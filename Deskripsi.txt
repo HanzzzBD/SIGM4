@@ -1,0 +1,35 @@
+Website SIGM4 (Sarana dan Prasarana Sekolah) merupakan sistem informasi terintegrasi yang dirancang untuk membantu sekolah dalam mengelola seluruh aset, fasilitas, dan kegiatan operasional sarana prasarana secara digital. Sistem ini memudahkan proses pencatatan inventaris, pemantauan kondisi barang, pengelolaan ruangan, hingga pengawasan penggunaan aset sehingga seluruh data dapat diakses secara cepat, akurat, dan transparan.
+
+Fitur Inventaris Aset memungkinkan sekolah mendata seluruh barang dan fasilitas yang dimiliki, mulai dari peralatan laboratorium, komputer, meubelair, hingga kendaraan operasional. Setiap aset memiliki informasi lengkap seperti kode barang, lokasi penyimpanan, kondisi, nilai aset, riwayat penggunaan, serta dokumen pendukung yang tersimpan secara terpusat.
+
+Untuk mempermudah identifikasi aset, sistem menyediakan QR Code Barang yang dapat ditempel pada setiap aset. Melalui pemindaian QR Code, pengguna dapat langsung melihat informasi barang, status penggunaan, lokasi, hingga riwayat pemeliharaan tanpa harus melakukan pencarian manual.
+
+Manajemen Lokasi membantu sekolah mengatur penempatan aset berdasarkan gedung, ruangan, atau area tertentu. Dengan fitur ini, petugas dapat mengetahui lokasi setiap aset secara akurat dan memudahkan proses audit maupun pencarian barang ketika diperlukan.
+
+Fitur Reservasi Ruangan dan Reservasi Barang memungkinkan guru, staf, maupun pihak terkait untuk melakukan pemesanan fasilitas sekolah secara online. Sistem akan mengelola jadwal penggunaan secara otomatis sehingga dapat menghindari benturan jadwal dan meningkatkan efisiensi pemanfaatan fasilitas sekolah.
+
+Dalam proses peminjaman aset, sistem menyediakan modul Peminjaman dan Pengembalian yang mencatat seluruh transaksi secara digital. Riwayat peminjaman tersimpan dengan baik sehingga memudahkan pemantauan barang yang sedang digunakan, telah dikembalikan, maupun yang mengalami keterlambatan pengembalian.
+
+Setiap permohonan reservasi atau peminjaman dapat melalui mekanisme Approval Workflow yang memungkinkan proses persetujuan dilakukan secara berjenjang sesuai kebijakan sekolah. Hal ini membantu menjaga kontrol penggunaan aset sekaligus memastikan setiap permintaan mendapatkan otorisasi yang tepat.
+
+Apabila terjadi kerusakan fasilitas, pengguna dapat memanfaatkan fitur Laporan Kerusakan untuk melaporkan kondisi aset secara langsung disertai deskripsi dan dokumentasi foto. Laporan yang masuk akan diteruskan kepada petugas terkait untuk segera ditindaklanjuti.
+
+Fitur Maintenance Management mendukung pengelolaan perawatan dan perbaikan aset secara terjadwal. Sistem dapat mencatat aktivitas pemeliharaan, biaya perbaikan, status pekerjaan, serta riwayat servis sehingga umur aset dapat dikelola dengan lebih baik.
+
+Untuk menjaga akurasi data inventaris, tersedia fitur Audit dan Stock Opname yang membantu petugas melakukan pemeriksaan fisik aset secara berkala. Hasil pemeriksaan dapat dibandingkan dengan data sistem sehingga perbedaan atau kehilangan aset dapat segera diketahui.
+
+Dashboard Monitoring menyajikan berbagai informasi penting dalam bentuk visual yang mudah dipahami, seperti jumlah aset, kondisi barang, tingkat penggunaan fasilitas, laporan kerusakan, dan aktivitas peminjaman. Dashboard ini membantu manajemen sekolah dalam mengambil keputusan berdasarkan data yang tersedia.
+
+Sistem juga dilengkapi Chatbot AI yang dapat membantu pengguna memperoleh informasi aset secara cepat melalui percakapan sederhana. Pengguna dapat menanyakan lokasi barang, status peminjaman, jadwal penggunaan ruangan, maupun informasi lainnya tanpa harus mencari secara manual.
+
+Fitur Notifikasi memberikan pemberitahuan otomatis terkait pengajuan reservasi, persetujuan peminjaman, jadwal pengembalian, laporan kerusakan, maupun agenda pemeliharaan. Dengan demikian, setiap pihak dapat memperoleh informasi penting secara tepat waktu.
+
+Seluruh aktivitas pengguna dicatat dalam Activity Log sehingga setiap perubahan data dapat ditelusuri dengan jelas. Fitur ini mendukung transparansi, keamanan data, dan proses audit internal sekolah.
+
+Manajemen User dan Role memungkinkan pengaturan hak akses sesuai tugas masing-masing pengguna, seperti administrator, petugas sarana prasarana, guru, teknisi, maupun pimpinan sekolah. Dengan pembagian akses yang tepat, keamanan dan kerahasiaan data dapat terjaga dengan baik.
+
+Fitur Pengadaan Barang membantu sekolah mengelola proses perencanaan dan pengadaan aset baru, mulai dari pengajuan kebutuhan, proses persetujuan, hingga pencatatan barang yang telah diterima. Seluruh proses terdokumentasi secara sistematis sehingga lebih mudah dipantau.
+
+Dokumen Aset berfungsi sebagai pusat penyimpanan berbagai dokumen penting yang berkaitan dengan aset sekolah, seperti faktur pembelian, surat garansi, sertifikat, manual penggunaan, dan dokumen pendukung lainnya yang dapat diakses kapan saja sesuai kewenangan pengguna.
+
+Sebagai pendukung pengambilan keputusan, fitur Statistik dan Analitik menyajikan berbagai laporan dan analisis mengenai kondisi aset, tingkat pemanfaatan fasilitas, biaya pemeliharaan, tren kerusakan, hingga kebutuhan pengadaan di masa mendatang. Informasi ini membantu sekolah dalam merencanakan pengelolaan sarana prasarana secara lebih efektif, efisien, dan berkelanjutan.
