@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Node — berlaku saat apps/ dibuat pada Phase 00
+node_modules/
+dist/
+build/
+.next/
+coverage/
+
+# Lingkungan & rahasia
+.env
+.env.*
+!.env.example
+
+# Perkakas editor & OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
