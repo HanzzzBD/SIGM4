@@ -5,7 +5,7 @@
 # Indeks Aksi Activity Log
 
 > Setiap aksi dimiliki modul penerbitnya. Prinsip pencatatan di `../03-architecture/activity-log.md`.
-> Total: **52** baris, dikumpulkan dari 21 berkas modul.
+> Total: **53** baris, dikumpulkan dari 21 berkas modul.
 
 | Aksi | Keterangan | Pemilik |
 |---|---|---|
@@ -33,6 +33,7 @@
 | `BORROWER_BLOCKED` / `BORROWER_UNBLOCKED` | Pemblokiran akibat kewajiban tertunggak | [M-09](../02-modules/m09-loans.md) |
 | `CATEGORY_CREATED` / `CATEGORY_UPDATED` / `CATEGORY_DELETED` | Perubahan kategori | [M-04](../02-modules/m04-assets.md) |
 | `CHAT_MESSAGE_SENT` | Metadata percakapan (tanpa merekam ulang isi di log audit) | [M-19](../02-modules/m19-chatbot.md) |
+| `COMPENSATION_WAIVED` | Pembebasan ganti rugi oleh Pimpinan beserta alasan dan nilai yang dibebaskan (BR-028e) | [M-09](../02-modules/m09-loans.md) |
 | `DAMAGE_REPORTED` / `DAMAGE_VERIFIED` / `DAMAGE_REJECTED` / `DAMAGE_CLOSED` | Siklus tiket | [M-11](../02-modules/m11-damage-reports.md) |
 | `DOCUMENT_UPLOADED` / `DOCUMENT_DOWNLOADED` / `DOCUMENT_DELETED` | Termasuk pencatatan siapa mengunduh | [M-06](../02-modules/m06-documents.md) |
 | `FINE_ISSUED` / `FINE_PAID` / `FINE_WAIVED` | Termasuk alasan pembebasan | [M-09](../02-modules/m09-loans.md) |

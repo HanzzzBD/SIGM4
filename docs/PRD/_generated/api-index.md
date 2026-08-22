@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **105** baris, dikumpulkan dari 21 berkas modul.
+> Total: **106** baris, dikumpulkan dari 21 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -53,7 +53,8 @@
 | GET | `/work-orders/mine` | `workorder.execute` | Work order yang ditugaskan kepada saya | [M-12](../02-modules/m12-maintenance.md) |
 | PATCH | `/assets/{id}/condition` | `asset.update` | Ubah kondisi + alasan | [M-04](../02-modules/m04-assets.md) |
 | PATCH | `/fines/{id}/pay` | `fine.manage` | Tandai lunas | [M-09](../02-modules/m09-loans.md) |
-| PATCH | `/fines/{id}/waive` | `fine.waive` | Bebaskan denda + alasan | [M-09](../02-modules/m09-loans.md) |
+| PATCH | `/fines/{id}/waive-compensation` | `fine.waive_compensation` | Bebaskan ganti rugi penuh/sebagian + alasan | [M-09](../02-modules/m09-loans.md) |
+| PATCH | `/fines/{id}/waive` | `fine.waive` | Bebaskan denda keterlambatan + alasan | [M-09](../02-modules/m09-loans.md) |
 | PATCH | `/notifications/read-all` | Bearer | Tandai semua terbaca | [M-17](../02-modules/m17-notifications.md) |
 | PATCH | `/notifications/{id}/read` | Bearer | Tandai terbaca | [M-17](../02-modules/m17-notifications.md) |
 | PATCH | `/users/{id}/status` | `user.update` | Aktifkan/nonaktifkan | [M-02](../02-modules/m02-users.md) |

@@ -13,7 +13,7 @@ Berkas ini memuat bagian **normatif**: daftar role, matriks akses, katalog kode 
 | Bab 5 — daftar role & aturan role | Normatif | Berkas ini (PRD) |
 | Bab 18 — matriks permission per role | Normatif (ringkasan bagi non-teknis) | Berkas ini (PRD) |
 | Lampiran C.1 — konvensi penamaan & scope | Normatif | Berkas ini (PRD) |
-| Lampiran C.2 — katalog 70 kode permission | Normatif — sumber kebenaran tunggal RBAC | Berkas ini (PRD) |
+| Lampiran C.2 — katalog 71 kode permission | Normatif — sumber kebenaran tunggal RBAC | Berkas ini (PRD) |
 | Lampiran C.3 — aturan penegakan (`PM-01`…`PM-06`) | Normatif | Berkas ini (PRD) |
 | Middleware, `AuthContext`, scope di repository, serializer | **Rancangan** | [`../../SDD/03-authorization.md`](../../SDD/03-authorization.md) |
 | Cache permission, urutan gerbang sesi, otorisasi tool AI | **Rancangan** | [`../../SDD/03-authorization.md`](../../SDD/03-authorization.md) |
@@ -30,7 +30,7 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 |---|---|---|---|
 | R-01 | **Administrator** | Pemilik sistem, akses penuh ke seluruh modul dan konfigurasi | CRUD user & role, konfigurasi approval rules, parameter sistem, format kode barang, tarif denda, akses penuh seluruh data, baca activity log |
 | R-02 | **Petugas Sarana Prasarana** | Pengelola operasional aset sehari-hari | CRUD aset, lokasi, kategori, dokumen aset, cetak QR, verifikasi serah terima & pengembalian, kelola denda, buat & jalankan stock opname, kelola work order, proses pengajuan sesuai approval rules, akses seluruh laporan |
-| R-03 | **Pimpinan Sekolah** | Kepala Sekolah & Wakasek Sarpras | Melihat seluruh data (read-only), menyetujui/menolak pengajuan sesuai approval rules, akses penuh dashboard & analitik, menyetujui hasil stock opname dan usulan pengadaan |
+| R-03 | **Pimpinan Sekolah** | Kepala Sekolah & Wakasek Sarpras | Melihat seluruh data (read-only), menyetujui/menolak pengajuan sesuai approval rules, akses penuh dashboard & analitik, menyetujui hasil stock opname dan usulan pengadaan, membebaskan kewajiban ganti rugi (BR-028e) |
 | R-04 | **Teknisi** | Pelaksana perbaikan & pemeliharaan internal | Melihat work order yang ditugaskan, memperbarui status & progres, mencatat biaya dan catatan pekerjaan, memperbarui kondisi aset pasca-perbaikan, melihat detail aset & riwayat servis |
 | R-05 | **Guru** | Tenaga pendidik | Mengajukan reservasi ruangan/barang, peminjaman, melihat katalog aset & jadwal, melaporkan kerusakan, mengajukan usulan pengadaan, melihat riwayat & denda pribadi, menggunakan chatbot |
 | R-06 | **Staf / Tata Usaha** | Tenaga kependidikan | Sama dengan Guru, ditambah kemampuan mengajukan reservasi atas nama unit kerja |
@@ -77,7 +77,8 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 | **Peminjaman — ajukan perpanjangan** | ✅ | ✅ | ✅ | ❌ | 🟡 | 🟡 | 🟡 |
 | **Denda — lihat seluruh** | ✅ | ✅ | 🔍 | ❌ | 🟡 | 🟡 | 🟡 |
 | **Denda — tandai lunas** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Denda — bebaskan** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Denda keterlambatan — bebaskan** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Ganti rugi — bebaskan** | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **Approval Rules — konfigurasi** | ✅ | ❌ | 🔍 | ❌ | ❌ | ❌ | ❌ |
 | **Approval — memutuskan** | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **Approval — lihat riwayat** | ✅ | ✅ | ✅ | ❌ | 🟡 | 🟡 | 🟡 |
@@ -178,7 +179,8 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 | `loan.extend` | Peminjaman | Mengajukan perpanjangan | Guru, Staf, Siswa, Petugas |
 | `fine.view` | Denda | Melihat denda | Semua (scope berbeda) |
 | `fine.manage` | Denda | Menandai lunas | Admin, Petugas |
-| `fine.waive` | Denda | Membebaskan denda | Admin, Petugas |
+| `fine.waive` | Denda | Membebaskan denda berjenis `Keterlambatan` | Admin, Petugas |
+| `fine.waive_compensation` | Denda | Membebaskan kewajiban `Ganti Rugi`, penuh atau sebagian (BR-028e) | Pimpinan |
 | `approval_rule.view` | Approval | Melihat aturan persetujuan | Admin, Pimpinan(view) |
 | `approval_rule.manage` 🔒 | Approval | Membuat & mengubah aturan | Admin |
 | `approval.view` | Approval | Melihat riwayat persetujuan | Semua (scope berbeda) |

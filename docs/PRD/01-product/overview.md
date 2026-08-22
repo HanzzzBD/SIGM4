@@ -195,6 +195,7 @@ Hal-hal berikut **secara eksplisit berada di luar cakupan** rilis ini:
 | NO-12 | Pembayaran denda secara online (payment gateway) | Sistem hanya mencatat status pembayaran |
 | NO-13 | Manajemen persediaan habis pakai (ATK/consumable) dengan stok masuk-keluar | Fokus pada aset tetap serialized |
 | NO-14 | Pelacakan lokasi real-time (RFID/GPS/IoT) | QR Code bersifat pemindaian manual |
+| NO-15 | Tarif sewa atau biaya pemakaian atas reservasi dan peminjaman | Fasilitas dan barang sekolah dipakai warga sekolah sendiri tanpa pungutan. Satu-satunya kewajiban bernilai uang adalah **denda keterlambatan** (BR-028) dan **ganti rugi** atas kehilangan/kerusakan berat (BR-028d) — keduanya tetap berlaku |
 
 ---
 

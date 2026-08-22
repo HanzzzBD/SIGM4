@@ -95,7 +95,7 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 | `PR-05-04` | Pelepasan slot & pemulihan status aset saat check-in | M | 03, Ph02 | `BR-030`, `SDD-AVL-07` | Aset kembali tersedia seketika |
 | `PR-05-05` | Pemantauan keterlambatan + pengingat berjenjang | M | 01 | `FR-09.3`, `BR-029` `BR-031`, `CAL-01` … `CAL-03` | Keterlambatan dihitung dengan hari kerja |
 | `PR-05-06` | Perhitungan denda | M | 05 | `FR-09.4`, `BR-032` `BR-033` | Denda berhenti bertambah setelah aset dinyatakan hilang |
-| `PR-05-07` | Pelunasan & pembebasan denda | M | 06 | `FR-09.4`, `BR-034` | Pembebasan memerlukan permission tersendiri + alasan |
+| `PR-05-07` | Pelunasan & pembebasan denda | M | 06 | `FR-09.4`, `BR-031` `BR-028e` | Pembebasan `Keterlambatan` memakai `fine.waive`; pembebasan `Ganti Rugi` memakai `fine.waive_compensation` (Pimpinan saja) + alasan, penuh atau sebagian |
 | `PR-05-08` | Perpanjangan peminjaman | M | 01, Ph04 | `FR-09.5`, `BR-035` | Perpanjangan ditolak bila ada reservasi menyusul |
 | `PR-05-09` | **Penutupan `SL-04`**: definisi kewajiban aktif | M | 06, Ph01 | `SL-04` | Siswa dengan pinjaman/denda aktif tidak dapat dinonaktifkan |
 | `PR-05-10` | Skema penghapusan + pengajuan | M | Ph04 | `FR-21.1`, `BR-065a` `BR-065b` | Aset dalam peminjaman aktif tidak dapat diajukan |

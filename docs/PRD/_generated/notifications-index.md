@@ -25,7 +25,7 @@
 | **NT-14** | Pengembalian tercatat | Peminjam | In-app + Push | ❌ | "Pengembalian {barang} tercatat pada {tanggal}." | [M-09](../02-modules/m09-loans.md) |
 | **NT-15** | Denda terbit | Peminjam | In-app + Push | ✅ | "Denda keterlambatan Rp{jumlah} terbit atas peminjaman {nomor}." | [M-09](../02-modules/m09-loans.md) |
 | **NT-16** | Denda dilunasi | Peminjam | In-app | ❌ | "Denda Rp{jumlah} telah dinyatakan lunas." | [M-09](../02-modules/m09-loans.md) |
-| **NT-17** | Denda dibebaskan | Peminjam | In-app | ❌ | "Denda Rp{jumlah} dibebaskan. Alasan: {alasan}." | [M-09](../02-modules/m09-loans.md) |
+| **NT-17** | Denda atau ganti rugi dibebaskan, penuh maupun sebagian | Peminjam | In-app | ❌ | "Kewajiban Rp{jumlah_dibebaskan} dibebaskan. Sisa tagihan Rp{sisa}. Alasan: {alasan}." | [M-09](../02-modules/m09-loans.md) |
 | **NT-18** | Pemohon diblokir karena kewajiban tertunggak | Pemohon | In-app + Push | ✅ | "Anda tidak dapat mengajukan peminjaman baru hingga kewajiban diselesaikan." | [M-09](../02-modules/m09-loans.md) |
 | **NT-19** | Laporan kerusakan baru | Petugas Sarpras | In-app + Push | ✅ | "Laporan kerusakan {nomor} atas {aset} dari {pelapor}." | [M-11](../02-modules/m11-damage-reports.md) |
 | **NT-20** | Laporan kerusakan urgensi Kritis | Petugas Sarpras + Pimpinan Sekolah | In-app + Push | ✅ | "KRITIS: {aset} di {lokasi} dilaporkan rusak berat." | [M-11](../02-modules/m11-damage-reports.md) |

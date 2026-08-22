@@ -43,6 +43,7 @@ Dibangun satu kali dan dipakai ulang di seluruh modul:
 
 ## 31.4 Spesifikasi Kalender Ketersediaan
 
+
 Komponen paling kompleks pada sistem ini; sebelumnya hanya dijelaskan satu paragraf.
 
 | Kode | Requirement |

@@ -268,7 +268,8 @@ flowchart TB
 5. Sistem mengubah status denda menjadi `Lunas` dan menotifikasi peminjam.
 
 **Alternative Flow**
-- **A1 — Pembebasan denda:** Administrator atau Petugas Sarpras menandai `Dibebaskan` dengan alasan wajib; tercatat di activity log.
+- **A1 — Pembebasan denda keterlambatan:** Administrator atau Petugas Sarpras menandai `Dibebaskan` dengan alasan wajib; tercatat di activity log (BR-031).
+- **A1a — Pembebasan ganti rugi:** Hanya Pimpinan Sekolah, penuh atau sebagian, dengan alasan wajib; tercatat di activity log sebagai `COMPENSATION_WAIVED` (BR-028e).
 - **A2 — Denda menumpuk melewati ambang batas:** Sistem otomatis memblokir pengajuan baru dari peminjam sampai denda diselesaikan (BR-030).
 - **A3 — Rekap denda:** Petugas mengekspor rekap denda per periode untuk pelaporan ke bendahara.
 
@@ -277,6 +278,8 @@ flowchart TB
 **Acceptance Criteria**
 - [ ] Denda dicatat **per unit yang dipinjam (`loan_item`)**, bukan per transaksi peminjaman — agar pengembalian sebagian dengan keterlambatan berbeda per unit dapat dihitung benar (BR-028a).
 - [ ] Perubahan status denda hanya dapat dilakukan role berwenang.
+- [ ] Pembebasan `Ganti Rugi` ditolak bagi Administrator dan Petugas Sarpras, dan diterima bagi Pimpinan Sekolah (BR-028e).
+- [ ] Pembebasan sebagian menyisakan tagihan `jumlah − jumlah_dibebaskan` dan tetap terhitung pada ambang BR-030.
 - [ ] Denda yang sudah `Lunas` tidak dapat diubah kembali kecuali oleh Administrator, dengan pencatatan alasan.
 - [ ] Rekap denda per periode dapat diekspor ke XLSX/PDF.
 - [ ] Total kewajiban pemohon adalah penjumlahan seluruh denda keterlambatan dan ganti rugi yang berstatus `Belum Dibayar`.
@@ -326,10 +329,10 @@ flowchart TB
 | BR-028b | Denda keterlambatan per unit dibatasi maksimum (*cap*) sebesar persentase nilai perolehan unit tersebut yang dikonfigurasi Administrator (bawaan 30%), atau nominal maksimum bila nilai perolehan tidak diketahui. Cap mencegah denda melampaui nilai barangnya sendiri. |
 | BR-028c | Hari libur sekolah **tetap dihitung** sebagai hari keterlambatan, kecuali Administrator mengaktifkan parameter "kecualikan hari libur". Kebijakan yang dipilih wajib disosialisasikan kepada pengguna sebelum go-live (RS-16). |
 | BR-028d | Barang yang dinyatakan `Hilang` atau rusak berat akibat kelalaian peminjam menimbulkan **kewajiban ganti rugi** terpisah dari denda keterlambatan, sebesar nilai perolehan aset atau nilai penggantian yang ditetapkan Petugas Sarpras dengan persetujuan Pimpinan Sekolah. Kewajiban ini dicatat dengan jenis `Ganti Rugi` dan mengikuti alur status yang sama dengan denda. |
-| BR-028e | Kewajiban ganti rugi dapat dibebaskan sepenuhnya atau sebagian oleh Pimpinan Sekolah dengan alasan wajib; Petugas Sarpras tidak berwenang membebaskannya. |
+| BR-028e | Kewajiban berjenis `Ganti Rugi` dapat dibebaskan sepenuhnya atau sebagian **hanya oleh Pimpinan Sekolah**, melalui permission `fine.waive_compensation`, dengan alasan wajib dan tercatat pada activity log. Petugas Sarpras maupun Administrator tidak berwenang membebaskannya — `fine.waive` (BR-031) tidak berlaku atas jenis ini. Pembebasan sebagian mengisi `jumlah_dibebaskan` dan menyisakan tagihan sebesar `jumlah − jumlah_dibebaskan` dengan status `Dibebaskan Sebagian`; kewajiban tersisa tetap diperhitungkan pada ambang pemblokiran BR-030. |
 | BR-029 | Tarif denda yang berlaku adalah tarif pada saat tanggal jatuh tempo, bukan tarif saat pengembalian. |
 | BR-030 | Pengguna yang memiliki peminjaman terlambat yang belum dikembalikan, atau denda `Belum Dibayar` melebihi ambang yang dikonfigurasi, diblokir dari mengajukan reservasi/peminjaman baru sampai kewajibannya diselesaikan. |
-| BR-031 | Pembebasan denda hanya dapat dilakukan oleh Administrator atau Petugas Sarana Prasarana, wajib menyertakan alasan, dan tercatat pada activity log. |
+| BR-031 | Pembebasan denda berjenis `Keterlambatan` hanya dapat dilakukan oleh Administrator atau Petugas Sarana Prasarana, wajib menyertakan alasan, dan tercatat pada activity log. Pembebasan berjenis `Ganti Rugi` tunduk pada BR-028e, bukan aturan ini. |
 | BR-032 | Barang yang kembali dalam kondisi rusak otomatis menghasilkan tiket Laporan Kerusakan yang tertaut ke transaksi peminjaman dan peminjamnya. |
 | BR-033 | Tanggung jawab peminjaman tetap melekat pada pemohon meskipun pengambilan barang diwakilkan pihak lain. |
 | BR-034 | Perpanjangan peminjaman hanya dapat diajukan sebelum jatuh tempo, hanya bila unit tidak dipesan pihak lain, dan wajib melalui persetujuan. |
@@ -352,7 +355,8 @@ flowchart TB
 | GET | `/loans` | `loan.view` | Daftar peminjaman (tab aktif/terlambat/selesai) |
 | GET | `/fines` | `fine.view` | Daftar denda |
 | PATCH | `/fines/{id}/pay` | `fine.manage` | Tandai lunas |
-| PATCH | `/fines/{id}/waive` | `fine.waive` | Bebaskan denda + alasan |
+| PATCH | `/fines/{id}/waive` | `fine.waive` | Bebaskan denda keterlambatan + alasan |
+| PATCH | `/fines/{id}/waive-compensation` | `fine.waive_compensation` | Bebaskan ganti rugi penuh/sebagian + alasan |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
@@ -365,7 +369,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 |---|---|---|---|
 | **loans** | Transaksi peminjaman | id, nomor, reservation_id, peminjam_id, petugas_serah_id, tanggal_pinjam, tanggal_jatuh_tempo, tanggal_kembali, status | ± 2.500 |
 | **loan_items** | Unit yang dipinjam & kondisinya | id, loan_id, asset_id, kondisi_awal, kondisi_akhir, foto_awal, foto_akhir, status_kembali | ± 5.000 |
-| **fines** | Denda keterlambatan & ganti rugi | id, **loan_item_id**, loan_id, peminjam_id, jenis (`Keterlambatan`/`Ganti Rugi`), hari_terlambat, tarif_per_hari, jumlah_sebelum_cap, jumlah, status, tanggal_bayar, nomor_bukti, alasan_pembebasan, dibebaskan_oleh | ± 300 |
+| **fines** | Denda keterlambatan & ganti rugi | id, **loan_item_id**, loan_id, peminjam_id, jenis (`Keterlambatan`/`Ganti Rugi`), hari_terlambat, tarif_per_hari, jumlah_sebelum_cap, jumlah, status, tanggal_bayar, nomor_bukti, jumlah_dibebaskan, alasan_pembebasan, dibebaskan_oleh | ± 300 |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
 
@@ -382,7 +386,7 @@ Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-archit
 | **NT-14** | Pengembalian tercatat | Peminjam | In-app + Push | ❌ | "Pengembalian {barang} tercatat pada {tanggal}." |
 | **NT-15** | Denda terbit | Peminjam | In-app + Push | ✅ | "Denda keterlambatan Rp{jumlah} terbit atas peminjaman {nomor}." |
 | **NT-16** | Denda dilunasi | Peminjam | In-app | ❌ | "Denda Rp{jumlah} telah dinyatakan lunas." |
-| **NT-17** | Denda dibebaskan | Peminjam | In-app | ❌ | "Denda Rp{jumlah} dibebaskan. Alasan: {alasan}." |
+| **NT-17** | Denda atau ganti rugi dibebaskan, penuh maupun sebagian | Peminjam | In-app | ❌ | "Kewajiban Rp{jumlah_dibebaskan} dibebaskan. Sisa tagihan Rp{sisa}. Alasan: {alasan}." |
 | **NT-18** | Pemohon diblokir karena kewajiban tertunggak | Pemohon | In-app + Push | ✅ | "Anda tidak dapat mengajukan peminjaman baru hingga kewajiban diselesaikan." |
 
 Ketentuan umum kanal, latensi, dan preferensi: [`m17-notifications.md`](m17-notifications.md).
@@ -399,7 +403,8 @@ Ketentuan umum kanal, latensi, dan preferensi: [`m17-notifications.md`](m17-noti
 | `loan.extend` | Peminjaman | Mengajukan perpanjangan | Guru, Staf, Siswa, Petugas |
 | `fine.view` | Denda | Melihat denda | Semua (scope berbeda) |
 | `fine.manage` | Denda | Menandai lunas | Admin, Petugas |
-| `fine.waive` | Denda | Membebaskan denda | Admin, Petugas |
+| `fine.waive` | Denda | Membebaskan denda berjenis `Keterlambatan` | Admin, Petugas |
+| `fine.waive_compensation` | Denda | Membebaskan kewajiban `Ganti Rugi`, penuh atau sebagian | Pimpinan |
 
 Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-foundation/roles-permissions.md).
 
@@ -415,6 +420,7 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | `LOAN_EXTENDED` | Perpanjangan yang disetujui |
 | `LOAN_MARKED_LOST` | Penetapan barang hilang |
 | `FINE_ISSUED` / `FINE_PAID` / `FINE_WAIVED` | Termasuk alasan pembebasan |
+| `COMPENSATION_WAIVED` | Pembebasan ganti rugi oleh Pimpinan beserta alasan dan nilai yang dibebaskan (BR-028e) |
 | `BORROWER_BLOCKED` / `BORROWER_UNBLOCKED` | Pemblokiran akibat kewajiban tertunggak |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).

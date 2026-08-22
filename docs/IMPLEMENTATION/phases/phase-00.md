@@ -27,7 +27,7 @@ Setelah phase ini, sebuah perubahan kode dapat berjalan dari *commit* hingga *st
 - Registri route + validasi permission saat *startup*
 - Worker skeleton: antrean, *distributed lock*, tabel outbox dan dispatcher-nya
 - Health endpoint, log terstruktur, korelasi `request_id`
-- Seed: 70 permission, 7 role bawaan, `work_days`, parameter sistem
+- Seed: 71 permission, 7 role bawaan, `work_days`, parameter sistem
 
 **Tidak termasuk**
 
@@ -43,7 +43,7 @@ Tidak ada. Ini titik masuk proyek.
 
 | Berkas | ID yang dilayani |
 |---|---|
-| [`roles-permissions.md`](../../PRD/00-foundation/roles-permissions.md) | Lampiran C — 70 kode permission, `PM-01` … `PM-06` |
+| [`roles-permissions.md`](../../PRD/00-foundation/roles-permissions.md) | Lampiran C — 71 kode permission, `PM-01` … `PM-06` |
 | [`conventions.md`](../../PRD/00-foundation/conventions.md) | `CAL-01` … `CAL-03`, `work_days` |
 | [`nfr.md`](../../PRD/03-architecture/nfr.md) | `NFR-M-01` `NFR-M-02` `NFR-M-04` `NFR-M-06` `NFR-M-09` |
 | [`deployment-ops.md`](../../PRD/03-architecture/deployment-ops.md) | `INF-01` … `INF-07`, `CD-01` … `CD-07`, `OBS-01` … `OBS-07` |
@@ -92,7 +92,7 @@ Tidak ada. Ini titik masuk proyek.
 | `PR-00-13` | `AuditLogger` + `activity_logs` terpartisi + rantai hash | L | 05, 06 | `AL-01` `AL-03a` `AL-03b`, `NFR-S-03d`, `SDD-DB-07/09` | Partisi bulan berjalan ada; rantai terverifikasi; akun app tanpa UPDATE/DELETE |
 | `PR-00-14` | Health endpoint (live/ready/ringkasan) | S | 06 | `NFR-A-07`, `OBS-06`, `SDD-OBS-06` | `llm`/`fcm` mati tidak membuat `ready` gagal |
 | `PR-00-15` | Header keamanan + rate limit berjenjang | M | 09 | `NFR-S-07` `NFR-S-11`, `SDD-SEC-03/05` | CSP tanpa `unsafe-inline`; kelas limit terpisah aktif |
-| `PR-00-16` | Seed: 70 permission, 7 role, matriks, `work_days`, parameter | M | 05 | Lampiran C, `SDD-DB-10` | Uji membandingkan hasil seed dengan Lampiran C baris per baris |
+| `PR-00-16` | Seed: 71 permission, 7 role, matriks, `work_days`, parameter | M | 05 | Lampiran C, `SDD-DB-10` | Uji membandingkan hasil seed dengan Lampiran C baris per baris |
 | `PR-00-17` | Pipeline CI: lint → uji → SAST → SCA → build → image scan | L | 01, 03 | `CD-01` `CD-02`, `ST-01` `ST-02` | Cakupan < 70% atau kerentanan High → pipeline merah |
 | `PR-00-18` | Deploy staging + job migration + smoke test | M | 17 | `CD-03` `CD-04` `CD-07`, `SDD-INF-03/04` | Merge ke `staging` men-deploy lingkungan staging otomatis (`CD-03`) |
 
