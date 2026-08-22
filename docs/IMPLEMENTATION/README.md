@@ -6,13 +6,17 @@
 
 ## Batas dokumen ini
 
-Tiga lapisan dokumentasi, tiga pertanyaan berbeda:
+Lima lapisan dokumentasi, lima pertanyaan berbeda:
 
 | Lapisan | Menjawab | Sumber |
 |---|---|---|
 | [`../PRD/`](../PRD/) | **Apa** yang dibangun | **Source of Truth** |
 | [`../SDD/`](../SDD/) | **Bagaimana** sistem dirancang | Turunan PRD |
+| [`../UX/`](../UX/) | **Bagaimana** requirement disajikan | Turunan PRD & SDD |
+| [`../DESIGN/`](../DESIGN/) | **Seperti apa** tampilannya | Turunan PRD, SDD & UX |
 | `IMPLEMENTATION/` | **Bagaimana** proyeknya dikerjakan | Turunan PRD & SDD |
+
+PR bermuatan antarmuka mengambil daftar layar dari [`UX/PAGE-SPECIFICATION.md`](../UX/PAGE-SPECIFICATION.md) dan spesifikasi visualnya dari [`DESIGN/COMPONENTS.md`](../DESIGN/COMPONENTS.md). Deliverable desain `DS-01`…`DS-06` dilacak di [`DESIGN-SYSTEM.md`](../DESIGN/DESIGN-SYSTEM.md).
 
 **Urutan prioritas: PRD → SDD → IMPLEMENTATION.** IMPLEMENTATION tidak boleh bertentangan dengan keduanya. Bila ditemukan pertentangan, yang diperbaiki adalah IMPLEMENTATION — bukan PRD, bukan SDD.
 

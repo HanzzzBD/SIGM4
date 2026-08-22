@@ -2,7 +2,7 @@
 
 Berkas ini mengumpulkan seluruh titik dalam SDD yang **memerlukan keputusan** dan sengaja tidak diisi. Tidak ada angka, kebijakan, atau perilaku yang dikarang.
 
-**Status: 27 terbuka · 8 tertutup** — terkumpul dari 18 berkas SDD.
+**Status: 24 terbuka · 11 tertutup** — terkumpul dari 18 berkas SDD.
 
 ---
 
@@ -16,12 +16,9 @@ Perlu keputusan pemilik produk. Tidak dapat ditetapkan tim teknis.
 | **TBD-APR-A** | [SDD-02](02-approval-engine.md) | `fallback_approver` disebut `RE-11` tetapi tidak ada pada skema Lampiran D.5. Field tingkat aturan, atau selalu jatuh ke Administrator tanpa konfigurasi? |
 | **TBD-APR-B** | [SDD-02](02-approval-engine.md) | Jam kerja untuk perhitungan SLA: jam operasional sekolah (06.00–18.00) atau jam administratif yang lebih sempit? Menggeser seluruh tenggat dan pengukuran `SC-03`. |
 | **TBD-APR-C** | [SDD-02](02-approval-engine.md) | Perilaku bila approver `approver_type='user'` dinonaktifkan setelah instance berjalan. `FR-02.1 A3` mengatur pencegahan, bukan pemulihan. |
-| **TBD-NTF-A** | [SDD-08](08-notification-design.md) | Pengelompokan `jenis` untuk preferensi notifikasi (`FR-17.3`) belum ada di PRD. Perlu daftar kelompok yang dilihat pengguna + pemetaan tiap `NT-xx`. |
 | **TBD-NTF-B** | [SDD-08](08-notification-design.md) | Apakah notifikasi terarsip (>90 hari) tetap dapat diakses pengguna lewat filter arsip, atau hanya administratif. |
 | **TBD-FS-A** | [SDD-09](09-file-storage-design.md) · [SDD-13](13-security-design.md) | Perlakuan foto berwajah saat permintaan penghapusan data (`DP-04`). Pseudonimisasi identitas tidak menghapus wajah pada foto bukti serah terima/kerusakan. Pertahankan sebagai bukti, kaburkan, atau hapus? |
 | **TBD-EVT-B** | [SDD-07](07-event-flow.md) · [SDD-15](15-observability-logging.md) | Apakah dead letter memerlukan antarmuka pemrosesan ulang di menu Administrator, atau cukup lewat akses operasional. Berdampak pada lingkup M-20. |
-| **TBD-MOB-B** | [SDD-12](12-mobile-architecture.md) | Apakah aplikasi mobile perlu dukungan tablet khusus. `NFR-C-04` hanya menyebut potret dan lanskap terbatas. |
-| **TBD-FE-B** | [SDD-11](11-frontend-architecture.md) | Apakah web perlu mode gelap. Tidak disebut PRD; berdampak pada jumlah token warna dan uji kontras. |
 | **TBD-SEC-B** | [SDD-13](13-security-design.md) | Apakah sekolah memerlukan kepatuhan formal di luar UU PDP (mis. standar dinas pendidikan setempat). |
 | **TBD-AUTH-C** | [SDD-03](03-authorization.md) | Konfirmasi bahwa penambahan mekanisme teknis murni seperti `role_version` boleh diputuskan di tingkat SDD tanpa dianggap perubahan requirement. |
 
@@ -64,7 +61,7 @@ _Seluruhnya tertutup — lihat [Tertutup](#tertutup)._
 
 | Kelompok | Jumlah | Kapan diputuskan |
 |---|---|---|
-| A — Kebijakan produk | 12 | **Sekarang** — memblokir penyelesaian SDD terkait |
+| A — Kebijakan produk | 9 | **Sekarang** — memblokir penyelesaian SDD terkait |
 | B — Parameter operasional | 14 | Setelah staging berdiri & uji beban dijalankan |
 | C — Pilihan teknis | 0 | Seluruhnya tertutup 6 Agustus 2026 |
 | D — Konten | 1 | Saat naskah prompt disusun (M5) |
@@ -85,7 +82,10 @@ Kelompok B sengaja ditunda: menetapkan ukuran pool koneksi atau TTL cache tanpa 
 | **TBD-MOB-A** | [SDD-12](12-mobile-architecture.md) | Versi React Native dan strategi pembaruan OTA. Berdampak pada kecepatan pengiriman perbaikan tanpa peninjauan store. | `SDD-MOB-10` | 6 Agustus 2026 |
 | **TBD-OBS-A** | [SDD-15](15-observability-logging.md) | Perkakas observability (mandiri vs terkelola). Berdampak pada biaya dan beban pemeliharaan sekolah. | `SDD-OBS-09` | 6 Agustus 2026 |
 | **TBD-INF-B** | [SDD-16](16-infrastructure-deployment.md) | Orkestrasi: Docker Compose (sesuai `INF-05`) atau Kubernetes bila sekolah sudah memilikinya. | `SDD-INF-10` | 6 Agustus 2026 |
+| **TBD-NTF-A** | [SDD-08](08-notification-design.md) | Pengelompokan `jenis` untuk preferensi notifikasi (`FR-17.3`) belum ada di PRD. Perlu daftar kelompok yang dilihat pengguna + pemetaan tiap `NT-xx`. | **UXD-05** — keputusan pemilik produk | 22 Agustus 2026 |
+| **TBD-MOB-B** | [SDD-12](12-mobile-architecture.md) | Apakah aplikasi mobile perlu dukungan tablet khusus. `NFR-C-04` hanya menyebut potret dan lanskap terbatas. | **UXD-11** — keputusan pemilik produk | 22 Agustus 2026 |
+| **TBD-FE-B** | [SDD-11](11-frontend-architecture.md) | Apakah web perlu mode gelap. Tidak disebut PRD; berdampak pada jumlah token warna dan uji kontras. | **UXD-12** — keputusan pemilik produk | 22 Agustus 2026 |
 
-Kolom **Keputusan** memuat ID keputusan SDD, bukan uraiannya — uraian, opsi yang ditolak, dan konsekuensinya ada di berkas SDD pemiliknya.
+Kolom **Keputusan** memuat ID keputusan SDD — atau ID keputusan UX (`UXD-xx`) bila yang memutuskan adalah pemilik produk, bukan arsitek — dan bukan uraiannya — uraian, opsi yang ditolak, dan konsekuensinya ada di berkas SDD pemiliknya.
 
 Format saat menutup: pindahkan barisnya ke sini, tambahkan kolom **Keputusan** dan **Tanggal**, lalu perbarui berkas SDD yang bersangkutan.

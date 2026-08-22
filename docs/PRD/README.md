@@ -116,7 +116,7 @@ Tiga berkas ini berlaku meski tidak selalu disebut, dan menjadi fondasi SDD:
 | [ai-features.md](03-architecture/ai-features.md) | Tool, prompt strategy, evaluasi, biaya, privasi AI |
 | *-index.md | **Digenerate** — jangan disunting |
 
-### 04 · Frontend · 05 · Mobile · 06 · Quality · 07 · SDD
+### 04 · Frontend · 05 · Mobile · 06 · Quality · 07 · SDD · 08 · UX · 09 · DESIGN
 | Berkas | Isi |
 |---|---|
 | [04-frontend/ui-foundation.md](04-frontend/ui-foundation.md) | Design token, komponen inti, spesifikasi kalender |
@@ -125,6 +125,8 @@ Tiga berkas ini berlaku meski tidak selalu disebut, dan menjadi fondasi SDD:
 | [06-quality/test-strategy.md](06-quality/test-strategy.md) | Piramida uji, alur kritis, uji konkurensi, UAT |
 | [06-quality/traceability.md](06-quality/traceability.md) | **Papan skor implementasi** — status semua FR & BR |
 | [07-sdd/README.md](../SDD/README.md) | Software Design Document — *bagaimana* sistem dibangun |
+| [08-ux/UX-SPEC.md](../UX/UX-SPEC.md) | UX Specification — *bagaimana* requirement disajikan: halaman, navigasi, alur, keadaan |
+| [09-design/DESIGN-SYSTEM.md](../DESIGN/DESIGN-SYSTEM.md) | Design System — *seperti apa* tampilannya: token, tipografi, komponen |
 
 ---
 
@@ -135,7 +137,7 @@ Tiga berkas ini berlaku meski tidak selalu disebut, dan menjadi fondasi SDD:
 | **Dokumentasi ini (eks-PRD)** | *Apa* yang dibangun | Requirement, aturan bisnis, kriteria penerimaan |
 | **[07-sdd/](../SDD/)** | *Bagaimana* dibangun | Keputusan desain teknis, struktur kode, skema fisik, algoritma |
 
-SDD **tidak menduplikasi** isi dokumentasi ini; ia merujuk lewat ID.
+SDD **tidak menduplikasi** isi dokumentasi ini; ia merujuk lewat ID. Hal yang sama berlaku bagi [`UX/`](../UX/) dan [`DESIGN/`](../DESIGN/): UX menjabarkan penyajian requirement ini menjadi halaman dan alur, DESIGN menetapkan bahasa visualnya. Keduanya turunan — bila bertentangan dengan dokumentasi ini, **dokumentasi ini yang berlaku**.
 
 ---
 
@@ -149,4 +151,4 @@ SDD **tidak menduplikasi** isi dokumentasi ini; ia merujuk lewat ID.
 | `scripts/gen_trace.py` | Regenerasi papan skor traceability |
 | `scripts/build_full.py` | Bangun ulang arsip `PRD.v1.1.full.md` + verifikasi sidik jari |
 
-Arsip PRD utuh sebelum dipecah: `PRD.v1.1.full.md` (5.912 baris, SHA-256 `ef24c261…4d4d57`).
+Arsip PRD utuh sebelum dipecah: `PRD.v1.1.full.md` (5.912 baris, SHA-256 `ef24c261…4d4d57`) — **saat ini tidak ada di pohon kerja**; bangun ulang dengan `scripts/build_full.py` atau pulihkan dari riwayat git. `audit_docs.py` memerlukannya untuk berjalan.

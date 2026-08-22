@@ -8,6 +8,15 @@
 
 SDD menjawab **bagaimana** sistem dibangun. [`../PRD/`](../PRD/) menjawab **apa** yang dibangun dan merupakan **Source of Truth**.
 
+Dua lapisan turunan berdiri **di bawah** SDD dan merujuknya lewat ID:
+
+| Lapisan | Menjawab | Entry point |
+|---|---|---|
+| [`../UX/`](../UX/) | **Bagaimana** requirement disajikan — halaman, navigasi, alur, keadaan layar | [`UX-SPEC.md`](../UX/UX-SPEC.md) |
+| [`../DESIGN/`](../DESIGN/) | **Seperti apa** tampilannya — token, tipografi, komponen, pola visual | [`DESIGN-SYSTEM.md`](../DESIGN/DESIGN-SYSTEM.md) |
+
+Keputusan SDD yang paling banyak dirujuk keduanya: `SDD-FE-04` (render berbasis permission), `SDD-FE-08` (peta enum), `SDD-FE-10` (filter di URL), `SDD-FE-12` (pustaka komponen sendiri), `SDD-MOB-*` (alur lapangan), `SDD-NTF-09` (deep link). Bila keputusan itu berubah, **periksa `UX/` dan `DESIGN/`**.
+
 **SDD dilarang menduplikasi requirement.** Setiap kali SDD menyebut sebuah aturan, ia merujuk lewat ID (`BR-017`, `FR-08.2`, `CI-01`, `RE-09`) — tidak menyalin teksnya. Bila teks aturan berubah, SDD tidak perlu ikut diubah.
 
 | Boleh ada di SDD | Tidak boleh ada di SDD |
@@ -103,11 +112,11 @@ Berlaku bagi seluruh berkas SDD dan tidak boleh dibantah tanpa persetujuan pemil
 
 ## Titik yang belum ditetapkan
 
-Terkumpul di [`TBD-REGISTER.md`](TBD-REGISTER.md) — **27 terbuka**, diklasifikasi menjadi empat kelompok menurut siapa yang memutuskan dan kapan. Tidak boleh ditebak oleh penyusun SDD.
+Terkumpul di [`TBD-REGISTER.md`](TBD-REGISTER.md) — **24 terbuka**, diklasifikasi menjadi empat kelompok menurut siapa yang memutuskan dan kapan. Tidak boleh ditebak oleh penyusun SDD.
 
 | Kelompok | Jumlah | Kapan |
 |---|---|---|
-| A — Kebijakan produk | 12 | **Sekarang** — memblokir SDD terkait |
+| A — Kebijakan produk | 9 | **Sekarang** — memblokir SDD terkait |
 | B — Parameter operasional | 14 | Setelah staging & uji beban |
 | C — Pilihan teknis | 0 | Seluruhnya tertutup |
 | D — Konten prompt | 1 | M5 |

@@ -169,6 +169,19 @@ Urutan ini mencerminkan gerbang middleware server (`SDD-AUTH-09`) sehingga klien
 
 ---
 
+### 4.8 Tata letak tablet
+
+Melampaui minimum `NFR-C-04` yang hanya menuntut potret dan lanskap terbatas. Keputusan pemilik produk `UXD-11`; perilaku layar ditetapkan [`UX/PAGE-SPECIFICATION.md §10.4`](../UX/PAGE-SPECIFICATION.md#104-tablet).
+
+| Layar | Tata letak | Alasan |
+|---|---|---|
+| `MS-16` Work Order Saya | Master-detail: daftar 320px di kiri, detail di kanan | Teknisi membaca deskripsi sambil melihat antrean |
+| `MS-18` Sesi Opname | Master-detail: daftar lokasi kiri, aset target kanan | Satu lokasi dapat memuat ratusan unit (`MOB-PERF-02`) |
+| `MS-06` Tugas | Seksi bersebelahan dua kolom | Petugas Sarpras memegang beberapa antrean sekaligus |
+| Layar lain | Tata letak ponsel dipusatkan, lebar maksimum terbatas | Menghindari baris teks terlalu panjang |
+
+Konsekuensi: satu kelas perangkat uji baru pada Bab 30.6, dan satu set wireframe tambahan pada `DS-03`.
+
 ## 5. Konsekuensi
 
 - Sekolah wajib memiliki domain HTTPS sendiri (`AS-15b`) — App/Universal Links tidak dapat diverifikasi tanpa itu.
@@ -206,6 +219,8 @@ Urutan ini mencerminkan gerbang middleware server (`SDD-AUTH-09`) sehingga klien
 
 ## 8. TBD
 
-| ID | Pertanyaan |
-|---|---|
-| **TBD-MOB-B** | Apakah aplikasi perlu mendukung tablet secara khusus. `NFR-C-04` hanya menyebut potret dan lanskap terbatas. |
+_Tidak ada titik terbuka._
+
+| ID | Ditutup | Keputusan |
+|---|---|---|
+| **TBD-MOB-B** | 22 Agustus 2026 | **Tablet mendapat tata letak dua panel** pada tiga layar (`UXD-11`). Rancangannya di §4.8. |

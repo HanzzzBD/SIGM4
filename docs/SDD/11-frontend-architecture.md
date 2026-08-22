@@ -162,6 +162,7 @@ async function onUnauthorized() {
 - Kalender adalah komponen paling mahal untuk dibangun dan diuji; ia menjadi jalur kritis pada milestone M2 ([delivery-plan](../PRD/01-product/delivery-plan.md)).
 - Batas 2 koneksi SSE (`NTF-03`) berarti membuka banyak tab akan memutus tab terlama — UI wajib menjelaskannya, bukan diam ([SDD-08 §5](08-notification-design.md)).
 - `SDD-FE-12` menjadikan `DS-02` pekerjaan nyata di M1: komponen inti ditulis, bukan dipasang. Yang ditukar adalah kepemilikan lapisan token — tanpanya, validasi kontras di CI (`NFR-AC-01/02`) tidak punya berkas untuk divalidasi dan **TBD-FE-B** menjadi mahal. Konsekuensi turunannya: `DS-06` (daftar periksa aksesibilitas per komponen) berlaku atas komponen kita sendiri, sehingga daftar itu benar-benar dapat diselesaikan alih-alih bergantung pada klaim vendor.
+- Nilai token yang mengisi lapisan `shared/ui/` ditetapkan [`DESIGN/FOUNDATIONS.md`](../DESIGN/FOUNDATIONS.md); spesifikasi tiap komponen ada di [`DESIGN/COMPONENTS.md`](../DESIGN/COMPONENTS.md). `SDD-FE-12` menetapkan **bahwa** komponen dibangun sendiri; kedua berkas itu menetapkan **seperti apa** wujudnya.
 - Karena komponen disalin ke dalam repositori, pembaruan hulu tidak datang otomatis — perbaikan aksesibilitas dari primitif hulu diikuti lewat pemutakhiran Radix/React Aria, sedangkan komponen turunan kita adalah kode yang kita rawat sendiri.
 
 ---
@@ -187,6 +188,8 @@ async function onUnauthorized() {
 
 ## 8. TBD
 
-| ID | Pertanyaan |
-|---|---|
-| **TBD-FE-B** | Apakah web perlu mendukung mode gelap. Tidak disebut PRD; berdampak pada jumlah token warna dan uji kontras. |
+_Tidak ada titik terbuka._
+
+| ID | Ditutup | Keputusan |
+|---|---|---|
+| **TBD-FE-B** | 22 Agustus 2026 | **Mode gelap di luar lingkup rilis ini** — satu set token warna saja (`UXD-12`, [`DESIGN-SYSTEM.md §8`](../DESIGN/DESIGN-SYSTEM.md)). Konsekuensi: validasi kontras di CI (§4.6) punya satu sasaran, bukan dua. |

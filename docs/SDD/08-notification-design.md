@@ -137,9 +137,18 @@ Payload push tidak memuat nilai finansial maupun identitas pengguna lain — kon
 ### 4.5 Preferensi
 
 ```sql
+CREATE TYPE notification_group AS ENUM (
+    'persetujuan',
+    'reservasi_peminjaman',
+    'denda_kewajiban',
+    'kerusakan_perawatan',
+    'opname_pengadaan',
+    'akun_sistem'
+);
+
 CREATE TABLE notification_preferences (
     user_id bigint NOT NULL REFERENCES users(id),
-    jenis   text   NOT NULL,
+    jenis   notification_group NOT NULL,
     in_app  boolean NOT NULL DEFAULT true,
     push    boolean NOT NULL DEFAULT true,
     PRIMARY KEY (user_id, jenis)
@@ -147,6 +156,21 @@ CREATE TABLE notification_preferences (
 ```
 
 Ketiadaan baris berarti "aktif" — sehingga pengguna baru menerima segalanya tanpa perlu seed. Notifikasi bertanda wajib mengabaikan tabel ini seluruhnya (`FR-17.3 A1`).
+
+**Enam kelompok** menutup `TBD-NTF-A`. Pengelompokan mengikuti domain proses yang dikenali pengguna, bukan batas modul — pengguna non-teknis tidak mengenal `M-13` (`UX-06`). Keputusan pemilik produk `UXD-05`; layar preferensinya dispesifikasikan [`UX/PAGE-SPECIFICATION.md §7.6.8`](../UX/PAGE-SPECIFICATION.md#768-p-78-preferensi-notifikasi).
+
+| `jenis` | Kode `NT-xx` | Memuat notifikasi wajib? |
+|---|---|---|
+| `persetujuan` | `NT-01`…`NT-07`, `NT-47` | Ya — seluruhnya |
+| `reservasi_peminjaman` | `NT-08`…`NT-14`, `NT-27`, `NT-46` | Sebagian |
+| `denda_kewajiban` | `NT-15`…`NT-18` | Sebagian |
+| `kerusakan_perawatan` | `NT-19`…`NT-26`, `NT-28`, `NT-29` | Sebagian |
+| `opname_pengadaan` | `NT-30`…`NT-36`, `NT-43`…`NT-45` | Sebagian |
+| `akun_sistem` | `NT-37`…`NT-42`, `NT-48` | Sebagian |
+
+Templat `SDD-NTF-04` membawa `jenis` sebagai bagian definisi tiap kode `NT-xx`, sehingga pemetaan di atas hidup di kode bersama templatnya — bukan sebagai tabel terpisah yang dapat menyimpang.
+
+> **Catatan lapisan.** Daftar kelompok ini bersifat kebijakan produk dan idealnya bermukim di PRD `M-17`. Selama belum dinaikkan ke sana, berkas inilah pemiliknya; bila kemudian ditambahkan ke `m17-notifications.md`, baris di atas wajib diganti rujukan ID.
 
 ### 4.6 Arsip
 
@@ -187,5 +211,11 @@ Notifikasi > 90 hari dipindahkan job harian ke `notifications_archive` (`FR-17.1
 
 | ID | Pertanyaan |
 |---|---|
-| **TBD-NTF-A** | Pengelompokan `jenis` untuk preferensi (`FR-17.3`) belum ditetapkan PRD. Perlu daftar kelompok yang dilihat pengguna — misalnya "Persetujuan", "Peminjaman", "Kerusakan", "Sistem" — beserta pemetaan tiap `NT-xx` ke kelompoknya. |
 | **TBD-NTF-B** | Apakah notifikasi yang sudah diarsipkan (>90 hari) tetap dapat diakses pengguna melalui filter arsip (`FR-17.1 A2` menyiratkan ya), atau hanya melalui pemeriksaan administratif. Berdampak pada endpoint dan indeks tabel arsip. |
+
+
+**Tertutup**
+
+| ID | Ditutup | Keputusan |
+|---|---|---|
+| **TBD-NTF-A** | 22 Agustus 2026 | Enam kelompok domain proses — lihat §4.5 (`UXD-05`) |
