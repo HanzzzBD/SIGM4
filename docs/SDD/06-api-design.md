@@ -125,6 +125,9 @@ const MAP: Array<[matcher, httpStatus, code]> = [
   [isPgError('23505'),             409, 'DUPLICATE_CODE'],
   [isDomainError('APPROVAL_ALREADY_DECIDED'), 409, 'APPROVAL_ALREADY_DECIDED'],
   [isDomainError('INVALID_RULE_DEFINITION'),  422, 'INVALID_RULE_DEFINITION'],
+  [isDomainError('INSUFFICIENT_BALANCE'),     422, 'INSUFFICIENT_BALANCE'],   // BR-083
+  [isDomainError('EXCEEDS_APPROVED_QTY'),     422, 'EXCEEDS_APPROVED_QTY'],   // BR-089
+  [isPgError('23514'),                        422, 'INSUFFICIENT_BALANCE'],   // CHECK saldo >= 0
   [isAuthError,                    401, 'UNAUTHENTICATED'],
   [isForbidden,                    403, 'FORBIDDEN'],
   [isNotFound,                     404, 'NOT_FOUND'],
@@ -137,6 +140,8 @@ const MAP: Array<[matcher, httpStatus, code]> = [
 Galat 500 **tidak pernah** menyertakan pesan asli ke klien (`NFR-R-10`); pesan asli hanya masuk log terstruktur bersama `request_id`.
 
 Pemetaan `23P01 → RESERVATION_CONFLICT` disesuaikan menjadi `ASSET_NOT_AVAILABLE` bila `resource_type = 'asset'`, berdasarkan nama constraint yang dilanggar.
+
+`23514` (pelanggaran CHECK) dipetakan ke `INSUFFICIENT_BALANCE` karena satu-satunya CHECK yang dapat dilanggar dari jalur permintaan pengguna adalah `material_balances_non_negatif`. Constraint itu adalah jaring terakhir `SDD-DB-14` — bila ia yang menolak, artinya ada jalur kode yang lupa mengunci baris, sehingga kejadiannya **wajib memicu alarm**, bukan sekadar dikembalikan sebagai galat biasa.
 
 ### 4.5 Paginasi & filter
 
@@ -153,6 +158,7 @@ GET /assets?page=2&per_page=50
 | `sort` | Awalan `-` = menurun; hanya field ber-allow-list |
 | Filter tak dikenal | `400 INVALID_REQUEST`, bukan diabaikan diam-diam |
 | `total` | Dihitung `COUNT(*) OVER ()` dalam kueri yang sama, bukan kueri kedua |
+| Pengecualian | `GET /materials/{id}/transactions` (kartu stok) maksimum 200 — dibaca berurutan waktu, jarang ditelusuri melampaui satu layar |
 
 ### 4.6 Struktur berkas per modul
 

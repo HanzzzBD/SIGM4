@@ -78,7 +78,7 @@ src/
 │   ├── enums/              # peta kode → label (SDD-FE-08)
 │   └── schemas/            # skema bersama dengan backend (SDD-FE-05)
 ├── modules/
-│   ├── m01-auth/ … m21-disposal/     # cermin struktur backend
+│   ├── m01-auth/ … m22-materials/    # cermin struktur backend
 └── pages/                  # perakitan route → modul
 ```
 

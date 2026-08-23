@@ -49,11 +49,14 @@ Bila SDD dan lampiran ini berbeda, **lampiran ini yang berlaku** dan SDD wajib d
 | `requester_id` | integer | semua | ID pemohon |
 | `requester_has_overdue` | boolean | semua | Ada peminjaman terlambat aktif |
 | `total_value` | decimal | Pengadaan, Penghapusan | Total estimasi / total nilai perolehan |
-| `item_count` | integer | Reservasi Barang, Pengadaan, Penghapusan | Jumlah unit/item |
-| `duration_days` | integer | Reservasi Barang, Perpanjangan | Selisih hari mulai–selesai |
+| `item_count` | integer | Reservasi Aset, Pengadaan, Penghapusan, Permintaan Bahan | Jumlah unit/item |
+| `material_category_id` | integer[] | Permintaan Bahan | Kategori bahan yang diminta |
+| `material_qty_total` | integer | Permintaan Bahan | Total kuantitas bahan yang diminta — dasar ambang `BR-086` |
+| `material_value_total` | decimal | Permintaan Bahan | Perkiraan nilai total bahan yang diminta |
+| `duration_days` | integer | Reservasi Aset, Perpanjangan | Selisih hari mulai–selesai |
 | `duration_hours` | integer | Reservasi Ruangan | Durasi penggunaan ruangan |
-| `asset_category_id` | integer[] | Reservasi Barang, Penghapusan | Kategori aset yang diminta |
-| `asset_value_max` | decimal | Reservasi Barang | Nilai perolehan tertinggi di antara unit yang diminta |
+| `asset_category_id` | integer[] | Reservasi Aset, Penghapusan | Kategori aset yang diminta |
+| `asset_value_max` | decimal | Reservasi Aset | Nilai perolehan tertinggi di antara unit yang diminta |
 | `room_type` | enum | Reservasi Ruangan | Jenis ruangan |
 | `room_id` | integer[] | Reservasi Ruangan | Ruangan yang diminta |
 | `participant_count` | integer | Reservasi Ruangan | Perkiraan jumlah peserta |
@@ -119,11 +122,11 @@ Bila SDD dan lampiran ini berbeda, **lampiran ini yang berlaku** dan SDD wajib d
 
 ### D.6 Contoh Aturan Lengkap
 
-**Contoh 1 — Reservasi barang oleh siswa selalu perlu dua level**
+**Contoh 1 — Reservasi aset oleh siswa selalu perlu dua level**
 
 ```json
 {
-  "jenis_pengajuan": "Reservasi Barang",
+  "jenis_pengajuan": "Reservasi Aset",
   "prioritas": 100,
   "kondisi": { "field": "requester_role", "op": "eq", "value": "Siswa/OSIS" },
   "steps": [

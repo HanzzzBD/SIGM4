@@ -28,13 +28,13 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 
 | Kode | Role | Deskripsi Singkat | Hak Akses Utama |
 |---|---|---|---|
-| R-01 | **Administrator** | Pemilik sistem, akses penuh ke seluruh modul dan konfigurasi | CRUD user & role, konfigurasi approval rules, parameter sistem, format kode barang, tarif denda, akses penuh seluruh data, baca activity log |
+| R-01 | **Administrator** | Pemilik sistem, akses penuh ke seluruh modul dan konfigurasi | CRUD user & role, konfigurasi approval rules, parameter sistem, format kode aset, tarif denda, akses penuh seluruh data, baca activity log |
 | R-02 | **Petugas Sarana Prasarana** | Pengelola operasional aset sehari-hari | CRUD aset, lokasi, kategori, dokumen aset, cetak QR, verifikasi serah terima & pengembalian, kelola denda, buat & jalankan stock opname, kelola work order, proses pengajuan sesuai approval rules, akses seluruh laporan |
 | R-03 | **Pimpinan Sekolah** | Kepala Sekolah & Wakasek Sarpras | Melihat seluruh data (read-only), menyetujui/menolak pengajuan sesuai approval rules, akses penuh dashboard & analitik, menyetujui hasil stock opname dan usulan pengadaan, membebaskan kewajiban ganti rugi (BR-028e) |
 | R-04 | **Teknisi** | Pelaksana perbaikan & pemeliharaan internal | Melihat work order yang ditugaskan, memperbarui status & progres, mencatat biaya dan catatan pekerjaan, memperbarui kondisi aset pasca-perbaikan, melihat detail aset & riwayat servis |
-| R-05 | **Guru** | Tenaga pendidik | Mengajukan reservasi ruangan/barang, peminjaman, melihat katalog aset & jadwal, melaporkan kerusakan, mengajukan usulan pengadaan, melihat riwayat & denda pribadi, menggunakan chatbot |
+| R-05 | **Guru** | Tenaga pendidik | Mengajukan reservasi ruangan/aset, peminjaman, melihat katalog aset & jadwal, melaporkan kerusakan, mengajukan usulan pengadaan, melihat riwayat & denda pribadi, menggunakan chatbot |
 | R-06 | **Staf / Tata Usaha** | Tenaga kependidikan | Sama dengan Guru, ditambah kemampuan mengajukan reservasi atas nama unit kerja |
-| R-07 | **Siswa / OSIS** | Peserta didik dengan akun terbatas | Mengajukan reservasi ruangan/barang untuk kegiatan kesiswaan, melihat katalog aset publik & jadwal ruangan, melaporkan kerusakan, melihat riwayat & denda pribadi, menggunakan chatbot dengan cakupan data terbatas |
+| R-07 | **Siswa / OSIS** | Peserta didik dengan akun terbatas | Mengajukan reservasi ruangan/aset untuk kegiatan kesiswaan, melihat katalog aset publik & jadwal ruangan, melaporkan kerusakan, melihat riwayat & denda pribadi, menggunakan chatbot dengan cakupan data terbatas |
 
 **Aturan role tambahan:**
 - Satu pengguna memiliki **tepat satu role utama**. Pengguna yang berperan sebagai approver ditentukan melalui **approval rules**, bukan melalui role tambahan.
@@ -69,7 +69,7 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 | **Dokumen Aset — unggah/hapus** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **Reservasi Ruangan — lihat kalender** | ✅ | ✅ | ✅ | 🔍 | ✅ | ✅ | 🟡 |
 | **Reservasi Ruangan — ajukan** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
-| **Reservasi Barang — ajukan** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
+| **Reservasi Aset — ajukan** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
 | **Reservasi — batalkan milik sendiri** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
 | **Reservasi — batalkan milik orang lain** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **Peminjaman — serah terima & pengembalian** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
@@ -99,6 +99,12 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 | **Pengadaan — lihat semua usulan** | ✅ | ✅ | ✅ | ❌ | 🟡 | 🟡 | ❌ |
 | **Pengadaan — setujui** | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **Pengadaan — catat penerimaan** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Bahan — lihat saldo & kartu stok** | ✅ | ✅ | 🔍 | 🔍 | 🔍 | 🔍 | ❌ |
+| **Bahan — kelola master & kategori** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Bahan — ajukan permintaan** | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ |
+| **Bahan — catat penerimaan** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Bahan — serahkan ke pemohon** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Bahan — penyesuaian saldo** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **Penghapusan Aset — ajukan usulan** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **Penghapusan Aset — setujui** | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **Penghapusan Aset — eksekusi & berita acara** | ✅ | ✅ | 👁 | ❌ | ❌ | ❌ | ❌ |
@@ -208,6 +214,13 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 | `disposal.approve` | Penghapusan | Menyetujui penghapusan | Pimpinan |
 | `disposal.execute` | Penghapusan | Mencatat pelaksanaan & menghapuskan | Admin, Petugas |
 | `disposal.reinstate` 🔒 | Penghapusan | Memulihkan aset terhapus | Admin |
+| `material.view` | Bahan | Melihat bahan, saldo, dan kartu stok | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf |
+| `material.manage` | Bahan | Kelola master bahan & kategori bahan | Admin, Petugas |
+| `material.request` | Bahan | Mengajukan & membatalkan permintaan bahan | Admin, Petugas, Teknisi, Guru, Staf |
+| `material.receive` | Bahan | Mencatat penerimaan bahan | Admin, Petugas |
+| `material.issue` | Bahan | Menyerahkan bahan kepada pemohon | Admin, Petugas |
+| `material.adjust` | Bahan | Menyesuaikan saldo dengan alasan wajib | Admin, Petugas |
+| `material.qr_print` | Bahan | Mencetak label QR per jenis bahan | Admin, Petugas |
 | `report.view` | Analitik | Melihat laporan analitik | Admin, Petugas, Pimpinan |
 | `report.export` | Analitik | Mengekspor laporan | Admin, Petugas, Pimpinan |
 | `dashboard.view` | Dashboard | Mengakses dashboard sesuai role | Semua role |

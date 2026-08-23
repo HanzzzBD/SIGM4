@@ -18,7 +18,7 @@
 | **Identitas anak** | nama, NIS, kelas, foto, akun | **Siswa/OSIS (di bawah umur)** | **Tinggi** |
 | Data perilaku | riwayat peminjaman, keterlambatan, denda, blokir | Seluruh pengguna | Sedang |
 | Data teknis | alamat IP, user agent, perangkat, waktu login | Seluruh pengguna | Sedang |
-| Media | foto kondisi barang & kerusakan yang **dapat memuat wajah** | Seluruh warga sekolah | Tinggi |
+| Media | foto kondisi aset & kerusakan yang **dapat memuat wajah** | Seluruh warga sekolah | Tinggi |
 | Percakapan | isi pertanyaan pengguna ke chatbot | Seluruh pengguna | Sedang |
 
 ## 28.3 Ketentuan Wajib

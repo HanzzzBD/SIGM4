@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **106** baris, dikumpulkan dari 21 berkas modul.
+> Total: **119** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -19,7 +19,7 @@
 | GET | `/asset-categories` | `asset.view` | Daftar kategori | [M-04](../02-modules/m04-assets.md) |
 | GET | `/asset-disposals/{id}/report` | `disposal.view` | Unduh berita acara penghapusan PDF | [M-21](../02-modules/m21-disposal.md) |
 | GET | `/asset-disposals` | `disposal.view` | Daftar & arsip penghapusan | [M-21](../02-modules/m21-disposal.md) |
-| GET | `/assets/availability` | `reservation.view` | Ketersediaan unit barang pada rentang waktu | [M-08](../02-modules/m08-reservation-item.md) |
+| GET | `/assets/availability` | `reservation.view` | Ketersediaan unit aset pada rentang waktu | [M-08](../02-modules/m08-reservation-item.md) |
 | GET | `/assets/by-uuid/{uuid}` | `asset.view` | Detail aset dari hasil scan QR | [M-05](../02-modules/m05-qr.md) |
 | GET | `/assets/export` | `asset.export` | Ekspor XLSX/PDF | [M-04](../02-modules/m04-assets.md) |
 | GET | `/assets/{id}/documents/{docId}/download` | `asset_document.view` | URL unduhan bertanda tangan | [M-06](../02-modules/m06-documents.md) |
@@ -37,6 +37,11 @@
 | GET | `/loans/ready-checkout` | `loan.manage` | Reservasi siap diserahkan hari ini | [M-09](../02-modules/m09-loans.md) |
 | GET | `/loans` | `loan.view` | Daftar peminjaman (tab aktif/terlambat/selesai) | [M-09](../02-modules/m09-loans.md) |
 | GET | `/locations/tree` | `location.view` | Pohon lokasi lengkap | [M-03](../02-modules/m03-locations.md) |
+| GET | `/material-categories` | `material.view` | Daftar kategori bahan | [M-22](../02-modules/m22-materials.md) |
+| GET | `/material-requests` | `material.view` | Daftar permintaan bahan | [M-22](../02-modules/m22-materials.md) |
+| GET | `/materials/{id}/transactions` | `material.view` | Kartu stok — riwayat transaksi | [M-22](../02-modules/m22-materials.md) |
+| GET | `/materials/{id}` | `material.view` | Detail bahan beserta saldo per lokasi | [M-22](../02-modules/m22-materials.md) |
+| GET | `/materials` | `material.view` | Daftar bahan + saldo (filter kategori, lokasi, status stok) | [M-22](../02-modules/m22-materials.md) |
 | GET | `/me` | Bearer | Profil & permission pengguna | 200 `{user, permissions}` | 401 | [M-01](../02-modules/m01-auth.md) |
 | GET | `/notifications/stream` | Bearer | Aliran notifikasi real-time via SSE (NTF-01) | [M-17](../02-modules/m17-notifications.md) |
 | GET | `/notifications` | Bearer | Daftar notifikasi pengguna | [M-17](../02-modules/m17-notifications.md) |
@@ -55,6 +60,7 @@
 | PATCH | `/fines/{id}/pay` | `fine.manage` | Tandai lunas | [M-09](../02-modules/m09-loans.md) |
 | PATCH | `/fines/{id}/waive-compensation` | `fine.waive_compensation` | Bebaskan ganti rugi penuh/sebagian + alasan | [M-09](../02-modules/m09-loans.md) |
 | PATCH | `/fines/{id}/waive` | `fine.waive` | Bebaskan denda keterlambatan + alasan | [M-09](../02-modules/m09-loans.md) |
+| PATCH | `/materials/{id}` | `material.manage` | Ubah data bahan | [M-22](../02-modules/m22-materials.md) |
 | PATCH | `/notifications/read-all` | Bearer | Tandai semua terbaca | [M-17](../02-modules/m17-notifications.md) |
 | PATCH | `/notifications/{id}/read` | Bearer | Tandai terbaca | [M-17](../02-modules/m17-notifications.md) |
 | PATCH | `/users/{id}/status` | `user.update` | Aktifkan/nonaktifkan | [M-02](../02-modules/m02-users.md) |
@@ -97,10 +103,17 @@
 | POST | `/loans/{id}/checkin` | `loan.manage` | Proses pengembalian | [M-09](../02-modules/m09-loans.md) |
 | POST | `/loans/{id}/extend` | `loan.extend` | Ajukan perpanjangan | [M-09](../02-modules/m09-loans.md) |
 | POST | `/maintenance-schedules` | `maintenance.manage` | Buat jadwal preventif | [M-12](../02-modules/m12-maintenance.md) |
+| POST | `/material-categories` | `material.manage` | Buat kategori bahan | [M-22](../02-modules/m22-materials.md) |
+| POST | `/material-requests/{id}/cancel` | `material.request` | Batalkan permintaan sebelum diserahkan | [M-22](../02-modules/m22-materials.md) |
+| POST | `/material-requests/{id}/issue` | `material.issue` | Catat penyerahan bahan | [M-22](../02-modules/m22-materials.md) |
+| POST | `/material-requests` | `material.request` | Ajukan permintaan bahan | [M-22](../02-modules/m22-materials.md) |
+| POST | `/materials/{id}/adjustments` | `material.adjust` | Catat penyesuaian saldo | [M-22](../02-modules/m22-materials.md) |
+| POST | `/materials/{id}/receipts` | `material.receive` | Catat penerimaan bahan | [M-22](../02-modules/m22-materials.md) |
+| POST | `/materials` | `material.manage` | Daftarkan bahan baru | [M-22](../02-modules/m22-materials.md) |
 | POST | `/procurements/{id}/receipts` | `procurement.receive` | Catat penerimaan & buat aset | [M-14](../02-modules/m14-procurement.md) |
 | POST | `/procurements` | `procurement.create` | Buat usulan pengadaan | [M-14](../02-modules/m14-procurement.md) |
 | POST | `/reservations/{id}/cancel` | `reservation.cancel` | Batalkan reservasi + alasan | [M-07](../02-modules/m07-reservation-room.md) |
-| POST | `/reservations` | `reservation.create` | Ajukan reservasi ruangan/barang | [M-07](../02-modules/m07-reservation-room.md) |
+| POST | `/reservations` | `reservation.create` | Ajukan reservasi ruangan/aset | [M-07](../02-modules/m07-reservation-room.md) |
 | POST | `/users/import` | `user.create` | Impor massal CSV/XLSX | [M-02](../02-modules/m02-users.md) |
 | POST | `/users/{id}/reset-2fa` | `user.reset_2fa` | Reset 2FA pengguna | [M-02](../02-modules/m02-users.md) |
 | POST | `/users/{id}/reset-password` | `user.reset_password` | Terbitkan password sementara | [M-02](../02-modules/m02-users.md) |

@@ -1,12 +1,12 @@
 # SIGM4
 
 **Sistem Informasi Management 4set** — pengelolaan aset, sarana, dan prasarana sekolah.
-SMKN 4 Bandung · 21 modul · monorepo tiga pohon.
+SMKN 4 Bandung · 22 modul · monorepo tiga pohon.
 
 | Item | Keterangan |
 |---|---|
 | **Status** | Dokumentasi lengkap · **kode belum ada** |
-| **Rencana** | 9 phase · 152 PR — [`docs/IMPLEMENTATION/README.md`](docs/IMPLEMENTATION/README.md) |
+| **Rencana** | 9 phase · 162 PR — [`docs/IMPLEMENTATION/README.md`](docs/IMPLEMENTATION/README.md) |
 | **Platform** | Web responsif (Express + React) · Mobile native (React Native) |
 | **Skala target** | ± 5.000 unit aset · 1.000 pengguna · 100–150 concurrent |
 

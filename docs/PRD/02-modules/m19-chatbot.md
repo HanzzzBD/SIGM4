@@ -53,7 +53,7 @@ sequenceDiagram
     end
 
     AI->>LLM: tool_result
-    LLM-->>AI: Jawaban natural + rujukan kode barang
+    LLM-->>AI: Jawaban natural + rujukan kode aset
     AI->>DB: Simpan chat_message (input, output, token, tools)
     API-->>C: 200 {jawaban, rujukan, tautan}
     C-->>U: Tampilkan jawaban + tautan ke detail aset
@@ -64,7 +64,7 @@ sequenceDiagram
         API->>AI: Proses
         AI->>LLM: (tanpa tool tulis apa pun)
         LLM-->>AI: Penolakan sopan + arahan
-        API-->>C: "Saya hanya dapat memberi informasi.<br/>Silakan ajukan melalui menu Reservasi Barang."
+        API-->>C: "Saya hanya dapat memberi informasi.<br/>Silakan ajukan melalui menu Reservasi Aset."
     end
 
     alt Layanan LLM tidak tersedia
@@ -93,7 +93,7 @@ sequenceDiagram
 4. LLM menentukan *tool* yang perlu dipanggil (mis. `search_assets`, `get_room_schedule`).
 5. Sistem menjalankan tool tersebut terhadap basis data dengan **filter permission pengguna diterapkan di lapisan data**, bukan diserahkan kepada model.
 6. LLM menyusun jawaban berbahasa Indonesia berdasarkan hasil tool.
-7. Sistem menampilkan jawaban beserta rujukan data (kode barang, nama ruangan, nomor transaksi) dan tautan menuju halaman terkait.
+7. Sistem menampilkan jawaban beserta rujukan data (kode aset, nama ruangan, nomor transaksi) dan tautan menuju halaman terkait.
 8. Pengguna dapat memberi umpan balik (👍/👎) atas jawaban.
 
 **Alternative Flow**

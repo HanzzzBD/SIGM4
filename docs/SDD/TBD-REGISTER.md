@@ -2,7 +2,7 @@
 
 Berkas ini mengumpulkan seluruh titik dalam SDD yang **memerlukan keputusan** dan sengaja tidak diisi. Tidak ada angka, kebijakan, atau perilaku yang dikarang.
 
-**Status: 24 terbuka · 11 tertutup** — terkumpul dari 18 berkas SDD.
+**Status: 25 terbuka · 15 tertutup** — terkumpul dari 18 berkas SDD dan dari [proposal perubahan lingkup domain Bahan](../PRD/01-product/bahan-scope-change.md).
 
 ---
 
@@ -20,6 +20,7 @@ Perlu keputusan pemilik produk. Tidak dapat ditetapkan tim teknis.
 | **TBD-FS-A** | [SDD-09](09-file-storage-design.md) · [SDD-13](13-security-design.md) | Perlakuan foto berwajah saat permintaan penghapusan data (`DP-04`). Pseudonimisasi identitas tidak menghapus wajah pada foto bukti serah terima/kerusakan. Pertahankan sebagai bukti, kaburkan, atau hapus? |
 | **TBD-EVT-B** | [SDD-07](07-event-flow.md) · [SDD-15](15-observability-logging.md) | Apakah dead letter memerlukan antarmuka pemrosesan ulang di menu Administrator, atau cukup lewat akses operasional. Berdampak pada lingkup M-20. |
 | **TBD-SEC-B** | [SDD-13](13-security-design.md) | Apakah sekolah memerlukan kepatuhan formal di luar UU PDP (mis. standar dinas pendidikan setempat). |
+| **TBD-BHN-E** | [M-19](../PRD/02-modules/m19-chatbot.md) · [ai-features](../PRD/03-architecture/ai-features.md) | Katalog tool chatbot (`get_asset_detail`, `get_damage_report_status`, dan seterusnya) seluruhnya berdomain Aset. Apakah chatbot perlu tool bahan — mis. menanyakan saldo atau bahan yang menipis? Menambah tool adalah **requirement baru** di PRD, bukan keputusan SDD. |
 | **TBD-AUTH-C** | [SDD-03](03-authorization.md) | Konfirmasi bahwa penambahan mekanisme teknis murni seperti `role_version` boleh diputuskan di tingkat SDD tanpa dianggap perubahan requirement. |
 
 ## B. Parameter operasional — sebaiknya ditunda sampai staging berdiri
@@ -74,6 +75,10 @@ Kelompok B sengaja ditunda: menetapkan ukuran pool koneksi atau TTL cache tanpa 
 
 | ID | Berkas | Pertanyaan | Keputusan | Tanggal |
 |---|---|---|---|---|
+| **TBD-BHN-A** | [M-14](../PRD/02-modules/m14-procurement.md) · [M-22 (proposal)](../PRD/01-product/bahan-scope-change.md) | `BR-064` mewajibkan setiap penerimaan pengadaan menjadi record aset per unit, sementara Bahan juga diadakan lewat M-14. | Keputusan #27 — `procurement_items` memperoleh kolom `jenis`; `BR-064` dipersempit ke item Aset, item Bahan menambah saldo | 23 Agustus 2026 |
+| **TBD-BHN-B** | [M-20](../PRD/02-modules/m20-settings.md) | Satuan bahan: master data tertutup atau teks bebas? | Daftar tertutup dikelola Administrator lewat `FR-20.1`; entitas `material_units`, ditegakkan `BR-084` | 23 Agustus 2026 |
+| **TBD-BHN-C** | [M-22](../PRD/02-modules/m22-materials.md) | Kategori bahan memakai ulang kategori aset atau berdiri sendiri? | Master `material_categories` tersendiri, terpisah penuh dari kategori aset | 23 Agustus 2026 |
+| **TBD-BHN-D** | [M-13](../PRD/02-modules/m13-audit-stocktake.md) | Hasil opname bahan perlu persetujuan Pimpinan? | Ya — `BR-094`, sejajar `BR-057` pada sesi aset | 23 Agustus 2026 |
 | **TBD-AUTH-A** | [SDD-04](04-authentication-session.md) | Media penyimpanan daftar refresh token. **SDD-04 merancangnya di PostgreSQL** (pencabutan tidak boleh hilang saat Redis restart) — perlu konfirmasi atau evaluasi ulang. | Dikonfirmasi — `SDD-SESS-03/04/06` | 6 Agustus 2026 |
 | **TBD-DB-A** | [SDD-05](05-database-design.md) | Alat migration (SQL polos + runner vs perkakas seperti node-pg-migrate). | `SDD-DB-12` | 6 Agustus 2026 |
 | **TBD-API-A** | [SDD-06](06-api-design.md) | Pustaka validasi (Zod, Valibot, TypeBox). Ketiganya memenuhi `SDD-API-01`. | `SDD-API-11` | 6 Agustus 2026 |

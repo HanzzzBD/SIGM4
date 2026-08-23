@@ -7,8 +7,8 @@
 | **Profil** | Perempuan, 38 tahun, 10 tahun mengelola sarpras sekolah, terbiasa dengan spreadsheet, literasi digital menengah |
 | **Perangkat** | Desktop di ruang sarpras, ponsel Android untuk pekerjaan lapangan |
 | **Goals** | Semua aset tercatat dan mudah dilacak; serah terima peminjaman cepat diverifikasi; stock opname selesai tanpa lembur; laporan siap kapan pun diminta pimpinan |
-| **Pain Points** | Data spreadsheet berantakan dan sering bentrok versi; barang dipinjam tanpa lapor; mencari satu unit proyektor bisa memakan setengah jam; menjelang audit harus rekap manual berhari-hari |
-| **Needs** | Input aset massal dan cepat; pencetakan label QR secara batch; verifikasi serah terima lewat scan; daftar barang terlambat kembali; laporan selisih opname otomatis |
+| **Pain Points** | Data spreadsheet berantakan dan sering bentrok versi; aset dipinjam tanpa lapor; mencari satu unit proyektor bisa memakan setengah jam; menjelang audit harus rekap manual berhari-hari |
+| **Needs** | Input aset massal dan cepat; pencetakan label QR secara batch; verifikasi serah terima lewat scan; daftar aset terlambat kembali; laporan selisih opname otomatis |
 | **Motivations** | Terbebas dari pekerjaan rekap manual; tidak lagi disalahkan atas aset yang hilang tanpa jejak; pekerjaan terlihat rapi dan profesional di mata pimpinan |
 
 ## Persona 2 — Pak Budi, Guru IPA (Frequent Requester)
@@ -18,7 +18,7 @@
 | **Profil** | Laki-laki, 34 tahun, guru IPA, sering menggunakan laboratorium dan alat peraga, literasi digital baik |
 | **Perangkat** | Ponsel Android (utama), laptop di ruang guru |
 | **Goals** | Memastikan lab dan alat tersedia saat jadwal mengajar; meminjam alat tanpa proses berbelit; tidak terkena masalah karena alat rusak yang bukan kesalahannya |
-| **Pain Points** | Datang ke lab ternyata sudah dipakai kelas lain; harus mencari petugas untuk meminjam barang; tidak tahu status pengajuannya sudah disetujui atau belum; alat rusak dilaporkan lisan lalu terlupakan |
+| **Pain Points** | Datang ke lab ternyata sudah dipakai kelas lain; harus mencari petugas untuk meminjam aset; tidak tahu status pengajuannya sudah disetujui atau belum; alat rusak dilaporkan lisan lalu terlupakan |
 | **Needs** | Kalender ketersediaan ruangan; pengajuan cepat dari ponsel; notifikasi status persetujuan; pelaporan kerusakan berfoto agar jelas kondisinya bukan karena dirinya |
 | **Motivations** | Pembelajaran berjalan lancar sesuai rencana; tidak membuang waktu mengejar administrasi; bukti digital melindunginya dari kesalahpahaman |
 
@@ -52,7 +52,7 @@
 | **Perangkat** | Desktop di ruang TU, ponsel |
 | **Goals** | Menyiapkan ruangan dan perlengkapan untuk rapat/kegiatan dinas tepat waktu; administrasi rapi dan dapat dipertanggungjawabkan |
 | **Pain Points** | Reservasi ruang rapat sering bentrok dengan kegiatan lain; harus menelepon beberapa pihak untuk memastikan ketersediaan kursi/sound system; arsip peminjaman tersebar |
-| **Needs** | Melihat jadwal seluruh ruangan sekaligus; mengajukan reservasi ruangan beserta barang pendukung dalam satu pengajuan; rekap kegiatan yang menggunakan fasilitas |
+| **Needs** | Melihat jadwal seluruh ruangan sekaligus; mengajukan reservasi ruangan beserta aset pendukung dalam satu pengajuan; rekap kegiatan yang menggunakan fasilitas |
 | **Motivations** | Kegiatan sekolah berjalan tanpa insiden; pekerjaannya dinilai rapi; tidak menjadi pihak yang disalahkan saat fasilitas tidak siap |
 
 ## Persona 6 — Dika, Ketua OSIS (Limited User)
@@ -63,7 +63,7 @@
 | **Perangkat** | Ponsel Android (satu-satunya perangkat) |
 | **Goals** | Mendapatkan izin penggunaan aula dan perlengkapan untuk kegiatan OSIS; kegiatan berjalan sesuai rencana |
 | **Pain Points** | Harus menemui banyak pihak untuk minta izin; sering ditolak di menit terakhir karena ruangan sudah dipakai; tidak tahu perlengkapan apa saja yang boleh dipinjam siswa |
-| **Needs** | Katalog barang yang boleh dipinjam siswa; pengajuan langsung dari ponsel; kejelasan status pengajuan dan alasan penolakan; pengingat jadwal pengembalian |
+| **Needs** | Katalog aset yang boleh dipinjam siswa; pengajuan langsung dari ponsel; kejelasan status pengajuan dan alasan penolakan; pengingat jadwal pengembalian |
 | **Motivations** | Kegiatan OSIS sukses; belajar berorganisasi secara profesional; tidak merepotkan guru pembina |
 
 ## Persona 7 — Pak Yoga, Administrator Sistem (Technical Owner)
@@ -103,12 +103,12 @@ flowchart TD
     P1 --> P2{Approval Pengadaan<br/>berjenjang}
     P2 -->|Ditolak| PEND([Usulan ditutup])
     P2 -->|Disetujui| P3["Barang diterima &<br/>dicatat sebagai aset baru"]
-    P3 --> P4["Generate kode barang +<br/>QR per unit, cetak & tempel"]
+    P3 --> P4["Generate kode aset +<br/>QR per unit, cetak & tempel"]
     P4 --> P5["Aset ditempatkan di lokasi<br/>Status: Tersedia"]
 
     P5 --> USE{Pemanfaatan}
     USE -->|Reservasi ruangan| U1["Booking ruangan<br/>+ approval"]
-    USE -->|Reservasi & pinjam barang| U2["Booking barang → serah terima<br/>scan QR → pengembalian"]
+    USE -->|Reservasi & pinjam aset| U2["Booking aset → serah terima<br/>scan QR → pengembalian"]
     USE -->|Digunakan di tempat| U3["Penggunaan rutin<br/>tanpa transaksi"]
 
     U1 --> COND
@@ -144,10 +144,10 @@ sequenceDiagram
     actor A as Approver
     actor P as Petugas Sarpras
 
-    G->>M: Buka menu Reservasi Barang
-    M->>S: GET ketersediaan barang pada rentang tanggal
-    S-->>M: Daftar barang tersedia
-    G->>M: Pilih barang, tanggal, keperluan → Ajukan
+    G->>M: Buka menu Reservasi Aset
+    M->>S: GET ketersediaan aset pada rentang tanggal
+    S-->>M: Daftar aset tersedia
+    G->>M: Pilih aset, tanggal, keperluan → Ajukan
     S->>S: Validasi bentrok jadwal & kelayakan pemohon
     S->>S: Bentuk instance approval dari rules
     S-->>A: Notifikasi in-app + push "Pengajuan baru"
@@ -155,20 +155,20 @@ sequenceDiagram
     S-->>G: Notifikasi "Pengajuan disetujui"
     S->>S: Status reservasi = Disetujui, aset = Direservasi
 
-    Note over G,P: Hari H — pengambilan barang
-    G->>P: Datang mengambil barang
-    P->>M: Scan QR unit barang
+    Note over G,P: Hari H — pengambilan aset
+    G->>P: Datang mengambil aset
+    P->>M: Scan QR unit aset
     M->>S: Verifikasi kecocokan unit dengan reservasi
     S-->>M: Valid — form serah terima
     P->>S: Konfirmasi serah terima + foto kondisi awal
     S->>S: Buat transaksi Peminjaman, aset = Dipinjam
-    S-->>G: Notifikasi "Barang diserahkan, kembali tgl X"
+    S-->>G: Notifikasi "Aset diserahkan, kembali tgl X"
 
     Note over S,G: H-1 jatuh tempo
     S-->>G: Reminder pengembalian
 
     Note over G,P: Pengembalian
-    G->>P: Mengembalikan barang
+    G->>P: Mengembalikan aset
     P->>M: Scan QR + pilih kondisi kembali
     P->>S: Konfirmasi pengembalian
     alt Terlambat

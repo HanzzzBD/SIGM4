@@ -139,7 +139,7 @@ flowchart TD
 **Alternative Flow**
 - **A1 — Sudah ada tiket terbuka untuk aset yang sama:** Sistem menampilkan tiket tersebut dan menawarkan opsi "Tambahkan informasi ke tiket yang ada" alih-alih membuat duplikat.
 - **A2 — Foto tidak dapat diunggah karena koneksi lemah:** Sistem menyimpan tiket dan menandai unggahan foto tertunda; pengguna dapat melengkapi kemudian.
-- **A3 — Kerusakan terdeteksi saat pengembalian barang:** Tiket dibuat otomatis oleh sistem dan tertaut ke transaksi peminjaman serta peminjamnya.
+- **A3 — Kerusakan terdeteksi saat pengembalian aset:** Tiket dibuat otomatis oleh sistem dan tertaut ke transaksi peminjaman serta peminjamnya.
 - **A4 — Objek adalah ruangan, bukan aset:** Pengguna memilih ruangan dari daftar lokasi; tiket tertaut ke lokasi.
 
 **Post Conditions** — Tiket kerusakan tercatat; Petugas Sarpras dinotifikasi; kondisi aset belum berubah hingga diverifikasi.
@@ -296,4 +296,4 @@ Strategi pengujian: [`../06-quality/test-strategy.md`](../06-quality/test-strate
 
 ## 15. Open Issues
 
-- BR-032 (barang kembali rusak menghasilkan tiket otomatis) dimiliki M-09; modul ini adalah konsumennya.
+- BR-032 (aset kembali rusak menghasilkan tiket otomatis) dimiliki M-09; modul ini adalah konsumennya.

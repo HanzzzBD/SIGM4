@@ -19,7 +19,7 @@ Fitur-fitur berikut berada di luar lingkup rilis ini, namun layak dipertimbangka
 | FE-06 | **Manajemen vendor & Purchase Order** | Melengkapi alur pengadaan hingga pemilihan penyedia dan penerbitan PO |
 | FE-07 | **Integrasi anggaran RKAS/BOS** | Validasi pagu anggaran otomatis saat usulan pengadaan diajukan |
 | FE-08 | **Portal vendor untuk pekerjaan maintenance** | Memungkinkan pihak ketiga memperbarui progres pekerjaan secara mandiri |
-| FE-09 | **Manajemen barang habis pakai (consumable)** | Pengelolaan stok masuk-keluar untuk ATK dan bahan praktikum |
+| FE-09 | ~~**Manajemen barang habis pakai (consumable)**~~ → **dipindahkan ke dalam lingkup rilis ini sebagai M-22 Manajemen Bahan** | Ditemukan pada audit terminologi: target produk mencakup seluruh sarpras, sehingga Bahan tidak dapat ditunda tanpa meninggalkan separuh domain sarpras tanpa pengelolaan |
 | FE-10 | **Tanda tangan digital pada berita acara** | Meningkatkan keabsahan dokumen serah terima, opname, dan mutasi |
 | FE-11 | **Laporan terjadwal otomatis** | Laporan berkala dikirim otomatis kepada pimpinan tanpa perlu diminta |
 | FE-12 | **Multi-sekolah (multi-tenant)** | Memungkinkan penggunaan pada tingkat yayasan atau dinas pendidikan |

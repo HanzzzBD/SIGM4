@@ -31,15 +31,15 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 
 | Aspek | Uraian |
 |---|---|
-| **Description** | Mencatat aset baru. Setiap unit fisik menghasilkan satu record dengan kode barang unik dan QR Code sendiri. |
+| **Description** | Mencatat aset baru. Setiap unit fisik menghasilkan satu record dengan kode aset unik dan QR Code sendiri. |
 | **Actor** | Petugas Sarana Prasarana, Administrator |
-| **Preconditions** | Kategori aset dan lokasi tersedia; format kode barang sudah dikonfigurasi (FR-20.1) |
+| **Preconditions** | Kategori aset dan lokasi tersedia; format kode aset sudah dikonfigurasi (FR-20.1) |
 
 **Main Flow**
 1. Pengguna membuka menu Inventaris dan menekan "Tambah Aset".
-2. Pengguna mengisi: nama barang, kategori, merek, model/tipe, nomor seri, tahun perolehan, sumber perolehan (Pembelian/Hibah/Bantuan), nilai perolehan, lokasi penempatan, kondisi awal, penanggung jawab, penanda `dapat_dipinjam` dan `boleh_dipinjam_siswa`.
+2. Pengguna mengisi: nama aset, kategori, merek, model/tipe, nomor seri, tahun perolehan, sumber perolehan (Pembelian/Hibah/Bantuan), nilai perolehan, lokasi penempatan, kondisi awal, penanggung jawab, penanda `dapat_dipinjam` dan `boleh_dipinjam_siswa`.
 3. Pengguna menentukan jumlah unit yang akan dibuat (mis. 20 unit kursi identik).
-4. Sistem membuat N record aset terpisah, masing-masing dengan kode barang unik berurutan dan QR Code unik.
+4. Sistem membuat N record aset terpisah, masing-masing dengan kode aset unik berurutan dan QR Code unik.
 5. Sistem menetapkan status awal `Tersedia` dan kondisi sesuai input.
 6. Sistem menampilkan daftar aset yang dibuat beserta tombol "Cetak QR".
 
@@ -49,13 +49,13 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 - **A3 — Aset dari penerimaan pengadaan:** Data terisi otomatis dari dokumen penerimaan (FR-14.3); pengguna melengkapi nomor seri dan lokasi.
 - **A4 — Kategori belum ada:** Pengguna berwenang dapat membuat kategori baru langsung dari form.
 
-**Post Conditions** — N record aset tersimpan berstatus `Tersedia`; kode barang dan QR terbentuk; activity log tercatat.
+**Post Conditions** — N record aset tersimpan berstatus `Tersedia`; kode aset dan QR terbentuk; activity log tercatat.
 
 **Acceptance Criteria**
-- [ ] Membuat 20 unit sekaligus menghasilkan 20 record dengan 20 kode barang dan 20 QR berbeda.
-- [ ] Kode barang mengikuti format yang dikonfigurasi Administrator dan unik sistem-wide.
+- [ ] Membuat 20 unit sekaligus menghasilkan 20 record dengan 20 kode aset dan 20 QR berbeda.
+- [ ] Kode aset mengikuti format yang dikonfigurasi Administrator dan unik sistem-wide.
 - [ ] Impor 500 baris selesai ≤ 60 detik dengan laporan galat per baris.
-- [ ] Aset dengan `dapat_dipinjam = false` tidak muncul pada modul Reservasi Barang.
+- [ ] Aset dengan `dapat_dipinjam = false` tidak muncul pada modul Reservasi Aset.
 - [ ] Aset dengan `boleh_dipinjam_siswa = false` tidak terlihat pada katalog role Siswa/OSIS.
 
 ### FR-04.2 Melihat & Mencari Aset
@@ -68,8 +68,8 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 
 **Main Flow**
 1. Pengguna membuka menu Inventaris.
-2. Sistem menampilkan tabel aset terpaginasi (kode barang, nama, kategori, lokasi, kondisi, status).
-3. Pengguna mencari berdasarkan kode barang, nama, merek, atau nomor seri.
+2. Sistem menampilkan tabel aset terpaginasi (kode aset, nama, kategori, lokasi, kondisi, status).
+3. Pengguna mencari berdasarkan kode aset, nama, merek, atau nomor seri.
 4. Pengguna memfilter berdasarkan kategori, lokasi, kondisi, status, tahun perolehan, dan kelayakan pinjam.
 5. Pengguna membuka detail aset: identitas lengkap, foto, QR Code, riwayat peminjaman, riwayat pemeliharaan, riwayat mutasi lokasi, laporan kerusakan terkait, dan dokumen aset.
 
@@ -166,8 +166,8 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 
 | Kode | Business Rule |
 |---|---|
-| BR-001 | Setiap unit fisik aset dicatat sebagai satu record tersendiri dengan kode barang dan QR Code unik (pencatatan *serialized*). |
-| BR-002 | Kode barang bersifat unik sistem-wide, dihasilkan otomatis mengikuti format yang dikonfigurasi Administrator, dan tidak dapat diubah manual setelah terbentuk. |
+| BR-001 | Setiap unit fisik aset dicatat sebagai satu record tersendiri dengan kode aset dan QR Code unik (pencatatan *serialized*). |
+| BR-002 | Kode aset bersifat unik sistem-wide, dihasilkan otomatis mengikuti format yang dikonfigurasi Administrator, dan tidak dapat diubah manual setelah terbentuk. |
 | BR-003 | Nomor seri, bila diisi, wajib unik di seluruh sistem. |
 | BR-004 | Kondisi aset hanya bernilai: `Baik`, `Rusak Ringan`, `Rusak Berat`, `Hilang`. |
 | BR-005 | Status aset (`assets.status`) menyatakan **kondisi operasional aset pada saat ini (*now*)** dan hanya bernilai: `Tersedia`, `Direservasi`, `Dipinjam`, `Dalam Perbaikan`, `Tidak Tersedia`. Status ini **bukan** sumber kebenaran ketersediaan masa depan. |

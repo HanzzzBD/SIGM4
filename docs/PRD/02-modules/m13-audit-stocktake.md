@@ -165,7 +165,7 @@ flowchart TD
 - **A1 — Aset ditemukan di lokasi berbeda dari data sistem:** Sistem menandai `Salah Lokasi` dan menawarkan pembaruan lokasi setelah sesi disetujui.
 - **A2 — Aset dalam daftar tidak ditemukan sampai sesi berakhir:** Otomatis ditandai `Tidak Ditemukan` dan masuk daftar selisih.
 - **A3 — Ditemukan aset fisik tanpa data di sistem:** Petugas mencatatnya sebagai `Temuan Baru` (deskripsi, kategori perkiraan, kondisi, lokasi, foto) untuk didaftarkan setelah sesi disetujui. **Catatan model data:** temuan baru disimpan pada tabel terpisah `audit_new_findings` yang **tidak** memiliki FK ke `assets`, karena asetnya memang belum ada. `audit_items` tetap ber-FK ke `assets` dan hanya memuat aset yang termasuk snapshot target.
-- **A4 — QR rusak/tidak terbaca:** Petugas memasukkan kode barang manual atau memilih dari daftar target.
+- **A4 — QR rusak/tidak terbaca:** Petugas memasukkan kode aset manual atau memilih dari daftar target.
 - **A5 — Kondisi aktual berbeda dari data sistem:** Sistem menandai `Perbedaan Kondisi` dan mencatat kedua nilainya.
 
 **Post Conditions** — Hasil pemeriksaan per aset tercatat pada sesi; progres opname terbarui real-time.
@@ -206,18 +206,51 @@ flowchart TD
 - [ ] Berita acara memuat identitas sesi, pelaksana, penyetuju, ringkasan selisih, dan tanggal.
 - [ ] Sesi yang sudah `Selesai` bersifat *read-only* bagi seluruh role.
 
+### FR-13.4 Sesi Stock Opname Bahan
+
+| Aspek | Uraian |
+|---|---|
+| **Description** | Memeriksa jumlah fisik bahan di lokasi penyimpanan dan mencocokkannya dengan saldo sistem. Sesi bahan **terpisah** dari sesi aset — satu sesi tidak pernah mencampur kedua domain (`BR-093`). |
+| **Actor** | Petugas Sarpras (melaksanakan), Pimpinan Sekolah (menyetujui) |
+| **Preconditions** | Terdapat data bahan bersaldo; pengguna memiliki permission `audit.manage` |
+
+**Main Flow**
+1. Pengguna membuat sesi opname dan memilih domain **Bahan** beserta cakupan lokasi penyimpanan.
+2. Sistem membekukan *snapshot* saldo sistem tiap bahan pada lokasi yang tercakup.
+3. Petugas mencatat **jumlah fisik hasil hitungan** per bahan per lokasi — dapat dibantu pemindaian QR bahan untuk melompat ke barisnya (`BR-090`).
+4. Sistem menghitung selisih antara jumlah fisik dan saldo sistem.
+5. Petugas memberi keterangan pada setiap selisih dan mengirim laporan kepada Pimpinan Sekolah.
+6. Setelah disetujui, sistem menerbitkan transaksi bahan berjenis `OPNAME` sebesar selisihnya, memperbarui saldo, dan menutup sesi.
+7. Sistem menghasilkan berita acara opname bahan dalam format PDF.
+
+**Alternative Flow**
+- **A1 — Bahan tercatat 0 tetapi ditemukan fisiknya:** Selisih positif dicatat dan diberi keterangan; saldo bertambah setelah disetujui.
+- **A2 — Terdapat selisih tanpa keterangan:** Sistem menolak pengiriman laporan (`BR-095`).
+- **A3 — Pimpinan menolak laporan:** Sesi kembali `Berjalan`; saldo **tidak** tersentuh.
+
+**Post Conditions** — Saldo bahan tersesuaikan dengan hasil hitungan fisik melalui transaksi `OPNAME`; berita acara tersimpan; sesi tertutup permanen.
+
+**Acceptance Criteria**
+- [ ] Satu sesi opname hanya mencakup satu domain — memilih bahan dan aset sekaligus ditolak.
+- [ ] Saldo bahan berubah **hanya** setelah laporan disetujui Pimpinan Sekolah (`BR-094`).
+- [ ] Penyesuaian hasil opname tercatat sebagai transaksi bahan berjenis `OPNAME`, bukan sebagai suntingan saldo langsung (`BR-081`).
+- [ ] Selisih tanpa keterangan menghalangi pengiriman laporan.
+
 ## 6. Business Rules
 
 ### Dimiliki modul ini
 
 | Kode | Business Rule |
 |---|---|
-| BR-054 | Satu aset hanya boleh tercakup dalam satu sesi stock opname yang berstatus `Berjalan`. |
+| BR-054 | Satu aset hanya boleh tercakup dalam satu sesi stock opname **domain Aset** yang berstatus `Berjalan`. |
 | BR-055 | Daftar aset target dibekukan sebagai *snapshot* saat sesi dibuat dan tidak berubah selama sesi berjalan. |
 | BR-056 | Aset berstatus `Dipinjam` pada saat opname tidak dihitung sebagai selisih. |
 | BR-057 | Hasil opname baru diterapkan ke data aset setelah laporan rekonsiliasi disetujui Pimpinan Sekolah. |
 | BR-058 | Setiap aset berstatus `Tidak Ditemukan` wajib diberi keterangan sebelum laporan dapat diajukan. |
 | BR-059 | Sesi opname yang telah `Selesai` bersifat *read-only* dan tidak dapat diubah oleh role mana pun. |
+| BR-093 | Satu sesi stock opname hanya mencakup **satu domain**: Aset atau Bahan. Sesi tidak pernah mencampur keduanya. `BR-054`…`BR-058` berlaku bagi sesi domain **Aset**. |
+| BR-094 | Hasil opname bahan baru diterapkan ke saldo setelah laporan rekonsiliasi disetujui Pimpinan Sekolah — sejajar dengan `BR-057` pada sesi aset. |
+| BR-095 | Setiap selisih pada sesi opname bahan wajib diberi keterangan sebelum laporan dapat diajukan — sejajar dengan `BR-058` pada sesi aset. |
 
 **Aturan bersama yang juga berlaku** (dimiliki modul lain, dirujuk melalui ID — tidak disalin ke sini):
 
@@ -246,8 +279,9 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **audit_sessions** | Sesi stock opname | id, nama, periode_mulai, periode_selesai, cakupan (JSON), pelaksana_id, status, disetujui_oleh, disetujui_pada | ± 4 |
+| **audit_sessions** | Sesi stock opname | id, nama, **domain (ASET/BAHAN — `BR-093`)**, periode_mulai, periode_selesai, cakupan (JSON), pelaksana_id, status, disetujui_oleh, disetujui_pada | ± 8 |
 | **audit_items** | Hasil pemeriksaan per aset yang termasuk snapshot target | id, audit_session_id, asset_id (FK wajib), lokasi_sistem, lokasi_aktual, kondisi_sistem, kondisi_aktual, hasil (ditemukan/salah_lokasi/tidak_ditemukan/perbedaan_kondisi), keterangan, foto, diperiksa_oleh, diperiksa_pada | ± 5.000 per sesi |
+| **audit_material_items** | Hasil hitungan fisik per bahan pada sesi domain Bahan | id, audit_session_id, material_id, room_id, saldo_sistem, jumlah_fisik, selisih, keterangan, diperiksa_oleh, diperiksa_pada | ± 300 per sesi |
 | **audit_new_findings** | Aset fisik yang ditemukan tanpa data sistem (tanpa FK ke `assets`) | id, audit_session_id, deskripsi, kategori_perkiraan_id, kondisi, room_id, foto, keterangan, ditemukan_oleh, asset_id_hasil (terisi setelah didaftarkan) | ± 50 per sesi |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
@@ -301,14 +335,16 @@ Strategi pengujian: [`../06-quality/test-strategy.md`](../06-quality/test-strate
 ## 13. Dependencies
 
 - [`m04-assets.md`](m04-assets.md) — M-04 Inventaris Aset
-- [`m05-qr.md`](m05-qr.md) — M-05 QR Code Barang
+- [`m05-qr.md`](m05-qr.md) — M-05 QR Code
 - [`m10-approval.md`](m10-approval.md) — M-10 Approval Workflow Engine
+- [`m22-materials.md`](m22-materials.md) — M-22 Manajemen Bahan
 
 ## 14. Related Modules
 
 - [`m04-assets.md`](m04-assets.md) — M-04 Inventaris Aset
-- [`m05-qr.md`](m05-qr.md) — M-05 QR Code Barang
+- [`m05-qr.md`](m05-qr.md) — M-05 QR Code
 - [`m10-approval.md`](m10-approval.md) — M-10 Approval Workflow Engine
+- [`m22-materials.md`](m22-materials.md) — M-22 Manajemen Bahan
 
 ## 15. Open Issues
 

@@ -139,7 +139,7 @@ sequenceDiagram
 **Main Flow**
 1. Pengguna memilih ruangan dan slot waktu dari kalender.
 2. Pengguna mengisi: nama kegiatan, jenis kegiatan, tanggal & jam mulai–selesai, perkiraan jumlah peserta, kebutuhan tambahan, dan keterangan.
-3. Pengguna dapat menambahkan barang pendukung dalam pengajuan yang sama (opsional; memicu validasi ketersediaan barang — FR-08.2).
+3. Pengguna dapat menambahkan aset pendukung dalam pengajuan yang sama (opsional; memicu validasi ketersediaan aset — FR-08.2).
 4. Sistem memvalidasi: tidak bentrok dengan reservasi berstatus `Disetujui`, dalam jam operasional, jumlah peserta ≤ kapasitas ruangan, dan pengajuan minimal H-1 (dapat dikonfigurasi).
 5. Sistem membuat reservasi berstatus `Menunggu Persetujuan` dan membentuk instance approval dari rules (FR-10.2).
 6. Sistem menotifikasi approver level pertama.
@@ -159,7 +159,7 @@ sequenceDiagram
 - [ ] Validasi bentrok dilakukan di sisi server dengan penguncian transaksional (bukan hanya pemeriksaan di klien).
 - [ ] Reservasi berulang menghasilkan **satu** pengajuan induk dengan **satu** instance approval dan N slot turunan per tanggal (BR-024a); keputusan approval berlaku untuk seluruh tanggal.
 - [ ] Pembatalan satu tanggal turunan tidak membatalkan induk maupun tanggal lainnya.
-- [ ] Reservasi gabungan ruangan + barang pendukung diperlakukan *all-or-nothing* dalam satu instance approval (BR-024b).
+- [ ] Reservasi gabungan ruangan + aset pendukung diperlakukan *all-or-nothing* dalam satu instance approval (BR-024b).
 - [ ] Reservasi berulang tidak dapat melampaui horizon pemesanan yang dikonfigurasi (BR-023c).
 - [ ] Nomor pengajuan unik dan mengikuti format `RSV-RG-{TAHUN}-{URUT}` sesuai regex SEQ-04; tanggal turunan memakai sufiks `.{n}` (mis. `RSV-RG-2026-0001.03`).
 
@@ -249,11 +249,11 @@ sequenceDiagram
 
 | Kode | Business Rule |
 |---|---|
-| BR-017 | Dua slot pemesanan berstatus `Tentative`, `Confirmed`, atau `Active` tidak boleh beririsan waktu pada ruangan atau unit barang yang sama. Aturan ini ditegakkan sebagai *constraint* basis data, bukan hanya validasi aplikasi (Bab 26). |
+| BR-017 | Dua slot pemesanan berstatus `Tentative`, `Confirmed`, atau `Active` tidak boleh beririsan waktu pada ruangan atau unit aset yang sama. Aturan ini ditegakkan sebagai *constraint* basis data, bukan hanya validasi aplikasi (Bab 26). |
 | BR-018 | Reservasi hanya dapat diajukan pada hari dan jam operasional sekolah yang dikonfigurasi. |
 | BR-019 | Jumlah peserta pada reservasi ruangan tidak boleh melebihi kapasitas ruangan. |
 | BR-020 | Pengajuan reservasi wajib dilakukan minimal H-1 sebelum waktu penggunaan, kecuali oleh pengguna dengan permission `reservation.urgent`. |
-| BR-021 | Durasi maksimum peminjaman barang ditetapkan per role melalui konfigurasi sistem; nilai bawaan: Guru & Staf 7 hari, Siswa/OSIS 3 hari. |
+| BR-021 | Durasi maksimum peminjaman aset ditetapkan per role melalui konfigurasi sistem; nilai bawaan: Guru & Staf 7 hari, Siswa/OSIS 3 hari. |
 | BR-022 | Role Siswa/OSIS hanya dapat mereservasi aset dengan penanda `boleh_dipinjam_siswa = true` dan ruangan dengan penanda `boleh_direservasi_siswa = true`. |
 | BR-023 | Reservasi yang telah disetujui namun tidak diambil dalam 1×24 jam sejak waktu mulai otomatis berstatus `Kedaluwarsa` dan unitnya dibebaskan. |
 | BR-023a | Setiap pemohon dibatasi jumlah pengajuan berstatus `Menunggu Persetujuan` yang boleh berjalan bersamaan (nilai bawaan: Guru & Staf 5, Siswa/OSIS 2; dikonfigurasi Administrator). Pengajuan melebihi kuota ditolak. |
@@ -261,7 +261,7 @@ sequenceDiagram
 | BR-023c | Reservasi berulang (BR-024a) tidak boleh menahan slot lebih dari horizon pemesanan yang dikonfigurasi (bawaan 90 hari ke depan). |
 | BR-024 | Perubahan jadwal reservasi diperlakukan sebagai pembatalan disertai pengajuan baru. |
 | BR-024a | Reservasi berulang menghasilkan **satu** pengajuan induk dengan **satu** instance approval, dan N slot turunan per tanggal. Keputusan approval berlaku untuk seluruh tanggal. Pembatalan dapat dilakukan per tanggal turunan tanpa membatalkan induk. |
-| BR-024b | Reservasi gabungan (ruangan + barang pendukung dalam satu pengajuan) diperlakukan sebagai **satu** pengajuan dengan **satu** instance approval dan bersifat *all-or-nothing*: bila salah satu objek tidak tersedia atau ditolak, seluruh pengajuan ditolak. Pemohon dapat mengajukan ulang secara terpisah. |
+| BR-024b | Reservasi gabungan (ruangan + aset pendukung dalam satu pengajuan) diperlakukan sebagai **satu** pengajuan dengan **satu** instance approval dan bersifat *all-or-nothing*: bila salah satu objek tidak tersedia atau ditolak, seluruh pengajuan ditolak. Pemohon dapat mengajukan ulang secara terpisah. |
 | BR-025 | Pembatalan reservasi wajib menyertakan alasan. |
 
 ## 7. API Endpoints
@@ -271,7 +271,7 @@ sequenceDiagram
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
 | GET | `/rooms/availability` | `reservation.view` | Ketersediaan ruangan pada rentang waktu |
-| POST | `/reservations` | `reservation.create` | Ajukan reservasi ruangan/barang |
+| POST | `/reservations` | `reservation.create` | Ajukan reservasi ruangan/aset |
 | GET | `/reservations` | `reservation.view` | Daftar reservasi (tersaring sesuai role) |
 | GET | `/reservations/{id}` | `reservation.view` | Detail reservasi + riwayat approval |
 | POST | `/reservations/{id}/cancel` | `reservation.cancel` | Batalkan reservasi + alasan |
@@ -285,8 +285,8 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **reservations** | Pengajuan reservasi ruangan & barang | id, nomor, jenis (ruangan/barang), pemohon_id, room_id, nama_kegiatan, waktu_mulai, waktu_selesai, jumlah_peserta, keperluan, status, parent_id (untuk berulang) | ± 3.000 |
-| **reservation_items** | Unit barang yang dialokasikan pada reservasi | id, reservation_id, asset_id, jumlah | ± 6.000 |
+| **reservations** | Pengajuan reservasi ruangan & aset | id, nomor, jenis (ruangan/aset), pemohon_id, room_id, nama_kegiatan, waktu_mulai, waktu_selesai, jumlah_peserta, keperluan, status, parent_id (untuk berulang) | ± 3.000 |
+| **reservation_items** | Unit aset yang dialokasikan pada reservasi | id, reservation_id, asset_id, jumlah | ± 6.000 |
 | **room_fixed_schedules** | Blokade jadwal tetap ruangan (FR-07.5) | id, room_id, hari, jam_mulai, jam_selesai, label_kegiatan, berlaku_mulai, berlaku_sampai, status | Petugas Sarpras |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
@@ -348,5 +348,5 @@ Strategi pengujian: [`../06-quality/test-strategy.md`](../06-quality/test-strate
 
 ## 15. Open Issues
 
-- Endpoint `/reservations`, `/reservations/{id}`, dan `/reservations/{id}/cancel` melayani reservasi ruangan **dan** barang. Untuk menjaga aturan satu-pemilik, seluruh baris tersebut ditempatkan di modul ini dan dirujuk oleh M-08. Perlu keputusan apakah pemisahan endpoint per jenis reservasi diinginkan pada tahap desain teknis (SDD).
-- BR-017 … BR-025 berlaku untuk reservasi ruangan maupun barang; dimiliki modul ini dan dirujuk oleh M-08.
+- Endpoint `/reservations`, `/reservations/{id}`, dan `/reservations/{id}/cancel` melayani reservasi ruangan **dan** aset. Untuk menjaga aturan satu-pemilik, seluruh baris tersebut ditempatkan di modul ini dan dirujuk oleh M-08. Perlu keputusan apakah pemisahan endpoint per jenis reservasi diinginkan pada tahap desain teknis (SDD).
+- BR-017 … BR-025 berlaku untuk reservasi ruangan maupun aset; dimiliki modul ini dan dirujuk oleh M-08.

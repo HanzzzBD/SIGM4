@@ -1,4 +1,4 @@
-# M-08 — Reservasi Barang
+# M-08 — Reservasi Aset
 
 > **Modul self-contained.** Seluruh yang diperlukan untuk mengimplementasikan modul ini ada di
 > berkas ini: requirement, aturan bisnis, endpoint, entitas, notifikasi, permission, jejak audit,
@@ -9,7 +9,7 @@
 ## 1. Overview
 
 Lihat [`../01-product/overview.md`](../01-product/overview.md) untuk konteks produk menyeluruh.
-Modul ini adalah **M-08 — Reservasi Barang** sebagaimana terdaftar pada Daftar Modul PRD.
+Modul ini adalah **M-08 — Reservasi Aset** sebagaimana terdaftar pada Daftar Modul PRD.
 
 ## 2. Scope
 
@@ -24,13 +24,13 @@ Definisi role: [`../00-foundation/roles-permissions.md`](../00-foundation/roles-
 ## 4. Business Flow
 
 
-## 13.1 Process Flow — Reservasi & Peminjaman Barang
+## 13.1 Process Flow — Reservasi & Peminjaman Aset
 
 ```mermaid
 flowchart TD
-    A([Mulai]) --> B["Pemohon membuka<br/>katalog barang"]
+    A([Mulai]) --> B["Pemohon membuka<br/>katalog aset"]
     B --> C["Pilih rentang tanggal<br/>& lihat ketersediaan"]
-    C --> D{Barang tersedia?}
+    C --> D{Aset tersedia?}
     D -->|Tidak| E["Tampilkan tanggal<br/>tersedia terdekat"] --> C
     D -->|Ya| F["Isi form pengajuan:<br/>keperluan, durasi, jumlah"]
     F --> G{"Pemohon diblokir?<br/>denda / terlambat"}
@@ -66,24 +66,24 @@ flowchart TD
 
 ## 5. Functional Requirements
 
-### FR-08.1 Melihat Ketersediaan Barang
+### FR-08.1 Melihat Ketersediaan Aset
 
 | Aspek | Uraian |
 |---|---|
-| **Description** | Menampilkan katalog barang yang dapat dipinjam beserta ketersediaannya pada rentang tanggal tertentu. |
+| **Description** | Menampilkan katalog aset yang dapat dipinjam beserta ketersediaannya pada rentang tanggal tertentu. |
 | **Actor** | Guru, Staf/TU, Siswa/OSIS, Petugas Sarpras |
 | **Preconditions** | Terdapat aset dengan `dapat_dipinjam = true`, kondisi `Baik`/`Rusak Ringan`, dan tidak berstatus `Dalam Perbaikan`/`Tidak Tersedia` |
 
 **Main Flow**
-1. Pengguna membuka menu Reservasi Barang dan menentukan rentang tanggal peminjaman.
-2. Sistem menampilkan katalog barang dikelompokkan per kategori beserta jumlah unit yang tersedia pada rentang tersebut.
-3. Pengguna dapat menelusuri hingga tingkat unit untuk melihat kode barang dan kondisinya.
-4. Pengguna memilih barang dan jumlah unit yang dibutuhkan.
+1. Pengguna membuka menu Reservasi Aset dan menentukan rentang tanggal peminjaman.
+2. Sistem menampilkan katalog aset dikelompokkan per kategori beserta jumlah unit yang tersedia pada rentang tersebut.
+3. Pengguna dapat menelusuri hingga tingkat unit untuk melihat kode aset dan kondisinya.
+4. Pengguna memilih aset dan jumlah unit yang dibutuhkan.
 
 **Alternative Flow**
 - **A1 — Role Siswa/OSIS:** Katalog dibatasi pada aset dengan `boleh_dipinjam_siswa = true`.
 - **A2 — Seluruh unit terpesan pada rentang tanggal tersebut:** Sistem menampilkan tanggal terdekat saat unit kembali tersedia.
-- **A3 — Barang berkondisi `Rusak Berat`, `Hilang`, atau berstatus `Dalam Perbaikan`:** Tidak ditampilkan sebagai tersedia.
+- **A3 — Aset berkondisi `Rusak Berat`, `Hilang`, atau berstatus `Dalam Perbaikan`:** Tidak ditampilkan sebagai tersedia.
 
 **Post Conditions** — Tidak ada perubahan data.
 
@@ -91,19 +91,19 @@ flowchart TD
 - [ ] Ketersediaan dihitung dari tabel `booking_slots` (Bab 26), **bukan** dari kolom `assets.status`.
 - [ ] Perhitungan ketersediaan memperhitungkan slot berstatus `Tentative` (pengajuan menunggu persetujuan), `Confirmed` (disetujui), dan `Active` (sedang dipinjam), serta blokade pemeliharaan dan blokade jadwal tetap (FR-07.5).
 - [ ] Aset yang sedang `Dipinjam` hari ini **tetap** ditampilkan tersedia untuk rentang tanggal mendatang yang tidak beririsan dengan slot manapun.
-- [ ] Katalog menampilkan foto barang bila tersedia.
+- [ ] Katalog menampilkan foto aset bila tersedia.
 - [ ] Ketersediaan dihitung ulang ketika pengguna mengubah rentang tanggal, dengan respons ≤ 2 detik pada volume 5.000 aset (NFR-P-05).
 
-### FR-08.2 Pengajuan Reservasi Barang
+### FR-08.2 Pengajuan Reservasi Aset
 
 | Aspek | Uraian |
 |---|---|
-| **Description** | Pengguna mengajukan pemesanan unit barang untuk rentang waktu tertentu; pengajuan masuk ke approval engine. |
+| **Description** | Pengguna mengajukan pemesanan unit aset untuk rentang waktu tertentu; pengajuan masuk ke approval engine. |
 | **Actor** | Guru, Staf/TU, Siswa/OSIS |
-| **Preconditions** | Pengguna login dan tidak diblokir; barang tersedia pada rentang tanggal yang diminta |
+| **Preconditions** | Pengguna login dan tidak diblokir; aset tersedia pada rentang tanggal yang diminta |
 
 **Main Flow**
-1. Pengguna memilih barang dan jumlah unit dari katalog.
+1. Pengguna memilih aset dan jumlah unit dari katalog.
 2. Pengguna mengisi: tanggal & jam mulai, tanggal & jam rencana pengembalian, keperluan, dan lokasi penggunaan.
 3. Sistem mengalokasikan unit spesifik (`asset_id`) secara otomatis berdasarkan ketersediaan, dengan opsi bagi Petugas Sarpras untuk memilih unit tertentu secara manual.
 4. Sistem memvalidasi durasi peminjaman maksimum sesuai kebijakan role (BR-021) dan kuota pengajuan tertunda pemohon (BR-023a).
@@ -114,7 +114,7 @@ flowchart TD
 - **A1 — Unit terpesan pihak lain saat pengajuan diproses:** Sistem mengalokasikan unit pengganti yang setara; bila tidak ada, pengajuan ditolak dengan penjelasan.
 - **A2 — Durasi melebihi batas maksimum role:** Sistem menolak dan menampilkan batas yang berlaku.
 - **A3 — Pemohon memiliki peminjaman terlambat atau denda belum lunas:** Sistem menolak pengajuan (BR-030).
-- **A4 — Barang bernilai tinggi:** Approval rules dapat menambahkan level persetujuan Pimpinan Sekolah secara otomatis (FR-10.1).
+- **A4 — Aset bernilai tinggi:** Approval rules dapat menambahkan level persetujuan Pimpinan Sekolah secara otomatis (FR-10.1).
 - **A5 — Kuota pengajuan tertunda terlampaui:** Sistem menolak dengan pesan "Anda memiliki {n} pengajuan yang masih menunggu persetujuan. Batas maksimum {maks}." (BR-023a).
 - **A6 — Pengajuan tidak diputuskan sampai batas TTL:** Slot `Tentative` otomatis kedaluwarsa dan dibebaskan (BR-023b); pemohon dan approver dinotifikasi.
 
@@ -124,14 +124,14 @@ flowchart TD
 - [ ] Satu unit fisik tidak pernah memiliki dua slot beririsan waktu berstatus `Tentative`/`Confirmed`/`Active` (dijamin *exclusion constraint* basis data, bukan hanya validasi aplikasi).
 - [ ] Alokasi unit dilakukan atomik dengan penguncian baris terurut menaik berdasarkan `asset_id` untuk mencegah *deadlock* pada pemesanan multi-unit.
 - [ ] 50 permintaan simultan atas unit terakhir yang sama menghasilkan **tepat 1** sukses dan 49 respons `409 ASSET_NOT_AVAILABLE`.
-- [ ] Pemohon melihat kode barang unit yang dialokasikan setelah pengajuan disetujui.
+- [ ] Pemohon melihat kode aset unit yang dialokasikan setelah pengajuan disetujui.
 - [ ] `assets.status` berubah menjadi `Direservasi` hanya ketika slot `Confirmed` mulai berlaku pada waktu saat ini, bukan saat pengajuan dibuat (BR-005b).
 
-### FR-08.3 Pembatalan Reservasi Barang
+### FR-08.3 Pembatalan Reservasi Aset
 
 | Aspek | Uraian |
 |---|---|
-| **Description** | Membatalkan reservasi barang sebelum serah terima dilakukan. |
+| **Description** | Membatalkan reservasi aset sebelum serah terima dilakukan. |
 | **Actor** | Pemohon, Petugas Sarpras, Administrator |
 | **Preconditions** | Reservasi berstatus `Menunggu Persetujuan` atau `Disetujui`, dan belum terjadi serah terima |
 
@@ -166,7 +166,7 @@ _Tidak ada aturan bisnis yang dimiliki modul ini._
 
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
-| GET | `/assets/availability` | `reservation.view` | Ketersediaan unit barang pada rentang waktu |
+| GET | `/assets/availability` | `reservation.view` | Ketersediaan unit aset pada rentang waktu |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).

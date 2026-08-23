@@ -40,12 +40,15 @@ Basis teknologi yang sudah ditetapkan dan tidak dibahas ulang: PostgreSQL 15+ (`
 | **SDD-AVL-11** | `assets.status` bersifat **turunan**. Hanya empat penulis yang diizinkan: `LoanService`, `MaintenanceService`, `AssetService`, dan job `slot-activation`. Ditegakkan lewat *code ownership* + uji arsitektur. |
 | **SDD-AVL-12** | Reservasi berulang menghasilkan **satu** baris induk `origin='reservation'` tanpa rentang, dan N baris turunan ber-`parent_slot_id`. Induk tidak ikut exclusion constraint. |
 | **SDD-AVL-13** | Slot `Released` **tidak dihapus**. Dipindahkan dari partisi aktif melalui kebijakan arsip (lihat TBD-AVL-A). |
+| **SDD-AVL-14** | **Bahan tidak memakai `booking_slots`.** Bahan tidak dapat direservasi maupun dipinjam (`BR-087`), sehingga tidak memiliki dimensi waktu untuk dikunci. Konkurensinya diselesaikan dengan row lock atas `material_balances` (`SDD-DB-14`), bukan exclusion constraint. |
 
 ---
 
 ## 3. Alasan
 
-**SDD-AVL-01 — satu tabel, bukan dua.** Alternatif `room_bookings` + `asset_bookings` ditolak karena `FR-07.2` mengizinkan satu pengajuan memuat ruangan *dan* barang (`BR-024b`, *all-or-nothing*). Dengan dua tabel, transaksi harus mengunci dua tabel sekaligus dan urutan lock menjadi sumber deadlock baru. Satu tabel juga membuat blokade pemeliharaan (`origin='maintenance'`) dan jadwal tetap (`origin='fixed_schedule'`, `FR-07.5`) memakai mekanisme yang sama persis — tidak ada jalur khusus yang bisa lupa diperiksa.
+**SDD-AVL-01 — satu tabel, bukan dua.** Alternatif `room_bookings` + `asset_bookings` ditolak karena `FR-07.2` mengizinkan satu pengajuan memuat ruangan *dan* aset (`BR-024b`, *all-or-nothing*). Dengan dua tabel, transaksi harus mengunci dua tabel sekaligus dan urutan lock menjadi sumber deadlock baru. Satu tabel juga membuat blokade pemeliharaan (`origin='maintenance'`) dan jadwal tetap (`origin='fixed_schedule'`, `FR-07.5`) memakai mekanisme yang sama persis — tidak ada jalur khusus yang bisa lupa diperiksa.
+
+**SDD-AVL-14 — bahan berada di luar model ini seluruhnya.** Godaan yang wajar adalah memperluas `booking_slots` dengan `resource_type='material'` demi keseragaman. Itu keliru: slot menjawab pertanyaan "apakah sumber daya ini bebas pada rentang waktu tertentu", sedangkan bahan menjawab "apakah jumlahnya cukup sekarang". Bahan yang sudah diserahkan tidak pernah kembali (`BR-087`), sehingga tidak ada rentang untuk dibebaskan dan tidak ada irisan untuk ditolak. Memaksakannya ke `booking_slots` akan menambah `resource_type` yang seluruh kolom waktunya `NULL` — dan melumpuhkan exclusion constraint yang justru menjadi alasan tabel itu ada.
 
 Harga yang dibayar: kehilangan foreign key pada `resource_id`. Dimitigasi oleh SDD-AVL-04.
 
@@ -290,6 +293,6 @@ Tidak diisi sendiri. Lihat ringkasan di [`TBD-REGISTER.md`](TBD-REGISTER.md).
 | ID | Pertanyaan |
 |---|---|
 | **TBD-AVL-A** | Kebijakan arsip/partisi `booking_slots`. Slot `Released` dipertahankan (`BR-005`-turunan, analitik utilisasi `SC-05`) sehingga tabel tumbuh monoton. Perlu ditetapkan: partisi per tahun, pemindahan ke tabel arsip, atau dibiarkan hingga volume nyata terukur. |
-| **TBD-AVL-B** | Endpoint reservasi ruangan vs barang: tetap satu `/reservations` (kondisi saat ini, `M-07` pemilik) atau dipecah `/room-reservations` + `/item-reservations`. Ditunda ke sini sesuai keputusan sebelumnya. Berdampak pada kepemilikan baris di `M-07`/`M-08`. |
+| **TBD-AVL-B** | Endpoint reservasi ruangan vs aset: tetap satu `/reservations` (kondisi saat ini, `M-07` pemilik) atau dipecah `/room-reservations` + `/item-reservations`. Ditunda ke sini sesuai keputusan sebelumnya. Berdampak pada kepemilikan baris di `M-07`/`M-08`. |
 | **TBD-AVL-C** | Ukuran connection pool per instance API dan worker. Tidak ada angka di PRD; bergantung pada batas koneksi PostgreSQL yang disediakan penyedia. |
 | **TBD-AVL-D** | TTL cache hasil ketersediaan. `AV-04` menetapkan batas atas 30 detik, tetapi nilai operasionalnya (0 = tanpa cache, atau 10–30 detik) belum ditetapkan. |

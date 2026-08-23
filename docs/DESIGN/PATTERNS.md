@@ -220,7 +220,7 @@ Hanya **Usulan Pengadaan** yang memiliki status `Draf` bagi pemohon (`FR-14.1 A1
 ## 5.2 Daftar deskripsi pada halaman detail
 
 ```
-Kode Barang        LAB-KOM-0002
+Kode Aset          LAB-KOM-0002
 Kategori           Komputer
 Nomor Seri         SN-88213-A
 Nilai Perolehan    Rp 8.500.000        <- hanya bila asset.view_financial
@@ -268,7 +268,7 @@ Nilai Perolehan    Rp 8.500.000        <- hanya bila asset.view_financial
 
 | Jenis | Tempat | Perilaku |
 |---|---|---|
-| **Global** | Topbar | Kode barang, nomor seri, nama aset, nomor dokumen. Nilai yang cocok regex `SEQ-04` **melompat langsung** ke detail objeknya |
+| **Global** | Topbar | Kode aset, nomor seri, nama aset, nomor dokumen. Nilai yang cocok regex `SEQ-04` **melompat langsung** ke detail objeknya |
 | **Dalam konteks** | Panel Filter tiap halaman daftar | Menyaring daftar yang sedang dilihat |
 
 ## 6.2 Pola filter

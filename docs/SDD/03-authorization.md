@@ -73,6 +73,10 @@ router.get('/assets/:id',
   authorize('asset.view'),            // wajib; ketiadaannya = gagal startup
   AssetController.show);
 
+router.post('/material-requests/:id/issue',
+  authorize('material.issue'),        // bukan material.request — lihat 4.3
+  MaterialRequestController.issue);
+
 // Pemeriksaan saat bootstrap
 for (const route of router.stack) {
   if (!route.meta?.permission && !route.meta?.public) {
@@ -132,6 +136,26 @@ function assetColumns(ctx: AuthContext): string[] {
 ```
 
 `SEC-T-02` menguji bahwa respons untuk role Siswa/OSIS tidak pernah memuat field finansial, diperiksa di sisi server — bukan hanya disembunyikan klien.
+
+**Domain Bahan tidak memiliki field finansial.** `materials` tidak menyimpan nilai perolehan — harga hanya ada pada `procurement_items` yang sudah dijaga `procurement.view`. Karena itu `material.view` tidak berpasangan dengan varian `view_financial`, dan tidak ada penyaringan field di domain ini:
+
+```ts
+const MATERIAL_FIELDS = {
+  base: ['id', 'uuid', 'nama', 'material_category_id', 'satuan_id',
+         'stok_minimum', 'status'],                        // seluruhnya non-sensitif
+};
+```
+
+Yang tetap dijaga adalah **scope baris** pada permintaan bahan: pemohon hanya melihat permintaannya sendiri kecuali memiliki scope `all`.
+
+```ts
+switch (ctx.scopeOf('material.view')) {
+  case 'all': break;                                              // Admin, Petugas, Pimpinan
+  case 'own': qb.where('material_requests.pemohon_id', ctx.userId); break;
+}
+```
+
+Perlu diperhatikan: `material.view` menjaga **saldo dan kartu stok**, sedangkan pengeluaran dijaga `material.issue` yang terpisah. Seorang Guru dapat melihat saldo dan mengajukan permintaan, tetapi tidak pernah dapat menyerahkan bahan kepada dirinya sendiri — pemisahan ini yang membuat `BR-089` bermakna.
 
 ### 4.4 Urutan middleware (`SDD-AUTH-09`)
 

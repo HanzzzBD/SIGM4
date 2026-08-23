@@ -54,10 +54,10 @@ AS-14 (hosting), AS-16 (basis data → PostgreSQL 15+), serta penambahan AS-15a 
 | Fitur dalam `Deskripsi.txt` | Modul PRD | Bab Terkait |
 |---|---|---|
 | Inventaris Aset | M-04 | 8, 11, 16 |
-| QR Code Barang | M-05 | 8, 15 |
+| QR Code | M-05 | 8, 15 |
 | Manajemen Lokasi | M-03 | 8, 11 |
 | Reservasi Ruangan | M-07 | 8, 13, 15 |
-| Reservasi Barang | M-08 | 8, 13, 15 |
+| Reservasi Aset | M-08 | 8, 13, 15 |
 | Peminjaman dan Pengembalian | M-09 | 8, 13, 15 |
 | Approval Workflow | M-10 | 8, 12, 15 |
 | Laporan Kerusakan | M-11 | 8, 13, 15 |
@@ -72,3 +72,31 @@ AS-14 (hosting), AS-16 (basis data → PostgreSQL 15+), serta penambahan AS-15a 
 | Dokumen Aset | M-06 | 8, 11 |
 | Statistik dan Analitik | M-16 | 8, 19 |
 | *(turunan audit — bukan dari `Deskripsi.txt`)* Penghapusan Aset | M-21 | 8, 10.8a, 26 |
+| *(turunan audit terminologi — perubahan lingkup)* Manajemen Bahan | M-22 | 8, 13.5 |
+
+---
+
+## Revisi — Audit Terminologi Domain Aset & Bahan
+
+Audit terminologi atas seluruh PRD dan SDD. Dua hasil: penyeragaman istilah domain Aset, dan pengakuan Bahan sebagai domain kedua.
+
+### Perubahan lingkup
+
+| # | Perubahan | Penyelesaian |
+|---|---|---|
+| 1 | Target produk mencakup seluruh sarpras, sementara `NO-13` dan `AS-24` mengecualikan barang habis pakai | **Bahan ditarik ke dalam lingkup** sebagai M-22. `NO-13` dan `AS-24` dicoret; `FE-09` dipindahkan ke dalam lingkup mengikuti pola `FE-05` → M-21. Requirement **belum ditulis** — lihat [`bahan-scope-change.md`](01-product/bahan-scope-change.md) |
+| 2 | Tidak ada definisi yang membedakan Aset dari Bahan | [Lampiran A.1](00-foundation/glossary.md) menetapkan batas kedua domain beserta siklus hidupnya |
+| 3 | Keputusan produk atas model Bahan belum ada | Keputusan Kunci **#17–#26** pada [`decisions.md`](00-foundation/decisions.md) |
+
+### Penyeragaman istilah
+
+| Sebelum | Sesudah | Alasan |
+|---|---|---|
+| `kode barang` (prosa) | `kode aset` | Merujuk identitas satu unit aset. Kolom `kode_barang` **tidak** berubah |
+| M-05 QR Code Barang | **M-05 QR Code** | Melayani dua sasaran: QR per unit aset dan QR per jenis bahan |
+| M-08 Reservasi Barang | **M-08 Reservasi Aset** | Yang direservasi adalah unit aset individual |
+| M-14 Pengadaan Barang | *(tetap)* | Pengadaan secara domain mencakup Aset **dan** Bahan |
+| `unit barang`, `katalog barang`, `ketersediaan barang`, `serah terima barang` | `unit aset`, `katalog aset`, … | Seluruhnya berkonteks unit aset individual |
+| — | `barang sarpras` | Istilah payung baru untuk konteks lintas-domain |
+
+**Tidak diubah:** `assets`, `asset_id`, `asset_documents`, `asset_condition`, `kode_barang`, `assets_kode_barang_uq`, `nama_barang`, `resource_type='asset'`, permission `asset.*`, dan endpoint API — seluruhnya identifier teknis yang ditetapkan SDD.

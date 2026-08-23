@@ -159,7 +159,7 @@ flowchart LR
         UC08["Kelola Dokumen Aset"]
         UC09["Scan QR Aset"]
         UC10["Ajukan Reservasi Ruangan"]
-        UC11["Ajukan Reservasi Barang"]
+        UC11["Ajukan Reservasi Aset"]
         UC12["Setujui / Tolak Pengajuan"]
         UC13["Proses Serah Terima"]
         UC14["Proses Pengembalian"]
@@ -176,6 +176,9 @@ flowchart LR
         UC25["Lihat Statistik & Analitik"]
         UC26["Gunakan Chatbot AI"]
         UC27["Kelola Notifikasi Pribadi"]
+        UC28["Kelola Master Bahan"]
+        UC29["Ajukan Permintaan Bahan"]
+        UC30["Serahkan Bahan"]
     end
 
     ADM --- UC01
@@ -245,10 +248,11 @@ Process flow (Bab 13), sequence diagram (Bab 15), dan use case modul peminjaman 
 
 | Diagram | Kini berada di |
 |---|---|
-| 13.1 Process Flow — Reservasi & Peminjaman Barang | [`m08-reservation-item.md`](../02-modules/m08-reservation-item.md) |
+| 13.1 Process Flow — Reservasi & Peminjaman Aset | [`m08-reservation-item.md`](../02-modules/m08-reservation-item.md) |
 | 13.2 Process Flow — Laporan Kerusakan hingga Work Order Selesai | [`m11-damage-reports.md`](../02-modules/m11-damage-reports.md) |
 | 13.3 Process Flow — Stock Opname | [`m13-audit-stocktake.md`](../02-modules/m13-audit-stocktake.md) |
 | 13.4 Process Flow — Pengadaan Barang | [`m14-procurement.md`](../02-modules/m14-procurement.md) |
+| 13.5 Process Flow — Permintaan & Pengeluaran Bahan | [`m22-materials.md`](../02-modules/m22-materials.md) |
 | 14.2 Use Case Modul Peminjaman (Detail Relasi) | [`m09-loans.md`](../02-modules/m09-loans.md) |
 | 15.1 Login dengan 2FA | [`m01-auth.md`](../02-modules/m01-auth.md) |
 | 15.2 Pengajuan Reservasi dengan Approval Berjenjang | [`m07-reservation-room.md`](../02-modules/m07-reservation-room.md) |

@@ -39,9 +39,9 @@ Asumsi berikut digunakan dalam penyusunan PRD ini. Setiap asumsi perlu divalidas
 | AS-19 | Data aset awal tersedia dalam bentuk yang dapat diimpor (spreadsheet), atau akan diinput manual pada tahap implementasi. |
 | AS-20 | Data pengguna (guru, staf, siswa terpilih) tersedia dan dapat diimpor oleh Administrator. |
 | AS-21 | Struktur gedung dan ruangan sekolah sudah jelas dan dapat dipetakan ke hierarki tiga tingkat. |
-| AS-22 | Format kode barang internal akan ditetapkan sekolah sebelum pendataan aset dimulai. |
+| AS-22 | Format kode aset internal akan ditetapkan sekolah sebelum pendataan aset dimulai. |
 | AS-23 | Nilai perolehan aset diketahui atau dapat diperkirakan; ketiadaannya tidak menghalangi pendaftaran aset. |
-| AS-24 | Barang habis pakai (ATK, bahan praktikum) **tidak** dikelola dalam sistem ini. |
+| ~~AS-24~~ | ~~Barang habis pakai (ATK, bahan praktikum) **tidak** dikelola dalam sistem ini.~~ → **dicabut.** Bahan (termasuk ATK dan bahan praktik) dikelola sistem ini sebagai domain M-22, terpisah dari Aset. |
 
 ## 23.4 Asumsi Proyek
 
@@ -63,7 +63,7 @@ Asumsi berikut digunakan dalam penyusunan PRD ini. Setiap asumsi perlu divalidas
 | Kode | Risiko | Kategori | Dampak | Kemungkinan | Mitigasi |
 |---|---|---|---|---|---|
 | RS-01 | Pendataan awal 5.000 unit aset memakan waktu jauh lebih lama dari perkiraan | Implementasi | Tinggi | Tinggi | Sediakan impor massal via CSV/XLSX, pembuatan N unit sekaligus dari satu form, dan pencetakan QR batch; lakukan pendataan bertahap per gedung |
-| RS-02 | Label QR rusak, terlepas, atau pudar seiring waktu | Operasional | Sedang | Tinggi | Gunakan stiker berbahan tahan lama; sediakan cetak ulang tanpa mengubah UUID; sediakan input kode barang manual di setiap alur pemindaian |
+| RS-02 | Label QR rusak, terlepas, atau pudar seiring waktu | Operasional | Sedang | Tinggi | Gunakan stiker berbahan tahan lama; sediakan cetak ulang tanpa mengubah UUID; sediakan input kode aset manual di setiap alur pemindaian |
 | RS-03 | Resistensi pengguna terhadap perubahan dari cara manual | Adopsi | Tinggi | Sedang | Pelatihan per role, antarmuka sederhana, aksi cepat pada dashboard, dukungan chatbot untuk pertanyaan dasar, dan dukungan aktif pimpinan sekolah |
 | RS-04 | Data inventaris tidak dipelihara sehingga sistem menjadi tidak akurat | Operasional | Tinggi | Sedang | Stock opname periodik wajib, laporan aset belum berlabel QR, dashboard indikator kualitas data, dan penetapan penanggung jawab data |
 | RS-05 | Approval berjenjang memperlambat proses jika approver tidak responsif | Proses | Sedang | Tinggi | SLA per langkah, pengingat otomatis, eskalasi otomatis, delegasi saat approver berhalangan, dan persetujuan dari perangkat mobile |
@@ -72,7 +72,7 @@ Asumsi berikut digunakan dalam penyusunan PRD ini. Setiap asumsi perlu divalidas
 | RS-08 | Biaya penggunaan Claude API membengkak melebihi anggaran | Biaya | Sedang | Sedang | Batas percakapan harian per pengguna, konteks dibatasi 10 pesan, pemantauan penggunaan token pada dashboard Administrator, dan pengalih untuk menonaktifkan chatbot |
 | RS-09 | Chatbot memberikan jawaban keliru yang dijadikan dasar keputusan | Kualitas AI | Sedang | Sedang | Kewajiban merujuk pengenal data konkret, larangan mengarang, umpan balik pengguna, evaluasi berkala, dan penegasan bahwa keputusan resmi merujuk laporan sistem |
 | RS-10 | Kebocoran data lintas hak akses melalui chatbot | Keamanan | Tinggi | Rendah | Filter permission ditegakkan pada lapisan query, bukan pada prompt; pengujian keamanan khusus untuk setiap role sebelum rilis |
-| RS-11 | *Race condition* menyebabkan double-booking ruangan atau unit barang | Teknis | Tinggi | Sedang | Penguncian tingkat baris, validasi bentrok dalam transaksi, *unique constraint* pada level basis data, dan pengujian konkurensi |
+| RS-11 | *Race condition* menyebabkan double-booking ruangan atau unit aset | Teknis | Tinggi | Sedang | Penguncian tingkat baris, validasi bentrok dalam transaksi, *unique constraint* pada level basis data, dan pengujian konkurensi |
 | RS-12 | Kebocoran data pribadi siswa dan pegawai | Keamanan | Tinggi | Rendah | RBAC ketat, HTTPS, enkripsi kredensial, 2FA untuk role sensitif, activity log, dan pembatasan data pada halaman publik hasil scan |
 | RS-13 | Kehilangan data akibat kegagalan server atau kesalahan operasional | Teknis | Tinggi | Rendah | Pencadangan harian dengan retensi 30 hari di lokasi terpisah, uji pemulihan berkala, dan penerapan *soft delete* pada entitas penting |
 | RS-14 | Performa menurun seiring pertumbuhan activity log dan notifikasi | Teknis | Sedang | Sedang | Indeks yang tepat, paginasi wajib, arsip otomatis notifikasi & percakapan > 90 hari, serta pemantauan kinerja query |

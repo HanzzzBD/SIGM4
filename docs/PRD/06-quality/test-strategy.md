@@ -21,11 +21,14 @@
 | 2 | Ganti password paksa setelah reset administratif | Web |
 | 3 | Impor 500 aset → cetak QR → tempel → scan | Web + Mobile |
 | 4 | Reservasi ruangan → approval berjenjang → penggunaan → selesai | Web + Mobile |
-| 5 | Reservasi barang → approval → serah terima → pengembalian tepat waktu | Web + Mobile |
+| 5 | Reservasi aset → approval → serah terima → pengembalian tepat waktu | Web + Mobile |
 | 6 | Pengembalian terlambat → denda terbit → tandai lunas → blokir terbuka | Web |
 | 7 | Pengembalian sebagian dengan keterlambatan berbeda per unit | Web |
 | 8 | Perpanjangan peminjaman disetujui dan ditolak | Mobile |
-| 9 | Barang hilang → ganti rugi terbit → pembebasan oleh Pimpinan | Web |
+| 9 | Aset hilang → ganti rugi terbit → pembebasan oleh Pimpinan | Web |
+| 9a | Permintaan bahan di bawah ambang → langsung diserahkan → saldo berkurang tepat | Web |
+| 9b | Permintaan bahan di atas ambang → approval → penyerahan sebagian → saldo & sisa benar | Web |
+| 9c | Stock opname bahan → selisih → persetujuan Pimpinan → transaksi OPNAME menyesuaikan saldo | Web + Mobile |
 | 10 | Lapor kerusakan berfoto → verifikasi → work order → eksekusi → verifikasi → tutup | Mobile |
 | 11 | Jadwal preventif → work order otomatis terbit H-7 | Web |
 | 12 | Sesi opname → scan 100 unit → rekonsiliasi → persetujuan → penyesuaian data | Mobile |
@@ -38,7 +41,7 @@
 | Kode | Skenario | Hasil yang diharapkan |
 |---|---|---|
 | CC-01 | 50 permintaan simultan memesan slot ruangan yang sama | Tepat 1 sukses; 49 menerima `409 RESERVATION_CONFLICT` |
-| CC-02 | 50 permintaan simultan memesan unit barang terakhir | Tepat 1 sukses; 49 menerima `409 ASSET_NOT_AVAILABLE` |
+| CC-02 | 50 permintaan simultan memesan unit aset terakhir | Tepat 1 sukses; 49 menerima `409 ASSET_NOT_AVAILABLE` |
 | CC-03 | 2 approver menekan Setujui bersamaan pada langkah yang sama | Tepat 1 keputusan tersimpan; yang kalah menerima `409 APPROVAL_ALREADY_DECIDED` (RE-09) |
 | CC-04 | Permintaan `checkout` yang sama dikirim dua kali dengan `Idempotency-Key` identik | Satu transaksi peminjaman; respons kedua identik dengan yang pertama (ID-03) |
 | CC-05 | Pemesanan multi-unit yang saling bersilangan urutannya | Tidak terjadi *deadlock* (CI-02) |

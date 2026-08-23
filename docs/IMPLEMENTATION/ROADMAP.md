@@ -56,7 +56,7 @@ Panah dibaca "membutuhkan". Hanya ketergantungan yang memaksa urutan yang digamb
         M-05 QR            M-11 Kerusakan    M-07 Reservasi Ruang │
               │                  │                 │             │
               │                  ▼                 ▼             │
-              │            M-12 Pemeliharaan  M-08 Reservasi Brg  │
+              │            M-12 Pemeliharaan  M-08 Reservasi Aset │
               │                  │                 │             │
               ▼                  │                 ▼             │
         M-13 Opname              │           M-09 Peminjaman      │
@@ -86,10 +86,10 @@ Panah dibaca "membutuhkan". Hanya ketergantungan yang memaksa urutan yang digamb
 | 01 | Butuh migration runner, `AuthContext`, activity log dari Phase 00 | M-01 tidak dapat memberi role bila katalog role belum ada |
 | 02 | Approval butuh user & role; aset butuh lokasi | `booking_slots` menentukan bentuk skema — menyisipkannya setelah reservasi berjalan berarti migrasi data hidup |
 | 03 | Seluruh isinya menggantung pada aset dan approval | M-14 harus mulai mengisi `procurement_id` sebelum data aset menumpuk |
-| 04 | Reservasi barang memakai `SlotService` bentukan Phase 02 | Opname membutuhkan aset berlabel QR (M-05) yang lahir di Phase 03 |
-| 05 | Peminjaman adalah kelanjutan reservasi barang | Penghapusan menutup siklus; tidak ada yang menunggunya |
+| 04 | Reservasi aset memakai `SlotService` bentukan Phase 02 | Opname membutuhkan aset berlabel QR (M-05) yang lahir di Phase 03 |
+| 05 | Peminjaman adalah kelanjutan reservasi aset; Bahan butuh lokasi, approval, QR, pengadaan, dan mesin opname yang seluruhnya sudah berdiri | Penghapusan menutup siklus; tidak ada yang menunggunya |
 | 06 | Analitik atas data tidak lengkap harus dibongkar ulang | Ia daun terakhir; tidak memblokir apa pun kecuali UAT |
-| 07 | Integrasi lintas modul mensyaratkan seluruh 21 modul hidup | Baseline `IMP-04` harus terukur **sebelum** sistem dipakai |
+| 07 | Integrasi lintas modul mensyaratkan seluruh 22 modul hidup | Baseline `IMP-04` harus terukur **sebelum** sistem dipakai |
 | 08 | Pengerasan atas sistem yang masih berubah adalah pemborosan | Keluarannya go-live |
 
 ## 4. Pemetaan phase ⇄ milestone PRD
@@ -115,7 +115,7 @@ Dibaca dari arah sebaliknya:
 | 02 | `M1` (M-01, M-04) · `M2` (M-10, Bab 26) · `M5` (M-15, M-17) | — |
 | 03 | `M1` (M-05) · `M2` (M-07) · `M3` (M-06, M-11) · `M4` (M-14) · `M5` (M-19) | `M1` |
 | 04 | `M2` (M-08) · `M3` (M-12) · `M4` (M-13) | `M2` |
-| 05 | `M3` (M-09) · `M4` (M-21) | `M3`, `M4` |
+| 05 | `M3` (M-09) · `M4` (M-21, M-22) | `M3`, `M4` |
 | 06 | `M5` (M-16) | `M5` |
 | 07 | `M6` — gerbang `GL-01`, `GL-02`, `GL-05`, `GL-09` | — |
 | 08 | `M6` — gerbang sisanya | `M6` |
@@ -133,7 +133,7 @@ Dibaca dari arah sebaliknya:
 | M-05 | QR Code | 03 | `M1` |
 | M-06 | Manajemen Dokumen | 03 | `M3` |
 | M-07 | Reservasi Ruangan | 03 | `M2` |
-| M-08 | Reservasi Barang | 04 | `M2` |
+| M-08 | Reservasi Aset | 04 | `M2` |
 | M-09 | Peminjaman & Serah Terima | 05 | `M3` |
 | M-10 | Approval & Disposisi | 02 | `M2` |
 | M-11 | Pelaporan Kerusakan | 03 | `M3` |
@@ -147,14 +147,15 @@ Dibaca dari arah sebaliknya:
 | M-19 | Chatbot AI | 03 | `M5` |
 | M-20 | Konfigurasi Sistem | 01 | `M1` |
 | M-21 | Penghapusan Aset | 05 | `M4` |
+| M-22 | Manajemen Bahan | 05 | `M4` |
 
-21 dari 21 modul PRD tercakup. Verifikasi otomatis: §6.
+22 dari 22 modul PRD tercakup. Verifikasi otomatis: §6.
 
 ## 6. Validasi graf
 
 | Pemeriksaan | Hasil |
 |---|---|
-| Seluruh 21 modul PRD punya phase | ✅ 21/21 — §5 |
+| Seluruh 22 modul PRD punya phase | ✅ 22/22 — §5 |
 | Seluruh 18 berkas SDD punya phase yang menerapkannya | ✅ — lihat [`DELIVERY-PLAN.md` §5](DELIVERY-PLAN.md) |
 | Tidak ada phase yatim (tanpa hulu maupun hilir) | ✅ — rantai 00→08 tersambung penuh |
 | Tidak ada dependensi melingkar antar-phase | ✅ — graf phase linear; satu-satunya siklus modul (M-04↔M-14) diputus di §2 |
@@ -172,7 +173,7 @@ PR-00-04 (koneksi DB + AuthContext)
       → PR-02-16 (booking_slots + exclusion constraint)
         → PR-02-17 (SlotService)
           → PR-03-08 (reservasi ruangan)
-            → PR-04-01 (reservasi barang)
+            → PR-04-01 (reservasi aset)
               → PR-05-01 (peminjaman)
                 → PR-07-xx (uji ujung-ke-ujung)
                   → PR-08-10 (migrasi produksi)

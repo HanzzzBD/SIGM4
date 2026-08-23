@@ -17,11 +17,11 @@ Urutan phase dan graf dependensinya ada di [`ROADMAP.md`](ROADMAP.md) dan tidak 
 | 02 | 5 | 30 | M–L | **Phase terbesar.** Menanam tiga tulang punggung sekaligus |
 | 03 | 6 | 23 | M | Enam modul bebas satu sama lain |
 | 04 | 3 | 14 | M | Sebagian besar memakai ulang abstraksi Phase 02 |
-| 05 | 2 | 14 | M | Menutup dua milestone |
+| 05 | 3 | 24 | M–L | Menutup dua milestone; menampung seluruh domain Bahan |
 | 06 | 1 | 10 | M–L | Satu modul, ketergantungan baca ke seluruh sistem |
 | 07 | — | 14 | M | Integrasi & UAT; banyak aktivitas non-PR |
 | 08 | — | 15 | S–M | Pengerasan; banyak aktivitas non-PR |
-| **Total** | **21** | **152** | | |
+| **Total** | **22** | **162** | | |
 
 Skala kompleksitas PR mengikuti [`templates/PHASE-TEMPLATE.md`](templates/PHASE-TEMPLATE.md): **S** ≤ 200 baris berubah · **M** ≤ 400 · **L** > 400 dan wajib disertai alasan di deskripsi PR.
 
@@ -41,7 +41,8 @@ Urutan penuh per-PR ada di bagian 7 tiap berkas phase. Di sini hanya **aturan ur
 | `PR-00-13` `AuditLogger` | seluruh PR operasi tulis | `AL-01` mensyaratkan setiap tulis tercatat; menambahkannya belakangan berarti menyisir ulang ratusan handler |
 | `PR-01-04` matriks permission | `PR-02-xx` seluruhnya | Approval mengevaluasi role; role harus berversi lebih dulu |
 | `PR-02-16` `booking_slots` + exclusion constraint | `PR-03-08`, `PR-04-01` | Bentuk skema ketersediaan tidak boleh disisipkan setelah ada reservasi hidup |
-| `PR-02-17` `SlotService` | `PR-03-08`, `PR-04-01`, `PR-05-01` | Satu abstraksi melayani ruangan, barang, dan peminjaman |
+| `PR-02-17` `SlotService` | `PR-03-08`, `PR-04-01`, `PR-05-01` | Satu abstraksi melayani ruangan, aset, dan peminjaman |
+| `PR-05-17` ledger saldo bahan | `PR-05-18` … `PR-05-24` | Seluruh domain Bahan berdiri di atas invarian saldo↔ledger (`SDD-DB-13`) |
 | `PR-02-19` evaluator DSL | `PR-03-xx`, `PR-04-xx`, `PR-05-xx` approval | Setiap modul berpersetujuan memanggil evaluator yang sama |
 | `PR-02-10` `assets.procurement_id` nullable | `PR-03-19` pengisian pertama | Pemutus siklus M-04 ↔ M-14 |
 | `PR-01-13` titik ekstensi `SL-04` | `PR-05-09` penutupan `SL-04` | Definisi "kewajiban aktif" baru dapat ditulis setelah peminjaman & denda ada |

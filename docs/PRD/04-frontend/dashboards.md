@@ -42,6 +42,8 @@
 | Garansi Akan Berakhir | Kartu peringatan | Aset dengan garansi berakhir ≤ 30 hari |
 | Jadwal Pemeliharaan Mendatang | Daftar | Pemeliharaan preventif jatuh tempo ≤ 14 hari |
 | Tren Peminjaman | Grafik garis | Jumlah transaksi peminjaman per minggu |
+| Stok Bahan Menipis | Kartu peringatan | Bahan dengan saldo mencapai/di bawah stok minimum + tautan ke usulan pengadaan (`FR-22.7`) |
+| Permintaan Bahan Menunggu | Kartu aksi | Permintaan berstatus `Disetujui` yang belum diserahkan (`FR-22.5`) |
 
 ## 19.4 Dashboard Pimpinan Sekolah
 
@@ -76,10 +78,10 @@
 | Komponen | Jenis | Isi |
 |---|---|---|
 | Pengajuan Saya | Kartu KPI | Jumlah pengajuan per status (menunggu/disetujui/ditolak) |
-| Peminjaman Aktif | Daftar | Barang yang sedang saya pinjam beserta tanggal jatuh tempo |
+| Peminjaman Aktif | Daftar | Aset yang sedang saya pinjam beserta tanggal jatuh tempo |
 | Jatuh Tempo Mendekat | Kartu peringatan | Peminjaman jatuh tempo ≤ 3 hari |
 | Denda Saya | Kartu peringatan | Total denda belum dibayar |
-| Jadwal Reservasi Saya | Kalender ringkas | Reservasi ruangan/barang mendatang |
+| Jadwal Reservasi Saya | Kalender ringkas | Reservasi ruangan/aset mendatang |
 | Ketersediaan Ruangan Hari Ini | Ringkasan | Ruangan yang masih kosong hari ini |
 | Laporan Kerusakan Saya | Daftar | Tiket yang saya buat beserta statusnya |
 | Aksi Cepat | Tombol | Ajukan Reservasi · Lapor Kerusakan · Scan QR · Tanya Chatbot |
@@ -89,7 +91,7 @@
 | Komponen | Jenis | Isi |
 |---|---|---|
 | Pengajuan Saya | Kartu KPI | Jumlah pengajuan per status |
-| Peminjaman Aktif | Daftar | Barang yang sedang dipinjam beserta jatuh tempo |
+| Peminjaman Aktif | Daftar | Aset yang sedang dipinjam beserta jatuh tempo |
 | Jatuh Tempo Mendekat | Kartu peringatan | Pengingat pengembalian |
 | Denda Saya | Kartu peringatan | Total denda belum dibayar dan status blokir |
 | Ruangan Tersedia | Ringkasan | Ruangan yang boleh direservasi siswa dan sedang kosong |

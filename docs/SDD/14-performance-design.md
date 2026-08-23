@@ -80,6 +80,9 @@ Indeks kritis (didefinisikan pada SDD terkait, dirangkum di sini):
 | Aset per lokasi | `assets(room_id)` berpredikat aktif | `FR-03.2` |
 | Peminjaman aktif | `loans(status, tanggal_jatuh_tempo)` berpredikat belum kembali | `FR-09.3` |
 | Approval menunggu | `approval_steps(instance_id, urutan)` berpredikat belum diputus | SDD-02 §4.6 |
+| Saldo bahan per lokasi | `material_balances(material_id, room_id)` unik — pembacaan dan `FOR UPDATE` lewat indeks yang sama | `SDD-DB-14` |
+| Kartu stok bahan | `material_transactions(material_id, room_id, dibuat_pada DESC)` | `FR-22.2` |
+| Bahan di bawah stok minimum | Agregat `SUM(saldo)` per `material_id`, dibandingkan `materials.stok_minimum` | `BR-085` |
 | SLA approval | `approval_steps(sla_deadline)` berpredikat belum diputus | SDD-02 §4.6 |
 | Activity log | `(waktu DESC)`, `(user_id, waktu DESC)`, `(entitas, entitas_id, waktu DESC)` | `FR-18.2` |
 | Notifikasi belum dibaca | `notifications(user_id)` berpredikat `dibaca_pada IS NULL` | `FR-17.1` |

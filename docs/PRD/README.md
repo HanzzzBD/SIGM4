@@ -74,7 +74,7 @@ Tiga berkas ini berlaku meski tidak selalu disebut, dan menjadi fondasi SDD:
 | [decisions.md](00-foundation/decisions.md) | 16 keputusan stakeholder yang mengikat |
 | [conventions.md](00-foundation/conventions.md) | Kalender & satuan waktu, master data tambahan, siklus akun siswa, template impor |
 | [roles-permissions.md](00-foundation/roles-permissions.md) | Role, matriks permission, katalog permission kanonik |
-| [glossary.md](00-foundation/glossary.md) | Glosarium |
+| [glossary.md](00-foundation/glossary.md) | Glosarium, **batas domain Aset vs Bahan (Lampiran A.1)** |
 
 ### 01 · Product
 | Berkas | Isi |
@@ -84,6 +84,7 @@ Tiga berkas ini berlaku meski tidak selalu disebut, dan menjadi fondasi SDD:
 | [delivery-plan.md](01-product/delivery-plan.md) | Milestone M0–M6, gerbang rilis, scope-cut ladder, DoD, cutover |
 | [assumptions-risks.md](01-product/assumptions-risks.md) | Asumsi & risiko |
 | [future-enhancements.md](01-product/future-enhancements.md) | Di luar lingkup rilis ini |
+| [bahan-scope-change.md](01-product/bahan-scope-change.md) | Catatan perubahan lingkup domain Bahan — keputusan, berkas terdampak, dan TBD tersisa |
 
 ### 02 · Modules
 | Modul | Berkas | Modul | Berkas |
@@ -95,10 +96,10 @@ Tiga berkas ini berlaku meski tidak selalu disebut, dan menjadi fondasi SDD:
 | M-05 QR Code | [m05-qr](02-modules/m05-qr.md) | M-16 Analitik | [m16-analytics](02-modules/m16-analytics.md) |
 | M-06 Dokumen Aset | [m06-documents](02-modules/m06-documents.md) | M-17 Notifikasi | [m17-notifications](02-modules/m17-notifications.md) |
 | M-07 Reservasi Ruangan | [m07-reservation-room](02-modules/m07-reservation-room.md) | M-18 Activity Log | [m18-activity-log](02-modules/m18-activity-log.md) |
-| M-08 Reservasi Barang | [m08-reservation-item](02-modules/m08-reservation-item.md) | M-19 Chatbot AI | [m19-chatbot](02-modules/m19-chatbot.md) |
+| M-08 Reservasi Aset | [m08-reservation-item](02-modules/m08-reservation-item.md) | M-19 Chatbot AI | [m19-chatbot](02-modules/m19-chatbot.md) |
 | M-09 Peminjaman | [m09-loans](02-modules/m09-loans.md) | M-20 Konfigurasi | [m20-settings](02-modules/m20-settings.md) |
 | M-10 Approval Engine | [m10-approval](02-modules/m10-approval.md) | M-21 Penghapusan Aset | [m21-disposal](02-modules/m21-disposal.md) |
-| M-11 Laporan Kerusakan | [m11-damage-reports](02-modules/m11-damage-reports.md) | | |
+| M-11 Laporan Kerusakan | [m11-damage-reports](02-modules/m11-damage-reports.md) | M-22 Manajemen Bahan | [m22-materials](02-modules/m22-materials.md) |
 
 ### 03 · Architecture
 | Berkas | Isi |
@@ -145,7 +146,7 @@ SDD **tidak menduplikasi** isi dokumentasi ini; ia merujuk lewat ID. Hal yang sa
 
 | Skrip | Fungsi |
 |---|---|
-| `scripts/build_docs.py` | Rakit 21 modul self-contained dari sumber |
+| `scripts/build_docs.py` | Rakit 22 modul self-contained dari sumber — **skrip ini tidak ada di pohon kerja** |
 | `scripts/build_central.py` | Rakit berkas pusat + regenerasi 4 indeks |
 | `scripts/audit_docs.py` | Audit kehilangan requirement & rujukan silang rusak |
 | `scripts/gen_trace.py` | Regenerasi papan skor traceability |

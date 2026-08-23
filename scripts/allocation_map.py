@@ -33,6 +33,7 @@ MODULES = [
     ("m19-chatbot",           "M-19", "Chatbot AI"),
     ("m20-settings",          "M-20", "Konfigurasi Sistem"),
     ("m21-disposal",          "M-21", "Penghapusan Aset"),
+    ("m22-materials",         "M-22", "Manajemen Bahan"),
 ]
 
 # Berkas sumber hasil pemecahan sebelumnya (docs/PRD/02-modules/...) -> slug baru
@@ -292,7 +293,7 @@ OPEN_ISSUES = {
         "spesifikasi antarmuka, bukan aturan bisnis.",
     ],
     "m17-notifications": [
-        "Katalog notifikasi NT-01…NT-48 tidak berada di modul ini; setiap baris dimiliki modul "
+        "Katalog notifikasi NT-01…NT-51 tidak berada di modul ini; setiap baris dimiliki modul "
         "yang menerbitkan event-nya. Indeks lengkap digenerate di "
         "`03-architecture/notifications-index.md`.",
     ],

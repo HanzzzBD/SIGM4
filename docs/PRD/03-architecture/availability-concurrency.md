@@ -19,7 +19,7 @@ Karena itu ditetapkan pemisahan tegas berikut.
 
 ## 26.2 Entitas `booking_slots`
 
-Satu tabel tunggal menampung seluruh pemesanan waktu, baik atas ruangan maupun atas unit barang, termasuk blokade non-reservasi.
+Satu tabel tunggal menampung seluruh pemesanan waktu, baik atas ruangan maupun atas unit aset, termasuk blokade non-reservasi.
 
 | Atribut | Tipe | Keterangan |
 |---|---|---|

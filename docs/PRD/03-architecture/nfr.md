@@ -19,7 +19,7 @@ Seluruh target di bawah ini ditetapkan berdasarkan skala terkonfirmasi: **± 5.0
 | NFR-P-11 | Impor massal 500 baris aset | ≤ 60 detik | Pengujian fungsional |
 | NFR-P-12 | Pengiriman notifikasi | ≤ 60 detik setelah event | Pengujian end-to-end |
 
-**Strategi pendukung:** indeks basis data pada kolom pencarian utama (kode barang, nomor seri, lokasi, status), paginasi wajib pada seluruh endpoint daftar (maksimum 100 item per halaman), caching hasil agregasi dashboard (TTL 5 menit), *lazy loading* gambar, dan kompresi respons (gzip/brotli).
+**Strategi pendukung:** indeks basis data pada kolom pencarian utama (kode aset, nomor seri, lokasi, status), paginasi wajib pada seluruh endpoint daftar (maksimum 100 item per halaman), caching hasil agregasi dashboard (TTL 5 menit), *lazy loading* gambar, dan kompresi respons (gzip/brotli).
 
 ## 9.3 Availability
 

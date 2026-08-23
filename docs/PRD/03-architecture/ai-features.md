@@ -17,15 +17,15 @@ Sistem memiliki **satu fitur AI**, yaitu **Chatbot Asisten SIGM4** — asisten p
 | Kode | Use Case | Contoh Pertanyaan Pengguna |
 |---|---|---|
 | AI-UC-01 | Mencari lokasi aset | "Di mana proyektor Epson yang masih bagus?" |
-| AI-UC-02 | Memeriksa ketersediaan barang | "Ada berapa laptop yang bisa dipinjam minggu depan?" |
+| AI-UC-02 | Memeriksa ketersediaan aset | "Ada berapa laptop yang bisa dipinjam minggu depan?" |
 | AI-UC-03 | Memeriksa jadwal ruangan | "Apakah aula kosong hari Jumat siang?" |
 | AI-UC-04 | Memeriksa status peminjaman pribadi | "Kapan saya harus mengembalikan kamera?" |
 | AI-UC-05 | Memeriksa status pengajuan | "Bagaimana status pengajuan reservasi lab saya?" |
 | AI-UC-06 | Memeriksa denda pribadi | "Apakah saya punya denda yang belum dibayar?" |
 | AI-UC-07 | Memeriksa kondisi & riwayat aset | "Berapa kali proyektor lab 2 pernah diperbaiki?" |
 | AI-UC-08 | Memeriksa status laporan kerusakan | "Bagaimana tindak lanjut laporan AC ruang guru?" |
-| AI-UC-09 | Panduan penggunaan sistem | "Bagaimana cara mengajukan peminjaman barang?" |
-| AI-UC-10 | Ringkasan operasional (role berwenang) | "Berapa barang yang terlambat dikembalikan bulan ini?" |
+| AI-UC-09 | Panduan penggunaan sistem | "Bagaimana cara mengajukan peminjaman aset?" |
+| AI-UC-10 | Ringkasan operasional (role berwenang) | "Berapa aset yang terlambat dikembalikan bulan ini?" |
 
 ## 22.3 Input
 
@@ -57,7 +57,7 @@ Sistem memiliki **satu fitur AI**, yaitu **Chatbot Asisten SIGM4** — asisten p
 | Aspek | Ketentuan |
 |---|---|
 | **Format** | Teks Bahasa Indonesia yang ringkas, disertai daftar bila menyebut lebih dari tiga item |
-| **Rujukan data** | Setiap fakta yang berasal dari basis data wajib menyertakan pengenal konkret (kode barang, nama ruangan, nomor transaksi) |
+| **Rujukan data** | Setiap fakta yang berasal dari basis data wajib menyertakan pengenal konkret (kode aset, nama ruangan, nomor transaksi) |
 | **Tautan aksi** | Jawaban menyertakan *deep link* ke halaman detail atau form yang relevan |
 | **Penanganan data kosong** | Menyatakan data tidak ditemukan secara eksplisit; dilarang mengarang |
 | **Penolakan aksi tulis** | Menyatakan keterbatasannya dan mengarahkan ke menu yang tepat |
@@ -71,7 +71,7 @@ Sistem memiliki **satu fitur AI**, yaitu **Chatbot Asisten SIGM4** — asisten p
 > 2. `AV-PRJ-0005` — Epson EB-X51, kondisi Baik, Lab Komputer 1
 > 3. `AV-PRJ-0007` — BenQ MS550, kondisi Rusak Ringan, Gudang AV
 >
-> Untuk memesan, silakan buka [Reservasi Barang](/reservations/new?category=proyektor).
+> Untuk memesan, silakan buka [Reservasi Aset](/reservations/new?category=proyektor).
 
 ## 22.5 Prompt Strategy
 
@@ -85,7 +85,7 @@ Sistem memiliki **satu fitur AI**, yaitu **Chatbot Asisten SIGM4** — asisten p
    - Dilarang menyebutkan data yang tidak dikembalikan oleh tool.
    - Bila hasil tool kosong, nyatakan bahwa data tidak ditemukan.
 4. **Gaya bahasa** — Bahasa Indonesia yang sopan, ringkas, dan tidak berbelit; sapa pengguna dengan namanya bila relevan.
-5. **Aturan format** — gunakan daftar bernomor untuk lebih dari tiga item; selalu sertakan kode barang atau nomor transaksi sebagai rujukan; sertakan tautan aksi bila tersedia.
+5. **Aturan format** — gunakan daftar bernomor untuk lebih dari tiga item; selalu sertakan kode aset atau nomor transaksi sebagai rujukan; sertakan tautan aksi bila tersedia.
 6. **Penanganan di luar cakupan** — bila pertanyaan berada di luar domain sarana prasarana, nyatakan dengan sopan dan arahkan ke Petugas Sarana Prasarana.
 7. **Konteks waktu** — tanggal dan waktu sistem saat ini agar pertanyaan relatif dapat dihitung.
 
@@ -124,7 +124,7 @@ SC-10 menargetkan akurasi ≥ 85%, namun sebelumnya tidak ada cara mengukurnya. 
 | Kode | Requirement |
 |---|---|
 | AI-EV-01 | Disusun **golden set** minimal **100 pertanyaan** berlabel, mencakup seluruh use case AI-UC-01…10, dengan distribusi merata antar-role dan menyertakan pertanyaan di luar cakupan serta pertanyaan yang seharusnya ditolak |
-| AI-EV-02 | Setiap butir golden set memiliki jawaban acuan dan **daftar pengenal data yang wajib muncul** (kode barang, nomor transaksi, nama ruangan) |
+| AI-EV-02 | Setiap butir golden set memiliki jawaban acuan dan **daftar pengenal data yang wajib muncul** (kode aset, nomor transaksi, nama ruangan) |
 | AI-EV-03 | Rubrik penilaian empat dimensi: **kebenaran fakta**, **kelengkapan**, **kepatuhan hak akses**, dan **kepatuhan format** (menyertakan rujukan & tautan). Jawaban dinilai benar hanya bila keempatnya terpenuhi |
 | AI-EV-04 | Evaluasi dijalankan otomatis pada setiap perubahan *system prompt*, definisi tool, atau model. Penurunan akurasi > 5% dibanding basis sebelumnya adalah penghambat rilis |
 | AI-EV-05 | **Uji kebocoran hak akses**: setiap pertanyaan golden set dijalankan untuk ketujuh role; jawaban yang memuat data di luar hak akses role tersebut dihitung sebagai **kegagalan kritis**, bukan sekadar penurunan akurasi. Target: **nol** kebocoran (PO-08) |

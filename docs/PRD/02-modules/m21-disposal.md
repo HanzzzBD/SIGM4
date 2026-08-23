@@ -78,13 +78,13 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 **Alternative Flow**
 - **A1 — Ditolak:** Usulan ditutup; aset kembali dapat dioperasikan sesuai kondisinya; slot pemesanan tidak lagi diblokir.
 - **A2 — Setujui Sebagian:** Hanya aset yang disetujui yang dihapuskan; sisanya kembali ke status semula.
-- **A3 — Aset ditemukan kembali setelah dihapuskan karena hilang:** Administrator dapat melakukan **pemulihan (*reinstatement*)** dengan alasan wajib; aset kembali aktif dengan kode barang dan UUID **yang sama**, dan seluruh riwayatnya tetap utuh.
+- **A3 — Aset ditemukan kembali setelah dihapuskan karena hilang:** Administrator dapat melakukan **pemulihan (*reinstatement*)** dengan alasan wajib; aset kembali aktif dengan kode aset dan UUID **yang sama**, dan seluruh riwayatnya tetap utuh.
 
 **Post Conditions** — Aset tidak lagi muncul di inventaris aktif namun **tetap dapat ditelusuri** (BR-008); berita acara tersimpan permanen.
 
 **Acceptance Criteria**
 - [ ] Aset yang dihapuskan tidak pernah hilang dari basis data; hanya ditandai dan dikecualikan dari katalog aktif.
-- [ ] Kode barang aset yang dihapuskan **tidak** dapat digunakan ulang oleh aset baru.
+- [ ] Kode aset yang dihapuskan **tidak** dapat digunakan ulang oleh aset baru.
 - [ ] Berita acara memuat: identitas aset, alasan, nilai perolehan, penyetuju, pelaksana, saksi, dan tanggal.
 - [ ] Seluruh langkah tercatat di activity log dengan aksi `ASSET_DISPOSAL_*`.
 - [ ] Aset yang dihapuskan tetap muncul pada laporan historis dan riwayat transaksi terkait.
@@ -99,7 +99,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 
 **Main Flow**
 1. Pengguna membuka menu Penghapusan Aset → tab Arsip.
-2. Sistem menampilkan daftar aset terhapus: kode barang, nama, alasan, tanggal, nilai perolehan, penyetuju, dan tautan berita acara.
+2. Sistem menampilkan daftar aset terhapus: kode aset, nama, alasan, tanggal, nilai perolehan, penyetuju, dan tautan berita acara.
 3. Pengguna memfilter berdasarkan periode, alasan, kategori, dan lokasi terakhir.
 4. Pengguna mengekspor rekapitulasi ke XLSX/PDF.
 
@@ -119,9 +119,9 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | BR-065b | Aset yang sedang dipinjam, direservasi, atau memiliki slot pemesanan aktif tidak dapat diusulkan untuk dihapus. |
 | BR-065c | Aset yang diusulkan penghapusannya diblokir dari pemesanan baru selama usulan berjalan. |
 | BR-065d | Penghapusan bersifat penonaktifan permanen, bukan penghapusan fisik record; seluruh riwayat transaksi tetap dapat ditelusuri (BR-008). |
-| BR-065e | Kode barang dan UUID aset yang telah dihapuskan tidak pernah digunakan ulang oleh aset lain. |
+| BR-065e | Kode aset dan UUID aset yang telah dihapuskan tidak pernah digunakan ulang oleh aset lain. |
 | BR-065f | Setiap penghapusan yang dieksekusi wajib menghasilkan berita acara PDF yang tersimpan permanen. |
-| BR-065g | Aset yang dihapuskan karena `Hilang` dan kemudian ditemukan kembali dapat dipulihkan oleh Administrator dengan alasan wajib, memakai kode barang dan UUID yang sama. |
+| BR-065g | Aset yang dihapuskan karena `Hilang` dan kemudian ditemukan kembali dapat dipulihkan oleh Administrator dengan alasan wajib, memakai kode aset dan UUID yang sama. |
 
 **Aturan bersama yang juga berlaku** (dimiliki modul lain, dirujuk melalui ID — tidak disalin ke sini):
 

@@ -6,7 +6,7 @@
 
 | § | Bagian | Isi |
 |---|---|---|
-| [6](#6-page-inventory) | Page Inventory | 79 halaman web (`P-01`…`P-79`) + 21 layar mobile (`MS-01`…`MS-21`), lengkap dengan entry point & exit point |
+| [6](#6-page-inventory) | Page Inventory | 87 halaman web (`P-01`…`P-87`) + 23 layar mobile (`MS-01`…`MS-23`), lengkap dengan entry point & exit point |
 | [7](#7-page-specification) | Page Specification | Empat arketipe layout, pola aksi destruktif, pola lima keadaan global, pola pencarian/filter, pola drawer, spesifikasi halaman kunci |
 | [8](#8-dashboard-specification) | Dashboard Specification | Zonasi, sasaran drill-down per kartu untuk enam varian dashboard, keadaan kosong |
 | [10](#10-responsive-ux) | Responsive UX | Empat titik henti, perilaku per komponen, tata letak tablet |
@@ -35,7 +35,7 @@ Penomoran bagian dipertahankan dari UX-SPEC v1.0 agar seluruh rujukan silang tet
 | **Entry point** | Dari mana pengguna sampai. Setiap halaman memiliki **minimal satu** |
 | **Exit point** | Ke mana pengguna melanjutkan. Setiap halaman memiliki **minimal satu** — tanpa pengecualian (`UX-05`) |
 
-Total: **79 halaman web** · **21 layar mobile**.
+Total: **87 halaman web** · **23 layar mobile**.
 
 ## 6.2 Halaman publik & gerbang sesi (M-01, M-05)
 
@@ -74,7 +74,7 @@ Total: **79 halaman web** · **21 layar mobile**.
 | Pengadaan, penghapusan, analitik, activity log, pengaturan | ✅ | — | `UX-01` administratif |
 | Chatbot | ✅ | ✅ | `FR-19.1` |
 
-**Konsekuensi:** aplikasi mobile tidak memiliki entri untuk 9 dari 21 modul. Itu **disengaja** — `SDD-MOB` §4.1 menyatakannya secara eksplisit. Pengguna mobile yang membutuhkan alur administratif diarahkan ke web responsif melalui tautan pada layar terkait, bukan dibiarkan buntu.
+**Konsekuensi:** aplikasi mobile tidak memiliki entri untuk 9 dari 22 modul. Itu **disengaja** — `SDD-MOB` §4.1 menyatakannya secara eksplisit. Pengguna mobile yang membutuhkan alur administratif diarahkan ke web responsif melalui tautan pada layar terkait, bukan dibiarkan buntu.
 
 ## 6.4 Beranda (M-15, M-17, M-19)
 
@@ -86,7 +86,7 @@ Total: **79 halaman web** · **21 layar mobile**.
 
 > Panel chatbot sendiri **bukan halaman**: ia overlay global yang dapat dibuka dari layar mana pun (`FR-19.1` langkah 1). Ia menutup diri saat pengguna mengikuti tautan aksi pada jawaban.
 
-## 6.5 Aset & Lokasi (M-03, M-04, M-05, M-06)
+## 6.5 Aset & Bahan (M-03, M-04, M-05, M-06, M-22)
 
 | ID | Halaman | Route | Tujuan | Permission | Entry point | Exit point |
 |---|---|---|---|---|---|---|
@@ -103,13 +103,18 @@ Total: **79 halaman web** · **21 layar mobile**.
 | P-25 | Scan QR (web) | `/scan` | Memindai lewat kamera peramban + input kode manual (`FR-05.2`, `NFR-C-05`) | `asset.view` | Sidebar | Detail Aset · aksi kontekstual sesuai role & status · input manual bila izin kamera ditolak |
 | P-26 | Dokumen Aset | `/dokumen-aset` | Daftar lintas-aset: faktur, garansi, sertifikat, manual, berita acara (`FR-06.1`) | `asset_document.view` | Sidebar · drill-down kartu "Garansi Akan Berakhir" (19.3) | Detail Aset pemilik dokumen · unduh berkas (URL bertanda tangan 15 menit) |
 
+| P-80 | Bahan | `/bahan` | Daftar bahan + saldo total + penanda stok menipis (`FR-22.2`) | `material.view` | Sidebar · drill-down kartu "Stok Bahan Menipis" | Detail Bahan · Tambah Bahan |
+| P-81 | Tambah / Ubah Bahan | `/bahan/baru` · `/bahan/{id}/ubah` | Master jenis bahan: kategori, satuan, stok minimum (`FR-22.1`) | `material.manage` | Tombol pada P-80 | Detail Bahan (simpan atau batal) |
+| P-82 | Detail Bahan | `/bahan/{id}` | Saldo per lokasi + kartu stok seluruh transaksi (`FR-22.2`) | `material.view` | Baris P-80 · scan QR bahan · notifikasi `NT-49` | Penyesuaian · Penerimaan · P-80 |
+| P-83 | Kategori Bahan | `/kategori-bahan` | CRUD kategori bahan, terpisah dari kategori aset (`FR-22.1 A1`) | `material.manage` | Sidebar · tautan "Kategori belum ada" pada P-81 | P-80 |
+
 ## 6.6 Pemanfaatan (M-07, M-08, M-09, M-10)
 
 | ID | Halaman | Route | Tujuan | Permission | Entry point | Exit point |
 |---|---|---|---|---|---|---|
 | P-27 | Kalender Ruangan | `/kalender-ruangan` | Ketersediaan seluruh ruangan: harian, mingguan, bulanan (`FR-07.1`, `CAL-UI-01`) | `reservation.view` | Sidebar · dashboard "Ketersediaan Ruangan Hari Ini" · chatbot | Wizard Reservasi (klik slot kosong) · Detail Reservasi (klik slot terisi, bila berhak) · Detail Ruangan |
-| P-28 | Katalog Barang | `/katalog-barang` | Barang yang dapat dipinjam + jumlah tersedia pada rentang tanggal (`FR-08.1`) | `reservation.view` | Sidebar · dashboard Aksi Cepat · chatbot | Wizard Reservasi · Detail Aset · saran tanggal bebas terdekat bila 0 (`FR-08.1 A2`) |
-| P-29 | Wizard Pengajuan Reservasi | `/reservasi/baru` | Tiga langkah: pilih slot → detail → tinjau & ajukan (`FR-07.2`, `FR-08.2`) | `reservation.create` | Kalender Ruangan · Katalog Barang · Aksi Cepat dashboard | Detail Reservasi dengan nomor pengajuan · batal kembali ke asal · saran slot alternatif bila `409` |
+| P-28 | Katalog Aset | `/katalog-aset` | Aset yang dapat dipinjam + jumlah tersedia pada rentang tanggal (`FR-08.1`) | `reservation.view` | Sidebar · dashboard Aksi Cepat · chatbot | Wizard Reservasi · Detail Aset · saran tanggal bebas terdekat bila 0 (`FR-08.1 A2`) |
+| P-29 | Wizard Pengajuan Reservasi | `/reservasi/baru` | Tiga langkah: pilih slot → detail → tinjau & ajukan (`FR-07.2`, `FR-08.2`) | `reservation.create` | Kalender Ruangan · Katalog Aset · Aksi Cepat dashboard | Detail Reservasi dengan nomor pengajuan · batal kembali ke asal · saran slot alternatif bila `409` |
 | P-30 | Daftar Reservasi | `/reservasi` | Seluruh pengajuan reservasi, tersaring scope role (`FR-07.3`) | `reservation.view` | Sidebar · drill-down kartu "Pengajuan Saya" | Detail Reservasi · Wizard Pengajuan · Ekspor |
 | P-31 | Detail Reservasi | `/reservasi/{id}` | Objek, jadwal, tanggal turunan, linimasa approval (`FR-10.3`) | `reservation.view` | Daftar Reservasi · notifikasi `NT-01`…`NT-09`, `NT-46` · kalender · chatbot | Batalkan (drawer beralasan) · Ajukan Ulang bila `Perlu Revisi` · Detail Peminjaman bila sudah diserahkan · Riwayat Perubahan |
 | P-32 | Daftar Peminjaman | `/peminjaman` | Empat tab: Aktif · Akan Jatuh Tempo · Terlambat · Selesai (`FR-09.3`) | `loan.view` | Sidebar · drill-down kartu "Peminjaman Terlambat" & "Pengembalian Jatuh Tempo" | Detail Peminjaman · Antrean Serah Terima · Ekspor daftar keterlambatan |
@@ -119,6 +124,11 @@ Total: **79 halaman web** · **21 layar mobile**.
 | P-36 | Detail Kewajiban | `/denda/{id}` | Rincian perhitungan: hari terlambat × tarif, penerapan cap, dan `jumlah_dibebaskan` bila ada (`BR-028`, `BR-028b`, `BR-028e`) | `fine.view` | Daftar Denda · Detail Peminjaman | Tandai Lunas (drawer) · Bebaskan (drawer beralasan — jenis `Keterlambatan` bagi `fine.waive`, jenis `Ganti Rugi` bagi `fine.waive_compensation` dengan isian nilai yang dibebaskan) · Detail Peminjaman asal |
 | P-37 | Persetujuan Saya | `/persetujuan` | Kotak masuk lintas jenis pengajuan, terurut waktu & urgensi (`FR-10.2`) | `approval.decide` | Sidebar · notifikasi `NT-01`, `NT-05`, `NT-07` · kartu dashboard | Detail Keputusan · Delegasikan (drawer) |
 | P-38 | Detail Keputusan | `/persetujuan/{id}` | Konteks lengkap + riwayat pemohon + ketersediaan objek, lalu keputusan (`FR-10.2` langkah 3) | `approval.decide` | Persetujuan Saya · deep link notifikasi | Setujui · Setujui Sebagian *(pengadaan & penghapusan saja)* · Tolak · Perlu Revisi — seluruhnya kembali ke Persetujuan Saya · tautan ke detail objek asal |
+
+| P-84 | Katalog Bahan | `/katalog-bahan` | Bahan aktif + saldo tersedia per lokasi (`FR-22.4` langkah 1) | `material.view` | Sidebar · dashboard | Ajukan Permintaan Bahan |
+| P-85 | Ajukan Permintaan Bahan | `/permintaan-bahan/baru` | Pilih bahan, jumlah, keperluan; ambang approval dievaluasi saat kirim (`FR-22.4`, `BR-086`) | `material.request` | Tombol pada P-84 | Detail Permintaan Bahan |
+| P-86 | Daftar Permintaan Bahan | `/permintaan-bahan` | Permintaan tersaring scope role; tab menurut status (`FR-22.4`) | `material.view` | Sidebar · notifikasi `NT-50` | Detail Permintaan Bahan |
+| P-87 | Detail Permintaan Bahan | `/permintaan-bahan/{id}` | Baris permintaan, linimasa approval, aksi penyerahan (`FR-22.5`) | `material.view` | P-86 · notifikasi `NT-50`/`NT-51` | P-86 · Penyerahan |
 
 ## 6.7 Perawatan (M-11, M-12)
 
@@ -206,6 +216,8 @@ Total: **79 halaman web** · **21 layar mobile**.
 | MS-19 | Scan Opname | Pemindaian beruntun + penetapan kondisi aktual (`FR-13.2`, `MOB-PERF-03`) | `audit.execute` | Sesi Opname | Sesi Opname · Temuan Baru · pilih dari daftar target bila QR rusak (`FR-13.2 A4`) |
 | MS-20 | Persetujuan Saya | Kotak masuk approver di ponsel (`FR-10.2 AC`) | `approval.decide` | Tab Tugas · push `NT-01`, `NT-05`, `NT-07` | Detail Keputusan · Setujui · Tolak · Perlu Revisi |
 | MS-21 | Chatbot | Percakapan streaming + tautan aksi (`FR-19.1`) | `chat.use` | Aksi Cepat · Beranda | Tautan aksi ke layar terkait · riwayat sesi · pesan gangguan bila `503` (`FR-19.1 A4`) |
+| MS-22 | Sesi Opname Bahan | Progres per lokasi penyimpanan + daftar bahan target (`FR-13.4`, `MOB-PERF-06`) | `audit.execute` | Tab Tugas · notifikasi `NT-30` | Input Hitungan Fisik · Sesi Opname |
+| MS-23 | Input Hitungan Fisik | Mencatat jumlah fisik per bahan; QR bahan melompat ke barisnya (`FR-13.4`, `BR-090`) | `audit.execute` | MS-22 · Pemindai QR | MS-22 |
 
 ---
 
@@ -215,7 +227,7 @@ Spesifikasi disusun dua lapis: **pola** (§7.1–§7.5) yang berlaku bagi banyak
 
 ## 7.1 Empat arketipe layout
 
-Seluruh 79 halaman jatuh ke salah satu dari empat arketipe.
+Seluruh 87 halaman jatuh ke salah satu dari empat arketipe.
 
 ### A. Halaman Daftar
 
@@ -227,7 +239,7 @@ JUDUL                                          [Aksi utama]  [... aksi lain]
 | [ Cari ]  [ Kategori v ] [ Lokasi v ] [ Kondisi v ] [ Status v ]     |
 | Filter aktif:  (Kategori: Komputer x)  (Kondisi: Baik x)  Hapus semua |
 +----------------------------------------------------------------------+
-| [ ] | Kode Barang ^ | Nama | Kategori | Lokasi | Kondisi | Status |   |
+| [ ] | Kode Aset ^ | Nama | Kategori | Lokasi | Kondisi | Status |     |
 | [x] | LAB-KOM-0001  | ...  | ...      | ...    | Baik    | Tersedia |  |
 | ...                                                                   |
 +----------------------------------------------------------------------+
@@ -261,7 +273,7 @@ Kategori Komputer · Lab Komputer 1 · Diperoleh 2024
 
 | Aspek | Ketentuan | Rujukan |
 |---|---|---|
-| Kepala halaman | Identitas yang dikenali pengguna (kode barang / nomor dokumen) + lencana status + aksi utama | `UX-03` |
+| Kepala halaman | Identitas yang dikenali pengguna (kode aset / nomor dokumen) + lencana status + aksi utama | `UX-03` |
 | Tab | Tab tercermin di URL sebagai segmen (`/aset/3021/servis`) agar dapat ditautkan | `UXP-01` |
 | Aksi utama | Maksimum dua tombol terlihat; sisanya di menu "..." | — |
 | Aksi singkat | Membuka drawer di atas halaman; route menerima parameter `?aksi=` sehingga dapat ditautkan | **UXD-02** |
@@ -284,7 +296,7 @@ Kategori Komputer · Lab Komputer 1 · Diperoleh 2024
 
 ### D. Halaman Papan & Kalender
 
-Hanya dua halaman: Kalender Ruangan (P-27) dan Katalog Barang (P-28). Spesifikasi penuh pada §7.6.1.
+Hanya dua halaman: Kalender Ruangan (P-27) dan Katalog Aset (P-28). Spesifikasi penuh pada §7.6.1.
 
 ## 7.2 Pola aksi destruktif
 
@@ -298,7 +310,7 @@ Hanya dua halaman: Kalender Ruangan (P-27) dan Katalog Barang (P-28). Spesifikas
 | Nonaktifkan aset | P-18 | ✅ | `BR-008` |
 | Bebaskan denda keterlambatan | P-36 | ✅ | `BR-031` |
 | Bebaskan ganti rugi (penuh/sebagian) | P-36 | ✅ | `BR-028e` |
-| Tandai barang hilang | P-34 | ✅ | `FR-09.2 A2` · `BR-012` |
+| Tandai aset hilang | P-34 | ✅ | `FR-09.2 A2` · `BR-012` |
 | Tolak tiket kerusakan | P-41 | ✅ | `FR-11.2 AC` |
 | Kembalikan work order ke teknisi | P-44 | ✅ | `FR-12.4 A1` |
 | Tandai work order tertunda / tidak dapat diperbaiki | P-44 · MS-17 | ✅ | `FR-12.3 A1`, `A2` |
@@ -367,19 +379,22 @@ Ditetapkan `ui-foundation.md §31.5`. Tabel berikut menjabarkannya menjadi keten
 
 | Halaman | Cari | Filter | Urutkan | Rujukan |
 |---|---|---|---|---|
-| P-15 Inventaris Aset | Kode barang, nama, merek, nomor seri | Kategori, lokasi, kondisi, status, tahun perolehan, kelayakan pinjam | Kode barang, nama, tahun, kondisi | `FR-04.2` |
-| P-23 Detail Ruangan | Nama aset | Kategori, kondisi, status | Kode barang | `FR-03.2` |
-| P-26 Dokumen Aset | Nama berkas, kode barang | Jenis dokumen, masa garansi, kategori | Tanggal unggah, tanggal berakhir garansi | `FR-06.1` |
+| P-15 Inventaris Aset | Kode aset, nama, merek, nomor seri | Kategori, lokasi, kondisi, status, tahun perolehan, kelayakan pinjam | Kode aset, nama, tahun, kondisi | `FR-04.2` |
+| P-23 Detail Ruangan | Nama aset | Kategori, kondisi, status | Kode aset | `FR-03.2` |
+| P-26 Dokumen Aset | Nama berkas, kode aset | Jenis dokumen, masa garansi, kategori | Tanggal unggah, tanggal berakhir garansi | `FR-06.1` |
 | P-27 Kalender Ruangan | Nama ruangan | Gedung, jenis ruangan, kapasitas minimum | — (dimensi waktu) | `FR-07.1` |
-| P-28 Katalog Barang | Nama, kategori | Kategori, rentang tanggal, hanya yang tersedia | Nama, jumlah tersedia | `FR-08.1` |
+| P-80 Bahan | Nama bahan | Kategori bahan, lokasi penyimpanan, status stok (menipis/aman), status bahan | Nama, saldo total | `FR-22.2` |
+| P-84 Katalog Bahan | Nama, kategori | Kategori bahan, lokasi penyimpanan, hanya yang bersaldo | Nama, saldo tersedia | `FR-22.4` |
+| P-86 Daftar Permintaan Bahan | Nomor, pemohon | Tab status, pemohon, rentang tanggal | Tanggal pengajuan | `FR-22.4` |
+| P-28 Katalog Aset | Nama, kategori | Kategori, rentang tanggal, hanya yang tersedia | Nama, jumlah tersedia | `FR-08.1` |
 | P-30 Daftar Reservasi | Nomor pengajuan, nama kegiatan | Jenis, status, pemohon, rentang tanggal | Tanggal pengajuan, waktu mulai | `FR-07.3` |
-| P-32 Daftar Peminjaman | Nomor, nama peminjam, kode barang | Tab status, peminjam, kategori, rentang tanggal | Jatuh tempo, lama keterlambatan | `FR-09.3` |
+| P-32 Daftar Peminjaman | Nomor, nama peminjam, kode aset | Tab status, peminjam, kategori, rentang tanggal | Jatuh tempo, lama keterlambatan | `FR-09.3` |
 | P-35 Denda & Kewajiban | Nomor peminjaman, nama | Jenis (`Keterlambatan`/`Ganti Rugi`), status, periode | Jumlah, tanggal terbit | `FR-09.4` |
 | P-37 Persetujuan Saya | Nomor pengajuan, pemohon | Jenis pengajuan, urgensi, sisa SLA | Waktu pengajuan, sisa SLA | `FR-10.2` |
-| P-39 Laporan Kerusakan | Nomor tiket, kode barang | Status, urgensi, lokasi, kategori, pelapor, rentang tanggal | Waktu lapor, urgensi | `FR-11.3` |
-| P-42 Work Order | Nomor WO, kode barang | Jenis, status, prioritas, teknisi, rentang tanggal | Target selesai, prioritas | `FR-12.1` |
+| P-39 Laporan Kerusakan | Nomor tiket, kode aset | Status, urgensi, lokasi, kategori, pelapor, rentang tanggal | Waktu lapor, urgensi | `FR-11.3` |
+| P-42 Work Order | Nomor WO, kode aset | Jenis, status, prioritas, teknisi, rentang tanggal | Target selesai, prioritas | `FR-12.1` |
 | P-51 Pengadaan | Nomor, judul | Status, prioritas, tahun anggaran, unit kerja | Total estimasi, tanggal | `FR-14.1` |
-| P-55 Penghapusan | Nomor, kode barang | Tab, alasan, periode, kategori, lokasi terakhir | Tanggal, nilai perolehan | `FR-21.3` |
+| P-55 Penghapusan | Nomor, kode aset | Tab, alasan, periode, kategori, lokasi terakhir | Tanggal, nilai perolehan | `FR-21.3` |
 | P-60 Pengguna | Nama, email, NIP/NIS | Role, status, unit kerja | Nama, terakhir login | `FR-02.1` |
 | P-73 Activity Log | Nama pelaku, entitas | Rentang tanggal, pengguna, role, modul, jenis aksi, entitas | Waktu | `FR-18.2` |
 
@@ -430,8 +445,8 @@ Tiga langkah (**UXD-04**). Langkah 3 wajib ada — ia satu-satunya tempat konsek
 
 | Langkah | Konten | Validasi saat lanjut | Rujukan |
 |---|---|---|---|
-| **1 — Pilih Objek & Waktu** | Ruangan dari kalender **atau** barang dari katalog; tanggal & jam mulai–selesai | Dalam jam operasional (`BR-018`) · minimal H-1 kecuali `reservation.urgent` (`BR-020`) · dalam horizon pemesanan (`BR-023c`) | `FR-07.2` · `FR-08.2` |
-| **2 — Detail Kegiatan** | Nama & jenis kegiatan, jumlah peserta, keperluan, keterangan · **Barang pendukung** (opsional) · **Pola pengulangan** (opsional) | Peserta ≤ kapasitas ruangan (`BR-019`) · durasi ≤ batas role (`BR-021`) · kuota pengajuan tertunda (`BR-023a`) | `FR-07.2` langkah 2–3 |
+| **1 — Pilih Objek & Waktu** | Ruangan dari kalender **atau** aset dari katalog; tanggal & jam mulai–selesai | Dalam jam operasional (`BR-018`) · minimal H-1 kecuali `reservation.urgent` (`BR-020`) · dalam horizon pemesanan (`BR-023c`) | `FR-07.2` · `FR-08.2` |
+| **2 — Detail Kegiatan** | Nama & jenis kegiatan, jumlah peserta, keperluan, keterangan · **Aset pendukung** (opsional) · **Pola pengulangan** (opsional) | Peserta ≤ kapasitas ruangan (`BR-019`) · durasi ≤ batas role (`BR-021`) · kuota pengajuan tertunda (`BR-023a`) | `FR-07.2` langkah 2–3 |
 | **3 — Tinjau & Ajukan** | Ringkasan seluruh objek · daftar tanggal turunan beserta tanggal bentrok yang akan dilewati · **peringatan eksplisit** bahwa pengajuan bersifat *all-or-nothing* · pratinjau jalur persetujuan yang akan berlaku | Pemeriksaan ketersediaan terakhir sebelum kirim | `BR-024a` · `BR-024b` · `RE-07` |
 
 | Aspek | Ketentuan |
@@ -497,7 +512,7 @@ Tiga langkah (**UXD-04**). Langkah 3 wajib ada — ia satu-satunya tempat konsek
 
 | Aspek | Serah Terima (`FR-09.1`) | Pengembalian (`FR-09.2`) |
 |---|---|---|
-| **Langkah 1** | Pindai QR unit — atau masukkan kode barang manual | Pindai QR unit yang dikembalikan |
+| **Langkah 1** | Pindai QR unit — atau masukkan kode aset manual | Pindai QR unit yang dikembalikan |
 | **Verifikasi** | Sistem memeriksa kesamaan unit dengan alokasi reservasi. Bila berbeda: peringatan + drawer **Substitusi Unit** beralasan (`FR-09.1 A1`) | Sistem menampilkan peminjam, tanggal pinjam, jatuh tempo, **kondisi awal + foto serah terima** sebagai pembanding |
 | **Konten** | Kondisi awal + minimal **1 foto** (wajib, `BR-027`) | Kondisi kembali: Baik / Rusak Ringan / Rusak Berat / Tidak Lengkap + minimal **1 foto** |
 | **Bukti** | Kanvas tanda tangan minimum 300×150 px **atau** konfirmasi dari akun peminjam sendiri (31.6). Bila peminjam diwakilkan: nama penerima kuasa dicatat, tanggung jawab tetap pada pemohon (`BR-033`) | — |
@@ -518,7 +533,7 @@ Tiga langkah (**UXD-04**). Langkah 3 wajib ada — ia satu-satunya tempat konsek
 | **Mode pemindai** | Beruntun: kamera tetap aktif, hasil ditambahkan ke daftar tanpa menutup pemindai | `MOB-MED-07` |
 | **Lima hasil pencocokan** | Ditemukan · Salah Lokasi · Perbedaan Kondisi · Tidak Ditemukan · Temuan Baru — masing-masing berlencana teks + ikon | `FR-13.2` · `UX-03` |
 | **Pemindaian ulang** | Menampilkan status yang sudah tercatat, tidak membuat entri kedua | `FR-13.2 AC` |
-| **QR rusak** | Input kode barang manual **atau** pilih dari daftar target lokasi | `FR-13.2 A4` |
+| **QR rusak** | Input kode aset manual **atau** pilih dari daftar target lokasi | `FR-13.2 A4` |
 | **Aset sedang dipinjam** | Ditandai khusus dan **tidak** dihitung sebagai selisih | `BR-056` |
 | **Temuan baru** | Formulir terpisah: deskripsi, kategori perkiraan, kondisi, lokasi, foto | `FR-13.2 A3` |
 | **Progres** | Terlihat real-time per lokasi dan keseluruhan | `FR-13.1 AC` |
@@ -781,7 +796,7 @@ Target: **WCAG 2.1 level AA** (`NFR-AC-01`). Bagian ini menjabarkan `NFR-AC-01`�
 | Drawer & dialog | Fokus berpindah masuk saat terbuka, terkunci di dalam, kembali ke pemicu saat tertutup |
 | Tabel | Kepala kolom dapat difokus untuk mengurutkan; baris dibuka dengan Enter |
 | Kalender | Panah berpindah slot, Enter memilih, Shift+Panah memperluas pilihan, Esc membatalkan (`CAL-UI-08`) |
-| Pemindai QR | Tombol "Masukkan kode barang manual" berada dalam urutan fokus — bukan hanya dapat dijangkau lewat sentuhan (`FR-05.2 A1`) |
+| Pemindai QR | Tombol "Masukkan kode aset manual" berada dalam urutan fokus — bukan hanya dapat dijangkau lewat sentuhan (`FR-05.2 A1`) |
 | Pintasan | Tidak ada pintasan huruf tunggal tanpa modifier, agar tidak bentrok dengan pembaca layar |
 
 ## 11.3 Pembaca layar

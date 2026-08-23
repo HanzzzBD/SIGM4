@@ -63,11 +63,11 @@ for ph, mods in phase_modules.items():
             dupes.append(f"M-{m} muncul di lebih dari satu phase")
         all_mods.add(m)
 
-expected = {f"{i:02d}" for i in range(1, 22)}
+expected = {f"{i:02d}" for i in range(1, 23)}
 missing = sorted(expected - all_mods)
 extra = sorted(all_mods - expected)
-check("21 modul PRD tercakup tepat satu kali", not missing and not extra and not dupes,
-      f"hilang={missing} asing={extra} ganda={dupes}" if (missing or extra or dupes) else "21/21")
+check("22 modul PRD tercakup tepat satu kali", not missing and not extra and not dupes,
+      f"hilang={missing} asing={extra} ganda={dupes}" if (missing or extra or dupes) else "22/22")
 
 # --------------------------------------------------- 3. cakupan berkas SDD
 sdd_files = sorted(f.name for f in SDD.glob("*.md")
@@ -107,7 +107,7 @@ for p in phase_files:
     ids = sorted(set(re.findall(r"^\| `(PR-\d{2}-\d{2})`", texts[p], re.M)))
     per_phase[p.stem] = ids
 total = sum(len(v) for v in per_phase.values())
-check("Total PR = 152", total == 152, f"{total} ditemukan")
+check("Total PR = 162", total == 162, f"{total} ditemukan")
 
 gaps = []
 for ph, ids in per_phase.items():

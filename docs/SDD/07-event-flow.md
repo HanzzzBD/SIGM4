@@ -10,12 +10,14 @@ Banyak requirement PRD berbentuk "ketika X terjadi, maka Y juga terjadi" — dan
 
 | Pemicu | Efek lintas modul | ID |
 |---|---|---|
-| Pengembalian barang rusak | Tiket kerusakan terbit otomatis | `BR-032` |
+| Pengembalian aset rusak | Tiket kerusakan terbit otomatis | `BR-032` |
 | Aset masuk perbaikan | Reservasi mendatang dibatalkan + pemohon dinotifikasi | `BR-048`, `NT-27` |
 | Work order ditutup | Tiket kerusakan asalnya ikut tertutup | `BR-050` |
 | Penerimaan pengadaan | Aset terbentuk + dokumen tertaut | `BR-064`, `BR-065` |
 | Opname disetujui | Penyesuaian lokasi/kondisi/status aset diterapkan | `BR-057` |
 | Approval final | Slot naik ke `Confirmed`, pemohon dinotifikasi | `BR-043`, `NT-02` |
+| Penyerahan bahan | Saldo berkurang; bila menembus stok minimum, peringatan terbit | `BR-083`, `BR-085`, `NT-49` |
+| Opname bahan disetujui | Transaksi `OPNAME` menyesuaikan saldo | `BR-094` |
 | Setiap operasi tulis | Entri activity log | `BR-071`, `AL-01` |
 
 Berkas ini menetapkan **bagaimana** rantai sebab-akibat itu dijalankan tanpa membuat modul saling bergantung, dan tanpa kehilangan efek bila proses mati di tengah jalan.
@@ -131,12 +133,15 @@ Dispatcher memakai `SELECT ... FOR UPDATE SKIP LOCKED` sehingga aman meski suatu
 | `ProcurementDecided` | M-14 | Notifikasi `NT-35` |
 | `AssetsGenerated` | M-14 | Notifikasi `NT-36` |
 | `DisposalExecuted` | M-21 | Notifikasi `NT-45` |
+| `MaterialIssued` | M-22 | Notifikasi `NT-51` |
+| `MaterialStockLow` | M-22 | Notifikasi `NT-49` |
+| `MaterialRequestReady` | M-22 | Notifikasi `NT-50` |
 | `FileUploaded` | M-06 | Pemindaian AV, pembuatan thumbnail |
 | `ExportRequested` | M-16 | Pembuatan berkas, notifikasi `NT-42` |
 
 Kolom "konsumen asinkron" sengaja didominasi notifikasi — karena efek yang bukan notifikasi umumnya sinkron (SDD-EVT-02).
 
-### 4.4 Contoh rantai: pengembalian barang rusak
+### 4.4 Contoh rantai: pengembalian aset rusak
 
 ```
 POST /loans/{id}/checkin
@@ -155,6 +160,35 @@ COMMIT
 ```
 
 Empat efek berlabel `[SINKRON]` gagal bersama-sama bila salah satunya gagal — itulah yang diinginkan. Notifikasi tidak.
+
+### 4.4a Contoh rantai: penyerahan bahan yang menembus stok minimum
+
+Rantai ini dipilih sebagai contoh karena memuat keduanya sekaligus — efek yang **wajib atomik** dan efek yang **boleh tertunda** — pada satu operasi tulis yang sama.
+
+```text
+POST /material-requests/{id}/issue
+│
+├─ BEGIN ─────────────────────────────────────────────── sinkron, satu transaksi
+│   1. SELECT … FOR UPDATE material_balances            (SDD-DB-14)
+│   2. periksa kecukupan saldo                          (BR-083)  -> tolak bila kurang
+│   3. periksa jumlah <= jumlah_disetujui                (BR-089)  -> tolak bila lebih
+│   4. UPDATE material_balances                          (saldo baru)
+│   5. INSERT material_transactions (saldo_sesudah)      (BR-081, BR-092)
+│   6. UPDATE material_requests -> Diserahkan
+│   7. INSERT activity_logs MATERIAL_ISSUED              (BR-071, AL-01)
+│   8. INSERT event_outbox: MaterialIssued
+│   9. evaluasi stok minimum atas SUM(saldo) bahan       (BR-085)
+│      └─ bila menembus ambang: INSERT event_outbox: MaterialStockLow
+└─ COMMIT ────────────────────────────────────────────────────────────────────
+    │
+    └─ worker (setelah commit)                            SDD-EVT-03, SDD-EVT-04
+        ├─ MaterialIssued   -> NT-51 ke pemohon
+        └─ MaterialStockLow -> NT-49 ke Petugas Sarpras + Administrator
+```
+
+**Yang membuat urutan ini mengikat.** Langkah 9 berada **di dalam** transaksi meskipun akibatnya hanya sebuah notifikasi: bila evaluasi stok minimum dilakukan setelah `COMMIT`, ia membaca saldo yang mungkin sudah diubah transaksi lain, dan peringatan bisa terbit dua kali atau tidak terbit sama sekali. Yang ditunda ke worker hanyalah **pengiriman**-nya, bukan **keputusan**-nya — persis pembagian yang `SDD-EVT-03` tetapkan.
+
+Sebaliknya, langkah 4 dan 5 tidak boleh dipisah ke worker dengan alasan apa pun: saldo dan ledger yang tidak commit bersama berarti `material_balances` menyimpang dari kebenarannya (`SDD-DB-13`).
 
 ### 4.5 Idempotensi handler
 
@@ -191,7 +225,8 @@ Empat efek berlabel `[SINKRON]` gagal bersama-sama bila salah satunya gagal — 
 ## 7. Requirement Terkait
 
 `BR-032` `BR-043` `BR-047` `BR-048` `BR-050` `BR-057` `BR-064` `BR-065` `BR-071` ·
-`AL-01` `AL-06` `AL-08` · `NT-01` … `NT-48` (penerbitan) · `NFR-A-06` `NFR-P-02` `NFR-P-12` `NFR-R-05` `NFR-R-08` `NFR-SC-05` ·
+`BR-081` `BR-083` `BR-085` `BR-089` `BR-092` `BR-094` ·
+`AL-01` `AL-06` `AL-08` · `NT-01` … `NT-51` (penerbitan) · `NFR-A-06` `NFR-P-02` `NFR-P-12` `NFR-R-05` `NFR-R-08` `NFR-SC-05` ·
 `NTF-04` · `JOB-03` `JOB-06` · `OBS-05` `OBS-06`
 
 ---

@@ -31,7 +31,7 @@ Ini phase terbesar dalam jumlah modul (6) namun keenamnya **saling independen** 
 
 **Tidak termasuk**
 
-- Reservasi **barang** (M-08) → **Phase 04** — berbagi tabel `booking_slots` dan aturan `BR-017`…`BR-030`; dipisah agar konflik ruangan tuntas dulu
+- Reservasi **aset** (M-08) → **Phase 04** — berbagi tabel `booking_slots` dan aturan `BR-017`…`BR-030`; dipisah agar konflik ruangan tuntas dulu
 - Work order dari laporan kerusakan (`BR-052`) → **Phase 04** bersama M-12
 - Penghapusan aset rusak berat → **Phase 05** bersama M-21
 

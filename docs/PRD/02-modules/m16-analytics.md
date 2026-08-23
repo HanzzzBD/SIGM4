@@ -38,11 +38,12 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 **Main Flow**
 1. Pengguna membuka menu Statistik & Analitik dan memilih jenis laporan:
    - **Kondisi Aset** — komposisi kondisi per kategori dan lokasi, tren kondisi antar-periode
-   - **Pemanfaatan Fasilitas** — tingkat utilisasi ruangan dan barang, jam pemakaian, ruangan paling/paling jarang dipakai
+   - **Pemanfaatan Fasilitas** — tingkat utilisasi ruangan dan aset, jam pemakaian, ruangan paling/paling jarang dipakai
    - **Biaya Pemeliharaan** — biaya per periode, per kategori, per aset; aset dengan biaya tertinggi
    - **Tren Kerusakan** — jumlah laporan per periode, kategori paling sering rusak, waktu rata-rata penyelesaian
-   - **Aktivitas Peminjaman** — jumlah transaksi, tingkat keterlambatan, peminjam teraktif, barang terpopuler
-   - **Kebutuhan Pengadaan** — rekomendasi berbasis aset rusak berat, aset melewati umur teknis, dan barang yang permintaannya sering tidak terpenuhi
+   - **Aktivitas Peminjaman** — jumlah transaksi, tingkat keterlambatan, peminjam teraktif, aset terpopuler
+   - **Konsumsi Bahan** — pemakaian bahan per periode, bahan paling banyak terpakai, unit kerja peminta terbanyak, dan bahan yang sering menyentuh stok minimum
+   - **Kebutuhan Pengadaan** — rekomendasi berbasis aset rusak berat, aset melewati umur teknis, dan aset yang permintaannya sering tidak terpenuhi
    - **Rekapitulasi Aset** — daftar aset per kategori, lokasi, tahun perolehan, dan nilai perolehan
 2. Pengguna menetapkan filter: rentang tanggal, lokasi, kategori, dan role pemohon.
 3. Sistem menampilkan grafik dan tabel hasil.

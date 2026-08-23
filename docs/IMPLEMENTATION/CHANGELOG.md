@@ -6,6 +6,24 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 
 ---
 
+## 2026-08-23 — Domain Bahan masuk lingkup (M-22)
+
+Menyusul perubahan lingkup yang diputuskan di PRD ([`bahan-scope-change.md`](../PRD/01-product/bahan-scope-change.md), Keputusan Kunci #17–#28), domain Bahan masuk rilis berjalan sebagai **M-22 Manajemen Bahan**. Perubahan pada dokumentasi implementasi:
+
+| Berkas | Perubahan |
+|---|---|
+| `ROADMAP.md` | M-22 → Phase 05, milestone `M4`; peta modul dan validasi graf menjadi 22/22 |
+| `phases/phase-05.md` | Modul PRD bertambah M-22; **10 PR baru** `PR-05-15`…`PR-05-24`; dependensi, risiko, rollback, dan gerbang keluar disesuaikan |
+| `DELIVERY-PLAN.md` | Total **21 → 22 modul**, **152 → 162 PR**; `PR-05-17` (ledger saldo) masuk daftar PR bertulang-punggung |
+| `IMPLEMENTATION-STATUS.md` · `README.md` | Hitungan modul dan PR |
+| `phases/phase-06.md` · `phases/phase-07.md` | Gerbang keluar menyebut 22 modul |
+
+**Perubahan di luar folder ini yang menjadi konsekuensinya:** `scripts/validate_impl.py` mengunci `range(1, 22)` dan `total == 152` sebagai nilai harfiah, sehingga skrip itu **wajib** ikut disunting menjadi `range(1, 23)` dan `total == 162`. Tanpa itu, penambahan M-22 ke header phase membuat validasi gagal. `CLAUDE.md` dan `README.md` akar juga memuat hitungan yang sama.
+
+**Catatan urutan.** Penulisan modul, penambahan PR, dan pembaruan hitungan harus terjadi dalam satu langkah. Berkas modul yang ada tanpa PR penampung, atau PR yang ada tanpa pembaruan ambang validator, sama-sama membuat `validate_impl.py` merah.
+
+---
+
 ## 2026-08-06 — Penutupan TBD kelompok C
 
 Delapan TBD kelompok C ("pilihan teknis murni — dapat diputuskan arsitek") ditutup. **Tidak ada requirement, business rule, maupun kriteria penerimaan yang berubah**; seluruhnya pilihan bentuk kode dan perkakas. Keputusannya dicatat pada berkas SDD pemiliknya — proyek ini tidak memakai berkas ADR terpisah ([`templates/ADR-REFERENCE.md`](templates/ADR-REFERENCE.md)).

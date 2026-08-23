@@ -1,13 +1,13 @@
 # 31. UI/UX Foundation
 
-> PRD ini ditujukan antara lain kepada UI/UX Designer, namun sebelumnya tidak menetapkan satupun fondasi desain. Tanpa bab ini, 21 modul akan dibangun dengan gaya yang berbeda-beda dan biaya penyelarasan visual akan menumpuk di akhir proyek.
+> PRD ini ditujukan antara lain kepada UI/UX Designer, namun sebelumnya tidak menetapkan satupun fondasi desain. Tanpa bab ini, 22 modul akan dibangun dengan gaya yang berbeda-beda dan biaya penyelarasan visual akan menumpuk di akhir proyek.
 
 ## 31.1 Prinsip Desain
 
 | Kode | Prinsip | Alasan |
 |---|---|---|
 | UX-01 | **Mobile-first untuk alur lapangan, desktop-first untuk alur administratif** | Teknisi dan petugas opname bekerja dari ponsel; petugas sarpras dan admin bekerja dari meja |
-| UX-02 | **Scan QR sebagai jalan pintas utama**, dengan input kode barang manual selalu tersedia | Literasi digital pengguna beragam; QR bisa rusak (RS-02) |
+| UX-02 | **Scan QR sebagai jalan pintas utama**, dengan input kode aset manual selalu tersedia | Literasi digital pengguna beragam; QR bisa rusak (RS-02) |
 | UX-03 | **Status selalu disertai teks dan ikon**, tidak pernah hanya warna | NFR-AC-06 dan keterbacaan di layar terang saat di lapangan |
 | UX-04 | **Aksi destruktif selalu memerlukan konfirmasi dan alasan** | Sejalan dengan kewajiban audit (BR-025, BR-031) |
 | UX-05 | **Tidak ada jalan buntu**: setiap status kosong, galat, dan penolakan menyertakan langkah berikutnya | Pengguna non-teknis (Persona 3, 6) |
