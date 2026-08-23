@@ -5,7 +5,7 @@
 # Indeks Aksi Activity Log
 
 > Setiap aksi dimiliki modul penerbitnya. Prinsip pencatatan di `../03-architecture/activity-log.md`.
-> Total: **53** baris, dikumpulkan dari 21 berkas modul.
+> Total: **59** baris, dikumpulkan dari 22 berkas modul.
 
 | Aksi | Keterangan | Pemilik |
 |---|---|---|
@@ -40,12 +40,18 @@
 | `LOAN_CHECKIN` | Pengembalian beserta kondisi akhir | [M-09](../02-modules/m09-loans.md) |
 | `LOAN_CHECKOUT` | Serah terima beserta unit dan kondisi awal | [M-09](../02-modules/m09-loans.md) |
 | `LOAN_EXTENDED` | Perpanjangan yang disetujui | [M-09](../02-modules/m09-loans.md) |
-| `LOAN_MARKED_LOST` | Penetapan barang hilang | [M-09](../02-modules/m09-loans.md) |
+| `LOAN_MARKED_LOST` | Penetapan aset hilang | [M-09](../02-modules/m09-loans.md) |
 | `LOAN_UNIT_SUBSTITUTED` | Penggantian unit saat serah terima beserta alasan | [M-09](../02-modules/m09-loans.md) |
 | `LOCATION_CREATED` / `LOCATION_UPDATED` / `LOCATION_DEACTIVATED` | Perubahan struktur lokasi | [M-03](../02-modules/m03-locations.md) |
 | `LOGIN_SUCCESS` / `LOGIN_FAILED` | Termasuk IP dan perangkat | [M-01](../02-modules/m01-auth.md) |
 | `LOGOUT` / `LOGOUT_ALL_DEVICES` | Pencabutan sesi | [M-01](../02-modules/m01-auth.md) |
 | `MAINTENANCE_SCHEDULE_CREATED` / `UPDATED` / `DEACTIVATED` / `SKIPPED` | Jadwal preventif | [M-12](../02-modules/m12-maintenance.md) |
+| `MATERIAL_ADJUSTED` | Penyesuaian saldo beserta alasan wajib | [M-22](../02-modules/m22-materials.md) |
+| `MATERIAL_CATEGORY_CREATED` / `UPDATED` / `DELETED` | Siklus kategori bahan | [M-22](../02-modules/m22-materials.md) |
+| `MATERIAL_CREATED` / `UPDATED` / `DEACTIVATED` | Siklus master bahan | [M-22](../02-modules/m22-materials.md) |
+| `MATERIAL_ISSUED` | Penyerahan bahan beserta penerima | [M-22](../02-modules/m22-materials.md) |
+| `MATERIAL_RECEIVED` | Penerimaan bahan beserta jumlah & lokasi | [M-22](../02-modules/m22-materials.md) |
+| `MATERIAL_REQUEST_SUBMITTED` / `APPROVED` / `REJECTED` / `CANCELLED` | Siklus permintaan bahan | [M-22](../02-modules/m22-materials.md) |
 | `PASSWORD_CHANGED` | Tanpa merekam nilai password | [M-01](../02-modules/m01-auth.md) |
 | `PASSWORD_RESET_REQUESTED` / `PASSWORD_RESET_ISSUED` / `PASSWORD_RESET_REJECTED` | Alur reset administratif | [M-01](../02-modules/m01-auth.md) |
 | `PROCUREMENT_ASSETS_GENERATED` | Pembentukan aset dari penerimaan | [M-14](../02-modules/m14-procurement.md) |

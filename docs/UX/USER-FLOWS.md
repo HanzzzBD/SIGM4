@@ -29,7 +29,7 @@ Penomoran bagian dipertahankan dari UX-SPEC v1.0 agar seluruh rujukan silang tet
 | F-07 | Keputusan persetujuan | `FR-10.2` | Web + Mobile |
 | F-08 | SLA, eskalasi & delegasi | `FR-10.2 A2`, `A3`, `BR-039a` | Web + Mobile |
 | F-09 ⭐ | Reservasi ruangan hingga selesai | `FR-07.1`…`FR-07.4` | Web + Mobile |
-| F-10 ⭐ | Reservasi barang hingga disetujui | `FR-08.1`, `FR-08.2` | Web + Mobile |
+| F-10 ⭐ | Reservasi aset hingga disetujui | `FR-08.1`, `FR-08.2` | Web + Mobile |
 | F-11 | Blokade jadwal tetap ruangan | `FR-07.5` | Web |
 | F-12 ⭐ | Serah terima peminjaman | `FR-09.1` | Mobile + Web |
 | F-13 ⭐ | Pengembalian, denda & kerusakan | `FR-09.2` | Mobile + Web |
@@ -38,6 +38,8 @@ Penomoran bagian dipertahankan dari UX-SPEC v1.0 agar seluruh rujukan silang tet
 | F-16 ⭐ | Kerusakan hingga work order tertutup | `FR-11.1`…`FR-12.4` | Mobile + Web |
 | F-17 ⭐ | Pemeliharaan preventif otomatis | `FR-12.2` | Web |
 | F-18 ⭐ | Stock opname hingga penyesuaian data | `FR-13.1`…`FR-13.3` | Mobile + Web |
+| F-26 ⭐ | Permintaan bahan hingga diserahkan | `FR-22.4`, `FR-22.5` | Web |
+| F-27 | Stock opname bahan hingga saldo tersesuaikan | `FR-13.4` | Mobile + Web |
 | F-19 ⭐ | Pengadaan hingga aset terbentuk | `FR-14.1`…`FR-14.3` | Web |
 | F-20 ⭐ | Penghapusan aset hingga berita acara | `FR-21.1`, `FR-21.2` | Web |
 | F-21 | Laporan analitik & ekspor asinkron | `FR-16.1` | Web |
@@ -160,7 +162,7 @@ flowchart TD
     G -->|Ya| I["Tentukan jumlah unit N"]
     I --> J{Nomor seri unik?}
     J -->|Tidak| K["Tolak dengan pesan spesifik<br/>BR-003"] --> F
-    J -->|Ya| L["Sistem membuat N record<br/>N kode barang + N UUID QR unik · BR-001"]
+    J -->|Ya| L["Sistem membuat N record<br/>N kode aset + N UUID QR unik · BR-001"]
 
     D --> L
     E --> L
@@ -178,7 +180,7 @@ flowchart TD
 | Titik UX | Ketentuan | Rujukan |
 |---|---|---|
 | Jumlah unit | Satu formulir menghasilkan N record terpisah, bukan satu record berjumlah N — antarmuka wajib menyatakannya sebelum simpan | `BR-001` · `FR-04.1 AC` |
-| Kode barang | Dihasilkan sistem mengikuti format terkonfigurasi; **tidak** dapat diketik manual | `BR-002` |
+| Kode aset | Dihasilkan sistem mengikuti format terkonfigurasi; **tidak** dapat diketik manual | `BR-002` |
 | Cetak ulang label | UUID tidak berubah, sehingga label lama tetap sah bila ditemukan kembali — dinyatakan pada dialog cetak ulang | `FR-05.1 A1` |
 | Regenerasi UUID 🔒 | Hanya Administrator; dialog wajib menyatakan bahwa seluruh label lama menjadi tidak berlaku | `FR-05.1 A2` |
 
@@ -241,7 +243,7 @@ flowchart TD
 
 ### F-07 Keputusan persetujuan
 
-Satu alur untuk lima jenis pengajuan: Reservasi Ruangan, Reservasi Barang, Perpanjangan Peminjaman, Pengadaan Barang, Penghapusan Aset (`BR-035`).
+Satu alur untuk enam jenis pengajuan: Reservasi Ruangan, Reservasi Aset, Perpanjangan Peminjaman, Pengadaan Barang, Penghapusan Aset, dan Permintaan Bahan (`BR-035`).
 
 ```mermaid
 flowchart TD
@@ -313,7 +315,7 @@ flowchart TD
     C -->|"Menunggu Persetujuan / Disetujui"| E["Tidak dapat dipilih<br/>Siswa hanya melihat Terpakai · CAL-UI-06"] --> B
     C -->|Kosong| F["P-29 Wizard langkah 1<br/>slot terisi otomatis"]
 
-    F --> G["Langkah 2: detail kegiatan,<br/>barang pendukung, pola pengulangan"]
+    F --> G["Langkah 2: detail kegiatan,<br/>aset pendukung, pola pengulangan"]
     G --> H{Validasi}
     H -->|"Peserta melebihi kapasitas"| I["Sarankan ruangan berkapasitas cukup<br/>FR-07.2 A2"] --> G
     H -->|"Kurang dari H-1 tanpa reservation.urgent"| J["Tolak dengan penjelasan · BR-020"] --> G
@@ -338,7 +340,7 @@ flowchart TD
     W -->|"Tidak digunakan"| AA(["Status Tidak Digunakan<br/>tercatat pada analitik utilisasi · FR-07.4 A1"])
 ```
 
-### F-10 Reservasi barang hingga disetujui ⭐
+### F-10 Reservasi aset hingga disetujui ⭐
 
 Berbagi wizard yang sama (P-29) dan alur persetujuan yang sama (F-07). Yang berbeda hanya langkah 1 dan alokasi unit.
 
@@ -349,7 +351,7 @@ Berbagi wizard yang sama (P-29) dan alur persetujuan yang sama (F-07). Yang berb
 | Alokasi unit | Otomatis; Petugas Sarpras dapat memilih unit tertentu secara manual | `FR-08.2` langkah 3 |
 | Unit terambil saat proses | Sistem mengalokasikan unit pengganti setara; bila tidak ada, pengajuan ditolak **dengan penjelasan** | `FR-08.2 A1` |
 | Durasi melebihi batas role | Tolak + **tampilkan batas yang berlaku** | `BR-021` · `FR-08.2 A2` |
-| Setelah disetujui | Pemohon melihat **kode barang unit yang dialokasikan** | `FR-08.2 AC` |
+| Setelah disetujui | Pemohon melihat **kode aset unit yang dialokasikan** | `FR-08.2 AC` |
 | Konkurensi | 50 permintaan simultan atas unit terakhir menghasilkan tepat 1 sukses; 49 lainnya menerima `409 ASSET_NOT_AVAILABLE` dengan saran alternatif | `CC-02` · `CI-01` |
 | Siswa/OSIS | Katalog terbatas `boleh_dipinjam_siswa` | `BR-022` · `FR-08.1 A1` |
 
@@ -386,7 +388,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     A([Peminjam datang]) --> B["MS-06 Tugas / P-33 Antrean Serah Terima"]
-    B --> C["Pindai QR unit<br/>atau masukkan kode barang manual"]
+    B --> C["Pindai QR unit<br/>atau masukkan kode aset manual"]
     C --> D{"Unit sesuai alokasi reservasi?"}
     D -->|Tidak| E["Peringatan + drawer Substitusi Unit<br/>alasan WAJIB · FR-09.1 A1"]
     E --> F
@@ -418,12 +420,12 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A([Peminjam mengembalikan barang]) --> B["Pindai QR unit"]
+    A([Peminjam mengembalikan aset]) --> B["Pindai QR unit"]
     B --> C["Tampilkan peminjam, tanggal pinjam,<br/>jatuh tempo, kondisi awal + foto serah terima"]
     C --> D["Pilih kondisi kembali + minimal 1 foto akhir"]
 
     D --> E{Kondisi kembali}
-    E -->|"Barang tidak dikembalikan"| F["Tandai Hilang - alasan WAJIB<br/>kondisi jadi Hilang, status Tidak Tersedia<br/>NT-33 ke Pimpinan"]
+    E -->|"Aset tidak dikembalikan"| F["Tandai Hilang - alasan WAJIB<br/>kondisi jadi Hilang, status Tidak Tersedia<br/>NT-33 ke Pimpinan"]
     F --> G["Terbitkan GANTI RUGI sebesar nilai perolehan<br/>atau nilai penggantian · BR-028d<br/>denda keterlambatan berhenti bertambah"] --> M
     E -->|"Rusak Berat / Tidak Lengkap"| H["Tiket kerusakan otomatis tertaut<br/>peminjam & transaksi · BR-032<br/>status Tidak Tersedia · Bab 12.2"] --> I
     E -->|"Rusak Ringan perlu perbaikan"| H2["Tiket kerusakan + work order langsung<br/>status Dalam Perbaikan"] --> I
@@ -644,7 +646,7 @@ flowchart TD
     S -->|Tidak| T["Tandai Ditolak Saat Penerimaan<br/>alasan + foto WAJIB, item tidak jadi aset<br/>FR-14.3 A2"] --> W
     S -->|Ya| U["Lengkapi data aset: merek, model,<br/>nilai perolehan aktual, lokasi, kondisi,<br/>nomor seri per unit"]
 
-    U --> V["Sistem membuat N record aset<br/>N kode barang + N QR unik · BR-064<br/>tertaut ke usulan asal · BR-011"]
+    U --> V["Sistem membuat N record aset<br/>N kode aset + N QR unik · BR-064<br/>tertaut ke usulan asal · BR-011"]
     V --> V2["Dokumen penerimaan otomatis tertaut<br/>sebagai dokumen aset SELURUH unit · BR-065"]
     V2 --> W{"Seluruh item sudah diterima?"}
     W -->|Belum| X(["Status Diterima Sebagian<br/>FR-14.3 A1"]) --> O
@@ -680,10 +682,10 @@ flowchart TD
 
     P --> Q["Kondisi terminal ditetapkan<br/>status Tidak Tersedia, dihapuskan = true<br/>dikeluarkan dari katalog & perhitungan ketersediaan"]
     Q --> R["Berita Acara Penghapusan PDF<br/>NT-45 · BR-065f"]
-    R --> S(["Aset TETAP dapat ditelusuri<br/>kode barang & UUID TIDAK pernah dipakai ulang<br/>BR-065d · BR-065e"])
+    R --> S(["Aset TETAP dapat ditelusuri<br/>kode aset & UUID TIDAK pernah dipakai ulang<br/>BR-065d · BR-065e"])
 
     T(["Aset hilang ditemukan kembali"]) --> U["P-57 Pulihkan Aset - alasan WAJIB<br/>hanya Administrator · disposal.reinstate"]
-    U --> V(["Aset aktif kembali dengan kode barang<br/>dan UUID YANG SAMA, riwayat utuh · BR-065g"])
+    U --> V(["Aset aktif kembali dengan kode aset<br/>dan UUID YANG SAMA, riwayat utuh · BR-065g"])
 ```
 
 ## 9.8 Pelaporan
@@ -728,7 +730,7 @@ flowchart TD
     B -->|"P-25 kamera peramban"| F
 
     F --> G{Hasil pembacaan}
-    G -->|"QR tidak dikenali / rusak"| H["Galat + input kode barang manual<br/>SELALU terlihat · FR-05.2 A1"] --> F
+    G -->|"QR tidak dikenali / rusak"| H["Galat + input kode aset manual<br/>SELALU terlihat · FR-05.2 A1"] --> F
     G -->|"Izin kamera ditolak"| I["Panduan mengaktifkan izin<br/>+ input kode manual · MOB-MED-06"] --> F
     G -->|"Aset dinonaktifkan"| J["Profil + penanda Aset tidak aktif<br/>aksi transaksional DISEMBUNYIKAN · FR-05.2 A2"] --> Z([Selesai])
     G -->|Berhasil| K["MS-08 Hasil Scan - profil aset, 3 detik"]
@@ -795,7 +797,7 @@ flowchart TD
     G --> H["Jawaban di-STREAM<br/>token pertama 2 detik · AI-CTL-07"]
     H --> I{Jenis jawaban}
 
-    I -->|"Data ditemukan"| J["Jawaban + RUJUKAN KONKRET<br/>kode barang, nama ruangan, nomor transaksi<br/>+ tautan aksi ke halaman terkait · 22.4"]
+    I -->|"Data ditemukan"| J["Jawaban + RUJUKAN KONKRET<br/>kode aset, nama ruangan, nomor transaksi<br/>+ tautan aksi ke halaman terkait · 22.4"]
     I -->|"Data tidak ditemukan"| K(["Menyatakan tidak ditemukan<br/>DILARANG mengarang · BR-077"])
     I -->|"Di luar cakupan"| L(["Menyatakan keterbatasan<br/>+ arahkan ke menu relevan · FR-19.1 A1"])
     I -->|"Di luar hak akses pengguna"| M(["Tool mengembalikan data kosong<br/>chatbot menyatakan tidak dapat diakses<br/>FR-19.1 A6"])
@@ -839,3 +841,59 @@ flowchart TD
 ```
 
 **Mengapa pratinjau adalah bagian dari alur, bukan fitur tambahan:** `RS-06` mencatat konfigurasi approval rules yang salah sebagai risiko berdampak **Tinggi** yang membuat pengajuan macet. Pratinjau adalah mitigasi yang PRD tetapkan (`FR-10.1 AC`), sehingga antarmuka wajib membuatnya sulit dilewati — panel pratinjau selalu terlihat, bukan tersembunyi di balik tombol.
+
+
+---
+
+### F-26 Permintaan bahan hingga diserahkan ⭐
+
+```mermaid
+flowchart TD
+    A([Pemohon membutuhkan bahan]) --> B["P-84 Katalog Bahan:<br/>lihat saldo tersedia per lokasi"]
+    B --> C["P-85 Ajukan: bahan, jumlah, keperluan"]
+    C --> D{"Saldo mencukupi?"}
+    D -->|Tidak| E["422 INSUFFICIENT_BALANCE<br/>tampilkan saldo + lokasi lain · BR-083"] --> B
+    D -->|Ya| F{"Melampaui ambang<br/>approval? BR-086"}
+    F -->|Tidak| G["Status: Disetujui<br/>TANPA instance approval"]
+    F -->|Ya| H["Instance approval M-10<br/>Status: Menunggu Persetujuan"]
+    H --> I{Keputusan approver}
+    I -->|Tolak| J(["Status: Ditolak + alasan<br/>saldo TIDAK tersentuh"])
+    I -->|Setuju Sebagian| K["Jumlah disetujui diturunkan"] --> G
+    I -->|Setuju| G
+    G --> L["NT-50 ke pemohon: siap diambil"]
+    L --> M["Petugas buka P-87,<br/>catat jumlah diserahkan + penerima"]
+    M --> N{"Melebihi jumlah disetujui?"}
+    N -->|Ya| O["422 EXCEEDS_APPROVED_QTY · BR-089"] --> M
+    N -->|Tidak| P["Saldo berkurang + transaksi PENGELUARAN<br/>saldo_sesudah tersimpan · BR-081 BR-092"]
+    P --> Q{"Saldo menembus<br/>stok minimum?"}
+    Q -->|Ya| R["NT-49 ke Petugas + Admin<br/>muncul di kartu Stok Menipis"] --> S
+    Q -->|Tidak| S["NT-51 ke pemohon"]
+    S --> T(["Selesai — TANPA jadwal pengembalian,<br/>tanpa denda, tanpa ganti rugi · BR-087"])
+```
+
+| Titik | Ketentuan | Rujukan |
+|---|---|---|
+| Permintaan disetujui | **Tidak** mengurangi saldo; saldo hanya berkurang saat penyerahan | `FR-22.4 AC` |
+| Saldo berubah sebelum penyerahan | Penyerahan ditolak dan menampilkan saldo terkini; Petugas dapat menyerahkan sebagian | `FR-22.5 A2` |
+| Pemisahan peran | Pemohon tidak pernah dapat menyerahkan kepada dirinya sendiri — `material.request` dan `material.issue` terpisah | `SDD-03 §4.3` |
+
+**Mengapa cabang ambang berada di alur, bukan di konfigurasi belaka:** tanpa cabang `BR-086` yang terlihat, pengambilan satu spidol dan pengambilan satu dus tinta tampak identik bagi pengguna, padahal yang satu langsung dilayani dan yang lain menunggu approver. Cabang inilah yang membuat perbedaan waktu tunggu dapat dijelaskan di layar sejak awal.
+
+### F-27 Stock opname bahan hingga saldo tersesuaikan
+
+```mermaid
+flowchart TD
+    A([Petugas buat sesi opname domain BAHAN]) --> B["Sistem bekukan snapshot saldo<br/>per bahan per lokasi"]
+    B --> C["MS-22 Sesi Opname Bahan:<br/>progres per lokasi penyimpanan"]
+    C --> D["MS-23 Input Hitungan Fisik<br/>QR bahan melompat ke barisnya · BR-090"]
+    D --> E["Sistem hitung selisih<br/>fisik vs saldo sistem"]
+    E --> F{"Ada selisih<br/>tanpa keterangan?"}
+    F -->|Ya| G["Laporan tidak dapat dikirim · BR-095"] --> D
+    F -->|Tidak| H["Kirim laporan ke Pimpinan<br/>NT-31"]
+    H --> I{Keputusan Pimpinan}
+    I -->|Tolak| J["Sesi kembali Berjalan<br/>saldo TIDAK tersentuh"] --> D
+    I -->|Setuju| K["Transaksi OPNAME sebesar selisih<br/>saldo tersesuaikan · BR-094"]
+    K --> L(["Berita acara PDF + sesi read-only<br/>BR-059"])
+```
+
+Satu sesi hanya mencakup **satu domain** — memilih bahan dan aset sekaligus ditolak (`BR-093`). Alur aset yang sepadan adalah `F-18`.

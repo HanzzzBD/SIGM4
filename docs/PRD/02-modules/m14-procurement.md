@@ -49,7 +49,7 @@ flowchart TD
     Q -->|Ya| S{"Sesuai spesifikasi?"}
     S -->|Tidak| T["Tandai Ditolak Saat Penerimaan<br/>+ alasan & foto"] --> U
     S -->|Ya| V["Lengkapi data aset:<br/>merek, nilai, lokasi, nomor seri"]
-    V --> W["Sistem buat N record aset<br/>+ kode barang + QR unik"]
+    V --> W["Sistem buat N record aset<br/>+ kode aset + QR unik"]
     W --> X["Tautkan dokumen penerimaan<br/>ke seluruh unit"]
     X --> Y["Cetak & tempel label QR"]
     Y --> U{"Seluruh item<br/>sudah diterima?"}
@@ -78,7 +78,7 @@ flowchart TD
 2. Pengguna mengisi kepala usulan: judul usulan, unit kerja pengusul, tahun anggaran, prioritas (Rendah/Sedang/Tinggi/Mendesak), dan justifikasi kebutuhan.
 3. Pengguna menambahkan baris item: nama barang, kategori, spesifikasi, jumlah, satuan, estimasi harga satuan, dan keterangan.
 4. Sistem menghitung total estimasi biaya secara otomatis.
-5. Pengguna dapat melampirkan dokumen pendukung (brosur, foto kondisi barang lama, referensi harga).
+5. Pengguna dapat melampirkan dokumen pendukung (brosur, foto kondisi aset lama, referensi harga).
 6. Pengguna menekan "Ajukan".
 7. Sistem membuat usulan berstatus `Menunggu Persetujuan`, membentuk instance approval sesuai rules (nilai total menentukan jumlah level), dan menotifikasi approver pertama.
 
@@ -128,7 +128,7 @@ flowchart TD
 
 | Aspek | Uraian |
 |---|---|
-| **Description** | Mencatat barang yang telah diterima dari usulan yang disetujui, dan mengonversinya menjadi record aset per unit lengkap dengan kode barang dan QR. |
+| **Description** | Mencatat barang yang telah diterima dari usulan yang disetujui. Item **berjenis Aset** dikonversi menjadi record aset per unit lengkap dengan kode aset dan QR; item **berjenis Bahan** menambah saldo bahan (`BR-064`). Alur penerimaan bahan dimiliki M-22 dan **belum ditulis**. |
 | **Actor** | Petugas Sarana Prasarana |
 | **Preconditions** | Terdapat usulan berstatus `Disetujui` atau `Disetujui Sebagian`; barang telah tiba secara fisik |
 
@@ -138,7 +138,7 @@ flowchart TD
 3. Petugas melengkapi data aset: merek, model, nilai perolehan aktual, lokasi penempatan, kondisi awal, dan nomor seri per unit bila ada.
 4. Petugas mengunggah dokumen penerimaan (faktur, berita acara, foto barang).
 5. Petugas menekan "Terima & Daftarkan sebagai Aset".
-6. Sistem membuat record aset sebanyak jumlah unit diterima, masing-masing dengan kode barang dan QR Code unik, berstatus `Tersedia`.
+6. Sistem membuat record aset sebanyak jumlah unit diterima, masing-masing dengan kode aset dan QR Code unik, berstatus `Tersedia`.
 7. Sistem menautkan seluruh aset yang terbentuk ke usulan pengadaan asalnya, dan menautkan dokumen penerimaan ke setiap aset.
 8. Sistem mengubah status usulan menjadi `Diterima Sebagian` atau `Selesai`.
 9. Sistem menotifikasi pengusul dan menyediakan tombol cetak QR massal.
@@ -152,7 +152,7 @@ flowchart TD
 **Post Conditions** — Aset baru terdaftar dan siap dilabeli QR; usulan pengadaan tertutup atau berstatus diterima sebagian; jejak dari usulan hingga aset dapat ditelusuri.
 
 **Acceptance Criteria**
-- [ ] Menerima 10 unit menghasilkan 10 record aset dengan 10 kode barang unik.
+- [ ] Menerima 10 unit menghasilkan 10 record aset dengan 10 kode aset unik.
 - [ ] Setiap aset hasil pengadaan menyimpan referensi ke nomor usulan asalnya dan dapat ditelusuri dua arah.
 - [ ] Dokumen penerimaan otomatis tertaut sebagai dokumen aset pada seluruh unit terkait.
 - [ ] Jumlah diterima tidak pernah melebihi jumlah yang disetujui.
@@ -167,7 +167,7 @@ flowchart TD
 | BR-061 | Total estimasi biaya dihitung sistem dari jumlah × estimasi harga satuan, tidak diisi manual. |
 | BR-062 | Usulan yang telah diajukan tidak dapat disunting kecuali berstatus `Perlu Revisi`. |
 | BR-063 | Jumlah barang yang dicatat diterima tidak boleh melebihi jumlah yang disetujui. |
-| BR-064 | Penerimaan barang wajib menghasilkan record aset per unit lengkap dengan kode barang dan QR. |
+| BR-064 | Penerimaan item pengadaan **berjenis Aset** wajib menghasilkan record aset per unit lengkap dengan kode aset dan QR. Item **berjenis Bahan** menambah saldo bahan melalui transaksi penerimaan dan **tidak** menghasilkan record aset (Keputusan #27; alur bahannya dimiliki M-22). |
 | BR-065 | Dokumen penerimaan otomatis tertaut sebagai dokumen aset pada seluruh unit yang terbentuk. |
 
 ## 7. API Endpoints
@@ -190,7 +190,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
 | **procurements** | Usulan pengadaan | id, nomor, judul, pengusul_id, unit_kerja, tahun_anggaran, prioritas, justifikasi, total_estimasi, status | ± 100 |
-| **procurement_items** | Item dalam usulan | id, procurement_id, nama_barang, category_id, spesifikasi, jumlah_diusulkan, jumlah_disetujui, jumlah_diterima, satuan, estimasi_harga_satuan | ± 500 |
+| **procurement_items** | Item dalam usulan | id, procurement_id, jenis (Aset/Bahan — Keputusan #27), nama_barang, category_id, spesifikasi, jumlah_diusulkan, jumlah_disetujui, jumlah_diterima, satuan, estimasi_harga_satuan | ± 500 |
 | **procurement_receipts** | Catatan penerimaan barang | id, procurement_id, tanggal_terima, nomor_dokumen, diterima_oleh, catatan | ± 120 |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).

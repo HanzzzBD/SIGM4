@@ -35,5 +35,17 @@ Seluruh keputusan berikut telah dikonfirmasi oleh stakeholder dan menjadi dasar 
 | 14 | Skala Target | **± 5.000 unit aset**, hingga **1.000 pengguna**, **100–150 concurrent user** pada jam sibuk |
 | 15 | Mode Offline Mobile | **Online only** — seluruh fitur mobile membutuhkan koneksi internet |
 | 16 | Pelaksana Maintenance | **Teknisi internal sekolah saja**. Tidak ada master data vendor/pihak ketiga. |
+| 17 | Domain Sarpras | **Dua domain terpisah dan tidak boleh disamakan: Aset dan Bahan.** Aset = unit fisik ber-identitas individual; Bahan = persediaan yang dikelola per jumlah dan satuan. Batas lengkap: [Lampiran A.1](glossary.md) |
+| 18 | Lingkup Bahan | **Bahan masuk lingkup rilis ini** sebagai **M-22 Manajemen Bahan**. `NO-13` dan `AS-24` dicabut; `FE-09` ditarik dari future ke dalam lingkup |
+| 19 | Model Bahan | **Saldo agregat** per bahan per lokasi penyimpanan. **Tanpa** batch/lot dan **tanpa** tanggal kedaluwarsa. Saldo selalu akibat transaksi, tidak pernah disunting langsung |
+| 20 | Stok Minimum Bahan | **Ada**, beserta peringatan: saldo di bawah ambang memunculkan alert dan notifikasi kepada Petugas Sarpras |
+| 21 | Pengeluaran Bahan | Permintaan bahan melewati **approval berbasis ambang** yang dikonfigurasi Administrator lewat M-10 — bukan approval wajib untuk setiap pengeluaran |
+| 22 | Peminjaman Bahan | **Tidak ada.** Bahan hanya **diserahkan** dan tidak dikembalikan; M-08 dan M-09 tetap murni domain Aset, termasuk denda keterlambatan (`BR-028`) |
+| 23 | QR Bahan | QR melekat pada **jenis bahan**, bukan unit individual. M-05 melayani dua sasaran (QR Aset per unit, QR Bahan per jenis) dan karena itu bernama **M-05 QR Code** tanpa kualifikasi domain |
+| 24 | Stock Opname | M-13 memiliki **dua jenis sesi terpisah**: Stock Opname Aset (hitung unit, pindai QR) dan Stock Opname Bahan (hitung kuantitas, cocokkan saldo). Satu sesi hanya mencakup satu domain |
+| 25 | Bahan Praktik | Bahan praktik/praktikum (komponen, bahan kimia lab) diperlakukan sebagai **Bahan**. Alat praktik yang tahan lama tetap **Aset** |
+| 26 | Penempatan M-22 | Modul Bahan dikerjakan pada **Phase 05**, setelah lokasi, approval, QR, pengadaan, dan opname tersedia |
+| 27 | Pengadaan Bahan | Satu alur pengadaan untuk kedua domain. Setiap baris item usulan menyatakan **jenisnya (Aset atau Bahan)**. Item berjenis Aset menghasilkan record aset per unit (`BR-064`); item berjenis Bahan **menambah saldo** lewat transaksi penerimaan bahan, bukan record aset. Menutup `TBD-BHN-A` |
+| 28 | Milestone M-22 | Masuk **`M4`**, yang diperluas dari *Kontrol & Siklus Hidup Aset* menjadi **Kontrol & Siklus Hidup Sarpras** — sejalan dengan penempatan Phase 05 yang menutup `M4` |
 
 ---

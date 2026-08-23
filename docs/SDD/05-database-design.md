@@ -35,11 +35,17 @@ Skema khusus `booking_slots`, `idempotency_keys`, dan `document_counters` didefi
 | **SDD-DB-09** | Kolom `nilai_sebelum`/`nilai_sesudah` pada `activity_logs` bertipe `jsonb`, dengan indeks GIN hanya pada `entitas`+`entitas_id`, bukan pada isi JSON. |
 | **SDD-DB-10** | Data acuan yang dirujuk kode (permission, role bawaan, aturan approval bawaan) di-*seed* lewat migration, bukan lewat skrip manual. |
 | **SDD-DB-11** | Akun aplikasi tidak memiliki hak DDL; migration dijalankan akun terpisah (`SEC-CFG-03`). Akun aplikasi juga **tidak** punya `UPDATE`/`DELETE` pada `activity_logs` (`AL-03b`). |
+| **SDD-DB-13** | Saldo bahan disimpan sebagai **ledger + saldo termaterialisasi**: `material_transactions` adalah kebenaran, `material_balances` adalah agregat turunannya yang diperbarui **dalam transaksi yang sama**. Tidak ada saldo yang dihitung ulang saat baca (`BR-081`, `BR-092`). |
+| **SDD-DB-14** | Pengurangan saldo bahan mengunci baris `material_balances` dengan `SELECT … FOR UPDATE` sebelum memeriksa kecukupan. Larangan saldo negatif (`BR-083`) ditegakkan **CHECK constraint + row lock**, bukan hanya validasi service. |
 | **SDD-DB-12** | Berkas migration §4.5 dijalankan **runner SQL siap pakai** (kelas dbmate/Postgrator) — bukan runner buatan sendiri, bukan pula perkakas ber-DSL JavaScript. Dua kemampuan bersifat wajib, bukan preferensi: **opt-out transaksi per-migration** dan *advisory lock*. |
 
 ---
 
 ## 3. Alasan
+
+**SDD-DB-13 — ledger, bukan kolom saldo tunggal.** Menyimpan hanya `materials.saldo` membuat riwayat mustahil direkonstruksi dan setiap koreksi menjadi suntingan tanpa jejak — persis yang dilarang `BR-081`. Menyimpan hanya ledger tanpa agregat memaksa `SUM()` seluruh riwayat pada setiap pembacaan daftar bahan; pada ±20.000 transaksi itu berarti *sequential scan* di halaman yang paling sering dibuka. Karena itu keduanya disimpan, dengan satu syarat mengikat: **agregat tidak pernah ditulis di luar transaksi yang menulis ledger-nya**, sehingga keduanya tidak dapat menyimpang. `saldo_sesudah` pada tiap baris ledger (`BR-092`) membuat penyimpangan dapat dideteksi tanpa menghitung ulang: baris terakhir per (bahan, lokasi) wajib sama dengan `material_balances.saldo`.
+
+**SDD-DB-14 — row lock, bukan pemeriksaan optimistik.** Dua penyerahan bersamaan atas bahan yang sama adalah *read-modify-write* klasik. Tanpa kunci, keduanya membaca saldo 5, masing-masing mengurangi 3, dan saldo berakhir 2 — bukan ditolak. Ini persoalan yang sama dengan `SDD-AVL-01` pada `booking_slots`, tetapi **tidak** memerlukan exclusion constraint karena tidak ada dimensi waktu: cukup kunci baris agregat. `CHECK (saldo >= 0)` menjadi jaring terakhir bila ada jalur kode yang lupa mengunci — constraint basis data tidak dapat dilewati service yang keliru.
 
 **SDD-DB-01 — bigserial, bukan UUID.** UUID acak sebagai kunci primer merusak lokalitas indeks B-tree dan memperbesar setiap indeks sekunder. Pada tabel bervolume tinggi (`activity_logs` ±150.000/tahun, `notifications` ±40.000/tahun) itu terasa. `assets.uuid` tetap ada karena `FR-05.2 A3` mensyaratkan pengenal yang tidak dapat ditebak untuk halaman publik QR — tetapi ia kolom sekunder ber-indeks unik, bukan kunci primer.
 
@@ -177,6 +183,64 @@ Aturannya: satu rilis tidak boleh memuat expand dan contract untuk kolom yang sa
 | `work_days` Senin–Sabtu | [Lampiran E.2](../PRD/00-foundation/conventions.md) | idem |
 | Parameter sistem bawaan | `FR-20.1` | idem |
 
+### 4.8 Saldo bahan — ledger dan agregat
+
+```sql
+-- BR-082: saldo unik per kombinasi bahan x lokasi penyimpanan
+CREATE TABLE material_balances (
+    id          bigserial PRIMARY KEY,
+    material_id bigint  NOT NULL REFERENCES materials(id),
+    room_id     bigint  NOT NULL REFERENCES rooms(id),
+    saldo       integer NOT NULL DEFAULT 0,
+    CONSTRAINT material_balances_uq UNIQUE (material_id, room_id),
+    -- BR-083: jaring terakhir bila service lupa mengunci (SDD-DB-14)
+    CONSTRAINT material_balances_non_negatif CHECK (saldo >= 0)
+);
+
+-- BR-081 + BR-092: ledger adalah kebenaran; saldo_sesudah membuat
+-- penyimpangan terdeteksi tanpa menghitung ulang seluruh riwayat
+CREATE TABLE material_transactions (
+    id             bigserial   PRIMARY KEY,
+    material_id    bigint      NOT NULL REFERENCES materials(id),
+    room_id        bigint      NOT NULL REFERENCES rooms(id),
+    jenis          material_transaction_type NOT NULL,  -- SDD-DB-02
+    jumlah         integer     NOT NULL,
+    saldo_sesudah  integer     NOT NULL,
+    referensi_tipe text,
+    referensi_id   bigint,
+    alasan         text,                                -- BR-088: wajib saat PENYESUAIAN
+    dibuat_oleh    bigint      NOT NULL REFERENCES users(id),
+    dibuat_pada    timestamptz NOT NULL,                -- SDD-DB-03, dari Clock (SDD-SYS-07)
+    CONSTRAINT material_transactions_jumlah_nonzero CHECK (jumlah <> 0),
+    -- BR-088 ditegakkan skema, bukan hanya service
+    CONSTRAINT material_transactions_alasan_penyesuaian
+        CHECK (jenis <> 'PENYESUAIAN' OR alasan IS NOT NULL)
+);
+
+-- kartu stok FR-22.2: selalu dibaca per bahan, berurutan waktu
+CREATE INDEX material_transactions_kartu_stok_idx
+    ON material_transactions (material_id, room_id, dibuat_pada DESC);
+```
+
+**Urutan wajib setiap mutasi saldo** — dijalankan seluruhnya dalam **satu** transaksi (`SDD-EVT-02`):
+
+```text
+BEGIN
+  SELECT saldo FROM material_balances
+    WHERE material_id = $1 AND room_id = $2
+    FOR UPDATE                          -- SDD-DB-14: kunci sebelum periksa
+  -- periksa kecukupan (BR-083) -> tolak bila tidak cukup
+  UPDATE material_balances SET saldo = saldo + $delta
+  INSERT INTO material_transactions (..., saldo_sesudah = saldo baru)
+  INSERT INTO activity_logs (...)       -- BR-071, AL-01
+  INSERT INTO event_outbox (...)        -- NT-49 bila menembus stok minimum
+COMMIT
+```
+
+Baris `material_balances` dibuat saat bahan pertama kali bertransaksi di suatu lokasi (`INSERT … ON CONFLICT (material_id, room_id) DO UPDATE`), bukan saat bahan didaftarkan — mencegah ledakan baris kosong sebesar jumlah bahan × jumlah ruangan.
+
+**Stok minimum (`BR-085`) dievaluasi terhadap saldo total seluruh lokasi**, sehingga pemeriksaannya menjumlahkan `material_balances` per `material_id` — bukan membandingkan per baris.
+
 ### 4.7 Retensi & arsip
 
 | Tabel | Kebijakan | Mekanisme |
@@ -185,6 +249,7 @@ Aturannya: satu rilis tidak boleh memuat expand dan contract untuk kolom yang sa
 | `notifications` | 90 hari aktif | Job arsip harian memindahkan ke `notifications_archive` |
 | `chat_messages` | 90 hari (`BR-078`) | idem, isi pesan dianonimkan (`DP-AI-05`) |
 | `idempotency_keys` | 24 jam | `DELETE WHERE expires_at < now()` |
+| `material_transactions` | Tidak pernah dihapus — dasar kartu stok & rekonstruksi saldo | Tetap aktif; volume rendah (± 20.000/tahun) |
 | `booking_slots` (`Released`) | Belum ditetapkan | **TBD-AVL-A** |
 
 ---
@@ -209,12 +274,14 @@ Aturannya: satu rilis tidak boleh memuat expand dan contract untuk kolom yang sa
 | Migration `ALTER TYPE` mengunci | Deploy tertahan | Penambahan nilai enum dijadwalkan di luar jam operasional (`NFR-A-03`) |
 | Enum berkode teknis salah dipetakan ke label | Tampilan salah | Peta kode→label diuji lengkap terhadap Bab 11.3 |
 | Seed permission menyimpang dari Lampiran C | Celah otorisasi | Uji membandingkan hasil seed dengan katalog Lampiran C baris per baris |
+| `material_balances` menyimpang dari ledger | Saldo yang ditampilkan salah tanpa ada yang menyadari | Job pemeriksa berkala membandingkan `saldo` dengan `saldo_sesudah` transaksi terakhir per (bahan, lokasi); selisih memicu alarm (`OBS-05`) |
+| Jalur kode baru memutakhirkan saldo tanpa menulis ledger | Riwayat berlubang, `BR-081` dilanggar diam-diam | Akun aplikasi menulis `material_balances` hanya lewat satu repository; uji integrasi menolak mutasi saldo yang tidak berpasangan dengan baris ledger |
 
 ---
 
 ## 7. Requirement Terkait
 
-`BR-002` `BR-003` `BR-008` `BR-067` `BR-068` `BR-070a` `BR-071` `BR-072` `BR-078` ·
+`BR-002` `BR-003` `BR-008` `BR-067` `BR-081` `BR-082` `BR-083` `BR-085` `BR-088` `BR-092` `BR-068` `BR-070a` `BR-071` `BR-072` `BR-078` ·
 `AL-01` `AL-03` `AL-03a` `AL-03b` `AL-05` `AL-09` · `NFR-R-05` `NFR-M-04` `NFR-SC-03` `NFR-SC-06` ·
 `NFR-S-03d` `NFR-S-12` · `NFR-C-10` · `CD-04` `CD-05` `SEC-CFG-03` · `CAL-01` … `CAL-03` · `DP-AI-05` · `INF-01`
 

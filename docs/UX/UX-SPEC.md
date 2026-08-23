@@ -55,9 +55,9 @@ Dokumentasi UX terbagi enam berkas. **Berkas ini adalah entry point.**
 | Berkas | Isi | Bagian |
 |---|---|---|
 | **`UX-SPEC.md`** *(berkas ini)* | Overview, prinsip, role & sasaran, lingkup, dan traceability requirement → UX | §1 · §2 · §3-Lingkup · §13 |
-| [`INFORMATION-ARCHITECTURE.md`](INFORMATION-ARCHITECTURE.md) | Information architecture, pemetaan 21 modul, kedalaman hierarki, sitemap web & mobile | §3 · §4 |
+| [`INFORMATION-ARCHITECTURE.md`](INFORMATION-ARCHITECTURE.md) | Information architecture, pemetaan 22 modul, kedalaman hierarki, sitemap web & mobile | §3 · §4 |
 | [`NAVIGATION.md`](NAVIGATION.md) | Kerangka layar, topbar, sidebar, breadcrumb, navigasi mobile, navigasi berbasis role, deep link | §5 |
-| [`PAGE-SPECIFICATION.md`](PAGE-SPECIFICATION.md) | Page inventory 79 halaman + 21 layar mobile, arketipe layout, pola keadaan, spesifikasi halaman kunci, dashboard, responsif, aksesibilitas | §6 · §7 · §8 · §10 · §11 |
+| [`PAGE-SPECIFICATION.md`](PAGE-SPECIFICATION.md) | Page inventory 87 halaman + 23 layar mobile, arketipe layout, pola keadaan, spesifikasi halaman kunci, dashboard, responsif, aksesibilitas | §6 · §7 · §8 · §10 · §11 |
 | [`USER-FLOWS.md`](USER-FLOWS.md) | 25 user flow beserta diagram Mermaid | §9 |
 | [`DECISIONS.md`](DECISIONS.md) | Keputusan UX, keputusan terbuka/`BLOCKED`, konflik PRD/SDD, dan daftar layar yang sengaja tidak dibuat | §12 |
 
@@ -99,7 +99,7 @@ Dokumentasi UX terbagi enam berkas. **Berkas ini adalah entry point.**
 ## 1.1 Prinsip yang mengikat (dari PRD)
 
 Enam prinsip berikut **bukan milik berkas ini** — ia ditetapkan [`ui-foundation.md §31.1`](../PRD/04-frontend/ui-foundation.md) dan dirujuk di sini karena setiap keputusan pada §5–§1| `UX-01` | Mobile-first untuk alur lapangan, desktop-first untuk alur administratif | Pembagian tegas lingkup web ↔ mobile ([§6.3](PAGE-SPECIFICATION.md#63-batas-lingkup-web--mobile)); mobile hanya memuat alur lapangan (`SDD-MOB` §4.1) |
-| `UX-02` | Scan QR jalan pintas utama; input kode manual selalu tersedia | Scan mendapat posisi permanen di navigasi mobile (**UXD-03**) dan entri sidebar di web; setiap layar pemindai wajib menampilkan tombol "Masukkan kode barang manual" tanpa disembunyikan (`FR-05.2 A1`, `MOB-MED-06`) |
+| `UX-02` | Scan QR jalan pintas utama; input kode manual selalu tersedia | Scan mendapat posisi permanen di navigasi mobile (**UXD-03**) dan entri sidebar di web; setiap layar pemindai wajib menampilkan tombol "Masukkan kode aset manual" tanpa disembunyikan (`FR-05.2 A1`, `MOB-MED-06`) |
 | `UX-03` | Status selalu disertai teks dan ikon, tidak pernah hanya warna | Satu komponen `LencanaStatus` untuk seluruh enum Bab 11.3 ([§11.4](PAGE-SPECIFICATION.md#114-lencana-status--kalender)); lima keadaan slot kalender dibedakan warna **dan** pola **dan** teks (`CAL-UI-05`) |
 | `UX-04` | Aksi destruktif selalu memerlukan konfirmasi dan alasan | Daftar lengkap aksi berkonfirmasi-beralasan pada [§7.2](PAGE-SPECIFICATION.md#72-pola-aksi-destruktif) |
 | `UX-05` | Tidak ada jalan buntu | Setiap halaman pada [§6](PAGE-SPECIFICATION.md#6-page-inventory) memiliki kolom **Exit point** yang tidak boleh kosong; lima keadaan global ([§7.3](PAGE-SPECIFICATION.md#73-pola-lima-keadaan-global)) masing-masing menyertakan aksi berikutnya |
@@ -131,7 +131,7 @@ Definisi role bersifat normatif di [`roles-permissions.md`](../PRD/00-foundation
 | **R-03 Pimpinan Sekolah** | 3 — Pak Hendra | Ponsel (utama) + laptop | Menyetujui cepat, memantau kondisi aset, keputusan berbasis data | Persetujuan, dashboard, analitik, pembebasan ganti rugi | Approval dari ponsel wajib (`FR-10.2 AC`); literasi digital dasar–menengah → menu ringkas, tanpa istilah teknis (`UX-06`); 2FA wajib |
 | **R-04 Teknisi** | 4 — Pak Andi | Ponsel (hampir selalu) | Tahu pekerjaan hari ini, selesai tanpa bolak-balik | Work order, scan QR untuk riwayat servis, unggah foto & biaya | Mobile-first murni; web hanya baca; tab **Tugas** mobile berisi Work Order Saya (**UXD-03**) |
 | **R-05 Guru** | 2 — Pak Budi | Ponsel (utama) + laptop | Ruangan & alat siap saat mengajar, proses tidak berbelit | Reservasi, lapor kerusakan, cek status pengajuan | Pengguna jarang-pakai → aksi cepat di dashboard wajib; wizard reservasi (**UXD-04**) mengurangi beban ingatan |
-| **R-06 Staf / Tata Usaha** | 5 — Ibu Rina | Desktop + ponsel | Ruangan & perlengkapan kegiatan dinas siap tepat waktu | Reservasi gabungan ruangan + barang, rekap kegiatan | Pengguna terberat wizard reservasi gabungan (`BR-024b`); butuh melihat jadwal seluruh ruangan sekaligus → tampilan Harian kalender (`CAL-UI-01`) |
+| **R-06 Staf / Tata Usaha** | 5 — Ibu Rina | Desktop + ponsel | Ruangan & perlengkapan kegiatan dinas siap tepat waktu | Reservasi gabungan ruangan + aset, rekap kegiatan | Pengguna terberat wizard reservasi gabungan (`BR-024b`); butuh melihat jadwal seluruh ruangan sekaligus → tampilan Harian kalender (`CAL-UI-01`) |
 | **R-07 Siswa / OSIS** | 6 — Dika | Ponsel (satu-satunya) | Izin aula & perlengkapan untuk kegiatan OSIS | Reservasi, cek status, cek denda | Mobile-only secara praktik; katalog & kalender tersaring (`FR-04.2 A1`, `CAL-UI-06`); tidak pernah melihat data finansial, dokumen, maupun identitas pemohon lain (`BR-073`) |
 
 ## 2.2 Peran lintas-role: Approver
@@ -196,9 +196,9 @@ Setiap FR pada PRD memiliki representasi UX. Tabel ini adalah buktinya.
 | FR-07.3 Pembatalan Reservasi | M-07 | P-30, P-31 (drawer) | F-09 |
 | FR-07.4 Penggunaan & Penyelesaian | M-07 | P-31 | F-09 |
 | FR-07.5 Blokade Jadwal Tetap | M-07 | P-23 tab Jadwal Tetap | F-11 |
-| FR-08.1 Ketersediaan Barang | M-08 | P-28 | F-10 |
-| FR-08.2 Pengajuan Reservasi Barang | M-08 | P-29 | F-10 |
-| FR-08.3 Pembatalan Reservasi Barang | M-08 | P-30, P-31 (drawer) | F-10 |
+| FR-08.1 Ketersediaan Aset | M-08 | P-28 | F-10 |
+| FR-08.2 Pengajuan Reservasi Aset | M-08 | P-29 | F-10 |
+| FR-08.3 Pembatalan Reservasi Aset | M-08 | P-30, P-31 (drawer) | F-10 |
 | FR-09.1 Serah Terima | M-09 | P-33, MS-10 | F-12 |
 | FR-09.2 Pengembalian | M-09 | P-34, MS-11 | F-13 |
 | FR-09.3 Pemantauan Peminjaman | M-09 | P-32, MS-12 | F-13 |
@@ -218,9 +218,17 @@ Setiap FR pada PRD memiliki representasi UX. Tabel ini adalah buktinya.
 | FR-13.1 Membuat Sesi Opname | M-13 | P-47, P-48 | F-18 |
 | FR-13.2 Pelaksanaan Opname | M-13 | MS-18, MS-19, P-49 | F-18 |
 | FR-13.3 Rekonsiliasi Opname | M-13 | P-50 | F-18 |
+| FR-13.4 Sesi Opname Bahan | M-13 | MS-22, MS-23, P-50 | F-27 |
 | FR-14.1 Usulan Pengadaan | M-14 | P-51, P-52 | F-19 |
 | FR-14.2 Persetujuan Pengadaan | M-14 | P-38, P-53 | F-07, F-19 |
 | FR-14.3 Penerimaan Barang | M-14 | P-54 | F-19 |
+| FR-22.1 Master Bahan & Kategori | M-22 | P-80, P-81, P-83 | — |
+| FR-22.2 Saldo & Kartu Stok | M-22 | P-80, P-82 | F-26 |
+| FR-22.3 Penerimaan Bahan | M-22 | P-82 (drawer), P-54 | F-19, F-26 |
+| FR-22.4 Permintaan Bahan | M-22 | P-84, P-85, P-86, P-87 | F-26 |
+| FR-22.5 Pengeluaran & Penyerahan | M-22 | P-87 | F-26 |
+| FR-22.6 Penyesuaian Saldo | M-22 | P-82 (drawer) | F-26 |
+| FR-22.7 Peringatan Stok Minimum | M-22 | P-12 kartu · P-80 penanda | F-26 |
 | FR-15.1 Dashboard Per Role | M-15 | P-12, MS-05 | seluruh alur (drill-down §8.3) |
 | FR-16.1 Laporan Analitik | M-16 | P-58, P-59 | F-21 |
 | FR-17.1 Notifikasi In-App | M-17 | P-13, MS-06 tab Notifikasi | F-23 |

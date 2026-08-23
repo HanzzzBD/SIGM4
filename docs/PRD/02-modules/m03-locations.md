@@ -59,13 +59,13 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 
 | Aspek | Uraian |
 |---|---|
-| **Description** | Menampilkan seluruh aset pada suatu lokasi beserta ringkasan kondisinya untuk keperluan audit dan pencarian barang. |
+| **Description** | Menampilkan seluruh aset pada suatu lokasi beserta ringkasan kondisinya untuk keperluan audit dan pencarian aset. |
 | **Actor** | Petugas Sarpras, Administrator, Pimpinan Sekolah, Teknisi, Guru/Staf (read-only) |
 | **Preconditions** | Data lokasi dan aset tersedia |
 
 **Main Flow**
 1. Pengguna memilih lokasi pada pohon lokasi atau memindai QR ruangan.
-2. Sistem menampilkan daftar aset di lokasi tersebut (kode barang, nama, kondisi, status).
+2. Sistem menampilkan daftar aset di lokasi tersebut (kode aset, nama, kondisi, status).
 3. Sistem menampilkan ringkasan: total unit, jumlah per kondisi, jumlah dipinjam, jumlah dalam perbaikan.
 4. Pengguna dapat memfilter berdasarkan kategori, kondisi, dan status.
 
@@ -113,6 +113,8 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 | **buildings** | Gedung sekolah | id, nama, kode, keterangan, status | Petugas Sarpras |
 | **areas** | Lantai/area dalam gedung | id, building_id, nama, kode, lantai | Petugas Sarpras |
 | **rooms** | Ruangan | id, area_id, nama, kode, jenis, kapasitas, penanggung_jawab_id, dapat_direservasi, boleh_direservasi_siswa, status | Petugas Sarpras |
+
+**Ruangan sebagai lokasi penyimpanan bahan.** Selain menjadi tempat penempatan unit aset, sebuah ruangan — lazimnya berjenis `Gudang` — juga menjadi **lokasi penyimpanan bahan**. Saldo bahan dicatat per kombinasi bahan × ruangan (`BR-082`, [`m22-materials.md`](m22-materials.md)). Tidak ada atribut ruangan tambahan yang diperlukan untuk itu.
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
 

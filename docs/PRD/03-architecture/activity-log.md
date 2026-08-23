@@ -28,7 +28,7 @@
 | `role` | Role pelaku saat aksi dilakukan | Petugas Sarana Prasarana |
 | `ip` | Alamat IP asal | 192.168.1.24 |
 | `user_agent` | Peramban/perangkat | SIGM4-Mobile/1.2.0 (Android 13) |
-| `modul` | Modul asal aksi | INVENTARIS |
+| `modul` | Modul asal aksi — mis. `INVENTARIS`, `BAHAN`, `RESERVASI`, `PEMINJAMAN`, `OPNAME` | INVENTARIS |
 | `aksi` | Jenis aksi | ASSET_CONDITION_CHANGED |
 | `entitas` | Nama entitas terdampak | assets |
 | `entitas_id` | ID entitas terdampak | 3021 |

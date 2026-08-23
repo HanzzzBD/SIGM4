@@ -21,7 +21,7 @@ Penomoran bagian dipertahankan dari UX-SPEC v1.0 agar seluruh rujukan silang tet
 ```
 +----------------------------------------------------------------------+
 |  TOPBAR                                                              |
-|  [=]  SIGM4 · SMA Negeri 1     [ Cari aset / kode barang ]           |
+|  [=]  SIGM4 · SMA Negeri 1     [ Cari aset / kode aset ]             |
 |                                          [WIB 14:32]  [(3)]  [Yoga v]|
 +------------------+---------------------------------------------------+
 |  SIDEBAR         |  BREADCRUMB   Beranda / Inventaris Aset / LAB-...  |
@@ -30,9 +30,11 @@ Penomoran bagian dipertahankan dari UX-SPEC v1.0 agar seluruh rujukan silang tet
 |   Dashboard      |  Ringkasan / lencana status                       |
 |   Notifikasi (3) |---------------------------------------------------|
 |                  |                                                   |
-|  ASET & LOKASI   |  KONTEN                                           |
+|  ASET & BAHAN    |  KONTEN                                           |
 |   Inventaris     |                                                   |
-|   Kategori       |                                                   |
+|   Kategori Aset  |                                                   |
+|   Bahan          |                                                   |
+|   Kategori Bahan |                                                   |
 |   Lokasi         |                                                   |
 |   Label QR       |                                                   |
 |   Dokumen Aset   |                                                   |
@@ -50,7 +52,7 @@ Penomoran bagian dipertahankan dari UX-SPEC v1.0 agar seluruh rujukan silang tet
 |---|---|---|
 | **Tombol ciutkan sidebar** | Menciutkan sidebar menjadi ikon-saja; preferensi tersimpan sebagai preferensi tampilan (`SDD-FE-03`) | **UXD-01** |
 | **Identitas sekolah** | Nama sekolah + logo dari parameter sistem, kelompok Identitas Sekolah | `FR-20.1` |
-| **Pencarian global** | Satu kotak: kode barang, nomor seri, nama aset, nomor dokumen. Nilai yang cocok regex `SEQ-04` melompat langsung ke detail objeknya | `FR-04.2` · `SEQ-04` |
+| **Pencarian global** | Satu kotak: kode aset, nomor seri, nama aset, nomor dokumen. Nilai yang cocok regex `SEQ-04` melompat langsung ke detail objeknya | `FR-04.2` · `SEQ-04` |
 | **Penanda zona waktu** | Menampilkan **WIB** permanen, tidak mengikuti zona waktu perangkat | `CAL-UI-09` · `NFR-C-10` |
 | **Lonceng notifikasi** | Penghitung belum dibaca dari server, disiarkan ulang setiap perubahan — tidak dihitung klien. Klik membuka pratinjau 5 terbaru + tautan ke `/notifikasi` | `NTF-05` · `FR-17.1` |
 | **Menu pengguna** | Profil · Keamanan & 2FA · Preferensi Notifikasi · Pemberitahuan Privasi · Keluar · **Keluar dari semua perangkat** | `FR-01.2 A1` · `FR-01.4` · `DP-01` |
@@ -80,15 +82,19 @@ Diturunkan dari Lampiran C dan Bab 18. Tanda `—` berarti entri tidak dirender 
 | **Beranda** — Notifikasi | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Aset** — Inventaris Aset | ✅ | ✅ | 🔍 | 🔍 | 🔍 | 🔍 | 🟡 |
 | **Aset** — Kategori Aset | ✅ | ✅ | 🔍 | — | — | — | — |
+| **Aset & Bahan** — Bahan | ✅ | ✅ | 🔍 | 🔍 | 🔍 | 🔍 | — |
+| **Aset & Bahan** — Kategori Bahan | ✅ | ✅ | 🔍 | — | — | — | — |
 | **Aset** — Lokasi | ✅ | ✅ | 🔍 | 🔍 | 🔍 | 🔍 | — |
 | **Aset** — Label QR | ✅ | ✅ | — | — | — | — | — |
 | **Aset** — Dokumen Aset | ✅ | ✅ | 🔍 | 🔍 | 🔍 | 🔍 | — |
 | **Aset** — Scan QR | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 |
 | **Pemanfaatan** — Kalender Ruangan | ✅ | ✅ | ✅ | 🔍 | ✅ | ✅ | 🟡 |
-| **Pemanfaatan** — Katalog Barang | ✅ | ✅ | ✅ | — | ✅ | ✅ | 🟡 |
+| **Pemanfaatan** — Katalog Aset | ✅ | ✅ | ✅ | — | ✅ | ✅ | 🟡 |
 | **Pemanfaatan** — Reservasi | ✅ | ✅ | ✅ | — | 🟡 | 🟡 | 🟡 |
 | **Pemanfaatan** — Peminjaman | ✅ | ✅ | 🔍 | — | 🟡 | 🟡 | 🟡 |
 | **Pemanfaatan** — Denda & Kewajiban | ✅ | ✅ | 🔍◆ | — | 🟡 | 🟡 | 🟡 |
+| **Pemanfaatan** — Katalog Bahan | ✅ | ✅ | 🔍 | ✅ | ✅ | ✅ | — |
+| **Pemanfaatan** — Permintaan Bahan | ✅ | ✅ | 🔍 | 🟡 | 🟡 | 🟡 | — |
 | **Pemanfaatan** — Persetujuan Saya | ✅ | ✅ | ✅ | — | ◐ | ◐ | — |
 | **Perawatan** — Laporan Kerusakan | ✅ | ✅ | 🔍 | 🟡 | 🟡 | 🟡 | 🟡 |
 | **Perawatan** — Work Order | ✅ | ✅ | 🔍 | 🟡 | — | — | — |
@@ -119,7 +125,7 @@ Diturunkan dari Lampiran C dan Bab 18. Tanda `—` berarti entri tidak dirender 
 |---|---|
 | **Kapan tampil** | Setiap halaman tingkat 2 dan 3. Tidak tampil di Dashboard |
 | **Bentuk** | `Beranda / <Halaman Daftar> / <Identitas Objek>` — maksimum tiga segmen, sesuai kedalaman IA (§3.4) |
-| **Identitas objek** | Memakai nomor dokumen atau kode barang yang dikenali pengguna (`LAB-KOM-0002`, `RSV-RG-2026-0001`), bukan ID basis data |
+| **Identitas objek** | Memakai nomor dokumen atau kode aset yang dikenali pengguna (`LAB-KOM-0002`, `RSV-RG-2026-0001`), bukan ID basis data |
 | **Segmen terakhir** | Tidak dapat diklik; diberi `aria-current="page"` |
 | **Formulir & wizard** | Menambah segmen aksi: `Beranda / Inventaris Aset / Tambah Aset` |
 | **Tab dalam detail** | **Tidak** menambah segmen; tab berpindah dalam objek yang sama |

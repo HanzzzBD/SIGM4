@@ -327,7 +327,7 @@ Palet disimulasikan terhadap protanopia, deuteranopia, dan tritanopia. **Tiga ta
 |---|---|---:|---|
 | `accent.green` vs `accent.purple` | Protanopia | **20** | Grup Pemanfaatan vs Pengawasan |
 | `accent.green` vs `accent.purple` | Deuteranopia | **30** | idem |
-| `accent.blue` vs `accent.green` | Tritanopia | **35** | Grup Aset & Lokasi vs Pemanfaatan |
+| `accent.blue` vs `accent.green` | Tritanopia | **35** | Grup Aset & Bahan vs Pemanfaatan |
 
 **Mengapa ini tidak menjadi kegagalan.** Accent hanya muncul sebagai penanda 3px di sebelah **nama grup yang selalu tertulis**, dan sebagai seri grafik yang **selalu punya legenda tekstual + pola**. Tidak ada satu pun tempat di SIGM4 di mana warna accent menjadi satu-satunya pembawa makna — itulah yang `NFR-AC-06` tuntut, dan itulah sebabnya **DSD-07** melarang accent menjadi teks atau ikon.
 

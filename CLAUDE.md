@@ -4,9 +4,9 @@ Panduan kerja AI agent di repositori **SIGM4**. Berkas ini **tidak memuat requir
 
 ## Tujuan repository
 
-SIGM4 — Sistem Informasi Management Aset, sarana dan prasarana sekolah. 21 modul, monorepo tiga pohon (`apps/api`, `apps/web`, `apps/mobile`) + `packages/schemas` sesuai [`SDD-17 §4.1`](docs/SDD/17-repo-layout.md).
+SIGM4 — Sistem Informasi Management Aset, sarana dan prasarana sekolah. 22 modul, monorepo tiga pohon (`apps/api`, `apps/web`, `apps/mobile`) + `packages/schemas` sesuai [`SDD-17 §4.1`](docs/SDD/17-repo-layout.md).
 
-**Status saat ini: dokumentasi lengkap, kode belum ada.** Repo baru berisi `docs/` dan `scripts/`. Rencana pengerjaan: 9 phase · 152 PR — [`docs/IMPLEMENTATION/README.md`](docs/IMPLEMENTATION/README.md).
+**Status saat ini: dokumentasi lengkap, kode belum ada.** Repo baru berisi `docs/` dan `scripts/`. Rencana pengerjaan: 9 phase · 162 PR — [`docs/IMPLEMENTATION/README.md`](docs/IMPLEMENTATION/README.md).
 
 ## Source of truth
 

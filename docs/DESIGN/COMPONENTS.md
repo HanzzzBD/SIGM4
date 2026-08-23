@@ -100,7 +100,7 @@ C-22…C-29 memenuhi daftar komponen inti wajib pada [`ui-foundation.md §31.3`]
 
 **Purpose.** Berpindah ke alamat lain. Bersama Button, ia satu-satunya elemen berwarna teal di dalam teks.
 
-**Anatomy.** Teks + garis bawah. Tautan yang menuju objek memakai identitas yang dikenali pengguna — nomor dokumen atau kode barang, bukan ID basis data (`UXP-01`).
+**Anatomy.** Teks + garis bawah. Tautan yang menuju objek memakai identitas yang dikenali pengguna — nomor dokumen atau kode aset, bukan ID basis data (`UXP-01`).
 
 **Variant.**
 
@@ -138,7 +138,7 @@ C-22…C-29 memenuhi daftar komponen inti wajib pada [`ui-foundation.md §31.3`]
 |   [ikon] Dashboard             |            + letter.spacing.wide, HURUF BESAR
 |   [ikon] Notifikasi       (3)  |  item: 44px, font.size.base / 500 / text.primary
 |                                |
-||  ASET & LOKASI                |  <- penanda 3px accent.blue di kiri label grup
+||  ASET & BAHAN                 |  <- penanda 3px accent.blue di kiri label grup
 || [ikon] Inventaris Aset        |  <- item AKTIF
 |   [ikon] Kategori Aset         |
 +--------------------------------+
@@ -249,7 +249,7 @@ Tombol Scan memakai perlakuan visual tombol primer karena `UX-02` menjadikan sca
 
 **Anatomy.** `Beranda / Inventaris Aset / LAB-KOM-0002` — pemisah `/` berwarna `text.tertiary`, `font.size.sm`.
 
-**Spesifikasi.** Segmen dapat diklik memakai Link varian `standalone`. Segmen terakhir `text.secondary`, tidak dapat diklik, `aria-current="page"`. Identitas objek memakai nomor dokumen atau kode barang. Breadcrumb terisi penuh dari struktur route meski pengguna mendarat dari deep link.
+**Spesifikasi.** Segmen dapat diklik memakai Link varian `standalone`. Segmen terakhir `text.secondary`, tidak dapat diklik, `aria-current="page"`. Identitas objek memakai nomor dokumen atau kode aset. Breadcrumb terisi penuh dari struktur route meski pengguna mendarat dari deep link.
 
 **Accessibility.** `<nav aria-label="Breadcrumb">` berisi `<ol>`. Pemisah `/` dirender lewat CSS `::before` agar tidak terbaca pembaca layar. Tidak dipakai di mobile — penggantinya judul layar + tombol kembali.
 
@@ -319,7 +319,7 @@ Tombol Scan memakai perlakuan visual tombol primer karena `UX-02` menjadikan sca
 | Tipe | Ketentuan |
 |---|---|
 | Nominal rupiah | Prefiks "Rp" di dalam field · `tabular-nums` · rata kanan · dikirim sebagai string desimal (`SDD-API` §4.3) |
-| Kode barang | `tabular-nums` · huruf besar otomatis · tersedia sebagai jalur cadangan di **setiap** alur pemindaian (`FR-05.2 A1`) |
+| Kode aset | `tabular-nums` · huruf besar otomatis · tersedia sebagai jalur cadangan di **setiap** alur pemindaian (`FR-05.2 A1`) |
 | Tanggal & waktu | Selalu menyertakan penanda **WIB** (`CAL-UI-09`) |
 | Alasan (aksi destruktif) | Textarea minimum 3 baris · wajib · tombol utama nonaktif sampai terisi (`UX-04`) |
 
@@ -364,7 +364,7 @@ Tombol Scan memakai perlakuan visual tombol primer karena `UX-02` menjadikan sca
 
 # C-11 Radio
 
-**Purpose.** Memilih tepat satu dari beberapa opsi yang seluruhnya perlu terlihat — kondisi kembali barang, keputusan approval, alasan penghapusan.
+**Purpose.** Memilih tepat satu dari beberapa opsi yang seluruhnya perlu terlihat — kondisi kembali aset, keputusan approval, alasan penghapusan.
 
 **Spesifikasi.** Lingkaran 20×20px, `radius.full`, border 1px `border.strong`. Terpilih: border 2px `teal.600` + titik tengah 8px `teal.600`. Area sentuh 44×44 dp. Jarak antar-opsi `spacing.3`.
 
@@ -469,7 +469,7 @@ Tombol Scan memakai perlakuan visual tombol primer karena `UX-02` menjadikan sca
 ```
 [ Panel Filter                                            ]
 +---------------------------------------------------------+
-| [ ] | Kode Barang ^ | Nama | Kondisi | Status |          |  header 48px, surface.subtle
+| [ ] | Kode Aset ^ | Nama | Kondisi | Status |            |  header 48px, surface.subtle
 +---------------------------------------------------------+
 | [x] | LAB-KOM-0001  | ...  | [badge] | [badge]|  [...]   |  baris 44px
 +---------------------------------------------------------+
@@ -828,7 +828,7 @@ Filter aktif:  (Kategori: Komputer x)  (Kondisi: Baik x)      Hapus semua
 |      +------------------+        |
 |   Arahkan kamera ke label QR     |   font.size.base / text.inverse
 |                                  |
-| [ Masukkan kode barang manual ]  |   SELALU TERLIHAT
+| [ Masukkan kode aset manual ]    |   SELALU TERLIHAT
 +----------------------------------+
 ```
 
@@ -847,7 +847,7 @@ Filter aktif:  (Kategori: Komputer x)  (Kondisi: Baik x)      Hapus semua
 
 **Izin kamera ditolak** (`MOB-MED-06`, `FR-05.2 A4`). Layar berganti menjadi [Empty State](#c-21-empty-state) berisi panduan mengaktifkan izin **dan** input kode manual — bukan layar buntu.
 
-**Accessibility.** Tombol manual berada dalam urutan fokus, bukan hanya dapat dijangkau sentuhan (`NFR-AC-03`). Hasil pemindaian diumumkan lewat *live region* menyebut kode barang yang terbaca.
+**Accessibility.** Tombol manual berada dalam urutan fokus, bukan hanya dapat dijangkau sentuhan (`NFR-AC-03`). Hasil pemindaian diumumkan lewat *live region* menyebut kode aset yang terbaca.
 
 **Do / Don't.**
 

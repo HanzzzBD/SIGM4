@@ -11,7 +11,7 @@
 
 ## A. Functional Requirements
 
-Total: **61** requirement.
+Total: **69** requirement.
 
 | ID | Module | File | Status | Notes |
 |---|---|---|:---:|---|
@@ -60,6 +60,7 @@ Total: **61** requirement.
 | `FR-13.1` | M-13 Audit & Stock Opname | `02-modules/m13-audit-stocktake.md` | Not Started |  |
 | `FR-13.2` | M-13 Audit & Stock Opname | `02-modules/m13-audit-stocktake.md` | Not Started |  |
 | `FR-13.3` | M-13 Audit & Stock Opname | `02-modules/m13-audit-stocktake.md` | Not Started |  |
+| `FR-13.4` | M-13 Audit & Stock Opname | `02-modules/m13-audit-stocktake.md` | Not Started |  |
 | `FR-14.1` | M-14 Pengadaan Barang | `02-modules/m14-procurement.md` | Not Started |  |
 | `FR-14.2` | M-14 Pengadaan Barang | `02-modules/m14-procurement.md` | Not Started |  |
 | `FR-14.3` | M-14 Pengadaan Barang | `02-modules/m14-procurement.md` | Not Started |  |
@@ -76,10 +77,17 @@ Total: **61** requirement.
 | `FR-21.1` | M-21 Penghapusan Aset | `02-modules/m21-disposal.md` | Not Started |  |
 | `FR-21.2` | M-21 Penghapusan Aset | `02-modules/m21-disposal.md` | Not Started |  |
 | `FR-21.3` | M-21 Penghapusan Aset | `02-modules/m21-disposal.md` | Not Started |  |
+| `FR-22.1` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `FR-22.2` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `FR-22.3` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `FR-22.4` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `FR-22.5` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `FR-22.6` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `FR-22.7` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
 
 ## B. Business Rules
 
-Total: **103** aturan. Setiap aturan wajib memiliki minimal satu test case
+Total: **119** aturan. Setiap aturan wajib memiliki minimal satu test case
 (lihat [`test-strategy.md`](test-strategy.md)).
 
 | ID | Module | File | Status | Notes |
@@ -187,6 +195,22 @@ Total: **103** aturan. Setiap aturan wajib memiliki minimal satu test case
 | `BR-077` | M-19 Chatbot AI | `02-modules/m19-chatbot.md` | Not Started |  |
 | `BR-078` | M-19 Chatbot AI | `02-modules/m19-chatbot.md` | Not Started |  |
 | `BR-079` | M-19 Chatbot AI | `02-modules/m19-chatbot.md` | Not Started |  |
+| `BR-080` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `BR-081` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `BR-082` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `BR-083` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `BR-084` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `BR-085` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `BR-086` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `BR-087` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `BR-088` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `BR-089` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `BR-090` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `BR-091` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `BR-092` | M-22 Manajemen Bahan | `02-modules/m22-materials.md` | Not Started |  |
+| `BR-093` | M-13 Audit & Stock Opname | `02-modules/m13-audit-stocktake.md` | Not Started |  |
+| `BR-094` | M-13 Audit & Stock Opname | `02-modules/m13-audit-stocktake.md` | Not Started |  |
+| `BR-095` | M-13 Audit & Stock Opname | `02-modules/m13-audit-stocktake.md` | Not Started |  |
 
 ## C. Sebaran per Modul
 
@@ -204,7 +228,7 @@ Total: **103** aturan. Setiap aturan wajib memiliki minimal satu test case
 | M-10 Approval Workflow Engine | 3 | 10 |
 | M-11 Laporan Kerusakan | 3 | 2 |
 | M-12 Maintenance Management | 5 | 8 |
-| M-13 Audit & Stock Opname | 3 | 6 |
+| M-13 Audit & Stock Opname | 4 | 9 |
 | M-14 Pengadaan Barang | 3 | 6 |
 | M-15 Dashboard Monitoring | 1 | 0 |
 | M-16 Statistik & Analitik | 1 | 0 |
@@ -213,6 +237,7 @@ Total: **103** aturan. Setiap aturan wajib memiliki minimal satu test case
 | M-19 Chatbot AI | 2 | 5 |
 | M-20 Konfigurasi Sistem | 1 | 0 |
 | M-21 Penghapusan Aset | 3 | 7 |
+| M-22 Manajemen Bahan | 7 | 13 |
 
 ## D. Open Issues yang Menunggu Keputusan
 
@@ -227,9 +252,9 @@ pelaksana; perlu keputusan pemilik produk sebelum modul terkait dianggap selesai
 | M-09 | BR-030 (pemblokiran pemohon) ditegakkan saat pengajuan reservasi di M-07/M-08, namun aturannya dimiliki modul ini karena bersumber dari kewajiban peminjaman. |
 | M-11 | BR-032 (barang kembali rusak menghasilkan tiket otomatis) dimiliki M-09; modul ini adalah konsumennya. |
 | M-15 | Rincian isi tiap kartu dashboard berada di `04-frontend/dashboards.md` karena bersifat spesifikasi antarmuka, bukan aturan bisnis. |
-| M-17 | Katalog notifikasi NT-01…NT-48 tidak berada di modul ini; setiap baris dimiliki modul yang menerbitkan event-nya. Indeks lengkap digenerate di `03-architecture/notifications-index.md`. |
+| M-17 | Katalog notifikasi NT-01…NT-51 tidak berada di modul ini; setiap baris dimiliki modul yang menerbitkan event-nya. Indeks lengkap digenerate di `03-architecture/notifications-index.md`. |
 | M-18 | Daftar aksi yang wajib dicatat tersebar ke modul penerbitnya. Indeks lengkap digenerate di `03-architecture/activity-log-index.md`. |
 
 ---
 
-Ringkasan: **61 FR** · **103 BR** · **8 open issue** · seluruhnya berstatus awal `Not Started`.
+Ringkasan: **69 FR** · **119 BR** · **8 open issue** · seluruhnya berstatus awal `Not Started`.

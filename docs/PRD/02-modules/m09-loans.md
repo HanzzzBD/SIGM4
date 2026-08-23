@@ -41,7 +41,7 @@ sequenceDiagram
     M->>API: GET /api/v1/loans/ready-checkout
     API-->>M: Daftar reservasi siap diserahkan
 
-    S->>M: Scan QR unit barang
+    S->>M: Scan QR unit aset
     M->>API: GET /api/v1/assets/by-uuid/{uuid}
     API->>DB: SELECT asset WHERE uuid
     DB-->>API: Data aset
@@ -65,7 +65,7 @@ sequenceDiagram
     LOAN->>DB: Catat activity log
     LOAN->>DB: COMMIT
     LOAN->>NOTIF: Notifikasi peminjam
-    NOTIF-->>P: "Barang diserahkan. Kembalikan sebelum {tanggal}"
+    NOTIF-->>P: "Aset diserahkan. Kembalikan sebelum {tanggal}"
     API-->>M: 201 {nomor_peminjaman, jatuh_tempo}
     M-->>S: Tampilkan bukti serah terima
 ```
@@ -130,12 +130,12 @@ flowchart TB
     APP(("Approver"))
 
     subgraph MOD["Modul Reservasi & Peminjaman"]
-        A["Lihat Ketersediaan Barang"]
-        B["Ajukan Reservasi Barang"]
+        A["Lihat Ketersediaan Aset"]
+        B["Ajukan Reservasi Aset"]
         C["Batalkan Reservasi"]
         D["Proses Persetujuan"]
-        E["Serah Terima Barang"]
-        F["Pengembalian Barang"]
+        E["Serah Terima Aset"]
+        F["Pengembalian Aset"]
         G["Hitung Denda Keterlambatan"]
         H["Buat Tiket Kerusakan Otomatis"]
         I["Verifikasi Unit via Scan QR"]
@@ -168,15 +168,15 @@ flowchart TB
 
 | Aspek | Uraian |
 |---|---|
-| **Description** | Petugas menyerahkan unit barang kepada peminjam berdasarkan reservasi yang telah disetujui, diverifikasi melalui pemindaian QR. |
+| **Description** | Petugas menyerahkan unit aset kepada peminjam berdasarkan reservasi yang telah disetujui, diverifikasi melalui pemindaian QR. |
 | **Actor** | Petugas Sarana Prasarana (pelaksana), Peminjam (penerima) |
-| **Preconditions** | Terdapat reservasi barang berstatus `Disetujui`; unit fisik tersedia di tempat |
+| **Preconditions** | Terdapat reservasi aset berstatus `Disetujui`; unit fisik tersedia di tempat |
 
 **Main Flow**
 1. Peminjam datang; Petugas membuka daftar reservasi yang siap diserahkan hari ini.
-2. Petugas memindai QR unit barang (atau memasukkan kode barang manual).
+2. Petugas memindai QR unit aset (atau memasukkan kode aset manual).
 3. Sistem memverifikasi bahwa unit yang dipindai sesuai dengan unit yang dialokasikan pada reservasi.
-4. Petugas mencatat kondisi awal barang dan mengunggah foto kondisi serah terima.
+4. Petugas mencatat kondisi awal aset dan mengunggah foto kondisi serah terima.
 5. Petugas menekan "Serahkan"; peminjam melakukan konfirmasi digital (tanda tangan pada layar atau konfirmasi dari akun peminjam).
 6. Sistem membuat transaksi Peminjaman berstatus `Dipinjam`, mengubah status unit menjadi `Dipinjam`, dan menetapkan tanggal jatuh tempo.
 7. Sistem menotifikasi peminjam berisi rincian dan tanggal pengembalian.
@@ -184,7 +184,7 @@ flowchart TB
 **Alternative Flow**
 - **A1 — Unit yang dipindai berbeda dari alokasi:** Sistem menampilkan peringatan; Petugas dapat menyetujui penggantian unit setara (dicatat sebagai `substitusi unit` beserta alasan).
 - **A2 — Peminjam tidak dapat hadir dan diwakilkan:** Petugas mencatat nama penerima kuasa; tanggung jawab tetap melekat pada pemohon.
-- **A3 — Kondisi barang menurun sejak reservasi disetujui:** Petugas menampilkan kondisi terkini; peminjam dapat menerima atau membatalkan.
+- **A3 — Kondisi aset menurun sejak reservasi disetujui:** Petugas menampilkan kondisi terkini; peminjam dapat menerima atau membatalkan.
 - **A4 — Peminjaman langsung tanpa reservasi:** Hanya dapat dilakukan oleh Petugas Sarpras dengan permission `loan.direct`; sistem membuat reservasi retroaktif berstatus `Disetujui` demi konsistensi jejak audit.
 
 **Post Conditions** — Transaksi peminjaman aktif; unit berstatus `Dipinjam`; jatuh tempo terjadwal; reminder tersiapkan.
@@ -195,7 +195,7 @@ flowchart TB
 - [ ] Status unit berubah menjadi `Dipinjam` seketika dan tercermin pada katalog.
 - [ ] Nomor transaksi peminjaman unik (mis. `PJM-2026-0001`).
 
-### FR-09.2 Pengembalian Barang (Check-in)
+### FR-09.2 Pengembalian Aset (Check-in)
 
 | Aspek | Uraian |
 |---|---|
@@ -204,17 +204,17 @@ flowchart TB
 | **Preconditions** | Terdapat transaksi peminjaman berstatus `Dipinjam` |
 
 **Main Flow**
-1. Peminjam menyerahkan barang; Petugas memindai QR unit.
+1. Peminjam menyerahkan aset; Petugas memindai QR unit.
 2. Sistem menampilkan detail peminjaman: peminjam, tanggal pinjam, jatuh tempo, kondisi awal, dan foto serah terima.
-3. Petugas memeriksa fisik barang, memilih kondisi kembali (Baik / Rusak Ringan / Rusak Berat / Tidak Lengkap), dan mengunggah foto kondisi akhir.
+3. Petugas memeriksa fisik aset, memilih kondisi kembali (Baik / Rusak Ringan / Rusak Berat / Tidak Lengkap), dan mengunggah foto kondisi akhir.
 4. Sistem menghitung keterlambatan: `hari_terlambat = tanggal_kembali - tanggal_jatuh_tempo` (dibulatkan ke atas per hari kalender).
 5. Bila terlambat, sistem menerbitkan denda: `denda = hari_terlambat × tarif_denda_per_hari` (tarif dikonfigurasi Administrator — FR-20.1).
 6. Petugas menekan "Konfirmasi Pengembalian".
 7. Sistem menutup transaksi (`Dikembalikan`), mengubah status unit menjadi `Tersedia`, dan menotifikasi peminjam.
 
 **Alternative Flow**
-- **A1 — Barang kembali dalam kondisi rusak:** Sistem otomatis membuat Laporan Kerusakan tertaut ke transaksi peminjaman dan peminjam; status unit ditetapkan sesuai tabel klarifikasi transisi pada Bab 12.2 (`Tidak Tersedia` bila work order belum terbit, `Dalam Perbaikan` bila work order langsung dibuat). Seluruh slot pemesanan mendatang atas unit tersebut dibatalkan otomatis.
-- **A2 — Barang hilang / tidak dikembalikan:** Petugas menandai `Hilang`; sistem mengubah kondisi aset menjadi `Hilang`, membuat catatan tanggung jawab peminjam, menerbitkan **kewajiban ganti rugi** sebesar nilai perolehan atau nilai penggantian yang ditetapkan (BR-028d), dan menotifikasi Pimpinan Sekolah. Denda keterlambatan berhenti bertambah sejak barang dinyatakan hilang.
+- **A1 — Aset kembali dalam kondisi rusak:** Sistem otomatis membuat Laporan Kerusakan tertaut ke transaksi peminjaman dan peminjam; status unit ditetapkan sesuai tabel klarifikasi transisi pada Bab 12.2 (`Tidak Tersedia` bila work order belum terbit, `Dalam Perbaikan` bila work order langsung dibuat). Seluruh slot pemesanan mendatang atas unit tersebut dibatalkan otomatis.
+- **A2 — Aset hilang / tidak dikembalikan:** Petugas menandai `Hilang`; sistem mengubah kondisi aset menjadi `Hilang`, membuat catatan tanggung jawab peminjam, menerbitkan **kewajiban ganti rugi** sebesar nilai perolehan atau nilai penggantian yang ditetapkan (BR-028d), dan menotifikasi Pimpinan Sekolah. Denda keterlambatan berhenti bertambah sejak aset dinyatakan hilang.
 - **A3 — Pengembalian sebagian** (reservasi lebih dari satu unit): Sistem mencatat pengembalian per unit; transaksi tetap berstatus `Sebagian Dikembalikan` hingga seluruh unit kembali.
 - **A4 — Terlambat namun ada alasan sah:** Petugas Sarpras atau Administrator dapat membebaskan denda (`Dibebaskan`) dengan alasan wajib.
 - **A5 — Perpanjangan sebelum jatuh tempo:** Peminjam mengajukan perpanjangan; bila unit tidak dipesan pihak lain dan disetujui approver, jatuh tempo diperbarui tanpa denda.
@@ -238,7 +238,7 @@ flowchart TB
 **Main Flow**
 1. Pengguna membuka menu Peminjaman.
 2. Sistem menampilkan tab: Aktif, Akan Jatuh Tempo (≤ 3 hari), Terlambat, dan Selesai.
-3. Pengguna memfilter berdasarkan peminjam, kategori barang, dan rentang tanggal.
+3. Pengguna memfilter berdasarkan peminjam, kategori aset, dan rentang tanggal.
 4. Sistem menjalankan tugas terjadwal harian untuk mengirim pengingat H-1 jatuh tempo dan notifikasi harian keterlambatan.
 
 **Alternative Flow**
@@ -302,7 +302,7 @@ flowchart TB
 **Alternative Flow**
 - **A1 — Unit sudah dipesan pihak lain pada periode perpanjangan:** Sistem menolak dan menampilkan tanggal jatuh tempo maksimum yang masih memungkinkan.
 - **A2 — Peminjaman sudah terlambat:** Sistem menolak; perpanjangan tidak dapat menghapus keterlambatan yang telah terjadi (BR-034).
-- **A3 — Batas jumlah perpanjangan tercapai:** Sistem menolak dan mengarahkan peminjam untuk mengembalikan barang lalu mengajukan reservasi baru.
+- **A3 — Batas jumlah perpanjangan tercapai:** Sistem menolak dan mengarahkan peminjam untuk mengembalikan aset lalu mengajukan reservasi baru.
 - **A4 — Pengajuan ditolak approver:** Jatuh tempo asli tetap berlaku; slot tentative perpanjangan dilepas; peminjam dinotifikasi.
 - **A5 — Perpanjangan disetujui setelah jatuh tempo lewat:** Denda yang telah terbit untuk hari-hari sebelum keputusan **tetap berlaku**; perpanjangan hanya berlaku prospektif.
 
@@ -323,18 +323,18 @@ flowchart TB
 |---|---|
 | BR-026 | Serah terima peminjaman hanya dapat dilakukan atas reservasi berstatus `Disetujui`, kecuali oleh pengguna dengan permission `loan.direct`. |
 | BR-026a | Peminjaman langsung dengan permission `loan.direct` merupakan **satu-satunya pengecualian sah** terhadap BR-035. Sistem membentuk reservasi retroaktif berstatus `Disetujui` dengan penanda `bypass_approval = true` beserta alasan wajib, dan mencatatnya sebagai anomali pada activity log serta laporan kepatuhan bulanan. |
-| BR-027 | Serah terima dan pengembalian wajib disertai verifikasi unit (pemindaian QR atau input kode barang) dan minimal satu foto kondisi. |
+| BR-027 | Serah terima dan pengembalian wajib disertai verifikasi unit (pemindaian QR atau input kode aset) dan minimal satu foto kondisi. |
 | BR-028 | Denda keterlambatan dihitung `jumlah_hari_terlambat × tarif_denda_per_hari`, dengan pembulatan ke atas pada satuan **hari kalender** (bukan hari kerja). Definisi hari mengikuti Lampiran E. |
 | BR-028a | Denda diterbitkan **per unit yang dipinjam (`loan_item`)**, bukan per transaksi peminjaman. Pada pengembalian sebagian, setiap unit dihitung keterlambatannya sendiri. |
-| BR-028b | Denda keterlambatan per unit dibatasi maksimum (*cap*) sebesar persentase nilai perolehan unit tersebut yang dikonfigurasi Administrator (bawaan 30%), atau nominal maksimum bila nilai perolehan tidak diketahui. Cap mencegah denda melampaui nilai barangnya sendiri. |
+| BR-028b | Denda keterlambatan per unit dibatasi maksimum (*cap*) sebesar persentase nilai perolehan unit tersebut yang dikonfigurasi Administrator (bawaan 30%), atau nominal maksimum bila nilai perolehan tidak diketahui. Cap mencegah denda melampaui nilai asetnya sendiri. |
 | BR-028c | Hari libur sekolah **tetap dihitung** sebagai hari keterlambatan, kecuali Administrator mengaktifkan parameter "kecualikan hari libur". Kebijakan yang dipilih wajib disosialisasikan kepada pengguna sebelum go-live (RS-16). |
-| BR-028d | Barang yang dinyatakan `Hilang` atau rusak berat akibat kelalaian peminjam menimbulkan **kewajiban ganti rugi** terpisah dari denda keterlambatan, sebesar nilai perolehan aset atau nilai penggantian yang ditetapkan Petugas Sarpras dengan persetujuan Pimpinan Sekolah. Kewajiban ini dicatat dengan jenis `Ganti Rugi` dan mengikuti alur status yang sama dengan denda. |
+| BR-028d | Aset yang dinyatakan `Hilang` atau rusak berat akibat kelalaian peminjam menimbulkan **kewajiban ganti rugi** terpisah dari denda keterlambatan, sebesar nilai perolehan aset atau nilai penggantian yang ditetapkan Petugas Sarpras dengan persetujuan Pimpinan Sekolah. Kewajiban ini dicatat dengan jenis `Ganti Rugi` dan mengikuti alur status yang sama dengan denda. |
 | BR-028e | Kewajiban berjenis `Ganti Rugi` dapat dibebaskan sepenuhnya atau sebagian **hanya oleh Pimpinan Sekolah**, melalui permission `fine.waive_compensation`, dengan alasan wajib dan tercatat pada activity log. Petugas Sarpras maupun Administrator tidak berwenang membebaskannya — `fine.waive` (BR-031) tidak berlaku atas jenis ini. Pembebasan sebagian mengisi `jumlah_dibebaskan` dan menyisakan tagihan sebesar `jumlah − jumlah_dibebaskan` dengan status `Dibebaskan Sebagian`; kewajiban tersisa tetap diperhitungkan pada ambang pemblokiran BR-030. |
 | BR-029 | Tarif denda yang berlaku adalah tarif pada saat tanggal jatuh tempo, bukan tarif saat pengembalian. |
 | BR-030 | Pengguna yang memiliki peminjaman terlambat yang belum dikembalikan, atau denda `Belum Dibayar` melebihi ambang yang dikonfigurasi, diblokir dari mengajukan reservasi/peminjaman baru sampai kewajibannya diselesaikan. |
 | BR-031 | Pembebasan denda berjenis `Keterlambatan` hanya dapat dilakukan oleh Administrator atau Petugas Sarana Prasarana, wajib menyertakan alasan, dan tercatat pada activity log. Pembebasan berjenis `Ganti Rugi` tunduk pada BR-028e, bukan aturan ini. |
-| BR-032 | Barang yang kembali dalam kondisi rusak otomatis menghasilkan tiket Laporan Kerusakan yang tertaut ke transaksi peminjaman dan peminjamnya. |
-| BR-033 | Tanggung jawab peminjaman tetap melekat pada pemohon meskipun pengambilan barang diwakilkan pihak lain. |
+| BR-032 | Aset yang kembali dalam kondisi rusak otomatis menghasilkan tiket Laporan Kerusakan yang tertaut ke transaksi peminjaman dan peminjamnya. |
+| BR-033 | Tanggung jawab peminjaman tetap melekat pada pemohon meskipun pengambilan aset diwakilkan pihak lain. |
 | BR-034 | Perpanjangan peminjaman hanya dapat diajukan sebelum jatuh tempo, hanya bila unit tidak dipesan pihak lain, dan wajib melalui persetujuan. |
 
 **Aturan bersama yang juga berlaku** (dimiliki modul lain, dirujuk melalui ID — tidak disalin ke sini):
@@ -379,11 +379,11 @@ Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-archit
 
 | Kode | Event Pemicu | Penerima | Kanal | Wajib | Contoh Isi |
 |---|---|---|---|:---:|---|
-| **NT-10** | Serah terima barang selesai | Peminjam | In-app + Push | ❌ | "{jumlah} unit {barang} telah diserahkan. Kembalikan sebelum {tanggal}." |
-| **NT-11** | Pengingat H-1 jatuh tempo | Peminjam | In-app + Push | ✅ | "Pengembalian {barang} jatuh tempo besok, {tanggal}." |
-| **NT-12** | Peminjaman terlambat (harian) | Peminjam | In-app + Push | ✅ | "{barang} terlambat {n} hari. Denda berjalan Rp{jumlah}." |
+| **NT-10** | Serah terima aset selesai | Peminjam | In-app + Push | ❌ | "{jumlah} unit {aset} telah diserahkan. Kembalikan sebelum {tanggal}." |
+| **NT-11** | Pengingat H-1 jatuh tempo | Peminjam | In-app + Push | ✅ | "Pengembalian {aset} jatuh tempo besok, {tanggal}." |
+| **NT-12** | Peminjaman terlambat (harian) | Peminjam | In-app + Push | ✅ | "{aset} terlambat {n} hari. Denda berjalan Rp{jumlah}." |
 | **NT-13** | Rekap keterlambatan harian | Petugas Sarpras | In-app | ❌ | "{n} peminjaman terlambat perlu ditindaklanjuti." |
-| **NT-14** | Pengembalian tercatat | Peminjam | In-app + Push | ❌ | "Pengembalian {barang} tercatat pada {tanggal}." |
+| **NT-14** | Pengembalian tercatat | Peminjam | In-app + Push | ❌ | "Pengembalian {aset} tercatat pada {tanggal}." |
 | **NT-15** | Denda terbit | Peminjam | In-app + Push | ✅ | "Denda keterlambatan Rp{jumlah} terbit atas peminjaman {nomor}." |
 | **NT-16** | Denda dilunasi | Peminjam | In-app | ❌ | "Denda Rp{jumlah} telah dinyatakan lunas." |
 | **NT-17** | Denda atau ganti rugi dibebaskan, penuh maupun sebagian | Peminjam | In-app | ❌ | "Kewajiban Rp{jumlah_dibebaskan} dibebaskan. Sisa tagihan Rp{sisa}. Alasan: {alasan}." |
@@ -418,7 +418,7 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | `LOAN_UNIT_SUBSTITUTED` | Penggantian unit saat serah terima beserta alasan |
 | `LOAN_CHECKIN` | Pengembalian beserta kondisi akhir |
 | `LOAN_EXTENDED` | Perpanjangan yang disetujui |
-| `LOAN_MARKED_LOST` | Penetapan barang hilang |
+| `LOAN_MARKED_LOST` | Penetapan aset hilang |
 | `FINE_ISSUED` / `FINE_PAID` / `FINE_WAIVED` | Termasuk alasan pembebasan |
 | `COMPENSATION_WAIVED` | Pembebasan ganti rugi oleh Pimpinan beserta alasan dan nilai yang dibebaskan (BR-028e) |
 | `BORROWER_BLOCKED` / `BORROWER_UNBLOCKED` | Pemblokiran akibat kewajiban tertunggak |
@@ -435,13 +435,13 @@ Strategi pengujian: [`../06-quality/test-strategy.md`](../06-quality/test-strate
 
 ## 13. Dependencies
 
-- [`m08-reservation-item.md`](m08-reservation-item.md) — M-08 Reservasi Barang
+- [`m08-reservation-item.md`](m08-reservation-item.md) — M-08 Reservasi Aset
 - [`m10-approval.md`](m10-approval.md) — M-10 Approval Workflow Engine
 - [`m11-damage-reports.md`](m11-damage-reports.md) — M-11 Laporan Kerusakan
 
 ## 14. Related Modules
 
-- [`m08-reservation-item.md`](m08-reservation-item.md) — M-08 Reservasi Barang
+- [`m08-reservation-item.md`](m08-reservation-item.md) — M-08 Reservasi Aset
 - [`m10-approval.md`](m10-approval.md) — M-10 Approval Workflow Engine
 - [`m11-damage-reports.md`](m11-damage-reports.md) — M-11 Laporan Kerusakan
 

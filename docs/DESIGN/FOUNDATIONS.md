@@ -57,7 +57,7 @@ Satu nilai per accent, **tanpa varian** (**DSD-07**). Pemetaan grup domain mengi
 
 | Token | Hex | RGB | HSL | Grup domain | Kontras vs putih | Teks di atasnya |
 |---|---|---|---|---|---:|---|
-| `color.accent.blue` | `#00529C` | `0, 82, 156` | `208 100% 31%` | Aset & Lokasi | 7,82 | `#FFFFFF` (7,82 ✓) |
+| `color.accent.blue` | `#00529C` | `0, 82, 156` | `208 100% 31%` | Aset & Bahan | 7,82 | `#FFFFFF` (7,82 ✓) |
 | `color.accent.green` | `#028744` | `2, 135, 68` | `150 97% 27%` | Pemanfaatan | 4,61 | `#FFFFFF` (4,61 ✓) |
 | `color.accent.yellow` | `#FEB003` | `254, 176, 3` | `41 99% 50%` | Perawatan | 1,84 | `#111827` (9,65 ✓) |
 | `color.accent.purple` | `#541F7F` | `84, 31, 127` | `273 61% 31%` | Pengawasan | 11,17 | `#FFFFFF` (11,17 ✓) |
@@ -174,7 +174,7 @@ Tiga nilai per semantic. Berbeda dari accent, semantic **boleh** menjadi warna t
 | `success` | Berhasil · selesai · valid · tepat waktu | Aset `Tersedia` · WO `Selesai` · denda `Lunas` · toast simpan berhasil | Menyatakan grup **Pemanfaatan** — itu `accent.green` |
 | `warning` | Perhatian · perlu tindakan · mendekati batas | Jatuh tempo ≤3 hari · SLA hampir terlampaui · `Rusak Ringan` · garansi ≤30 hari · sisa tagihan `Dibebaskan Sebagian` | Menyatakan grup **Perawatan** — itu `accent.yellow` |
 | `error` | Kesalahan · gagal · destruktif · terlambat | Galat validasi · `Terlambat` · `Rusak Berat` · `Hilang` · urgensi `Kritis` · tombol destruktif | Menyatakan kategori atau identitas apa pun |
-| `info` | Informasi kontekstual · netral · sedang berjalan | Banner sesi akan berakhir · catatan linimasa · `Dipinjam` · `Dalam Perbaikan` | Menyatakan grup **Aset & Lokasi** — itu `accent.blue` |
+| `info` | Informasi kontekstual · netral · sedang berjalan | Banner sesi akan berakhir · catatan linimasa · `Dipinjam` · `Dalam Perbaikan` | Menyatakan grup **Aset & Bahan** — itu `accent.blue` |
 
 ## 1.9 Pemetaan enum ke warna
 
@@ -200,7 +200,7 @@ Enum Bab 11.3 → semantic. Seluruhnya **wajib** disertai teks label dan ikon (`
 | Token | Nilai | Alasan |
 |---|---|---|
 | `font.family.sans` | `Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif` | **DSD-04**. Angka tabular bawaan dan x-height tinggi untuk tabel padat; variable font sehingga satu berkas melayani seluruh bobot; dukungan Latin penuh sesuai 31.2 |
-| `font.family.mono` | `"JetBrains Mono", "SFMono-Regular", Consolas, monospace` | **Hanya** untuk `request_id` pada layar galat (31.5). Kode barang dan nomor dokumen memakai `font.family.sans` dengan `font-variant-numeric: tabular-nums` |
+| `font.family.mono` | `"JetBrains Mono", "SFMono-Regular", Consolas, monospace` | **Hanya** untuk `request_id` pada layar galat (31.5). Kode aset dan nomor dokumen memakai `font.family.sans` dengan `font-variant-numeric: tabular-nums` |
 
 **Pemuatan:** self-host sebagai variable font WOFF2, `font-display: swap`, subset Latin + Latin Extended. Fallback stack di atas wajib ada — pada perangkat kelas bawah (`NFR-C-03`, Android 8) kegagalan memuat font tidak boleh membuat teks hilang.
 
@@ -254,10 +254,10 @@ Empat bobot ini adalah batas. Menambah 300 atau 800 memerlukan pembaruan berkas 
 | Judul halaman (`h1`) | `2xl` 30px | 600 | `text.heading` | "Inventaris Aset" |
 | Judul section (`h2`) | `xl` 24px | 600 | `text.heading` | "Rekonsiliasi Opname" |
 | Judul kartu (`h3`) | `lg` 18px | 600 | `text.heading` | "Peminjaman Terlambat" |
-| Label grup sidebar | `xs` 12px | 500 | `text.secondary` | "ASET & LOKASI" — huruf besar + `letter.spacing.wide` |
+| Label grup sidebar | `xs` 12px | 500 | `text.secondary` | "ASET & BAHAN" — huruf besar + `letter.spacing.wide` |
 | Item navigasi | `base` 16px | 500 | `text.primary` | "Inventaris Aset" |
 | Item navigasi aktif | `base` 16px | 600 | `teal.800` | — |
-| Label kolom tabel | `sm` 14px | 500 | `text.primary` | "Kode Barang" |
+| Label kolom tabel | `sm` 14px | 500 | `text.primary` | "Kode Aset" |
 | Isi tabel | `base` 16px | 400 | `text.primary` | "LAB-KOM-0002" |
 | Nomor dokumen | `base` 16px | 600 | `text.link` bila dapat ditekan | "RSV-RG-2026-0001" |
 | Label form | `sm` 14px | 500 | `text.primary` | "Nama kegiatan" |

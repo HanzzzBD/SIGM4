@@ -1,6 +1,6 @@
 # 32. Mobile Application Requirements
 
-> Aplikasi mobile menanggung seluruh pekerjaan lapangan: pemindaian QR, stock opname, eksekusi work order, pelaporan kerusakan, dan persetujuan dari ponsel. Bab ini menutup kekosongan spesifikasi yang sebelumnya menyerahkan hal-hal kritis kepada asumsi developer.
+> Aplikasi mobile menanggung seluruh pekerjaan lapangan: pemindaian QR, stock opname **aset maupun bahan**, eksekusi work order, pelaporan kerusakan, dan persetujuan dari ponsel. Bab ini menutup kekosongan spesifikasi yang sebelumnya menyerahkan hal-hal kritis kepada asumsi developer.
 
 ## 32.1 Klarifikasi Kebijakan Luring
 
@@ -25,7 +25,7 @@ Tanpa ketentuan ini, satu tiket kerusakan berisi 5 foto ponsel modern dapat menc
 | MOB-MED-03 | Unggah dilakukan langsung ke object storage melalui *presigned URL* (17.5 poin 6), tidak melalui proses API |
 | MOB-MED-04 | Indikator progres per berkas dan pembatalan unggah tersedia |
 | MOB-MED-05 | Pemindaian QR memakai pustaka kamera native; tingkat koreksi galat M dan ukuran cetak minimum 2×2 cm wajib terbaca pada jarak 10–30 cm dalam kondisi cahaya ruangan kelas |
-| MOB-MED-06 | Bila izin kamera ditolak, aplikasi menampilkan panduan mengaktifkan izin dan menyediakan input kode barang manual (FR-05.2 A4) |
+| MOB-MED-06 | Bila izin kamera ditolak, aplikasi menampilkan panduan mengaktifkan izin dan menyediakan input kode aset manual (FR-05.2 A4) |
 | MOB-MED-07 | Mode pemindaian beruntun tersedia untuk opname dan mutasi massal: kamera tetap aktif, hasil ditambahkan ke daftar tanpa menutup pemindai |
 
 ## 32.3 Versi Aplikasi & Pembaruan Paksa
@@ -67,6 +67,7 @@ Seluruh izin diminta **saat pertama kali dibutuhkan** disertai penjelasan tujuan
 | MOB-PERF-03 | Hasil pemindaian opname dikirim per pemindaian (bukan menunggu akhir sesi) agar progres tidak hilang bila aplikasi tertutup |
 | MOB-PERF-04 | Daftar panjang memakai *virtualized list*; gambar dimuat malas dan memakai berkas turunan berukuran kecil (*thumbnail*) |
 | MOB-PERF-05 | Ukuran unduh aplikasi ≤ 40 MB per platform |
+| MOB-PERF-06 | Daftar bahan target opname dimuat **per lokasi penyimpanan**, bukan per sesi; hitungan fisik dikirim per baris agar progres tidak hilang bila aplikasi tertutup (`FR-13.4`) |
 
 ## 32.7 Keamanan Perangkat
 

@@ -1,4 +1,4 @@
-# M-05 — QR Code Barang
+# M-05 — QR Code
 
 > **Modul self-contained.** Seluruh yang diperlukan untuk mengimplementasikan modul ini ada di
 > berkas ini: requirement, aturan bisnis, endpoint, entitas, notifikasi, permission, jejak audit,
@@ -9,7 +9,18 @@
 ## 1. Overview
 
 Lihat [`../01-product/overview.md`](../01-product/overview.md) untuk konteks produk menyeluruh.
-Modul ini adalah **M-05 — QR Code Barang** sebagaimana terdaftar pada Daftar Modul PRD.
+Modul ini adalah **M-05 — QR Code** sebagaimana terdaftar pada Daftar Modul PRD.
+
+**Modul ini melayani dua sasaran yang berbeda** (Keputusan #23) dan keduanya tidak boleh tertukar:
+
+| Sasaran | Mengikat | Kardinalitas | Pemilik data |
+|---|---|---|---|
+| **QR Aset** | Satu **unit fisik** aset melalui `assets.uuid` | Satu QR = satu unit | [`m04-assets.md`](m04-assets.md) |
+| **QR Bahan** | Satu **jenis bahan** melalui `materials.uuid` | Satu QR = satu jenis, **bukan** satu unit (`BR-090`) | [`m22-materials.md`](m22-materials.md) |
+
+`FR-05.1` dan `FR-05.2` di bawah ditulis untuk **QR Aset**. QR Bahan memakai mekanisme pembuatan,
+pencetakan, dan pemindaian yang sama, dengan dua perbedaan: label tidak memuat kode aset (bahan
+tidak memilikinya), dan hasil pemindaian membuka halaman bahan beserta saldonya, bukan profil unit.
 
 ## 2. Scope
 
@@ -38,7 +49,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 **Main Flow**
 1. QR Code dihasilkan otomatis saat aset dibuat, memuat URL **permanen** menuju halaman publik aset: `https://{domain}/a/{asset_uuid}`. **Klarifikasi audit:** URL ini **tidak** bertanda tangan berbatas waktu — label QR dicetak permanen sehingga tanda tangan kedaluwarsa akan membuat label mati. Keamanannya bertumpu pada dua hal: UUIDv4 yang tidak dapat ditebak, dan halaman publik yang hanya memuat atribut non-sensitif (FR-05.2 A3). URL bertanda tangan berbatas waktu tetap dipakai untuk **unduhan dokumen dan foto** (FR-06.1), bukan untuk QR.
 2. Pengguna memilih satu atau banyak aset lalu menekan "Cetak Label QR".
-3. Pengguna memilih ukuran label, tata letak lembar (mis. 3×8 per A4), dan elemen yang ditampilkan (kode barang, nama, nama sekolah).
+3. Pengguna memilih ukuran label, tata letak lembar (mis. 3×8 per A4), dan elemen yang ditampilkan (kode aset, nama, nama sekolah).
 4. Sistem menghasilkan berkas PDF siap cetak.
 5. Petugas mencetak, menempel label, lalu menandai aset `qr_terpasang = true`.
 
@@ -74,7 +85,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
    - Teknisi dengan work order aktif → "Perbarui Work Order"
 
 **Alternative Flow**
-- **A1 — QR tidak dikenali/rusak:** Sistem menampilkan galat dan menyediakan input kode barang manual.
+- **A1 — QR tidak dikenali/rusak:** Sistem menampilkan galat dan menyediakan input kode aset manual.
 - **A2 — Aset sudah dinonaktifkan:** Sistem menampilkan profil dengan penanda "Aset tidak aktif" dan menyembunyikan aksi transaksional.
 - **A3 — QR dipindai dengan aplikasi kamera bawaan:** Pengguna diarahkan ke halaman web publik aset yang hanya menampilkan informasi dasar (kode, nama, kategori, lokasi, kondisi, status) tanpa data finansial, disertai ajakan login untuk aksi lanjutan.
 - **A4 — Izin kamera ditolak:** Sistem menampilkan panduan mengaktifkan izin dan menyediakan input manual.
@@ -84,7 +95,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 **Acceptance Criteria**
 - [ ] Waktu dari pemindaian hingga profil tampil ≤ 3 detik pada jaringan sekolah.
 - [ ] Halaman publik hasil scan tidak pernah menampilkan nilai aset, biaya, maupun data pribadi peminjam.
-- [ ] Input kode barang manual tersedia sebagai jalur cadangan di setiap alur pemindaian.
+- [ ] Input kode aset manual tersedia sebagai jalur cadangan di setiap alur pemindaian.
 - [ ] Aksi kontekstual yang ditampilkan selalu sesuai permission pengguna dan status aset.
 
 ## 6. Business Rules
@@ -159,10 +170,12 @@ Strategi pengujian: [`../06-quality/test-strategy.md`](../06-quality/test-strate
 ## 13. Dependencies
 
 - [`m04-assets.md`](m04-assets.md) — M-04 Inventaris Aset
+- [`m22-materials.md`](m22-materials.md) — M-22 Manajemen Bahan
 
 ## 14. Related Modules
 
 - [`m04-assets.md`](m04-assets.md) — M-04 Inventaris Aset
+- [`m22-materials.md`](m22-materials.md) — M-22 Manajemen Bahan
 
 ## 15. Open Issues
 

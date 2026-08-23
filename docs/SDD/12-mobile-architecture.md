@@ -83,7 +83,7 @@ src/
     └── notifications/   # FCM + deep link
 ```
 
-Aplikasi mobile **tidak** mencerminkan seluruh 21 modul — hanya alur yang PRD nyatakan harus berjalan di lapangan.
+Aplikasi mobile **tidak** mencerminkan seluruh 22 modul — hanya alur yang PRD nyatakan harus berjalan di lapangan.
 
 ### 4.2 Antrean unggah
 
@@ -114,7 +114,7 @@ Entitas yang fotonya masih tertunda ditandai jelas di UI ("Foto belum terunggah"
 |---|---|
 | Pemindai QR | Pustaka kamera native; bukan pemindai berbasis WebView |
 | Mode beruntun | Kamera tetap aktif; hasil ditambahkan ke daftar tanpa menutup pemindai (`MOB-MED-07`) |
-| Jalur cadangan | Tombol "Masukkan kode barang manual" **selalu terlihat**, bukan tersembunyi di menu (`FR-05.2 A1`) |
+| Jalur cadangan | Tombol "Masukkan kode aset manual" **selalu terlihat**, bukan tersembunyi di menu (`FR-05.2 A1`) |
 | Izin ditolak | Panduan mengaktifkan + input manual, bukan layar buntu (`MOB-MED-06`) |
 | Kompresi | Dilakukan di *worker thread*; UI tidak membeku saat memproses 5 foto |
 

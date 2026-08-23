@@ -40,7 +40,7 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 | [06](phases/phase-06.md) | Analitik | 1 | 10 | `Not Started` | 0/10 | Menutup `M5` |
 | [07](phases/phase-07.md) | Integrasi & UAT | — | 14 | `Not Started` | 0/14 | |
 | [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 15 | `Not Started` | 0/15 | Menutup `M6` |
-| | **Total** | **21** | **152** | | **0/152** | |
+| | **Total** | **22** | **162** | | **0/162** | |
 
 ## Ringkasan milestone PRD
 
@@ -127,7 +127,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 |---|---|:---:|---|
 | `PR-08-01` … `PR-08-15` | `Not Started` | — | Rincian: [`phases/phase-08.md` §7](phases/phase-08.md) |
 
-**Cara memakai tabel ini.** Saat sebuah phase dimulai, ganti barisnya menjadi satu baris per PR. Selama phase belum dimulai, satu baris ringkas lebih jujur daripada 152 baris `Not Started` yang tidak ada yang membacanya.
+**Cara memakai tabel ini.** Saat sebuah phase dimulai, ganti barisnya menjadi satu baris per PR. Selama phase belum dimulai, satu baris ringkas lebih jujur daripada 162 baris `Not Started` yang tidak ada yang membacanya.
 
 ---
 

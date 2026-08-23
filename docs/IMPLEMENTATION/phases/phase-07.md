@@ -4,7 +4,7 @@
 |---|---|
 | **Milestone PRD** | Bagian `M6 — Pengerasan & Kesiapan Rilis` — gerbang `GL-01`, `GL-02` |
 | **Status** | `Not Started` |
-| **Modul PRD** | — (tidak ada modul baru; seluruh 21 modul diuji sebagai satu sistem) |
+| **Modul PRD** | — (tidak ada modul baru; seluruh 22 modul diuji sebagai satu sistem) |
 | **Bergantung pada** | Phase 06 |
 | **Memblokir** | Phase 08 |
 | **Log** | [`logs/phase-07.md`](../logs/phase-07.md) |
@@ -39,7 +39,7 @@ Bila sebuah cacat integrasi baru ditemukan di Phase 08, artinya phase ini gagal.
 
 | Bergantung pada | Alasan teknis |
 |---|---|
-| Phase 06 | Seluruh 21 modul harus hidup — UAT atas sistem separuh jadi tidak dapat ditandatangani |
+| Phase 06 | Seluruh 22 modul harus hidup — UAT atas sistem separuh jadi tidak dapat ditandatangani |
 | Phase 01 → `IMPT-05` | Template impor sudah diserahkan sejak `M1` (`IMP-02`); pendataan berjalan sejak `M2` (`IMP-01`) |
 
 > Catatan jadwal, bukan dependensi kode: `IMP-01` mensyaratkan pendataan aset awal **dimulai paling lambat pada M2** — yakni selama Phase 03/04, jauh sebelum phase ini. Phase 07 memverifikasi hasilnya, tidak memulainya.
@@ -80,7 +80,7 @@ Bila sebuah cacat integrasi baru ditemukan di Phase 08, artinya phase ini gagal.
 | `PR-07-01` | Kerangka uji E2E + data uji berskala nyata | L | Ph06 | `test-strategy.md` | 5.000 aset, 500 pengguna, satu tahun ajaran |
 | `PR-07-02` | E2E: siklus hidup aset penuh (pengadaan → penghapusan) | L | 01 | Bab 15 | Satu aset melewati seluruh transisi status |
 | `PR-07-03` | E2E: reservasi ruangan → penggunaan → penyelesaian | M | 01 | `FR-07.1` … `FR-07.4` | Termasuk jalur pembatalan dan bentrok |
-| `PR-07-04` | E2E: reservasi barang → pinjam → kembali → denda | L | 01 | `FR-08.x`, `FR-09.x` | Termasuk keterlambatan dan perpanjangan |
+| `PR-07-04` | E2E: reservasi aset → pinjam → kembali → denda | L | 01 | `FR-08.x`, `FR-09.x` | Termasuk keterlambatan dan perpanjangan |
 | `PR-07-05` | E2E: kerusakan → work order → servis → verifikasi | M | 01 | `FR-11.x`, `FR-12.x`, `BR-052` | Kriteria keluar `M3` PRD |
 | `PR-07-06` | E2E: opname → selisih → tindak lanjut → penghapusan | M | 01 | `FR-13.x`, `FR-21.x`, `BR-012` | Aset hilang sampai ke berita acara |
 | `PR-07-07` | E2E: approval bertingkat lintas jenis pengaju | M | 01 | `FR-10.x`, Lampiran D | Satu konfigurasi rule melayani empat pengaju berbeda |

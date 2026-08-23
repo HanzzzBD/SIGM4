@@ -46,7 +46,7 @@ Kolom ketiga adalah yang paling berharga di seluruh log ini. Pola yang berulang 
 
 ## 5. Butir yang wajib tercatat pada phase ini
 
-- [ ] Apakah `SlotService` perlu diubah untuk melayani reservasi barang. **Perubahan apa pun di sini wajib melalui tinjauan arsitek** — ia menandakan abstraksi Phase 02 kurang umum
+- [ ] Apakah `SlotService` perlu diubah untuk melayani reservasi aset. **Perubahan apa pun di sini wajib melalui tinjauan arsitek** — ia menandakan abstraksi Phase 02 kurang umum
 - [ ] Kriteria keluar `M2` terverifikasi: 50 permintaan simultan atas slot sama → tepat 1 sukses
 
 ## 6. TBD yang tertutup

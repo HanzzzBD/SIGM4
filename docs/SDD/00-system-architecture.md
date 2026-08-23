@@ -26,7 +26,7 @@ Berkas ini menetapkan bentuk sistem secara keseluruhan. Seluruh SDD lain beroper
 | **SDD-SYS-01** | **Modular monolith**, bukan microservices. Satu artefak API yang dapat di-*deploy*, ditambah satu artefak worker dari basis kode yang sama. |
 | **SDD-SYS-02** | Batas modul ditegakkan oleh struktur folder **dan** aturan lint impor. Modul dilarang mengimpor lapisan dalam modul lain. |
 | **SDD-SYS-03** | Komunikasi antar-modul hanya melalui **service interface** yang diekspor modul pemilik. Repository bersifat privat terhadap modulnya. |
-| **SDD-SYS-04** | 21 modul PRD dipetakan satu-ke-satu ke folder `src/modules/`. Tidak ada modul kode yang tidak punya padanan di PRD. |
+| **SDD-SYS-04** | 22 modul PRD dipetakan satu-ke-satu ke folder `src/modules/`. Tidak ada modul kode yang tidak punya padanan di PRD. |
 | **SDD-SYS-05** | Efek samping lintas modul (notifikasi, activity log, pembatalan slot) dijalankan lewat **domain event**, bukan panggilan langsung berantai. Rinciannya di [SDD-07](07-event-flow.md). |
 | **SDD-SYS-06** | Terdapat *shared kernel* berisi: `AuthContext`, `BusinessCalendarService`, `Clock`, `DocumentNumberService`, `ErrorMapper`, `EventBus`, `AuditLogger`. Modul boleh bergantung padanya; ia tidak boleh bergantung pada modul. |
 | **SDD-SYS-07** | Waktu **selalu** diambil dari `Clock` yang di-*inject*, tidak pernah dari `new Date()` langsung. Ini prasyarat `TD-04` (test hook waktu). |
@@ -73,7 +73,8 @@ src/
 │   ├── m01-auth/               # tiap modul: routes / controllers / services
 │   ├── m02-users/              #              repositories / events / schemas
 │   ├── …
-│   └── m21-disposal/
+│   ├── m21-disposal/
+│   └── m22-materials/
 │
 ├── api/                        # entrypoint HTTP  (SDD-SYS-08)
 └── worker/                     # entrypoint job & queue consumer

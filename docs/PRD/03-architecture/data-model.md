@@ -32,8 +32,8 @@ Data yang tumbuh seiring operasional harian.
 
 | Entitas | Deskripsi | Atribut Utama | Volume Estimasi/Tahun |
 |---|---|---|---|
-| **reservations** | Pengajuan reservasi ruangan & barang | id, nomor, jenis (ruangan/barang), pemohon_id, room_id, nama_kegiatan, waktu_mulai, waktu_selesai, jumlah_peserta, keperluan, status, parent_id (untuk berulang) | ± 3.000 |
-| **reservation_items** | Unit barang yang dialokasikan pada reservasi | id, reservation_id, asset_id, jumlah | ± 6.000 |
+| **reservations** | Pengajuan reservasi ruangan & aset | id, nomor, jenis (ruangan/aset), pemohon_id, room_id, nama_kegiatan, waktu_mulai, waktu_selesai, jumlah_peserta, keperluan, status, parent_id (untuk berulang) | ± 3.000 |
+| **reservation_items** | Unit aset yang dialokasikan pada reservasi | id, reservation_id, asset_id, jumlah | ± 6.000 |
 | **loans** | Transaksi peminjaman | id, nomor, reservation_id, peminjam_id, petugas_serah_id, tanggal_pinjam, tanggal_jatuh_tempo, tanggal_kembali, status | ± 2.500 |
 | **loan_items** | Unit yang dipinjam & kondisinya | id, loan_id, asset_id, kondisi_awal, kondisi_akhir, foto_awal, foto_akhir, status_kembali | ± 5.000 |
 | **fines** | Denda keterlambatan & ganti rugi | id, **loan_item_id**, loan_id, peminjam_id, jenis (`Keterlambatan`/`Ganti Rugi`), hari_terlambat, tarif_per_hari, jumlah_sebelum_cap, jumlah, status, tanggal_bayar, nomor_bukti, jumlah_dibebaskan, alasan_pembebasan, dibebaskan_oleh | ± 300 |
@@ -45,11 +45,18 @@ Data yang tumbuh seiring operasional harian.
 | **audit_items** | Hasil pemeriksaan per aset yang termasuk snapshot target | id, audit_session_id, asset_id (FK wajib), lokasi_sistem, lokasi_aktual, kondisi_sistem, kondisi_aktual, hasil (ditemukan/salah_lokasi/tidak_ditemukan/perbedaan_kondisi), keterangan, foto, diperiksa_oleh, diperiksa_pada | ± 5.000 per sesi |
 | **audit_new_findings** | Aset fisik yang ditemukan tanpa data sistem (tanpa FK ke `assets`) | id, audit_session_id, deskripsi, kategori_perkiraan_id, kondisi, room_id, foto, keterangan, ditemukan_oleh, asset_id_hasil (terisi setelah didaftarkan) | ± 50 per sesi |
 | **procurements** | Usulan pengadaan | id, nomor, judul, pengusul_id, unit_kerja, tahun_anggaran, prioritas, justifikasi, total_estimasi, status | ± 100 |
-| **procurement_items** | Item dalam usulan | id, procurement_id, nama_barang, category_id, spesifikasi, jumlah_diusulkan, jumlah_disetujui, jumlah_diterima, satuan, estimasi_harga_satuan | ± 500 |
+| **procurement_items** | Item dalam usulan | id, procurement_id, jenis (Aset/Bahan), nama_barang, category_id, spesifikasi, jumlah_diusulkan, jumlah_disetujui, jumlah_diterima, satuan, estimasi_harga_satuan | ± 500 |
+| **material_categories** | Kategori bahan — terpisah dari kategori aset | id, nama, kode, keterangan, status | ± 15 |
+| **materials** | Master jenis bahan | id, uuid, nama, material_category_id, satuan_id, stok_minimum, room_id_default, keterangan, status | ± 300 |
+| **material_balances** | Saldo per bahan per lokasi penyimpanan | id, material_id, room_id, saldo | ± 900 |
+| **material_transactions** | Peristiwa yang mengubah saldo bahan | id, material_id, room_id, jenis, jumlah, saldo_sesudah, referensi_tipe, referensi_id, alasan, dibuat_oleh, dibuat_pada | ± 20.000 |
+| **material_requests** | Permintaan bahan | id, nomor, pemohon_id, keperluan, status, approval_instance_id, diserahkan_oleh, diserahkan_pada | ± 1.500 |
+| **material_request_items** | Baris permintaan bahan | id, material_request_id, material_id, jumlah_diminta, jumlah_disetujui, jumlah_diserahkan | ± 3.000 |
+| **material_units** | Master satuan bahan (dimiliki M-20) | id, nama, simbol, keterangan, status | ± 20 |
 | **procurement_receipts** | Catatan penerimaan barang | id, procurement_id, tanggal_terima, nomor_dokumen, diterima_oleh, catatan | ± 120 |
 | **asset_disposals** | Usulan penghapusan aset | id, nomor, pengusul_id, alasan, justifikasi, tindak_lanjut_fisik, status, disetujui_oleh, disetujui_pada, dilaksanakan_oleh, dilaksanakan_pada, saksi, berita_acara_path | ± 50 |
 | **asset_disposal_items** | Aset dalam usulan penghapusan | id, disposal_id, asset_id, nilai_perolehan_snapshot, biaya_pemeliharaan_snapshot, keputusan, keterangan | ± 300 |
-| **booking_slots** | Interval pemesanan ruangan & unit barang (Bab 26.2) | id, resource_type, resource_id, slot_range, status, origin, reservation_id, loan_id, work_order_id, parent_slot_id, expires_at | ± 12.000 |
+| **booking_slots** | Interval pemesanan ruangan & unit aset (Bab 26.2) | id, resource_type, resource_id, slot_range, status, origin, reservation_id, loan_id, work_order_id, parent_slot_id, expires_at | ± 12.000 |
 | **idempotency_keys** | Penyimpanan hasil operasi idempoten (Bab 26.5) | key, request_hash, status_code, response_body, created_at, expires_at | ± 20.000 |
 | **approval_instances** | Instance persetujuan berjalan | id, jenis_pengajuan, referensi_id, rule_id, rule_snapshot (JSON), langkah_aktif, status, dibuat_pada, diselesaikan_pada | ± 3.500 |
 | **approval_steps** | Keputusan per langkah | id, instance_id, urutan, approver_id, keputusan, catatan, diputuskan_pada, sla_deadline, dilewati, alasan_dilewati | ± 5.000 |
@@ -91,10 +98,13 @@ Data acuan bernilai tetap yang digunakan sebagai enumerasi dan dropdown.
 | **Keputusan Approval** | Disetujui, Ditolak, Perlu Revisi, Dilewati |
 | **Jenis Dokumen Aset** | Faktur, Garansi, Sertifikat, Manual, Berita Acara, Lainnya |
 | **Status Penghapusan Aset** | Draf, Menunggu Persetujuan, Disetujui, Disetujui Sebagian, Ditolak, Perlu Revisi, Dilaksanakan, Dibatalkan |
+| **Status Permintaan Bahan** | Draf, Menunggu Persetujuan, Disetujui, Ditolak, Diserahkan Sebagian, Diserahkan, Dibatalkan |
+| **Jenis Transaksi Bahan** | PENERIMAAN, PENGELUARAN, PENYESUAIAN, OPNAME |
+| **Domain Sesi Opname** | ASET, BAHAN (`BR-093`) |
 | **Alasan Penghapusan** | Rusak Berat Tidak Dapat Diperbaiki, Hilang, Habis Umur Teknis, Lainnya |
 | **Tindak Lanjut Fisik Penghapusan** | Dimusnahkan, Dijual, Dihibahkan, Disimpan sebagai Suku Cadang |
 | **Status Slot Pemesanan** | Tentative, Confirmed, Active, Released |
-| **Jenis Pengajuan (Approval)** | Reservasi Ruangan, Reservasi Barang, Perpanjangan Peminjaman, Pengadaan Barang, Penghapusan Aset |
+| **Jenis Pengajuan (Approval)** | Reservasi Ruangan, Reservasi Aset, Perpanjangan Peminjaman, Pengadaan Barang, Penghapusan Aset, Permintaan Bahan |
 | **Kanal Notifikasi** | In-App, Push |
 | **Prioritas** | Rendah, Sedang, Tinggi, Mendesak |
 
@@ -127,7 +137,7 @@ Data acuan bernilai tetap yang digunakan sebagai enumerasi dan dropdown.
 | **buildings / areas / rooms** | Hierarki lokasi tempat aset ditempatkan dan ruangan yang direservasi | 1 building → N areas → N rooms; 1 room → N assets |
 | **asset_categories** | Pengelompokan aset dan sumber parameter pemeliharaan | Self-referencing (parent-child); 1 category → N assets |
 | **assets** | Entitas inti — satu record mewakili satu unit fisik dengan QR unik | Terhubung ke room, category, procurement, dan seluruh transaksi |
-| **reservations / reservation_items** | Pemesanan ruangan atau unit barang | 1 reservation → N reservation_items → 1 asset |
+| **reservations / reservation_items** | Pemesanan ruangan atau unit aset | 1 reservation → N reservation_items → 1 asset |
 | **loans / loan_items** | Realisasi peminjaman fisik | 1 reservation → 0..1 loan; 1 loan → N loan_items |
 | **fines** | Konsekuensi finansial keterlambatan | 1 loan → 0..1 fine |
 | **damage_reports** | Tiket kerusakan yang dilaporkan pengguna atau dihasilkan sistem | Terhubung ke asset atau room, dan opsional ke loan |

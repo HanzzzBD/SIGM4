@@ -2,7 +2,12 @@
 
 ## 1.1 Ringkasan Produk
 
-SIGM4 adalah sistem informasi terintegrasi berbasis web dan aplikasi mobile yang mendigitalkan seluruh siklus hidup sarana dan prasarana sekolah — mulai dari perencanaan pengadaan, pencatatan inventaris per unit, penempatan lokasi, pemanfaatan melalui reservasi dan peminjaman, pelaporan kerusakan, pemeliharaan terjadwal, audit/stock opname, hingga pelaporan analitik untuk pengambilan keputusan.
+SIGM4 adalah sistem informasi terintegrasi berbasis web dan aplikasi mobile yang mendigitalkan seluruh siklus hidup sarana dan prasarana sekolah, mencakup **dua domain yang dikelola terpisah** ([Lampiran A.1](../00-foundation/glossary.md)):
+
+- **Aset** — unit fisik ber-identitas individual: perencanaan pengadaan, pencatatan inventaris per unit, penempatan lokasi, pemanfaatan melalui reservasi dan peminjaman, pelaporan kerusakan, pemeliharaan terjadwal, audit/stock opname, mutasi, hingga penghapusan.
+- **Bahan** — persediaan yang dikelola per jumlah dan satuan: perencanaan, pengadaan, penerimaan, penyimpanan, permintaan, pengeluaran, penyesuaian, hingga stock opname bahan.
+
+Di atas keduanya berdiri approval berjenjang, notifikasi, activity log, dan pelaporan analitik untuk pengambilan keputusan.
 
 Setiap unit aset memiliki identitas digital unik yang diwakili oleh QR Code fisik. Dengan satu kali pemindaian, petugas maupun pengguna dapat langsung mengakses profil aset, status penggunaan terkini, lokasi, serta riwayat pemeliharaannya. Seluruh proses persetujuan berjalan di atas *approval engine* yang dapat dikonfigurasi sesuai kebijakan sekolah, dan seluruh perubahan data terekam dalam *activity log* yang tidak dapat dimanipulasi.
 
@@ -13,9 +18,9 @@ Sistem dilengkapi Chatbot AI berbasis LLM yang mampu menjawab pertanyaan penggun
 | # | Masalah | Dampak |
 |---|---|---|
 | BP-01 | Pencatatan inventaris masih manual (buku induk/spreadsheet) dan tersebar | Data tidak sinkron, sulit dipertanggungjawabkan saat audit |
-| BP-02 | Identifikasi fisik aset lambat; kode barang ditulis manual dan sering pudar/hilang | Pencarian dan verifikasi aset memakan waktu lama |
-| BP-03 | Reservasi ruangan dan barang dilakukan lisan/WhatsApp tanpa jadwal terpusat | Benturan jadwal, ruangan menganggur, konflik antar guru |
-| BP-04 | Peminjaman tidak tercatat rapi, pengembalian tidak terpantau | Barang hilang/terlambat kembali tanpa jejak pertanggungjawaban |
+| BP-02 | Identifikasi fisik aset lambat; kode aset ditulis manual dan sering pudar/hilang | Pencarian dan verifikasi aset memakan waktu lama |
+| BP-03 | Reservasi ruangan dan aset dilakukan lisan/WhatsApp tanpa jadwal terpusat | Benturan jadwal, ruangan menganggur, konflik antar guru |
+| BP-04 | Peminjaman tidak tercatat rapi, pengembalian tidak terpantau | Aset hilang/terlambat kembali tanpa jejak pertanggungjawaban |
 | BP-05 | Persetujuan berjenjang berjalan lewat kertas disposisi | Proses lambat, tidak ada jejak siapa menyetujui apa dan kapan |
 | BP-06 | Laporan kerusakan disampaikan lisan tanpa dokumentasi | Perbaikan tertunda, tidak ada prioritas, kerusakan berulang tidak terdeteksi |
 | BP-07 | Pemeliharaan bersifat reaktif, bukan terjadwal | Umur aset memendek, biaya perbaikan membengkak |
@@ -37,7 +42,7 @@ flowchart LR
     end
     subgraph OPS["Operasional Harian"]
         B1["Reservasi Ruangan"]
-        B2["Reservasi Barang"]
+        B2["Reservasi Aset"]
         B3["Peminjaman &<br/>Pengembalian"]
         B4["Laporan Kerusakan"]
     end
@@ -110,13 +115,13 @@ flowchart LR
 Pengelolaan sarana dan prasarana sekolah saat ini berjalan secara manual dan terfragmentasi:
 
 - **Inventaris** dicatat dalam buku induk barang dan/atau spreadsheet yang dipegang oleh petugas sarana prasarana. Pembaruan bergantung pada ingatan dan disiplin pencatatan individu.
-- **Identifikasi aset** mengandalkan kode barang yang ditulis atau ditempel manual, sering pudar, terlepas, atau tidak konsisten formatnya.
+- **Identifikasi aset** mengandalkan kode aset yang ditulis atau ditempel manual, sering pudar, terlepas, atau tidak konsisten formatnya.
 - **Penempatan aset** hanya diketahui berdasarkan pengetahuan petugas, tanpa peta lokasi digital yang dapat ditelusuri.
-- **Reservasi ruangan dan barang** dilakukan melalui percakapan lisan, pesan WhatsApp, atau buku agenda di ruang tata usaha.
+- **Reservasi ruangan dan aset** dilakukan melalui percakapan lisan, pesan WhatsApp, atau buku agenda di ruang tata usaha.
 - **Peminjaman** dicatat pada buku peminjaman; pengembalian sering tidak diverifikasi ulang.
 - **Persetujuan** menggunakan lembar disposisi fisik yang harus diantar antar-ruangan.
 - **Laporan kerusakan** disampaikan lisan kepada petugas atau teknisi tanpa dokumentasi foto dan tanpa nomor tiket.
-- **Pemeliharaan** dilakukan reaktif ketika barang sudah tidak berfungsi.
+- **Pemeliharaan** dilakukan reaktif ketika aset sudah tidak berfungsi.
 - **Stock opname** dilakukan tahunan secara manual dengan mencocokkan daftar cetak.
 - **Pelaporan ke pimpinan** disusun manual menjelang rapat atau audit.
 
@@ -126,7 +131,7 @@ Pengelolaan sarana dan prasarana sekolah saat ini berjalan secara manual dan ter
 |---|---|
 | **Akurasi Data** | Data inventaris tidak mencerminkan kondisi nyata; jumlah, kondisi, dan lokasi sering tidak sesuai |
 | **Ketertelusuran** | Tidak diketahui siapa terakhir memegang, memindahkan, atau mengubah data aset |
-| **Efisiensi** | Waktu terbuang untuk mencari barang, menyusun laporan, dan mengantar disposisi |
+| **Efisiensi** | Waktu terbuang untuk mencari aset, menyusun laporan, dan mengantar disposisi |
 | **Kontrol** | Peminjaman tanpa otorisasi formal; aset keluar tanpa jejak |
 | **Pemanfaatan** | Ruangan dan alat menganggur karena ketersediaannya tidak terpublikasi |
 | **Perawatan** | Tidak ada jadwal preventif; biaya perbaikan tidak terekap |
@@ -166,7 +171,7 @@ Pengelolaan sarana dan prasarana sekolah saat ini berjalan secara manual dan ter
 |---|---|---|
 | PO-01 | Menyediakan katalog aset per unit yang lengkap, akurat, dan dapat dicari | Pencarian aset menghasilkan hasil ≤ 2 detik |
 | PO-02 | Menyediakan identifikasi aset instan melalui QR Code | Scan → tampil detail aset ≤ 3 detik |
-| PO-03 | Menyediakan kalender ketersediaan ruangan dan barang yang bebas konflik | Sistem menolak 100% overlapping booking |
+| PO-03 | Menyediakan kalender ketersediaan ruangan dan aset yang bebas konflik | Sistem menolak 100% overlapping booking |
 | PO-04 | Menyediakan approval engine yang dapat dikonfigurasi Administrator tanpa deployment | Perubahan aturan berlaku efektif tanpa restart layanan |
 | PO-05 | Menyediakan siklus lengkap kerusakan → work order → selesai | Setiap laporan kerusakan dapat ditelusuri hingga penyelesaian |
 | PO-06 | Menyediakan stock opname berbasis scan QR di aplikasi mobile | Rekonsiliasi selisih otomatis di akhir sesi opname |
@@ -182,7 +187,7 @@ Hal-hal berikut **secara eksplisit berada di luar cakupan** rilis ini:
 | Kode | Non Objective | Alasan |
 |---|---|---|
 | NO-01 | Multi-tenant / multi-sekolah | Dikonfirmasi single sekolah |
-| NO-02 | Perhitungan penyusutan (depresiasi) dan nilai buku aset | Dikonfirmasi tanpa penyusutan; kode barang internal |
+| NO-02 | Perhitungan penyusutan (depresiasi) dan nilai buku aset | Dikonfirmasi tanpa penyusutan; kode aset internal |
 | NO-03 | Kodefikasi standar BMN/BMD dan pelaporan SIMAK-BMN | Dikonfirmasi memakai kode internal sekolah |
 | NO-04 | Modul vendor, perbandingan penawaran, dan Purchase Order | Alur pengadaan dikonfirmasi sederhana |
 | NO-05 | Integrasi RKAS/BOS dan validasi pagu anggaran | Di luar alur pengadaan yang disepakati |
@@ -193,9 +198,9 @@ Hal-hal berikut **secara eksplisit berada di luar cakupan** rilis ini:
 | NO-10 | Integrasi dengan sistem akademik, keuangan, atau perpustakaan | Tidak disebut dalam kebutuhan |
 | NO-11 | Aksi tulis oleh Chatbot AI (membuat reservasi, menyetujui, mengubah data) | Chatbot dibatasi read-only |
 | NO-12 | Pembayaran denda secara online (payment gateway) | Sistem hanya mencatat status pembayaran |
-| NO-13 | Manajemen persediaan habis pakai (ATK/consumable) dengan stok masuk-keluar | Fokus pada aset tetap serialized |
+| ~~NO-13~~ | ~~Manajemen persediaan habis pakai (ATK/consumable) dengan stok masuk-keluar~~ → **ditarik ke dalam lingkup rilis ini sebagai M-22 Manajemen Bahan** | Keputusan pemilik produk: target produk mencakup **seluruh** sarpras, sedangkan Non Objective ini hanya mencakup Aset. Bahan menjadi domain kedua yang setara — lihat [Lampiran A.1](../00-foundation/glossary.md) |
 | NO-14 | Pelacakan lokasi real-time (RFID/GPS/IoT) | QR Code bersifat pemindaian manual |
-| NO-15 | Tarif sewa atau biaya pemakaian atas reservasi dan peminjaman | Fasilitas dan barang sekolah dipakai warga sekolah sendiri tanpa pungutan. Satu-satunya kewajiban bernilai uang adalah **denda keterlambatan** (BR-028) dan **ganti rugi** atas kehilangan/kerusakan berat (BR-028d) — keduanya tetap berlaku |
+| NO-15 | Tarif sewa atau biaya pemakaian atas reservasi dan peminjaman | Fasilitas dan aset sekolah dipakai warga sekolah sendiri tanpa pungutan. Satu-satunya kewajiban bernilai uang adalah **denda keterlambatan** (BR-028) dan **ganti rugi** atas kehilangan/kerusakan berat (BR-028d) — keduanya tetap berlaku |
 
 ---
 
@@ -210,10 +215,10 @@ Hal-hal berikut **secara eksplisit berada di luar cakupan** rilis ini:
 | ST-02 | **Wakil Kepala Sekolah Bidang Sarpras** | Business Owner | Menetapkan proses bisnis sarpras, menjadi approver level menengah, memvalidasi hasil audit dan usulan pengadaan |
 | ST-03 | **Petugas Sarana Prasarana** | Primary User / Data Owner | Mengelola data inventaris, lokasi, QR, verifikasi serah terima peminjaman & pengembalian, menjalankan stock opname, memproses pengajuan |
 | ST-04 | **Teknisi Sekolah** | Operational User | Mengeksekusi work order perbaikan & pemeliharaan, memperbarui progres dan biaya pekerjaan, memperbarui kondisi aset pasca-perbaikan |
-| ST-05 | **Guru** | End User | Mengajukan reservasi ruangan/barang untuk KBM, meminjam dan mengembalikan aset, melaporkan kerusakan, mengajukan usulan kebutuhan barang |
+| ST-05 | **Guru** | End User | Mengajukan reservasi ruangan/aset untuk KBM, meminjam dan mengembalikan aset, melaporkan kerusakan, mengajukan usulan kebutuhan barang |
 | ST-06 | **Staf / Tata Usaha** | End User | Mengajukan reservasi & peminjaman untuk kegiatan kedinasan, membantu pencatatan administratif, melaporkan kerusakan |
-| ST-07 | **Siswa / Pengurus OSIS** | End User (akses terbatas) | Mengajukan reservasi ruangan/barang untuk kegiatan kesiswaan, melaporkan kerusakan fasilitas |
-| ST-08 | **Administrator Sistem** | System Owner | Mengelola akun & role, mengonfigurasi approval rules, format kode barang, tarif denda, parameter sistem, memantau kesehatan sistem |
+| ST-07 | **Siswa / Pengurus OSIS** | End User (akses terbatas) | Mengajukan reservasi ruangan/aset untuk kegiatan kesiswaan, melaporkan kerusakan fasilitas |
+| ST-08 | **Administrator Sistem** | System Owner | Mengelola akun & role, mengonfigurasi approval rules, format kode aset, tarif denda, parameter sistem, memantau kesehatan sistem |
 | ST-09 | **Bendahara / Bagian Keuangan** | Supporting Stakeholder | Menerima informasi biaya pemeliharaan dan denda; memvalidasi estimasi biaya usulan pengadaan *(konsumen laporan, bukan pengguna transaksional)* |
 | ST-10 | **Tim Pengembang (Dev, QA, UI/UX)** | Delivery Team | Merancang, membangun, menguji, dan memelihara sistem sesuai PRD ini |
 | ST-11 | **Auditor Internal / Pengawas Sekolah** | External Reviewer | Memeriksa kelengkapan data aset, jejak audit, dan hasil stock opname *(akses baca melalui laporan)* |

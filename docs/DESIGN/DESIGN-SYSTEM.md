@@ -208,7 +208,7 @@ Kelima warna ini adalah identitas SMKN 4 Bandung yang dibawa dari logo. Ia **pen
 
 | Accent | Hex | Grup domain | Kontras vs putih | Fungsi tambahan |
 |---|---|---|---:|---|
-| `accent.blue` | `#00529C` | **Aset & Lokasi** | 7,82 | Seri data viz · badge kategori aset |
+| `accent.blue` | `#00529C` | **Aset & Bahan** | 7,82 | Seri data viz · badge kategori aset |
 | `accent.green` | `#028744` | **Pemanfaatan** | 4,61 | Seri data viz · badge kategori |
 | `accent.yellow` | `#FEB003` | **Perawatan** | 1,84 | Seri data viz · badge kategori |
 | `accent.purple` | `#541F7F` | **Pengawasan** | 11,17 | Seri data viz · badge kategori |
@@ -271,7 +271,7 @@ Karena accent tidak punya varian, teks di atasnya diambil dari token neutral yan
 | `accent.red` sebagai error | Merah kehilangan kemampuannya menjadi identitas apa pun; setiap badge merah terbaca sebagai galat |
 | `accent.yellow` sebagai warning | `#FEB003` hanya 1,84:1 — mustahil menjadi teks peringatan tanpa varian gelap, sementara **DSD-07** melarang varian |
 | `accent.green` sebagai success | Grup **Pemanfaatan** akan terbaca sebagai "sesuatu yang berhasil" |
-| `accent.blue` sebagai info | Grup **Aset & Lokasi** akan terbaca sebagai informasi |
+| `accent.blue` sebagai info | Grup **Aset & Bahan** akan terbaca sebagai informasi |
 
 Semantic memakai hue yang **berdekatan tetapi tidak identik** dengan accent, dan setiap nilainya disetel agar lolos AA sebagai teks di atas putih (5,43–6,57:1). Perbedaannya cukup untuk tidak bertabrakan secara makna, dan cukup dekat untuk tetap terasa satu keluarga.
 
@@ -408,17 +408,17 @@ Satu layar sebagai bukti bahwa hierarki bekerja: **Inventaris Aset (P-15)** pada
 
 ```
 +--------------------------------------------------------------------------+
-| [logo SIGM4 warna]   Cari aset / kode barang        WIB 14:32  (3)  Yoga |  <- topbar putih, teks #4B5563
+| [logo SIGM4 warna]   Cari aset / kode aset          WIB 14:32  (3)  Yoga |  <- topbar putih, teks #4B5563
 +------------------+-------------------------------------------------------+
 | BERANDA          |  Beranda / Inventaris Aset                            |  <- breadcrumb #6B7280
 |   Dashboard      |                                                       |
 |   Notifikasi (3) |  Inventaris Aset               [Impor]  [Tambah Aset] |  <- h1 #111827
 |                  |  ====================================================== |  <- garis 3px accent.blue
-| |ASET & LOKASI   |                                                       |
+| |ASET & BAHAN    |                                                       |
 | | # Inventaris   |  [ Cari ] [Kategori v] [Lokasi v] [Kondisi v]         |
 | |   Kategori     |  Kategori: Komputer x    Kondisi: Baik x   Hapus semua|
 | |   Lokasi       |  ------------------------------------------------------ |
-| |   Label QR     |  [ ] Kode Barang ^   Nama          Kondisi   Status   |  <- header 48px, #F9FAFB
+| |   Label QR     |  [ ] Kode Aset ^   Nama          Kondisi   Status     |  <- header 48px, #F9FAFB
 | |   Dokumen Aset |  ------------------------------------------------------ |
 | |   Scan QR      |  [x] LAB-KOM-0001    Komputer      * Baik    Tersedia  |  <- baris 44px
 |                  |  ------------------------------------------------------ |

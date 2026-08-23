@@ -18,7 +18,7 @@ Penomoran bagian dipertahankan dari UX-SPEC v1.0 agar seluruh rujukan silang tet
 
 ## 3.1 Prinsip penyusunan
 
-21 modul PRD **tidak** dipetakan satu-ke-satu menjadi 21 entri menu. Ia dikelompokkan menjadi **lima grup domain kerja** (**UXD-01**) karena tiga alasan:
+22 modul PRD **tidak** dipetakan satu-ke-satu menjadi 22 entri menu. Ia dikelompokkan menjadi **lima grup domain kerja** (**UXD-01**) karena tiga alasan:
 
 1. Tiga modul tidak pernah menjadi entri menu tersendiri — **M-15 Dashboard** adalah beranda, **M-17 Notifikasi** adalah pusat notifikasi + ikon lonceng, **M-19 Chatbot** adalah panel global.
 2. Beberapa modul memiliki lebih dari satu entri menu — **M-04** memunculkan *Inventaris Aset* dan *Kategori Aset*; **M-09** memunculkan *Peminjaman* dan *Denda & Kewajiban*; **M-10** memunculkan *Persetujuan Saya* dan *Approval Rules* yang berada di grup berbeda.
@@ -31,7 +31,7 @@ flowchart TD
     ROOT["SIGM4"]
 
     ROOT --> BER["BERANDA"]
-    ROOT --> AST["ASET & LOKASI"]
+    ROOT --> AST["ASET & BAHAN"]
     ROOT --> PMF["PEMANFAATAN"]
     ROOT --> PRW["PERAWATAN"]
     ROOT --> PGW["PENGAWASAN"]
@@ -43,17 +43,21 @@ flowchart TD
 
     AST --> A1["Inventaris Aset · M-04"]
     AST --> A2["Kategori Aset · M-04"]
-    AST --> A3["Lokasi · M-03"]
-    AST --> A4["Label QR · M-05"]
-    AST --> A5["Dokumen Aset · M-06"]
-    AST --> A6["Scan QR · M-05"]
+    AST --> A3["Bahan · M-22"]
+    AST --> A4["Kategori Bahan · M-22"]
+    AST --> A5["Lokasi · M-03"]
+    AST --> A6["Label QR · M-05"]
+    AST --> A7["Dokumen Aset · M-06"]
+    AST --> A8["Scan QR · M-05"]
 
     PMF --> P1["Kalender Ruangan · M-07"]
-    PMF --> P2["Katalog Barang · M-08"]
+    PMF --> P2["Katalog Aset · M-08"]
     PMF --> P3["Reservasi · M-07 · M-08"]
     PMF --> P4["Peminjaman · M-09"]
     PMF --> P5["Denda & Kewajiban · M-09"]
     PMF --> P6["Persetujuan Saya · M-10"]
+    PMF --> P7["Katalog Bahan · M-22"]
+    PMF --> P8["Permintaan Bahan · M-22"]
 
     PRW --> W1["Laporan Kerusakan · M-11"]
     PRW --> W2["Work Order · M-12"]
@@ -78,7 +82,7 @@ flowchart TD
     GLB(["Panel Chatbot · M-19 — global, bukan entri menu"]) -.-> ROOT
 ```
 
-## 3.3 Pemetaan 21 modul ke lokasi antarmuka
+## 3.3 Pemetaan 22 modul ke lokasi antarmuka
 
 Tidak ada modul yang tidak terwakili. Kolom terakhir membuktikannya.
 
@@ -86,12 +90,12 @@ Tidak ada modul yang tidak terwakili. Kolom terakhir membuktikannya.
 |---|---|---|
 | M-01 | Autentikasi & Akun | Layar publik (`/login`, `/lupa-password`) + grup **Akun Saya** + `/permintaan-reset-password` (grup Sistem) |
 | M-02 | User & Role | Grup **Sistem** → Pengguna & Role |
-| M-03 | Lokasi | Grup **Aset & Lokasi** → Lokasi |
-| M-04 | Inventaris Aset | Grup **Aset & Lokasi** → Inventaris Aset + Kategori Aset |
-| M-05 | QR Code | Grup **Aset & Lokasi** → Label QR + Scan QR; halaman publik `/a/{uuid}`; tab Scan mobile |
-| M-06 | Dokumen Aset | Grup **Aset & Lokasi** → Dokumen Aset; tab *Dokumen* pada detail aset |
+| M-03 | Lokasi | Grup **Aset & Bahan** → Lokasi |
+| M-04 | Inventaris Aset | Grup **Aset & Bahan** → Inventaris Aset + Kategori Aset |
+| M-05 | QR Code | Grup **Aset & Bahan** → Label QR + Scan QR; halaman publik `/a/{uuid}`; tab Scan mobile |
+| M-06 | Dokumen Aset | Grup **Aset & Bahan** → Dokumen Aset; tab *Dokumen* pada detail aset |
 | M-07 | Reservasi Ruangan | Grup **Pemanfaatan** → Kalender Ruangan + Reservasi; tab *Jadwal Tetap* pada detail ruangan |
-| M-08 | Reservasi Barang | Grup **Pemanfaatan** → Katalog Barang + Reservasi |
+| M-08 | Reservasi Aset | Grup **Pemanfaatan** → Katalog Aset + Reservasi |
 | M-09 | Peminjaman | Grup **Pemanfaatan** → Peminjaman + Denda & Kewajiban |
 | M-10 | Approval Engine | Grup **Pemanfaatan** → Persetujuan Saya; grup **Sistem** → Approval Rules; komponen *Linimasa Approval* pada setiap detail pengajuan |
 | M-11 | Laporan Kerusakan | Grup **Perawatan** → Laporan Kerusakan; aksi kontekstual pada scan QR |
@@ -105,13 +109,14 @@ Tidak ada modul yang tidak terwakili. Kolom terakhir membuktikannya.
 | M-19 | Chatbot AI | Panel global (tombol mengambang) + `/chat` untuk riwayat; grup **Sistem** → Monitoring Chatbot |
 | M-20 | Konfigurasi | Grup **Sistem** → Parameter Sistem (termasuk Kalender Akademik & Unit Kerja) |
 | M-21 | Penghapusan Aset | Grup **Pengawasan** → Penghapusan Aset |
+| M-22 | Manajemen Bahan | Grup **Aset & Bahan** → Bahan + Kategori Bahan; grup **Pemanfaatan** → Katalog Bahan + Permintaan Bahan; opname bahan berada di grup **Pengawasan** lewat M-13 |
 
 ## 3.4 Kedalaman hierarki
 
 Maksimum **tiga tingkat** dari beranda ke layar kerja mana pun.
 
 ```
-Tingkat 1   Grup sidebar          ASET & LOKASI
+Tingkat 1   Grup sidebar          ASET & BAHAN 
 Tingkat 2   Halaman daftar        Inventaris Aset            /aset
 Tingkat 3   Halaman detail        Detail Aset LAB-KOM-0002   /aset/3021
             Tab dalam detail      Riwayat Pemeliharaan       /aset/3021/servis
@@ -159,7 +164,7 @@ flowchart TD
 flowchart LR
     HOME["/ · Dashboard"]
 
-    subgraph AST["ASET & LOKASI"]
+    subgraph AST["ASET & BAHAN"]
         A1["/aset"] --> A1D["/aset/{id}"]
         A1 --> A1N["/aset/baru"]
         A1 --> A1I["/aset/impor"]
@@ -170,11 +175,17 @@ flowchart LR
         A4["/label-qr"]
         A5["/dokumen-aset"]
         A6["/scan"]
+        A7["/bahan"] --> A7D["/bahan/{id}"]
+        A7 --> A7N["/bahan/baru"]
+        A8["/kategori-bahan"]
     end
 
     subgraph PMF["PEMANFAATAN"]
         P1["/kalender-ruangan"] --> P3N["/reservasi/baru"]
-        P2["/katalog-barang"] --> P3N
+        P2["/katalog-aset"] --> P3N
+        P7["/katalog-bahan"] --> P8N["/permintaan-bahan/baru"]
+        P8N --> P8D["/permintaan-bahan/{id}"]
+        P8["/permintaan-bahan"] --> P8D
         P3N --> P3D["/reservasi/{id}"]
         P3["/reservasi"] --> P3D
         P4["/peminjaman"] --> P4D["/peminjaman/{id}"]
@@ -237,7 +248,7 @@ flowchart LR
 
 ## 4.3 Sitemap mobile
 
-Mobile **tidak** mencerminkan seluruh 21 modul — hanya alur yang PRD nyatakan berjalan di lapangan (`SDD-MOB` §4.1, `UX-01`).
+Mobile **tidak** mencerminkan seluruh 22 modul — hanya alur yang PRD nyatakan berjalan di lapangan (`SDD-MOB` §4.1, `UX-01`).
 
 ```mermaid
 flowchart TD

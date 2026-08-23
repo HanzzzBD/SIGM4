@@ -144,7 +144,7 @@ Ini phase dengan risiko rollback terendah: seluruh isinya baca-saja.
 
 **Tambahan khusus phase ini:**
 
-- [ ] **Seluruh 21 modul PRD terimplementasi**
+- [ ] **Seluruh 22 modul PRD terimplementasi**
 - [ ] Kriteria keluar `M5` PRD terpenuhi: dashboard ≤ 3 detik pada 5.000 aset · chatbot lolos *golden set* dan red-teaming per role (`ST-06`)
 - [ ] Seluruh milestone `M0`–`M5` tertutup; tersisa `M6` (Phase 08)
 - [ ] `TBD-PERF-A` tertutup dengan angka hasil pengukuran nyata

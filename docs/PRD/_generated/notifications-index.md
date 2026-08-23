@@ -5,7 +5,7 @@
 # Indeks Notifikasi
 
 > Setiap notifikasi dimiliki modul yang menerbitkan event-nya.
-> Total: **49** baris, dikumpulkan dari 21 berkas modul.
+> Total: **52** baris, dikumpulkan dari 22 berkas modul.
 
 | Kode | Event | Penerima | Kanal | Wajib | Contoh | Pemilik |
 |---|---|---|---|:---:|---|---|
@@ -18,11 +18,11 @@
 | **NT-07** | Pengajuan dieskalasi | Approver eskalasi | In-app + Push | ✅ | "Pengajuan {nomor} dieskalasikan kepada Anda." | [M-10](../02-modules/m10-approval.md) |
 | **NT-08** | Reservasi dibatalkan sepihak | Pemohon | In-app + Push | ✅ | "Reservasi {nomor} dibatalkan oleh {pelaku}. Alasan: {alasan}." | [M-07](../02-modules/m07-reservation-room.md) |
 | **NT-09** | Reservasi kedaluwarsa (tidak diambil) | Pemohon | In-app | ❌ | "Reservasi {nomor} kedaluwarsa karena tidak diambil dalam 1×24 jam." | [M-07](../02-modules/m07-reservation-room.md) |
-| **NT-10** | Serah terima barang selesai | Peminjam | In-app + Push | ❌ | "{jumlah} unit {barang} telah diserahkan. Kembalikan sebelum {tanggal}." | [M-09](../02-modules/m09-loans.md) |
-| **NT-11** | Pengingat H-1 jatuh tempo | Peminjam | In-app + Push | ✅ | "Pengembalian {barang} jatuh tempo besok, {tanggal}." | [M-09](../02-modules/m09-loans.md) |
-| **NT-12** | Peminjaman terlambat (harian) | Peminjam | In-app + Push | ✅ | "{barang} terlambat {n} hari. Denda berjalan Rp{jumlah}." | [M-09](../02-modules/m09-loans.md) |
+| **NT-10** | Serah terima aset selesai | Peminjam | In-app + Push | ❌ | "{jumlah} unit {aset} telah diserahkan. Kembalikan sebelum {tanggal}." | [M-09](../02-modules/m09-loans.md) |
+| **NT-11** | Pengingat H-1 jatuh tempo | Peminjam | In-app + Push | ✅ | "Pengembalian {aset} jatuh tempo besok, {tanggal}." | [M-09](../02-modules/m09-loans.md) |
+| **NT-12** | Peminjaman terlambat (harian) | Peminjam | In-app + Push | ✅ | "{aset} terlambat {n} hari. Denda berjalan Rp{jumlah}." | [M-09](../02-modules/m09-loans.md) |
 | **NT-13** | Rekap keterlambatan harian | Petugas Sarpras | In-app | ❌ | "{n} peminjaman terlambat perlu ditindaklanjuti." | [M-09](../02-modules/m09-loans.md) |
-| **NT-14** | Pengembalian tercatat | Peminjam | In-app + Push | ❌ | "Pengembalian {barang} tercatat pada {tanggal}." | [M-09](../02-modules/m09-loans.md) |
+| **NT-14** | Pengembalian tercatat | Peminjam | In-app + Push | ❌ | "Pengembalian {aset} tercatat pada {tanggal}." | [M-09](../02-modules/m09-loans.md) |
 | **NT-15** | Denda terbit | Peminjam | In-app + Push | ✅ | "Denda keterlambatan Rp{jumlah} terbit atas peminjaman {nomor}." | [M-09](../02-modules/m09-loans.md) |
 | **NT-16** | Denda dilunasi | Peminjam | In-app | ❌ | "Denda Rp{jumlah} telah dinyatakan lunas." | [M-09](../02-modules/m09-loans.md) |
 | **NT-17** | Denda atau ganti rugi dibebaskan, penuh maupun sebagian | Peminjam | In-app | ❌ | "Kewajiban Rp{jumlah_dibebaskan} dibebaskan. Sisa tagihan Rp{sisa}. Alasan: {alasan}." | [M-09](../02-modules/m09-loans.md) |
@@ -58,3 +58,6 @@
 | **NT-46** | Slot pengajuan tertunda kedaluwarsa (TTL) | Pemohon + Approver aktif | In-app + Push | ✅ | "Pengajuan {nomor} kedaluwarsa karena belum diputuskan hingga batas waktu." | [M-07](../02-modules/m07-reservation-room.md) |
 | **NT-47** | Approval mencapai batas eskalasi terakhir | Petugas Sarpras + Administrator | In-app + Push | ✅ | "Pengajuan {nomor} tidak diputuskan hingga eskalasi terakhir dan memerlukan tindakan manual." | [M-10](../02-modules/m10-approval.md) |
 | **NT-48** | Persetujuan wali siswa belum terekam | Administrator | In-app | ✅ | "Akun siswa {nama} tidak dapat diaktifkan: persetujuan wali belum terekam (DP-02)." | [M-02](../02-modules/m02-users.md) |
+| **NT-49** | Saldo bahan mencapai / turun di bawah stok minimum | Petugas Sarpras + Administrator | In-app + Push | ✅ | "Stok {bahan} tersisa {saldo} {satuan}, di bawah minimum {ambang}." | [M-22](../02-modules/m22-materials.md) |
+| **NT-50** | Permintaan bahan siap diambil | Pemohon | In-app + Push | ❌ | "Permintaan {nomor} siap diambil di {lokasi}." | [M-22](../02-modules/m22-materials.md) |
+| **NT-51** | Bahan diserahkan | Pemohon | In-app | ❌ | "{jumlah} {satuan} {bahan} telah diserahkan pada {tanggal}." | [M-22](../02-modules/m22-materials.md) |

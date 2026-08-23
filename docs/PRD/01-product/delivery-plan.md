@@ -19,7 +19,7 @@
 | **M1 — Identitas & Data Induk** | M-01, M-02, M-03, M-04, M-05, M-20 + Lampiran C ditegakkan di seluruh endpoint | 500 aset dapat diimpor, QR dicetak & dipindai, RBAC lolos uji otorisasi per role (ST-05) |
 | **M2 — Mesin Persetujuan & Pemesanan** | M-10 (termasuk Lampiran D), M-07, M-08, Bab 26 (`booking_slots`, exclusion constraint) | Uji konkurensi lolos: 50 permintaan simultan atas slot sama → tepat 1 sukses |
 | **M3 — Siklus Operasional** | M-09, M-11, M-12, M-06 | Alur ujung-ke-ujung reservasi → serah terima → pengembalian → denda → tiket kerusakan → work order → selesai, berjalan di staging |
-| **M4 — Kontrol & Siklus Hidup Aset** | M-13, M-14, M-21 | Sesi opname 1.000 unit selesai di perangkat nyata; usulan pengadaan menghasilkan aset; penghapusan menghasilkan berita acara |
+| **M4 — Kontrol & Siklus Hidup Sarpras** | M-13, M-14, M-21, **M-22** | Sesi opname 1.000 unit selesai di perangkat nyata; usulan pengadaan menghasilkan aset; penghapusan menghasilkan berita acara |
 | **M5 — Insight, Notifikasi & AI** | M-15, M-16, M-17, M-18, M-19 (termasuk Bab 22.7–22.9) | Dashboard ≤3 detik pada 5.000 aset; chatbot lolos *golden set* dan red-teaming per role (ST-06) |
 | **M6 — Pengerasan & Kesiapan Rilis** | Uji beban, penetration test, DR drill, dokumentasi, pelatihan | Seluruh gerbang rilis pada 29.3 terpenuhi |
 

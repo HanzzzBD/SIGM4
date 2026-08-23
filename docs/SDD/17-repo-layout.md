@@ -48,7 +48,7 @@ Tiga repositori tidak dapat memenuhi kalimat itu. Perubahan skema di sana menjad
 
 Argumen tandingan yang jujur untuk repositori terpisah adalah kepemilikan: `MOB-REL-02` menetapkan akun store dan Expo/EAS milik **sekolah, bukan vendor**. Itu tidak terjawab oleh bentuk repositori — ia soal kepemilikan akun dan repositori itu sendiri, yang tetap berlaku sama entah repositorinya satu atau tiga.
 
-**SDD-REPO-02 — akar bukan milik siapa pun.** Ini bukan estetika, melainkan syarat agar monorepo mungkin sama sekali. `SDD-SYS-04` memetakan 21 modul PRD ke `src/modules/`, dan `SDD-FE-01` mencerminkannya di web dengan sengaja. Akibatnya `src/modules/m09-loans/` adalah jalur yang **sah pada dua pohon sekaligus**. Membiarkan salah satunya menempati akar repositori membuat jalur itu ambigu di setiap alat yang membaca jalur: lint, tsconfig, pemetaan cakupan, penelusuran tumpukan, dan review. Tiap pohon karena itu wajib punya akarnya sendiri, dan akar repositori tinggal untuk hal yang memang lintas pohon.
+**SDD-REPO-02 — akar bukan milik siapa pun.** Ini bukan estetika, melainkan syarat agar monorepo mungkin sama sekali. `SDD-SYS-04` memetakan 22 modul PRD ke `src/modules/`, dan `SDD-FE-01` mencerminkannya di web dengan sengaja. Akibatnya `src/modules/m09-loans/` adalah jalur yang **sah pada dua pohon sekaligus**. Membiarkan salah satunya menempati akar repositori membuat jalur itu ambigu di setiap alat yang membaca jalur: lint, tsconfig, pemetaan cakupan, penelusuran tumpukan, dan review. Tiap pohon karena itu wajib punya akarnya sendiri, dan akar repositori tinggal untuk hal yang memang lintas pohon.
 
 **SDD-REPO-03 — npm workspaces polos.** Dua kandidat lain dipertimbangkan dan keduanya menuntut perubahan pada dokumen yang sudah stabil.
 

@@ -37,7 +37,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 
 **Main Flow**
 1. Administrator membuka menu Approval Rules.
-2. Administrator membuat aturan baru dan memilih **jenis pengajuan**: Reservasi Ruangan, Reservasi Barang, Perpanjangan Peminjaman, Pengadaan Barang, atau Penghapusan Aset.
+2. Administrator membuat aturan baru dan memilih **jenis pengajuan**: Reservasi Ruangan, Reservasi Aset, Perpanjangan Peminjaman, Pengadaan Barang, Penghapusan Aset, atau **Permintaan Bahan**.
 3. Administrator menetapkan **kondisi pemicu** (dapat dikombinasikan dengan AND/OR):
    - Role pemohon (mis. Siswa/OSIS)
    - Nilai/estimasi biaya (mis. > Rp10.000.000)
