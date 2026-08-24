@@ -336,13 +336,13 @@ Tidak seluruh business rule berdampak visual. Tabel ini memuat yang **mengubah a
 | [`SDD/11-frontend-architecture.md`](../SDD/11-frontend-architecture.md) | Struktur aplikasi, state, gerbang permission, komponen kalender |
 | [`SDD/12-mobile-architecture.md`](../SDD/12-mobile-architecture.md) | Navigasi, antrean unggah, deep link, gerbang startup |
 | [`SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md) | Titik yang belum ditetapkan — §12.3 memetakan yang berdampak UX |
-| [`PRD/06-quality/test-strategy.md`](../PRD/06-quality/test-strategy.md) | 15 alur kritis (30.2), matriks perangkat (30.6), UAT (30.8) |
+| [`PRD/06-quality/test-strategy.md`](../PRD/06-quality/test-strategy.md) | 18 alur kritis (30.2), matriks perangkat (30.6), UAT (30.8) |
 
 ## Tindak lanjut
 
 | # | Tindakan | Pemilik |
 |---|---|---|
-| 1 | Perbaiki tabel endpoint `m07` bagian 7: `reservation.cancel` menjadi `reservation.cancel_own` / `reservation.cancel_any` (**K-02**) | Pemilik berkas modul M-07 |
+| 1 | ~~Perbaiki tabel endpoint `m07` bagian 7: `reservation.cancel` menjadi `reservation.cancel_own` / `reservation.cancel_any` (**K-02**)~~ — **selesai 24 Agustus 2026**: satu endpoint menerima kedua permission, kepemilikan diperiksa di server | Pemilik berkas modul M-07 |
 | 2 | ~~Tutup `TBD-FE-B`, `TBD-MOB-B`, `TBD-NTF-A`~~ — **selesai 22 Agustus 2026**; rancangan `SDD-08 §4.5` serta `SDD-12 §4.8` sudah diselaraskan. Register kini **25 terbuka · 15 tertutup** (empat TBD Bahan ditutup 23 Agustus, `TBD-BHN-E` dibuka) | Software Architect |
 | 3 | Selesaikan `TBD-APR-A`, `TBD-NTF-B`, `TBD-EVT-B`, `TBD-FS-A`, `TBD-AVL-B` — kelimanya memblokir bagian UX-SPEC | Pemilik produk |
 | 4 | Naikkan enam kelompok notifikasi (**UXD-05**) ke PRD `M-17` — kini bermukim di `SDD-08 §4.5`, padahal sifatnya kebijakan produk | Pemilik produk |

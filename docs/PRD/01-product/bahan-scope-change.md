@@ -84,7 +84,7 @@ Cakupan FR yang diturunkan dari keputusan #17–#26: master bahan & kategori, sa
 | **M-05 QR Code** | Menyatakan dua sasaran QR secara eksplisit — per unit aset dan per jenis bahan |
 | **M-10 Approval** | Menambah `jenis_pengajuan` **Permintaan Bahan**; variabel DSL untuk ambang (jumlah/nilai) |
 | **M-13 Stock Opname** | Menambah jenis sesi Bahan; `BR-054`…`BR-059` perlu dinyatakan berlaku untuk sesi **Aset**, dengan BR baru untuk sesi Bahan |
-| **M-14 Pengadaan** | ✅ **Sudah disesuaikan** (Keputusan #27): `procurement_items.jenis`, `BR-064` dipersempit ke item Aset, `FR-14.3` diberi batas domain. **Sisa:** alur penerimaan bahan (Main Flow + acceptance criteria) ditulis di M-22 |
+| **M-14 Pengadaan** | ✅ **Selesai** (Keputusan #27): `procurement_items.jenis`, `BR-064` dipersempit ke item Aset, `FR-14.3` diberi batas domain. Alur penerimaan bahan beserta Main Flow dan acceptance criteria-nya sudah didefinisikan di [`FR-22.3`](../02-modules/m22-materials.md) — dari usulan pengadaan maupun penerimaan langsung |
 | **M-15 Dashboard** · **M-16 Analitik** | Kartu stok bahan di bawah minimum; laporan konsumsi bahan |
 | **M-17 Notifikasi** | Notifikasi stok minimum dan status permintaan bahan |
 | **M-20 Konfigurasi** | Master satuan bahan; ambang approval permintaan bahan |
@@ -104,7 +104,7 @@ Cakupan FR yang diturunkan dari keputusan #17–#26: master bahan & kategori, sa
 | Berkas | Penyesuaian |
 |---|---|
 | [`delivery-plan.md`](delivery-plan.md) | ✅ M-22 sudah masuk `M4`; kriteria keluar `M4` sudah memuat butir saldo bahan (`BR-081`, `BR-082`, `BR-083`) — 24 Agustus 2026 |
-| [`overview.md`](overview.md) | ✅ §1.1 sudah menyebut kedua domain. **Sisa:** `G-xx`, `PO-xx`, `SC-xx` untuk domain Bahan — menuntut target terukur yang belum ditetapkan |
+| [`overview.md`](overview.md) | ✅ **Selesai** — §1.1 menyebut kedua domain; `G-09` (cakupan pengelolaan saldo), `PO-11` (integritas saldo per lokasi), dan `SC-12` (akurasi saldo terhadap opname fisik) ditetapkan pemilik produk 24 Agustus 2026 |
 | [`activity-log.md`](../03-architecture/activity-log.md) | Nilai enum `modul` perlu `BAHAN` di samping `INVENTARIS` |
 | [`data-model.md`](../03-architecture/data-model.md) | Entitas `materials`, `material_balances`, `material_transactions`; enum **Jenis Pengajuan** perlu *Permintaan Bahan* |
 | [`system-overview.md`](../03-architecture/system-overview.md) | Use case diagram dan peta bab |

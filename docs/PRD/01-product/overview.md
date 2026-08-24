@@ -86,6 +86,7 @@ flowchart LR
 | G-06 | Pengambilan keputusan berbasis data | Pimpinan memiliki dashboard dan analitik real-time |
 | G-07 | Kemudahan akses informasi | Informasi aset dapat diperoleh via QR scan dan chatbot dalam hitungan detik |
 | G-08 | Akuntabilitas | Setiap perubahan data memiliki jejak pelaku, waktu, dan nilai sebelum/sesudah |
+| G-09 | Kendali persediaan bahan | 100% bahan habis pakai sekolah terkelola saldonya di sistem |
 
 ## 1.5 Success Criteria
 
@@ -102,6 +103,7 @@ flowchart LR
 | SC-09 | Kepuasan pengguna | Skor kepuasan ≥ 4 dari 5 | Survei pengguna pasca-implementasi |
 | SC-10 | Akurasi chatbot | ≥ 85% pertanyaan dalam cakupan dijawab benar | Sampling evaluasi berkala + feedback thumbs up/down |
 | SC-11 | Kelengkapan audit trail | 100% operasi tulis tercatat di activity log | Uji sampling QA & audit internal |
+| SC-12 | Akurasi saldo bahan | ≥ 95% bahan tanpa selisih antara saldo sistem dan hasil hitung fisik | Hasil sesi opname bahan (`BR-094`) vs saldo sistem |
 
 ---
 
@@ -179,6 +181,7 @@ Pengelolaan sarana dan prasarana sekolah saat ini berjalan secara manual dan ter
 | PO-08 | Menyediakan chatbot AI read-only yang menghormati hak akses pengguna | 0 kebocoran data lintas hak akses pada pengujian |
 | PO-09 | Menyediakan notifikasi in-app dan push yang tepat waktu | Notifikasi terkirim ≤ 60 detik setelah event |
 | PO-10 | Menyediakan activity log yang immutable dan dapat difilter | Log tidak dapat diubah/dihapus oleh role mana pun |
+| PO-11 | Menyediakan saldo bahan per lokasi penyimpanan yang hanya berubah lewat transaksi | Sistem menolak 100% transaksi yang membuat saldo negatif; 0 saldo negatif |
 
 ## 3.3 Non Objectives
 
