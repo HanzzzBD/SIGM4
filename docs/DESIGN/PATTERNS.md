@@ -149,7 +149,7 @@ Satu kolom. Zona 1 dan Zona 4 terlihat tanpa gulir; Zona 3 **diciutkan** secara 
 
 ## 3.5 Subgrup kartu
 
-Ketika satu modul menyumbang lebih dari satu kartu ke zona yang sama, kartu-kartu itu dikelompokkan menjadi **subgrup berlabel** (**UXD-18**). Subgrup adalah satuan tata letak **di dalam** zona — bukan zona kelima. Urutan empat zona §3.1 tidak berubah.
+Ketika satu modul menyumbang lebih dari satu kartu ke zona yang sama, kartu-kartu itu dikelompokkan menjadi **subgrup berlabel** — ketentuan `19.1`, penempatannya di dalam zona ditetapkan **UXD-18**. Subgrup adalah satuan tata letak **di dalam** zona, bukan zona kelima; urutan empat zona §3.1 tidak berubah.
 
 Penerapan pertama: dua kartu M-22 — *Stok Bahan Menipis* dan *Permintaan Bahan Menunggu* — menjadi subgrup **Bahan** pada Zona 1 dashboard Petugas Sarana Prasarana.
 

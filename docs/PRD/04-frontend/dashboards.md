@@ -10,6 +10,7 @@
 | **Pemuatan** | ≤ 3 detik; setiap kartu memuat mandiri dengan *skeleton loading* |
 | **Pembaruan data** | Data agregat di-*cache* dengan TTL 5 menit; tombol muat ulang manual tersedia |
 | **Responsif** | Tata letak menyesuaikan desktop (grid 3–4 kolom), tablet (2 kolom), dan ponsel (1 kolom) |
+| **Subgrup kartu** | Kartu yang berasal dari satu modul dan mengisi zona yang sama boleh dikelompokkan menjadi subgrup berlabel. Subgrup adalah satuan tata letak **di dalam** zona, bukan zona tersendiri; tidak ada kartu yang disembunyikan atau dilipat karenanya. Pada tata letak satu kolom, label subgrup tetap dirender sebagai pemisah |
 | **Status kosong** | Bila belum ada data, kartu menampilkan pesan dan tautan aksi yang relevan |
 
 ## 19.2 Dashboard Administrator
