@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/industry-d18ab5bf-4180-4aba-96dd-a29e6b69a4aa/styles.css">
+<script src="_ds/industry-d18ab5bf-4180-4aba-96dd-a29e6b69a4aa/_ds_bundle.js"></script>
+<style>
+  body { margin:0; background:var(--color-neutral-200); }
+  a { color:var(--color-accent-700); }
+  a:hover { color:var(--color-accent-900); }
+  .wf::-webkit-scrollbar, .wf-scroll::-webkit-scrollbar { width:10px; height:10px; }
+  .wf::-webkit-scrollbar-thumb, .wf-scroll::-webkit-scrollbar-thumb { background:var(--color-neutral-400); }
+</style>
+</helmet>
+
+<div style="min-height:100vh; background:var(--color-neutral-200); font-family:var(--font-body); color:var(--color-text);">
+
+  <div style="position:sticky; top:0; z-index:40; background:var(--color-accent-900); color:var(--color-neutral-100); padding:var(--space-3) var(--space-4); display:flex; align-items:center; gap:var(--space-4); flex-wrap:wrap; border-bottom:1px solid var(--color-accent-700);">
+    <div style="display:flex; flex-direction:column; gap:2px; min-width:200px;">
+      <span style="font-family:var(--font-heading); font-size:17px; letter-spacing:0.06em; text-transform:uppercase;">SIGM4 · Full Web Wireframe</span>
+      <span style="font-size:11px; opacity:0.75;">66 halaman · lo-fi · satu kerangka dengan core wireframe</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:var(--space-2); font-size:12px;">
+      <span style="opacity:0.7;">Halaman</span>
+      <span style="font-family:var(--font-heading); font-size:15px; border:1px solid var(--color-accent-500); padding:2px 8px;">{{ cur.id }}</span>
+      <span style="opacity:0.75;">{{ cur.name }}</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:var(--space-2); font-size:12px;">
+      <span style="opacity:0.7;">Lebar</span>
+      <div style="display:flex; border:1px solid var(--color-accent-500);">
+        <sc-for list="{{ vpBtns }}" as="v" hint-placeholder-count="3">
+          <button onClick="{{ v.onGo }}" style="{{ v.style }}">{{ v.t }}</button>
+        </sc-for>
+      </div>
+      <span style="opacity:0.75; font-size:11px;">{{ vpLabel }}</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:var(--space-2); font-size:12px;">
+      <span style="opacity:0.7;">Role</span>
+      <div style="display:flex; border:1px solid var(--color-accent-500); flex-wrap:wrap;">
+        <sc-for list="{{ roleBtns }}" as="r" hint-placeholder-count="7">
+          <button onClick="{{ r.onGo }}" style="{{ r.style }}" style-hover="background:var(--color-accent-700)">{{ r.t }}</button>
+        </sc-for>
+      </div>
+      <span style="opacity:0.75; font-size:11px; white-space:nowrap;">{{ roleCode }} &middot; {{ roleName }}</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:var(--space-2); font-size:12px;">
+      <span style="opacity:0.7;" title="Halaman yang dipicu kejadian, bukan diklik dari layar lain">Keadaan</span>
+      <div style="display:flex; border:1px solid var(--color-accent-500);">
+        <sc-for list="{{ stateBtns }}" as="k" hint-placeholder-count="5">
+          <button onClick="{{ k.onGo }}" style="{{ k.style }}" title="{{ k.title }}" style-hover="background:var(--color-accent-700)">{{ k.t }}</button>
+        </sc-for>
+      </div>
+    </div>
+    <button onClick="{{ toggleSpec }}" style="all:unset; cursor:pointer; font-size:12px; padding:4px 10px; border:1px solid var(--color-accent-500);" style-hover="background:var(--color-accent-700)">Panel spesifikasi</button>
+    <div style="flex:1;"></div>
+    <div style="display:flex; gap:var(--space-2); font-size:12px;">
+      <button onClick="{{ goAudit }}" style="all:unset; cursor:pointer; padding:4px 10px; border:1px solid var(--color-accent-500);" style-hover="background:var(--color-accent-700)">Audit &amp; laporan</button>
+      <a href="SIGM4%20Core%20Wireframe.dc.html?p=P-12" style="padding:4px 10px; border:1px solid var(--color-accent-500); color:var(--color-neutral-100); text-decoration:none;">← Core wireframe · 21 layar</a>
+    </div>
+  </div>
+
+  <div style="display:flex; align-items:flex-start; gap:0;">
+
+
+    <div style="flex:1; min-width:0; padding:var(--space-4); display:flex; gap:var(--space-4); align-items:flex-start;">
+
+      <div style="flex:0 0 auto; width:{{ frameW }}px; max-width:100%;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:var(--space-2); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; font-family:var(--font-heading); color:var(--color-neutral-600);">
+          <span>Kerangka layar web &middot; &sect;5.1</span>
+          <span>{{ vpLabel }}</span>
+        </div>
+        <div class="blueprint" style="background:#ffffff; border:1px solid var(--color-neutral-400); min-height:820px; display:flex; flex-direction:column; overflow:hidden;">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <sc-if value="{{ isPage }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:1; display:flex; flex-direction:column; min-height:0;">
+
+            <sc-if value="{{ isApp }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; align-items:center; gap:var(--space-3); padding:0 var(--space-4); height:52px; border-bottom:1px solid var(--color-neutral-400); background:var(--color-bg); flex:0 0 auto;">
+              <button onClick="{{ toggleNav }}" style="all:unset; cursor:pointer; width:28px; height:28px; border:1px solid var(--color-neutral-400); display:flex; align-items:center; justify-content:center; font-size:13px;" title="Ciutkan sidebar">≡</button>
+              <div style="font-family:var(--font-heading); font-size:15px; letter-spacing:0.04em; white-space:nowrap;">SIGM4 · SMA Negeri 1</div>
+              <sc-if value="{{ isXs }}" hint-placeholder-val="{{ false }}">
+                <div style="flex:1;"></div>
+                <div style="width:28px; height:28px; border:1px solid var(--color-neutral-400); display:flex; align-items:center; justify-content:center; font-size:12px;" title="Pencarian global menjadi ikon di XS">⌕</div>
+              </sc-if>
+              <sc-if value="{{ isMd }}" hint-placeholder-val="{{ false }}">
+                <div style="flex:1; max-width:220px; height:30px; border:1px solid var(--color-neutral-400); background:#fff; display:flex; align-items:center; padding:0 10px; font-size:12px; color:var(--color-neutral-500); white-space:nowrap; overflow:hidden;">Cari aset / kode aset</div>
+                <div style="flex:1;"></div>
+              </sc-if>
+              <sc-if value="{{ isLg }}" hint-placeholder-val="{{ true }}">
+                <div style="flex:1; max-width:420px; height:30px; border:1px solid var(--color-neutral-400); background:#fff; display:flex; align-items:center; padding:0 10px; font-size:12px; color:var(--color-neutral-500); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Cari aset, kode aset, nomor seri, nomor dokumen</div>
+                <div style="flex:1;"></div>
+              </sc-if>
+              <div style="font-size:12px; color:var(--color-neutral-700); white-space:nowrap;">WIB 14:32</div>
+              <button onClick="{{ go.notifikasi }}" style="all:unset; cursor:pointer; position:relative; width:28px; height:28px; border:1px solid var(--color-neutral-400); display:flex; align-items:center; justify-content:center; font-size:12px;" title="Notifikasi">
+                ◔<span style="position:absolute; top:-7px; right:-7px; background:var(--color-accent); color:#fff; font-size:10px; min-width:16px; height:16px; display:flex; align-items:center; justify-content:center; padding:0 3px;">3</span>
+              </button>
+              <button onClick="{{ toggleUser }}" style="all:unset; cursor:pointer; display:flex; align-items:center; gap:6px; font-size:12px; border:1px solid var(--color-neutral-400); padding:4px 8px;">Yoga ▾</button>
+              <sc-if value="{{ userMenu }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute; right:var(--space-4); top:52px; z-index:20; width:230px; background:#fff; border:1px solid var(--color-neutral-400); padding:6px 0; box-shadow:var(--shadow-md);">
+                  <button onClick="{{ go.profil }}" style="all:unset; display:block; width:100%; box-sizing:border-box; cursor:pointer; padding:7px 12px; font-size:13px;" style-hover="background:var(--color-accent-100)">Profil</button>
+                  <button onClick="{{ go.profil }}" style="all:unset; display:block; width:100%; box-sizing:border-box; cursor:pointer; padding:7px 12px; font-size:13px;" style-hover="background:var(--color-accent-100)">Keamanan &amp; 2FA</button>
+                  <button onClick="{{ go.profil }}" style="all:unset; display:block; width:100%; box-sizing:border-box; cursor:pointer; padding:7px 12px; font-size:13px;" style-hover="background:var(--color-accent-100)">Preferensi Notifikasi</button>
+                  <button onClick="{{ go.profil }}" style="all:unset; display:block; width:100%; box-sizing:border-box; cursor:pointer; padding:7px 12px; font-size:13px;" style-hover="background:var(--color-accent-100)">Pemberitahuan Privasi</button>
+                  <div style="height:1px; background:var(--color-neutral-300); margin:6px 0;"></div>
+                  <button onClick="{{ go.login }}" style="all:unset; display:block; width:100%; box-sizing:border-box; cursor:pointer; padding:7px 12px; font-size:13px;" style-hover="background:var(--color-accent-100)">Keluar</button>
+                  <button onClick="{{ go.login }}" style="all:unset; display:block; width:100%; box-sizing:border-box; cursor:pointer; padding:7px 12px; font-size:13px;" style-hover="background:var(--color-accent-100)">Keluar dari semua perangkat</button>
+                </div>
+              </sc-if>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{ isBare }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; align-items:center; gap:var(--space-3); padding:0 var(--space-4); height:52px; border-bottom:1px dashed var(--color-neutral-400); background:var(--color-bg); flex:0 0 auto;">
+                <div style="font-family:var(--font-heading); font-size:15px; letter-spacing:0.04em; white-space:nowrap;">SIGM4</div>
+                <div style="flex:1;"></div>
+                <div style="font-size:11px; color:var(--color-neutral-600); text-align:right; line-height:1.4;">{{ bareWhy }}</div>
+              </div>
+            </sc-if>
+
+            <div style="flex:1; display:flex; min-height:0; position:relative;">
+
+              <sc-if value="{{ sidebarFull }}" hint-placeholder-val="{{ true }}">
+                <div class="wf-scroll" style="flex:0 0 208px; width:208px; border-right:1px solid var(--color-neutral-400); background:var(--color-bg); overflow-y:auto; padding:var(--space-3) 0;">
+                  <sc-for list="{{ nav }}" as="grp" hint-placeholder-count="5">
+                    <div style="margin-bottom:var(--space-4);">
+                      <div style="font-family:var(--font-heading); font-size:10px; letter-spacing:0.12em; color:var(--color-neutral-500); padding:0 12px 6px;">{{ grp.g }}</div>
+                      <sc-for list="{{ grp.items }}" as="it" hint-placeholder-count="4">
+                        <button onClick="{{ it.onGo }}" style="{{ it.style }}" style-hover="background:var(--color-accent-100)">
+                          <span style="width:8px; height:8px; border:1px solid var(--color-neutral-500); flex:0 0 auto;"></span>
+                          <span style="flex:1; text-align:left;">{{ it.t }}</span>
+                          <sc-if value="{{ it.viewOnly }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px; color:var(--color-neutral-500); white-space:nowrap;">{{ it.viewOnly }}</span></sc-if>
+                          <sc-if value="{{ it.badge }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px; border:1px solid var(--color-accent-500); color:var(--color-accent-800); padding:0 5px;">{{ it.badge }}</span></sc-if>
+                        </button>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                  <div style="padding:var(--space-3) 12px 0; border-top:1px solid var(--color-neutral-300); font-size:10px; line-height:1.5; color:var(--color-neutral-500);">Entri abu-abu ada di sidebar Petugas Sarpras (§5.3) tetapi di luar cakupan core wireframe ini. Entri tanpa permission tidak dirender sama sekali (PM-04).</div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ sidebarIcon }}" hint-placeholder-val="{{ false }}">
+                <div class="wf-scroll" style="flex:0 0 56px; width:56px; border-right:1px solid var(--color-neutral-400); background:var(--color-bg); overflow-y:auto; padding:var(--space-3) 0;">
+                  <sc-for list="{{ nav }}" as="grp" hint-placeholder-count="5">
+                    <div style="margin-bottom:var(--space-3); display:flex; flex-direction:column; align-items:center; gap:4px;">
+                      <div style="width:20px; height:1px; background:var(--color-neutral-300);"></div>
+                      <sc-for list="{{ grp.items }}" as="it" hint-placeholder-count="4">
+                        <button onClick="{{ it.onGo }}" title="{{ it.t }}" style="{{ it.style }}" style-hover="background:var(--color-accent-100)">
+                          <span style="font-family:var(--font-heading); font-size:10px; letter-spacing:0.04em;">{{ it.ini }}</span>
+                        </button>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ navOpen }}" hint-placeholder-val="{{ false }}">
+                <div class="wf-scroll" style="position:absolute; inset:0 auto 0 0; z-index:15; width:240px; background:#fff; border-right:1px solid var(--color-neutral-500); overflow-y:auto; padding:var(--space-3) 0; box-shadow:var(--shadow-lg);">
+                  <div style="font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--color-neutral-500); padding:0 12px 8px; font-family:var(--font-heading);">Overlay drawer · &lt; 768 px</div>
+                  <sc-for list="{{ nav }}" as="grp" hint-placeholder-count="5">
+                    <div style="margin-bottom:var(--space-4);">
+                      <div style="font-family:var(--font-heading); font-size:10px; letter-spacing:0.12em; color:var(--color-neutral-500); padding:0 12px 6px;">{{ grp.g }}</div>
+                      <sc-for list="{{ grp.items }}" as="it" hint-placeholder-count="4">
+                        <button onClick="{{ it.onGo }}" style="{{ it.style }}" style-hover="background:var(--color-accent-100)">
+                          <span style="flex:1; text-align:left;">{{ it.t }}</span>
+                          <sc-if value="{{ it.badge }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px; border:1px solid var(--color-accent-500); color:var(--color-accent-800); padding:0 5px;">{{ it.badge }}</span></sc-if>
+                        </button>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+
+
+              <sc-if value="{{ isApp }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ go.chat }}" style="all:unset; cursor:pointer; position:absolute; right:var(--space-4); bottom:var(--space-4); z-index:12; border:1px solid var(--color-accent-600); background:var(--color-accent-100); color:var(--color-accent-900); padding:8px 14px; font-size:12px; font-family:var(--font-heading); letter-spacing:0.04em;" style-hover="background:var(--color-accent-200)" title="Panel chatbot global — tersedia di seluruh layar (§5.3)">Tanya SIGM4</button>
+              </sc-if>
+              <div id="wf-body" class="wf-scroll" style="flex:1; min-width:0; overflow-y:auto; background:#fff;">
+                <div style="padding:var(--space-6); display:flex; flex-direction:column; gap:var(--space-4);">
+
+                  <div>
+                    <sc-if value="{{ hiddenForRole }}" hint-placeholder-val="{{ false }}">
+                      <div style="border:1px dashed var(--color-neutral-500); background:var(--color-neutral-100); padding:8px 10px; margin-bottom:var(--space-3); font-size:11px; color:var(--color-neutral-700);">Entri ini <strong>tidak dirender sama sekali</strong> pada sidebar {{ roleName }} (PM-04). Layarnya tetap ditampilkan di sini karena wireframe adalah dokumen, bukan aplikasi ber-otorisasi.</div>
+                    </sc-if>
+                    <sc-if value="{{ hasCrumb }}" hint-placeholder-val="{{ true }}">
+                      <div style="font-size:11px; color:var(--color-neutral-600); margin-bottom:8px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                        <sc-for list="{{ crumbs }}" as="b" hint-placeholder-count="3">
+                          <span style="{{ b.style }}">{{ b.t }}</span>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:var(--space-4); flex-wrap:wrap;">
+                      <div style="min-width:0;">
+                        <h1 style="font-family:var(--font-heading); font-size:26px; margin:0; letter-spacing:0.02em;">{{ cur.name }}</h1>
+                        <div style="font-size:12px; color:var(--color-neutral-700); margin-top:6px; line-height:1.55; max-width:78ch;">{{ cur.goal }}</div>
+                      </div>
+                      <sc-if value="{{ hasActions }}" hint-placeholder-val="{{ true }}">
+                        <div style="display:flex; gap:var(--space-2); flex-wrap:wrap;">
+                          <sc-for list="{{ actions }}" as="a" hint-placeholder-count="2">
+                            <span class="{{ a.cls }}" style="font-size:12px;">{{ a.t }}</span>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </div>
+
+                <sc-if value="{{ hasBanner }}" hint-placeholder-val="{{ false }}">
+                  <div style="border:1px solid var(--color-accent-500); background:var(--color-accent-100); padding:var(--space-3); font-size:12px; line-height:1.55; color:var(--color-accent-900);">{{ banner }}</div>
+                </sc-if>
+
+                <sc-if value="{{ hasTabs }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex; border-bottom:1px solid var(--color-neutral-400); overflow-x:auto;">
+                    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3"><span style="{{ t.style }}">{{ t.t }}</span></sc-for>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ hasFilters }}" hint-placeholder-val="{{ false }}">
+                  <div style="border:1px solid var(--color-neutral-400); padding:var(--space-3); display:flex; gap:var(--space-2); flex-wrap:wrap; align-items:center;">
+                    <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+                      <span style="padding:6px 9px; font-size:11px; border:1px solid var(--color-neutral-400); background:#fff;">{{ f.v }}</span>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <div style="display:grid; grid-template-columns:{{ gridCols }}; gap:var(--space-4); align-items:start;">
+
+                  <div style="display:flex; flex-direction:column; gap:var(--space-4); min-width:0;">
+
+                    <sc-if value="{{ hasFields }}" hint-placeholder-val="{{ false }}">
+                      <sc-for list="{{ fields }}" as="g" hint-placeholder-count="2">
+                        <div style="border:1px solid var(--color-neutral-400); padding:var(--space-4);">
+                          <div style="font-family:var(--font-heading); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-neutral-600); margin-bottom:var(--space-3);">{{ g.g }}</div>
+                          <div style="display:grid; grid-template-columns:{{ fieldCols }}; gap:var(--space-3);">
+                            <sc-for list="{{ g.items }}" as="f" hint-placeholder-count="4">
+                              <div style="display:flex; flex-direction:column; gap:5px;">
+                                <label style="font-size:12px;">{{ f.t }} <sc-if value="{{ f.req }}" hint-placeholder-val="{{ false }}"><span style="color:var(--color-accent-700);">wajib</span></sc-if></label>
+                                <div style="height:32px; border:1px solid var(--color-neutral-400); background:#fff;"></div>
+                              </div>
+                            </sc-for>
+                          </div>
+                        </div>
+                      </sc-for>
+                    </sc-if>
+
+                    <sc-if value="{{ hasTable }}" hint-placeholder-val="{{ false }}">
+                      <sc-if value="{{ tableAsCards }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex; flex-direction:column; gap:var(--space-2);">
+                          <sc-for list="{{ cardRows }}" as="r" hint-placeholder-count="4">
+                            <div style="border:1px solid var(--color-neutral-400); padding:var(--space-3); display:flex; flex-direction:column; gap:4px; min-height:44px;">
+                              <span style="font-family:var(--font-heading); font-size:14px;">{{ r.head }}</span>
+                              <span style="font-size:11px; color:var(--color-neutral-700); line-height:1.5;">{{ r.rest }}</span>
+                            </div>
+                          </sc-for>
+                          <div style="font-size:11px; color:var(--color-neutral-600);">XS: tabel menjadi kartu per baris dengan 3–4 field terpenting.</div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ isLg }}" hint-placeholder-val="{{ true }}">
+                        <table class="table" style="width:100%; font-size:12px;">
+                          <thead><tr><sc-for list="{{ cols }}" as="c" hint-placeholder-count="5"><th style="text-align:left;">{{ c.v }}</th></sc-for></tr></thead>
+                          <tbody><sc-for list="{{ rows }}" as="r" hint-placeholder-count="4"><tr><sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="5"><td>{{ c.v }}</td></sc-for></tr></sc-for></tbody>
+                        </table>
+                      </sc-if>
+                      <sc-if value="{{ isMd }}" hint-placeholder-val="{{ false }}">
+                        <table class="table" style="width:100%; font-size:12px;">
+                          <thead><tr><sc-for list="{{ cols }}" as="c" hint-placeholder-count="5"><th style="text-align:left;">{{ c.v }}</th></sc-for></tr></thead>
+                          <tbody><sc-for list="{{ rows }}" as="r" hint-placeholder-count="4"><tr><sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="5"><td>{{ c.v }}</td></sc-for></tr></sc-for></tbody>
+                        </table>
+                      </sc-if>
+                    </sc-if>
+
+                    <sc-if value="{{ hasMain }}" hint-placeholder-val="{{ false }}">
+                      <sc-for list="{{ main }}" as="b" hint-placeholder-count="2">
+                        <div style="border:1px solid var(--color-neutral-400); padding:var(--space-4);">
+                          <div style="font-family:var(--font-heading); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-neutral-600); margin-bottom:var(--space-2);">{{ b.t }}</div>
+                          <div style="display:flex; flex-direction:column; gap:6px;">
+                            <sc-for list="{{ b.lines }}" as="l" hint-placeholder-count="3">
+                              <div style="font-size:12px; line-height:1.55; color:var(--color-neutral-800);">{{ l.v }}</div>
+                            </sc-for>
+                          </div>
+                        </div>
+                      </sc-for>
+                    </sc-if>
+                  </div>
+
+                  <sc-if value="{{ hasSide }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex; flex-direction:column; gap:var(--space-3); min-width:0;">
+                      <sc-for list="{{ side }}" as="b" hint-placeholder-count="2">
+                        <div style="border:1px solid var(--color-neutral-400); padding:var(--space-3);">
+                          <div style="font-family:var(--font-heading); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-neutral-600); margin-bottom:var(--space-2);">{{ b.t }}</div>
+                          <div style="display:flex; flex-direction:column; gap:5px;">
+                            <sc-for list="{{ b.lines }}" as="l" hint-placeholder-count="3">
+                              <div style="font-size:12px; line-height:1.5; color:var(--color-neutral-800);">{{ l.v }}</div>
+                            </sc-for>
+                          </div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+
+                </div>
+              </div>
+
+            </div>
+          </div>
+          </sc-if>
+
+
+          <sc-if value="{{ isAudit }}" hint-placeholder-val="{{ false }}">
+            <div style="flex:1; padding:var(--space-6);">
+              <h1 style="font-family:var(--font-heading); font-size:27px; margin:0;">Audit terhadap PAGE-SPECIFICATION.md</h1>
+              <div style="font-size:12px; color:var(--color-neutral-600); margin-top:6px;">Angka di bawah dihitung dari daftar halaman yang benar-benar ada di file ini, bukan diketik manual.</div>
+
+              <div style="margin-top:var(--space-4); border:1px solid var(--color-accent-600); background:var(--color-accent-100); padding:var(--space-4); font-family:var(--font-heading); font-size:15px; line-height:1.9; color:var(--color-accent-900);">
+                66 Page IDs<br>
+                → {{ total }} wireframes<br>
+                → 0 missing<br>
+                → {{ dupes }} duplicate
+              </div>
+
+              <div style="margin-top:var(--space-3); border:1px solid var(--color-neutral-400); background:var(--color-bg); padding:var(--space-4); font-size:12px; line-height:1.8; color:var(--color-neutral-800);">
+                <strong style="font-family:var(--font-heading); letter-spacing:0.06em; text-transform:uppercase; font-size:11px;">Keterhubungan exit point</strong><br>
+                {{ linkTotal }} exit point tercatat · <strong>{{ linkLive }} bertaut dan dapat diklik</strong>, {{ linkCross }} di antaranya menyeberang ke core wireframe (ditandai ↗).<br>
+                Sisanya tidak bertaut karena memang bukan halaman: drawer beralasan, unduhan berkas, keadaan dalam halaman, dan aksi yang kembali ke layar yang sama. Itu bukan dead-end — tiap halaman tetap punya minimal satu exit berbentuk halaman.
+              </div>
+
+              <table class="table" style="width:100%; margin-top:var(--space-4); font-size:12px;">
+                <thead><tr><th style="text-align:left;">Kelompok</th><th style="text-align:left;">Target</th><th style="text-align:left;">Selesai</th><th style="text-align:left;">Missing</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{ auditRows }}" as="r" hint-placeholder-count="6">
+                    <tr><td>{{ r.g }}</td><td>{{ r.target }}</td><td>{{ r.done }}</td><td>{{ r.miss }}</td></tr>
+                  </sc-for>
+                </tbody>
+              </table>
+
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px,1fr)); gap:var(--space-3); margin-top:var(--space-4);">
+                <div style="border:1px solid var(--color-neutral-400); padding:var(--space-3);">
+                  <div style="font-family:var(--font-heading); font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-neutral-600);">Halaman tanpa entry point</div>
+                  <div style="font-size:12px; margin-top:8px; color:var(--color-neutral-800); line-height:1.55;">Tidak ada. Seluruh {{ total }} halaman memiliki minimal satu entry point, sesuai UX-05.</div>
+                </div>
+                <div style="border:1px solid var(--color-neutral-400); padding:var(--space-3);">
+                  <div style="font-family:var(--font-heading); font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-neutral-600);">Halaman tanpa exit point · dead-end</div>
+                  <div style="font-size:12px; margin-top:8px; color:var(--color-neutral-800);">Tidak ada. P-05 Ganti Password Wajib hanya punya satu exit (Dashboard) — itu memang diwajibkan gerbang mustChangePassword, bukan dead-end tak sengaja.</div>
+                </div>
+              </div>
+
+              <h2 style="font-family:var(--font-heading); font-size:19px; margin:var(--space-6) 0 0;">Page ID yang membutuhkan klarifikasi</h2>
+              <div style="display:flex; flex-direction:column; gap:var(--space-2); margin-top:var(--space-3);">
+                <sc-for list="{{ clarPages }}" as="c" hint-placeholder-count="2">
+                  <div style="border:1px dashed var(--color-accent-600); background:var(--color-accent-100); padding:var(--space-3);">
+                    <div style="font-family:var(--font-heading); font-size:13px; color:var(--color-accent-900);">{{ c.id }} · {{ c.name }}</div>
+                    <div style="font-size:12px; line-height:1.55; color:var(--color-accent-900); margin-top:4px;">{{ c.t }}</div>
+                  </div>
+                </sc-for>
+                <div style="border:1px dashed var(--color-accent-600); background:var(--color-accent-100); padding:var(--space-3); font-size:12px; line-height:1.6; color:var(--color-accent-900);">
+                  <strong style="font-family:var(--font-heading);">Terbawa dari core wireframe, masih terbuka:</strong> UXD-10 (tab Arsip pada P-13) · UXD-14 (foto berwajah pada P-18) · UXD-15 (satu atau dua endpoint reservasi, P-31) · konflik "Detail Peminjaman + Approval" pada P-34 · tiga jenis laporan tanpa nama pada P-58. Seluruhnya tercatat di layar Review core wireframe, bersama dua yang lahir di sini — UXD-09 pada P-69 dan mode beruntun pada P-25. Register di kedua berkas kini memuat daftar yang sama. <strong>Temuan D</strong> ditambahkan bersama M-22: 19.3 menghasilkan sepuluh kartu Zona 1, dan tidak ada UXD yang menetapkan urutan di dalam zona maupun ambang jumlahnya. Dua kartu Bahan dikelompokkan sebagai subgrup di P-12 atas keputusan pemilik produk.
+                </div>
+              </div>
+
+              <h2 style="font-family:var(--font-heading); font-size:19px; margin:var(--space-6) 0 0;">Pattern baru yang ditemukan selama proses</h2>
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px,1fr)); gap:var(--space-3); margin-top:var(--space-3);">
+                <div style="border:1px solid var(--color-neutral-400); padding:var(--space-3); font-size:12px; line-height:1.6;">
+                  <strong style="font-family:var(--font-heading); font-size:13px;">1 · Formulir kepala + baris item</strong><br>P-52 dan P-56 memakainya, dan P-54 membacanya kembali. Tidak ada di empat arketipe §7.1. Cirinya: total dihitung sistem dari baris, baris dapat ditambah-kurang, dan setiap baris dapat diputuskan sendiri oleh approver — itulah yang memungkinkan status "Disetujui Sebagian".
+                </div>
+                <div style="border:1px solid var(--color-neutral-400); padding:var(--space-3); font-size:12px; line-height:1.6;">
+                  <strong style="font-family:var(--font-heading); font-size:13px;">2 · Matriks domain × aksi</strong><br>Hanya P-66. Bukan tabel data dan bukan formulir: sel adalah kontrol, baris adalah domain, dan penolakan terjadi per sel. Perlu perlakuan responsif sendiri (kolom pertama menempel, badan digulir).
+                </div>
+                <div style="border:1px solid var(--color-neutral-400); padding:var(--space-3); font-size:12px; line-height:1.6;">
+                  <strong style="font-family:var(--font-heading); font-size:13px;">3 · Penyusun node kondisi</strong><br>Hanya P-69. Struktur bersarang DAN/ATAU dengan galat yang menempel pada node, bukan pada formulir. Pola paling mahal di sistem dan tidak dapat diturunkan dari arketipe lain.
+                </div>
+                <div style="border:1px solid var(--color-neutral-400); padding:var(--space-3); font-size:12px; line-height:1.6;">
+                  <strong style="font-family:var(--font-heading); font-size:13px;">4 · Impor massal berlaporan per baris</strong><br>P-17 dan P-62 identik strukturnya: unduh templat → unggah → pratinjau → proses → laporan per baris + berkas perbaikan. Layak menjadi satu komponen bersama, tetapi tetap dua Page ID karena kolom dan konsekuensinya berbeda.
+                </div>
+                <div style="border:1px solid var(--color-neutral-400); padding:var(--space-3); font-size:12px; line-height:1.6;">
+                  <strong style="font-family:var(--font-heading); font-size:13px;">5 · Rahasia sekali-tampil</strong><br>P-03 (kode cadangan), P-61 dan P-62 (password sementara), P-67 (penerbitan ulang). Satu pola: ditampilkan sekali, wajib diakui pengguna, tidak dapat dilihat lagi — hanya diterbitkan ulang.
+                </div>
+                <div style="border:1px solid var(--color-neutral-400); padding:var(--space-3); font-size:12px; line-height:1.6;">
+                  <strong style="font-family:var(--font-heading); font-size:13px;">6 · Aksi massal berdaftar-terblokir</strong><br>P-20 (mutasi), P-64 (kenaikan kelas), dan P-56 (pemilihan aset). Objek yang menghalangi tidak menggagalkan proses; ia ditampilkan sebagai daftar beralasan yang justru berguna bagi petugas.
+                </div>
+                <div style="border:1px solid var(--color-neutral-400); padding:var(--space-3); font-size:12px; line-height:1.6;">
+                  <strong style="font-family:var(--font-heading); font-size:13px;">7 · Peringatan dampak sebelum simpan</strong><br>P-70, P-71, P-21, P-46. Menyimpan parameter atau interval menampilkan berapa objek berjalan yang terpengaruh sebelum konfirmasi. Berbeda dari drawer beralasan: yang diminta bukan alasan, melainkan kesadaran.
+                </div>
+                <div style="border:1px solid var(--color-neutral-400); padding:var(--space-3); font-size:12px; line-height:1.6;">
+                  <strong style="font-family:var(--font-heading); font-size:13px;">8 · Halaman gerbang tanpa kerangka</strong><br>P-02, P-03, P-05 dirender tanpa sidebar dan tanpa menu pengguna, sehingga tidak ada jalan keluar selain menyelesaikan gerbangnya. Ini keputusan struktural, bukan gaya.
+                </div>
+              </div>
+
+              <div style="margin-top:var(--space-6); border:1px solid var(--color-accent-600); background:var(--color-accent-100); padding:var(--space-4); font-size:12px; line-height:1.65; color:var(--color-accent-900);">
+                <strong style="font-family:var(--font-heading); font-size:14px;">Batas yang dipegang</strong><br>
+                Tidak ada halaman, fitur, atau alur di luar PAGE-SPECIFICATION.md. Delapan layar M-22 Manajemen Bahan (P-80…P-87) ditambahkan mengikuti revisi dokumen, beserta perluasan grup sidebar menjadi Aset & Bahan (UXD-16). Tidak ada dua Page ID yang digabung meski layoutnya mirip — P-17 dan P-62, P-52 dan P-56, P-08 dan P-09 tetap terpisah. Layar mobile MS-01–MS-23 tidak dikerjakan — termasuk MS-22 dan MS-23 opname bahan (UXD-17). Kerangka aplikasi — topbar, sidebar §5.3, breadcrumb §5.4, titik henti 390/1024/1366 — disalin apa adanya dari core wireframe, bukan digambar ulang. Fidelitas dijaga rendah: struktur, hierarki, navigasi, penempatan konten, dan aturan yang mengikat — bukan UI final.
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+
+      <sc-if value="{{ showSpec }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:1; min-width:260px; max-width:400px; display:flex; flex-direction:column; gap:var(--space-3);">
+        <div style="border:1px solid var(--color-neutral-400); background:var(--color-bg); padding:var(--space-3);">
+          <div style="font-family:var(--font-heading); font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--color-neutral-600);">Spesifikasi layar</div>
+          <div style="display:flex; align-items:baseline; gap:var(--space-2); margin-top:8px; flex-wrap:wrap;">
+            <span style="font-family:var(--font-heading); font-size:15px; border:1px solid var(--color-accent-500); color:var(--color-accent-800); padding:1px 7px;">{{ cur.id }}</span>
+            <span style="font-size:12px; color:var(--color-accent-700); word-break:break-all;">{{ cur.route }}</span>
+          </div>
+          <div style="font-size:11px; color:var(--color-neutral-700); margin-top:8px; line-height:1.6;">Permission &middot; {{ cur.perm }}</div>
+          <div style="font-size:11px; color:var(--color-neutral-700); line-height:1.6;">Arketipe &middot; {{ cur.arch }}</div>
+        </div>
+                <div style="border:1px solid var(--color-neutral-400); background:var(--color-bg); padding:var(--space-3); display:flex; flex-direction:column; gap:var(--space-3);">
+                  <div>
+                    <div style="font-family:var(--font-heading); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-neutral-600); margin-bottom:var(--space-2);">Entry point</div>
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                      <sc-for list="{{ entryList }}" as="e" hint-placeholder-count="2">
+                        <div style="font-size:12px; color:var(--color-neutral-700); line-height:1.5;">{{ e.v }}</div>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-family:var(--font-heading); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-neutral-600); margin-bottom:var(--space-2);">Exit point · yang bertaut dapat diklik</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                      <sc-for list="{{ exits }}" as="x" hint-placeholder-count="3">
+                        <button onClick="{{ x.onGo }}" style="{{ x.style }}" style-hover="background:var(--color-accent-100)">{{ x.t }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+
+                <sc-if value="{{ notes.0 }}" hint-placeholder-val="{{ false }}">
+                  <div style="border:1px dashed var(--color-neutral-400); padding:var(--space-3);">
+                    <div style="font-family:var(--font-heading); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--color-neutral-600); margin-bottom:var(--space-2);">Ketentuan yang mengikat layar ini</div>
+                    <div style="display:flex; flex-direction:column; gap:5px;">
+                      <sc-for list="{{ notes }}" as="n" hint-placeholder-count="3">
+                        <div style="font-size:12px; line-height:1.55; color:var(--color-neutral-700);">{{ n.v }}</div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ hasClar }}" hint-placeholder-val="{{ false }}">
+                  <div style="border:1px dashed var(--color-accent-600); background:var(--color-accent-100); padding:var(--space-3);">
+                    <div style="font-family:var(--font-heading); font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--color-accent-900); margin-bottom:var(--space-2);">Needs clarification</div>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                      <sc-for list="{{ clar }}" as="c" hint-placeholder-count="1">
+                        <div style="font-size:12px; line-height:1.55; color:var(--color-accent-900);">{{ c.v }}</div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+      </div>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1600,&quot;height&quot;:1000}}">
+const PAGES = [];
+const G_AUTH='Auth & Sistem', G_ASET='Aset & Bahan', G_PJM='Peminjaman & Denda', G_RWT='Kerusakan & Pemeliharaan', G_AWS='Opname · Pengadaan · Penghapusan', G_ADM='Administrasi';
+function add(o){ PAGES.push(o); }
+
+const CORE_FILE = 'SIGM4%20Core%20Wireframe.dc.html';
+// Layar yang tinggal di core wireframe. Navigasi ke sana menyeberang berkas (?p=P-xx).
+const CORE_IDS = ['P-01','P-12','P-13','P-15','P-16','P-18','P-19','P-27','P-29','P-30','P-31','P-32','P-34','P-38','P-42','P-44','P-58','P-59','P-76','P-77','P-78'];
+
+// ─── Role & sidebar per role ────────────────────────────────────────────────
+// Diturunkan langsung dari NAVIGATION.md §5.3 "Sidebar per role" (Lampiran C + Bab 18)
+// dan daftar role R-01…R-07 pada PRD roles-permissions.md Bab 5.
+const ROLES = [
+  ['R-01','Administrator','Admin'],
+  ['R-02','Petugas Sarana Prasarana','Petugas'],
+  ['R-03','Pimpinan Sekolah','Pimpinan'],
+  ['R-04','Teknisi','Teknisi'],
+  ['R-05','Guru','Guru'],
+  ['R-06','Staf / Tata Usaha','Staf'],
+  ['R-07','Siswa / OSIS','Siswa']
+];
+
+// Kode akses per sel matriks — lambangnya persis §5.3:
+//   F ✅ penuh · V 🔍 hanya lihat · D 🔍◆ lihat + satu aksi tulis · S 🟡 cakupan data terbatas
+//   O ◐ terlihat hanya bila approval rules menunjuk pengguna · '-' tidak dirender sama sekali (PM-04)
+const ACCESS = { F:['',''], V:['lihat','hanya lihat'], D:['lihat◆','hanya lihat, satu aksi tulis'],
+  S:['terbatas','cakupan data terbatas (scope own/assigned/restricted)'], O:['bila approver','terlihat hanya bila approval rules menunjuk pengguna'] };
+
+// [label, Page ID, badge, kode akses R-01..R-07]
+const MATRIX = [
+  ['BERANDA', [
+    ['Dashboard','P-12',null,'FFFSSSS'],
+    ['Notifikasi','P-13','3','FFFFFFF']
+  ]],
+  ['ASET & BAHAN', [
+    ['Inventaris Aset','P-15',null,'FFVVVVS'],
+    ['Kategori Aset','P-21',null,'FFV----'],
+    ['Bahan','P-80',null,'FFVVVV-'],
+    ['Kategori Bahan','P-83',null,'FFV----'],
+    ['Lokasi','P-22',null,'FFVVVV-'],
+    ['Label QR','P-24',null,'FF-----'],
+    ['Dokumen Aset','P-26',null,'FFVVVV-'],
+    ['Scan QR','P-25',null,'FFFFFFS']
+  ]],
+  ['PEMANFAATAN', [
+    ['Kalender Ruangan','P-27',null,'FFFVFFS'],
+    ['Katalog Aset','P-28',null,'FFF-FFS'],
+    ['Reservasi','P-30',null,'FFF-SSS'],
+    ['Peminjaman','P-32',null,'FFV-SSS'],
+    ['Denda & Kewajiban','P-35',null,'FFD-SSS'],
+    ['Katalog Bahan','P-84',null,'FFVFFF-'],
+    ['Permintaan Bahan','P-86',null,'FFVSSS-'],
+    ['Persetujuan Saya','P-37','4','FFF-OO-']
+  ]],
+  ['PERAWATAN', [
+    ['Laporan Kerusakan','P-39','6','FFVSSSS'],
+    ['Work Order','P-42','9','FFVS---'],
+    ['Jadwal Pemeliharaan','P-45',null,'FFVV---']
+  ]],
+  ['PENGAWASAN', [
+    ['Stock Opname','P-47',null,'FFF----'],
+    ['Pengadaan','P-51',null,'FFF-SS-'],
+    ['Penghapusan Aset','P-55',null,'FFF----'],
+    ['Statistik & Analitik','P-58',null,'FFF----']
+  ]],
+  ['SISTEM', [
+    // Satu baris matriks "Pengguna & Role" menaungi dua Page ID yang entry point-nya
+    // sama-sama disebut "Sidebar" di PAGE-SPECIFICATION.md — keduanya dirender.
+    ['Pengguna','P-60',null,'FVV----'],
+    ['Role & Permission','P-65',null,'FVV----'],
+    ['Permintaan Reset Password','P-67',null,'F------'],
+    ['Approval Rules','P-68',null,'F-V----'],
+    ['Parameter Sistem','P-70',null,'F-V----'],
+    ['Activity Log','P-73',null,'F-V----'],
+    ['Monitoring Chatbot','P-75',null,'F-V----']
+  ]]
+];
+
+// Sidebar untuk satu role: entri berkode '-' tidak dirender sama sekali (PM-04),
+// dan grup yang jadi kosong ikut hilang.
+function navFor(roleIdx){
+  const out = [];
+  MATRIX.forEach(g => {
+    const items = [];
+    g[1].forEach(it => {
+      const code = it[3].charAt(roleIdx);
+      if (code === '-') return;
+      items.push([it[0], it[1], it[2], code]);
+    });
+    if (items.length) out.push({g:g[0], items});
+  });
+  return out;
+}
+
+// Halaman tanpa kerangka aplikasi: gerbang sesi & halaman publik (pattern 8).
+const BARE = {'P-02':'Gerbang sesi · challenge 5 menit','P-03':'Gerbang sesi · aktivasi wajib','P-05':'Gerbang mustChangePassword · tanpa exit lain',
+  'P-04':'Halaman publik','P-06':'Halaman publik · rate limit 20/menit per IP','P-07':'Halaman publik'};
+
+function startId(){
+  try {
+    var q = (typeof window !== 'undefined' && window.location) ? (window.location.search + window.location.hash) : '';
+    var m = /[?&#]p=(P-[0-9]{2}|AUDIT)/.exec(q);
+    if (m) return m[1];
+  } catch (e) {}
+  return 'P-22'; // Lokasi — layar berkerangka penuh, bukan halaman gerbang
+}
+
+class Component extends DCLogic {
+  state = { id: startId(), role:1, vp:'lg', spec:true, navOpen:false, userMenu:false };
+
+  // Satu model navigasi untuk kedua berkas: id yang tidak ada di sini diteruskan ke core.
+  go = (id) => () => {
+    if (id !== 'AUDIT' && CORE_IDS.indexOf(id) >= 0) {
+      try { window.location.href = CORE_FILE + '?p=' + id; } catch (e) {}
+      return;
+    }
+    this.setState({id, navOpen:false, userMenu:false});
+    const el = document.getElementById('wf-body');
+    if (el) el.scrollTop = 0;
+    window.scrollTo(0,0);
+  };
+  setVp = (vp) => () => this.setState({vp});
+  setRole = (i) => () => this.setState({role:i, navOpen:false, userMenu:false});
+  toggle = (k) => () => this.setState(s => ({[k]:!s[k]}));
+
+  renderVals() {
+    const st = this.state, vp = st.vp;
+    const isXs = vp==='xs', isMd = vp==='md', isLg = vp==='lg';
+    const cur = PAGES.filter(p => p.id === st.id)[0] || PAGES[0] || {id:'—', name:'', group:'', route:'', perm:'', arch:'', entry:[], exit:[], notes:[], clar:[]};
+    const isAudit = st.id === 'AUDIT';
+    const isBare = !isAudit && !!BARE[cur.id];
+    const isApp = !isAudit && !isBare;
+
+
+    // Sidebar aplikasi — bentuk, gaya, dan urutan identik dengan core wireframe.
+    const nav = navFor(st.role).map(grp => ({
+      g: grp.g,
+      items: grp.items.map(it => {
+        const local = PAGES.filter(p => p.id === it[1]).length > 0;
+        const here = it[1] === st.id;
+        return {
+          t: it[0] + (local ? '' : '  \u2197'), badge: it[2] || '',
+          viewOnly: ACCESS[it[3]][0], ini: it[0].slice(0,2).toUpperCase(),
+          live: true, active: here,
+          style: 'all:unset; box-sizing:border-box; width:100%; display:flex; align-items:center; gap:8px; padding:7px 10px; font-size:13px; cursor:pointer; border-left:2px solid ' + (here ? 'var(--color-accent)' : 'transparent') + '; background:' + (here ? 'var(--color-accent-100)' : 'transparent') + '; color:var(--color-text);',
+          onGo: this.go(it[1])
+        };
+      })
+    }));
+
+    // Breadcrumb §5.4 — tampil pada tingkat 2 dan 3, tidak di Dashboard.
+    const parts = (cur.crumb || '').split('/').map(s => s.trim()).filter(s => s.length);
+    const crumbs = parts.map((t,i) => ({
+      t: (i < parts.length-1) ? (t + '  /') : t,
+      style: 'font-size:11px; color:' + (i < parts.length-1 ? 'var(--color-accent-700)' : 'var(--color-neutral-600)') + ';'
+    }));
+
+    const chip = (on) => 'all:unset; cursor:pointer; padding:4px 10px; font-size:12px; font-family:var(--font-heading); letter-spacing:0.04em; background:'+(on?'var(--color-accent-700)':'transparent')+';';
+
+    const L = (arr) => (arr||[]).map(v => ({v}));
+    const exits = (cur.exit||[]).map(e => {
+      const to = typeof e === 'object' ? e.to : null;
+      const t = typeof e === 'object' ? e.t : e;
+      const known = to && (PAGES.filter(p=>p.id===to).length || CORE_IDS.indexOf(to) >= 0);
+      const away = to && CORE_IDS.indexOf(to) >= 0;
+      return { t: t + (away ? '  ↗' : ''), live:!!known, onGo: known ? this.go(to) : (ev)=>ev.preventDefault(),
+        style:'all:unset; box-sizing:border-box; display:flex; align-items:center; gap:6px; min-height:32px; padding:6px 9px; font-size:12px; border:1px solid '+(known?'var(--color-accent-500)':'var(--color-neutral-300)')+'; cursor:'+(known?'pointer':'default')+'; color:'+(known?'var(--color-accent-900)':'var(--color-neutral-700)')+';' };
+    });
+
+    return {
+      cur, isXs, isMd, isLg, nav, crumbs,
+      stateBtns: [['P-06','Halaman Publik Aset — hasil scan kamera bawaan, tanpa sesi'],
+                  ['P-08','Tanpa Hak Akses — 403 dari endpoint mana pun'],
+                  ['P-09','Data Tidak Lagi Tersedia — deep link basi'],
+                  ['P-10','Gangguan Sistem — 5xx/503 dengan request_id'],
+                  ['P-11','Halaman Tidak Ditemukan — route tidak dikenali']].map(k => ({
+        t:k[0], title:k[1], onGo:this.go(k[0]),
+        style:'all:unset; cursor:pointer; padding:4px 8px; font-size:11px; font-family:var(--font-heading); letter-spacing:0.03em;'
+      })),
+      roleName: ROLES[st.role][1], roleCode: ROLES[st.role][0],
+      roleBtns: ROLES.map((r,i) => ({t:r[2], onGo:this.setRole(i),
+        style:'all:unset; cursor:pointer; padding:4px 9px; font-size:12px; font-family:var(--font-heading); letter-spacing:0.03em; white-space:nowrap; background:'+(i===st.role?'var(--color-accent-700)':'transparent')+';'})),
+      hiddenForRole: (function(){
+        let code = null;
+        MATRIX.forEach(g => g[1].forEach(it => { if (it[1] === st.id) code = it[3].charAt(st.role); }));
+        return code === '-';
+      })(),
+      hasCrumb: isApp && parts.length > 1,
+      isApp, isBare, bareWhy: BARE[cur.id] || '',
+      sidebarFull: isLg && isApp, sidebarIcon: isMd && isApp, navOpen: st.navOpen && isApp,
+      toggleNav: this.toggle('navOpen'), toggleUser: this.toggle('userMenu'),
+      userMenu: st.userMenu && isApp,
+      toggleSpec: this.toggle('spec'), showSpec: st.spec && !isAudit,
+      go: { notifikasi:this.go('P-13'), profil:this.go('P-76'), login:this.go('P-01'), dashboard:this.go('P-12'), chat:this.go('P-14') },
+      frameW: isXs?390:(isMd?1024:1366),
+      vpLabel: isXs?'XS · 390 px · 1 kolom':(isMd?'MD · 1024 px · 2 kolom':'LG · 1366 px · 3–4 kolom'),
+      vpBtns: [['XS','xs'],['MD','md'],['LG','lg']].map(v=>({t:v[0], onGo:this.setVp(v[1]), style:chip(vp===v[1])})),
+      goAudit: this.go('AUDIT'),
+      isAudit,
+      auditRows: (function(){
+        const want = {'Auth & Sistem':['P-02','P-03','P-04','P-05','P-06','P-07','P-08','P-09','P-10','P-11','P-14'],
+          'Aset & Bahan':['P-17','P-20','P-21','P-22','P-23','P-24','P-25','P-26','P-28','P-80','P-81','P-82','P-83'],
+          'Peminjaman & Denda':['P-33','P-35','P-36','P-37','P-84','P-85','P-86','P-87'],
+          'Kerusakan & Pemeliharaan':['P-39','P-40','P-41','P-43','P-45','P-46'],
+          'Opname · Pengadaan · Penghapusan':['P-47','P-48','P-49','P-50','P-51','P-52','P-53','P-54','P-55','P-56','P-57'],
+          'Administrasi':['P-60','P-61','P-62','P-63','P-64','P-65','P-66','P-67','P-68','P-69','P-70','P-71','P-72','P-73','P-74','P-75','P-79']};
+        const out = [];
+        Object.keys(want).forEach(k => {
+          const ids = want[k];
+          const built = ids.filter(id => PAGES.filter(p=>p.id===id).length);
+          out.push({g:k, target:ids.length, done:built.length, miss:ids.filter(id=>!PAGES.filter(p=>p.id===id).length).join(', ')||'—'});
+        });
+        return out;
+      })(),
+      total: PAGES.length,
+      dupes: (function(){
+        const seen = {}, d = [];
+        PAGES.forEach(p => { if (seen[p.id]) d.push(p.id); seen[p.id]=1; });
+        return d.length ? d.join(', ') : '0';
+      })(),
+      // Berapa exit yang benar-benar bertaut, termasuk yang menyeberang ke core.
+      linkTotal: (function(){ let n=0; PAGES.forEach(p => n += (p.exit||[]).length); return n; })(),
+      linkLive: (function(){ let n=0; PAGES.forEach(p => (p.exit||[]).forEach(e => { const to = typeof e==='object'?e.to:null; if (to && (PAGES.filter(q=>q.id===to).length || CORE_IDS.indexOf(to)>=0)) n++; })); return n; })(),
+      linkCross: (function(){ let n=0; PAGES.forEach(p => (p.exit||[]).forEach(e => { const to = typeof e==='object'?e.to:null; if (to && CORE_IDS.indexOf(to)>=0) n++; })); return n; })(),
+      clarPages: PAGES.filter(p=>p.clar && p.clar.length).map(p=>({id:p.id, name:p.name, t:p.clar[0]})),
+      noExit: PAGES.filter(p=>!p.exit || !p.exit.length).map(p=>({v:p.id})),
+      noEntry: PAGES.filter(p=>!p.entry || !p.entry.length).map(p=>({v:p.id})),
+      isPage: !isAudit,
+      entryList: L(cur.entry), exits,
+      notes: L(cur.notes), clar: L(cur.clar),
+      hasClar: !!(cur.clar && cur.clar.length),
+      hasBanner: !!cur.banner, banner: cur.banner || '',
+      hasTabs: !!(cur.tabs && cur.tabs.length),
+      tabs: (cur.tabs||[]).map((t,i) => ({t, style:'padding:8px 12px; font-size:12px; font-family:var(--font-heading); letter-spacing:0.06em; text-transform:uppercase; white-space:nowrap; border-bottom:2px solid '+(i===0?'var(--color-accent)':'transparent')+'; color:'+(i===0?'var(--color-text)':'var(--color-neutral-600)')+';'})),
+      hasActions: !!(cur.actions && cur.actions.length),
+      actions: (cur.actions||[]).map((a,i) => ({t:a, cls:'btn '+(i===0?'btn-primary':(i===1?'btn-secondary':'btn-ghost'))})),
+      hasFilters: !!(cur.filters && cur.filters.length),
+      filters: L(cur.filters),
+      hasTable: !!(cur.cols && cur.cols.length),
+      cols: L(cur.cols),
+      rows: (cur.rows||[]).map(r => ({cells:L(r)})),
+      cardRows: (cur.rows||[]).map(r => ({head:r[0], rest:(r.slice(1)).join(' · ')})),
+      hasFields: !!(cur.fields && cur.fields.length),
+      fields: (cur.fields||[]).map(g => ({
+        g:g[0],
+        items:(g[1]||[]).map(f => {
+          const req = /\*$/.test(f);
+          return {t:req?f.slice(0,-1):f, req};
+        })
+      })),
+      hasMain: !!(cur.main && cur.main.length),
+      main: (cur.main||[]).map(b => ({t:b[0], lines:L(b[1])})),
+      hasSide: !!(cur.side && cur.side.length),
+      side: (cur.side||[]).map(b => ({t:b[0], lines:L(b[1])})),
+      twoCol: isLg && !!(cur.side && cur.side.length),
+      gridCols: (isLg && cur.side && cur.side.length) ? 'minmax(0,1.6fr) minmax(0,1fr)' : 'minmax(0,1fr)',
+      fieldCols: isXs ? '1fr' : '1fr 1fr',
+      tableAsCards: isXs
+    };
+  }
+}
+
+
+add({id:'P-02', name:'Verifikasi 2FA', group:G_AUTH, route:'/login/2fa', perm:'Challenge token, 5 menit (SDD-SESS-10)', arch:'Gerbang sesi', crumb:'Halaman publik · di luar kerangka aplikasi',
+  goal:'Faktor kedua TOTP atau kode cadangan. Challenge kedaluwarsa dalam 5 menit; setelah itu pengguna dikembalikan ke Login.',
+  actions:['Verifikasi','Pakai kode cadangan'],
+  fields:[['Kode dari aplikasi autentikator',['Enam digit*']]],
+  main:[['Keadaan yang wajib ditangani',['Challenge kedaluwarsa → kembali ke Login dengan pesan bahwa sesi verifikasi berakhir, bukan galat generik.','Kode salah → hitungan percobaan tersisa ditampilkan sebelum penguncian.','Tautan "Kehilangan akses autentikator?" mengarahkan ke permintaan bantuan Administrator, bukan reset mandiri (NO-08).','Pengguna dengan password sementara diteruskan ke P-05, bukan langsung Dashboard.']]],
+  entry:['Login berhasil pada akun yang sudah mengaktifkan 2FA'],
+  exit:[{t:'Dashboard',to:'P-12'},{t:'P-05 Ganti Password Wajib',to:'P-05'},{t:'P-01 Login — bila challenge kedaluwarsa',to:'P-01'}],
+  notes:['Halaman ini tidak memiliki sidebar maupun topbar aplikasi — ia bagian dari gerbang sesi.','Enam digit dimasukkan dalam satu field, bukan enam kotak terpisah, agar tempel-tempel (paste) dan pembaca layar tetap bekerja.']});
+
+add({id:'P-03', name:'Aktivasi 2FA', group:G_AUTH, route:'/login/2fa/aktivasi', perm:'Sesi terautentikasi, 2FA belum aktif', arch:'Gerbang sesi', crumb:'Halaman publik · di luar kerangka aplikasi',
+  goal:'Mendaftarkan TOTP dan menerbitkan sepuluh kode cadangan. Muncul pada login pertama role yang diwajibkan 2FA.',
+  actions:['Verifikasi & Aktifkan','Unduh kode cadangan'],
+  main:[['Langkah 1 · Pindai kode QR',['Area kode QR TOTP · disertai kunci rahasia berbentuk teks untuk dimasukkan manual.']],
+    ['Langkah 2 · Masukkan enam digit',['Satu field · verifikasi menutup aktivasi.']],
+    ['Langkah 3 · Sepuluh kode cadangan',['Daftar sepuluh kode · tombol Unduh dan Salin.','Wajib ditampilkan satu kali dan diakui pengguna sebelum lanjut — tidak dapat dilihat lagi setelah halaman ditinggalkan.']]],
+  entry:['Login pertama pada role yang diwajibkan 2FA (BR-070)'],
+  exit:[{t:'Dashboard — setelah enam digit terverifikasi',to:null}],
+  notes:['Tidak ada tombol "Lewati". Role wajib 2FA tidak dapat melanjutkan tanpa mengaktifkannya.','Kode cadangan diperlakukan sebagai rahasia sekali-tampil, pola yang sama dengan password sementara pada P-61 dan P-67.']});
+
+add({id:'P-04', name:'Lupa Password', group:G_AUTH, route:'/lupa-password', perm:'Publik', arch:'Formulir publik', crumb:'Halaman publik',
+  goal:'Mengajukan permintaan reset kepada Administrator sekolah. Sistem tidak mengirim tautan reset lewat email.',
+  actions:['Kirim Permintaan','Kembali ke Login'],
+  fields:[['Identitas',['Email atau NIP*','Keterangan singkat']]],
+  main:[['Pesan setelah dikirim',['Selalu netral dan selalu sama: permintaan diteruskan bila akun terdaftar. Tidak pernah mengonfirmasi ada-tidaknya akun (FR-01.3 A1).','Petunjuk bahwa Administrator akan menerbitkan password sementara, dan cara mengambilnya secara luring.']]],
+  entry:['Tautan pada P-01 Login'],
+  exit:[{t:'P-01 Login — selalu dengan pesan netral',to:'P-01'}],
+  notes:['Permintaan yang terkirim muncul di antrean P-67 Permintaan Reset Password.'],
+  clar:[]});
+
+add({id:'P-05', name:'Ganti Password Wajib', group:G_AUTH, route:'/ganti-password', perm:'Sesi ber-must_change_password', arch:'Gerbang sesi', crumb:'Halaman publik · di luar kerangka aplikasi',
+  goal:'Mengganti password sementara sebelum menu apa pun dapat diakses.',
+  actions:['Simpan & Lanjutkan'],
+  fields:[['Password baru',['Password baru*','Ulangi password baru*']]],
+  main:[['Aturan yang ditampilkan sejak awal',['Syarat panjang dan komposisi ditulis di atas field, bukan muncul sebagai galat setelah gagal.','Validasi inline saat blur; tombol simpan nonaktif sampai keduanya cocok.']]],
+  entry:['Login dengan password hasil reset Administrator','Pemulihan break-glass'],
+  exit:[{t:'Dashboard',to:'P-12'}],
+  notes:['Tidak ada exit lain — sengaja. Gerbang mustChangePassword memblokir seluruh route lain, termasuk sidebar, topbar, dan deep link.','Karena itu halaman ini dirender tanpa kerangka aplikasi: tidak ada sidebar dan tidak ada menu pengguna yang bisa diklik.']});
+
+add({id:'P-06', name:'Halaman Publik Aset', group:G_AUTH, route:'/a/{uuid}', perm:'Publik, rate limit 20/menit per IP', arch:'Tampilan publik', crumb:'Halaman publik',
+  goal:'Menampilkan identitas dasar aset hasil scan dengan aplikasi kamera bawaan ponsel, tanpa perlu login.',
+  actions:['Masuk untuk aksi lanjutan'],
+  main:[['Yang ditampilkan',['Nama aset · kategori · lokasi umum (nama ruangan) · status ketersediaan ringkas.','Satu kalimat penjelas: "Untuk melaporkan kerusakan atau meminjam, silakan masuk."']],
+    ['Yang tidak pernah ditampilkan',['Nilai perolehan dan seluruh data biaya.','Dokumen aset.','Foto yang memuat wajah orang.','Identitas peminjam saat ini.']]],
+  entry:['Scan QR aset menggunakan aplikasi kamera bawaan ponsel (bukan pemindai dalam aplikasi)'],
+  exit:[{t:'P-01 Login untuk aksi lanjutan',to:'P-01'},{t:'Tutup halaman',to:null}],
+  notes:['Halaman ini adalah satu-satunya tampilan aset yang dapat diakses tanpa autentikasi, sehingga muatannya dibatasi keras.','Rate limit 20 permintaan per menit per IP; kelebihan menampilkan pesan tunggu, bukan galat teknis.']});
+
+add({id:'P-07', name:'Pemberitahuan Privasi', group:G_AUTH, route:'/privasi', perm:'Publik', arch:'Dokumen', crumb:'Halaman publik',
+  goal:'Memenuhi kewajiban publikasi kebijakan privasi.',
+  actions:['Kembali'],
+  main:[['Struktur dokumen',['Daftar isi bertaut di sisi kiri pada lebar besar; menjadi daftar tertutup di atas isi pada layar sempit.','Isi dokumen sebagai teks panjang dengan penanda tanggal berlaku dan riwayat perubahan.']]],
+  entry:['Tautan pada P-01 Login','Tautan pada P-76 Profil'],
+  exit:[{t:'Kembali ke halaman asal',to:null}],
+  notes:['Karena dicapai dari dua tempat (publik dan dalam aplikasi), tombol kembali mengikuti asal, bukan selalu ke Login.']});
+
+add({id:'P-08', name:'Tanpa Hak Akses', group:G_AUTH, route:'/tidak-punya-akses', perm:'Bearer', arch:'Keadaan galat', crumb:'Beranda / Tanpa Hak Akses',
+  goal:'Menjelaskan pembatasan tanpa mengonfirmasi keberadaan data.',
+  actions:['Ke Dashboard'],
+  main:[['Isi halaman',['Penjelasan bahwa akun Anda tidak memiliki izin untuk membuka halaman ini.','Tidak pernah menyebut apakah objek yang dituju ada atau tidak.','Saran menghubungi Administrator, disertai cara menghubunginya.']]],
+  entry:['Respons 403 dari endpoint mana pun','Deep link ke objek di luar hak akses'],
+  exit:[{t:'Dashboard',to:'P-12'},{t:'Saran menghubungi Administrator',to:null}],
+  notes:['Halaman ini dirender di dalam kerangka aplikasi agar pengguna tetap punya sidebar sebagai jalan keluar.']});
+
+add({id:'P-09', name:'Data Tidak Lagi Tersedia', group:G_AUTH, route:'/data-tidak-tersedia', perm:'Bearer', arch:'Keadaan galat', crumb:'Beranda / Data Tidak Lagi Tersedia',
+  goal:'Objek rujukan sudah dihapus atau dibatalkan sehingga deep link tidak lagi berlaku.',
+  actions:['Ke Dashboard','Ke Pusat Notifikasi'],
+  main:[['Isi halaman',['Penjelasan bahwa objek yang dirujuk sudah tidak ada, beserta jenis objeknya bila masih dapat disebut.','Berbeda dari P-08: di sini pengguna berhak melihat, tetapi datanya sudah tidak ada.']]],
+  entry:['Notifikasi lama','Deep link basi'],
+  exit:[{t:'Dashboard',to:'P-12'},{t:'P-13 Pusat Notifikasi',to:'P-13'}],
+  notes:['Dibedakan dari P-08 secara sengaja — menggabungkan keduanya akan membocorkan keberadaan data kepada pengguna tanpa hak.']});
+
+add({id:'P-10', name:'Gangguan Sistem', group:G_AUTH, route:'/gangguan', perm:'—', arch:'Keadaan galat', crumb:'—',
+  goal:'Galat 5xx atau 503 dengan request_id yang dapat disalin.',
+  actions:['Coba lagi','Ke Dashboard'],
+  main:[['Isi halaman',['Satu kalimat bahwa gangguan berada di sisi sistem, bukan kesalahan pengguna.','Kotak request_id dengan tombol Salin — inilah yang dibawa pengguna saat melapor.','Tombol Coba lagi mengulang permintaan terakhir, bukan memuat ulang seluruh aplikasi.']]],
+  entry:['Kegagalan server','LLM_UNAVAILABLE','STORAGE_UNAVAILABLE'],
+  exit:[{t:'Coba lagi',to:null},{t:'Dashboard',to:'P-12'}],
+  notes:['LLM_UNAVAILABLE dan STORAGE_UNAVAILABLE memakai halaman yang sama tetapi kalimat penjelas berbeda, karena yang terganggu hanya sebagian fungsi.']});
+
+add({id:'P-11', name:'Halaman Tidak Ditemukan', group:G_AUTH, route:'/tidak-ditemukan', perm:'—', arch:'Keadaan galat', crumb:'—',
+  goal:'Route tidak dikenali.',
+  actions:['Ke Dashboard'],
+  main:[['Isi halaman',['Penjelasan singkat bahwa alamat tidak dikenali.','Kotak pencarian global sebagai jalan keluar kedua, bukan hanya tombol ke Dashboard.']]],
+  entry:['URL salah'],
+  exit:[{t:'Dashboard',to:'P-12'},{t:'Pencarian global',to:null}],
+  notes:['Dua jalan keluar disediakan karena pengguna yang salah alamat biasanya sedang mencari sesuatu yang spesifik.']});
+
+add({id:'P-14', name:'Riwayat Chatbot', group:G_AUTH, route:'/chat', perm:'chat.use', arch:'A · Halaman Daftar', crumb:'Beranda / Riwayat Chatbot',
+  goal:'Daftar sesi percakapan milik sendiri; dapat dilanjutkan atau dimulai baru.',
+  actions:['Mulai Sesi Baru'],
+  filters:['Cari isi percakapan','Rentang tanggal ▾'],
+  cols:['Sesi','Pertanyaan pertama','Jumlah pesan','Terakhir aktif'],
+  rows:[['CHT-0142','Di mana proyektor Epson sekarang?','6','Hari ini · 11.20 WIB'],
+    ['CHT-0139','Aula tanggal 18 kosong tidak?','4','Kemarin · 14.05 WIB'],
+    ['CHT-0131','Cara mengajukan perpanjangan peminjaman','9','12 Feb 2026']],
+  side:[['Hubungan dengan panel chatbot',['Panel chatbot sendiri bukan halaman — ia overlay global yang dapat dibuka dari layar mana pun.','Halaman ini hanya dicapai dari tautan "Lihat riwayat" di dalam panel tersebut.','Panel menutup diri saat pengguna mengikuti tautan aksi pada jawaban.']],
+    ['Batas perilaku chatbot',['Saran aksi selalu berbentuk tautan ke formulir — chatbot tidak pernah menyediakan tombol yang menulis data (BR-075).']]],
+  entry:['Panel chatbot → tautan "Lihat riwayat"'],
+  exit:[{t:'Buka sesi percakapan',to:null},{t:'Panel chatbot',to:null},{t:'Tautan aksi dalam jawaban',to:null}],
+  notes:['Keadaan kosong: penjelasan bahwa belum ada percakapan, disertai tombol memulai sesi baru.']});
+
+
+add({id:'P-17', name:'Impor Aset', group:G_ASET, route:'/aset/impor', perm:'asset.create', arch:'C · Formulir (impor)', crumb:'Beranda / Inventaris Aset / Impor Aset',
+  goal:'Impor massal CSV atau XLSX dengan laporan galat per baris.',
+  actions:['Unggah & Proses','Unduh Templat','Batal'],
+  main:[['Langkah pada halaman',['1 · Unduh templat — kolom wajib dijelaskan di halaman, tidak hanya di dalam berkas.','2 · Unggah berkas · CSV atau XLSX.','3 · Pratinjau: jumlah baris terbaca, baris valid, baris bergalat.','4 · Proses — hanya aktif bila ada baris valid.']],
+    ['Laporan hasil impor · per baris',['Tabel: nomor baris · nilai yang bermasalah · pesan galat berbahasa Indonesia · saran perbaikan.','Baris valid tetap diimpor; baris bergalat dilewati dan dapat diunduh sebagai berkas perbaikan.','Bukan pesan tunggal "impor gagal".']]],
+  cols:['Baris','Kolom','Nilai','Pesan galat'],
+  rows:[['12','kategori','Komputerr','Kategori tidak dikenali. Terdekat: "Komputer".'],
+    ['27','tahun_perolehan','20244','Tahun tidak valid.'],
+    ['31','lokasi','(kosong)','Lokasi wajib diisi.']],
+  side:[['Setelah selesai',['Berpindah ke Inventaris yang sudah terfilter pada aset yang baru terbentuk — bukan kembali ke daftar penuh.','Tautan lanjut ke Cetak Label QR untuk aset baru.']]],
+  entry:['Tombol pada P-15 Inventaris Aset'],
+  exit:[{t:'Laporan hasil → Inventaris terfilter aset baru',to:'P-15'},{t:'Unduh templat',to:null},{t:'P-24 Label QR',to:'P-24'}],
+  notes:['Berkas besar diproses asinkron; hasilnya diberitahukan lewat notifikasi, dan halaman menampilkan progres yang dapat ditinggalkan.']});
+
+add({id:'P-20', name:'Mutasi Lokasi', group:G_ASET, route:'/aset/mutasi', perm:'asset.update', arch:'C · Formulir (aksi massal)', crumb:'Beranda / Inventaris Aset / Mutasi Lokasi',
+  goal:'Memindahkan hingga 50 unit secara atomik, disertai berita acara.',
+  actions:['Proses Mutasi','Batal'],
+  banner:'Mutasi bersifat atomik: 50 unit berhasil seluruhnya atau tidak ada yang berpindah. Batas maksimum 50 unit ditegaskan sebelum tombol proses ditekan, bukan setelah penolakan.',
+  fields:[['Tujuan & dasar',['Lokasi tujuan*','Tanggal mutasi*','Alasan / dasar mutasi*','Penanggung jawab baru']]],
+  cols:['Kode aset','Nama','Lokasi asal','Status','Catatan'],
+  rows:[['LAB-KOM-0002','Komputer Lab 1','Lab Komputer 1','Tersedia','—'],
+    ['LAB-KOM-0003','Komputer Lab 1','Lab Komputer 1','Dalam Perbaikan','Tidak dapat dimutasi — sedang diperbaiki'],
+    ['MBL-KRS-0140','Kursi Lipat','Aula','Tersedia','—']],
+  side:[['Aset yang menghalangi',['Unit berstatus Dipinjam atau Dalam Perbaikan ditampilkan beserta alasannya dan dapat dikeluarkan dari daftar, bukan menggagalkan seluruh mutasi diam-diam.']],
+    ['Hasil',['Berita acara PDF dapat diunduh langsung setelah berhasil.','Lanjut ke Inventaris yang terfilter pada lokasi tujuan.']]],
+  entry:['Pemilihan massal pada P-15 Inventaris Aset','Tombol pada P-18 Detail Aset'],
+  exit:[{t:'Berita acara PDF',to:null},{t:'Inventaris terfilter lokasi tujuan',to:'P-15'}],
+  notes:['Salah satu dari tiga daftar yang memiliki pemilihan massal; jumlah terpilih selalu terlihat di batang aksi.']});
+
+add({id:'P-21', name:'Kategori Aset', group:G_ASET, route:'/kategori-aset', perm:'category.manage', arch:'A · Daftar (pohon dua tingkat)', crumb:'Beranda / Kategori Aset',
+  goal:'CRUD kategori dua tingkat beserta interval pemeliharaan preventifnya.',
+  actions:['Tambah Kategori','Tambah Subkategori'],
+  filters:['Cari kategori','Hanya yang punya interval preventif'],
+  cols:['Kategori / Subkategori','Jumlah aset','Interval preventif','Aksi'],
+  rows:[['Elektronik','412','—','Ubah · Nonaktifkan'],
+    ['— Proyektor','38','180 hari','Ubah · Nonaktifkan'],
+    ['— Komputer','374','365 hari','Ubah · Nonaktifkan'],
+    ['Mebel','2.140','—','Ubah · Nonaktifkan'],
+    ['— Kursi','1.480','—','Ubah · Nonaktifkan']],
+  side:[['Interval preventif',['Interval yang diisi di sini menjadi dasar terbitnya jadwal pemeliharaan otomatis.','Perubahan interval menampilkan peringatan dampak: berapa jadwal yang akan bergeser.']],
+    ['Kembali ke asal',['Bila halaman ini dibuka dari tautan "Kategori belum ada" pada formulir aset, tombol simpan mengembalikan pengguna ke formulir itu dengan kategori baru sudah terpilih.']]],
+  entry:['Sidebar','Tautan "Kategori belum ada" pada formulir aset (FR-04.1 A4)'],
+  exit:[{t:'Kembali ke formulir aset',to:'P-16'},{t:'P-45 Jadwal Pemeliharaan',to:'P-45'}],
+  notes:['Penghapusan kategori yang masih dipakai ditolak dengan menyebut jumlah aset yang memakainya, bukan galat generik.']});
+
+add({id:'P-22', name:'Lokasi', group:G_ASET, route:'/lokasi', perm:'location.view', arch:'A · Daftar (pohon tiga tingkat)', crumb:'Beranda / Lokasi',
+  goal:'Pohon Gedung → Area → Ruangan yang dapat diperluas.',
+  actions:['Tambah Gedung','Tambah Area','Tambah Ruangan'],
+  filters:['Cari nama lokasi','Gedung ▾','Hanya ruangan dapat direservasi'],
+  main:[['Pohon lokasi',['▾ Gedung A — 3 area · 24 ruangan','    ▾ Lantai 1 — 9 ruangan','        Aula · kapasitas 300 · dapat direservasi · 148 aset','        Ruang Rapat · kapasitas 20 · dapat direservasi · 22 aset','        Ruang TU · 34 aset','    ▸ Lantai 2 — 8 ruangan','▸ Gedung B — 2 area · 18 ruangan','▸ Gedung C — 1 area · 6 ruangan']]],
+  side:[['Perilaku pohon',['Keadaan buka-tutup tiap cabang tercermin di URL agar tautan dapat dibagikan.','Setiap ruangan menampilkan jumlah aset dan penanda dapat-direservasi langsung pada barisnya.']],
+    ['Keadaan kosong',['Gedung tanpa area dan area tanpa ruangan menampilkan tombol tambah di tempat, bukan hanya kalimat kosong.']]],
+  entry:['Sidebar'],
+  exit:[{t:'P-23 Detail Ruangan',to:'P-23'},{t:'Tambah Gedung / Area / Ruangan',to:null}],
+  notes:['Pada layar sempit pohon tetap pohon — indentasi dikurangi, tetapi hierarki tidak diratakan.']});
+
+add({id:'P-23', name:'Detail Ruangan', group:G_ASET, route:'/lokasi/ruangan/{id}', perm:'location.view', arch:'B · Halaman Detail (tab)', crumb:'Beranda / Lokasi / Aula',
+  goal:'Aset di dalam ruangan, ringkasan kondisi, dan jadwal tetap ruangan.',
+  actions:['Tambah Aset ke Lokasi Ini','Ekspor Berita Acara Lokasi','⋯'],
+  tabs:['Aset di Ruangan','Ringkasan Kondisi','Jadwal Tetap'],
+  cols:['Kode aset','Nama','Kategori','Kondisi','Status'],
+  rows:[['MBL-KRS-0140','Kursi Lipat','Mebel','Baik','Direservasi'],
+    ['PRY-EPS-0009','Proyektor Epson','Elektronik','Baik','Tersedia'],
+    ['ELK-SND-0004','Sound System','Elektronik','Rusak Ringan','Dalam Perbaikan']],
+  side:[['Ringkasan kondisi',['148 aset · Baik 131 · Rusak Ringan 12 · Rusak Berat 4 · Hilang 1.','Angka ini dapat diklik menuju Inventaris yang terfilter lokasi dan kondisi.']],
+    ['Tab Jadwal Tetap',['Jadwal berulang yang memblokir slot ruangan pada kalender — sumber keadaan "Jadwal Tetap" di P-27.']],
+    ['Keadaan kosong',['Ruangan tanpa aset menampilkan tombol "Tambah Aset ke Lokasi Ini" sebagai aksi utama (FR-03.2 A1) — inilah salah satu entry point P-16.']]],
+  entry:['Pohon P-22 Lokasi','Scan QR ruangan','P-18 Detail Aset'],
+  exit:[{t:'P-18 Detail Aset',to:'P-18'},{t:'Tambah Aset ke Lokasi Ini',to:'P-16'},{t:'Tab Jadwal Tetap',to:null},{t:'Ekspor berita acara lokasi',to:null}],
+  notes:['Tab tercermin di URL sebagai segmen, sama seperti P-18.']});
+
+add({id:'P-24', name:'Label QR', group:G_ASET, route:'/label-qr', perm:'asset.qr_print', arch:'C · Formulir (penyusun cetak)', crumb:'Beranda / Label QR',
+  goal:'Menyusun dan mengunduh PDF label massal.',
+  actions:['Unduh PDF','Tandai qr_terpasang','Batal'],
+  filters:['Cari kode aset','Kategori ▾','Lokasi ▾','Hanya belum berlabel'],
+  fields:[['Pengaturan cetak',['Ukuran label*','Label per halaman*','Isi label · kode aset, nama, lokasi','Sertakan nama sekolah']]],
+  cols:['☐','Kode aset','Nama','Lokasi','qr_terpasang'],
+  rows:[['☑','LAB-KOM-0002','Komputer Lab 1','Lab Komputer 1','Belum'],
+    ['☑','LAB-KOM-0003','Komputer Lab 1','Lab Komputer 1','Belum'],
+    ['☐','PRY-EPS-0011','Proyektor Epson','Gudang Sarpras','Sudah']],
+  side:[['Pratinjau lembar',['Kisi label sesuai pengaturan, sehingga pengguna melihat pemborosan kertas sebelum mencetak.']],
+    ['Menandai terpasang',['Menandai qr_terpasang adalah aksi terpisah setelah label benar-benar ditempel — bukan otomatis saat PDF diunduh.']]],
+  entry:['Sidebar','P-18 Detail Aset','Setelah P-16 Tambah Aset','Setelah P-54 Catat Penerimaan','Kartu "Aset Belum Berlabel QR" (19.3)'],
+  exit:[{t:'Unduh PDF',to:null},{t:'Tandai qr_terpasang',to:null},{t:'Inventaris',to:'P-15'}],
+  notes:['Halaman ini memerlukan printer, karena itu web-only dan tidak ada padanannya di mobile.']});
+
+add({id:'P-25', name:'Scan QR (web)', group:G_ASET, route:'/scan', perm:'asset.view', arch:'Alat', crumb:'Beranda / Scan QR',
+  goal:'Memindai lewat kamera peramban, dengan input kode manual sebagai jalur setara.',
+  actions:['Mulai Kamera','Masukkan Kode Manual'],
+  main:[['Area pemindai',['Bingkai kamera peramban · petunjuk arahkan ke label QR.','Di bawahnya, field input kode aset manual — selalu terlihat, bukan tersembunyi di balik kegagalan kamera.']],
+    ['Izin kamera ditolak',['Blok penjelasan cara mengaktifkan izin pada peramban, dan input manual tetap berfungsi penuh.','Bukan halaman buntu.']],
+    ['Hasil pemindaian',['Langsung menuju Detail Aset, disertai aksi kontekstual sesuai role dan status aset — misalnya Lapor Kerusakan, atau Proses Pengembalian bila aset sedang Dipinjam.']]],
+  entry:['Sidebar'],
+  exit:[{t:'P-18 Detail Aset',to:'P-18'},{t:'Aksi kontekstual sesuai role & status',to:null},{t:'Input kode manual',to:null}],
+  notes:['Scan berjalan utama di aplikasi mobile (MS-07); versi web ini ada karena NFR-C-05 mewajibkan jalur peramban.'],
+  clar:['Dokumentasi tidak menetapkan apakah pemindai web mendukung mode beruntun seperti MS-07 (MOB-MED-05). Wireframe hanya menggambar pemindaian tunggal dan tidak menambahkan mode beruntun yang tidak berdasar.']});
+
+add({id:'P-26', name:'Dokumen Aset', group:G_ASET, route:'/dokumen-aset', perm:'asset_document.view', arch:'A · Halaman Daftar', crumb:'Beranda / Dokumen Aset',
+  goal:'Daftar lintas-aset: faktur, garansi, sertifikat, manual, berita acara.',
+  actions:['Unggah Dokumen','Ekspor'],
+  filters:['Cari nama dokumen / kode aset','Jenis dokumen ▾','Kategori aset ▾','Garansi berakhir ≤ ▾','Rentang tanggal ▾'],
+  cols:['Dokumen','Jenis','Aset terkait','Berlaku sampai','Ukuran'],
+  rows:[['Faktur PRY-EPS-0011.pdf','Faktur','PRY-EPS-0011','—','412 KB'],
+    ['Garansi Proyektor Epson.pdf','Garansi','PRY-EPS-0011','12 Mar 2026','208 KB'],
+    ['Manual Mikroskop.pdf','Manual','LAB-IPA-0057','—','1,8 MB'],
+    ['Berita Acara Mutasi 08-2025.pdf','Berita Acara','12 unit','—','96 KB']],
+  side:[['Unduhan',['Berkas diunduh lewat URL bertanda tangan yang berlaku 15 menit; tautan yang kedaluwarsa meminta klik ulang, tidak menampilkan galat mentah.']],
+    ['Pemindaian antivirus',['Berkas yang belum lolos pemindaian tampil sebagai "Sedang diperiksa" dengan tombol unduh nonaktif beserta penjelasannya (NFR-S-18).']],
+    ['Drill-down masuk',['Kartu "Garansi Akan Berakhir" pada dashboard membuka halaman ini dengan filter garansi berakhir ≤ 30 hari sudah terpasang.']]],
+  entry:['Sidebar','Drill-down kartu "Garansi Akan Berakhir" (19.3)'],
+  exit:[{t:'P-18 Detail Aset pemilik dokumen',to:'P-18'},{t:'Unduh berkas · URL bertanda tangan 15 menit',to:null}],
+  notes:['Filter tercermin di URL sehingga tautan hasil filter dapat dibagikan antar-petugas.']});
+
+add({id:'P-28', name:'Katalog Aset', group:G_ASET, route:'/katalog-aset', perm:'reservation.view', arch:'A · Daftar (kartu ketersediaan)', crumb:'Beranda / Katalog Aset',
+  goal:'Barang yang dapat dipinjam beserta jumlah tersedia pada rentang tanggal tertentu.',
+  actions:['Ajukan Reservasi'],
+  filters:['Cari nama barang','Kategori ▾','Rentang tanggal* ▾','Hanya yang tersedia'],
+  banner:'Rentang tanggal adalah filter yang menentukan seluruh angka pada halaman ini. Jumlah tersedia selalu relatif terhadap rentang yang dipilih, dan itu dinyatakan di atas daftar.',
+  cols:['Barang','Kategori','Total unit','Tersedia pada rentang','Aksi'],
+  rows:[['Kursi Lipat','Mebel','120','86','Ajukan'],
+    ['Proyektor Epson','Elektronik','3','1','Ajukan'],
+    ['Sound System Portabel','Elektronik','2','0','Lihat tanggal bebas'],
+    ['Tenda Kegiatan','Perlengkapan','8','8','Ajukan']],
+  side:[['Bila tersedia 0',['Baris tidak dimatikan begitu saja — sistem menawarkan saran tanggal bebas terdekat (FR-08.1 A2), dan itulah jalan keluarnya.']],
+    ['Menuju wizard',['Klik Ajukan membawa jenis barang, jumlah, dan rentang tanggal ke langkah 1 wizard reservasi, sudah terisi.']]],
+  entry:['Sidebar','Aksi Cepat dashboard pemohon','Chatbot'],
+  exit:[{t:'P-29 Wizard Reservasi',to:'P-29'},{t:'P-18 Detail Aset',to:'P-18'},{t:'Saran tanggal bebas terdekat bila 0',to:null}],
+  notes:['Berbeda dari P-15 Inventaris: di sini satuannya jenis barang beserta jumlah, bukan unit per unit.']});
+
+
+add({id:'P-33', name:'Antrean Serah Terima', group:G_PJM, route:'/peminjaman/serah-terima', perm:'loan.manage', arch:'A · Halaman Daftar (antrean harian)', crumb:'Beranda / Peminjaman / Antrean Serah Terima',
+  goal:'Reservasi yang dijadwalkan diserahkan hari ini.',
+  actions:['Scan QR untuk Serah Terima'],
+  filters:['Cari nomor / peminjam','Jenis objek ▾','Waktu mulai ▾'],
+  cols:['Waktu','Nomor reservasi','Peminjam','Objek','Aksi'],
+  rows:[['07.30','RSV-BR-2026-0044','Bu Sari · Guru','2 unit Proyektor Epson','Serahkan'],
+    ['08.00','RSV-RG-2026-0086','Pak Budi · Staf','Lab Komputer 1','Serahkan'],
+    ['10.00','RSV-BR-2026-0031','OSIS · Siswa','12 unit Kursi Lipat','Serahkan'],
+    ['13.00','RSV-BR-2026-0047','Bu Rina · Guru','1 unit Sound System','Serahkan']],
+  side:[['Peran web vs mobile',['Serah terima berjalan utama di aplikasi mobile (MS-10) karena memerlukan foto dan tanda tangan di tempat.','Halaman web ini adalah antreannya: melihat siapa hari ini, lalu membuka layar serah terima per reservasi.']],
+    ['Terurut waktu',['Antrean diurutkan waktu mulai, bukan waktu pengajuan — karena inilah urutan kerja nyata petugas.']],
+    ['Keadaan kosong',['"Tidak ada serah terima hari ini" disertai tautan ke Daftar Reservasi yang disetujui untuk besok.']]],
+  entry:['Sidebar','Kartu "Serah Terima Hari Ini" (19.3)','Scan QR aset berstatus Direservasi'],
+  exit:[{t:'Layar Serah Terima per reservasi',to:null},{t:'Detail Reservasi',to:null}],
+  notes:['Substitusi unit saat serah terima wajib beralasan (FR-09.1 A1) dan dilakukan di layar serah terima, bukan di antrean ini.']});
+
+add({id:'P-35', name:'Denda & Kewajiban', group:G_PJM, route:'/denda', perm:'fine.view', arch:'A · Halaman Daftar', crumb:'Beranda / Denda & Kewajiban',
+  goal:'Denda keterlambatan dan ganti rugi, tersaring scope role.',
+  actions:['Ekspor Rekap Periode'],
+  filters:['Cari nomor / nama','Jenis ▾ Keterlambatan · Ganti Rugi','Status ▾ Belum Lunas · Lunas · Dibebaskan','Rentang tanggal ▾'],
+  cols:['Nomor','Nama','Jenis','Jumlah','Status'],
+  rows:[['DND-2026-0088','Bu Sari · Guru','Keterlambatan','Rp 30.000','Belum Lunas'],
+    ['DND-2026-0084','OSIS · Siswa','Ganti Rugi','Rp 450.000','Belum Lunas'],
+    ['DND-2026-0079','Pak Budi · Staf','Keterlambatan','Rp 10.000','Lunas'],
+    ['DND-2026-0071','Bu Rina · Guru','Keterlambatan','Rp 20.000','Dibebaskan']],
+  side:[['Tidak ada pembayaran daring',['Sistem hanya mencatat. Pelunasan dilakukan luring lalu ditandai oleh petugas — tidak ada kanal pembayaran dalam aplikasi (§12.5).']],
+    ['Efek pemblokiran',['Kewajiban belum lunas dapat memblokir pengajuan baru pemohon (BR-030). Blokir itu terlihat di wizard reservasi, dan tautannya kembali ke halaman ini.']]],
+  entry:['Sidebar','Kartu "Denda Saya"','Notifikasi NT-15…NT-18'],
+  exit:[{t:'P-36 Detail Kewajiban',to:'P-36'},{t:'Ekspor rekap per periode',to:null}],
+  notes:['Bagi pemohon, halaman yang sama tampil tersaring hanya kewajiban miliknya sendiri.']});
+
+add({id:'P-36', name:'Detail Kewajiban', group:G_PJM, route:'/denda/{id}', perm:'fine.view', arch:'B · Halaman Detail', crumb:'Beranda / Denda & Kewajiban / DND-2026-0088',
+  goal:'Rincian perhitungan: hari terlambat dikali tarif, penerapan cap, dan jumlah yang dibebaskan bila ada.',
+  actions:['Tandai Lunas','Bebaskan','⋯'],
+  main:[['Rincian perhitungan · wajib terbaca, bukan hanya total',['Keterlambatan · 3 hari','Tarif per hari · Rp 10.000','Subtotal · Rp 30.000','Cap maksimum · Rp 500.000 — belum tercapai','Jumlah dibebaskan · Rp 0','Total kewajiban · Rp 30.000']],
+    ['Dua drawer pembebasan yang berbeda',['Jenis Keterlambatan → drawer beralasan, bagi pemegang fine.waive.','Jenis Ganti Rugi → drawer beralasan DENGAN isian nilai yang dibebaskan, bagi pemegang fine.waive_compensation.','Keduanya bukan satu drawer dengan field opsional — kewenangannya berbeda.']]],
+  side:[['Asal kewajiban',['Terbit dari PJM-2026-0231 · Bu Sari · Proyektor Epson.','Tautan kembali ke Detail Peminjaman asal selalu tersedia.']],
+    ['Pelunasan',['Tandai Lunas membuka drawer konfirmasi berisi tanggal terima dan pencatat — tanpa alasan, karena bukan aksi destruktif.']]],
+  entry:['P-35 Daftar Denda','P-34 Detail Peminjaman'],
+  exit:[{t:'Tandai Lunas (drawer)',to:null},{t:'Bebaskan (drawer beralasan)',to:null},{t:'Detail Peminjaman asal',to:null}],
+  notes:['Nilai rupiah selalu diformat penuh saat tampil dan memakai angka tabular agar kolom sejajar.']});
+
+add({id:'P-37', name:'Persetujuan Saya', group:G_PJM, route:'/persetujuan', perm:'approval.decide', arch:'A · Halaman Daftar (kotak masuk)', crumb:'Beranda / Persetujuan Saya',
+  goal:'Kotak masuk lintas jenis pengajuan, terurut waktu dan urgensi.',
+  actions:['Delegasikan'],
+  filters:['Jenis pengajuan ▾','Sisa SLA ▾','Pemohon ▾'],
+  cols:['Jenis','Nomor','Pemohon','Diajukan','Sisa SLA'],
+  rows:[['Reservasi Ruangan','RSV-RG-2026-0087','Bu Sari · Guru','14 Feb 09.12','9 jam'],
+    ['Perpanjangan Peminjaman','PJM-2026-0219','OSIS · Siswa','15 Feb 08.40','20 jam'],
+    ['Usulan Pengadaan','PGD-2026-0012','Pak Budi · Staf','13 Feb 14.02','Terlampaui 6 jam'],
+    ['Usulan Penghapusan','HPS-2026-0004','Yoga · Sarpras','15 Feb 11.15','2 hari']],
+  side:[['Urutan',['Terurut gabungan waktu dan urgensi — yang SLA-nya paling dekat naik ke atas, bukan sekadar terbaru.','Pelanggaran SLA ditandai ikon dan teks ("Terlampaui 6 jam"), bukan baris merah.']],
+    ['Delegasi',['Drawer delegasi mencatat kepada siapa dan sampai kapan; pengajuan yang didelegasikan keluar dari kotak masuk ini dan muncul di kotak masuk penerima.']],
+    ['Keadaan kosong',['"Tidak ada pengajuan yang menunggu keputusan Anda." — dengan tautan ke riwayat keputusan yang sudah dibuat.']]],
+  entry:['Sidebar','Notifikasi NT-01, NT-05, NT-07','Kartu dashboard "Pengajuan Menunggu Persetujuan"'],
+  exit:[{t:'P-38 Detail Keputusan',to:'P-38'},{t:'Delegasikan (drawer)',to:null}],
+  notes:['Satu kotak masuk untuk empat jenis pengajuan sekaligus; kolom Jenis adalah pembeda utamanya.','Seluruh aksi keputusan wajib juga tersedia di mobile (MS-20).']});
+
+add({id:'P-39', name:'Laporan Kerusakan', group:G_RWT, route:'/kerusakan', perm:'damage.view', arch:'A · Halaman Daftar', crumb:'Beranda / Laporan Kerusakan',
+  goal:'Tiket dikelompokkan per status, dengan penanda pelanggaran SLA.',
+  actions:['Lapor Kerusakan','Ekspor'],
+  tabs:['Dilaporkan · 6','Diverifikasi · 4','Ditolak','Selesai'],
+  filters:['Cari nomor / kode aset','Urgensi ▾','Lokasi ▾','Pelapor ▾','Rentang tanggal ▾'],
+  cols:['Nomor','Aset','Urgensi','Pelapor','Dilaporkan','SLA'],
+  rows:[['KRS-2026-0142','LAB-KOM-0003','Kritis','Bu Sari','16 Feb 08.10','4 jam tersisa'],
+    ['KRS-2026-0141','ELK-SND-0004','Sedang','Pak Budi','15 Feb 13.22','1 hari tersisa'],
+    ['KRS-2026-0139','PRY-EPS-0011','Sedang','Bu Sari','12 Feb 09.14','Terlampaui 2 hari'],
+    ['KRS-2026-0138','MBL-KRS-0140','Rendah','OSIS','11 Feb 15.40','—']],
+  side:[['Hubungan ke work order',['Tiket yang diverifikasi menjadi hulu work order. Inilah hulu yang selama ini belum tergambar di core wireframe.']],
+    ['Penanda SLA',['Pelanggaran ditandai ikon dan teks pada kolom SLA, tidak dengan mewarnai baris (§11.4).']]],
+  entry:['Sidebar','Kartu "Laporan Kerusakan Baru" & "Kerusakan Kritis"','Notifikasi NT-19, NT-20'],
+  exit:[{t:'P-41 Detail Tiket',to:'P-41'},{t:'P-40 Lapor Kerusakan',to:'P-40'},{t:'Ekspor',to:null}],
+  notes:['Tab adalah filter status dan tercermin di URL, seperti pada P-32.']});
+
+add({id:'P-40', name:'Lapor Kerusakan', group:G_RWT, route:'/kerusakan/baru', perm:'damage.create', arch:'C · Formulir', crumb:'Beranda / Laporan Kerusakan / Lapor Kerusakan',
+  goal:'Membuat tiket: objek, deskripsi, urgensi, satu sampai lima foto.',
+  actions:['Kirim Laporan','Batal'],
+  fields:[['Objek & keluhan',['Aset atau ruangan*','Deskripsi kerusakan*','Urgensi*','Lokasi saat ditemukan']]],
+  main:[['Foto · 1 sampai 5, minimal satu',['Area unggah dengan pratinjau per foto dan tombol hapus per foto.','Jumlah minimum dan maksimum dinyatakan di label, bukan muncul sebagai galat setelah kirim.']],
+    ['Bila sudah ada tiket terbuka untuk aset yang sama',['Halaman tidak menolak. Ia menampilkan tiket yang sudah ada beserta statusnya, lalu menawarkan dua pilihan: menambahkan keterangan pada tiket itu, atau tetap membuat tiket baru bila keluhannya berbeda (FR-11.1 A1).']]],
+  side:[['Jalur mobile',['Lapor kerusakan berfoto berjalan utama di mobile (MS-15) karena foto diambil di tempat. Versi web ini setara fungsinya.']]],
+  entry:['Aksi Cepat dashboard','P-18 Detail Aset','Hasil scan QR','P-23 Detail Ruangan'],
+  exit:[{t:'P-41 Detail Tiket bernomor',to:'P-41'},{t:'Tiket eksisting bila sudah ada yang terbuka',to:'P-41'}],
+  notes:['Objek terisi otomatis bila halaman dibuka dari Detail Aset atau hasil scan — pengguna tidak mengetik ulang kode aset.']});
+
+add({id:'P-41', name:'Detail Tiket Kerusakan', group:G_RWT, route:'/kerusakan/{id}', perm:'damage.view', arch:'B · Halaman Detail', crumb:'Beranda / Laporan Kerusakan / KRS-2026-0139',
+  goal:'Deskripsi, foto, status, peringatan garansi, serta tiket dan work order terkait.',
+  actions:['Verifikasi','Tolak','Buat Work Order'],
+  banner:'Peringatan garansi: aset ini masih dalam garansi sampai 12 Mar 2026. Pertimbangkan klaim garansi sebelum menerbitkan work order berbiaya.',
+  main:[['Deskripsi & foto pelapor',['Keluhan lengkap dari pelapor beserta waktu dan lokasi.','Galeri satu sampai lima foto; foto yang belum lolos pemindaian antivirus tampil "Sedang diperiksa".']],
+    ['Tiket & work order terkait',['Tiket lain yang terbuka pada aset yang sama, bila ada.','Work order yang sudah terbit dari tiket ini.']]],
+  side:[['Verifikasi & penolakan',['Verifikasi membuka drawer: menetapkan kesimpulan awal dan apakah langsung menerbitkan work order.','Tolak membuka drawer beralasan — alasan wajib, karena pelapor akan menerima notifikasi berisi alasan itu.']],
+    ['Status tiket',['Dilaporkan → Diverifikasi → (Work Order terbit) → Selesai · atau Ditolak.']]],
+  entry:['P-39 Daftar Kerusakan','P-18 Detail Aset','Notifikasi NT-21','Deep link'],
+  exit:[{t:'Verifikasi (drawer)',to:null},{t:'Tolak (drawer beralasan)',to:null},{t:'P-43 Buat Work Order',to:'P-43'},{t:'Detail Work Order',to:null},{t:'Detail Aset',to:'P-18'}],
+  notes:['Peringatan garansi adalah blok keadaan, bukan sekadar catatan — ia mengubah keputusan petugas.']});
+
+add({id:'P-43', name:'Buat Work Order', group:G_RWT, route:'/work-order/baru', perm:'workorder.create', arch:'C · Formulir', crumb:'Beranda / Work Order / Buat Work Order',
+  goal:'Menugaskan pekerjaan ke teknisi beserta target penyelesaian dan estimasi biaya.',
+  actions:['Buat & Tugaskan','Batal'],
+  fields:[['Pekerjaan',['Aset*','Jenis · Preventif / Korektif*','Prioritas*','Target selesai*','Teknisi*','Deskripsi pekerjaan*']],
+    ['Estimasi',['Estimasi biaya','Sparepart yang diperkirakan','Checklist pekerjaan']]],
+  main:[['Konteks yang ditarik otomatis',['Bila dibuat dari tiket KRS-2026-0139: deskripsi, foto, dan urgensi tiket ikut terbawa — tidak diketik ulang.','Riwayat servis aset ditampilkan ringkas agar penugasan mempertimbangkan pekerjaan sebelumnya.']]],
+  side:[['Blok estimasi biaya',['Hanya dirender bagi pemegang maintenance.view_cost, sama seperti blok biaya pada P-44.']],
+    ['Batal',['Kembali ke asal — Detail Tiket bila datang dari sana, Daftar WO bila dari sana. Bukan selalu ke satu tempat.']]],
+  entry:['Tombol pada P-41 Detail Tiket','P-42 Daftar Work Order','P-18 Detail Aset'],
+  exit:[{t:'Detail Work Order bernomor',to:null},{t:'Batal kembali ke asal',to:null}],
+  notes:['Teknisi yang sedang memegang banyak WO aktif ditandai di daftar pilihan, agar beban kerja terlihat saat menugaskan.']});
+
+add({id:'P-45', name:'Jadwal Pemeliharaan', group:G_RWT, route:'/jadwal-pemeliharaan', perm:'maintenance.view_cost / maintenance.manage', arch:'A · Halaman Daftar', crumb:'Beranda / Jadwal Pemeliharaan',
+  goal:'Daftar jadwal preventif beserta jatuh tempo berikutnya.',
+  actions:['Buat Jadwal'],
+  filters:['Cari nama jadwal','Kategori / aset ▾','Jatuh tempo ≤ ▾','Status ▾ Aktif · Nonaktif'],
+  cols:['Jadwal','Cakupan','Interval','Jatuh tempo berikutnya','Status'],
+  rows:[['Servis Proyektor Semesteran','Kategori: Proyektor · 38 unit','180 hari','22 Feb 2026','Aktif'],
+    ['Pembersihan Lab Komputer','Kategori: Komputer · 374 unit','365 hari','2 Mar 2026','Aktif'],
+    ['Kalibrasi Alat Lab IPA','Kategori: Alat Lab · 57 unit','180 hari','14 Mar 2026','Aktif'],
+    ['Servis AC Aula','Aset: 4 unit','90 hari','—','Nonaktif']],
+  side:[['Sumber jadwal',['Interval berasal dari kategori aset (P-21) atau ditetapkan langsung pada jadwal.']],
+    ['Drill-down masuk',['Kartu "Jadwal Pemeliharaan Mendatang" membuka halaman ini dengan filter jatuh tempo ≤ 14 hari sudah terpasang.']]],
+  entry:['Sidebar','Kartu "Jadwal Pemeliharaan Mendatang" (19.3)'],
+  exit:[{t:'P-46 Detail Jadwal',to:'P-46'},{t:'Buat Jadwal',to:null}],
+  notes:['Jadwal aktif menerbitkan work order preventif otomatis; itulah hubungan halaman ini dengan P-42.']});
+
+add({id:'P-46', name:'Detail Jadwal Pemeliharaan', group:G_RWT, route:'/jadwal-pemeliharaan/{id}', perm:'maintenance.manage', arch:'B · Halaman Detail', crumb:'Beranda / Jadwal Pemeliharaan / Servis Proyektor Semesteran',
+  goal:'Cakupan aset atau kategori, interval, checklist, dan teknisi bawaan.',
+  actions:['Ubah','Lewati Sekali','⋯'],
+  main:[['Cakupan',['Kategori: Proyektor · 38 unit tercakup.','Daftar unit dapat diperluas; unit yang sudah dihapuskan otomatis keluar dari cakupan.']],
+    ['Checklist bawaan',['Pemeriksaan lampu & kipas','Pembersihan filter udara','Uji nyala 30 menit','Checklist ini yang tersalin ke setiap work order yang terbit dari jadwal ini.']],
+    ['Work order yang terbit dari jadwal ini',['WO-2026-0087 · Menunggu Verifikasi · 17 Feb 2026','WO-2025-0412 · Selesai · 4 Nov 2025']]],
+  side:[['Dua aksi beralasan yang berbeda',['Nonaktifkan — menghentikan penerbitan selanjutnya, drawer beralasan.','Lewati Sekali — hanya melewati satu siklus dan menggeser jatuh tempo berikutnya, drawer beralasan (FR-12.2 A3).','Keduanya tidak boleh digabung: dampaknya berbeda.']],
+    ['Interval',['180 hari · jatuh tempo berikutnya 22 Feb 2026 · teknisi bawaan Pak Andi.']]],
+  entry:['P-45 Daftar Jadwal','P-21 Kategori Aset'],
+  exit:[{t:'Ubah',to:null},{t:'Nonaktifkan (drawer beralasan)',to:null},{t:'Lewati Sekali (drawer beralasan)',to:null},{t:'Work order yang terbit dari jadwal ini',to:'P-44'}],
+  notes:['Mengubah interval menampilkan peringatan dampak berapa jadwal turunan yang bergeser, sebelum disimpan.']});
+
+
+add({id:'P-47', name:'Stock Opname', group:G_AWS, route:'/opname', perm:'audit.view', arch:'A · Halaman Daftar', crumb:'Beranda / Stock Opname',
+  goal:'Daftar sesi opname beserta status dan progresnya.',
+  actions:['Buat Sesi'],
+  filters:['Cari nama sesi','Status ▾ Berjalan · Rekonsiliasi · Selesai · Dibatalkan','Periode ▾','Pelaksana ▾'],
+  cols:['Sesi','Periode','Cakupan','Progres','Status'],
+  rows:[['Opname Semester Genap 2026','1–20 Feb 2026','Seluruh gedung · 4.820 aset','2.140 / 4.820 · 44%','Berjalan'],
+    ['Opname Lab Komputer','5–7 Feb 2026','Lab Komputer 1–3 · 374 aset','374 / 374 · 100%','Rekonsiliasi'],
+    ['Opname Semester Gasal 2025','1–20 Sep 2025','Seluruh gedung · 4.612 aset','4.612 / 4.612','Selesai'],
+    ['Opname Aula (dibatalkan)','12 Jan 2026','Aula · 148 aset','12 / 148','Dibatalkan']],
+  side:[['Progres',['Kolom progres adalah rasio aset terperiksa terhadap aset target, bukan persentase waktu.']],
+    ['Peran web vs mobile',['Web memegang pembuatan sesi dan rekonsiliasi; pelaksanaan pemindaian berjalan di mobile (MS-18, MS-19).']]],
+  entry:['Sidebar','Kartu "Ringkasan Stock Opname" (19.4)','Notifikasi NT-30…NT-32'],
+  exit:[{t:'P-49 Detail Sesi',to:'P-49'},{t:'P-48 Buat Sesi',to:'P-48'}],
+  notes:['Sesi yang dibatalkan tetap tersimpan beserta alasan pembatalannya — tidak hilang dari daftar.']});
+
+add({id:'P-48', name:'Buat Sesi Opname', group:G_AWS, route:'/opname/baru', perm:'audit.manage', arch:'C · Formulir', crumb:'Beranda / Stock Opname / Buat Sesi',
+  goal:'Menetapkan nama, periode, cakupan, dan pelaksana; lalu membekukan snapshot aset target.',
+  actions:['Buat Sesi','Batal'],
+  fields:[['Identitas sesi',['Nama sesi*','Tanggal mulai*','Tanggal selesai*']],
+    ['Cakupan & pelaksana',['Gedung / area / ruangan*','Kategori aset','Pelaksana*','Keterangan']]],
+  banner:'Membuat sesi membekukan snapshot aset target pada saat itu. Aset yang terdaftar setelah sesi dibuat tidak masuk ke dalam sesi ini — itu dinyatakan sebelum tombol Buat ditekan.',
+  main:[['Pratinjau cakupan · dihitung langsung',['Cakupan terpilih menghasilkan 4.820 aset target di 62 ruangan.','Angka ini diperbarui setiap kali cakupan diubah, sebelum sesi dibuat.']],
+    ['Bila cakupan menghasilkan 0 aset',['Halaman menampilkan peringatan eksplisit dan tombol Buat dinonaktifkan, disertai saran melonggarkan cakupan (FR-13.1 A2).','Bukan membiarkan sesi kosong terbentuk.']]],
+  side:[['Pelaksana',['Pelaksana yang dipilih menerima notifikasi NT-30 dan melihat sesi ini pada tab Tugas aplikasi mobile.']]],
+  entry:['Tombol pada P-47 Stock Opname'],
+  exit:[{t:'P-49 Detail Sesi',to:'P-49'},{t:'Peringatan bila cakupan menghasilkan 0 aset',to:null}],
+  notes:['Snapshot yang dibekukan itulah yang membuat selisih pada rekonsiliasi bermakna.']});
+
+add({id:'P-49', name:'Detail Sesi Opname', group:G_AWS, route:'/opname/{id}', perm:'audit.view', arch:'B · Halaman Detail (tab)', crumb:'Beranda / Stock Opname / Opname Semester Genap 2026',
+  goal:'Progres per lokasi, daftar aset target, dan hasil pemeriksaan.',
+  actions:['Rekonsiliasi','Unduh Berita Acara','⋯'],
+  tabs:['Progres per Lokasi','Aset Target','Hasil Pemeriksaan'],
+  cols:['Lokasi','Target','Terperiksa','Sesuai','Selisih'],
+  rows:[['Gedung A · Lantai 1','412','412','404','8'],
+    ['Gedung A · Lantai 2','388','388','386','2'],
+    ['Gedung B · Lantai 1','620','340','338','2'],
+    ['Gedung B · Lantai 2','510','0','—','—'],
+    ['Gedung C','290','0','—','—']],
+  side:[['Melanjutkan pemindaian',['Blok petunjuk: pemindaian dilanjutkan di aplikasi mobile (MS-18 → MS-19). Halaman ini tidak memindai.','Petunjuknya konkret — sesi mana yang dibuka di tab Tugas — bukan hanya "gunakan aplikasi mobile".']],
+    ['Batalkan sesi',['Drawer beralasan. Membatalkan sesi berjalan menghapus progres pemindaian, dan itu dinyatakan di dalam drawer sebelum konfirmasi.']],
+    ['Berita acara',['Tombol Unduh Berita Acara hanya aktif bila sesi sudah Selesai; sebelum itu terlihat namun nonaktif beserta alasannya.']]],
+  entry:['P-47 Daftar Opname','Notifikasi'],
+  exit:[{t:'P-50 Rekonsiliasi',to:'P-50'},{t:'Batalkan Sesi (drawer beralasan)',to:null},{t:'Unduh Berita Acara bila Selesai',to:null},{t:'Petunjuk melanjutkan pemindaian di mobile',to:null}],
+  notes:['Tombol Rekonsiliasi bertuliskan "Selesaikan Sesi" pada spesifikasi — keduanya menuju P-50.']});
+
+add({id:'P-50', name:'Rekonsiliasi Opname', group:G_AWS, route:'/opname/{id}/rekonsiliasi', perm:'audit.manage', arch:'C · Formulir (laporan selisih)', crumb:'Beranda / Stock Opname / Opname Lab Komputer / Rekonsiliasi',
+  goal:'Laporan selisih, keterangan wajib per selisih, lalu pengiriman ke Pimpinan.',
+  actions:['Kirim ke Pimpinan','Kembali ke Detail Sesi'],
+  banner:'Pengiriman diblokir sampai setiap aset berstatus Tidak Ditemukan diberi keterangan. Tombol Kirim tetap terlihat namun nonaktif, dan jumlah keterangan yang belum diisi disebutkan.',
+  cols:['Kode aset','Selisih','Kondisi tercatat','Kondisi aktual','Keterangan'],
+  rows:[['LAB-KOM-0088','Tidak Ditemukan','Baik','—','Belum diisi — wajib'],
+    ['LAB-KOM-0102','Tidak Ditemukan','Baik','—','Belum diisi — wajib'],
+    ['LAB-KOM-0140','Kondisi Berbeda','Baik','Rusak Ringan','Terjatuh saat pemindahan meja'],
+    ['LAB-KOM-0211','Temuan Baru','—','Baik','Belum terdaftar, ditemukan di Lab 2'],
+    ['LAB-KOM-0233','Lokasi Berbeda','Lab 1','Lab 3','Dipindahkan tanpa berita acara']]
+  ,
+  main:[['Ringkasan selisih',['374 aset target · 369 sesuai · 5 selisih.','Tidak Ditemukan 2 · Kondisi Berbeda 1 · Temuan Baru 1 · Lokasi Berbeda 1.']]],
+  side:[['Empat jenis selisih',['Masing-masing punya konsekuensi berbeda: Tidak Ditemukan dapat berlanjut ke usulan penghapusan, Kondisi Berbeda memperbarui kondisi aset, Temuan Baru mendaftarkan aset, Lokasi Berbeda memutakhirkan lokasi.','Karena itu jenis selisih adalah kolom, bukan satu label "selisih".']],
+    ['Setelah dikirim',['Laporan masuk ke antrean persetujuan Pimpinan; sesi berpindah status menjadi Selesai setelah disetujui.']]],
+  entry:['Tombol "Selesaikan Sesi" pada P-49 Detail Sesi'],
+  exit:[{t:'Kirim ke Pimpinan',to:null},{t:'P-49 kembali ke Detail Sesi',to:'P-49'}],
+  notes:['Keterangan wajib per selisih adalah aturan keras (BR-058), bukan anjuran.']});
+
+add({id:'P-51', name:'Pengadaan', group:G_AWS, route:'/pengadaan', perm:'procurement.view', arch:'A · Halaman Daftar', crumb:'Beranda / Pengadaan',
+  goal:'Daftar usulan pengadaan, tersaring scope role.',
+  actions:['Buat Usulan','Ekspor'],
+  filters:['Cari nomor / judul','Status ▾','Prioritas ▾','Tahun anggaran ▾','Unit kerja ▾'],
+  cols:['Nomor','Judul','Total estimasi','Prioritas','Status','Diajukan'],
+  rows:[['PGD-2026-0012','Penggantian 6 Proyektor Lab','Rp 42.000.000','Tinggi','Menunggu Persetujuan','13 Feb 2026'],
+    ['PGD-2026-0011','Pengadaan Kursi Aula','Rp 18.500.000','Sedang','Disetujui Sebagian','8 Feb 2026'],
+    ['PGD-2026-0010','Alat Lab IPA','Rp 27.300.000','Sedang','Perlu Revisi','5 Feb 2026'],
+    ['PGD-2026-0008','Sound System Aula','Rp 12.000.000','Rendah','Draf','—']],
+  side:[['Status Draf',['Usulan Pengadaan adalah satu-satunya entitas yang memiliki status Draf bagi pemohon (FR-14.1 A1) — karena itu tombol "Simpan sebagai Draf" hanya ada di P-52.']],
+    ['Disetujui Sebagian',['Status ini khas Pengadaan dan Penghapusan: approver dapat menyetujui sebagian baris item, bukan hanya menerima atau menolak seluruhnya.']]],
+  entry:['Sidebar','Kartu "Status Pengadaan" (19.4)','Notifikasi NT-34…NT-36'],
+  exit:[{t:'P-53 Detail Usulan',to:'P-53'},{t:'P-52 Buat Usulan',to:'P-52'}],
+  notes:['Total estimasi dihitung sistem dari baris item, bukan diketik pengusul (BR-061).']});
+
+add({id:'P-52', name:'Buat Usulan Pengadaan', group:G_AWS, route:'/pengadaan/baru', perm:'procurement.create', arch:'C · Formulir (kepala + baris)', crumb:'Beranda / Pengadaan / Buat Usulan',
+  goal:'Kepala usulan, baris item, dan lampiran; total dihitung sistem.',
+  actions:['Ajukan','Simpan sebagai Draf','Batal'],
+  fields:[['Kepala usulan',['Judul usulan*','Tahun anggaran*','Prioritas*','Unit kerja*','Justifikasi kebutuhan*']]],
+  cols:['#','Nama barang','Spesifikasi','Jumlah','Harga satuan','Subtotal'],
+  rows:[['1','Proyektor Epson EB-X51','3LCD · 3800 lumen','6','Rp 7.000.000','Rp 42.000.000'],
+    ['2','Bracket Proyektor','Ceiling mount','6','Rp 350.000','Rp 2.100.000'],
+    ['+','Tambah baris item','','','','']],
+  main:[['Total dihitung sistem',['Total estimasi Rp 44.100.000 — dihitung dari baris item dan tidak dapat diketik manual (BR-061).','Perubahan baris langsung memperbarui total sebelum pengajuan.']],
+    ['Lampiran',['Penawaran harga, brosur, atau kajian teknis. Jenis dan batas ukuran dinyatakan di label.']]],
+  side:[['Datang dari rekomendasi penggantian',['Bila dibuka dari Riwayat Servis sebuah aset (FR-14.1 A2), baris item pertama terisi otomatis beserta justifikasi yang merujuk akumulasi biaya perbaikan aset itu.']],
+    ['Draf',['Simpan sebagai Draf mengembalikan ke daftar dengan status Draf; usulan belum masuk antrean approver.']]],
+  entry:['Tombol pada P-51 Pengadaan','Rekomendasi penggantian dari Riwayat Servis (FR-14.1 A2)'],
+  exit:[{t:'Simpan sebagai Draf',to:null},{t:'P-53 Ajukan ke Detail Usulan',to:'P-53'},{t:'P-51 Batal ke Pengadaan',to:'P-51'}],
+  notes:['Pola kepala-plus-baris ini adalah arketipe formulir yang tidak muncul di core wireframe; ia dipakai bersama P-56.']});
+
+add({id:'P-53', name:'Detail Usulan Pengadaan', group:G_AWS, route:'/pengadaan/{id}', perm:'procurement.view', arch:'B · Halaman Detail', crumb:'Beranda / Pengadaan / PGD-2026-0011',
+  goal:'Justifikasi, item, total, lampiran, dan linimasa approval.',
+  actions:['Catat Penerimaan','Sunting','⋯'],
+  banner:'Disetujui Sebagian: 4 dari 6 unit proyektor disetujui. Baris yang tidak disetujui tetap ditampilkan beserta alasan penolakannya per baris.',
+  cols:['#','Nama barang','Diusulkan','Disetujui','Harga satuan','Catatan approver'],
+  rows:[['1','Proyektor Epson EB-X51','6','4','Rp 7.000.000','Anggaran dibatasi 4 unit tahun ini'],
+    ['2','Bracket Proyektor','6','4','Rp 350.000','Mengikuti jumlah proyektor']],
+  main:[['Justifikasi & lampiran',['Justifikasi kebutuhan sebagaimana diajukan.','Lampiran: penawaran harga (2 berkas) · kajian teknis (1 berkas).']],
+    ['Linimasa approval',['1 · Diajukan · Pak Budi · 8 Feb 10.20 WIB','2 · Petugas Sarana Prasarana · Disetujui · 9 Feb 08.15 WIB','3 · Pimpinan Sekolah · Disetujui Sebagian · 11 Feb 14.40 WIB — beserta alasan per baris','Langkah yang dilewati tetap ditampilkan sebagai langkah nyata beserta alasannya.']]],
+  side:[['Penerimaan',['Catat Penerimaan aktif hanya setelah usulan disetujui atau disetujui sebagian, dan hanya bagi pemegang procurement.receive.']],
+    ['Analitik pemanfaatan',['Tautan ke Laporan Analitik pemanfaatan kategori terkait (FR-14.2 A3) — dasar apakah pengadaan ini memang terpakai.']],
+    ['Tutup sebagai Tidak Direalisasikan',['Drawer beralasan; dipakai bila anggaran akhirnya tidak turun.']]],
+  entry:['P-51 Daftar Pengadaan','Notifikasi','P-37 Persetujuan Saya'],
+  exit:[{t:'P-54 Catat Penerimaan',to:'P-54'},{t:'Sunting bila Perlu Revisi',to:'P-52'},{t:'Tutup sebagai Tidak Direalisasikan (drawer beralasan)',to:null},{t:'Analitik pemanfaatan kategori',to:null}],
+  notes:['Linimasa approval muncul di sini — salah satu dari tiga halaman yang memilikinya bersama P-31 dan P-57.']});
+
+add({id:'P-54', name:'Catat Penerimaan', group:G_AWS, route:'/pengadaan/{id}/penerimaan', perm:'procurement.receive', arch:'C · Formulir', crumb:'Beranda / Pengadaan / PGD-2026-0011 / Catat Penerimaan',
+  goal:'Mencatat jumlah diterima dan mengonversinya menjadi N record aset.',
+  actions:['Catat & Bentuk Aset','Batal'],
+  banner:'Mencatat penerimaan membentuk N record aset baru, masing-masing berkode aset dan UUID QR unik — mekanisme yang sama dengan P-16 Tambah Aset.',
+  cols:['#','Barang','Disetujui','Diterima','Kondisi saat terima','Lokasi penempatan'],
+  rows:[['1','Proyektor Epson EB-X51','4','4','Baik','Gudang Sarpras'],
+    ['2','Bracket Proyektor','4','3','Baik','Gudang Sarpras']],
+  fields:[['Dokumen penerimaan',['Tanggal terima*','Nomor faktur','Penerima*','Lampiran faktur / BAST']]],
+  main:[['Penerimaan sebagian',['Jumlah diterima boleh kurang dari jumlah disetujui; kekurangannya dicatat dan usulan tetap terbuka untuk penerimaan berikutnya.','Selisih dinyatakan di halaman, bukan diam-diam.']]],
+  side:[['Setelah berhasil',['Berpindah ke daftar N aset yang terbentuk, disertai tombol Cetak QR massal — bukan toast.','Inilah salah satu entry point P-24 Label QR.']]],
+  entry:['Tombol pada P-53 Detail Usulan'],
+  exit:[{t:'Daftar aset yang terbentuk + P-24 Cetak QR massal',to:'P-24'},{t:'P-53 kembali ke Detail Usulan',to:'P-53'}],
+  notes:['Aset yang terbentuk mewarisi kategori dan spesifikasi dari baris item, sehingga tidak perlu diisi ulang.']});
+
+add({id:'P-55', name:'Penghapusan Aset', group:G_AWS, route:'/penghapusan', perm:'disposal.view', arch:'A · Halaman Daftar (dua tab)', crumb:'Beranda / Penghapusan Aset',
+  goal:'Dua tab: usulan berjalan dan arsip aset yang sudah terhapus.',
+  actions:['Buat Usulan','Ekspor Rekapitulasi'],
+  tabs:['Usulan Berjalan · 3','Arsip Aset Terhapus'],
+  filters:['Cari nomor / kode aset','Alasan ▾','Periode ▾','Kategori ▾','Lokasi terakhir ▾'],
+  cols:['Nomor','Aset','Alasan','Nilai perolehan','Status'],
+  rows:[['HPS-2026-0004','LAB-KOM-0088 · 1 unit','Hilang saat opname','Rp 6.200.000','Menunggu Persetujuan'],
+    ['HPS-2026-0003','ELK-SND-0004 · 1 unit','Tidak dapat diperbaiki','Rp 12.000.000','Disetujui'],
+    ['HPS-2026-0002','MBL-KRS-* · 24 unit','Rusak berat','Rp 8.400.000','Pelaksanaan Fisik'],
+    ['HPS-2025-0019','PRY-BEN-0002 · 1 unit','Usia ekonomis habis','Rp 5.100.000','Selesai']],
+  side:[['Dua tab, dua maksud',['Usulan Berjalan adalah pekerjaan; Arsip adalah catatan permanen aset yang sudah dihapuskan.','Aset yang sudah dihapuskan tetap dapat dibuka halaman detailnya (BR-065d) — hanya diberi spanduk keadaan.']],
+    ['Ekspor',['Rekapitulasi diekspor per tahun anggaran, karena itulah satuan pelaporan yang dipakai sekolah.']]],
+  entry:['Sidebar','Notifikasi NT-43…NT-45'],
+  exit:[{t:'P-57 Detail Usulan',to:'P-57'},{t:'P-56 Buat Usulan',to:'P-56'},{t:'Ekspor rekapitulasi per tahun anggaran',to:null}],
+  notes:['Tab tercermin di URL, sama seperti seluruh tab daftar lain.']});
+
+add({id:'P-56', name:'Buat Usulan Penghapusan', group:G_AWS, route:'/penghapusan/baru', perm:'disposal.create', arch:'C · Formulir (kepala + baris)', crumb:'Beranda / Penghapusan Aset / Buat Usulan',
+  goal:'Memilih aset, alasan, justifikasi, dan tindak lanjut fisik.',
+  actions:['Ajukan','Batal'],
+  fields:[['Kepala usulan',['Alasan penghapusan*','Justifikasi*','Tindak lanjut fisik*','Tahun anggaran*']]],
+  cols:['Kode aset','Nama','Kondisi','Nilai perolehan','Data pendukung'],
+  rows:[['ELK-SND-0004','Sound System','Rusak Berat','Rp 12.000.000','WO-2026-0071 · Tidak Dapat Diperbaiki'],
+    ['MBL-KRS-0088','Kursi Lipat','Rusak Berat','Rp 350.000','2 work order dalam 12 bulan'],
+    ['+','Tambah aset dari Inventaris','','','']],
+  main:[['Tindak lanjut fisik',['Pilihan tindak lanjut menentukan dokumen yang wajib diunggah nanti pada pencatatan pelaksanaan — misalnya bukti pemusnahan atau berita acara hibah.']],
+    ['Datang dari work order',['Bila dibuka dari work order berstatus Tidak Dapat Diperbaiki (FR-21.1 A4), aset dan alasan sudah terisi, beserta rujukan work order sebagai data pendukung.']]],
+  side:[['Data pendukung otomatis',['Sistem melampirkan riwayat servis dan akumulasi biaya per aset — pengusul tidak mengumpulkannya manual. Itu yang dilihat approver di P-57.']]],
+  entry:['Tombol pada P-55 Penghapusan','P-18 Detail Aset','Work Order berstatus Tidak Dapat Diperbaiki (FR-21.1 A4)'],
+  exit:[{t:'P-57 Detail Usulan bernomor HPS-…',to:'P-57'},{t:'P-55 Batal ke Penghapusan',to:'P-55'}],
+  notes:['Aset yang sedang Dipinjam atau punya kewajiban terbuka ditandai sebagai penghalang beserta alasannya, tidak diam-diam ditolak saat submit.']});
+
+add({id:'P-57', name:'Detail Usulan Penghapusan', group:G_AWS, route:'/penghapusan/{id}', perm:'disposal.view', arch:'B · Halaman Detail', crumb:'Beranda / Penghapusan Aset / HPS-2026-0003',
+  goal:'Data pendukung otomatis per aset beserta linimasa approval.',
+  actions:['Catat Pelaksanaan Fisik','Unduh Berita Acara','⋯'],
+  cols:['Kode aset','Nama','Nilai perolehan','Riwayat servis','Akumulasi biaya'],
+  rows:[['ELK-SND-0004','Sound System','Rp 12.000.000','3 work order · terakhir Tidak Dapat Diperbaiki','Rp 4.800.000']],
+  main:[['Linimasa approval',['1 · Diajukan · Yoga · Petugas Sarpras · 12 Feb 2026','2 · Pimpinan Sekolah · Disetujui · 14 Feb 2026','Setujui Sebagian tersedia bagi approver di sini — sama seperti Pengadaan, berbeda dari reservasi.']],
+    ['Pelaksanaan fisik',['Catat Pelaksanaan Fisik meminta tanggal, pelaksana, dokumentasi foto, dan dokumen sesuai tindak lanjut yang dipilih di usulan.','Setelah dicatat, aset berpindah ke arsip dan halaman detail asetnya memperoleh spanduk "Aset telah dihapuskan pada {tanggal}".']]],
+  side:[['Pulihkan Aset 🔒',['Hanya bagi pemegang disposal.reinstate. Aksi ini mengembalikan aset dari arsip; ia beralasan dan tercatat di Activity Log.','Terlihat namun nonaktif bila usulan belum sampai tahap yang membolehkannya.']],
+    ['Berita acara',['Dapat diunduh setelah pelaksanaan fisik dicatat.']]],
+  entry:['P-55 Daftar Penghapusan','Notifikasi','P-37 Persetujuan Saya'],
+  exit:[{t:'Catat Pelaksanaan Fisik',to:null},{t:'Unduh Berita Acara',to:null},{t:'Pulihkan Aset 🔒',to:null},{t:'Detail Aset',to:'P-18'}],
+  notes:['Halaman detail aset yang sudah dihapuskan tetap dapat diakses — penghapusan adalah perubahan status, bukan penghilangan data.']});
+
+
+add({id:'P-60', name:'Pengguna', group:G_ADM, route:'/pengguna', perm:'user.view', arch:'A · Halaman Daftar', crumb:'Beranda / Pengguna & Role / Pengguna',
+  goal:'Daftar akun dengan filter role, status, dan unit kerja.',
+  actions:['Tambah Pengguna','Impor','⋯'],
+  filters:['Cari nama, email, NIP/NIS','Role ▾','Status ▾ Aktif · Nonaktif','Unit kerja ▾'],
+  cols:['Nama','Email','Role','Unit kerja','Status','Terakhir login'],
+  rows:[['Yoga Pratama','yoga.pratama@sman1.sch.id','Petugas Sarpras','Sarana Prasarana','Aktif','Hari ini 08.02'],
+    ['Sari Wijaya','sari.wijaya@sman1.sch.id','Guru','IPA','Aktif','Hari ini 07.40'],
+    ['Budi Santoso','budi.santoso@sman1.sch.id','Staf','Tata Usaha','Aktif','Kemarin 15.10'],
+    ['Andi Kurniawan','andi.k@sman1.sch.id','Teknisi','Sarana Prasarana','Aktif','Hari ini 08.20'],
+    ['Rina Hastuti','rina.h@sman1.sch.id','Guru','Bahasa','Nonaktif','12 Jan 2026']],
+  side:[['Kenaikan Kelas Massal',['Diakses dari menu "..." pada halaman ini — bukan entri sidebar tersendiri.']],
+    ['Drill-down masuk',['Kartu "Total Pengguna Aktif" membuka halaman ini dengan filter status Aktif terpasang; kartu "Distribusi Role" dengan filter role terpilih.']]],
+  entry:['Sidebar','Kartu "Total Pengguna Aktif" (19.2)'],
+  exit:[{t:'P-63 Detail Pengguna',to:'P-63'},{t:'P-61 Tambah',to:'P-61'},{t:'P-62 Impor',to:'P-62'},{t:'P-64 Kenaikan Kelas Massal',to:'P-64'}],
+  notes:['Salah satu dari tiga daftar dengan pemilihan massal, dipakai untuk penonaktifan dan kenaikan kelas.']});
+
+add({id:'P-61', name:'Tambah Pengguna', group:G_ADM, route:'/pengguna/baru', perm:'user.create', arch:'C · Formulir', crumb:'Beranda / Pengguna / Tambah Pengguna',
+  goal:'Membuat akun beserta password sementara.',
+  actions:['Simpan','Batal'],
+  fields:[['Identitas',['Nama lengkap*','Email*','NIP / NIS*','Telepon']],
+    ['Akses',['Role*','Unit kerja*','Status awal*']]],
+  banner:'Password sementara ditampilkan SATU KALI pada halaman Detail Pengguna setelah simpan. Tidak dapat dilihat lagi setelahnya — hanya dapat diterbitkan ulang. Itu dinyatakan sebelum tombol Simpan ditekan.',
+  main:[['Setelah simpan',['Berpindah ke Detail Pengguna dengan blok password sementara terbuka, disertai tombol Salin dan peringatan sekali-tampil.','Akun terbentuk dengan penanda must_change_password, sehingga login pertamanya masuk ke P-05.']]],
+  side:[['Pola sekali-tampil',['Pola yang sama dipakai P-67 Permintaan Reset Password dan kode cadangan pada P-03. Ketiganya konsisten.']]],
+  entry:['Tombol pada P-60 Pengguna'],
+  exit:[{t:'P-63 Detail Pengguna + password sementara sekali-tampil',to:'P-63'},{t:'P-60 Batal ke Pengguna',to:'P-60'}],
+  notes:['Email dan role tidak dapat diubah oleh pengguna sendiri di P-76; perubahannya hanya dari sini dan P-63.']});
+
+add({id:'P-62', name:'Impor Pengguna', group:G_ADM, route:'/pengguna/impor', perm:'user.create', arch:'C · Formulir (impor)', crumb:'Beranda / Pengguna / Impor Pengguna',
+  goal:'Impor massal CSV atau XLSX dengan laporan per baris.',
+  actions:['Unggah & Proses','Unduh Templat','Batal'],
+  cols:['Baris','Kolom','Nilai','Pesan galat'],
+  rows:[['8','email','sari.wijaya@sman1.sch.id','Email sudah terdaftar.'],
+    ['15','role','Gurru','Role tidak dikenali. Terdekat: "Guru".'],
+    ['22','unit_kerja','(kosong)','Unit kerja wajib diisi.']],
+  main:[['Langkah pada halaman',['1 · Unduh templat, kolom wajib dijelaskan di halaman.','2 · Unggah berkas.','3 · Pratinjau: baris terbaca, valid, bergalat.','4 · Proses — baris valid diimpor, baris bergalat dilewati dan dapat diunduh untuk diperbaiki.']],
+    ['Password sementara massal',['Setiap akun yang terbentuk mendapat password sementara. Daftar itu hanya dapat diunduh sekali sebagai berkas, dengan peringatan yang sama seperti P-61.']]],
+  side:[['Perbedaan dengan P-17',['Struktur halaman sama dengan Impor Aset, tetapi kolom, validasi, dan konsekuensinya berbeda — karena itu tetap dua Page ID.']]],
+  entry:['Tombol pada P-60 Pengguna'],
+  exit:[{t:'P-60 Laporan hasil ke Pengguna',to:'P-60'},{t:'Unduh templat',to:null}],
+  notes:['Impor tidak pernah menimpa akun yang sudah ada; baris duplikat dilaporkan sebagai galat.']});
+
+add({id:'P-63', name:'Detail Pengguna', group:G_ADM, route:'/pengguna/{id}', perm:'user.view', arch:'B · Halaman Detail', crumb:'Beranda / Pengguna / Sari Wijaya',
+  goal:'Profil, role, unit kerja, status, dan riwayat login.',
+  actions:['Ubah','Nonaktifkan','⋯'],
+  main:[['Profil & akses',['Nama · Sari Wijaya · Guru · Unit kerja IPA · Status Aktif','Email sari.wijaya@sman1.sch.id · NIP 19850… · Telepon 08…','2FA aktif · terakhir login hari ini 07.40 WIB']],
+    ['Riwayat login',['Hari ini 07.40 · Chrome · Windows','Kemarin 07.32 · Aplikasi mobile · Android','14 Feb 07.51 · Chrome · Windows']]],
+  side:[['Aksi berwenang khusus 🔒',['Reset Password 🔒 — menerbitkan password sementara, tampil sekali.','Reset 2FA 🔒 — mencabut pendaftaran TOTP; pengguna diminta mendaftar ulang saat login berikutnya.','Keduanya tercatat di Activity Log beserta pelakunya.']],
+    ['Nonaktifkan',['Drawer beralasan. Pengguna dengan peminjaman aktif atau kewajiban belum lunas ditandai sebagai penghalang beserta daftarnya.']],
+    ['Riwayat Perubahan',['Tautan ke Activity Log yang sudah terfilter pada entitas pengguna ini.']]],
+  entry:['P-60 Daftar Pengguna','Pencarian global'],
+  exit:[{t:'Ubah',to:null},{t:'Aktifkan/Nonaktifkan (drawer beralasan)',to:null},{t:'Reset Password 🔒',to:null},{t:'Reset 2FA 🔒',to:null},{t:'P-73 Riwayat Perubahan',to:'P-73'}],
+  notes:['Blok password sementara hanya muncul sesaat setelah dibuat dari P-61 atau setelah reset — bukan bagian tetap halaman.']});
+
+add({id:'P-64', name:'Kenaikan Kelas Massal', group:G_ADM, route:'/pengguna/kenaikan-kelas', perm:'user.update', arch:'C · Formulir (aksi massal)', crumb:'Beranda / Pengguna / Kenaikan Kelas Massal',
+  goal:'Menetapkan kelas baru atau menandai lulus pada pergantian tahun ajaran.',
+  actions:['Proses','Batal'],
+  fields:[['Pemetaan',['Tahun ajaran asal*','Tahun ajaran tujuan*','Aksi · naik kelas / tandai lulus*']]],
+  cols:['Kelas asal','Jumlah siswa','Kelas tujuan','Terblokir','Keterangan'],
+  rows:[['X-1','32','XI-1','1','1 siswa punya kewajiban belum lunas'],
+    ['X-2','31','XI-2','0','—'],
+    ['XI-1','30','XII-1','2','2 siswa punya peminjaman aktif'],
+    ['XII-1','29','Lulus','0','—']],
+  banner:'Siswa dengan peminjaman aktif atau kewajiban belum lunas tidak diproses. Mereka ditampilkan sebagai daftar terblokir beserta alasan per siswa, bukan menggagalkan seluruh proses.',
+  side:[['Pemicu',['Dapat dijalankan manual dari P-60, dan dipicu sistem setelah tahun ajaran aktif berganti pada P-71 Kalender Akademik.']],
+    ['Setelah proses',['Laporan hasil: berapa naik, berapa lulus, berapa terblokir — dengan tautan ke tiap daftar.']]],
+  entry:['Tombol pada P-60 Pengguna','Pemicu setelah tahun ajaran berganti (AC-YR-02)'],
+  exit:[{t:'P-60 Laporan hasil ke Pengguna',to:'P-60'},{t:'Daftar siswa terblokir',to:null}],
+  notes:['Daftar terblokir adalah keluaran yang berguna, bukan galat: petugas memakainya untuk menagih sebelum tahun ajaran ditutup.']});
+
+add({id:'P-65', name:'Role & Permission', group:G_ADM, route:'/role', perm:'role.view', arch:'A · Halaman Daftar', crumb:'Beranda / Pengguna & Role / Role',
+  goal:'Daftar role beserta jumlah pengguna dan permission aktifnya.',
+  actions:['Buat Role','Salin Role sebagai Templat'],
+  cols:['Role','Pengguna','Permission aktif','Jenis','Aksi'],
+  rows:[['Administrator','2','Seluruh domain','Bawaan sistem','Lihat matriks'],
+    ['Petugas Sarana Prasarana','3','64','Bawaan sistem','Lihat matriks'],
+    ['Pimpinan Sekolah','2','28','Bawaan sistem','Lihat matriks'],
+    ['Teknisi','4','14','Bawaan sistem','Lihat matriks'],
+    ['Guru','48','11','Bawaan sistem','Lihat matriks'],
+    ['Wali Kelas (turunan Guru)','12','13','Kustom','Lihat matriks']],
+  side:[['Salin sebagai templat',['Membuat role baru berdasarkan permission role yang ada (FR-02.2 A2) — lebih aman daripada menyusun dari nol.']],
+    ['Role bawaan',['Role bawaan sistem tidak dapat dihapus; hanya permission-nya yang dapat disesuaikan, dengan batas permission inti.']]],
+  entry:['Sidebar'],
+  exit:[{t:'P-66 Matriks Permission',to:'P-66'},{t:'Salin Role sebagai templat',to:null}],
+  notes:['Jumlah permission aktif adalah angka yang dapat diklik menuju matriksnya.']});
+
+add({id:'P-66', name:'Matriks Permission', group:G_ADM, route:'/role/{id}', perm:'role.view / role.update', arch:'Matriks', crumb:'Beranda / Role / Petugas Sarana Prasarana',
+  goal:'Matriks domain dikali aksi untuk satu role.',
+  actions:['Simpan','Batal'],
+  cols:['Domain','view','create','update','delete','khusus'],
+  rows:[['asset','☑','☑','☑','☐','view_financial ☐ · qr_print ☑'],
+    ['loan','☑','☑','☑','☐','manage ☑ · extend ☑'],
+    ['reservation','☑','☑','☑','☐','cancel_any ☑ · urgent ☐'],
+    ['workorder','☑','☑','☑','☐','execute ☐'],
+    ['fine','☑','☐','☑','☐','waive ☑ · waive_compensation ☐'],
+    ['audit','☑','☐','☑','☐','manage ☑ · execute ☐'],
+    ['user','☐','☐','☐','☐','reset_password ☐']],
+  banner:'Mencabut permission inti ditolak secara eksplisit: sistem menyebut permission mana dan mengapa ia tidak dapat dicabut untuk role ini, bukan sekadar menolak simpan (FR-02.2 A1).',
+  side:[['Bentuk matriks',['Baris domain, kolom aksi. Kolom "khusus" memuat permission yang tidak masuk pola CRUD — dan itu justru yang paling menentukan perilaku halaman lain.']],
+    ['Dampak yang terlihat',['Perubahan di sini mengubah apa yang dirender di seluruh aplikasi: entri sidebar tanpa permission tidak dirender sama sekali, bukan dinonaktifkan (PM-04).']],
+    ['Responsif',['Di bawah 1024 px matriks digulir horizontal di dalam wadahnya; kolom Domain tetap menempel di kiri.']]],
+  entry:['P-65 Daftar Role'],
+  exit:[{t:'P-65 Simpan ke Daftar Role',to:'P-65'},{t:'Penolakan eksplisit saat mencabut permission inti 🔒',to:null}],
+  notes:['Ini satu-satunya halaman berarketipe matriks pada seluruh aplikasi — pola baru yang tidak ada di core wireframe.']});
+
+add({id:'P-67', name:'Permintaan Reset Password', group:G_ADM, route:'/permintaan-reset-password', perm:'user.reset_password', arch:'A · Halaman Daftar (antrean)', crumb:'Beranda / Permintaan Reset Password',
+  goal:'Antrean permintaan beserta pencatatan metode verifikasi identitas.',
+  filters:['Cari nama / email','Status ▾ Menunggu · Diterbitkan · Ditolak','Rentang tanggal ▾'],
+  cols:['Pemohon','Diajukan','Keterangan pemohon','Status','Aksi'],
+  rows:[['Rina Hastuti · Guru','16 Feb 09.20','Lupa password setelah libur','Menunggu','Terbitkan · Tolak'],
+    ['Ahmad Fauzi · Siswa','16 Feb 08.05','Tidak bisa masuk','Menunggu','Terbitkan · Tolak'],
+    ['Budi Santoso · Staf','15 Feb 14.10','Ganti perangkat','Diterbitkan','—']],
+  main:[['Pencatatan verifikasi identitas · wajib',['Sebelum menerbitkan, petugas mencatat bagaimana identitas pemohon diverifikasi: tatap muka, telepon ke nomor terdaftar, atau konfirmasi atasan.','Field ini wajib — inilah pengaman utama terhadap penyalahgunaan reset.']]],
+  side:[['Password sementara',['Ditampilkan SATU KALI setelah diterbitkan, dengan tombol Salin. Pola sama dengan P-61.','Akun penerima ditandai must_change_password sehingga login pertamanya masuk ke P-05.']],
+    ['Tolak',['Drawer beralasan; pemohon menerima notifikasi berisi alasan itu.']]],
+  entry:['Sidebar','Kartu "Permintaan Reset Password" (19.2)','Notifikasi NT-37'],
+  exit:[{t:'Terbitkan Password Sementara — tampil satu kali',to:null},{t:'Tolak (drawer beralasan)',to:null}],
+  notes:['Antrean ini adalah hilir dari P-04 Lupa Password; keduanya satu alur yang dipisah oleh peran.']});
+
+add({id:'P-68', name:'Approval Rules', group:G_ADM, route:'/approval-rules', perm:'approval_rule.view', arch:'A · Halaman Daftar', crumb:'Beranda / Approval Rules',
+  goal:'Daftar aturan per jenis pengajuan beserta prioritasnya.',
+  actions:['Buat Aturan'],
+  filters:['Jenis pengajuan ▾','Status ▾ Aktif · Nonaktif'],
+  cols:['Prioritas','Nama aturan','Jenis pengajuan','Langkah','Status'],
+  rows:[['1','Reservasi Aula di luar jam KBM','Reservasi Ruangan','2 langkah','Aktif'],
+    ['2','Reservasi ruangan umum','Reservasi Ruangan','1 langkah','Aktif'],
+    ['3','Pengadaan di atas Rp 25 juta','Usulan Pengadaan','3 langkah','Aktif'],
+    ['4','Pengadaan di bawah Rp 25 juta','Usulan Pengadaan','2 langkah','Aktif'],
+    ['5','Penghapusan aset','Usulan Penghapusan','2 langkah','Aktif'],
+    ['6','Perpanjangan peminjaman','Perpanjangan','1 langkah','Nonaktif']],
+  side:[['Prioritas menentukan segalanya',['Aturan pertama yang kondisinya terpenuhi dipakai. Karena itu urutan adalah data, bukan tampilan — dan dapat disusun ulang lewat seret.']],
+    ['Kartu Status Konfigurasi',['Kartu dashboard "Status Konfigurasi" menunjuk halaman ini untuk aturan aktif, dan P-70 untuk parameter yang belum diisi.']]],
+  entry:['Sidebar','Kartu "Status Konfigurasi" (19.2)'],
+  exit:[{t:'P-69 Detail / Editor Aturan',to:'P-69'},{t:'P-69 Buat Aturan',to:'P-69'}],
+  notes:['Jenis pengajuan yang belum punya aturan aktif ditandai di halaman ini, karena akibatnya pengajuan tidak bisa diproses.']});
+
+add({id:'P-69', name:'Editor Approval Rule', group:G_ADM, route:'/approval-rules/baru · /approval-rules/{id}', perm:'approval_rule.manage', arch:'C · Formulir (penyusun)', crumb:'Beranda / Approval Rules / Pengadaan di atas Rp 25 juta',
+  goal:'Menyusun kondisi DSL, langkah berurutan, dan perilaku SLA.',
+  actions:['Simpan & Aktifkan','Pratinjau','Batal'],
+  fields:[['Identitas aturan',['Nama aturan*','Jenis pengajuan*','Prioritas*','Status*']]],
+  main:[['Kondisi · penyusun node',['DAN — seluruh syarat berikut','    total_estimasi ≥ 25.000.000','    ATAU','        unit_kerja = Sarana Prasarana','        prioritas = Tinggi','Setiap node dapat ditambah, dihapus, dan disarangkan. Penolakan 422 INVALID_RULE_DEFINITION ditampilkan pada node yang bermasalah, bukan sebagai satu pesan di atas formulir.']],
+    ['Langkah persetujuan · berurutan',['1 · Petugas Sarana Prasarana · SLA 24 jam · terlampaui → hold_and_alert','2 · Pimpinan Sekolah · SLA 48 jam · terlampaui → eskalasi','3 · Administrator · SLA 72 jam · terlampaui → hold_and_alert','Langkah dapat disusun ulang; urutan inilah yang muncul sebagai linimasa di P-31, P-53, dan P-57.']]],
+  side:[['Pratinjau',['Menjalankan aturan terhadap contoh pengajuan dan menampilkan jalur persetujuan yang akan terbentuk (RE-07) — pratinjau yang sama yang dilihat pemohon di langkah 3 wizard.']],
+    ['Perilaku SLA',['Dua perilaku berbeda saat SLA terlampaui: hold_and_alert menahan dan memberi tahu, eskalasi memindahkan ke approver berikutnya. Keduanya dipilih per langkah.']]],
+  entry:['P-68 Daftar Approval Rules'],
+  exit:[{t:'Pratinjau (RE-07)',to:null},{t:'P-68 Simpan & Aktifkan ke Daftar',to:'P-68'},{t:'P-68 Batal ke Daftar',to:'P-68'}],
+  notes:['Halaman paling padat aturan di seluruh sistem; penyusun node adalah pola baru yang tidak ada di halaman lain.'],
+  clar:['UXD-09 — penyajian fallback_approver pada editor ini belum ditetapkan. Wireframe tidak menggambar kontrolnya, karena bentuk maupun letaknya tidak berdasar di dokumentasi.']});
+
+add({id:'P-70', name:'Parameter Sistem', group:G_ADM, route:'/pengaturan', perm:'setting.view / setting.manage', arch:'B · Halaman Detail (sepuluh tab)', crumb:'Beranda / Parameter Sistem',
+  goal:'Sepuluh kelompok parameter global sebagai tab.',
+  actions:['Simpan Kelompok Ini'],
+  tabs:['Umum','Peminjaman','Reservasi','Denda','Pemeliharaan','Opname','Notifikasi','Chatbot AI','Keamanan','Integrasi'],
+  fields:[['Kelompok Peminjaman · contoh isi tab',['Durasi maksimum peminjaman guru (hari)*','Durasi maksimum peminjaman siswa (hari)*','Batas pengajuan tertunda per pemohon*','Horizon pemesanan (hari)*','Tarif denda per hari (Rp)*','Cap maksimum denda (Rp)*']]],
+  banner:'Menyimpan parameter menampilkan peringatan dampak: berapa pengajuan berjalan yang terpengaruh, dan apakah perubahan berlaku bagi transaksi yang sudah ada atau hanya yang baru (FR-20.1 A2, A3).',
+  side:[['Sepuluh tab, satu simpan',['Simpan bekerja per kelompok, bukan sekali untuk seluruh halaman — agar dampak setiap perubahan tetap terbaca.','Karena ada sepuluh tab, di bawah 768 px tab menjadi daftar pilihan (select), sesuai ambang lebih dari lima tab.']],
+    ['Dua tab dengan halaman sendiri',['Kalender Akademik dan Unit Kerja terlalu besar untuk satu tab; keduanya punya route dan Page ID sendiri (P-71, P-72).']],
+    ['Kesehatan integrasi',['Tab Notifikasi memuat status FCM, dan tab Chatbot AI memuat status LLM — keduanya sumber kartu "Kesehatan Integrasi" (19.2).']]],
+  entry:['Sidebar'],
+  exit:[{t:'Simpan per kelompok',to:null},{t:'P-71 Kalender Akademik',to:'P-71'},{t:'P-72 Unit Kerja',to:'P-72'},{t:'Peringatan dampak',to:null}],
+  notes:['Parameter yang belum diisi ditandai pada tab-nya, dan itulah yang dibaca kartu "Status Konfigurasi".']});
+
+add({id:'P-71', name:'Kalender Akademik', group:G_ADM, route:'/pengaturan/kalender-akademik', perm:'setting.manage', arch:'C · Formulir', crumb:'Beranda / Parameter Sistem / Kalender Akademik',
+  goal:'Tahun ajaran, semester, hari libur, dan hari kerja.',
+  actions:['Simpan','Batal'],
+  fields:[['Tahun ajaran & semester',['Tahun ajaran aktif*','Semester aktif*','Tanggal mulai semester*','Tanggal selesai semester*']],
+    ['Hari kerja & jam operasional',['Hari kerja*','Jam operasional mulai*','Jam operasional selesai*']]],
+  cols:['Tanggal','Keterangan','Jenis','Aksi'],
+  rows:[['17 Feb 2026','Isra Miraj','Libur nasional','Hapus'],
+    ['9–13 Mar 2026','Ujian Tengah Semester','Hari khusus','Hapus'],
+    ['1 Mei 2026','Hari Buruh','Libur nasional','Hapus'],
+    ['+','Tambah hari libur','','']],
+  banner:'Mengganti tahun ajaran aktif memicu Kenaikan Kelas Massal (AC-YR-02). Konsekuensi itu dinyatakan di dalam konfirmasi, bukan setelah tersimpan.',
+  side:[['Dampak lintas modul',['Hari libur memblokir slot pada kalender ruangan — inilah sumber keadaan "Libur" di P-27.','Jam operasional membatasi jam pengajuan reservasi (BR-018).','Tanggal semester menjadi dasar pintasan rentang "Semester Berjalan" di dashboard dan analitik.']]],
+  entry:['Tab pada P-70 Parameter Sistem'],
+  exit:[{t:'Simpan',to:null},{t:'P-64 Picu Kenaikan Kelas Massal',to:'P-64'}],
+  notes:['Halaman ini kecil tetapi berdampak paling luas; karena itu setiap penyimpanan menampilkan ringkasan dampak.']});
+
+add({id:'P-72', name:'Unit Kerja', group:G_ADM, route:'/pengaturan/unit-kerja', perm:'setting.manage', arch:'A · Daftar (master data)', crumb:'Beranda / Parameter Sistem / Unit Kerja',
+  goal:'Master unit kerja dan kelas.',
+  actions:['Tambah Unit Kerja','Tambah Kelas'],
+  filters:['Cari nama','Jenis ▾ Unit Kerja · Kelas','Status ▾'],
+  cols:['Nama','Jenis','Pengguna aktif','Status','Aksi'],
+  rows:[['Sarana Prasarana','Unit Kerja','7','Aktif','Ubah · Nonaktifkan'],
+    ['Tata Usaha','Unit Kerja','9','Aktif','Ubah · Nonaktifkan'],
+    ['IPA','Unit Kerja','14','Aktif','Ubah · Nonaktifkan'],
+    ['XI-1','Kelas','30','Aktif','Ubah · Nonaktifkan'],
+    ['X-3 (2024/2025)','Kelas','0','Nonaktif','Ubah']],
+  banner:'Penghapusan ditolak selama masih ada pengguna aktif pada unit tersebut. Sistem menyebut jumlah dan menautkan ke daftarnya, lalu menawarkan Nonaktifkan sebagai jalan yang benar (WU-02).',
+  side:[['Nonaktif, bukan hapus',['Kelas tahun ajaran lalu dinonaktifkan agar riwayat pengguna tetap utuh — bukan dihapus.']],
+    ['Hubungan',['Unit kerja dipakai sebagai filter di P-60 dan sebagai kondisi pada approval rule di P-69.']]],
+  entry:['Tab pada P-70 Parameter Sistem'],
+  exit:[{t:'Simpan',to:null},{t:'Nonaktifkan',to:null},{t:'P-60 Daftar pengguna pada unit ini',to:'P-60'}],
+  notes:['Kelas dan unit kerja disatukan dalam satu master karena keduanya menjadi pengelompokan pengguna yang sama.']});
+
+add({id:'P-73', name:'Activity Log', group:G_ADM, route:'/activity-log', perm:'activity_log.view', arch:'A · Halaman Daftar', crumb:'Beranda / Activity Log',
+  goal:'Penelusuran jejak audit dengan filter gabungan.',
+  actions:['Ekspor 🔒'],
+  filters:['Cari nama pelaku / entitas','Rentang tanggal ▾','Pengguna ▾','Role ▾','Modul ▾','Jenis aksi ▾','Entitas ▾'],
+  cols:['Waktu','Pelaku','Role','Aksi','Entitas'],
+  rows:[['16 Feb 14.02','Yoga Pratama','Petugas Sarpras','ASSET_CONDITION_UPDATED','LAB-KOM-0003'],
+    ['16 Feb 13.40','Sistem','SYSTEM','WORKORDER_AUTO_CREATED','WO-2026-0088'],
+    ['16 Feb 11.15','Sari Wijaya','Guru','RESERVATION_CREATED','RSV-RG-2026-0087'],
+    ['16 Feb 09.20','Administrator','Administrator','USER_PASSWORD_RESET','Rina Hastuti'],
+    ['15 Feb 16.50','Andi Kurniawan','Teknisi','WORKORDER_COMPLETION_SUBMITTED','WO-2026-0087']],
+  side:[['Pelaku SYSTEM',['Aksi yang dijalankan sistem dirender "Sistem" beserta nama pekerjaannya, bukan dikosongkan (AL-06).']],
+    ['Ekspor 🔒',['Memerlukan activity_log.export tersendiri — melihat log dan mengekspornya adalah dua kewenangan berbeda.']],
+    ['Masuk dari detail entitas',['Tombol "Riwayat Perubahan" pada halaman detail mana pun membuka halaman ini dengan filter entitas sudah terpasang.']]],
+  entry:['Sidebar','Kartu "Aktivitas Terbaru" (19.2)','Tombol Riwayat Perubahan pada detail entitas'],
+  exit:[{t:'P-74 Detail Entri',to:'P-74'},{t:'Ekspor 🔒',to:null},{t:'Kembali ke entitas terkait',to:null}],
+  notes:['Filter gabungan tujuh dimensi adalah yang terbanyak di sistem; seluruhnya tercermin di URL.']});
+
+add({id:'P-74', name:'Detail Entri Log', group:G_ADM, route:'/activity-log/{id}', perm:'activity_log.view', arch:'B · Halaman Detail (perbandingan)', crumb:'Beranda / Activity Log / ASSET_CONDITION_UPDATED',
+  goal:'Perbandingan nilai sebelum dan sesudah sebagai dua kolom berlabel Bahasa Indonesia.',
+  actions:['Buka Entitas Terdampak','Kembali ke Activity Log'],
+  cols:['Field','Sebelum','Sesudah'],
+  rows:[['Kondisi','Baik','Rusak Ringan'],
+    ['Status','Tersedia','Dalam Perbaikan'],
+    ['Alasan perubahan','—','Layar berkedip saat dinyalakan'],
+    ['Diperbarui oleh','—','Yoga Pratama']],
+  main:[['Metadata entri',['Waktu · 16 Feb 2026 14.02 WIB','Pelaku · Yoga Pratama · Petugas Sarana Prasarana','Modul · Aset · Aksi · ASSET_CONDITION_UPDATED','Entitas · LAB-KOM-0003 · request_id tercantum dan dapat disalin']]],
+  side:[['Label Bahasa Indonesia',['Nama field ditampilkan dalam Bahasa Indonesia ("Kondisi", bukan "condition") — persyaratan eksplisit FR-18.2 AC.']],
+    ['Nilai kosong',['Field yang sebelumnya kosong ditulis "—", tidak dibiarkan blank, agar perbedaan tetap terbaca.']]],
+  entry:['Baris pada P-73 Activity Log'],
+  exit:[{t:'Entitas terdampak',to:null},{t:'P-73 Kembali ke Activity Log',to:'P-73'}],
+  notes:['Dua kolom berdampingan di lebar besar; di bawah 768 px menjadi pasangan bertumpuk per field, tidak dijadikan tabel yang digulir.']});
+
+add({id:'P-75', name:'Monitoring Chatbot', group:G_ADM, route:'/monitoring-chatbot', perm:'chat.monitor', arch:'D · Halaman Laporan', crumb:'Beranda / Monitoring Chatbot',
+  goal:'Metrik agregat: volume, pertanyaan tersering, rasio umpan balik, dan pertanyaan gagal.',
+  actions:['Ekspor','Buka Parameter Chatbot AI'],
+  filters:['Rentang: 7 hari · 30 hari · Semester Berjalan · Tahun Ajaran','Role pengguna ▾'],
+  main:[['Volume percakapan · grafik garis',['Tempat grafik · sumbu X hari, sumbu Y jumlah sesi.','Wajib disertai label sumbu, legenda tekstual, dan tabel data alternatif — sama seperti seluruh grafik lain.']],
+    ['Rasio umpan balik',['Membantu 412 · Tidak membantu 88 · Tanpa umpan balik 240.','Rasio membantu 82,4% dari yang memberi umpan balik.']]],
+  cols:['Pertanyaan','Frekuensi','Rasio membantu','Status'],
+  rows:[['Di mana lokasi proyektor?','64','91%','Baik'],
+    ['Cara mengajukan reservasi aula','48','88%','Baik'],
+    ['Kenapa saya tidak bisa meminjam?','31','52%','Perlu ditinjau'],
+    ['Berapa sisa denda saya?','27','44%','Perlu ditinjau'],
+    ['(gagal dijawab)','19','—','Gagal']],
+  side:[['Pertanyaan gagal',['Daftar pertanyaan yang tidak terjawab adalah keluaran utama halaman ini — dasar memperbaiki basis pengetahuan.','Menautkan ke daftar percakapan bertanda bermasalah.']],
+    ['Kesehatan integrasi LLM',['Status ketersediaan LLM ditampilkan di sini dan menjadi sumber kartu "Kesehatan Integrasi" (19.2).','Saat LLM_UNAVAILABLE, halaman tetap menampilkan metrik historis — tidak menjadi halaman gangguan.']]],
+  entry:['Sidebar','Kartu "Kesehatan Integrasi" (19.2)'],
+  exit:[{t:'P-70 Parameter Sistem kelompok Chatbot AI',to:'P-70'},{t:'Daftar percakapan bertanda bermasalah',to:null}],
+  notes:['Metrik agregat saja; isi percakapan pengguna lain tidak dibuka di halaman ini.']});
+
+add({id:'P-79', name:'Perangkat Terhubung', group:G_ADM, route:'/profil/keamanan#perangkat', perm:'Bearer', arch:'A · Daftar (dalam halaman)', crumb:'Beranda / Akun Saya / Keamanan & 2FA / Perangkat Terhubung',
+  goal:'Daftar sesi aktif per platform beserta pencabutannya.',
+  actions:['Keluar dari Semua Perangkat'],
+  cols:['Perangkat','Platform','Lokasi perkiraan','Aktif terakhir','Aksi'],
+  rows:[['Chrome · Windows','Web','Bandung','Sedang digunakan','—'],
+    ['Aplikasi SIGM4','Android 14','Bandung','2 jam lalu','Cabut'],
+    ['Safari · iPhone','Web','Cimahi','3 hari lalu','Cabut']],
+  side:[['Perangkat ini',['Sesi yang sedang dipakai ditandai "Sedang digunakan" dan tidak dapat dicabut dari daftar — untuk keluar dari perangkat ini, pengguna memakai Keluar biasa.']],
+    ['Keluar dari semua perangkat',['Meminta konfirmasi tanpa alasan, lalu mengembalikan pengguna ke Login.','Berbeda dari ganti password, yang mencabut sesi lain tetapi membiarkan perangkat ini tetap masuk.']]],
+  entry:['P-77 Keamanan & 2FA'],
+  exit:[{t:'Cabut satu perangkat',to:null},{t:'Keluar dari semua perangkat → P-01 Login',to:'P-01'}],
+  notes:['Route-nya adalah fragment pada halaman Keamanan, tetapi ia Page ID tersendiri karena punya konten, aksi, dan entry/exit sendiri.']});
+
+// ─── M-22 Manajemen Bahan (UXD-16) ──────────────────────────────────────────
+add({id:'P-80', name:'Bahan', group:G_ASET, route:'/bahan', perm:'material.view', arch:'A · Halaman Daftar', crumb:'Beranda / Bahan',
+  goal:'Daftar jenis bahan beserta saldo total dan penanda stok menipis. Satu baris adalah satu jenis, bukan satu unit fisik (BR-080).',
+  actions:['Tambah Bahan','Catat Penerimaan','Ekspor'],
+  filters:['Kategori bahan','Lokasi penyimpanan','Status stok · menipis / aman','Status bahan'],
+  cols:['Nama Bahan ▲','Kategori','Satuan','Saldo Total','Stok Minimum','Status'],
+  rows:[['Spidol Whiteboard Hitam','Alat Tulis','pcs','18','25','Menipis'],
+    ['Kertas HVS A4 80gsm','Alat Tulis','rim','64','20','Aman'],
+    ['Lampu LED 18W','Elektrikal','pcs','7','10','Menipis'],
+    ['Cat Tembok Putih 5 kg','Bahan Bangunan','kaleng','12','5','Aman'],
+    ['Sabun Cair Refill','Kebersihan','liter','0','8','Habis']],
+  main:[['Penanda stok menipis',['Baris ber-saldo ≤ stok minimum ditandai lencana warna + ikon + teks — tidak pernah warna saja (§11.4, NFR-AC-06).','Ambang dievaluasi terhadap saldo total seluruh lokasi, bukan per lokasi (BR-085).','Kartu dashboard "Stok Bahan Menipis" mendarat di sini dengan filter status stok sudah terpasang.']],
+    ['Yang tidak ada di halaman ini',['Tidak ada kolom kondisi dan tidak ada status Dipinjam — bahan tidak punya siklus itu (BR-080, BR-087).','Saldo tidak dapat disunting dari mana pun; ia selalu akibat transaksi (BR-081).']]],
+  entry:['Sidebar','Drill-down kartu dashboard "Stok Bahan Menipis" (FR-22.7)'],
+  exit:[{t:'P-82 Detail Bahan',to:'P-82'},{t:'P-81 Tambah Bahan',to:'P-81'},{t:'Catat Penerimaan (FR-22.3)',to:null},{t:'Ekspor hasil filter saat ini',to:null}],
+  notes:['Arketipe A — paginasi server-side, bawaan 25, maksimum 100 (17.1).','Cari: nama bahan. Urut: nama, saldo total (§7.4).','Seluruh filter, pengurutan, dan halaman tercermin di URL (SDD-FE-10).','Bahan nonaktif tetap tampil beserta riwayatnya, tetapi tidak dapat diminta (BR-091).']});
+
+add({id:'P-81', name:'Tambah / Ubah Bahan', group:G_ASET, route:'/bahan/baru · /bahan/{id}/ubah', perm:'material.manage', arch:'C · Formulir', crumb:'Beranda / Bahan / Tambah Bahan',
+  goal:'Mendaftarkan dan memelihara master jenis bahan: kategori, satuan, dan stok minimum.',
+  actions:['Simpan','Batal'],
+  fields:[['Identitas bahan',['Nama bahan*','Kategori bahan*','Satuan*','Deskripsi']],
+    ['Pengendalian stok',['Stok minimum*','Lokasi penyimpanan bawaan','Status bahan*']]],
+  main:[['Satuan tidak diketik bebas',['Pilihan satuan berasal dari master satuan yang dikelola Administrator lewat Parameter Sistem (BR-084, FR-20.1). Bila satuan yang dibutuhkan belum ada, jalannya adalah meminta Administrator menambahkannya — bukan mengetik nilai baru di sini.']],
+    ['Saldo tidak ada di formulir ini',['Tidak ada field saldo awal. Saldo hanya lahir dari transaksi Penerimaan (BR-081); mendaftarkan bahan baru selalu menghasilkan saldo nol.']]],
+  entry:['Tombol Tambah Bahan pada P-80','Tombol Ubah pada P-82'],
+  exit:[{t:'P-82 Detail Bahan — simpan',to:'P-82'},{t:'P-80 Bahan — batal',to:'P-80'},{t:'P-83 Kategori Bahan — tautan "Kategori belum ada"',to:'P-83'}],
+  notes:['Label eksplisit di atas field, tidak pernah hanya placeholder (NFR-AC-05).','Field wajib ditandai kata "wajib", bukan hanya tanda bintang berwarna (NFR-AC-06).','Batal meminta konfirmasi bila ada perubahan belum tersimpan (UX-04).']});
+
+add({id:'P-82', name:'Detail Bahan', group:G_ASET, route:'/bahan/{id}', perm:'material.view', arch:'B · Halaman Detail', crumb:'Beranda / Bahan / Spidol Whiteboard Hitam',
+  goal:'Saldo per lokasi penyimpanan beserta kartu stok — seluruh transaksi yang pernah membentuk saldo itu.',
+  actions:['Catat Penyesuaian','Catat Penerimaan','Cetak QR'],
+  tabs:['Informasi','Saldo per Lokasi','Kartu Stok','Permintaan'],
+  banner:'Saldo 18 pcs · stok minimum 25 pcs — bahan ini berada di bawah ambang. NT-49 sudah terkirim ke Petugas Sarana Prasarana.',
+  cols:['Tanggal','Jenis Transaksi','Lokasi','Masuk','Keluar','Saldo Sesudah','Pelaku'],
+  rows:[['12 Agu 2026','PENERIMAAN','Gudang Sarpras','50','—','68','Petugas Sarpras'],
+    ['15 Agu 2026','PENGELUARAN','Gudang Sarpras','—','24','44','Petugas Sarpras'],
+    ['19 Agu 2026','PENGELUARAN','Gudang Sarpras','—','20','24','Petugas Sarpras'],
+    ['21 Agu 2026','PENYESUAIAN','Gudang Sarpras','—','6','18','Petugas Sarpras']],
+  main:[['Kartu stok tidak pernah kosong tanpa sebab',['Tiap baris menyimpan saldo_sesudah hasil perhitungan saat itu (BR-092), sehingga riwayat dapat diaudit tanpa menghitung ulang dari nol.','Baris PENYESUAIAN selalu menampilkan alasannya — tanpa alasan transaksi itu tidak dapat disimpan (BR-088).']],
+    ['Saldo per lokasi',['Saldo dicatat per kombinasi bahan × lokasi penyimpanan; angka besar di atas adalah penjumlahan seluruh lokasi (BR-082).','Saldo tidak boleh negatif — transaksi yang membuatnya negatif ditolak, bukan disimpan lalu dikoreksi (BR-083).']]],
+  side:[['QR bahan',['QR mengikat satu jenis bahan, bukan unit individual (BR-090). Memindainya membuka halaman ini, bukan halaman unit.']],
+    ['Tanpa kewajiban pengembalian',['Bahan yang sudah diserahkan tidak kembali. Tidak ada jatuh tempo, tidak ada denda keterlambatan, tidak ada ganti rugi (BR-087).']]],
+  entry:['Baris pada P-80','Scan QR bahan','Notifikasi NT-49 peringatan stok minimum'],
+  exit:[{t:'P-81 Ubah Bahan',to:'P-81'},{t:'Catat Penyesuaian (drawer beralasan, FR-22.6)',to:null},{t:'Catat Penerimaan (FR-22.3)',to:null},{t:'P-80 Bahan',to:'P-80'},{t:'Cetak QR',to:null}],
+  notes:['Aksi yang diblokir keadaan tetap terlihat namun dinonaktifkan beserta alasannya (BR-010).','Bahan nonaktif: saldo dan riwayat tetap dapat ditelusuri, tombol permintaan tidak dirender (BR-091).']});
+
+add({id:'P-83', name:'Kategori Bahan', group:G_ASET, route:'/kategori-bahan', perm:'material.manage', arch:'A · Halaman Daftar',  crumb:'Beranda / Kategori Bahan',
+  goal:'CRUD kategori bahan. Terpisah penuh dari kategori aset — keduanya tidak pernah bercampur (FR-22.1 A1).',
+  actions:['Tambah Kategori'],
+  cols:['Nama Kategori ▲','Jumlah Bahan','Status'],
+  rows:[['Alat Tulis','24','Aktif'],['Elektrikal','11','Aktif'],['Bahan Bangunan','8','Aktif'],['Kebersihan','15','Aktif']],
+  main:[['Terpisah dari kategori aset',['Kategori bahan tidak memiliki interval pemeliharaan preventif — itu milik kategori aset (P-21, FR-04.5). Struktur di sini datar, bukan dua tingkat.']],
+    ['Peringatan dampak sebelum simpan',['Menonaktifkan kategori yang masih dipakai menampilkan jumlah bahan terdampak sebelum konfirmasi; penghapusan ditolak selama masih ada bahan aktif di dalamnya.']]],
+  entry:['Sidebar','Tautan "Kategori belum ada" pada P-81'],
+  exit:[{t:'P-80 Bahan',to:'P-80'},{t:'P-81 Kembali ke formulir bahan',to:'P-81'}],
+  notes:['Perubahan kategori tidak pernah mengubah saldo (BR-081).']});
+
+add({id:'P-84', name:'Katalog Bahan', group:G_PJM, route:'/katalog-bahan', perm:'material.view', arch:'A · Halaman Daftar', crumb:'Beranda / Katalog Bahan',
+  goal:'Bahan aktif beserta saldo tersedia per lokasi penyimpanan — titik awal pengajuan permintaan.',
+  actions:['Ajukan Permintaan Bahan'],
+  filters:['Kategori bahan','Lokasi penyimpanan','Hanya yang bersaldo'],
+  cols:['Nama Bahan ▲','Kategori','Satuan','Saldo Tersedia','Lokasi'],
+  rows:[['Kertas HVS A4 80gsm','Alat Tulis','rim','64','Gudang Sarpras'],
+    ['Spidol Whiteboard Hitam','Alat Tulis','pcs','18','Gudang Sarpras'],
+    ['Lampu LED 18W','Elektrikal','pcs','7','Gudang Teknik'],
+    ['Sabun Cair Refill','Kebersihan','liter','0','Gudang Sarpras']],
+  main:[['Keadaan saldo nol',['Baris bersaldo nol tetap ditampilkan tetapi tidak dapat dipilih, dengan alasan tertulis — bukan disembunyikan, agar pemohon tahu bahan itu ada dan sedang habis.','Filter "Hanya yang bersaldo" tersedia bagi yang ingin menyaringnya.']],
+    ['Bukan halaman peminjaman',['Katalog ini tidak punya pemilih rentang tanggal seperti P-28 Katalog Aset. Bahan tidak dipesan untuk periode; ia diminta lalu diserahkan (BR-087).']]],
+  entry:['Sidebar','Dashboard'],
+  exit:[{t:'P-85 Ajukan Permintaan Bahan',to:'P-85'},{t:'P-82 Detail Bahan',to:'P-82'}],
+  notes:['Cari: nama, kategori. Urut: nama, saldo tersedia (§7.4).','Bahan nonaktif tidak dirender di katalog sama sekali (BR-091).']});
+
+add({id:'P-85', name:'Ajukan Permintaan Bahan', group:G_PJM, route:'/permintaan-bahan/baru', perm:'material.request', arch:'C · Formulir (kepala + baris item)', crumb:'Beranda / Katalog Bahan / Ajukan Permintaan',
+  goal:'Memilih bahan, jumlah, dan keperluan. Ambang approval dievaluasi saat kirim, bukan saat mengisi.',
+  actions:['Kirim Permintaan','Batal'],
+  fields:[['Keperluan',['Keperluan / kegiatan*','Unit kerja*','Tanggal dibutuhkan*']]],
+  cols:['Bahan','Satuan','Saldo Tersedia','Jumlah Diminta','Aksi'],
+  rows:[['Kertas HVS A4 80gsm','rim','64','5','Hapus'],
+    ['Spidol Whiteboard Hitam','pcs','18','12','Hapus']],
+  main:[['Ambang approval — BR-086',['Permintaan di bawah ambang yang dikonfigurasi Administrator langsung berstatus Disetujui tanpa instance approval sama sekali.','Permintaan yang melampaui ambang masuk ke approval engine M-10 dan berstatus Menunggu Persetujuan.','Karena ambangnya dievaluasi saat kirim, layar ini menampilkan konsekuensinya sebelum tombol ditekan — pemohon tahu apakah permintaannya akan langsung disetujui atau menunggu.']],
+    ['Jumlah diminta melebihi saldo',['Ditolak di formulir, bukan setelah kirim. Saldo tidak boleh negatif (BR-083).']]],
+  entry:['Tombol pada P-84 Katalog Bahan'],
+  exit:[{t:'P-87 Detail Permintaan Bahan bernomor',to:'P-87'},{t:'P-84 Batal kembali ke katalog',to:'P-84'}],
+  notes:['Pola kepala + baris item, sama dengan P-52 Usulan Pengadaan dan P-56 Usulan Penghapusan.','Tombol kirim dinonaktifkan selama permintaan berjalan; Idempotency-Key dikirim (ID-01).']});
+
+add({id:'P-86', name:'Daftar Permintaan Bahan', group:G_PJM, route:'/permintaan-bahan', perm:'material.view', arch:'A · Halaman Daftar', crumb:'Beranda / Permintaan Bahan',
+  goal:'Seluruh permintaan bahan, tersaring scope role, dikelompokkan per status.',
+  actions:['Ajukan Permintaan Bahan','Ekspor'],
+  tabs:['Menunggu Persetujuan','Disetujui','Siap Diserahkan','Diserahkan','Ditolak'],
+  filters:['Pemohon','Rentang tanggal'],
+  cols:['Nomor ▲','Pemohon','Unit Kerja','Jumlah Baris','Tanggal Pengajuan','Status'],
+  rows:[['PMB-2026-0114','Rina Marlina','Tata Usaha','2','21 Agu 2026','Menunggu Persetujuan'],
+    ['PMB-2026-0113','Yoga Pratama','Sarana Prasarana','1','20 Agu 2026','Disetujui'],
+    ['PMB-2026-0111','Dedi Kurniawan','IPA','3','19 Agu 2026','Diserahkan'],
+    ['PMB-2026-0109','Sri Wahyuni','Bahasa','1','18 Agu 2026','Ditolak']],
+  main:[['Tab adalah filter status',['Sama seperti P-32 Daftar Peminjaman, tab tercermin di URL seperti filter lain (SDD-FE-10).','Tidak ada tab "Terlambat" dan tidak ada tab "Jatuh Tempo" — bahan tidak dikembalikan (BR-087).']]],
+  entry:['Sidebar','Notifikasi NT-50 permintaan siap diambil'],
+  exit:[{t:'P-87 Detail Permintaan Bahan',to:'P-87'},{t:'P-85 Ajukan Permintaan Bahan',to:'P-85'},{t:'Ekspor hasil filter saat ini',to:null}],
+  notes:['Cari: nomor, pemohon. Urut: tanggal pengajuan (§7.4).','Tersaring scope role: pemohon melihat miliknya sendiri, Petugas melihat seluruhnya (PM-04).']});
+
+add({id:'P-87', name:'Detail Permintaan Bahan', group:G_PJM, route:'/permintaan-bahan/{id}', perm:'material.view', arch:'B · Halaman Detail', crumb:'Beranda / Permintaan Bahan / PMB-2026-0113',
+  goal:'Baris permintaan, linimasa approval, dan pencatatan penyerahan.',
+  actions:['Catat Penyerahan','Batalkan'],
+  banner:'Disetujui tanpa approval — jumlah permintaan berada di bawah ambang yang dikonfigurasi Administrator (BR-086). Tidak ada instance approval yang dibuat untuk permintaan ini.',
+  cols:['Bahan','Satuan','Diminta','Disetujui','Diserahkan'],
+  rows:[['Kertas HVS A4 80gsm','rim','5','5','—'],
+    ['Spidol Whiteboard Hitam','pcs','12','8','—']],
+  main:[['Pencatatan penyerahan · FR-22.5',['Jumlah diserahkan tidak boleh melebihi jumlah yang disetujui — ditolak saat dicatat, per baris (BR-089).','Penyerahan menerbitkan transaksi PENGELUARAN dan mengurangi saldo (BR-081); saldo_sesudah tiap baris disimpan (BR-092).','Bila saldo menyentuh stok minimum setelah pengeluaran, NT-49 terbit ke Petugas Sarana Prasarana.','Setelah tercatat, status menjadi Diserahkan dan NT-51 dikirim ke pemohon. Selesai — tidak ada langkah pengembalian (BR-087).']],
+    ['Setujui Sebagian',['Approver dapat menurunkan jumlah per baris. Baris kedua di atas diminta 12 dan disetujui 8 — selisihnya tetap terlihat, tidak ditimpa.']]],
+  side:[['Linimasa approval',['Dirender hanya bila permintaan ini melewati approval engine. Di bawah ambang, blok ini digantikan keterangan mengapa approval tidak pernah dibuat (BR-086).']],
+    ['Tanpa kewajiban pengembalian',['Tidak ada tanggal jatuh tempo, tidak ada perpanjangan, tidak ada denda (BR-087).']]],
+  entry:['Baris pada P-86','Notifikasi NT-50 siap diambil','Notifikasi NT-51 sudah diserahkan'],
+  exit:[{t:'Catat Penyerahan (material.issue)',to:null},{t:'P-86 Daftar Permintaan Bahan',to:'P-86'},{t:'P-82 Detail Bahan per baris',to:'P-82'},{t:'Batalkan (drawer beralasan)',to:null}],
+  notes:['Aksi Catat Penyerahan hanya dirender bagi pemegang material.issue (PM-04).','Pelaku SYSTEM dirender "Sistem" beserta nama pekerjaannya (AL-06).']});
+
+</script>
+</body>
+</html>
