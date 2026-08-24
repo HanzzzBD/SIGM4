@@ -16,7 +16,7 @@ Penomoran bagian dipertahankan dari UX-SPEC v1.0 agar seluruh rujukan silang tet
 
 # 9. User Flows
 
-25 alur, seluruhnya berasal dari FR/BR yang ada. Kolom **Sumber** menyebut requirement yang menjadi dasarnya. Alur bertanda ⭐ termasuk 15 alur kritis wajib diuji ujung-ke-ujung (Bab 30.2).
+27 alur, seluruhnya berasal dari FR/BR yang ada. Kolom **Sumber** menyebut requirement yang menjadi dasarnya. Alur bertanda ⭐ termasuk alur kritis wajib diuji ujung-ke-ujung (Bab 30.2).
 
 | Kode | Alur | Sumber | Platform |
 |---|---|---|---|

@@ -58,7 +58,7 @@ Dokumentasi UX terbagi enam berkas. **Berkas ini adalah entry point.**
 | [`INFORMATION-ARCHITECTURE.md`](INFORMATION-ARCHITECTURE.md) | Information architecture, pemetaan 22 modul, kedalaman hierarki, sitemap web & mobile | §3 · §4 |
 | [`NAVIGATION.md`](NAVIGATION.md) | Kerangka layar, topbar, sidebar, breadcrumb, navigasi mobile, navigasi berbasis role, deep link | §5 |
 | [`PAGE-SPECIFICATION.md`](PAGE-SPECIFICATION.md) | Page inventory 87 halaman + 23 layar mobile, arketipe layout, pola keadaan, spesifikasi halaman kunci, dashboard, responsif, aksesibilitas | §6 · §7 · §8 · §10 · §11 |
-| [`USER-FLOWS.md`](USER-FLOWS.md) | 25 user flow beserta diagram Mermaid | §9 |
+| [`USER-FLOWS.md`](USER-FLOWS.md) | 27 user flow beserta diagram Mermaid | §9 |
 | [`DECISIONS.md`](DECISIONS.md) | Keputusan UX, keputusan terbuka/`BLOCKED`, konflik PRD/SDD, dan daftar layar yang sengaja tidak dibuat | §12 |
 
 ### Peta bagian → berkas
@@ -243,7 +243,7 @@ Setiap FR pada PRD memiliki representasi UX. Tabel ini adalah buktinya.
 | FR-21.2 Persetujuan & Eksekusi | M-21 | P-38, P-57 | F-07, F-20 |
 | FR-21.3 Arsip Penghapusan | M-21 | P-55 tab Arsip | F-20 |
 
-**Jumlah:** 61 Functional Requirement · 61 terwakili · **0 tanpa representasi UX**. Dua di antaranya (`FR-01.6`, `FR-18.1`) sengaja tidak memiliki halaman — alasannya tercatat §12.5.
+**Jumlah:** 69 Functional Requirement · 69 terwakili · **0 tanpa representasi UX**. Dua di antaranya (`FR-01.6`, `FR-18.1`) sengaja tidak memiliki halaman — alasannya tercatat §12.5.
 
 ## 13.2 Requirement UI/UX & aksesibilitas
 
@@ -310,16 +310,16 @@ Tidak seluruh business rule berdampak visual. Tabel ini memuat yang **mengubah a
 
 | Dimensi | Jumlah | Terwakili | Catatan |
 |---|---|---|---|
-| Modul PRD | 21 | 21 | Peta lengkap §3.3 |
-| Functional Requirement | 61 | 61 | 2 sengaja tanpa halaman (§12.5) |
+| Modul PRD | 22 | 22 | Peta lengkap §3.3 |
+| Functional Requirement | 69 | 69 | 2 sengaja tanpa halaman (§12.5) |
 | Role | 7 | 7 | Navigasi per role §5.3, dashboard §8.3 |
 | Dashboard per role | 6 varian | 6 | 19.2–19.7; Guru & Staf berbagi satu varian |
-| Halaman web | 79 | 79 | Seluruhnya memiliki entry & exit point |
-| Layar mobile | 21 | 21 | Batas lingkup §6.3 |
-| User flow | 25 | 25 | 15 di antaranya alur kritis Bab 30.2 |
-| Diagram Mermaid | 28 | — | IA (1), sitemap (3), alur navigasi (1), dan 23 diagram alur |
+| Halaman web | 87 | 87 | Seluruhnya memiliki entry & exit point |
+| Layar mobile | 23 | 23 | Batas lingkup §6.3 |
+| User flow | 27 | 27 | 17 bertanda ⭐ — alur kritis Bab 30.2 |
+| Diagram Mermaid | 30 | — | IA (1), sitemap (3), alur navigasi (1), dan 25 diagram alur |
 | Keadaan global | 6 | 6 | Lima dari 31.5 + keadaan sukses (**UXD-06**) |
-| Keputusan UX diambil | 10 | — | §12.2 — 7 User Decision, 3 turunan PRD/SDD |
+| Keputusan UX diambil | 13 | — | §12.2 — 11 User Decision, 2 turunan PRD/SDD |
 | Keputusan masih terbuka | 5 | — | §12.3 — seluruhnya memetakan TBD kelompok A |
 | Konflik ditemukan | 4 | — | §12.4 — seluruhnya tertutup: 2 lewat aturan prioritas, 1 oleh pemilik produk, 1 sudah ditutup PRD |
 
@@ -343,8 +343,8 @@ Tidak seluruh business rule berdampak visual. Tabel ini memuat yang **mengubah a
 | # | Tindakan | Pemilik |
 |---|---|---|
 | 1 | Perbaiki tabel endpoint `m07` bagian 7: `reservation.cancel` menjadi `reservation.cancel_own` / `reservation.cancel_any` (**K-02**) | Pemilik berkas modul M-07 |
-| 2 | ~~Tutup `TBD-FE-B`, `TBD-MOB-B`, `TBD-NTF-A`~~ — **selesai 22 Agustus 2026**; register kini 24 terbuka · 11 tertutup, dan rancangan `SDD-08 §4.5` serta `SDD-12 §4.8` sudah diselaraskan | Software Architect |
+| 2 | ~~Tutup `TBD-FE-B`, `TBD-MOB-B`, `TBD-NTF-A`~~ — **selesai 22 Agustus 2026**; rancangan `SDD-08 §4.5` serta `SDD-12 §4.8` sudah diselaraskan. Register kini **25 terbuka · 15 tertutup** (empat TBD Bahan ditutup 23 Agustus, `TBD-BHN-E` dibuka) | Software Architect |
 | 3 | Selesaikan `TBD-APR-A`, `TBD-NTF-B`, `TBD-EVT-B`, `TBD-FS-A`, `TBD-AVL-B` — kelimanya memblokir bagian UX-SPEC | Pemilik produk |
 | 4 | Naikkan enam kelompok notifikasi (**UXD-05**) ke PRD `M-17` — kini bermukim di `SDD-08 §4.5`, padahal sifatnya kebijakan produk | Pemilik produk |
-| 5 | Pulihkan atau bangun ulang `PRD.v1.1.full.md`; tanpanya `scripts/audit_docs.py` berhenti dengan `FileNotFoundError` | Pemilik berkas PRD |
+| 5 | ~~Pulihkan atau bangun ulang `PRD.v1.1.full.md`; tanpanya `scripts/audit_docs.py` berhenti dengan `FileNotFoundError`~~ — **selesai 24 Agustus 2026**: arsip tidak dipulihkan; `audit_docs.py` dilepaskan dari perbandingan arsip dan kini memeriksa invarian yang berlaku terus-menerus | Pemilik berkas PRD |
 | 6 | Mulai `DS-03` (wireframe) memakai §6 sebagai daftar layar, §7 sebagai spesifikasi, dan [`DESIGN/`](../DESIGN/DESIGN-SYSTEM.md) sebagai bahasa visual | UI/UX Designer |

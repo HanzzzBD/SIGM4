@@ -96,14 +96,14 @@ Cakupan FR yang diturunkan dari keputusan #17–#26: master bahan & kategori, sa
 |---|---|
 | **SDD** | Skema `materials`, `material_balances`, `material_transactions`; `SDD-05` (tabel & indeks), `SDD-06` (endpoint), `SDD-07` (batas transaksi penyesuaian saldo), `SDD-03` (permission) |
 | **UX** | Halaman Bahan pada sitemap dan page inventory (`P-xx` baru), alur permintaan → persetujuan → penyerahan (`F-xx` baru), entri menu pada `INFORMATION-ARCHITECTURE` |
-| **DESIGN** | Tidak ada komponen baru yang diketahui perlu; memakai pola daftar, formulir, dan detail yang ada |
+| **DESIGN** | Halaman Bahan memakai pola daftar, formulir, dan detail yang ada. Satu pola baru menyusul dari **UXD-18**: blok subgrup kartu dashboard ([`PATTERNS.md §3.5`](../../DESIGN/PATTERNS.md)), dipicu oleh dua kartu M-22 di Zona 1 |
 | **IMPLEMENTATION** | `ROADMAP` peta modul → phase, `DELIVERY-PLAN`, dan `phases/phase-05.md` menampung PR M-22 |
 
 ### 5.4 Berkas lain yang wajib ikut diperbarui saat M-22 ditulis
 
 | Berkas | Penyesuaian |
 |---|---|
-| [`delivery-plan.md`](delivery-plan.md) | ✅ M-22 sudah masuk `M4`. **Sisa:** kriteria keluar `M4` perlu satu butir untuk saldo bahan |
+| [`delivery-plan.md`](delivery-plan.md) | ✅ M-22 sudah masuk `M4`; kriteria keluar `M4` sudah memuat butir saldo bahan (`BR-081`, `BR-082`, `BR-083`) — 24 Agustus 2026 |
 | [`overview.md`](overview.md) | ✅ §1.1 sudah menyebut kedua domain. **Sisa:** `G-xx`, `PO-xx`, `SC-xx` untuk domain Bahan — menuntut target terukur yang belum ditetapkan |
 | [`activity-log.md`](../03-architecture/activity-log.md) | Nilai enum `modul` perlu `BAHAN` di samping `INVENTARIS` |
 | [`data-model.md`](../03-architecture/data-model.md) | Entitas `materials`, `material_balances`, `material_transactions`; enum **Jenis Pengajuan** perlu *Permintaan Bahan* |

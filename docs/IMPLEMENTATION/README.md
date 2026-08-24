@@ -96,8 +96,8 @@ Akibat praktisnya: sebuah milestone dinyatakan tercapai pada phase yang **menutu
 
 ## Tiga hal yang paling mudah keliru
 
-**1. Sepuluh TBD kelompok A memblokir Phase 01–03.**
-Pengerjaan dapat dimulai dari Phase 00 tanpa satu pun terjawab, tetapi tidak dapat melampauinya. Daftar dan jadwalnya di [`ROADMAP.md` §8](ROADMAP.md); pertanyaannya di [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md). **27 terbuka, 8 tertutup.** Ini butir tunggal berisiko tertinggi pada seluruh rencana, dan satu-satunya yang tidak dapat diselesaikan tim pengembang.
+**1. Sembilan dari sepuluh TBD kelompok A memblokir Phase 01–03.**
+Pengerjaan dapat dimulai dari Phase 00 tanpa satu pun terjawab, tetapi tidak dapat melampauinya. Daftar dan jadwalnya di [`ROADMAP.md` §8](ROADMAP.md); pertanyaannya di [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md). **25 terbuka, 15 tertutup.** Ini butir tunggal berisiko tertinggi pada seluruh rencana, dan satu-satunya yang tidak dapat diselesaikan tim pengembang.
 
 **2. Baseline `IMP-04` hanya dapat diukur sebelum sistem dipakai.**
 Durasi opname manual, waktu persetujuan disposisi kertas, tingkat pengembalian tepat waktu versi manual. Setelah go-live, `SC-03`, `SC-06`, `SC-07`, dan `SC-08` tidak dapat dibuktikan **selamanya** — bukan tertunda, tidak dapat. Ia masuk gerbang keluar Phase 07 sebagai butir yang menghalangi.

@@ -112,7 +112,7 @@ Berlaku bagi seluruh berkas SDD dan tidak boleh dibantah tanpa persetujuan pemil
 
 ## Titik yang belum ditetapkan
 
-Terkumpul di [`TBD-REGISTER.md`](TBD-REGISTER.md) — **24 terbuka**, diklasifikasi menjadi empat kelompok menurut siapa yang memutuskan dan kapan. Tidak boleh ditebak oleh penyusun SDD.
+Terkumpul di [`TBD-REGISTER.md`](TBD-REGISTER.md) — **25 terbuka**, diklasifikasi menjadi empat kelompok menurut siapa yang memutuskan dan kapan. Tidak boleh ditebak oleh penyusun SDD.
 
 | Kelompok | Jumlah | Kapan |
 |---|---|---|

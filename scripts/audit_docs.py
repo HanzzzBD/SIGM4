@@ -1,22 +1,33 @@
 #!/usr/bin/env python3
-"""Audit Phase 2: pastikan tidak ada requirement yang hilang saat restrukturisasi.
+"""Audit invarian docs/: satu pemilik per baris, tautan hidup, struktur modul utuh.
 
-Membandingkan arsip PRD.v1.1.full.md (sumber kebenaran) terhadap pohon docs/ baru.
-Memeriksa: FR, BR, RE, CI, AV, ID, SEQ, JOB, DP, NT, NFR, aksi log, endpoint,
-Acceptance Criteria, dan rujukan silang antar berkas.
+Sampai commit a00993f skrip ini membandingkan pohon docs/ terhadap arsip
+PRD.v1.1.full.md untuk membuktikan tidak ada requirement yang hilang saat
+restrukturisasi Phase 2. Arsip itu sudah dihapus dan perbandingannya kini justru
+menyesatkan: M-22 menambah requirement yang memang tidak pernah ada di arsip,
+sehingga setiap ID baru akan terbaca sebagai selisih. Restrukturisasi sudah
+selesai; yang perlu dijaga sekarang adalah invarian yang berlaku terus-menerus.
+
+Yang diperiksa (bagian 2 dan 4-6 menentukan lulus/gagal):
+  1. Sensus ID per jenis                          -- informatif
+  2. Definisi FR di berkas modul
+  3. Sensus Acceptance Criteria                   -- informatif
+  4. Aturan satu pemilik: BR, NT, endpoint, aksi log
+  5. Rujukan silang berkas
+  6. Kelengkapan struktur 15 bagian per modul
+
+Cakupan ID pada lapisan IMPLEMENTATION diperiksa scripts/validate_impl.py.
 
 Jalankan dari root proyek:  python scripts/audit_docs.py
-Keluar dengan kode 1 bila ditemukan kehilangan.
+Keluar dengan kode 1 bila ada temuan.
 """
 import os
 import re
 import sys
 from collections import Counter
 
-ARCHIVE = "PRD.v1.1.full.md"
 NEW = "docs"
-SKIP_DIRS = set()            # seluruh isi docs/ dihitung (PRD/ dan SDD/)
-SKIP_FILES = {"README.md"}   # indeks buatan, boleh menyebut ID tanpa memilikinya
+SKIP_DIRS = set()            # seluruh isi docs/ dihitung
 MODULE_DIR = "02-modules"    # penanda folder modul, di mana pun ia bersarang
 
 ID_PATTERNS = {
@@ -60,117 +71,89 @@ def read(p):
         return fh.read()
 
 
-archive = read(ARCHIVE)
 new_files = list(walk_docs())
 new_all = {p: read(p) for p in new_files}
 new_text = "\n".join(new_all.values())
+mod_text = {k: v for k, v in new_all.items() if os.sep + MODULE_DIR + os.sep in k}
 
 print("=" * 78)
-print("LAPORAN AUDIT — Phase 2")
+print("LAPORAN AUDIT — invarian docs/")
 print("=" * 78)
-print(f"Sumber acuan : {ARCHIVE}")
-print(f"Diperiksa    : {len(new_files)} berkas di {NEW}/ (PRD/ + SDD/)")
+print(f"Diperiksa : {len(new_files)} berkas di {NEW}/ "
+      f"({len(mod_text)} di antaranya berkas modul)")
 print()
 
-# ── 1. Kelengkapan ID ─────────────────────────────────────────────────────────
+# -- 1. Sensus ID -------------------------------------------------------------
 print("-" * 78)
-print("1. KELENGKAPAN ID")
+print("1. SENSUS ID (informatif)")
 print("-" * 78)
-print(f"{'Jenis':6s} {'di arsip':>9s} {'di docs/':>9s} {'hilang':>7s}  keterangan")
-total_missing = 0
+print(f"{'Jenis':6s} {'di docs/':>9s}  contoh")
 for kind, pat in ID_PATTERNS.items():
-    a = set(re.findall(pat, archive))
-    b = set(re.findall(pat, new_text))
-    missing = sorted(a - b)
-    total_missing += len(missing)
-    note = "OK" if not missing else "HILANG: " + ", ".join(missing[:8])
-    print(f"{kind:6s} {len(a):9d} {len(b):9d} {len(missing):7d}  {note}")
-    if missing:
-        FAILED.append(f"{kind} hilang: {missing}")
+    found = sorted(set(re.findall(pat, new_text)))
+    sample = ", ".join(found[:4]) + (" ..." if len(found) > 4 else "")
+    print(f"{kind:6s} {len(found):9d}  {sample}")
 print()
 
-# ── 2. Definisi FR (heading) ──────────────────────────────────────────────────
+# -- 2. Definisi FR (heading) -------------------------------------------------
 print("-" * 78)
 print("2. DEFINISI FUNCTIONAL REQUIREMENT (heading ### FR-xx.y)")
 print("-" * 78)
-fr_arc = set(re.findall(r"^### (FR-\d+\.\d+[a-z]?)", archive, re.M))
-fr_new = Counter(re.findall(r"^### (FR-\d+\.\d+[a-z]?)", "\n".join(
-    v for k, v in new_all.items() if "02-modules" in k), re.M))
-missing = sorted(fr_arc - set(fr_new))
-dupes = sorted(k for k, v in fr_new.items() if v > 1)
-print(f"Di arsip           : {len(fr_arc)}")
-print(f"Di docs/02-modules : {len(fr_new)}")
-print(f"Hilang             : {len(missing)} {missing or ''}")
-print(f"Terdefinisi ganda  : {len(dupes)} {dupes or ''}")
-if missing:
-    FAILED.append(f"FR tidak terdefinisi di modul: {missing}")
+fr_def = Counter(re.findall(r"^### (FR-\d+\.\d+[a-z]?)",
+                            "\n".join(mod_text.values()), re.M))
+fr_ref = set(re.findall(r"\bFR-\d+\.\d+[a-z]?\b", new_text))
+dupes = sorted(k for k, v in fr_def.items() if v > 1)
+undef = sorted(fr_ref - set(fr_def))
+print(f"Terdefinisi di modul   : {len(fr_def)}")
+print(f"Dirujuk di docs/       : {len(fr_ref)}")
+print(f"Terdefinisi ganda      : {len(dupes)} {dupes or ''}")
+print(f"Dirujuk tanpa definisi : {len(undef)} {undef or ''}")
 if dupes:
     FAILED.append(f"FR terdefinisi ganda: {dupes}")
+if undef:
+    FAILED.append(f"FR dirujuk tanpa definisi di modul: {undef}")
 print()
 
-# ── 3. Acceptance Criteria ────────────────────────────────────────────────────
+# -- 3. Acceptance Criteria ---------------------------------------------------
 print("-" * 78)
-print("3. ACCEPTANCE CRITERIA (baris '- [ ] ...')")
+print("3. ACCEPTANCE CRITERIA (baris '- [ ] ...') — informatif")
 print("-" * 78)
-ac_arc = Counter(re.findall(r"^- \[ \] (.+)$", archive, re.M))
-ac_new = Counter(re.findall(r"^- \[ \] (.+)$", new_text, re.M))
-lost = [t for t, n in ac_arc.items() if ac_new[t] < n]
-print(f"Di arsip : {sum(ac_arc.values())} baris ({len(ac_arc)} unik)")
-print(f"Di docs/ : {sum(ac_new.values())} baris ({len(ac_new)} unik)")
-print(f"Hilang   : {len(lost)}")
-for t in lost[:5]:
-    print(f"   - {t[:90]}")
-if lost:
-    FAILED.append(f"Acceptance Criteria hilang: {len(lost)} baris")
+ac = Counter(re.findall(r"^- \[ \] (.+)$", new_text, re.M))
+print(f"Di docs/ : {sum(ac.values())} baris ({len(ac)} unik)")
 print()
 
-# ── 4. Baris tabel bernilai kunci: satu pemilik, tanpa duplikasi ─────────────
+# -- 4. Baris tabel bernilai kunci: satu pemilik, tanpa duplikasi -------------
 print("-" * 78)
 print("4. ATURAN SATU PEMILIK (Zero Duplication)")
 print("-" * 78)
-mod_text = {k: v for k, v in new_all.items() if os.sep + "02-modules" + os.sep in k}
 
 
-def owner_check(label, pattern, expected):
+def owner_check(label, pattern, key=lambda m: m.group(1)):
+    """Setiap baris bernilai kunci dimiliki tepat satu berkas modul.
+
+    Aturan "Satu baris, satu pemilik" (CLAUDE.md, Aturan dokumentasi): modul
+    lain merujuk lewat ID, tidak menyalin barisnya.
+    """
     loc = {}
     for path, txt in mod_text.items():
         for m in re.finditer(pattern, txt, re.M):
-            loc.setdefault(m.group(1), []).append(os.path.basename(path))
-    dup = {k: v for k, v in loc.items() if len(v) > 1}
-    print(f"{label:16s} pemilik unik: {len(loc):4d} / target {expected:4d}   duplikat: {len(dup)}")
+            loc.setdefault(key(m), set()).add(os.path.basename(path))
+    dup = {k: sorted(v) for k, v in loc.items() if len(v) > 1}
+    print(f"{label:16s} pemilik unik: {len(loc):4d}   duplikat: {len(dup)}")
     if dup:
-        for k, v in list(dup.items())[:5]:
+        for k, v in list(dup.items())[:8]:
             print(f"   ! {k} ada di {v}")
-        FAILED.append(f"{label} duplikat di beberapa modul: {list(dup)[:5]}")
-    if len(loc) != expected:
-        FAILED.append(f"{label}: {len(loc)} pemilik, seharusnya {expected}")
+        FAILED.append(f"{label} duplikat di beberapa modul: {sorted(dup)[:5]}")
     return loc
 
 
-n_br_arc = len(set(re.findall(r"^\| (BR-\d+[a-z]*) \|", archive, re.M)))
-n_nt_arc = len(set(re.findall(r"^\| \*\*(NT-\d+[a-z]*)\*\* \|", archive, re.M)))
-owner_check("Business Rule", r"^\| (BR-\d+[a-z]*) \|", n_br_arc)
-owner_check("Notifikasi", r"^\| \*\*(NT-\d+[a-z]*)\*\* \|", n_nt_arc)
-
-ep_arc = set(re.findall(r"^\| (?:GET|POST|PUT|PATCH|DELETE) \| `([^`]+)`", archive, re.M))
-ep_new = set(re.findall(r"^\| (?:GET|POST|PUT|PATCH|DELETE) \| `([^`]+)`",
-                        "\n".join(mod_text.values()), re.M))
-print(f"{'Endpoint':16s} di arsip: {len(ep_arc):4d}   di modul: {len(ep_new):4d}   "
-      f"hilang: {len(ep_arc - ep_new)}")
-if ep_arc - ep_new:
-    print(f"   ! {sorted(ep_arc - ep_new)[:8]}")
-    FAILED.append(f"Endpoint hilang: {sorted(ep_arc - ep_new)[:8]}")
-
-log_arc = set(re.findall(r"^\| `([A-Z_]+)`", archive, re.M))
-log_new = set(re.findall(r"^\| `([A-Z_]+)`", "\n".join(mod_text.values()), re.M))
-print(f"{'Aksi log':16s} di arsip: {len(log_arc):4d}   di modul: {len(log_new):4d}   "
-      f"hilang: {len(log_arc - log_new)}")
-if log_arc - log_new:
-    print(f"   ! {sorted(log_arc - log_new)}")
-    FAILED.append(f"Aksi log hilang: {sorted(log_arc - log_new)}")
+owner_check("Business Rule", r"^\| (BR-\d+[a-z]*) \|")
+owner_check("Notifikasi", r"^\| \*\*(NT-\d+[a-z]*)\*\* \|")
+owner_check("Endpoint", r"^\| (GET|POST|PUT|PATCH|DELETE) \| `([^`]+)`",
+            key=lambda m: f"{m.group(1)} {m.group(2)}")
+owner_check("Aksi log", r"^\| `([A-Z_]+)`")
 print()
 
-# ── 5. Rujukan silang berkas ─────────────────────────────────────────────────
+# -- 5. Rujukan silang berkas -------------------------------------------------
 print("-" * 78)
 print("5. RUJUKAN SILANG BERKAS")
 print("-" * 78)
@@ -204,7 +187,7 @@ if broken:
     FAILED.append(f"Tautan rusak: {len(broken)}")
 print()
 
-# ── 6. Struktur modul ────────────────────────────────────────────────────────
+# -- 6. Struktur modul --------------------------------------------------------
 print("-" * 78)
 print("6. KELENGKAPAN STRUKTUR 15 BAGIAN PER MODUL")
 print("-" * 78)
@@ -226,13 +209,13 @@ if bad:
     FAILED.append(f"Modul struktur tidak lengkap: {[b[0] for b in bad]}")
 print()
 
-# ── Kesimpulan ────────────────────────────────────────────────────────────────
+# -- Kesimpulan ---------------------------------------------------------------
 print("=" * 78)
 if FAILED:
     print(f"HASIL: GAGAL — {len(FAILED)} temuan")
     for f in FAILED:
         print(f"  - {f}")
     sys.exit(1)
-print("HASIL: LULUS — tidak ada requirement yang hilang, tidak ada duplikasi,")
-print("       tidak ada rujukan silang rusak, struktur modul lengkap.")
+print("HASIL: LULUS — tidak ada duplikasi kepemilikan, tidak ada rujukan silang")
+print("       rusak, struktur modul lengkap.")
 print("=" * 78)
