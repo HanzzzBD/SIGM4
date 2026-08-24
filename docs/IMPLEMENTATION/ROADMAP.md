@@ -191,20 +191,18 @@ Beberapa phase tidak dapat diselesaikan sebelum TBD tertentu ditutup. Daftar len
 | `TBD-EVT-B` | A | `PR-01-10` (lingkup M-20: antarmuka dead letter) | Sebelum **Phase 01** |
 | `TBD-APR-A` `TBD-APR-C` | A | `PR-02-20` (resolusi approver & fallback) | Sebelum **Phase 02** |
 | `TBD-APR-B` | A | `PR-02-22` (SLA & eskalasi) | Sebelum **Phase 02** |
-| `TBD-NTF-A` | A | `PR-02-28` (preferensi notifikasi) | Sebelum **Phase 02** |
 | `TBD-NTF-B` | A | `PR-02-25` (skema notifikasi & retensi) | Sebelum **Phase 02** |
-| `TBD-FE-B` | A | `PR-02-30` (kerangka aplikasi web) | Sebelum **Phase 02** |
 | `TBD-AVL-B` | A | `PR-03-08` · `PR-04-01` (bentuk endpoint reservasi) | Sebelum **Phase 03** |
 | `TBD-FS-A` | A | `PR-03-04` … `PR-03-07` (perlakuan foto berwajah) | Sebelum **Phase 03** |
+| `TBD-BHN-E` | A | `PR-03-21` (katalog tool chatbot — perlu tool bahan atau tidak) | Sebelum **Phase 03** |
 | `TBD-AI-A` | D | `PR-03-22` (prefiks statis ≥ 1.024 token) | Sebelum **Phase 03** |
-| `TBD-MOB-B` | A | jalur mobile Phase 03–05 | Sebelum **Phase 03** |
 | `TBD-SEC-B` | A | `PR-00-06` (perkakas observability & tujuan log) · `PR-08-01` … `PR-08-06` (lingkup kepatuhan) | **Sebelum `PR-00-06`** — bukan lagi sebelum Phase 08 |
 | kelompok B (14) | B | kalibrasi parameter | Phase 07–08, setelah data staging ada |
 | kelompok C (0) | C | — | Seluruhnya tertutup 6 Agustus 2026 |
 
 **`TBD-SEC-B` maju ke Phase 00.** `SDD-OBS-09` memilih *backend* observability terkelola, sehingga log aplikasi berisi PII meninggalkan infrastruktur sekolah sejak logger terstruktur dipasang (`PR-00-06`). Lingkup kepatuhan karena itu harus diketahui **saat perkakas dipilih**, bukan saat Phase 08 — memilih vendor lebih dulu lalu menanyakan kepatuhan sesudahnya berarti keputusan sudah terlanjur dibuat. `SDD-OBS-04` (*redaction* di formatter) adalah kontrol yang menyertainya, bukan penggantinya.
 
-**Sepuluh dari dua belas TBD kelompok A memblokir Phase 01–03** — tiga phase pertama yang berisi kode. Menundanya berarti menunda lintasan kritis secara langsung. Ini butir tunggal berisiko tertinggi pada roadmap, dan satu-satunya yang tidak dapat diselesaikan oleh tim pengembang.
+**Sembilan dari sepuluh TBD kelompok A memblokir Phase 01–03** — tiga phase pertama yang berisi kode. Menundanya berarti menunda lintasan kritis secara langsung. Ini butir tunggal berisiko tertinggi pada roadmap, dan satu-satunya yang tidak dapat diselesaikan oleh tim pengembang.
 
 ---
 

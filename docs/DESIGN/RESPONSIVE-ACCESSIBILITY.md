@@ -178,7 +178,7 @@ Aplikasi mobile mendapat tata letak dua panel pada tablet (**UXD-11**), melampau
 
 ## 6.3 Alur kritis yang wajib diuji papan ketik
 
-15 alur kritis Bab 30.2 seluruhnya wajib dapat diselesaikan tanpa tetikus. Empat yang paling berisiko:
+18 alur kritis Bab 30.2 seluruhnya wajib dapat diselesaikan tanpa tetikus. Empat yang paling berisiko:
 
 | Alur | Titik risiko |
 |---|---|
@@ -423,7 +423,7 @@ Pemenuhan `DS-06`. Setiap komponen pada [`COMPONENTS.md`](COMPONENTS.md) wajib l
 | Per commit | Validasi kontras token + lint aksesibilitas menggagalkan CI (`SDD-FE` §4.6) |
 | Per komponen | 12 baris §12.1 lulus sebelum komponen masuk pustaka (`DS-06`) |
 | Per halaman | 12 baris §12.2 lulus sebelum halaman masuk staging |
-| Per alur kritis | 15 alur Bab 30.2 dapat diselesaikan tanpa tetikus |
+| Per alur kritis | 18 alur Bab 30.2 dapat diselesaikan tanpa tetikus |
 | Sebelum go-live | Audit WCAG 2.1 AA menyeluruh (`NFR-AC-01`); matriks perangkat Bab 30.6 diuji |
 
 ## 12.4 Matriks perangkat uji

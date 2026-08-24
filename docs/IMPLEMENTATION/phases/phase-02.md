@@ -131,9 +131,9 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | `PR-02-25` | Skema notifikasi + penerbitan dari event domain | M | Ph00 | `FR-17.1`, `SDD-NTF-01/02` | Notifikasi terbit hanya setelah transaksi commit |
 | `PR-02-26` | SSE + Redis Pub/Sub fanout multi-instance | L | 25 | `FR-17.1`, `SDD-NTF-03/04/05` | Dua instance API → satu notifikasi, satu kali tampil |
 | `PR-02-27` | Push FCM + registrasi token + penanganan token mati | M | 25 | `FR-17.2`, `SDD-NTF-06/07` | Token tidak valid dibersihkan otomatis |
-| `PR-02-28` | Preferensi notifikasi | S | 25 | `FR-17.3` | Bergantung **TBD-NTF-A** (pengelompokan `jenis`) |
+| `PR-02-28` | Preferensi notifikasi | S | 25 | `FR-17.3`, **UXD-05** | Enam kelompok `jenis` sesuai `SDD-08 §4.5`, bukan per modul |
 | `PR-02-29` | Kerangka dashboard + kartu per role | L | 09 | `FR-15.1`, `BR-073` `BR-074`, `SDD-PERF-03` | Kartu di luar permission tidak dirender **dan** tidak dikirim server |
-| `PR-02-30` | Kerangka aplikasi web: routing, state, render berbasis permission | L | 09 | `SDD-FE-01` … `SDD-FE-06`, `SDD-FE-11/12` | TanStack Query + primitif headless & token sendiri; bergantung **TBD-FE-B** |
+| `PR-02-30` | Kerangka aplikasi web: routing, state, render berbasis permission | L | 09 | `SDD-FE-01` … `SDD-FE-06`, `SDD-FE-11/12`, **UXD-12** | TanStack Query + primitif headless & token sendiri; satu set token warna — tanpa mode gelap |
 
 ## 8. Task Breakdown
 
@@ -184,7 +184,7 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | **TBD-APR-A/B/C** belum terjawab saat `PR-02-20`/`PR-02-22` dimulai | Dua PR terhenti | Ketiganya kelompok A — wajib dijawab **sebelum** Phase 02 mulai; tercatat sebagai blocker phase | TBD-REGISTER A |
 | `booking_slots` dianggap "belum perlu" lalu ditunda ke Phase 03 | Skema ketersediaan disisipkan setelah reservasi jalan — persis kegagalan yang `CI-01` cegah | Tidak dapat ditunda; termasuk gerbang keluar phase | `CI-01`, `RS-03` |
 | Deteksi pemakaian ulang refresh token memutus sesi sah karena balapan jaringan | Pengguna terlempar keluar | Tenggang idempotensi rotasi; diuji pada jaringan mobile | `SDD-SESS-05` |
-| **TBD-NTF-A** belum terjawab | `PR-02-28` terhenti | PR terkecil di phase; dapat dipindah ke akhir tanpa memblokir yang lain | TBD-REGISTER A |
+| **TBD-NTF-B** belum terjawab saat `PR-02-25` dimulai | Retensi & akses notifikasi terarsip tidak dapat diskemakan | Kelompok A — wajib dijawab sebelum Phase 02 mulai; `UXD-10` menunggu jawaban yang sama | TBD-REGISTER A |
 
 ## 11. Rollback Strategy
 
@@ -203,7 +203,7 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 
 - [ ] Uji konkurensi ketersediaan **dan** approval keduanya berjalan di CI, bukan sekali manual
 - [ ] Prosedur break-glass sudah **dilatih**, bukan hanya ditulis (`FR-01.6`)
-- [ ] `TBD-APR-A`, `TBD-APR-B`, `TBD-APR-C`, `TBD-NTF-A` tertutup di [TBD-REGISTER](../../SDD/TBD-REGISTER.md)
+- [ ] `TBD-APR-A`, `TBD-APR-B`, `TBD-APR-C`, `TBD-NTF-B` tertutup di [TBD-REGISTER](../../SDD/TBD-REGISTER.md)
 - [ ] Log phase terisi
 
 ---

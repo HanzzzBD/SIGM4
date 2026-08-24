@@ -139,7 +139,7 @@ M-08 ──(paralel, tanpa ketergantungan internal)
 | `SlotService` perlu diubah untuk melayani aset | Abstraksi Phase 02 ternyata salah; kerja ulang menyebar | Perubahan `SlotService` di phase ini wajib melalui tinjauan arsitek dan tercatat di log | `SDD-AVL-06` |
 | Sinkronisasi luring menggandakan data opname | Angka inventaris salah — merusak kepercayaan pada `RS-02` | Idempotensi berbasis `client_scan_id`, bukan waktu | `ID-01`, `RS-02` |
 | `FR-08.2` vs sekuens 15.2 ditafsirkan ulang oleh pengembang | Status aset tidak konsisten dengan M-07 | Resolusi sudah ditetapkan di PRD; PR yang menyimpang ditolak review | `FR-08.2` |
-| Jadwal preventif membanjiri notifikasi teknisi | Notifikasi diabaikan seluruhnya | Pengelompokan notifikasi (bergantung **TBD-NTF-A**) | `FR-17.3` |
+| Jadwal preventif membanjiri notifikasi teknisi | Notifikasi diabaikan seluruhnya | Preferensi per kelompok domain proses (**UXD-05**, `SDD-08 §4.5`) sudah tersedia sejak `PR-02-28` | `FR-17.3` |
 
 ## 11. Rollback Strategy
 

@@ -62,7 +62,7 @@ _Seluruhnya tertutup — lihat [Tertutup](#tertutup)._
 
 | Kelompok | Jumlah | Kapan diputuskan |
 |---|---|---|
-| A — Kebijakan produk | 9 | **Sekarang** — memblokir penyelesaian SDD terkait |
+| A — Kebijakan produk | 10 | **Sekarang** — memblokir penyelesaian SDD terkait |
 | B — Parameter operasional | 14 | Setelah staging berdiri & uji beban dijalankan |
 | C — Pilihan teknis | 0 | Seluruhnya tertutup 6 Agustus 2026 |
 | D — Konten | 1 | Saat naskah prompt disusun (M5) |

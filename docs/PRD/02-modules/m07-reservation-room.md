@@ -274,7 +274,7 @@ sequenceDiagram
 | POST | `/reservations` | `reservation.create` | Ajukan reservasi ruangan/aset |
 | GET | `/reservations` | `reservation.view` | Daftar reservasi (tersaring sesuai role) |
 | GET | `/reservations/{id}` | `reservation.view` | Detail reservasi + riwayat approval |
-| POST | `/reservations/{id}/cancel` | `reservation.cancel` | Batalkan reservasi + alasan |
+| POST | `/reservations/{id}/cancel` | `reservation.cancel_own` · `reservation.cancel_any` | Batalkan reservasi + alasan. Pemilik reservasi cukup `cancel_own`; membatalkan reservasi pihak lain wajib `cancel_any` (`FR-07.3 A2`). Kepemilikan diperiksa di server, bukan disimpulkan dari role |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).

@@ -112,7 +112,7 @@
 | POST | `/materials` | `material.manage` | Daftarkan bahan baru | [M-22](../02-modules/m22-materials.md) |
 | POST | `/procurements/{id}/receipts` | `procurement.receive` | Catat penerimaan & buat aset | [M-14](../02-modules/m14-procurement.md) |
 | POST | `/procurements` | `procurement.create` | Buat usulan pengadaan | [M-14](../02-modules/m14-procurement.md) |
-| POST | `/reservations/{id}/cancel` | `reservation.cancel` | Batalkan reservasi + alasan | [M-07](../02-modules/m07-reservation-room.md) |
+| POST | `/reservations/{id}/cancel` | `reservation.cancel_own` · `reservation.cancel_any` | Batalkan reservasi + alasan. Pemilik reservasi cukup `cancel_own`; membatalkan reservasi pihak lain wajib `cancel_any` (`FR-07.3 A2`). Kepemilikan diperiksa di server, bukan disimpulkan dari role | [M-07](../02-modules/m07-reservation-room.md) |
 | POST | `/reservations` | `reservation.create` | Ajukan reservasi ruangan/aset | [M-07](../02-modules/m07-reservation-room.md) |
 | POST | `/users/import` | `user.create` | Impor massal CSV/XLSX | [M-02](../02-modules/m02-users.md) |
 | POST | `/users/{id}/reset-2fa` | `user.reset_2fa` | Reset 2FA pengguna | [M-02](../02-modules/m02-users.md) |

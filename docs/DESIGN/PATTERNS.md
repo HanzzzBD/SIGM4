@@ -147,6 +147,41 @@ Pemilih rentang memakai segmented control: latar `neutral.100`, segmen aktif `su
 
 Satu kolom. Zona 1 dan Zona 4 terlihat tanpa gulir; Zona 3 **diciutkan** secara bawaan karena grafik mahal dirender dan jarang menjadi alasan aplikasi dibuka di lapangan (`UX-01`, `MOB-PERF-01`). Aksi Cepat naik ke atas Zona 3.
 
+## 3.5 Subgrup kartu
+
+Ketika satu modul menyumbang lebih dari satu kartu ke zona yang sama, kartu-kartu itu dikelompokkan menjadi **subgrup berlabel** — ketentuan `19.1`, penempatannya di dalam zona ditetapkan **UXD-18**. Subgrup adalah satuan tata letak **di dalam** zona, bukan zona kelima; urutan empat zona §3.1 tidak berubah.
+
+Penerapan pertama: dua kartu M-22 — *Stok Bahan Menipis* dan *Permintaan Bahan Menunggu* — menjadi subgrup **Bahan** pada Zona 1 dashboard Petugas Sarana Prasarana.
+
+```
+Zona 1 — Tindakan
+┌───────────────┐ ┌───────────────┐ ┌───────────────┐
+│ Pengajuan     │ │ Serah Terima  │ │ Pengembalian  │
+│ Menunggu      │ │ Hari Ini      │ │ Jatuh Tempo   │
+└───────────────┘ └───────────────┘ └───────────────┘
+
+BAHAN ─────────────────────────────────────────────────
+┌───────────────┐ ┌───────────────┐
+│ Stok Bahan    │ │ Permintaan    │
+│ Menipis       │ │ Bahan Menunggu│
+└───────────────┘ └───────────────┘
+```
+
+| Bagian | Token |
+|---|---|
+| Label subgrup | `font.size.xs` · bobot 500 · `color.text.secondary` · huruf besar + `letter.spacing.wide` — perlakuan yang sama dengan label grup sidebar (`FOUNDATIONS §2.5`) |
+| Garis pemisah | 1px `color.border.subtle`, sebaris dengan label, mengisi sisa lebar |
+| Jarak label ke kartu pertama | `spacing.4` |
+| Jarak subgrup ke blok di atasnya | `spacing.8` |
+| Grid kartu di dalam subgrup | Mengikuti grid zona induknya; gap antar-kartu tetap `spacing.6` |
+
+| Aturan | Alasan |
+|---|---|
+| Subgrup hanya untuk kartu yang berasal dari **satu modul** | Zona yang kartunya berasal dari modul berbeda-beda tidak memperoleh subgrup (**UXD-18**) |
+| Label subgrup tidak pernah berwarna accent | Accent tidak pernah menjadi teks (**DSD-07**) |
+| Tidak ada kartu yang dilipat di balik "lihat lainnya" | Zona 1 adalah zona tindakan; menyembunyikan kartu menyalahi kedudukannya. Subgrup menurunkan beban pindai tanpa menghilangkan satu kartu pun |
+| Pada satu kolom (`xs`/`sm` dan dashboard mobile §3.4) label dan garis pemisah **tetap dirender** | Label adalah satu-satunya pembawa pengelompokan; kartu yang menumpuk tanpa label kehilangan penandanya |
+
 ---
 
 # 4. Form Patterns

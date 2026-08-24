@@ -137,13 +137,13 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 |---|---|---|---|
 | Phase 00 — `PR-00-06` | `TBD-SEC-B` (lingkup kepatuhan; `SDD-OBS-09` mengirim log ke luar premis) | — | Pemilik produk / sekolah |
 | Phase 01 | `TBD-AUTH-C` · `TBD-EVT-B` | — | Pemilik produk |
-| Phase 02 | `TBD-APR-A/B/C` · `TBD-NTF-A/B` · `TBD-FE-B` | — | Pemilik produk |
-| Phase 03 | `TBD-AVL-B` · `TBD-FS-A` · `TBD-MOB-B` · `TBD-AI-A` | — | Pemilik produk |
+| Phase 02 | `TBD-APR-A/B/C` · `TBD-NTF-B` | — | Pemilik produk |
+| Phase 03 | `TBD-AVL-B` · `TBD-FS-A` · `TBD-BHN-E` · `TBD-AI-A` | — | Pemilik produk |
 | Phase 08 | `TBD-SEC-A` (penyedia pentest) · `TBD-SEC-B` (lanjutan, lingkup kepatuhan) · `TBD-OBS-B` (penerima alarm) | — | Pemilik produk / sekolah |
 
-Daftar TBD lengkap beserta pertanyaannya: [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md) — **27 terbuka, 8 tertutup**. Jadwal penutupan yang diharapkan: [`ROADMAP.md` §8](ROADMAP.md).
+Daftar TBD lengkap beserta pertanyaannya: [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md) — **25 terbuka, 15 tertutup**. Jadwal penutupan yang diharapkan: [`ROADMAP.md` §8](ROADMAP.md).
 
-**Sepuluh TBD kelompok A memblokir Phase 01–03.** Pengerjaan dapat dimulai dari Phase 00 tanpa satu pun di antaranya terjawab, tetapi tidak dapat melampaui Phase 00 tanpa jawaban untuk dua TBD pertama.
+**Sembilan dari sepuluh TBD kelompok A memblokir Phase 01–03.** Pengerjaan dapat dimulai dari Phase 00 tanpa satu pun di antaranya terjawab, tetapi tidak dapat melampaui Phase 00 tanpa jawaban untuk dua TBD pertama.
 
 ## Pergeseran jadwal tercatat
 

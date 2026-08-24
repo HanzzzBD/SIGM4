@@ -9,11 +9,13 @@
 | Unit | Logika bisnis murni: evaluasi approval rule, perhitungan denda & cap, perhitungan keterlambatan, validasi durasi, algoritma ketersediaan | ≥ 80% pada modul inti (menaikkan NFR-M-03 untuk area kritis) | Developer |
 | Integrasi | Endpoint + basis data + transaksi + otorisasi | 100% endpoint pada Bab 17 memiliki minimal jalur sukses, jalur validasi gagal, dan jalur ditolak otorisasi | Developer |
 | Kontrak API | Kesesuaian implementasi dengan OpenAPI | 100% endpoint | Developer + QA |
-| E2E Web | 15 alur bisnis kritis (30.2) | 100% alur kritis | QA |
-| E2E Mobile | 8 alur lapangan kritis | 100% alur kritis | QA |
+| E2E Web | 15 dari 18 alur kritis 30.2 yang bertanda Web | 100% alur kritis | QA |
+| E2E Mobile | 9 dari 18 alur kritis 30.2 yang bertanda Mobile | 100% alur kritis | QA |
 | Non-fungsional | Beban, keamanan, aksesibilitas | Sesuai Bab 9 | QA + Security |
 
 ## 30.2 Alur Kritis Wajib Diuji Ujung-ke-Ujung
+
+18 alur kritis. Kolom **Platform** menentukan level E2E mana yang menjalankannya (30.1): 15 bertanda Web, 9 bertanda Mobile; alur yang bertanda keduanya dijalankan pada kedua level.
 
 | # | Alur | Platform |
 |---|---|---|

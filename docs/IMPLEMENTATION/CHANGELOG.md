@@ -6,6 +6,23 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 
 ---
 
+## 2026-08-24 — Sinkronisasi hitungan & pemulihan `audit_docs.py`
+
+Audit kesiapan dokumentasi menemukan enam selisih yang tertinggal setelah penutupan TBD 22 Agustus dan masuknya M-22 pada 23 Agustus. **Tidak ada requirement, business rule, maupun keputusan baru** — seluruhnya penyelarasan angka dan penerusan keputusan yang sudah diambil.
+
+| Berkas | Perubahan |
+|---|---|
+| `scripts/audit_docs.py` | Dilepaskan dari `PRD.v1.1.full.md` yang dihapus di `a00993f`; skrip berhenti dengan `FileNotFoundError` sejak itu. Perbandingan arsip diganti pemeriksaan invarian: FR terdefinisi & tidak ganda, aturan satu pemilik (BR · NT · endpoint · aksi log), tautan silang, struktur 15 bagian |
+| `IMPLEMENTATION-STATUS.md` · `ROADMAP.md` §8 · `phases/phase-02.md` · `phases/phase-04.md` | `TBD-NTF-A`, `TBD-FE-B`, `TBD-MOB-B` masih terdaftar sebagai penghalang terbuka padahal ditutup 22 Agustus (**UXD-05**, **UXD-12**, **UXD-11**). Diganti rujukan ke keputusan yang menutupnya |
+| `ROADMAP.md` §8 | `TBD-BHN-E` — dibuka 23 Agustus bersama M-22 — belum punya baris jadwal. Ditambahkan: memblokir `PR-03-21` (katalog tool chatbot), sebelum Phase 03 |
+| `CLAUDE.md` · `README.md` · `IMPLEMENTATION-STATUS.md` · `SDD/README.md` · `SDD/TBD-REGISTER.md` · `UX/UX-SPEC.md` | Hitungan TBD berbeda di lima tempat (27 · 25 · 24) dan kelompok A tertulis 9 padahal tabelnya 10 baris. Diseragamkan menjadi **25 terbuka · 15 tertutup**, kelompok A **10** — sembilan di antaranya memblokir Phase 01–03 |
+
+Penyelarasan di luar `IMPLEMENTATION/` yang menyertainya — papan skor UX-SPEC §13, pola subgrup kartu `DESIGN/PATTERNS.md §3.5` (**UXD-18**), dan kriteria keluar `M4` untuk saldo bahan — dicatat pada riwayat lapisan masing-masing.
+
+**Status TBD: 25 terbuka · 15 tertutup** — A (10) · B (14) · C (0) · D (1).
+
+---
+
 ## 2026-08-23 — Domain Bahan masuk lingkup (M-22)
 
 Menyusul perubahan lingkup yang diputuskan di PRD ([`bahan-scope-change.md`](../PRD/01-product/bahan-scope-change.md), Keputusan Kunci #17–#28), domain Bahan masuk rilis berjalan sebagai **M-22 Manajemen Bahan**. Perubahan pada dokumentasi implementasi:
