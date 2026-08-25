@@ -8,6 +8,28 @@ Yang ada di sini hanyalah **cara kerja sehari-hari di dalam model itu**: penamaa
 
 ---
 
+## 0. Keadaan saat ini — pengecualian transisi
+
+**Model pada §1 belum dapat dijalankan utuh.** `develop` dan `staging` belum ada, dan keduanya baru berdiri bersama lingkungannya pada [`PR-00-18`](phases/phase-00.md). Selama itu belum terjadi, `apps/` juga belum ada — tidak ada kode untuk di-*lint*, diuji, maupun dipindai, sehingga gerbang `CD-01` tidak punya sasaran.
+
+Selama masa transisi ini berlaku:
+
+| Hal | Ketentuan sementara |
+|---|---|
+| Cabang hidup | Hanya `main` |
+| Jalur kerja | Cabang bernama sesuai §2 → PR → `main` |
+| Penamaan | §2 berlaku penuh. Pekerjaan yang hanya menyentuh `docs/` memakai `chore/` — jenisnya sudah berarti "tanpa perubahan perilaku" |
+| Tinjauan | §3.1 berlaku penuh; ditegakkan [`.github/CODEOWNERS`](../../.github/CODEOWNERS) |
+| Template PR | §4 berlaku penuh; terisi otomatis lewat [`.github/pull_request_template.md`](../../.github/pull_request_template.md) |
+
+**Pengecualian ini berakhir saat `PR-00-18` selesai.** Sejak titik itu §1 sampai §3 berlaku tanpa pengurangan, dan penggabungan langsung ke `main` tertutup sepenuhnya.
+
+Yang **tidak** dikecualikan sedikit pun: penamaan cabang (§2), tinjauan arsitek (§3.1), pemakaian template dan klasifikasi komentar (§4), serta DoD tingkat PR (§5). Ketiadaan `develop` tidak melonggarkan satu pun dari itu.
+
+Keadaan aktual terhadap seluruh aturan — termasuk penyimpangan yang tercatat dan setelan branch protection yang belum dinyalakan — ada di [`GITHUB-CI-STATE.md`](GITHUB-CI-STATE.md).
+
+---
+
 ## 1. Peta cabang
 
 ```
@@ -40,7 +62,7 @@ feature/*  ──▶  develop  ──▶  staging  ──▶  main  ──▶  t
 | `feature/` | PR yang terdaftar pada rencana phase | `feature/PR-02-17-slot-service` |
 | `fix/` | Cacat yang ditemukan sebelum rilis | `fix/PR-07-04-approval-race` |
 | `hotfix/` | Cacat produksi pasca go-live | `hotfix/login-lockout` |
-| `chore/` | Perkakas, dependensi, CI — tanpa perubahan perilaku | `chore/bump-node-lts` |
+| `chore/` | Perkakas, dependensi, CI, **dan perubahan yang hanya menyentuh `docs/`** — tanpa perubahan perilaku | `chore/bump-node-lts` · `chore/dokumentasi-ux-design-system` |
 
 Menyertakan ID PR pada nama cabang membuat rantai *cabang → PR → phase → requirement* dapat ditelusuri tanpa membuka dokumen apa pun.
 
