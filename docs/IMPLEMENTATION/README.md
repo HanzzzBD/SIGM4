@@ -42,6 +42,7 @@ Aturan yang paling sering tergoda dilanggar: **IMPLEMENTATION menurunkan, tidak 
 | [`ROADMAP.md`](ROADMAP.md) | Graf dependensi phase & modul · alasan urutan · pemetaan phase ⇄ milestone PRD · lintasan kritis · jadwal penutupan TBD |
 | [`DELIVERY-PLAN.md`](DELIVERY-PLAN.md) | Urutan PR lintas phase · lintasan kritis · jalur kerja paralel · cakupan SDD · strategi migrasi · urutan pengujian & penempatan |
 | [`BRANCHING-STRATEGY.md`](BRANCHING-STRATEGY.md) | Peta cabang · penamaan · aturan penggabungan · alur review · DoD tingkat PR · alur hotfix |
+| [`GITHUB-CI-STATE.md`](GITHUB-CI-STATE.md) | Keadaan GitHub & CI/CD: current vs target, penyimpangan tercatat, setelan branch protection |
 | [`RELEASE-PLAN.md`](RELEASE-PLAN.md) | Bentuk rilis · status gerbang · urutan rilis produksi · urutan cutover · strategi rollback |
 
 ### Pelaksanaan

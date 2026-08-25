@@ -1,0 +1,56 @@
+# CODEOWNERS — penegak tinjauan arsitek wajib
+#
+# Sumber aturan: docs/IMPLEMENTATION/BRANCHING-STRATEGY.md §3.1
+# Berkas ini TIDAK menetapkan kebijakan baru. Ia hanya menerjemahkan lima area
+# bertinjauan-arsitek yang sudah ditetapkan §3.1 menjadi aturan yang GitHub tegakkan.
+#
+# Prasyarat agar berlaku: branch protection pada develop/staging/main mengaktifkan
+# "Require review from Code Owners". Tanpa itu berkas ini hanya menyarankan peninjau,
+# tidak mewajibkannya. Lihat docs/IMPLEMENTATION/GITHUB-CI-STATE.md §4.
+#
+# CATATAN PEMILIK: @HanzzzBD adalah pemilik repositori dan dipakai sebagai peninjau
+# sementara karena tim belum terbentuk. Ganti dengan tim arsitek begitu tim ada —
+# satu orang yang meninjau pekerjaannya sendiri bukan tinjauan (BRANCHING §3.1).
+
+# ---------------------------------------------------------------------------
+# Bawaan — seluruh repositori
+# ---------------------------------------------------------------------------
+*                                   @HanzzzBD
+
+# ---------------------------------------------------------------------------
+# Lima area bertinjauan arsitek wajib (BRANCHING §3.1)
+# Path mengikuti tata letak SDD-17 §4.1 dan SDD-00 §4.1.
+# Sebagian path belum ada karena apps/ baru dibuat pada Phase 00 — aturan
+# sengaja ditulis lebih dulu agar berlaku sejak berkasnya lahir.
+# ---------------------------------------------------------------------------
+
+# Migration apa pun — expand → migrate → contract (CD-04, SDD-DB-08)
+/apps/api/migrations/               @HanzzzBD
+
+# Lapisan permission & AuthContext — kebocoran di sini bersifat menyeluruh
+# (SDD-AUTH-05, PM-01, PM-02, NFR-S-05)
+/apps/api/src/shared/auth/          @HanzzzBD
+
+# AuditLogger & rantai hash activity log (AL-01, NFR-S-03d)
+/apps/api/src/shared/audit/         @HanzzzBD
+
+# Evaluator DSL / mesin approval — melayani enam modul berpersetujuan
+# (SDD-APR-*, Lampiran D)
+/apps/api/src/modules/m10-approval/ @HanzzzBD
+
+# booking_slots & ketersediaan — melayani M-07, M-08, M-09 dengan satu semantik
+# (SDD-AVL-01 … SDD-AVL-14)
+/apps/api/src/modules/m07-reservation-room/ @HanzzzBD
+
+# CATATAN: `SlotService` disebut BRANCHING §3.1 dan PR-02-17, tetapi letak kodenya
+# TIDAK ditetapkan SDD mana pun. Path-nya ditambahkan di sini pada PR-02-17, saat
+# lokasinya diputuskan. Sampai itu terjadi, ia tercakup sebagian lewat baris
+# m07-reservation-room dan migrations di atas.
+
+# ---------------------------------------------------------------------------
+# Tata kelola & kontrak lintas pohon
+# ---------------------------------------------------------------------------
+/.github/                           @HanzzzBD
+/docs/PRD/                          @HanzzzBD
+/docs/SDD/                          @HanzzzBD
+/packages/schemas/                  @HanzzzBD
