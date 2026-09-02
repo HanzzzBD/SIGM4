@@ -1,6 +1,6 @@
 # Implementation Documentation — SIGM4
 
-**Status:** rencana lengkap, pengerjaan belum dimulai. 9 phase · 162 pull request · 22 modul.
+**Status:** rencana lengkap, pengerjaan belum dimulai. 9 phase · 163 pull request · 22 modul.
 
 ---
 
@@ -96,8 +96,8 @@ Akibat praktisnya: sebuah milestone dinyatakan tercapai pada phase yang **menutu
 
 ## Tiga hal yang paling mudah keliru
 
-**1. Sembilan dari sepuluh TBD kelompok A memblokir Phase 01–03.**
-Pengerjaan dapat dimulai dari Phase 00 tanpa satu pun terjawab, tetapi tidak dapat melampauinya. Daftar dan jadwalnya di [`ROADMAP.md` §8](ROADMAP.md); pertanyaannya di [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md). **25 terbuka, 15 tertutup.** Ini butir tunggal berisiko tertinggi pada seluruh rencana, dan satu-satunya yang tidak dapat diselesaikan tim pengembang.
+**1. ~~TBD kelompok A memblokir phase berkode.~~ Tidak lagi berlaku sejak 25 Agustus 2026.**
+Kelompok A dan D dikosongkan 25 Agustus 2026; tidak ada phase yang terhalang keputusan yang belum diambil. Daftar dan jadwalnya di [`ROADMAP.md` §8](ROADMAP.md); pertanyaannya di [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md). **13 terbuka, 27 tertutup** — seluruh sisanya kelompok B, parameter operasional yang dikalibrasi Phase 07–08 setelah data staging tersedia. Risiko yang dulu tertinggi pada rencana ini kini berupa pengukuran yang belum dijalankan, bukan keputusan yang belum diambil.
 
 **2. Baseline `IMP-04` hanya dapat diukur sebelum sistem dipakai.**
 Durasi opname manual, waktu persetujuan disposisi kertas, tingkat pengembalian tepat waktu versi manual. Setelah go-live, `SC-03`, `SC-06`, `SC-07`, dan `SC-08` tidak dapat dibuktikan **selamanya** — bukan tertunda, tidak dapat. Ia masuk gerbang keluar Phase 07 sebagai butir yang menghalangi.

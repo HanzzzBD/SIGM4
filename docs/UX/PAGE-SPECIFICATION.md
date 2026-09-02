@@ -506,7 +506,8 @@ Tiga langkah (**UXD-04**). Langkah 3 wajib ada — ia satu-satunya tempat konsek
 | **Validasi** | `422 INVALID_RULE_DEFINITION` ditampilkan **pada node yang bermasalah**, bukan sebagai pesan tunggal di atas formulir | `RE-08` |
 | **Aturan bawaan** | Ditampilkan sebagai baris terkunci yang tidak dapat disunting maupun dihapus — ia konstanta kode, bukan baris basis data | `BR-036` · `RE-06` · `SDD-APR` §4.3 |
 | **Menonaktifkan aturan** | Peringatan bahwa instance berjalan tetap memakai snapshot lama hingga selesai | `BR-040` · `FR-10.1 A4` |
-| **`fallback_approver`** | `BLOCKED` — lihat **UXD-09** | `RE-11` · `TBD-APR-A` |
+| **`fallback_approver`** | Satu pemilih **opsional** setingkat aturan — bukan di dalam daftar langkah — berlabel *Approver cadangan* dengan teks bawaan **"bawaan: Administrator"** saat kosong. Menerima role atau pengguna, sepola dengan pemilih approver langkah. Aturan tetap dapat disimpan tanpa mengisinya | `RE-11` · `SDD-APR-13` · **UXD-09** |
+| **Approver nonaktif** | Panel Pratinjau menandai langkah yang approver-nya bertipe pengguna dan pengguna itu **sedang nonaktif** — supaya penyusun aturan melihatnya saat menyusun, bukan saat pengajuan pertama gagal. Penandaan bersifat peringatan; ia tidak memblokir penyimpanan, karena status pengguna dapat berubah kapan saja setelah aturan disimpan | `RE-13` · `SDD-APR-14` |
 
 ### 7.6.6 MS-10 Serah Terima & MS-11 Pengembalian (mobile)
 
@@ -558,7 +559,7 @@ Enam kelompok (**UXD-05**), dua kanal per kelompok.
 | Notifikasi wajib | Ditampilkan terkunci beserta penjelasan singkat mengapa tidak dapat dimatikan — bukan sekadar dinonaktifkan tanpa alasan | `FR-17.3 A1` · `UX-05` |
 | Berlaku | Seketika setelah disimpan | `FR-17.3 AC` |
 | Izin push ditolak | Blok penjelasan + tautan ke pengaturan sistem perangkat; kanal in-app tetap berjalan | `FR-17.2 A1` |
-| Arsip > 90 hari | `BLOCKED` — lihat **UXD-10** | `TBD-NTF-B` |
+| Arsip > 90 hari | Pusat Notifikasi (**P-13**) mendapat filter **Arsip**; pengguna membaca notifikasi lamanya sendiri. Arsip saling meniadakan dengan daftar aktif — bukan tambahan pada gulir tak berujung — dan tidak menampilkan penanda belum dibaca, karena status itu tidak lagi bermakna di arsip | `FR-17.1 A2` · `SDD-NTF-10` · **UXD-10** |
 
 ---
 
@@ -613,6 +614,7 @@ Kolom **Sasaran** adalah kontribusi §8; isi kartu tetap milik Bab 19.
 | Permintaan Reset Password | 1 | P-67 |
 | Status Konfigurasi | 1 | P-68 (aturan aktif) · P-70 (parameter belum diisi) |
 | Kesehatan Integrasi | 1 | P-75 (LLM) · P-70 kelompok Notifikasi (FCM) |
+| Efek Tertunda Gagal | 1 | — · daftar lima teratas tampil di kartu; tidak ada halaman tujuan (**UXD-13**) |
 | Total Pengguna Aktif | 2 | P-60, `filter[status]=AKTIF` |
 | Login Hari Ini | 2 | P-73, `filter[aksi]=LOGIN_SUCCESS,LOGIN_FAILED` + rentang 24 jam |
 | Distribusi Role | 3 | P-60 dengan filter role terpilih |

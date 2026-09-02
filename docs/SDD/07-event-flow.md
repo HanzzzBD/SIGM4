@@ -37,6 +37,7 @@ Berkas ini menetapkan **bagaimana** rantai sebab-akibat itu dijalankan tanpa mem
 | **SDD-EVT-07** | Setiap handler event **idempoten** dan aman diproses ulang; dispatcher menjamin *at-least-once*, bukan *exactly-once*. |
 | **SDD-EVT-08** | Activity log **tidak** memakai event. Ia ditulis sinkron di dalam transaksi (`AL-01`, `AL-08`). |
 | **SDD-EVT-09** | Urutan pemrosesan dijamin **per agregat**, tidak global. Outbox diproses berurutan berdasarkan `(aggregate_type, aggregate_id, id)`. |
+| **SDD-EVT-10** | Dead letter **terlihat, tidak dapat diproses ulang dari antarmuka**. Jumlah dan daftar ringkasnya tampil sebagai kartu pada Dashboard Administrator (19.2) melalui `GET /dashboard` yang sudah ada — tanpa halaman baru, tanpa permission baru, tanpa endpoint tulis, dan tanpa aksi activity log baru. Pemrosesan ulang tetap berjalan lewat akses operasional dan runbook (`SDD-OBS-07`). Menutup `TBD-EVT-B` (keputusan pemilik produk, 25 Agustus 2026; `UXD-13`). |
 
 ---
 
@@ -66,6 +67,14 @@ Berkas ini menetapkan **bagaimana** rantai sebab-akibat itu dijalankan tanpa mem
 **SDD-EVT-06 — payload minimum.** Payload gemuk membuat konsumen bekerja atas data basi dan mengunci bentuk entitas ke dalam kontrak event. Dengan hanya `{ loanId, assetIds }`, konsumen membaca kondisi terkini.
 
 **SDD-EVT-08 — activity log sinkron.** `AL-01` mewajibkan **100%** operasi tulis tercatat. Melewatkan outbox berarti ada jendela di mana operasi sudah commit tetapi log belum ada. `AL-08` memang melarang kegagalan log menggagalkan transaksi — itu ditangani dengan menulis log di transaksi yang sama namun memperlakukan kegagalannya sebagai alarm, bukan rollback.
+
+**SDD-EVT-10 — terlihat, tanpa tombol.** Kegagalan yang §6 takutkan berbunyi tepat: *efek hilang diam-diam*. Yang menyembuhkannya adalah visibilitas, dan visibilitas saja.
+
+Tombol proses ulang menjawab pertanyaan yang berbeda — bukan "apakah ada yang gagal" melainkan "siapa yang memperbaikinya" — dan menjawabnya untuk pihak yang paling tidak siap menjawab. Event mencapai dead letter setelah lima percobaan gagal berturut-turut (§4.2); itu bukan gangguan sesaat melainkan cacat yang menuntut diagnosis. Administrator sistem ini adalah staf sekolah, bukan operator. Tombol yang menjalankan ulang sesuatu yang sebabnya belum diperbaiki akan gagal untuk keenam kalinya, dan yang tertinggal hanyalah keyakinan keliru bahwa tindakan sudah diambil.
+
+Menunda antarmuka tulis juga menjaga ongkosnya tetap jujur. Halaman pemrosesan ulang menuntut permission baru, endpoint tulis baru, aksi activity log baru, dan satu halaman `P-xx` baru — seluruhnya **requirement baru di PRD**, bukan keputusan berkas ini. Kartu baca-saja tidak menuntut satu pun di antaranya: `GET /dashboard` (`M-15`) sudah mengembalikan muatan dashboard menurut role, sehingga yang bertambah hanyalah satu baris pada spesifikasi antarmuka 19.2.
+
+Bila kelak pemrosesan ulang mandiri memang diperlukan, ia masuk lewat pintu yang benar — sebagai requirement PRD dengan permission-nya sendiri — bukan sebagai tombol yang tumbuh diam-diam di sisi kartu.
 
 ---
 
@@ -217,7 +226,7 @@ Sebaliknya, langkah 4 dan 5 tidak boleh dipisah ke worker dengan alasan apa pun:
 | Dispatcher tertinggal (backlog) | Notifikasi terlambat melewati `NFR-P-12` (60 detik) | Metrik kedalaman outbox + alarm (`OBS-05`); dispatcher berjalan tiap beberapa detik |
 | Handler lambat memblokir antrean per agregat | Event lain di agregat sama tertahan | Handler wajib ringan; kerja berat didorong ke antrean tersendiri |
 | Transaksi sinkron terlalu panjang | Kunci baris tertahan, throughput turun | Efek sinkron dibatasi daftar di §3; penambahan memerlukan pembaruan berkas ini |
-| Event dead-letter tidak diperhatikan | Efek hilang diam-diam | Alarm wajib; dead-letter tampil pada dashboard Administrator (`OBS-06`) |
+| Event dead-letter tidak diperhatikan | Efek hilang diam-diam | Alarm wajib (`OBS-05`) dengan penerima dan runbook (`SDD-OBS-07`); jumlah dan daftar ringkasnya tampil sebagai kartu Dashboard Administrator (`SDD-EVT-10`, 19.2). Rujukan `OBS-06` pada versi sebelumnya keliru — `OBS-06` adalah pemeriksaan `/health`, bukan permukaan dead letter |
 | Payload minimum menyebabkan konsumen membaca data yang sudah berubah | Notifikasi menyebut kondisi terkini, bukan saat kejadian | Fakta yang penting bagi isi notifikasi (mis. jumlah hari terlambat) disertakan di payload |
 
 ---
@@ -236,4 +245,5 @@ Sebaliknya, langkah 4 dan 5 tidak boleh dipisah ke worker dengan alasan apa pun:
 | ID | Pertanyaan |
 |---|---|
 | **TBD-EVT-A** | Retensi baris `event_outbox` yang sudah diproses. Berkas ini menyarankan mengikuti pola retensi umum, tetapi durasinya belum ditetapkan — berkaitan dengan **TBD-AVL-A**. |
-| **TBD-EVT-B** | Apakah dead-letter memerlukan antarmuka pemrosesan ulang manual di menu Administrator, atau cukup ditangani lewat akses operasional. Berdampak pada lingkup M-20/dashboard Administrator. |
+
+**Tertutup 25 Agustus 2026:** `TBD-EVT-B` → `SDD-EVT-10`.

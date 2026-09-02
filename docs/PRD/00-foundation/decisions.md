@@ -47,5 +47,6 @@ Seluruh keputusan berikut telah dikonfirmasi oleh stakeholder dan menjadi dasar 
 | 26 | Penempatan M-22 | Modul Bahan dikerjakan pada **Phase 05**, setelah lokasi, approval, QR, pengadaan, dan opname tersedia |
 | 27 | Pengadaan Bahan | Satu alur pengadaan untuk kedua domain. Setiap baris item usulan menyatakan **jenisnya (Aset atau Bahan)**. Item berjenis Aset menghasilkan record aset per unit (`BR-064`); item berjenis Bahan **menambah saldo** lewat transaksi penerimaan bahan, bukan record aset. Menutup `TBD-BHN-A` |
 | 28 | Milestone M-22 | Masuk **`M4`**, yang diperluas dari *Kontrol & Siklus Hidup Aset* menjadi **Kontrol & Siklus Hidup Sarpras** — sejalan dengan penempatan Phase 05 yang menutup `M4` |
+| 29 | Residensi Data & Kepatuhan | **Kepatuhan formal terbatas pada UU PDP No. 27/2022** — tidak ada standar dinas pendidikan atau yayasan tambahan. Menyertainya satu batasan mengikat: **seluruh data sistem, termasuk log aplikasi dan cadangan, wajib berada pada wilayah Indonesia**. Batasan ini berlaku bagi setiap layanan pihak ketiga yang menerima data dan menjadi kriteria seleksi, bukan pemeriksaan sesudahnya. Menutup `TBD-SEC-B` · `SDD-SEC-10` |
 
 ---

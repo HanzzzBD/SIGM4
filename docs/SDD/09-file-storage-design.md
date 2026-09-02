@@ -31,6 +31,7 @@
 | **SDD-FS-07** | Turunan gambar (thumbnail) dibuat asinkron untuk **daftar dan katalog**; berkas asli tetap disimpan utuh. |
 | **SDD-FS-08** | Bucket bersifat **privat sepenuhnya**. Tidak ada objek yang dapat diakses tanpa tanda tangan, termasuk foto pada halaman publik QR — karena halaman itu memang tidak menampilkan foto (`DP-05`). |
 | **SDD-FS-09** | Berkas yatim (terunggah tetapi tidak pernah ditautkan ke entitas) dibersihkan job harian setelah **24 jam**. |
+| **SDD-FS-11** | Foto berwajah **tidak ikut dipseudonimkan maupun dihapus** saat `DP-04` dilayani (`DP-05a`). Tidak ada pipeline pengaburan wajah di sistem ini. Perlindungan foto tetap bersandar sepenuhnya pada `DP-05`: permission eksplisit, URL bertanda tangan berbatas waktu, dan larangan mutlak muncul di halaman publik QR (`SDD-FS-08`). Menutup `TBD-FS-A` (keputusan pemilik produk, 25 Agustus 2026; `UXD-14`). |
 
 ---
 
@@ -45,6 +46,14 @@
 **SDD-FS-06 — kunci buram.** Nama berkas asli sering memuat informasi (`Faktur-Proyektor-Lab2-2026.pdf`) dan nama orang. Karena bucket privat, kebocoran nama objek seharusnya tidak terjadi — tetapi kunci buram menghilangkan seluruh kelas risiko itu, termasuk dari log akses object storage.
 
 **SDD-FS-07 — thumbnail asinkron.** Katalog aset dan daftar tiket kerusakan menampilkan banyak gambar sekaligus. Menyalurkan foto 1600 px (`MOB-MED-01`) untuk setiap kartu akan melanggar anggaran `NFR-P-03` (LCP ≤ 2,5 detik pada 4G).
+
+**SDD-FS-11 — foto mengikuti penalaran `DP-04`, bukan mengecualikannya.** `DP-04` sudah menghadapi pertanyaan yang sama untuk data teks dan menjawabnya: permintaan penghapusan dilayani lewat **pseudonimisasi**, bukan penghapusan, justru agar catatan transaksi bertahan bagi audit sekolah (`BR-008`, `AL-03`). Memperlakukan foto secara berbeda akan membalik penalaran itu pada satu jenis data saja, tanpa alasan yang membedakannya.
+
+Yang membuat foto terasa berbeda adalah bahwa wajah tidak dapat dipseudonimkan — ia hanya dapat dikaburkan atau dihapus, dan keduanya merusak. Foto serah terima diwajibkan `BR-027` **karena** ia bukti; menghapusnya berarti menghilangkan satu-satunya rekaman visual pada peminjaman yang berujung denda atau ganti rugi, tepat pada kasus yang paling membutuhkannya.
+
+Mengaburkan wajah ditolak dengan alasan yang berbeda dan sama beratnya. Ia menuntut pustaka deteksi wajah — komponen baru yang harus dipelihara sekolah, pada host yang [SDD-16 §4.2](16-infrastructure-deployment.md) sudah catat padat — dan operasinya tidak dapat dibalik. Deteksi yang meleset menghasilkan dua kegagalan yang sama-sama senyap: wajah yang lolos, atau bukti yang rusak. Tidak satu pun menghasilkan galat.
+
+Yang **wajib** menyertai keputusan ini adalah keterbukaan. `DP-05a` mengharuskan hal ini dinyatakan pada Pemberitahuan Privasi, sehingga subjek data mengetahui batas hak penghapusannya **sebelum** memberikan data — bukan menemukannya saat permintaan penghapusan dilayani sebagian. Sebuah pengecualian yang tidak diumumkan bukanlah kebijakan, melainkan kelalaian yang kebetulan terdokumentasi.
 
 ---
 
@@ -146,7 +155,7 @@ Dibuat worker saat `FileUploaded` untuk MIME gambar. Kegagalan pembuatan turunan
 | Entitas induk dihapuskan | Berkas **tetap** disimpan — Bab 11.4 mengikat masa hidup berkas pada entitas induk yang sendiri tidak pernah dihapus permanen (`BR-008`) |
 | Dokumen dihapus pengguna | `stored_files` ditandai, objek dipertahankan, penghapusan tercatat (`FR-06.1 A2`) |
 | Berkas `INFECTED` | Objek dihapus segera; baris dipertahankan sebagai jejak |
-| Pseudonimisasi subjek data (`DP-04`) | Foto yang memuat wajah subjek ditinjau kasus per kasus — lihat **TBD-FS-A** |
+| Pseudonimisasi subjek data (`DP-04`) | Foto **tidak disentuh** — tidak dikaburkan, tidak dihapus (`DP-05a`, `SDD-FS-11`). Yang dipseudonimkan adalah kolom identitas pada `users`; foto tetap menjadi bukti, dilindungi `DP-05` |
 
 ---
 
@@ -184,5 +193,6 @@ Dibuat worker saat `FileUploaded` untuk MIME gambar. Kegagalan pembuatan turunan
 
 | ID | Pertanyaan |
 |---|---|
-| **TBD-FS-A** | Perlakuan foto yang memuat wajah saat permintaan penghapusan data pribadi (`DP-04`). Pseudonimisasi identitas tidak menghapus wajah di foto bukti serah terima/kerusakan yang menjadi dokumen pertanggungjawaban. Perlu kebijakan: pertahankan sebagai bukti, kaburkan, atau hapus. |
 | **TBD-FS-B** | Apakah berkas perlu disalin ke penyimpanan dingin setelah entitasnya tidak aktif bertahun-tahun, atau cukup satu kelas penyimpanan. Berkaitan dengan estimasi biaya (PRD 27.9). |
+
+**Tertutup 25 Agustus 2026:** `TBD-FS-A` → `SDD-FS-11` · `DP-05a`.

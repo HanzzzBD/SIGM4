@@ -10,6 +10,8 @@ Aturan kepemilikan bila sebuah baris berlaku untuk >1 modul:
 Keputusan kepemilikan bersama ini DILAPORKAN pada audit Phase 2, bukan disembunyikan.
 """
 
+import os
+
 # slug modul -> (nomor modul, judul, judul PRD asli)
 MODULES = [
     ("m01-auth",              "M-01", "Autentikasi & Manajemen Akun"),
@@ -266,39 +268,45 @@ DEPENDS_ON = {
     "m21-disposal": ["m04-assets", "m10-approval", "m13-audit-stocktake"],
 }
 
-# ── Catatan kepemilikan bersama yang WAJIB muncul di "Open Issues" ────────────
-OPEN_ISSUES = {
-    "m07-reservation-room": [
-        "Endpoint `/reservations`, `/reservations/{id}`, dan `/reservations/{id}/cancel` melayani "
-        "reservasi ruangan **dan** barang. Untuk menjaga aturan satu-pemilik, seluruh baris tersebut "
-        "ditempatkan di modul ini dan dirujuk oleh M-08. Perlu keputusan apakah pemisahan endpoint "
-        "per jenis reservasi diinginkan pada tahap desain teknis (SDD).",
-        "BR-017 … BR-025 berlaku untuk reservasi ruangan maupun barang; dimiliki modul ini dan "
-        "dirujuk oleh M-08.",
-    ],
-    "m08-reservation-item": [
-        "Modul ini memakai endpoint dan Business Rules yang dimiliki M-07 (lihat Related Modules). "
-        "Tidak ada salinan di berkas ini — perubahan aturan dilakukan di M-07.",
-    ],
-    "m09-loans": [
-        "BR-030 (pemblokiran pemohon) ditegakkan saat pengajuan reservasi di M-07/M-08, "
-        "namun aturannya dimiliki modul ini karena bersumber dari kewajiban peminjaman.",
-    ],
-    "m11-damage-reports": [
-        "BR-032 (barang kembali rusak menghasilkan tiket otomatis) dimiliki M-09; "
-        "modul ini adalah konsumennya.",
-    ],
-    "m15-dashboard": [
-        "Rincian isi tiap kartu dashboard berada di `04-frontend/dashboards.md` karena bersifat "
-        "spesifikasi antarmuka, bukan aturan bisnis.",
-    ],
-    "m17-notifications": [
-        "Katalog notifikasi NT-01…NT-51 tidak berada di modul ini; setiap baris dimiliki modul "
-        "yang menerbitkan event-nya. Indeks lengkap digenerate di "
-        "`03-architecture/notifications-index.md`.",
-    ],
-    "m18-activity-log": [
-        "Daftar aksi yang wajib dicatat tersebar ke modul penerbitnya. Indeks lengkap digenerate "
-        "di `03-architecture/activity-log-index.md`.",
-    ],
-}
+# ── Catatan kepemilikan bersama pada bagian "Open Issues" ────────────────────
+# TIDAK disalin di sini. Pemilik setiap catatan adalah berkas modulnya sendiri
+# (docs/PRD/02-modules/<slug>.md bagian 15), sesuai aturan satu-baris-satu-pemilik.
+# Salinan hardcoded yang pernah ada di sini menyimpang dari sumbernya — teksnya
+# masih menyebut NT-01…NT-48 dan istilah "barang" setelah M-22 mengubah keduanya —
+# sehingga isinya kini dibaca langsung dari berkas modul saat skrip dijalankan.
+
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODULE_DIR = os.path.join(_REPO_ROOT, "docs", "PRD", "02-modules")
+_SECTION_OPEN_ISSUES = "## 15. Open Issues"
+
+
+def load_open_issues(module_dir=MODULE_DIR):
+    """Baca bagian 15 tiap berkas modul menjadi {slug: [isu, ...]}.
+
+    Bagian yang berisi "_Tidak ada isu terbuka._" menghasilkan entri kosong;
+    butir yang membungkus ke baris berikutnya disambung kembali menjadi satu isu.
+    """
+    issues = {}
+    for slug, _num, _title in MODULES:
+        path = os.path.join(module_dir, slug + ".md")
+        if not os.path.exists(path):
+            continue
+        with open(path, encoding="utf-8") as fh:
+            lines = fh.read().splitlines()
+        if _SECTION_OPEN_ISSUES not in lines:
+            continue
+        found = []
+        for line in lines[lines.index(_SECTION_OPEN_ISSUES) + 1:]:
+            stripped = line.strip()
+            if stripped.startswith("## ") or stripped == "---":
+                break
+            if stripped.startswith("- "):
+                found.append(stripped[2:].strip())
+            elif found and stripped:
+                found[-1] += " " + stripped
+        if found:
+            issues[slug] = found
+    return issues
+
+
+OPEN_ISSUES = load_open_issues()

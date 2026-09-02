@@ -135,7 +135,7 @@ Angka **21 modul** dan **152 PR** tertanam di sekitar 20 tempat dan seluruhnya s
 | `TBD-BHN-B` | ✅ Tertutup | Satuan bahan: master data atau teks bebas | Master `material_units` dikelola Administrator (`FR-20.1`, `BR-084`) |
 | `TBD-BHN-C` | ✅ Tertutup | Kategori bahan berdiri sendiri atau memakai ulang kategori aset | Master `material_categories` tersendiri |
 | `TBD-BHN-D` | ✅ Tertutup | Opname bahan perlu persetujuan Pimpinan | Ya — `BR-094`, sejajar `BR-057` |
-| **`TBD-BHN-E`** | ⏳ **Terbuka** | Katalog tool chatbot seluruhnya berdomain Aset. Apakah chatbot perlu tool bahan (saldo, stok menipis)? Menambah tool adalah **requirement baru** di PRD, bukan keputusan SDD | Menunggu keputusan pemilik produk |
+| **`TBD-BHN-E`** | ✅ **Tertutup 25 Agustus 2026** | Katalog tool chatbot seluruhnya berdomain Aset. Apakah chatbot perlu tool bahan (saldo, stok menipis)? | **Ya** — `get_material_stock` dan `get_low_stock_materials` masuk 22.3, menjaga kesejajaran Bahan dengan Aset yang `UXD-16` tetapkan. Diimplementasikan `PR-05-25` di Phase 05, bukan Phase 03, karena M-22 baru hadir di sana (Keputusan #26) |
 
 TBD ini adalah **keputusan produk**, bukan keputusan desain — tidak boleh diputuskan sendiri di tingkat SDD.
 

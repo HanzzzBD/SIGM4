@@ -25,6 +25,7 @@
 | Distribusi Role | Grafik donat | Komposisi pengguna per role |
 | Status Konfigurasi | Kartu status | Ringkasan approval rules aktif, parameter yang belum diisi |
 | Kesehatan Integrasi | Kartu status | Status layanan LLM dan FCM (tersedia/gangguan) |
+| Efek Tertunda Gagal | Kartu peringatan | Jumlah event *dead letter* dan daftar lima teratas (jenis event, waktu, galat terakhir). **Baca saja** — pemrosesan ulang tidak tersedia dari antarmuka (`SDD-EVT-10`). Kartu tidak dirender bila jumlahnya nol |
 
 ## 19.3 Dashboard Petugas Sarana Prasarana
 

@@ -41,6 +41,7 @@ Kegagalan memisahkan keduanya adalah penyebab paling umum kebocoran lintas hak a
 | **SDD-AUTH-08** | Ketiadaan hak akses terhadap objek yang ada dan objek yang tidak ada menghasilkan **respons yang sama**: `403` tanpa membocorkan keberadaan data (17.5 poin 3). |
 | **SDD-AUTH-09** | Gerbang sesi dijalankan berurutan sebagai middleware: `authenticate` → `mustChangePassword` → `twoFactorVerified` → `permission` → `scope`. Urutan ini tetap dan diuji. |
 | **SDD-AUTH-10** | Permission inti bertanda 🔒 (Lampiran C) ditolak pencabutannya oleh **validator domain**, bukan hanya oleh UI (`FR-02.2 A1`). |
+| **SDD-AUTH-11** | **Uji tiga syarat bagi mekanisme teknis.** Sebuah mekanisme boleh ditetapkan pada tingkat SDD tanpa dianggap requirement baru **hanya bila ketiganya terpenuhi**: (1) tidak mengubah perilaku yang dapat diamati pengguna mana pun; (2) tidak menambah atau mengubah business rule, permission, endpoint publik, maupun aksi activity log; (3) semata menjadi **cara** memenuhi requirement yang sudah ada. Gagal pada satu syarat berarti wajib dinaikkan ke PRD lebih dulu. `role_version` (`SDD-AUTH-04`) lolos ketiganya. Menutup `TBD-AUTH-C` (keputusan pemilik produk, 25 Agustus 2026). |
 
 ---
 
@@ -61,6 +62,14 @@ Konsekuensinya diterima secara eksplisit: **akses langsung ke basis data melewat
 **SDD-AUTH-06 — allow-list, bukan penghapusan properti.** Menghapus field setelah kueri berarti data sensitif sempat berada di memori proses dan berpotensi masuk log atau pesan galat. Allow-list memastikan field yang tidak diizinkan tidak pernah ikut ter-*select*, sejalan dengan `NFR-S-10` dan `DP-03`.
 
 **SDD-AUTH-07 — chatbot memakai repository yang sama.** Ini penerapan langsung `BR-076`. Bila tool AI punya kueri sendiri, ia menjadi jalur kedua yang harus diaudit terpisah — dan `RS-10` menyatakan kebocoran lewat chatbot berdampak tinggi. Dengan memakai repository yang sama, setiap perbaikan scope otomatis berlaku untuk chatbot.
+
+**SDD-AUTH-11 — uji tiga syarat, bukan izin terbuka.** Pertanyaan `TBD-AUTH-C` tampak menyangkut satu kolom, tetapi jawabannya berlaku 163 kali. Menjawab "boleh" tanpa kriteria akan dipakai sebagai celah; menjawab "tidak boleh" akan memaksa setiap indeks, kunci cache, dan kolom versi melewati penyuntingan PRD — dan pada akhirnya PRD akan memuat rincian implementasi yang justru bukan miliknya.
+
+Ketiga syarat itu dipilih karena masing-masing menjaga satu batas yang berbeda. Syarat (1) menjaga PRD sebagai satu-satunya sumber perilaku yang dijanjikan kepada pengguna. Syarat (2) menjaga empat katalog yang aturan satu-pemilik lindungi — business rule, permission, endpoint, aksi log — dari pertumbuhan diam-diam di luar berkas modul. Syarat (3) menutup celah terakhir: mekanisme yang tidak melayani requirement mana pun bukanlah mekanisme teknis, melainkan fitur yang belum diminta.
+
+`role_version` diuji dengan ketiganya dan lolos. Pengguna tidak pernah melihatnya; ia tidak menambah baris pada satu pun dari empat katalog; dan ia ada semata agar `PM-05` — pembatalan cache permission — terpenuhi lebih tegas daripada sekadar menunggu TTL 60 detik habis. Yang ditetapkan PRD adalah bahwa perubahan matriks harus berlaku cepat; bagaimana caranya adalah milik berkas ini.
+
+Uji ini dijalankan **sebelum** mekanisme ditulis, dan hasilnya disebut pada deskripsi PR yang memperkenalkannya. Uji yang dijalankan sesudah kode ada akan selalu lulus.
 
 ---
 
@@ -248,4 +257,5 @@ if (role.isAdministrator && removed.some(p => CORE_PERMISSIONS.has(p))) {
 | ID | Pertanyaan |
 |---|---|
 | **TBD-AUTH-B** | Rotasi kunci penanda tangan JWT setiap 6 bulan (`SEC-CFG-02`) memerlukan masa tumpang tindih dua kunci. Panjang masa tumpang tindih dan mekanisme distribusinya belum ditetapkan. |
-| **TBD-AUTH-C** | `role_version` (SDD-AUTH-04) adalah mekanisme baru yang tidak disebut PRD. Perlu konfirmasi bahwa penambahan kolom teknis semacam ini dapat diputuskan pada tingkat SDD tanpa dianggap perubahan requirement. |
+
+**Tertutup 25 Agustus 2026:** `TBD-AUTH-C` → `SDD-AUTH-11`.

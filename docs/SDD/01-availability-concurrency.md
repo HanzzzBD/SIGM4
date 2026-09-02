@@ -293,6 +293,7 @@ Tidak diisi sendiri. Lihat ringkasan di [`TBD-REGISTER.md`](TBD-REGISTER.md).
 | ID | Pertanyaan |
 |---|---|
 | **TBD-AVL-A** | Kebijakan arsip/partisi `booking_slots`. Slot `Released` dipertahankan (`BR-005`-turunan, analitik utilisasi `SC-05`) sehingga tabel tumbuh monoton. Perlu ditetapkan: partisi per tahun, pemindahan ke tabel arsip, atau dibiarkan hingga volume nyata terukur. |
-| **TBD-AVL-B** | Endpoint reservasi ruangan vs aset: tetap satu `/reservations` (kondisi saat ini, `M-07` pemilik) atau dipecah `/room-reservations` + `/item-reservations`. Ditunda ke sini sesuai keputusan sebelumnya. Berdampak pada kepemilikan baris di `M-07`/`M-08`. |
 | **TBD-AVL-C** | Ukuran connection pool per instance API dan worker. Tidak ada angka di PRD; bergantung pada batas koneksi PostgreSQL yang disediakan penyedia. |
 | **TBD-AVL-D** | TTL cache hasil ketersediaan. `AV-04` menetapkan batas atas 30 detik, tetapi nilai operasionalnya (0 = tanpa cache, atau 10–30 detik) belum ditetapkan. |
+
+**Tertutup 25 Agustus 2026 — `TBD-AVL-B`.** Endpoint reservasi **tetap satu rumpun `/reservations`**, dimiliki `M-07` dan dirujuk `M-08` (`UXD-15`, keputusan pemilik produk). Pemisahan `/room-reservations` + `/item-reservations` ditolak karena `BR-017` … `BR-025` berlaku identik bagi kedua jenis: memecah permukaan API di atas perilaku yang sama menghasilkan dua kontrak yang wajib dijaga seragam selamanya, tanpa satu pun requirement yang meminta perbedaannya. Perbedaan jenis diserap **di dalam** muatan permintaan, sebagaimana `SDD-AVL-04` sudah memperlakukan `booking_slots` secara polimorfik. Katalog endpoint tidak berubah; `PR-03-08` dan `PR-04-01` berjalan sesuai rencana.

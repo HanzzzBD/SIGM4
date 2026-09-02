@@ -177,7 +177,7 @@ Aturannya: satu rilis tidak boleh memuat expand dan contract untuk kolom yang sa
 
 | Seed | Sumber kebenaran | Idempoten karena |
 |---|---|---|
-| 71 kode permission | [Lampiran C](../PRD/00-foundation/roles-permissions.md) | `ON CONFLICT (kode) DO UPDATE` |
+| 78 kode permission | [Lampiran C](../PRD/00-foundation/roles-permissions.md) | `ON CONFLICT (kode) DO UPDATE` |
 | 7 role bawaan + matriks | Bab 5 & Bab 18 | idem |
 | Aturan approval bawaan | `RE-06` — konstanta kode, bukan baris | tidak di-seed (lihat SDD-APR §4.3) |
 | `work_days` Senin–Sabtu | [Lampiran E.2](../PRD/00-foundation/conventions.md) | idem |

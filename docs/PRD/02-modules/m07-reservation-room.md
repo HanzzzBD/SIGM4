@@ -348,5 +348,5 @@ Strategi pengujian: [`../06-quality/test-strategy.md`](../06-quality/test-strate
 
 ## 15. Open Issues
 
-- Endpoint `/reservations`, `/reservations/{id}`, dan `/reservations/{id}/cancel` melayani reservasi ruangan **dan** aset. Untuk menjaga aturan satu-pemilik, seluruh baris tersebut ditempatkan di modul ini dan dirujuk oleh M-08. Perlu keputusan apakah pemisahan endpoint per jenis reservasi diinginkan pada tahap desain teknis (SDD).
+- Endpoint `/reservations`, `/reservations/{id}`, dan `/reservations/{id}/cancel` melayani reservasi ruangan **dan** aset. Untuk menjaga aturan satu-pemilik, seluruh baris tersebut ditempatkan di modul ini dan dirujuk oleh M-08. **Ditutup 25 Agustus 2026** (`TBD-AVL-B`, `UXD-15`): endpoint tetap satu rumpun `/reservations`; pemisahan per jenis tidak dilakukan karena `BR-017` … `BR-025` berlaku identik bagi kedua jenis.
 - BR-017 … BR-025 berlaku untuk reservasi ruangan maupun aset; dimiliki modul ini dan dirujuk oleh M-08.

@@ -123,9 +123,9 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | `PR-02-17` | `SlotService`: reservasi, pelepasan, aktivasi + pemetaan 409 | L | 16 | `CI-02` `CI-03`, `SDD-AVL-04/05` | 100 permintaan serentak → tepat satu berhasil |
 | `PR-02-18` | Skema approval: `approval_rules`, `instances`, `steps` + `rule_snapshot` | M | Ph01 | `FR-10.1`, Lampiran D.5, `SDD-APR-03` | Snapshot beku; perubahan aturan tidak menyentuh instance berjalan |
 | `PR-02-19` | Evaluator DSL kondisi (`RE-01` … `RE-08`) | L | 18 | Lampiran D.2, `SDD-APR-01/02` | Seluruh operator D.2 teruji, termasuk kasus batas |
-| `PR-02-20` | Resolusi approver + delegasi + fallback | M | 19 | `RE-09` … `RE-12`, `SDD-APR-04/05` | Approver nonaktif → jalur fallback (lihat **TBD-APR-A/C**) |
+| `PR-02-20` | Resolusi approver + delegasi + fallback | M | 19 | `RE-09` … `RE-13`, `SDD-APR-04/05/13/14` | Approver nonaktif → langkah dilewati beralasan `approver nonaktif`, lalu jalur fallback `RE-11`; `fallback_approver` kosong berarti Administrator |
 | `PR-02-21` | Eksekusi persetujuan + *first-responder-wins* | L | 20 | `FR-10.2`, `BR-035` … `BR-039a`, `SDD-APR-07` | Dua approver serentak → satu 200, satu 409 |
-| `PR-02-22` | SLA, pengingat, eskalasi (job terjadwal) | M | 21, Ph00 | `BR-040` … `BR-043`, `SDD-APR-06` | Perhitungan memakai jam kerja (lihat **TBD-APR-B**) |
+| `PR-02-22` | SLA, pengingat, eskalasi (job terjadwal) | M | 21, Ph00 | `BR-040` … `BR-043`, `SDD-APR-06`, `SDD-APR-15` | Perhitungan memakai jam operasional terkonfigurasi (`CAL-01`); tenggat di luar jam itu tidak bertambah |
 | `PR-02-23` | Riwayat & pelacakan persetujuan | S | 21 | `FR-10.3` | Linimasa menampilkan seluruh langkah + alasan |
 | `PR-02-24` | Antarmuka konfigurasi approval rule + pratinjau | M | 19 | `FR-10.1`, `RE-01` | Pratinjau menunjukkan jalur yang akan terpilih |
 | `PR-02-25` | Skema notifikasi + penerbitan dari event domain | M | Ph00 | `FR-17.1`, `SDD-NTF-01/02` | Notifikasi terbit hanya setelah transaksi commit |
@@ -181,10 +181,10 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | Risiko | Dampak | Mitigasi | Rujukan |
 |---|---|---|---|
 | Mesin approval dibangun tanpa pengaju nyata sehingga celahnya baru terlihat di Phase 03 | Kerja ulang pada modul pengaju | Uji integrasi memakai *pengaju tiruan* yang menjalankan seluruh cabang DSL | `RS-04` |
-| **TBD-APR-A/B/C** belum terjawab saat `PR-02-20`/`PR-02-22` dimulai | Dua PR terhenti | Ketiganya kelompok A — wajib dijawab **sebelum** Phase 02 mulai; tercatat sebagai blocker phase | TBD-REGISTER A |
+| ~~`TBD-APR-A/B/C` belum terjawab~~ | — | ✅ **Tertutup 25 Agustus 2026** — `SDD-APR-13` · `SDD-APR-14` · `SDD-APR-15` · `RE-13` | TBD-REGISTER |
 | `booking_slots` dianggap "belum perlu" lalu ditunda ke Phase 03 | Skema ketersediaan disisipkan setelah reservasi jalan — persis kegagalan yang `CI-01` cegah | Tidak dapat ditunda; termasuk gerbang keluar phase | `CI-01`, `RS-03` |
 | Deteksi pemakaian ulang refresh token memutus sesi sah karena balapan jaringan | Pengguna terlempar keluar | Tenggang idempotensi rotasi; diuji pada jaringan mobile | `SDD-SESS-05` |
-| **TBD-NTF-B** belum terjawab saat `PR-02-25` dimulai | Retensi & akses notifikasi terarsip tidak dapat diskemakan | Kelompok A — wajib dijawab sebelum Phase 02 mulai; `UXD-10` menunggu jawaban yang sama | TBD-REGISTER A |
+| ~~`TBD-NTF-B` belum terjawab~~ | — | ✅ **Tertutup 25 Agustus 2026** — `SDD-NTF-10` · `UXD-10`: arsip dibaca pemiliknya lewat filter; tabel arsip memperoleh indeks `(user_id, dibuat_pada DESC)` | TBD-REGISTER |
 
 ## 11. Rollback Strategy
 

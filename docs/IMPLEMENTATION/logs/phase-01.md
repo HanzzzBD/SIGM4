@@ -48,7 +48,7 @@ Kolom ketiga adalah yang paling berharga di seluruh log ini. Pola yang berulang 
 
 - [ ] Titik ekstensi `SL-04` — di mana ia ditinggalkan terbuka (`PR-01-13`); **ditutup di Phase 05 `PR-05-09`**
 - [ ] Migrasi `users.unit_kerja` → `work_unit_id`: tahap expand & migrate selesai; **contract ditunda ke `PR-08-11`**
-- [ ] Keputusan atas `TBD-AUTH-C` dan `TBD-EVT-B`
+- [ ] Penerapan `SDD-AUTH-11` (uji tiga syarat) dan `SDD-EVT-10` (kartu dead letter baca-saja) — keduanya ditutup 25 Agustus 2026, sebelum phase dimulai
 
 ## 6. TBD yang tertutup
 
