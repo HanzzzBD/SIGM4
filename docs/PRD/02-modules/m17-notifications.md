@@ -199,4 +199,4 @@ Strategi pengujian: [`../06-quality/test-strategy.md`](../06-quality/test-strate
 
 ## 15. Open Issues
 
-- Katalog notifikasi NT-01…NT-48 tidak berada di modul ini; setiap baris dimiliki modul yang menerbitkan event-nya. Indeks lengkap digenerate di `03-architecture/notifications-index.md`.
+- Katalog notifikasi NT-01…NT-51 tidak berada di modul ini; setiap baris dimiliki modul yang menerbitkan event-nya. Indeks lengkap digenerate di [`_generated/notifications-index.md`](../_generated/notifications-index.md).

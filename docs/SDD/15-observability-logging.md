@@ -31,6 +31,7 @@
 | **SDD-OBS-07** | Setiap alarm memiliki **penerima dan runbook** sebelum diaktifkan; alarm tanpa keduanya tidak dipasang. |
 | **SDD-OBS-08** | *Tracing* dipasang pada lima alur transaksional kritis saja, bukan seluruh endpoint (`OBS-03`). |
 | **SDD-OBS-09** | Instrumentasi memakai **OpenTelemetry** di dalam aplikasi; *backend* log, metrik, dan trace adalah **layanan terkelola tier kecil**. Activity log tidak ikut ke sana (`SDD-OBS-01`). |
+| **SDD-OBS-10** | *Backend* terkelola `SDD-OBS-09` **wajib menyimpan dan memproses data pada wilayah Indonesia** (`SDD-SEC-10`). Region diverifikasi sebelum kontrak, dinyatakan pada konfigurasi *exporter*, dan menjadi kriteria gugur pada seleksi `PR-00-06`. Penyedia tanpa region Indonesia tidak dipertimbangkan, sekuat apa pun fiturnya. |
 
 ---
 
@@ -63,6 +64,10 @@ Menyimpan activity log di agregator akan melanggar `AL-09` (retensi) dan `AL-03`
 **Backend terkelola dipilih atas dasar kapasitas operasional, bukan kemampuan teknis.** Stack swa-kelola (Prometheus + Grafana + Loki + Tempo) memenuhi seluruh kebutuhan §4.3–§4.7 dan punya keunggulan nyata: tidak ada data yang meninggalkan infrastruktur sekolah, dan tidak ada biaya per-GB. Ia ditolak karena menambahkan empat layanan pada host yang topologinya sudah padat ([SDD-16 §4.2](16-infrastructure-deployment.md)), menjadikan retensi §4.7 sebagai persoalan disk sekolah, dan membuat alarm "disk > 80%" ikut menjaga sistem pemantauannya sendiri — semuanya pada pihak yang [SDD-16 §6](16-infrastructure-deployment.md) sudah tandai sebagai risiko dengan mitigasi berupa pelatihan dan hypercare berbatas waktu. Perlu dicatat pula bahwa swa-kelola penuh tetap tidak menghilangkan komponen luar: `OBS-04` menuntut pemantauan *uptime* **eksternal** atas `/health`, karena pemantau yang berada di host yang sama akan mati bersama host yang dipantaunya.
 
 Yang **tidak** ikut ke backend mana pun adalah activity log. `SDD-OBS-01` sudah menetapkannya sebagai sistem terpisah di PostgreSQL berantai hash; memindahkannya ke agregator akan melanggar `AL-09` dan `AL-03`. Keputusan ini karena itu hanya menyangkut log aplikasi, metrik, dan trace.
+
+**SDD-OBS-10 — residensi sebagai kriteria gugur, bukan preferensi.** `TBD-SEC-B` ditutup dengan cakupan kepatuhan yang sempit (UU PDP saja) tetapi residensi yang ketat — `SDD-SEC-10`. Bagi berkas ini akibatnya tunggal dan tegas: pilihan *backend* terkelola `SDD-OBS-09` bertahan, ruang kandidatnya yang menyempit.
+
+Menyatakannya sebagai kriteria **gugur** disengaja. Residensi yang diperlakukan sebagai preferensi akan kalah oleh perbandingan fitur pada saat seleksi, lalu muncul kembali sebagai temuan audit setelah data mengalir — dan pada titik itu perpindahan berarti kehilangan riwayat log, metrik, dan trace, bukan sekadar mengganti *endpoint*. Netralitas OpenTelemetry (`SDD-OBS-09`) menurunkan biaya perpindahan kode menjadi nol, tetapi tidak menyelamatkan datanya.
 
 ---
 
@@ -125,7 +130,8 @@ http_errors_total{class,route,error_code}
 | `scheduled_job_failures_total{job}` | `JOB-06` |
 | `file_scan_pending_count` | Berkas tertahan AV (`NFR-S-18`) |
 | `chat_tokens_total{user}` / `chat_cost_daily` | `AI-CTL-08` |
-| `chat_cache_read_ratio` | Bukti caching aktif (`AI-CTL-01`) — nol berarti caching mati diam-diam |
+| `chat_cache_read_ratio` | Bukti caching aktif (`AI-CTL-01`), dari `usage.total_cached_tokens` — nol berarti caching mati diam-diam |
+| `chat_thought_tokens_total` | Bukti `thinking_level` masih `"minimal"` (`SDD-AI-02`) — lonjakan berarti permintaan kembali ke bawaan `"medium"` |
 | `sse_connections_active` | Beban notifikasi real-time (`NTF-03`) |
 | `activity_log_chain_verified` | Integritas rantai hash (`NFR-S-03d`) |
 | `login_failures_total`, `accounts_locked_total` | `NFR-S-16` |
@@ -183,7 +189,7 @@ GET /health          → ringkasan untuk kartu Kesehatan Integrasi (OBS-06)
 | Sertifikat TLS | < 14 hari | Tinggi | Perbarui |
 | Kegagalan tulis activity log | Sekali | Kritis | `AL-08` — transaksi lanjut tapi jejak hilang |
 | Rantai hash log terputus | Sekali | Kritis | Dugaan manipulasi; eskalasi ke Kepala Sekolah |
-| Biaya harian Claude API | > ambang | Sedang | Tinjau pemakaian; pertimbangkan pengalih (`AI-CTL-09`) |
+| Biaya harian Gemini API | > ambang | Sedang | Tinjau pemakaian; pertimbangkan pengalih (`AI-CTL-09`) |
 | `chat_cache_read_ratio` = 0 | 1 jam | Sedang | Prefiks statis berubah? cache mati (`AI-CTL-01`) |
 | Break-glass dijalankan | Sekali | Kritis | Verifikasi otorisasi tertulis (`FR-01.6`) |
 | Lonjakan login gagal | > 50/menit | Tinggi | Dugaan credential stuffing |
@@ -207,9 +213,9 @@ Ketiga sistem pertama dikorelasikan lewat `request_id`; activity log memuat `req
 - `request_id` menjadi field wajib di banyak tempat, termasuk baris outbox dan konteks job — pengabaiannya memutus penelusuran.
 - Alarm memerlukan penerima yang ditetapkan sebelum go-live (`OBS-07`); tanpa itu, gerbang rilis tidak dapat dinyatakan lulus.
 - Metrik `chat_cache_read_ratio` mengubah `AI-CTL-01` dari niat menjadi sesuatu yang terpantau — kegagalan caching tidak lagi tak terlihat.
-- **Log aplikasi meninggalkan infrastruktur sekolah** (`SDD-OBS-09`). Akibatnya *redaction* di formatter (`SDD-OBS-04`) naik status dari higiene menjadi **kontrol kepatuhan**: daftar tolak §4.2 dan pengujiannya menjadi syarat, bukan praktik baik. **TBD-SEC-B** (kepatuhan formal di luar UU PDP) karena itu wajib dijawab **sebelum** vendor dipilih, bukan sesudahnya.
-- Bila jawaban TBD-SEC-B melarang data keluar premis, yang berubah hanya backend — instrumentasi OpenTelemetry tidak perlu ditulis ulang, dan stack swa-kelola menjadi jalur cadangan dengan biaya perpindahan yang kecil.
-- Retensi §4.7 (log 30 hari, metrik 90 hari mentah + 1 tahun teragregasi, trace 7 hari) menjadi parameter langganan, bukan kapasitas disk — ia berpindah dari risiko operasional menjadi baris biaya pada PRD 27.9, dan ikut bergantung pada **TBD-INF-A**.
+- **Log aplikasi meninggalkan infrastruktur sekolah** (`SDD-OBS-09`) tetapi **tidak meninggalkan wilayah Indonesia** (`SDD-OBS-10`). *Redaction* di formatter (`SDD-OBS-04`) tetap berstatus **kontrol kepatuhan**, bukan higiene: daftar tolak §4.2 dan pengujiannya adalah syarat. Residensi menetapkan di mana data boleh berada; redaction menetapkan apa yang boleh ikut — keduanya diperlukan.
+- `TBD-SEC-B` **tertutup 25 Agustus 2026**: data tidak dilarang keluar premis, hanya dilarang keluar Indonesia. Stack swa-kelola (Prometheus + Grafana + Loki + Tempo) karena itu tetap menjadi jalur cadangan yang sah — bukan karena kepatuhan menuntutnya, melainkan bila tidak ada penyedia terkelola ber-region Indonesia yang memenuhi §4.3–§4.7 dengan harga yang wajar. Biaya perpindahannya tetap kecil berkat netralitas OpenTelemetry.
+- Retensi §4.7 (log 30 hari, metrik 90 hari mentah + 1 tahun teragregasi, trace 7 hari) menjadi parameter langganan, bukan kapasitas disk — ia berpindah dari risiko operasional menjadi baris biaya pada PRD 27.9. `TBD-INF-A` **tertutup 25 Agustus 2026** (`SDD-INF-11`), sehingga yang tersisa adalah angka langganannya, bukan bentuk penyediaannya.
 - `OBS-04` tetap memerlukan pemantauan *uptime* eksternal; pada backend terkelola umumnya tercakup, tetapi keberadaannya harus diverifikasi saat vendor dipilih, bukan diasumsikan.
 
 ---
@@ -240,4 +246,5 @@ Ketiga sistem pertama dikorelasikan lewat `request_id`; activity log memuat `req
 | ID | Pertanyaan |
 |---|---|
 | **TBD-OBS-B** | Penerima alarm (*on-call*) dan jalur eskalasinya belum ditetapkan — `OBS-07` mewajibkannya sebelum go-live. Ini keputusan organisasi sekolah, bukan teknis. |
-| **TBD-EVT-B** *(dari SDD-07)* | Apakah dead letter memerlukan antarmuka pemrosesan ulang di menu Administrator, atau cukup ditangani lewat akses operasional. |
+
+**Tertutup 25 Agustus 2026:** `TBD-EVT-B` → `SDD-EVT-10` (kartu baca-saja pada Dashboard Administrator; pemrosesan ulang tetap operasional).

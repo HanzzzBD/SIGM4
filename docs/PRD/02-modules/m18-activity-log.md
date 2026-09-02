@@ -157,4 +157,4 @@ _Tidak ada._
 
 ## 15. Open Issues
 
-- Daftar aksi yang wajib dicatat tersebar ke modul penerbitnya. Indeks lengkap digenerate di `03-architecture/activity-log-index.md`.
+- Daftar aksi yang wajib dicatat tersebar ke modul penerbitnya. Indeks lengkap digenerate di [`_generated/activity-log-index.md`](../_generated/activity-log-index.md).

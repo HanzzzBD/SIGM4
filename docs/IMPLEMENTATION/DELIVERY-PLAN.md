@@ -21,7 +21,7 @@ Urutan phase dan graf dependensinya ada di [`ROADMAP.md`](ROADMAP.md) dan tidak 
 | 06 | 1 | 10 | M–L | Satu modul, ketergantungan baca ke seluruh sistem |
 | 07 | — | 14 | M | Integrasi & UAT; banyak aktivitas non-PR |
 | 08 | — | 15 | S–M | Pengerasan; banyak aktivitas non-PR |
-| **Total** | **22** | **162** | | |
+| **Total** | **22** | **163** | | |
 
 Skala kompleksitas PR mengikuti [`templates/PHASE-TEMPLATE.md`](templates/PHASE-TEMPLATE.md): **S** ≤ 200 baris berubah · **M** ≤ 400 · **L** > 400 dan wajib disertai alasan di deskripsi PR.
 

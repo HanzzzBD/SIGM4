@@ -49,10 +49,10 @@ Berkas pusat berikut adalah **indeks yang digenerate** dari modul, bukan salinan
 
 | Indeks | Digenerate dari |
 |---|---|
-| [`03-architecture/business-rules-index.md`](_generated/business-rules-index.md) | bagian 6 tiap modul |
-| [`03-architecture/api-index.md`](_generated/api-index.md) | bagian 7 tiap modul |
-| [`03-architecture/notifications-index.md`](_generated/notifications-index.md) | bagian 9 tiap modul |
-| [`03-architecture/activity-log-index.md`](_generated/activity-log-index.md) | bagian 11 tiap modul |
+| [`_generated/business-rules-index.md`](_generated/business-rules-index.md) | bagian 6 tiap modul |
+| [`_generated/api-index.md`](_generated/api-index.md) | bagian 7 tiap modul |
+| [`_generated/notifications-index.md`](_generated/notifications-index.md) | bagian 9 tiap modul |
+| [`_generated/activity-log-index.md`](_generated/activity-log-index.md) | bagian 11 tiap modul |
 
 Bila sebuah aturan berlaku bagi beberapa modul, pemiliknya tetap satu; modul lain merujuknya lewat ID pada bagian **Related Modules**, dan kepemilikan bersama itu dicatat terbuka pada **Open Issues**.
 

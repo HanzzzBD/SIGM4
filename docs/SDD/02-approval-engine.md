@@ -35,6 +35,9 @@ Satu mesin melayani **lima** jenis pengajuan. Tidak boleh ada cabang khusus per 
 | **SDD-APR-10** | Endpoint pratinjau (`RE-07`) memanggil **evaluator yang sama persis**. Dilarang ada implementasi kedua untuk pratinjau. |
 | **SDD-APR-11** | Ketersediaan objek diverifikasi ulang saat keputusan akhir (`BR-043`) dengan **mengunci** slot terkait, bukan sekadar membacanya. |
 | **SDD-APR-12** | Langkah yang dilewati (`BR-039`) tetap ditulis sebagai baris `approval_steps` berstatus `Dilewati` beserta alasannya — bukan dihapus. |
+| **SDD-APR-13** | `fallback_approver` adalah field **opsional tingkat aturan** pada skema (`RE-11`, Lampiran D.5), bukan field tingkat langkah. Ketiadaannya berarti role Administrator — diselesaikan **saat pembentukan langkah**, bukan saat pembacaan. Menutup `TBD-APR-A` (keputusan pemilik produk, 25 Agustus 2026; `UXD-09`). |
+| **SDD-APR-14** | Ketersediaan approver bertipe `user` diperiksa **saat langkah hendak diaktifkan**, bukan saat instance lahir. Approver nonaktif menyebabkan langkah ditandai `Dilewati` beralasan `approver nonaktif` (`RE-13`) dan pemrosesan lanjut; bila seluruh langkah habis, berlaku jalur fallback `SDD-APR-13` yang sama. Menutup `TBD-APR-C` (keputusan pemilik produk, 25 Agustus 2026). |
+| **SDD-APR-15** | Kalender SLA memakai **jam operasional terkonfigurasi** (`conventions.md`, bawaan Senin–Sabtu 06.00–18.00 WIB) persis seperti `CAL-01` menetapkannya. **Tidak ada** rentang jam kerja administratif kedua. Menutup `TBD-APR-B` (keputusan pemilik produk, 25 Agustus 2026). |
 
 ---
 
@@ -63,6 +66,26 @@ Jumlah baris terpengaruh menjadi pemenangnya: `1` = menang, `0` = kalah → `409
 **SDD-APR-07 — tenggat absolut.** Menghitung ulang tenggat setiap pembacaan berarti perubahan `holidays` di kemudian hari menggeser tenggat pengajuan yang sudah berjalan — melanggar semangat `BR-040`. Menyimpannya absolut membuat tenggat stabil sejak langkah aktif.
 
 **SDD-APR-11 — kunci, bukan baca.** `BR-043` menyatakan persetujuan tidak berlaku bila objek sudah tidak tersedia. Membaca tanpa mengunci menyisakan jendela antara verifikasi dan promosi slot ke `Confirmed`. Karena promosi itu sendiri menyentuh `booking_slots`, penguncian mengikuti aturan urutan `CI-02` dari [SDD-01](01-availability-concurrency.md).
+
+**SDD-APR-13 — opsional dengan bawaan, bukan wajib.** `RE-11` versi sebelumnya bertentangan dengan dirinya sendiri: ia menyebut *fallback approver* "wajib ditetapkan pada setiap aturan" lalu, pada kalimat yang sama, mengatur apa yang terjadi "bila tidak ditetapkan". Sesuatu yang wajib tidak punya cabang kedua. Pertentangan itu diselesaikan ke arah yang menjaga jaminannya: yang benar-benar dilindungi `BR-039a` adalah **tidak ada pengajuan yang disetujui otomatis karena kekosongan approver**, dan bawaan role Administrator melindunginya sepenuhnya tanpa mewajibkan apa pun diisi.
+
+Mewajibkan pengisian akan menambah satu keputusan pada setiap aturan — termasuk aturan sederhana yang tidak pernah menghasilkan langkah terlewati — sambil membiarkan `DEFAULT_RULE` (`RE-06`), yang berupa konstanta kode, harus ikut menetapkannya demi konsistensi yang tidak menghasilkan keamanan tambahan.
+
+Resolusinya terjadi **saat pembentukan langkah** (§4.3), bukan saat pembacaan. Alasannya sama dengan `SDD-APR-07`: sesuatu yang disimpulkan ulang setiap kali dibaca akan berubah ketika konfigurasi berubah, dan itu melanggar semangat `BR-040` yang membuat instance berjalan kebal terhadap perubahan aturan.
+
+**SDD-APR-14 — diperiksa saat aktivasi, bukan saat instance lahir.** `FR-02.1 A3` mencegah penonaktifan approver aktif, tetapi `SDD-APR-03` menyimpan `rule_snapshot` justru agar instance berjalan tidak bergantung pada baris aturan yang hidup. Keduanya benar dan tetap menyisakan celah: pencegahan berada di hulu, dan tidak ada pemulihan di hilir.
+
+Menutupnya dengan melarang penonaktifan selama ada instance berjalan akan menempatkan kerapian alur persetujuan di atas kebutuhan keamanan akun — staf yang mengundurkan diri atau akun yang dicurigai disalahgunakan akan tertahan oleh satu pengajuan reservasi yang menunggu. Itu pertukaran yang salah arah.
+
+Yang dipilih justru memakai ulang mekanisme yang sudah ada. Langkah yang approver-nya tidak dapat memutuskan sudah punya perlakuan baku — `RE-10` melewatinya karena konflik kepentingan — dan approver nonaktif adalah kejadian yang sama dengan sebab berbeda. Menambahkan alasan kedua pada mekanisme yang sama jauh lebih murah daripada membangun jalur penugasan ulang beserta permission, endpoint, dan halamannya. `BR-039a` tetap aman karena ujung jalur ini adalah fallback, bukan persetujuan.
+
+Pemeriksaan dilakukan **saat aktivasi** dan bukan saat instance lahir karena penonaktifan dapat terjadi kapan saja setelah instance berjalan; memeriksanya sekali di muka hanya akan menangkap sebagian kasus, dan justru bukan kasus yang menjadi pertanyaan.
+
+**SDD-APR-15 — satu kalender, bukan dua.** Pertanyaan `TBD-APR-B` sebenarnya sudah dijawab `CAL-01`; yang diperiksa adalah apakah jawaban itu dipertahankan. Keberatannya masuk akal — 06.00–18.00 adalah jam gedung terbuka yang `BR-018` pakai untuk memvalidasi reservasi, bukan jam staf berada di meja, sehingga `sla_hours: 24` merentang hampir dua hari kerja.
+
+Keberatan itu tetap tidak cukup untuk membangun kalender kedua. `SDD-APR-06 §3` sudah mencatat kelemahan yang justru ditemukan pada audit PRD: aritmetika tanggal yang tersebar menghasilkan dua modul yang menghitungnya berbeda. Menambahkan rentang jam administratif berarti `BusinessCalendarService` melayani dua definisi, dan setiap pemanggil harus benar memilih salah satunya — persis bentuk kesalahan yang service itu diciptakan untuk mencegah.
+
+Bila 24 jam terasa terlalu longgar, pengaturnya sudah tersedia dan berada di tempat yang benar: `sla_hours` dapat diatur per langkah pada setiap aturan. Menurunkan angkanya menyelesaikan keluhan tanpa menambah konsep.
 
 ---
 
@@ -117,10 +140,10 @@ createInstance(submission, requester):        -- dalam transaksi pemanggil (SDD-
 
   steps := rule.steps.map(planStep)
   for each step:
-     if resolvesToRequesterOnly(step, requester):     -- BR-039
+     if resolvesToRequesterOnly(step, requester):     -- BR-039 / RE-10
         mark 'Dilewati', alasan 'konflik kepentingan'
   if all steps skipped:                                -- RE-11
-     append fallbackStep(rule.fallback_approver ?? ROLE_ADMINISTRATOR)
+     append fallbackStep(rule.fallback_approver ?? ROLE_ADMINISTRATOR)   -- SDD-APR-13
 
   INSERT approval_instances (rule_snapshot = rule, langkah_aktif = firstActive(steps))
   INSERT approval_steps (seluruhnya)
@@ -140,7 +163,7 @@ decide(instanceId, stepOrder, actor, decision, note):
     IF decision = Ditolak        -> instance.status = Ditolak; release slot; NT-03; END  -- BR-038
     IF decision = Perlu Revisi   -> instance.status = PerluRevisi; NT-04; END            -- FR-10.2 A1
 
-    next := nextActiveStep()
+    next := nextActiveStep()                         -- lihat activate() di bawah
     IF next EXISTS -> langkah_aktif = next; set sla_deadline; NT-05
     ELSE
        assertObjectStillAvailable(FOR UPDATE)   -- BR-043, SDD-APR-11
@@ -150,6 +173,24 @@ decide(instanceId, stepOrder, actor, decision, note):
 ```
 
 Idempotensi permintaan ganda ditangani lapisan `Idempotency-Key` dari [SDD-01 §4.4](01-availability-concurrency.md) (`ID-01`).
+
+Aktivasi langkah menyaring approver yang sudah tidak dapat memutuskan (`SDD-APR-14`, `RE-13`):
+
+```
+activate(instance, step):
+  WHILE step EXISTS:
+     IF step.approver_type = 'user' AND user(step.approver_user_id).status <> 'AKTIF':
+        mark step 'Dilewati', alasan 'approver nonaktif'      -- RE-13
+        step := nextActiveStep()
+        CONTINUE
+     langkah_aktif := step; set sla_deadline (SDD-APR-07); NT-05
+     RETURN
+  -- seluruh langkah habis tanpa satu pun approver yang tersedia
+  append fallbackStep(snapshot.fallback_approver ?? ROLE_ADMINISTRATOR)   -- RE-11 / SDD-APR-13
+  alarm Administrator (NT-47)
+```
+
+Pemeriksaan status membaca tabel `users` yang hidup, **bukan** `rule_snapshot` — snapshot membekukan definisi aturan (`SDD-APR-03`), bukan keadaan orang. Langkah yang sudah aktif dan approver-nya baru kemudian dinonaktifkan tertangkap pada job `approval-sla-check` §4.5, yang menjalankan `activate` ulang atas langkah aktif sebelum memeriksa tenggatnya.
 
 ### 4.5 SLA & eskalasi
 
@@ -219,6 +260,5 @@ CREATE INDEX approval_rules_active
 
 | ID | Pertanyaan |
 |---|---|
-| **TBD-APR-A** | `fallback_approver` pada definisi aturan disebut oleh `RE-11` tetapi tidak tercantum sebagai field pada skema langkah di Lampiran D.5. Perlu ditetapkan apakah ia field tingkat aturan (`rule.fallback_approver`) atau selalu jatuh ke role Administrator tanpa konfigurasi. |
-| **TBD-APR-B** | Jam kerja untuk perhitungan SLA: apakah memakai jam operasional sekolah (06.00–18.00, `FR-20.1`) atau jam kerja administratif yang lebih sempit. Keduanya masuk akal dan menghasilkan tenggat berbeda. |
-| **TBD-APR-C** | Perilaku bila approver yang ditunjuk `approver_type='user'` dinonaktifkan setelah instance berjalan. `FR-02.1 A3` memblokir penonaktifan approver aktif, namun tidak mengatur instance yang sudah memakai snapshot berisi user tersebut. |
+
+**Tertutup 25 Agustus 2026:** `TBD-APR-A` → `SDD-APR-13` · `TBD-APR-B` → `SDD-APR-15` · `TBD-APR-C` → `SDD-APR-14`. Seluruh TBD berkas ini tertutup.

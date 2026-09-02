@@ -49,7 +49,7 @@ Kolom ketiga adalah yang paling berharga di seluruh log ini. Pola yang berulang 
 - [ ] Bentuk akhir skema `booking_slots` dan alasan setiap kolomnya — ia mengikat Phase 03, 04, dan 05
 - [ ] Hasil uji konkurensi `PR-02-17`: berapa permintaan serentak, berapa yang berhasil
 - [ ] Hasil uji *first-responder-wins* `PR-02-21`
-- [ ] Keputusan atas `TBD-APR-A/B/C`, `TBD-NTF-A/B`, `TBD-FE-B`
+- [ ] Penerapan `SDD-APR-13/14/15`, `SDD-NTF-10`, dan `UXD-05`/`UXD-12` — seluruh TBD terkait sudah tertutup sebelum phase dimulai
 - [ ] `assets.procurement_id` dibuat nullable tanpa FK aktif — pemutus siklus M-04 ↔ M-14
 
 ## 6. TBD yang tertutup

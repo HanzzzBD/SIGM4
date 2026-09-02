@@ -8,7 +8,7 @@
 
 | Kelompok | ID |
 |---|---|
-| Katalog notifikasi | `NT-01` … `NT-48` (49 baris, dimiliki modul penerbit) |
+| Katalog notifikasi | `NT-01` … `NT-51` (52 baris, dimiliki modul penerbit) |
 | Transport & fanout | `NTF-01` … `NTF-05` |
 | Requirement fungsional | `FR-17.1`, `FR-17.2`, `FR-17.3` |
 | Latensi & keandalan | `NFR-P-12`, `NFR-A-06`, `NFR-R-08` |
@@ -30,6 +30,7 @@
 | **SDD-NTF-07** | Anti-spam (maksimum 1×/hari per objek, Bab 20.1) ditegakkan **unique index** pada basis data, bukan pemeriksaan aplikasi. |
 | **SDD-NTF-08** | Pengiriman FCM memakai **batch multicast** per pengguna, dengan pembersihan token tidak valid berdasarkan respons FCM (`FR-17.2 A2`). |
 | **SDD-NTF-09** | Setiap notifikasi menyimpan `deep_link` sebagai **path relatif aplikasi** (mis. `/reservations/1234`), bukan URL absolut — agar berlaku sama di web dan mobile. |
+| **SDD-NTF-10** | `notifications_archive` **dapat dibaca pemiliknya sendiri** lewat filter arsip pada endpoint daftar yang sudah ada (`FR-17.1 A2`), bukan hanya lewat pemeriksaan administratif. Karena itu tabel arsip memperoleh indeks `(user_id, dibuat_pada DESC)`. Tidak ada endpoint maupun permission baru — `notification.manage_own` tetap berlaku dan *scope* pemilik ditegakkan di repository (`SDD-AUTH-02`). Menutup `TBD-NTF-B` (keputusan pemilik produk, 25 Agustus 2026; `UXD-10`). |
 
 ---
 
@@ -174,7 +175,16 @@ Templat `SDD-NTF-04` membawa `jenis` sebagai bagian definisi tiap kode `NT-xx`, 
 
 ### 4.6 Arsip
 
-Notifikasi > 90 hari dipindahkan job harian ke `notifications_archive` (`FR-17.1 A2`, Bab 11.4). Tabel arsip memakai skema identik tanpa indeks *unread*, sehingga tabel utama tetap ramping (`NFR-SC-06`).
+Notifikasi > 90 hari dipindahkan job harian ke `notifications_archive` (`FR-17.1 A2`, Bab 11.4). Tabel arsip memakai skema identik **tanpa indeks *unread*** — status terbaca tidak lagi bermakna di arsip — sehingga tabel utama tetap ramping (`NFR-SC-06`).
+
+Arsip dibaca pemiliknya sendiri (`SDD-NTF-10`):
+
+```sql
+CREATE INDEX notifications_archive_owner
+    ON notifications_archive (user_id, dibuat_pada DESC);
+```
+
+Endpoint daftar notifikasi menerima penanda arsip sebagai **parameter kueri**, bukan endpoint kedua; permintaan tanpa penanda itu tidak pernah menyentuh tabel arsip. Kedua tabel tidak pernah di-`UNION` dalam satu respons — filter arsip adalah pilihan yang saling meniadakan, sepola dengan tab pada P-13.
 
 ---
 
@@ -201,7 +211,7 @@ Notifikasi > 90 hari dipindahkan job harian ke `notifications_archive` (`FR-17.1
 
 ## 7. Requirement Terkait
 
-`FR-17.1` `FR-17.2` `FR-17.3` · `NT-01` … `NT-48` · `NTF-01` … `NTF-05` · Bab 20.1 ·
+`FR-17.1` `FR-17.2` `FR-17.3` · `NT-01` … `NT-51` · `NTF-01` … `NTF-05` · Bab 20.1 ·
 `NFR-P-12` `NFR-A-06` `NFR-R-08` `NFR-SC-06` · `BR-073` · `MOB-DL-01` … `MOB-DL-05` `MOB-SEC-05` ·
 `OBS-05` · Bab 11.4 (retensi)
 
@@ -211,7 +221,6 @@ Notifikasi > 90 hari dipindahkan job harian ke `notifications_archive` (`FR-17.1
 
 | ID | Pertanyaan |
 |---|---|
-| **TBD-NTF-B** | Apakah notifikasi yang sudah diarsipkan (>90 hari) tetap dapat diakses pengguna melalui filter arsip (`FR-17.1 A2` menyiratkan ya), atau hanya melalui pemeriksaan administratif. Berdampak pada endpoint dan indeks tabel arsip. |
 
 
 **Tertutup**
@@ -219,3 +228,4 @@ Notifikasi > 90 hari dipindahkan job harian ke `notifications_archive` (`FR-17.1
 | ID | Ditutup | Keputusan |
 |---|---|---|
 | **TBD-NTF-A** | 22 Agustus 2026 | Enam kelompok domain proses — lihat §4.5 (`UXD-05`) |
+| **TBD-NTF-B** | 25 Agustus 2026 | Arsip dapat dibaca pemiliknya lewat filter — lihat §4.6 (`SDD-NTF-10`, `UXD-10`) |

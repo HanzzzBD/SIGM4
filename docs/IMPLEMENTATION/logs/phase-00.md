@@ -48,9 +48,9 @@ Kolom ketiga adalah yang paling berharga di seluruh log ini. Pola yang berulang 
 
 - [ ] Runner migration yang dipakai memenuhi kedua syarat `SDD-DB-12` — opt-out transaksi per-migration dan *advisory lock*
 - [ ] Pembangkitan OpenAPI dari skema Zod berjalan (`SDD-API-11`, `SDD-API-02`) dan `/api/docs` tidak aktif di produksi (`SDD-API-12`)
-- [ ] Perkakas observability terpasang sesuai `SDD-OBS-09`; **`TBD-SEC-B` sudah terjawab sebelum `PR-00-06`**
+- [ ] Perkakas observability terpasang sesuai `SDD-OBS-09`, dan penyedianya **ber-region Indonesia** (`SDD-OBS-10`, `SDD-SEC-10`) — region diverifikasi sebelum kontrak, bukan sesudahnya
 - [ ] Koreografi deploy `SDD-INF-10` teruji di staging — penggantian instance API satu per satu dan drain worker
-- [ ] Nilai `TBD-INF-A` bila sudah diputuskan
+- [ ] Penyediaan mengikuti `SDD-INF-11` — VPS ber-region Indonesia + PostgreSQL terkelola; ketersediaan `btree_gist` diverifikasi sebelum langganan dibuka (§10 `phases/phase-00.md`)
 
 ## 6. TBD yang tertutup
 

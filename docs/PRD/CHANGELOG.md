@@ -100,3 +100,30 @@ Audit terminologi atas seluruh PRD dan SDD. Dua hasil: penyeragaman istilah doma
 | — | `barang sarpras` | Istilah payung baru untuk konteks lintas-domain |
 
 **Tidak diubah:** `assets`, `asset_id`, `asset_documents`, `asset_condition`, `kode_barang`, `assets_kode_barang_uq`, `nama_barang`, `resource_type='asset'`, permission `asset.*`, dan endpoint API — seluruhnya identifier teknis yang ditetapkan SDD.
+
+---
+
+## Revisi — Migrasi Penyedia LLM (2 September 2026)
+
+Chatbot M-19 berpindah dari Claude API ke **Google Gemini Developer API — *paid tier*** dengan model `gemini-3.6-flash` (stabil/GA). Keputusan pemilik produk. Rancangan teknisnya di [`SDD-10`](../SDD/10-ai-orchestrator-design.md); yang dicatat di sini hanya baris PRD yang ikut berubah.
+
+### Requirement yang berubah
+
+| ID | Sebelum | Sesudah | Alasan |
+|---|---|---|---|
+| Bab 22.1 — Model | Claude API, `claude-sonnet-5` | Gemini Developer API paid tier, `gemini-3.6-flash`; alias `latest`, preview, dan eksperimental dilarang; tier gratis dilarang untuk data SIGM4 | Isi tier gratis dapat dipakai penyedia untuk meningkatkan produk — bertabrakan dengan `DP-AI-04` |
+| Bab 22.1 — Pola integrasi | Tool calling terhadap API internal | Idem, ditambah penegasan bahwa model hanya **mengusulkan** panggilan tool; backend SIGM4 yang mengeksekusi | Menutup celah *automatic function calling* SDK yang melewati `AuthContext` (`BR-076`) |
+| `AI-CTL-02` | Masukan maksimum ±8.000 token | Masukan maksimum ±16.000 token | Ambang prompt caching Gemini 3.x adalah 4.096 token; dengan anggaran lama, awalan statis memakan lebih dari separuh jendela dan riwayat 10 pesan (22.3) tidak lagi muat |
+| `AI-SEC-08` | Penyedia dikonfigurasi agar data tidak dipakai melatih model, dinyatakan dalam DPA | Idem, ditambah: syarat hanya terpenuhi pada paid tier, dan penyedia **tidak menjamin residensi data** | Fakta penyedia yang tidak dapat dimitigasi secara teknis; menjadi keputusan sekolah, bukan keputusan teknis |
+| `AS-15` · `RS-08` | Akun & biaya Claude API | Akun & biaya Gemini API paid tier | Konsekuensi langsung |
+| **`RS-21` (baru)** | — | Prompt dan hasil tool dapat diproses atau di-*cache* di yurisdiksi mana pun | Persetujuan tertulis sekolah menjadi prasyarat `GL-07`; tercatat sebagai `TBD-AI-D`. Bila tidak diberikan, jalur yang tersedia adalah menonaktifkan chatbot lewat `AI-CTL-09` |
+
+**Tidak berubah:** `BR-075` … `BR-079`, seluruh `AI-SEC-01` … `AI-SEC-07`, `DP-AI-01` … `DP-AI-05`, katalog 12 tool 22.3, batas 5 iterasi (`AI-CTL-03`), permission `chat.*`, endpoint `/chat/*`, dan aksi log `CHAT_MESSAGE_SENT`. Migrasi mengganti penyedia, bukan model ancamannya.
+
+### Kontradiksi internal yang diselesaikan
+
+| # | Kontradiksi | Penyelesaian |
+|---|---|---|
+| 11 | 22.5 butir 2 menyertakan **nama pengguna** ke dalam system prompt dan butir 4 menyuruh model menyapa dengan nama, sementara `DP-AI-01`, 22.3, dan AC `FR-19.1` melarang nama dikirim ke penyedia LLM | Butir 2 dipersempit menjadi **role dan ringkasan cakupan permission**; butir 4 menyatakan model tidak menyapa dengan nama karena tidak menerimanya, dan sapaan personal disisipkan server pada jawaban yang sudah jadi. `DP-AI-01` yang berlaku; 22.5 adalah satu-satunya baris yang menyimpang |
+
+Kontradiksi ini sudah ada sebelum migrasi dan tidak disebabkan olehnya; ia ditemukan saat penelusuran ulang Bab 22 dan diperbaiki di lapisan yang memilikinya.

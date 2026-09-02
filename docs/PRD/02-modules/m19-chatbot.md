@@ -33,15 +33,15 @@ sequenceDiagram
     participant API as Express API
     participant AI as AI Orchestrator
     participant GUARD as Permission Guardrail
-    participant LLM as Claude API
+    participant LLM as Gemini API
     participant DB as Database
 
     U->>C: "Proyektor mana yang bisa dipinjam besok?"
     C->>API: POST /api/v1/chat/messages
     API->>AI: Proses pesan + konteks pengguna
     AI->>AI: Susun system prompt<br/>(role, permission, batasan read-only)
-    AI->>LLM: messages + tool definitions
-    LLM-->>AI: tool_use: search_assets<br/>{kategori: "proyektor", tanggal: besok}
+    AI->>LLM: input steps + function declarations
+    LLM-->>AI: function_call: search_assets<br/>{kategori: "proyektor", tanggal: besok}
 
     AI->>GUARD: Validasi permintaan tool terhadap permission
     alt Di luar hak akses pengguna
@@ -52,7 +52,7 @@ sequenceDiagram
         GUARD-->>AI: Data aset tersedia
     end
 
-    AI->>LLM: tool_result
+    AI->>LLM: function_result
     LLM-->>AI: Jawaban natural + rujukan kode aset
     AI->>DB: Simpan chat_message (input, output, token, tools)
     API-->>C: 200 {jawaban, rujukan, tautan}

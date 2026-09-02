@@ -343,8 +343,8 @@ Tidak seluruh business rule berdampak visual. Tabel ini memuat yang **mengubah a
 | # | Tindakan | Pemilik |
 |---|---|---|
 | 1 | ~~Perbaiki tabel endpoint `m07` bagian 7: `reservation.cancel` menjadi `reservation.cancel_own` / `reservation.cancel_any` (**K-02**)~~ — **selesai 24 Agustus 2026**: satu endpoint menerima kedua permission, kepemilikan diperiksa di server | Pemilik berkas modul M-07 |
-| 2 | ~~Tutup `TBD-FE-B`, `TBD-MOB-B`, `TBD-NTF-A`~~ — **selesai 22 Agustus 2026**; rancangan `SDD-08 §4.5` serta `SDD-12 §4.8` sudah diselaraskan. Register kini **25 terbuka · 15 tertutup** (empat TBD Bahan ditutup 23 Agustus, `TBD-BHN-E` dibuka) | Software Architect |
-| 3 | Selesaikan `TBD-APR-A`, `TBD-NTF-B`, `TBD-EVT-B`, `TBD-FS-A`, `TBD-AVL-B` — kelimanya memblokir bagian UX-SPEC | Pemilik produk |
+| 2 | ~~Tutup `TBD-FE-B`, `TBD-MOB-B`, `TBD-NTF-A`~~ — **selesai 22 Agustus 2026**; rancangan `SDD-08 §4.5` serta `SDD-12 §4.8` sudah diselaraskan. Register kini **13 terbuka · 27 tertutup** (empat TBD Bahan ditutup 23 Agustus; dua belas TBD ditutup 25 Agustus dalam empat batch — kelompok A dan D kosong) | Software Architect |
+| 3 | ~~Selesaikan `TBD-APR-A`, `TBD-NTF-B`, `TBD-EVT-B`, `TBD-FS-A`, `TBD-AVL-B`~~ — **seluruhnya selesai 25 Agustus 2026** (`UXD-09`, `UXD-10`, `UXD-13`, `UXD-14`, `UXD-15`). Tidak ada lagi bagian UX-SPEC yang tertahan | Pemilik produk |
 | 4 | Naikkan enam kelompok notifikasi (**UXD-05**) ke PRD `M-17` — kini bermukim di `SDD-08 §4.5`, padahal sifatnya kebijakan produk | Pemilik produk |
 | 5 | ~~Pulihkan atau bangun ulang `PRD.v1.1.full.md`; tanpanya `scripts/audit_docs.py` berhenti dengan `FileNotFoundError`~~ — **selesai 24 Agustus 2026**: arsip tidak dipulihkan; `audit_docs.py` dilepaskan dari perbandingan arsip dan kini memeriksa invarian yang berlaku terus-menerus | Pemilik berkas PRD |
 | 6 | Mulai `DS-03` (wireframe) memakai §6 sebagai daftar layar, §7 sebagai spesifikasi, dan [`DESIGN/`](../DESIGN/DESIGN-SYSTEM.md) sebagai bahasa visual | UI/UX Designer |

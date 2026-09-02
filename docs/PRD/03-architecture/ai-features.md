@@ -6,8 +6,8 @@ Sistem memiliki **satu fitur AI**, yaitu **Chatbot Asisten SIGM4** — asisten p
 
 | Aspek | Ketentuan |
 |---|---|
-| **Model** | Claude API — `claude-sonnet-5` sebagai model utama (keseimbangan biaya & latensi); dapat dikonfigurasi Administrator |
-| **Pola integrasi** | Tool calling (function calling) terhadap API internal, bukan pengiriman seluruh basis data ke model |
+| **Model** | **Google Gemini Developer API — *paid tier*** dengan model `gemini-3.6-flash` (versi stabil/GA) sebagai model utama; dapat dikonfigurasi Administrator **di antara model stabil/GA saja**. Alias `latest`, versi *preview*, dan versi eksperimental dilarang karena siklus hidupnya tidak menjamin perilaku tetap. **Tier gratis dilarang** untuk data SIGM4: isinya dapat dipakai penyedia untuk meningkatkan produk |
+| **Pola integrasi** | Tool calling (function calling) terhadap API internal, bukan pengiriman seluruh basis data ke model. Model hanya **mengusulkan** panggilan tool; yang menjalankannya adalah backend SIGM4, bukan SDK penyedia (BR-076) |
 | **Sifat akses** | Read-only, difilter permission pengguna pada lapisan query |
 | **Bahasa** | Bahasa Indonesia |
 | **Ketersediaan** | Web dan mobile; gangguan layanan LLM tidak memengaruhi modul lain |
@@ -50,7 +50,11 @@ Sistem memiliki **satu fitur AI**, yaitu **Chatbot Asisten SIGM4** — asisten p
 | `get_my_fines` | Denda milik pengguna | status | Hanya data milik pengguna yang bertanya |
 | `get_damage_report_status` | Status tiket kerusakan | nomor_tiket atau kode_barang | Pelapor hanya melihat tiketnya sendiri |
 | `get_operational_summary` | Ringkasan agregat operasional | jenis_ringkasan, periode | **Hanya** untuk role Administrator, Petugas Sarpras, dan Pimpinan Sekolah |
+| `get_material_stock` | Saldo bahan per lokasi penyimpanan | nama_bahan atau kategori, lokasi | Saldo agregat saja; tidak menampilkan riwayat transaksi maupun identitas peminta. Tersedia sejak M-22 aktif |
+| `get_low_stock_materials` | Bahan yang saldonya di bawah stok minimum | kategori, lokasi | Difilter cakupan role; role tanpa hak atas M-22 menerima hasil kosong. Tersedia sejak M-22 aktif |
 | `get_help_article` | Panduan penggunaan fitur | topik | Konten statis, tidak menyentuh data operasional |
+
+**Dua tool berdomain Bahan ditambahkan 25 Agustus 2026** (menutup `TBD-BHN-E`). Keduanya menjaga kesejajaran Bahan dengan Aset yang Keputusan #17 dan `UXD-16` tetapkan: pengguna yang dapat menanyakan ketersediaan aset dapat menanyakan saldo bahan dengan cara yang sama, tanpa mempelajari pola kedua. Keduanya **read-only** seperti seluruh tool lain (`BR-075`), dan **diimplementasikan pada Phase 05** bersama M-22 — katalog Phase 03 dibangun tanpa keduanya. Penambahannya membatalkan prompt cache satu kali pada rilis itu dan memicu evaluasi ulang `AI-EV-04`.
 
 ## 22.4 Output
 
@@ -78,13 +82,13 @@ Sistem memiliki **satu fitur AI**, yaitu **Chatbot Asisten SIGM4** — asisten p
 **Struktur system prompt (disusun server pada setiap permintaan):**
 
 1. **Peran & cakupan** — "Anda adalah asisten Sistem SIGM4 di {nama sekolah}. Anda membantu pengguna memperoleh informasi mengenai aset, ruangan, peminjaman, dan pengajuan."
-2. **Konteks pengguna** — nama, role, dan ringkasan permission pengguna yang sedang bertanya.
+2. **Konteks pengguna** — **role dan ringkasan cakupan permission** pengguna yang sedang bertanya. Nama dan pengenal pribadi **tidak** disertakan (DP-AI-01, 22.3).
 3. **Batasan mutlak** —
    - Hanya boleh menjawab berdasarkan hasil tool; dilarang menebak atau mengarang data.
    - Dilarang melakukan atau menjanjikan aksi tulis apa pun.
    - Dilarang menyebutkan data yang tidak dikembalikan oleh tool.
    - Bila hasil tool kosong, nyatakan bahwa data tidak ditemukan.
-4. **Gaya bahasa** — Bahasa Indonesia yang sopan, ringkas, dan tidak berbelit; sapa pengguna dengan namanya bila relevan.
+4. **Gaya bahasa** — Bahasa Indonesia yang sopan, ringkas, dan tidak berbelit. Model **tidak** menyapa dengan nama, karena ia tidak menerimanya; sapaan personal disisipkan server pada jawaban yang sudah jadi (DP-AI-01).
 5. **Aturan format** — gunakan daftar bernomor untuk lebih dari tiga item; selalu sertakan kode aset atau nomor transaksi sebagai rujukan; sertakan tautan aksi bila tersedia.
 6. **Penanganan di luar cakupan** — bila pertanyaan berada di luar domain sarana prasarana, nyatakan dengan sopan dan arahkan ke Petugas Sarana Prasarana.
 7. **Konteks waktu** — tanggal dan waktu sistem saat ini agar pertanyaan relatif dapat dihitung.
@@ -136,7 +140,7 @@ SC-10 menargetkan akurasi ≥ 85%, namun sebelumnya tidak ada cara mengukurnya. 
 | Kode | Requirement |
 |---|---|
 | AI-CTL-01 | **Prompt caching** diaktifkan atas bagian statis dari system prompt (peran, batasan, aturan format, definisi tool). Hanya konteks pengguna dan riwayat yang berubah per permintaan. Ini menekan biaya secara langsung dan memitigasi RS-08 |
-| AI-CTL-02 | **Anggaran token per pesan** ditetapkan: masukan maksimum ±8.000 token, keluaran maksimum ±1.000 token. Melebihi batas, konteks riwayat dipangkas dari yang terlama |
+| AI-CTL-02 | **Anggaran token per pesan** ditetapkan: masukan maksimum ±16.000 token, keluaran maksimum ±1.000 token. Melebihi batas, konteks riwayat dipangkas dari yang terlama. Batas masukan dinaikkan dari ±8.000 pada 2 September 2026 karena ambang caching model (SDD-10) menuntut prefiks statis yang lebih panjang; tanpa kenaikan itu jendela 10 pesan tidak lagi muat |
 | AI-CTL-03 | **Batas iterasi tool: maksimum 5 panggilan per pesan pengguna.** Setelah batas tercapai, model wajib menjawab dengan data yang telah diperoleh atau menyatakan tidak dapat menjawab |
 | AI-CTL-04 | **Timeout**: 20 detik per panggilan ke penyedia LLM; 5 detik per eksekusi tool. Melewati batas → jalur *fallback* (FR-19.1 A4) |
 | AI-CTL-05 | **Retry**: maksimum 2 percobaan ulang untuk galat sementara (429, 5xx) dengan *exponential backoff*; galat permanen tidak diulang |
@@ -157,6 +161,6 @@ SC-10 menargetkan akurasi ≥ 85%, namun sebelumnya tidak ada cara mengukurnya. 
 | AI-SEC-05 | Instruksi sistem tidak dapat ditimpa oleh isi pesan pengguna; percobaan menimpa dicatat sebagai anomali dan ditinjau |
 | AI-SEC-06 | Untuk pengguna role Siswa/OSIS, berlaku pembatasan tambahan: tidak ada data pribadi pengguna lain dalam bentuk apapun yang masuk ke konteks model (DP-AI-03) |
 | AI-SEC-07 | **Moderasi**: percakapan yang memuat konten tidak pantas atau percobaan penyalahgunaan berulang ditandai, dan pengguna yang bersangkutan dapat dibatasi aksesnya ke chatbot oleh Administrator |
-| AI-SEC-08 | Penyedia LLM dikonfigurasi agar data tidak digunakan untuk pelatihan model, dan hal ini dinyatakan dalam DPA (DP-AI-04) |
+| AI-SEC-08 | Penyedia LLM dikonfigurasi agar data tidak digunakan untuk pelatihan model, dan hal ini dinyatakan dalam DPA (DP-AI-04). Pada Gemini Developer API syarat ini hanya terpenuhi pada **paid tier**; tier gratis dilarang dipakai untuk data SIGM4 apa pun. Penyedia **tidak menjamin residensi data** — pemrosesan lintas yurisdiksi menjadi keputusan tersendiri (`TBD-AI-D`, `RS-21`) yang wajib tertutup sebelum GL-07 |
 
 ---

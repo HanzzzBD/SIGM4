@@ -187,22 +187,28 @@ Beberapa phase tidak dapat diselesaikan sebelum TBD tertentu ditutup. Daftar len
 
 | TBD | Kelompok | Memblokir | Batas waktu penutupan |
 |---|:---:|---|---|
-| `TBD-AUTH-C` | A | `PR-01-04` (`role_version`) | Sebelum **Phase 01** |
-| `TBD-EVT-B` | A | `PR-01-10` (lingkup M-20: antarmuka dead letter) | Sebelum **Phase 01** |
-| `TBD-APR-A` `TBD-APR-C` | A | `PR-02-20` (resolusi approver & fallback) | Sebelum **Phase 02** |
-| `TBD-APR-B` | A | `PR-02-22` (SLA & eskalasi) | Sebelum **Phase 02** |
-| `TBD-NTF-B` | A | `PR-02-25` (skema notifikasi & retensi) | Sebelum **Phase 02** |
-| `TBD-AVL-B` | A | `PR-03-08` · `PR-04-01` (bentuk endpoint reservasi) | Sebelum **Phase 03** |
-| `TBD-FS-A` | A | `PR-03-04` … `PR-03-07` (perlakuan foto berwajah) | Sebelum **Phase 03** |
-| `TBD-BHN-E` | A | `PR-03-21` (katalog tool chatbot — perlu tool bahan atau tidak) | Sebelum **Phase 03** |
-| `TBD-AI-A` | D | `PR-03-22` (prefiks statis ≥ 1.024 token) | Sebelum **Phase 03** |
-| `TBD-SEC-B` | A | `PR-00-06` (perkakas observability & tujuan log) · `PR-08-01` … `PR-08-06` (lingkup kepatuhan) | **Sebelum `PR-00-06`** — bukan lagi sebelum Phase 08 |
-| kelompok B (14) | B | kalibrasi parameter | Phase 07–08, setelah data staging ada |
+| ~~`TBD-AUTH-C`~~ | A | ~~`PR-01-04`~~ | ✅ **Tertutup 25 Agustus 2026** — `SDD-AUTH-11` |
+| ~~`TBD-EVT-B`~~ | A | ~~`PR-01-10`~~ | ✅ **Tertutup 25 Agustus 2026** — `SDD-EVT-10` · `UXD-13` |
+| ~~`TBD-APR-A` `TBD-APR-C`~~ | A | ~~`PR-02-20`~~ | ✅ **Tertutup 25 Agustus 2026** — `SDD-APR-13` · `SDD-APR-14` · `RE-13` |
+| ~~`TBD-APR-B`~~ | A | ~~`PR-02-22`~~ | ✅ **Tertutup 25 Agustus 2026** — `SDD-APR-15` |
+| ~~`TBD-NTF-B`~~ | A | ~~`PR-02-25`~~ | ✅ **Tertutup 25 Agustus 2026** — `SDD-NTF-10` · `UXD-10` |
+| ~~`TBD-AVL-B`~~ | A | ~~`PR-03-08` · `PR-04-01`~~ | ✅ **Tertutup 25 Agustus 2026** — tetap satu `/reservations` (`UXD-15`) |
+| ~~`TBD-FS-A`~~ | A | ~~`PR-03-04` … `PR-03-07`~~ | ✅ **Tertutup 25 Agustus 2026** — `SDD-FS-11` · `DP-05a` |
+| ~~`TBD-BHN-E`~~ | A | ~~`PR-03-21`~~ | ✅ **Tertutup 25 Agustus 2026** — dua tool bahan, dipasang `PR-05-25` |
+| ~~`TBD-AI-A`~~ | D | ~~`PR-03-22`~~ | ✅ **Tertutup 25 Agustus 2026** — `SDD-AI-13` |
+| ~~`TBD-SEC-B`~~ | A | ~~`PR-00-06` · `PR-08-01` … `PR-08-06`~~ | ✅ **Tertutup 25 Agustus 2026** — `SDD-SEC-10` · `SDD-OBS-10` |
+| ~~`TBD-INF-A`~~ | B | ~~`PR-00-18`~~ | ✅ **Tertutup 25 Agustus 2026** — `SDD-INF-11` |
+| `TBD-AI-D` | A | `GL-07` (gerbang go-live) | Sebelum go-live — dibuka 2 September 2026 oleh migrasi penyedia LLM |
+| kelompok B (13 sisanya) | B | kalibrasi parameter | Phase 07–08, setelah data staging ada |
+| kelompok A (1) | A | `GL-07` | `TBD-AI-D`; sisanya tertutup 25 Agustus 2026 |
 | kelompok C (0) | C | — | Seluruhnya tertutup 6 Agustus 2026 |
+| kelompok D (0) | D | — | Seluruhnya tertutup 25 Agustus 2026 |
 
-**`TBD-SEC-B` maju ke Phase 00.** `SDD-OBS-09` memilih *backend* observability terkelola, sehingga log aplikasi berisi PII meninggalkan infrastruktur sekolah sejak logger terstruktur dipasang (`PR-00-06`). Lingkup kepatuhan karena itu harus diketahui **saat perkakas dipilih**, bukan saat Phase 08 — memilih vendor lebih dulu lalu menanyakan kepatuhan sesudahnya berarti keputusan sudah terlanjur dibuat. `SDD-OBS-04` (*redaction* di formatter) adalah kontrol yang menyertainya, bukan penggantinya.
+**`TBD-SEC-B` ditutup sebelum `PR-00-06`, sesuai jadwal.** Ia dimajukan ke Phase 00 karena `SDD-OBS-09` memilih *backend* observability terkelola, sehingga log aplikasi berisi PII meninggalkan infrastruktur sekolah sejak logger terstruktur dipasang — lingkup kepatuhan harus diketahui **saat perkakas dipilih**, bukan sesudahnya. Hasilnya (`SDD-SEC-10`): cakupan kepatuhan tetap UU PDP saja, disertai kewajiban **residensi wilayah Indonesia** yang menjadi kriteria gugur pada seleksi `PR-00-06` (`SDD-OBS-10`). `SDD-OBS-04` (*redaction* di formatter) adalah kontrol yang menyertainya, bukan penggantinya.
 
-**Sembilan dari sepuluh TBD kelompok A memblokir Phase 01–03** — tiga phase pertama yang berisi kode. Menundanya berarti menunda lintasan kritis secara langsung. Ini butir tunggal berisiko tertinggi pada roadmap, dan satu-satunya yang tidak dapat diselesaikan oleh tim pengembang.
+**`TBD-INF-A` ditutup sebelum `PR-00-18`, sesuai jadwal.** `PR-00-18` men-deploy staging beserta job migration-nya, dan lingkungan itu tidak dapat berdiri sebelum penyedia infrastrukturnya dipilih. Hasilnya (`SDD-INF-11`): **VPS ber-region Indonesia + PostgreSQL terkelola**, Docker Compose tetap (`SDD-INF-10`), pengecualian Kubernetes `INF-05` tidak berlaku. Yang berpindah hanya waktunya, bukan kelompoknya: sizing dan biaya nyata tetap ditetapkan setelah uji beban bersama `TBD-AVL-C`.
+
+**Tidak ada TBD yang memblokir pengerjaan satu PR pun.** Dua belas TBD ditutup 25 Agustus 2026 dalam empat batch, mengosongkan kelompok A dan D sekaligus; `TBD-AI-D` membukanya kembali pada 2 September 2026, tetapi ia menunggu di gerbang go-live (`GL-07`), bukan di depan sebuah PR — chatbot tetap dibangun dan dievaluasi Phase 03. Yang tersisa adalah 13 parameter operasional kelompok B, seluruhnya dijadwalkan Phase 07–08 setelah data staging tersedia — parameter yang menunggu **pengukuran**, bukan keputusan yang menunggu **orang**. Butir berisiko tertinggi pada roadmap ini karena itu tidak lagi berupa keputusan yang belum diambil. Menundanya berarti menunda lintasan kritis secara langsung. Ini butir tunggal berisiko tertinggi pada roadmap, dan satu-satunya yang tidak dapat diselesaikan oleh tim pengembang.
 
 ---
 

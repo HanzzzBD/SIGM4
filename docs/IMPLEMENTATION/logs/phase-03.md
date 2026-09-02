@@ -48,7 +48,7 @@ Kolom ketiga adalah yang paling berharga di seluruh log ini. Pola yang berulang 
 
 - [ ] Pengisian pertama `procurement_id` (`PR-03-19`) — kolom **tetap** nullable; aset hibah/impor manual sah bernilai `NULL`
 - [ ] Apakah `SlotService` perlu diubah untuk melayani reservasi ruangan. Bila ya — catat apa yang kurang umum pada rancangan Phase 02
-- [ ] Keputusan atas `TBD-AVL-B`, `TBD-FS-A`, `TBD-AI-A`, `TBD-MOB-B`
+- [ ] Penerapan `UXD-15` (satu rumpun `/reservations`), `SDD-FS-11` (foto dipertahankan), `SDD-AI-13` (awalan statis ≥ 4.500 token), dan `UXD-11` (tablet) — seluruhnya sudah tertutup sebelum phase dimulai
 - [ ] Kriteria keluar `M1` terverifikasi: 500 aset terimpor, QR dicetak & dipindai, `ST-05` lolos
 
 ## 6. TBD yang tertutup

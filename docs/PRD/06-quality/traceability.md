@@ -246,14 +246,14 @@ pelaksana; perlu keputusan pemilik produk sebelum modul terkait dianggap selesai
 
 | Module | Isu |
 |---|---|
-| M-07 | Endpoint `/reservations`, `/reservations/{id}`, dan `/reservations/{id}/cancel` melayani reservasi ruangan **dan** barang. Untuk menjaga aturan satu-pemilik, seluruh baris tersebut ditempatkan di modul ini dan dirujuk oleh M-08. Perlu keputusan apakah pemisahan endpoint per jenis reservasi diinginkan pada tahap desain teknis (SDD). |
-| M-07 | BR-017 … BR-025 berlaku untuk reservasi ruangan maupun barang; dimiliki modul ini dan dirujuk oleh M-08. |
+| M-07 | Endpoint `/reservations`, `/reservations/{id}`, dan `/reservations/{id}/cancel` melayani reservasi ruangan **dan** aset. Untuk menjaga aturan satu-pemilik, seluruh baris tersebut ditempatkan di modul ini dan dirujuk oleh M-08. **Ditutup 25 Agustus 2026** (`TBD-AVL-B`, `UXD-15`): endpoint tetap satu rumpun `/reservations`; pemisahan per jenis tidak dilakukan karena `BR-017` … `BR-025` berlaku identik bagi kedua jenis. |
+| M-07 | BR-017 … BR-025 berlaku untuk reservasi ruangan maupun aset; dimiliki modul ini dan dirujuk oleh M-08. |
 | M-08 | Modul ini memakai endpoint dan Business Rules yang dimiliki M-07 (lihat Related Modules). Tidak ada salinan di berkas ini — perubahan aturan dilakukan di M-07. |
 | M-09 | BR-030 (pemblokiran pemohon) ditegakkan saat pengajuan reservasi di M-07/M-08, namun aturannya dimiliki modul ini karena bersumber dari kewajiban peminjaman. |
-| M-11 | BR-032 (barang kembali rusak menghasilkan tiket otomatis) dimiliki M-09; modul ini adalah konsumennya. |
+| M-11 | BR-032 (aset kembali rusak menghasilkan tiket otomatis) dimiliki M-09; modul ini adalah konsumennya. |
 | M-15 | Rincian isi tiap kartu dashboard berada di `04-frontend/dashboards.md` karena bersifat spesifikasi antarmuka, bukan aturan bisnis. |
-| M-17 | Katalog notifikasi NT-01…NT-51 tidak berada di modul ini; setiap baris dimiliki modul yang menerbitkan event-nya. Indeks lengkap digenerate di `03-architecture/notifications-index.md`. |
-| M-18 | Daftar aksi yang wajib dicatat tersebar ke modul penerbitnya. Indeks lengkap digenerate di `03-architecture/activity-log-index.md`. |
+| M-17 | Katalog notifikasi NT-01…NT-51 tidak berada di modul ini; setiap baris dimiliki modul yang menerbitkan event-nya. Indeks lengkap digenerate di [`_generated/notifications-index.md`](../_generated/notifications-index.md). |
+| M-18 | Daftar aksi yang wajib dicatat tersebar ke modul penerbitnya. Indeks lengkap digenerate di [`_generated/activity-log-index.md`](../_generated/activity-log-index.md). |
 
 ---
 

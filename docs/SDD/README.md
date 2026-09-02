@@ -112,13 +112,13 @@ Berlaku bagi seluruh berkas SDD dan tidak boleh dibantah tanpa persetujuan pemil
 
 ## Titik yang belum ditetapkan
 
-Terkumpul di [`TBD-REGISTER.md`](TBD-REGISTER.md) — **25 terbuka**, diklasifikasi menjadi empat kelompok menurut siapa yang memutuskan dan kapan. Tidak boleh ditebak oleh penyusun SDD.
+Terkumpul di [`TBD-REGISTER.md`](TBD-REGISTER.md) — **14 terbuka**, diklasifikasi menjadi empat kelompok menurut siapa yang memutuskan dan kapan. Tidak boleh ditebak oleh penyusun SDD.
 
 | Kelompok | Jumlah | Kapan |
 |---|---|---|
-| A — Kebijakan produk | 9 | **Sekarang** — memblokir SDD terkait |
-| B — Parameter operasional | 14 | Setelah staging & uji beban |
+| A — Kebijakan produk | 1 | `TBD-AI-D` — sebelum `GL-07` |
+| B — Parameter operasional | 13 | Setelah staging & uji beban |
 | C — Pilihan teknis | 0 | Seluruhnya tertutup |
-| D — Konten prompt | 1 | M5 |
+| D — Konten prompt | 0 | Seluruhnya tertutup 25 Agustus 2026 |
 
 Open Issues tingkat requirement terkumpul di [`../PRD/06-quality/traceability.md`](../PRD/06-quality/traceability.md) bagian D.

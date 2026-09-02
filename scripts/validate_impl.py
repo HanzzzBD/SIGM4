@@ -107,7 +107,7 @@ for p in phase_files:
     ids = sorted(set(re.findall(r"^\| `(PR-\d{2}-\d{2})`", texts[p], re.M)))
     per_phase[p.stem] = ids
 total = sum(len(v) for v in per_phase.values())
-check("Total PR = 162", total == 162, f"{total} ditemukan")
+check("Total PR = 163", total == 163, f"{total} ditemukan")
 
 gaps = []
 for ph, ids in per_phase.items():

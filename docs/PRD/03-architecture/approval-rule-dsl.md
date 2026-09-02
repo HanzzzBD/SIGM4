@@ -118,6 +118,7 @@ Bila SDD dan lampiran ini berbeda, **lampiran ini yang berlaku** dan SDD wajib d
 |---|---|---|
 | `approver_type` | `role` \| `user` | Berdasarkan role atau pengguna spesifik |
 | `on_sla_breach` | `remind` \| `escalate` | Perilaku saat SLA terlampaui |
+| `fallback_approver` | `{ approver_type, approver_role \| approver_user_id }` | **Opsional, tingkat aturan** (bukan tingkat langkah). Dipakai bila seluruh langkah terlewati (`RE-11`). Bila tidak diisi, berlaku role Administrator |
 | `terminal_on_exhausted_escalation` | `hold_and_alert` \| `auto_reject` | **Menutup celah menggantung**: perilaku bila seluruh eskalasi habis dan tetap tidak ada keputusan. Nilai bawaan `hold_and_alert` — pengajuan tetap menunggu namun Administrator dan Petugas Sarpras dialarmi (NT-47) |
 
 ### D.6 Contoh Aturan Lengkap
@@ -157,5 +158,6 @@ Bila SDD dan lampiran ini berbeda, **lampiran ini yang berlaku** dan SDD wajib d
 |---|---|
 | RE-09 | **First responder wins** (BR-041) diimplementasikan dengan `UPDATE … WHERE status = 'Menunggu' AND langkah_aktif = :n` yang mengembalikan jumlah baris terpengaruh. Pemenang menerima `200`; approver yang kalah menerima `409 APPROVAL_ALREADY_DECIDED` beserta identitas pemutus dan waktunya |
 | RE-10 | Approver yang identik dengan pemohon menyebabkan langkah **dilewati** dan dicatat `dilewati — konflik kepentingan` (BR-039) |
-| RE-11 | Bila **seluruh** langkah terlewati karena konflik kepentingan, pengajuan diarahkan ke *fallback approver* yang wajib ditetapkan pada setiap aturan; bila tidak ditetapkan, berlaku role Administrator. Pengajuan tidak pernah otomatis disetujui karena kekosongan approver |
+| RE-11 | Bila **seluruh** langkah terlewati, pengajuan diarahkan ke *fallback approver* — field **opsional** tingkat aturan (Lampiran D.5). Bila aturan tidak menetapkannya, berlaku role Administrator. Pengajuan tidak pernah otomatis disetujui karena kekosongan approver |
 | RE-12 | Delegasi (FR-10.2 A3) tidak memindahkan tanggung jawab audit: linimasa mencatat approver asli dan penerima delegasi |
+| RE-13 | Langkah yang approver-nya bertipe `user` dan pengguna tersebut **nonaktif saat langkah hendak diaktifkan** ditandai **dilewati** dengan alasan `dilewati — approver nonaktif`, dan pemrosesan lanjut ke langkah berikutnya. Bila seluruh langkah menjadi tidak tersedia karena sebab apa pun — konflik kepentingan (RE-10), approver nonaktif, atau gabungan keduanya — berlaku jalur fallback RE-11 yang sama. Administrator dialarmi (NT-47). Penonaktifan pengguna tidak pernah tertahan oleh instance yang sedang berjalan |
