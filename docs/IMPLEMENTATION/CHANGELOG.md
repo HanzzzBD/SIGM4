@@ -7,6 +7,27 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 ---
 
 
+## 2 September 2026 — Sinkronisasi turunan: alarm kuota & sisa rujukan `TBD-AI-D`
+
+**Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). **Tidak ada TBD yang dibuka maupun ditutup**; entri ini murni menyelaraskan lapisan turunan dengan dua keputusan yang sudah diambil hari itu (`SDD-AI-16`, `SDD-AI-17`).
+
+Dua keputusan 2 September 2026 tidak seluruhnya mengalir ke bawah. Keputusan tier gratis (`SDD-AI-17`) menghapus tagihan, tetapi delapan tempat masih mendefinisikan alarm `OBS-05` sebagai *biaya harian Gemini API* — termasuk `SDD-15`, yang dicatat sebagai pemilik penyesuaian itu tetapi tidak pernah disunting. Penutupan `TBD-AI-D` (`SDD-AI-16`) juga menyisakan tiga klaim bahwa ia masih memblokir `GL-07`, salah satunya berselisih dengan paragraf empat baris di bawahnya pada berkas yang sama.
+
+| Yang berubah | Berkas yang menyesuaikan |
+|---|---|
+| Alarm & metrik `OBS-05`: biaya harian → konsumsi kuota + batas laju penyedia | `SDD/15-observability-logging.md` §4.3 §4.6 §6 §8 · `SDD/10-ai-orchestrator-design.md` §4.1 §4.8 §6 §8 · `SDD/13-security-design.md` §4.1 §4.4 · `SDD/TBD-REGISTER.md` · `phases/phase-03.md` |
+| Sisa rujukan `TBD-AI-D` sebagai penghalang `GL-07` dihapus | `IMPLEMENTATION-STATUS.md` (baris tabel *Penghalang aktif*) · `phases/phase-03.md` · `SDD/10-ai-orchestrator-design.md` §5 |
+| Hitungan register diselaraskan `13 terbuka · 28 tertutup` | `UX/UX-SPEC.md` §Tindak lanjut |
+| Kalimat menggantung sisa `TBD-AI-D` terbuka | `ROADMAP.md` §8 |
+| Requirement PRD `AI-CTL-08`, `OBS-05`, Bab 22.1, Bab 27.9 | dicatat di `PRD/CHANGELOG.md`, bukan di sini |
+
+**Tidak ada keputusan, requirement, angka ambang, maupun ID baru.** `TBD-AI-C` tetap terbuka dan tetap tanpa angka — yang berubah hanya rumusan pertanyaannya, mengikuti `SDD-AI-17`. Register kini mencatatnya menyentuh `SDD-10` **dan** `SDD-15`.
+
+**Dampak pada lintasan kritis:** tidak ada. Total PR tetap **163**; tidak ada PR bertambah, berpindah phase, atau berubah kompleksitas.
+
+---
+
+
 ## 2 September 2026 — `TBD-AI-D` tertutup & tier gratis diizinkan
 
 **Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). Satu TBD ditutup; **kelompok A kembali kosong**.

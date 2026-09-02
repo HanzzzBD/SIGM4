@@ -157,5 +157,5 @@ Dua keputusan pemilik produk pada hari yang sama, dicatat terpisah karena menjaw
 |---|---|
 | Penyaringan PII pada **teks bebas pengguna** | `AI-SEC-02` menyaring nilai field yang kembali lewat hasil tool, bukan pertanyaan yang diketik pengguna. Pengguna yang menyebut namanya sendiri mengirimkannya ke penyedia. Belum ada requirement yang menanganinya — **perlu keputusan pemilik produk** |
 | Risiko "isi percakapan dipakai meningkatkan produk penyedia" | Belum punya ID risiko sendiri; kini tercatat hanya sebagai konsekuensi pada `DP-AI-04`. Kandidat `RS-22` — **belum dibuat**, menunggu keputusan |
-| `TBD-AI-C` | Tetap terbuka, tetapi objeknya berubah: tanpa tagihan, alarm `OBS-05` perlu diarahkan ke kuota penyedia alih-alih biaya harian (`SDD-15`) |
+| `TBD-AI-C` | Tetap terbuka, tetapi objeknya berubah: tanpa tagihan, alarm `OBS-05` **sudah** diarahkan ke konsumsi kuota dan batas laju penyedia (`SDD-15` §4.3 & §4.6, disinkronkan 2 September 2026). Yang tersisa hanyalah **angkanya**, dan itu menunggu pengukuran — bukan keputusan |
 

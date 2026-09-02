@@ -27,7 +27,7 @@ Menebaknya sekarang tidak menambah nilai; ditetapkan setelah uji beban `NFR-P-09
 | **TBD-EVT-A** | [SDD-07](07-event-flow.md) | Retensi baris `event_outbox` yang sudah diproses. Berkaitan dengan **TBD-AVL-A**. |
 | **TBD-FS-B** | [SDD-09](09-file-storage-design.md) | Apakah berkas perlu dipindah ke penyimpanan dingin setelah entitasnya lama tidak aktif. Berkaitan dengan estimasi biaya. |
 | **TBD-AI-B** | [SDD-10](10-ai-orchestrator-design.md) | Nilai `thinking_level` produksi untuk chatbot. Rancangan memilih `"minimal"` demi latensi; keputusan final menunggu hasil eval terhadap `SC-10`. |
-| **TBD-AI-C** | [SDD-10](10-ai-orchestrator-design.md) | Ambang biaya harian Gemini API yang memicu alarm. Bergantung anggaran sekolah. |
+| **TBD-AI-C** | [SDD-10](10-ai-orchestrator-design.md) · [SDD-15](15-observability-logging.md) | Ambang konsumsi kuota dan batas laju Gemini API yang memicu alarm (`OBS-05`). Sejak tier gratis (`SDD-AI-17`) objeknya bukan lagi biaya harian — tidak ada tagihan yang diambang-batasi. |
 | **TBD-PERF-A** | [SDD-14](14-performance-design.md) | Ambang jumlah kueri per endpoint untuk uji N+1 (`SDD-PERF-02`). Dikalibrasi saat endpoint pertama dibangun. |
 | **TBD-SEC-A** | [SDD-13](13-security-design.md) | Penyedia penetration test independen dan anggarannya — dependensi jadwal pada `GL-04`. |
 | **TBD-OBS-B** | [SDD-15](15-observability-logging.md) | Penerima alarm (*on-call*) dan jalur eskalasi. `OBS-07` mewajibkannya sebelum go-live; keputusan organisasi sekolah. |

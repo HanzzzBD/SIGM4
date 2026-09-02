@@ -136,7 +136,6 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | Yang terhalang | Menunggu | Sejak | Penanggung jawab |
 |---|---|---|---|
 | Phase 08 | `TBD-SEC-A` (penyedia pentest) · `TBD-OBS-B` (penerima alarm) | — | Pemilik produk / sekolah |
-| `GL-07` (gerbang go-live) | `TBD-AI-D` (persetujuan pemrosesan data chatbot lintas yurisdiksi) | 2 September 2026 | Pemilik produk / sekolah |
 
 Daftar TBD lengkap beserta pertanyaannya: [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md) — **13 terbuka, 28 tertutup**. Jadwal penutupan yang diharapkan: [`ROADMAP.md` §8](ROADMAP.md).
 

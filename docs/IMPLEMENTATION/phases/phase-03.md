@@ -157,7 +157,7 @@ M-05  M-06  M-07  M-11  M-14  M-19   ← tanpa ketergantungan antar-modul
 - [ ] Hitung token lewat `models.countTokens` terhadap model produksi, bukan pustaka pihak ketiga
 - [ ] Periksa `status` sebelum membaca keluaran (`SDD-AI-11`)
 - [ ] Kunci dibaca dari `GEMINI_API_KEY`; startup gagal bila kosong (`SDD-INF-08`)
-- [ ] Batas biaya harian + alarm (`AI-CTL-05`, **TBD-AI-C**)
+- [ ] Pemantauan konsumsi kuota & batas laju penyedia + alarm (`AI-CTL-08` · retry 429 `AI-CTL-05`, **TBD-AI-C**)
 
 ## 9. Acceptance Checklist
 
@@ -202,7 +202,7 @@ Mulai phase ini `booking_slots` memuat data bermakna — `DROP TABLE` tidak lagi
 - [ ] Uji lintas-scope chatbot lulus untuk minimal tiga role berbeda
 - [ ] Rasio *cache read* chatbot terukur dan tercatat di log phase
 - [ ] Aset dari dua asal (pengadaan & manual) hidup berdampingan tanpa galat
-- [ ] `TBD-AI-B`, `TBD-AI-C`, dan `TBD-AI-D` ditinjau; yang masih terbuka tercatat sebagai risiko terbawa. `TBD-AI-D` tidak memblokir phase ini tetapi memblokir `GL-07`. `TBD-AI-A` dan `TBD-FS-A` sudah tertutup 25 Agustus 2026 (`SDD-AI-13`, `SDD-FS-11`)
+- [ ] `TBD-AI-B` dan `TBD-AI-C` ditinjau; yang masih terbuka tercatat sebagai risiko terbawa. `TBD-AI-A` dan `TBD-FS-A` sudah tertutup 25 Agustus 2026 (`SDD-AI-13`, `SDD-FS-11`), `TBD-AI-D` tertutup 2 September 2026 (`SDD-AI-16`) sehingga `GL-07` bagian chatbot tidak lagi tertahan
 - [ ] Log phase terisi
 
 ---

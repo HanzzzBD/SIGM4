@@ -6,7 +6,7 @@ Sistem memiliki **satu fitur AI**, yaitu **Chatbot Asisten SIGM4** — asisten p
 
 | Aspek | Ketentuan |
 |---|---|
-| **Model** | **Google Gemini Developer API — *paid tier*** dengan model `gemini-3.6-flash` (versi stabil/GA) sebagai model utama; dapat dikonfigurasi Administrator **di antara model stabil/GA saja**. Alias `latest`, versi *preview*, dan versi eksperimental dilarang karena siklus hidupnya tidak menjamin perilaku tetap. **Tier gratis diizinkan sejak 2 September 2026** (keputusan pemilik produk, `DP-AI-04`); konsekuensinya isi percakapan dapat dipakai penyedia untuk meningkatkan produknya, dan kuota serta batas laju tier gratis menjadi batasan operasional |
+| **Model** | **Google Gemini Developer API — *tier gratis* sejak 2 September 2026** (keputusan pemilik produk, `DP-AI-04`) dengan model `gemini-3.6-flash` (versi stabil/GA) sebagai model utama; dapat dikonfigurasi Administrator **di antara model stabil/GA saja**. Alias `latest`, versi *preview*, dan versi eksperimental dilarang karena siklus hidupnya tidak menjamin perilaku tetap. Konsekuensi tier gratis: isi percakapan dapat dipakai penyedia untuk meningkatkan produknya, dan kuota serta batas laju penyedia menjadi batasan operasional — bukan biaya. Paid tier tidak dilarang; tier adalah keputusan sekolah, bukan syarat rancangan (`SDD-AI-17`) |
 | **Pola integrasi** | Tool calling (function calling) terhadap API internal, bukan pengiriman seluruh basis data ke model. Model hanya **mengusulkan** panggilan tool; yang menjalankannya adalah backend SIGM4, bukan SDK penyedia (BR-076) |
 | **Sifat akses** | Read-only, difilter permission pengguna pada lapisan query |
 | **Bahasa** | Bahasa Indonesia |
@@ -146,7 +146,7 @@ SC-10 menargetkan akurasi ≥ 85%, namun sebelumnya tidak ada cara mengukurnya. 
 | AI-CTL-05 | **Retry**: maksimum 2 percobaan ulang untuk galat sementara (429, 5xx) dengan *exponential backoff*; galat permanen tidak diulang |
 | AI-CTL-06 | **Rate limit per pengguna: 10 pesan per menit**, melengkapi batas harian yang sudah ada, agar kuota harian tidak habis dalam satu menit dan sistem tidak terbebani |
 | AI-CTL-07 | **Streaming respons** diaktifkan agar jawaban tampil bertahap; ini membuat latensi hingga 8 detik (AI-L-08) terasa responsif, bukan menggantung |
-| AI-CTL-08 | Penggunaan token per pengguna dan biaya harian dicatat dan ditampilkan pada Dashboard Administrator, dengan alarm bila melewati ambang (OBS-05) |
+| AI-CTL-08 | Penggunaan token per pengguna dan konsumsi kuota penyedia dicatat dan ditampilkan pada Dashboard Administrator, dengan alarm bila melewati ambang (OBS-05). Sejak tier gratis diizinkan (DP-AI-04) tidak ada biaya harian yang diambang-batasi; yang dipantau adalah kuota dan batas laju penyedia |
 | AI-CTL-09 | Administrator dapat menonaktifkan chatbot sepenuhnya melalui parameter sistem tanpa memengaruhi modul lain (NFR-A-05) |
 | AI-CTL-10 | Kegagalan layanan LLM tidak pernah menghasilkan galat pada modul lain; kartu chatbot menampilkan status gangguan (OBS-06) |
 
