@@ -2,7 +2,7 @@
 
 Berkas ini mengumpulkan seluruh titik dalam SDD yang **memerlukan keputusan** dan sengaja tidak diisi. Tidak ada angka, kebijakan, atau perilaku yang dikarang.
 
-**Status: 25 terbuka · 15 tertutup** — terkumpul dari 18 berkas SDD dan dari [proposal perubahan lingkup domain Bahan](../PRD/01-product/bahan-scope-change.md).
+**Status: 14 terbuka · 27 tertutup** — terkumpul dari 18 berkas SDD dan dari [proposal perubahan lingkup domain Bahan](../PRD/01-product/bahan-scope-change.md).
 
 ---
 
@@ -12,16 +12,7 @@ Perlu keputusan pemilik produk. Tidak dapat ditetapkan tim teknis.
 
 | ID | Berkas | Pertanyaan |
 |---|---|---|
-| **TBD-AVL-B** | [SDD-01](01-availability-concurrency.md) | Endpoint reservasi: tetap satu `/reservations` (M-07 pemilik) atau dipecah `/room-reservations` + `/item-reservations`. Memecahnya mengubah daftar endpoint PRD = perubahan lingkup. |
-| **TBD-APR-A** | [SDD-02](02-approval-engine.md) | `fallback_approver` disebut `RE-11` tetapi tidak ada pada skema Lampiran D.5. Field tingkat aturan, atau selalu jatuh ke Administrator tanpa konfigurasi? |
-| **TBD-APR-B** | [SDD-02](02-approval-engine.md) | Jam kerja untuk perhitungan SLA: jam operasional sekolah (06.00–18.00) atau jam administratif yang lebih sempit? Menggeser seluruh tenggat dan pengukuran `SC-03`. |
-| **TBD-APR-C** | [SDD-02](02-approval-engine.md) | Perilaku bila approver `approver_type='user'` dinonaktifkan setelah instance berjalan. `FR-02.1 A3` mengatur pencegahan, bukan pemulihan. |
-| **TBD-NTF-B** | [SDD-08](08-notification-design.md) | Apakah notifikasi terarsip (>90 hari) tetap dapat diakses pengguna lewat filter arsip, atau hanya administratif. |
-| **TBD-FS-A** | [SDD-09](09-file-storage-design.md) · [SDD-13](13-security-design.md) | Perlakuan foto berwajah saat permintaan penghapusan data (`DP-04`). Pseudonimisasi identitas tidak menghapus wajah pada foto bukti serah terima/kerusakan. Pertahankan sebagai bukti, kaburkan, atau hapus? |
-| **TBD-EVT-B** | [SDD-07](07-event-flow.md) · [SDD-15](15-observability-logging.md) | Apakah dead letter memerlukan antarmuka pemrosesan ulang di menu Administrator, atau cukup lewat akses operasional. Berdampak pada lingkup M-20. |
-| **TBD-SEC-B** | [SDD-13](13-security-design.md) | Apakah sekolah memerlukan kepatuhan formal di luar UU PDP (mis. standar dinas pendidikan setempat). |
-| **TBD-BHN-E** | [M-19](../PRD/02-modules/m19-chatbot.md) · [ai-features](../PRD/03-architecture/ai-features.md) | Katalog tool chatbot (`get_asset_detail`, `get_damage_report_status`, dan seterusnya) seluruhnya berdomain Aset. Apakah chatbot perlu tool bahan — mis. menanyakan saldo atau bahan yang menipis? Menambah tool adalah **requirement baru** di PRD, bukan keputusan SDD. |
-| **TBD-AUTH-C** | [SDD-03](03-authorization.md) | Konfirmasi bahwa penambahan mekanisme teknis murni seperti `role_version` boleh diputuskan di tingkat SDD tanpa dianggap perubahan requirement. |
+| **TBD-AI-D** | [SDD-10](10-ai-orchestrator-design.md) | Persetujuan tertulis sekolah atas pemrosesan data percakapan chatbot **lintas yurisdiksi**. Gemini Developer API tidak menjamin residensi data; paid tier menjamin data tidak dipakai melatih model, tetapi lokasi pemrosesan tidak dapat dibatasi (`RS-21`). Memblokir `GL-07`, tidak memblokir Phase 03. |
 
 ## B. Parameter operasional — sebaiknya ditunda sampai staging berdiri
 
@@ -37,12 +28,13 @@ Menebaknya sekarang tidak menambah nilai; ditetapkan setelah uji beban `NFR-P-09
 | **TBD-SESS-B** | [SDD-04](04-authentication-session.md) | Retensi dan pembersihan baris `refresh_tokens` yang kedaluwarsa atau dicabut. Tabel tumbuh monoton; indeks `expires_at` sudah ada, angkanya belum. Berkaitan dengan **TBD-EVT-A** dan **TBD-AVL-A**. |
 | **TBD-EVT-A** | [SDD-07](07-event-flow.md) | Retensi baris `event_outbox` yang sudah diproses. Berkaitan dengan **TBD-AVL-A**. |
 | **TBD-FS-B** | [SDD-09](09-file-storage-design.md) | Apakah berkas perlu dipindah ke penyimpanan dingin setelah entitasnya lama tidak aktif. Berkaitan dengan estimasi biaya. |
-| **TBD-AI-B** | [SDD-10](10-ai-orchestrator-design.md) | Nilai `effort` produksi untuk chatbot. Rancangan memilih `"low"` demi latensi; keputusan final menunggu hasil eval terhadap `SC-10`. |
-| **TBD-AI-C** | [SDD-10](10-ai-orchestrator-design.md) | Ambang biaya harian Claude API yang memicu alarm. Bergantung anggaran sekolah. |
+| **TBD-AI-B** | [SDD-10](10-ai-orchestrator-design.md) | Nilai `thinking_level` produksi untuk chatbot. Rancangan memilih `"minimal"` demi latensi; keputusan final menunggu hasil eval terhadap `SC-10`. |
+| **TBD-AI-C** | [SDD-10](10-ai-orchestrator-design.md) | Ambang biaya harian Gemini API yang memicu alarm. Bergantung anggaran sekolah. |
 | **TBD-PERF-A** | [SDD-14](14-performance-design.md) | Ambang jumlah kueri per endpoint untuk uji N+1 (`SDD-PERF-02`). Dikalibrasi saat endpoint pertama dibangun. |
-| **TBD-INF-A** | [SDD-16](16-infrastructure-deployment.md) | Penyedia infrastruktur. Menentukan sizing dan biaya nyata, serta PostgreSQL terkelola vs dikelola sendiri. |
 | **TBD-SEC-A** | [SDD-13](13-security-design.md) | Penyedia penetration test independen dan anggarannya — dependensi jadwal pada `GL-04`. |
 | **TBD-OBS-B** | [SDD-15](15-observability-logging.md) | Penerima alarm (*on-call*) dan jalur eskalasi. `OBS-07` mewajibkannya sebelum go-live; keputusan organisasi sekolah. |
+
+**`TBD-INF-A` sudah tertutup 25 Agustus 2026** — ia adalah pengecualian di kelompok ini karena staging yang menjadi prasyarat kelompok B justru tidak dapat berdiri sebelum penyedianya dipilih. `SDD-INF-11` menetapkan penyedianya; yang tetap menunggu uji beban adalah sizing dan biayanya, dan itu berjalan bersama `TBD-AVL-C`.
 
 ## C. Pilihan teknis murni — dapat diputuskan arsitek
 
@@ -54,7 +46,6 @@ _Seluruhnya tertutup — lihat [Tertutup](#tertutup)._
 
 | ID | Berkas | Pertanyaan |
 |---|---|---|
-| **TBD-AI-A** | [SDD-10](10-ai-orchestrator-design.md) | Panjang dan isi final prefiks statis system prompt. **Harus ≥ 1.024 token** agar prompt caching aktif pada `claude-sonnet-5` — di bawah itu caching mati tanpa galat. Bila naskah Bab 22.5 lebih pendek, perlu diputuskan: perkaya prefiks, atau lepaskan caching. |
 
 ---
 
@@ -62,12 +53,12 @@ _Seluruhnya tertutup — lihat [Tertutup](#tertutup)._
 
 | Kelompok | Jumlah | Kapan diputuskan |
 |---|---|---|
-| A — Kebijakan produk | 10 | **Sekarang** — memblokir penyelesaian SDD terkait |
-| B — Parameter operasional | 14 | Setelah staging berdiri & uji beban dijalankan |
+| A — Kebijakan produk | 1 | `TBD-AI-D` dibuka 2 September 2026; wajib tertutup sebelum `GL-07` |
+| B — Parameter operasional | 13 | Setelah staging berdiri & uji beban dijalankan |
 | C — Pilihan teknis | 0 | Seluruhnya tertutup 6 Agustus 2026 |
-| D — Konten | 1 | Saat naskah prompt disusun (M5) |
+| D — Konten | 0 | Seluruhnya tertutup 25 Agustus 2026 |
 
-Kelompok B sengaja ditunda: menetapkan ukuran pool koneksi atau TTL cache tanpa data pengukuran hanya memindahkan tebakan ke dokumen. Kelompok A tidak bisa ditunda — SDD yang bersangkutan tidak dapat naik dari Draft tanpa jawabannya.
+Kelompok B sengaja ditunda: menetapkan ukuran pool koneksi atau TTL cache tanpa data pengukuran hanya memindahkan tebakan ke dokumen. **Kelompok C dan D seluruhnya tertutup.** Kelompok A berisi satu butir yang dibuka kembali oleh migrasi penyedia LLM 2 September 2026: `TBD-AI-D` menunggu keputusan sekolah, bukan pengukuran. Ia **tidak memblokir Phase 00 hingga Phase 06** — chatbot tetap dibangun dan dievaluasi pada Phase 03 — tetapi memblokir gerbang go-live `GL-07`. Bila persetujuan tidak diberikan, jalur yang tersedia adalah menonaktifkan chatbot lewat `AI-CTL-09`, bukan mengganti rancangannya.
 
 ---
 
@@ -90,6 +81,18 @@ Kelompok B sengaja ditunda: menetapkan ukuran pool koneksi atau TTL cache tanpa 
 | **TBD-NTF-A** | [SDD-08](08-notification-design.md) | Pengelompokan `jenis` untuk preferensi notifikasi (`FR-17.3`) belum ada di PRD. Perlu daftar kelompok yang dilihat pengguna + pemetaan tiap `NT-xx`. | **UXD-05** — keputusan pemilik produk | 22 Agustus 2026 |
 | **TBD-MOB-B** | [SDD-12](12-mobile-architecture.md) | Apakah aplikasi mobile perlu dukungan tablet khusus. `NFR-C-04` hanya menyebut potret dan lanskap terbatas. | **UXD-11** — keputusan pemilik produk | 22 Agustus 2026 |
 | **TBD-FE-B** | [SDD-11](11-frontend-architecture.md) | Apakah web perlu mode gelap. Tidak disebut PRD; berdampak pada jumlah token warna dan uji kontras. | **UXD-12** — keputusan pemilik produk | 22 Agustus 2026 |
+| **TBD-SEC-B** | [SDD-13](13-security-design.md) · [SDD-15](15-observability-logging.md) | Apakah sekolah memerlukan kepatuhan formal di luar UU PDP (mis. standar dinas pendidikan setempat). | `SDD-SEC-10` · `SDD-OBS-10` — UU PDP saja, **tanpa** standar tambahan; disertai kewajiban residensi data wilayah Indonesia (Keputusan #29) | 25 Agustus 2026 |
+| **TBD-INF-A** | [SDD-16](16-infrastructure-deployment.md) | Penyedia infrastruktur. Menentukan sizing dan biaya nyata, serta PostgreSQL terkelola vs dikelola sendiri. | `SDD-INF-11` — VPS ber-region Indonesia + PostgreSQL terkelola; Kubernetes tidak dipakai. Sizing & biaya tetap menunggu uji beban bersama `TBD-AVL-C` | 25 Agustus 2026 |
+| **TBD-AUTH-C** | [SDD-03](03-authorization.md) | Konfirmasi bahwa penambahan mekanisme teknis murni seperti `role_version` boleh diputuskan di tingkat SDD tanpa dianggap perubahan requirement. | `SDD-AUTH-11` — boleh, bila lolos **uji tiga syarat**; gagal satu syarat berarti wajib naik ke PRD | 25 Agustus 2026 |
+| **TBD-EVT-B** | [SDD-07](07-event-flow.md) · [SDD-15](15-observability-logging.md) | Apakah dead letter memerlukan antarmuka pemrosesan ulang di menu Administrator, atau cukup lewat akses operasional. Berdampak pada lingkup M-20. | `SDD-EVT-10` · **UXD-13** — terlihat sebagai kartu baca-saja 19.2; pemrosesan ulang tetap operasional. Tanpa halaman, permission, atau endpoint tulis baru | 25 Agustus 2026 |
+| **TBD-APR-A** | [SDD-02](02-approval-engine.md) | `fallback_approver` disebut `RE-11` tetapi tidak ada pada skema Lampiran D.5. Field tingkat aturan, atau selalu jatuh ke Administrator tanpa konfigurasi? | `SDD-APR-13` · **UXD-09** — field **opsional** tingkat aturan; kosong berarti Administrator. `RE-11` disunting agar berhenti menyebut "wajib" | 25 Agustus 2026 |
+| **TBD-APR-B** | [SDD-02](02-approval-engine.md) | Jam kerja untuk perhitungan SLA: jam operasional sekolah (06.00–18.00) atau jam administratif yang lebih sempit? | `SDD-APR-15` — `CAL-01` ditegaskan apa adanya: jam operasional terkonfigurasi. Tidak ada kalender kedua; pengencangan tenggat lewat `sla_hours` per aturan | 25 Agustus 2026 |
+| **TBD-APR-C** | [SDD-02](02-approval-engine.md) | Perilaku bila approver `approver_type='user'` dinonaktifkan setelah instance berjalan. | `SDD-APR-14` · `RE-13` — langkah dilewati beralasan `approver nonaktif`, lalu jalur fallback `RE-11` yang sama. Penonaktifan tidak pernah tertahan instance berjalan | 25 Agustus 2026 |
+| **TBD-NTF-B** | [SDD-08](08-notification-design.md) | Apakah notifikasi terarsip (>90 hari) tetap dapat diakses pengguna lewat filter arsip, atau hanya administratif. | `SDD-NTF-10` · **UXD-10** — dapat dibaca pemiliknya lewat filter arsip P-13; tabel arsip memperoleh indeks `(user_id, dibuat_pada DESC)` | 25 Agustus 2026 |
+| **TBD-AVL-B** | [SDD-01](01-availability-concurrency.md) | Endpoint reservasi: tetap satu `/reservations` atau dipecah per jenis. | `SDD-01 §8` · **UXD-15** — tetap satu rumpun `/reservations`; `BR-017`…`BR-025` berlaku identik bagi kedua jenis | 25 Agustus 2026 |
+| **TBD-FS-A** | [SDD-09](09-file-storage-design.md) · [SDD-13](13-security-design.md) | Perlakuan foto berwajah saat permintaan penghapusan data (`DP-04`). | `SDD-FS-11` · `DP-05a` · **UXD-14** — dipertahankan sebagai bukti; **wajib** dinyatakan pada Pemberitahuan Privasi | 25 Agustus 2026 |
+| **TBD-BHN-E** | [ai-features](../PRD/03-architecture/ai-features.md) | Apakah chatbot perlu tool berdomain Bahan? | 22.3 — dua tool (`get_material_stock`, `get_low_stock_materials`) ditambahkan; diimplementasikan `PR-05-25` di Phase 05 | 25 Agustus 2026 |
+| **TBD-AI-A** | [SDD-10](10-ai-orchestrator-design.md) | Panjang dan isi final prefiks statis system prompt (ambang caching penyedia). | `SDD-AI-13` — diperkaya dengan isi berguna; uji memverifikasi panjang **dan** cache benar-benar kena. Angka disesuaikan ke ambang Gemini 3.x (≥ 4.096, sasaran ≥ 4.500) pada migrasi 2 September 2026 | 25 Agustus 2026 |
 
 Kolom **Keputusan** memuat ID keputusan SDD — atau ID keputusan UX (`UXD-xx`) bila yang memutuskan adalah pemilik produk, bukan arsitek — dan bukan uraiannya — uraian, opsi yang ditolak, dan konsekuensinya ada di berkas SDD pemiliknya.
 

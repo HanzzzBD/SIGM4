@@ -27,7 +27,7 @@ flowchart TB
 
     subgraph EXT["Layanan Eksternal"]
         FCM["Firebase Cloud Messaging"]
-        LLM["Claude API<br/>Layanan LLM"]
+        LLM["Gemini API<br/>Layanan LLM"]
     end
 
     W --> GW

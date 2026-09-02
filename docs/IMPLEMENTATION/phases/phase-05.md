@@ -81,7 +81,7 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 | [`02-approval-engine.md`](../../SDD/02-approval-engine.md) | Penerapan approval bertingkat pada M-21 |
 | [`09-file-storage-design.md`](../../SDD/09-file-storage-design.md) | `SDD-FS-08` `SDD-FS-09` (foto bukti serah terima) |
 | [`12-mobile-architecture.md`](../../SDD/12-mobile-architecture.md) | `SDD-MOB-04` (serah terima di lapangan) |
-| [`13-security-design.md`](../../SDD/13-security-design.md) | `SDD-SEC-08` (pseudonimisasi — foto berwajah, **TBD-FS-A**) |
+| [`13-security-design.md`](../../SDD/13-security-design.md) | `SDD-SEC-08` (pseudonimisasi) · `SDD-FS-11` (foto berwajah dipertahankan sebagai bukti, `DP-05a`) |
 
 ## 6. Deliverables
 
@@ -98,7 +98,7 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 | PR | Judul | Kompleksitas | Bergantung | FR/SDD | Acceptance |
 |---|---|:---:|---|---|---|
 | `PR-05-01` | Skema peminjaman + check-out dari reservasi | L | Ph04 | `FR-09.1`, `BR-026` `BR-026a` `BR-027` | Check-out tanpa reservasi disetujui ditolak |
-| `PR-05-02` | Bukti serah terima: foto + tanda tangan | M | 01, Ph03 | `FR-09.1`, `SDD-FS-08`, `DP-01` | Foto tersimpan ter-*scan* AV; wajah tunduk **TBD-FS-A** |
+| `PR-05-02` | Bukti serah terima: foto + tanda tangan | M | 01, Ph03 | `FR-09.1`, `SDD-FS-08`, `DP-01` `DP-05a`, `SDD-FS-11` | Foto tersimpan ter-*scan* AV; foto berwajah dipertahankan utuh dan dilindungi `DP-05` — tidak dikaburkan, tidak dihapus |
 | `PR-05-03` | Check-in + pemeriksaan kondisi + kerusakan baru | L | 01, Ph03 | `FR-09.2`, `BR-028` … `BR-028e` | Kerusakan saat kembali membuat laporan M-11 otomatis |
 | `PR-05-04` | Pelepasan slot & pemulihan status aset saat check-in | M | 03, Ph02 | `BR-030`, `SDD-AVL-07` | Aset kembali tersedia seketika |
 | `PR-05-05` | Pemantauan keterlambatan + pengingat berjenjang | M | 01 | `FR-09.3`, `BR-029` `BR-031`, `CAL-01` … `CAL-03` | Keterlambatan dihitung dengan hari kerja |
@@ -121,6 +121,7 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 | `PR-05-22` | Stok minimum + `NT-49` lewat outbox | M | 17, Ph02 | `FR-22.7`, `BR-085`, `SDD-EVT-03` | Notifikasi terbit sekali saat ambang ditembus, tidak berulang tiap transaksi |
 | `PR-05-23` | QR bahan per jenis + pemindaian | S | 16, Ph03 | `BR-090`, `FR-05.1` `FR-05.2` | QR bahan membuka halaman bahan, tidak pernah dibaca sebagai unit aset |
 | `PR-05-24` | Opname bahan: sesi domain `BAHAN` + layar mobile `MS-22`/`MS-23` | L | 17, Ph04 | `FR-13.4`, `BR-093` `BR-094` `BR-095`, `MOB-PERF-06` | Sesi campur domain ditolak; saldo berubah hanya setelah disetujui Pimpinan |
+| `PR-05-25` | Tool chatbot bahan: `get_material_stock` + `get_low_stock_materials` | S | 17, 22, Ph03 | 22.3, `BR-075` `BR-076`, `SDD-AUTH-07`, `SDD-AI-13`, `AI-SEC-03` | Kedua tool memanggil repository M-22 dengan `AuthContext` penanya; role tanpa hak atas M-22 menerima hasil kosong, bukan galat. Awalan statis terbentuk ulang dan `usage.total_cached_tokens > 0` pada permintaan kedua setelah rilis |
 
 ## 8. Task Breakdown
 
@@ -154,14 +155,15 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 - [ ] `material_balances` tidak pernah menyimpang dari `material_transactions` — diuji dengan penyerahan simultan
 - [ ] Saldo bahan tidak pernah negatif, diuji lewat jalur service **dan** jalur SQL langsung (`CHECK`)
 - [ ] Sesi opname yang mencampur domain Aset dan Bahan ditolak (`BR-093`)
-- [ ] Foto serah terima tunduk pada keputusan **TBD-FS-A**; bila masih terbuka, tercatat sebagai risiko terbawa ke Phase 08
+- [ ] Foto serah terima mengikuti `SDD-FS-11`/`DP-05a`; **Pemberitahuan Privasi diperiksa memuat pernyataannya** — kewajiban itu melekat pada `DP-05a`, bukan opsional
 
 ## 10. Risks
 
 | Risiko | Dampak | Mitigasi | Rujukan |
 |---|---|---|---|
 | Penghapusan diimplementasikan sebagai `DELETE` baris | Riwayat dan activity log pecah — tidak dapat dipulihkan | Uji eksplisit: aset terhapus harus tetap terbaca di riwayat lama | `BR-008` |
-| **TBD-FS-A** belum terjawab saat `PR-05-02` | Foto berwajah tersimpan tanpa kebijakan penghapusan — risiko kepatuhan PDP | Kelompok A; wajib dijawab sebelum phase mulai | `DP-04` |
+| ~~`TBD-FS-A` belum terjawab saat `PR-05-02`~~ | — | ✅ **Tertutup 25 Agustus 2026**: foto dipertahankan sebagai bukti (`DP-05a`, `SDD-FS-11`); yang wajib dipastikan kini adalah Pemberitahuan Privasi menyatakannya | `DP-04` · `DP-05a` |
+| `PR-05-25` membatalkan prompt cache bagi seluruh pengguna | Biaya Gemini API melonjak sesaat pada rilis; latensi naik sampai prefiks baru terbentuk | Disengaja dan terjadwal bersama rilis, bukan perubahan runtime (`SDD-10 §5`). `AI-EV-04` dijalankan ulang sebelum rilis | `TBD-BHN-E` · `AI-CTL-01` |
 | Denda dihitung dengan hari kalender | Sengketa dengan orang tua siswa | `BusinessCalendarService` Phase 00 dipakai, bukan aritmetika tanggal langsung | `CAL-01` |
 | `SL-04` terlupa ditutup | Aturan Phase 01 tinggal setengah selamanya | Termasuk gerbang keluar phase ini, bukan catatan tersendiri | `SL-04` |
 | Perpanjangan bertabrakan dengan reservasi menyusul | Dua pihak mengklaim aset yang sama | Pemeriksaan `booking_slots` sebelum perpanjangan disetujui | `BR-035` |
@@ -178,6 +180,7 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 | `PR-05-09` memblokir penonaktifan yang sah | *Feature flag* mematikan pemeriksaan; Phase 01 kembali berlaku sementara |
 | `PR-05-17` ledger bermasalah | Seluruh PR `PR-05-18`…`PR-05-24` bergantung padanya dan ikut ditarik. Tabel bahan bersifat baru sehingga `down` migration aman: tidak ada data modul lain yang menunjuk ke sana |
 | `PR-05-24` opname bahan bermasalah | Sesi domain `BAHAN` dinonaktifkan lewat *feature flag*; sesi domain `ASET` tidak tersentuh karena difilter kolom `domain` |
+| `PR-05-25` tool bahan bermasalah | Kedua tool dicabut dari katalog; prefiks statis kembali ke bentuk Phase 03. Chatbot kehilangan dua kemampuan dan tidak kehilangan apa pun yang lain, karena tool bersifat aditif |
 | Data denda salah hitung | Perhitungan bersifat turunan — dihitung ulang dari riwayat peminjaman tanpa migrasi data |
 
 ## 12. Definition of Done

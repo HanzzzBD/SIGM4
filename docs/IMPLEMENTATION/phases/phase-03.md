@@ -82,7 +82,7 @@ M-05  M-06  M-07  M-11  M-14  M-19   ← tanpa ketergantungan antar-modul
 |---|---|
 | [`01-availability-concurrency.md`](../../SDD/01-availability-concurrency.md) | `SDD-AVL-06` … `SDD-AVL-11` (penerapan) |
 | [`09-file-storage-design.md`](../../SDD/09-file-storage-design.md) | `SDD-FS-01` … `SDD-FS-09` |
-| [`10-ai-orchestrator-design.md`](../../SDD/10-ai-orchestrator-design.md) | `SDD-AI-01` … `SDD-AI-12` |
+| [`10-ai-orchestrator-design.md`](../../SDD/10-ai-orchestrator-design.md) | `SDD-AI-01` … `SDD-AI-10`, `SDD-AI-12` … `SDD-AI-15` |
 | [`02-approval-engine.md`](../../SDD/02-approval-engine.md) | Penerapan pada M-07 & M-14 |
 | [`12-mobile-architecture.md`](../../SDD/12-mobile-architecture.md) | `SDD-MOB-01` … `SDD-MOB-06` (pemindaian & unggah) |
 | [`11-frontend-architecture.md`](../../SDD/11-frontend-architecture.md) | `SDD-FE-07` … `SDD-FE-09` (komponen kalender) |
@@ -121,9 +121,9 @@ M-05  M-06  M-07  M-11  M-14  M-19   ← tanpa ketergantungan antar-modul
 | `PR-03-17` | Skema pengadaan + pengajuan usulan | M | Ph02 | `FR-14.1`, `BR-060` `BR-061` | Anggaran & justifikasi tervalidasi |
 | `PR-03-18` | Persetujuan usulan pengadaan | M | 17, Ph02 | `FR-14.2`, `BR-062` `BR-063` | Rule bertingkat sesuai nilai usulan |
 | `PR-03-19` | Penerimaan barang → pembuatan aset + **isi `procurement_id`** | L | 18, Ph02 | `FR-14.3`, `BR-064` `BR-065`, `SDD-DB-08` | Aset baru ber-`procurement_id`; aset lama tetap `NULL` dan sah |
-| `PR-03-20` | Orkestrator AI: klien, streaming, kendali biaya | L | Ph02 | `FR-19.1`, `SDD-AI-01/03/04`, `AI-CTL-02` | Tanpa `temperature`/`top_p`/`top_k`; `thinking` eksplisit |
-| `PR-03-21` | Definisi tool chatbot + guardrail permission di lapisan kueri | L | 20 | `BR-075` `BR-076`, `SDD-AI-05/06` | Tool menerima `AuthContext`; data di luar scope tidak pernah terbaca |
-| `PR-03-22` | Prompt caching (prefiks statis ≥ 1.024 token) | M | 20 | `SDD-AI-07/08`, **TBD-AI-A** | Metrik `chat_cache_read_ratio` terpantau |
+| `PR-03-20` | Orkestrator AI: klien, streaming, kendali biaya | L | Ph02 | `FR-19.1`, `SDD-AI-01/03/04/14/15`, `AI-CTL-02` | `interactions.create` dengan `store: false`; tanpa `temperature`/`top_p`/`top_k`; `thinking_level` eksplisit; hanya custom function tool |
+| `PR-03-21` | Definisi tool chatbot + guardrail permission di lapisan kueri | L | 20 | `BR-075` `BR-076`, `SDD-AI-05/06/15` | Automatic function calling SDK dimatikan; tool menerima `AuthContext`; data di luar scope tidak pernah terbaca |
+| `PR-03-22` | Prompt caching (awalan statis, sasaran ≥ 4.500 token) | M | 20 | `SDD-AI-04/05/13`, `AI-CTL-01` | Uji memverifikasi **panjang awalan** dan `usage.total_cached_tokens > 0` pada permintaan kedua; metrik `chat_cache_read_ratio` terpantau |
 | `PR-03-23` | Riwayat percakapan + evaluasi + eval harness | M | 21 | `FR-19.2`, `BR-077` … `BR-079`, `SDD-AI-09/10` | Eval berjalan di CI terhadap `SC-10` |
 
 ## 8. Task Breakdown
@@ -147,11 +147,16 @@ M-05  M-06  M-07  M-11  M-14  M-19   ← tanpa ketergantungan antar-modul
 - [ ] Uji: aset Phase 02 tetap terbaca dan tidak terpengaruh
 
 ### `PR-03-20` — Orkestrator AI
-- [ ] Model `claude-sonnet-5` sesuai Bab 22.1
-- [ ] `thinking` dinyatakan eksplisit — adaptif menyala secara bawaan (`SDD-AI-02`)
-- [ ] Tidak mengirim `temperature`/`top_p`/`top_k` — ditolak 400 (`SDD-AI-03`)
-- [ ] Hitung token lewat `messages.count_tokens`, bukan pustaka pihak ketiga
-- [ ] Periksa `stop_reason` sebelum membaca `content`
+- [ ] Model `gemini-3.6-flash` (stabil/GA) sesuai Bab 22.1; bukan alias `latest`, preview, atau eksperimental
+- [ ] `store: false` pada setiap permintaan — tidak ada state percakapan di sisi penyedia (`SDD-AI-14`)
+- [ ] `thinking_level: "minimal"` dinyatakan eksplisit — bawaannya `"medium"` (`SDD-AI-02`)
+- [ ] Tidak mengirim `temperature`/`top_p`/`top_k` — diabaikan diam-diam, bukan ditolak (`SDD-AI-03`)
+- [ ] Tidak mengirim `frequency_penalty`/`presence_penalty` — menghasilkan galat (`SDD-AI-03`)
+- [ ] Automatic function calling SDK dimatikan; `ToolExecutor` satu-satunya jalur eksekusi (`SDD-AI-06`)
+- [ ] Daftar tool hanya memuat custom function Bab 22.3 — tanpa tool bawaan Google (`SDD-AI-15`)
+- [ ] Hitung token lewat `models.countTokens` terhadap model produksi, bukan pustaka pihak ketiga
+- [ ] Periksa `status` sebelum membaca keluaran (`SDD-AI-11`)
+- [ ] Kunci dibaca dari `GEMINI_API_KEY`; startup gagal bila kosong (`SDD-INF-08`)
 - [ ] Batas biaya harian + alarm (`AI-CTL-05`, **TBD-AI-C**)
 
 ## 9. Acceptance Checklist
@@ -170,7 +175,8 @@ M-05  M-06  M-07  M-11  M-14  M-19   ← tanpa ketergantungan antar-modul
 |---|---|---|---|
 | Blokade jadwal tetap dimaterialisasi seluruh tahun ajaran | Ledakan baris `booking_slots` | Horizon bergulir; kebijakan arsip menunggu **TBD-AVL-A** | `FR-07.5` |
 | Guardrail chatbot diterapkan di lapisan prompt, bukan kueri | Kebocoran data lintas scope — risiko keamanan tertinggi di phase ini | `AuthContext` wajib pada setiap tool; uji lintas-scope masuk gerbang keluar | `BR-076`, `SDD-AI-06` |
-| **TBD-AI-A** belum tuntas | Prompt caching mati diam-diam, biaya membengkak | Metrik rasio cache dipantau sejak hari pertama; bukan asumsi | `SDD-AI-07` |
+| Awalan statis menyusut di bawah 4.096 token akibat suntingan kemudian | Prompt caching mati diam-diam, biaya membengkak | Sasaran `SDD-AI-13` adalah ≥ 4.500 token — margin yang disengaja. Uji memverifikasi panjang **dan** cache benar-benar kena; metrik rasio cache dipantau sejak hari pertama | `SDD-AI-05` · `SDD-AI-13` |
+| `store: true` lolos ke produksi | Percakapan sekolah tersimpan 55 hari di sisi penyedia, di luar `BR-078` dan `DP-AI-05` | Nilai dikunci konstanta di `ChatProvider`; uji memeriksa `store: false` pada setiap permintaan | `SDD-AI-14` · `DP-AI-05` |
 | Enam modul paralel menyulitkan integrasi di akhir phase | Penumpukan konflik merge di pekan terakhir | Merge harian ke `develop`; tidak ada cabang berumur > 3 hari | `BRANCHING-STRATEGY` |
 | Pemindaian AV memperlambat unggah dari mobile | Pengguna mengira aplikasi menggantung | Pemindaian asinkron dengan status berkas eksplisit | `SDD-FS-05` |
 | Lantai OS lini Expo yang dipilih berada di atas `NFR-C-03` — Android 8.0 (API 26) / iOS 14 | Perangkat yang PRD janjikan didukung tidak dapat memasang aplikasi | Verifikasi lantai OS terhadap `NFR-C-03` **sebelum** versi dikunci, bukan sesudah kerangka dibangun. Bila lantai memang di atasnya, jalannya bukan menurunkan dukungan perangkat diam-diam: itu **perubahan requirement** yang naik ke pemilik produk, bukan keputusan SDD | `SDD-MOB-10`, `NFR-C-03` |
@@ -196,7 +202,7 @@ Mulai phase ini `booking_slots` memuat data bermakna — `DROP TABLE` tidak lagi
 - [ ] Uji lintas-scope chatbot lulus untuk minimal tiga role berbeda
 - [ ] Rasio *cache read* chatbot terukur dan tercatat di log phase
 - [ ] Aset dari dua asal (pengadaan & manual) hidup berdampingan tanpa galat
-- [ ] `TBD-AI-A`, `TBD-AI-B`, `TBD-AI-C`, `TBD-FS-A` ditinjau; yang masih terbuka tercatat sebagai risiko terbawa
+- [ ] `TBD-AI-B`, `TBD-AI-C`, dan `TBD-AI-D` ditinjau; yang masih terbuka tercatat sebagai risiko terbawa. `TBD-AI-D` tidak memblokir phase ini tetapi memblokir `GL-07`. `TBD-AI-A` dan `TBD-FS-A` sudah tertutup 25 Agustus 2026 (`SDD-AI-13`, `SDD-FS-11`)
 - [ ] Log phase terisi
 
 ---

@@ -34,7 +34,8 @@ Keputusan platform sudah ditetapkan PRD Bab 27.1 dan tidak diulang. Berkas ini m
 | **SDD-INF-07** | Uji restore **otomatis bulanan** ke lingkungan sementara; hasilnya menjadi metrik, bukan laporan manual (`BR-DR-04`). |
 | **SDD-INF-08** | Seluruh konfigurasi lewat **variabel lingkungan**, divalidasi skema saat *startup*; konfigurasi tidak valid mencegah proses berjalan. |
 | **SDD-INF-09** | Zona waktu container dan basis data **UTC**, dipaksa lewat variabel lingkungan dan diverifikasi saat startup (`INF-07`). |
-| **SDD-INF-10** | Orkestrasi memakai **Docker Compose**, bawaan `INF-05`. *Rolling deploy* `SDD-INF-04` dicapai lewat **koreografi pipeline** — reverse proxy (`INF-06`) memeriksa kesehatan upstream, instance API diganti satu per satu — bukan lewat fitur platform. Pengecualian Kubernetes pada `INF-05` berlaku **hanya bila** `TBD-INF-A` menetapkan sekolah memang sudah menjalankannya. |
+| **SDD-INF-10** | Orkestrasi memakai **Docker Compose**, bawaan `INF-05`. *Rolling deploy* `SDD-INF-04` dicapai lewat **koreografi pipeline** — reverse proxy (`INF-06`) memeriksa kesehatan upstream, instance API diganti satu per satu — bukan lewat fitur platform. Pengecualian Kubernetes pada `INF-05` **tidak berlaku**: `SDD-INF-11` menetapkan sekolah tidak menjalankan klaster Kubernetes. |
+| **SDD-INF-11** | **Penyedia infrastruktur: VPS ber-region Indonesia** untuk API, worker, Redis, dan reverse proxy, ditambah **PostgreSQL sebagai layanan terkelola ber-region Indonesia** — bukan container PostgreSQL yang dipelihara sendiri. Object storage `INF-02` mengikuti batasan region yang sama (`SDD-SEC-10`). Menutup `TBD-INF-A` (keputusan pemilik produk, 25 Agustus 2026). Yang diputuskan **hanya penyedianya**; sizing dan biaya nyata (PRD 27.3, 27.9) tetap ditetapkan setelah uji beban `NFR-P-09` bersama `TBD-AVL-C`. |
 
 ---
 
@@ -50,11 +51,23 @@ Keputusan platform sudah ditetapkan PRD Bab 27.1 dan tidak diulang. Berkas ini m
 
 **SDD-INF-07 — restore diuji otomatis.** Cadangan yang tidak pernah dipulihkan bukan cadangan. `BR-DR-04` mewajibkan uji berkala; mengotomasinya membuat kegagalan terdeteksi dalam sebulan, bukan saat bencana.
 
-**SDD-INF-08 — konfigurasi divalidasi saat startup.** Konfigurasi yang salah sebaiknya mencegah proses berjalan, bukan menghasilkan perilaku aneh di produksi. Kunci Claude API yang kosong lebih baik menggagalkan *startup* daripada membuat chatbot gagal diam-diam pada permintaan pertama pengguna.
+**SDD-INF-08 — konfigurasi divalidasi saat startup.** Konfigurasi yang salah sebaiknya mencegah proses berjalan, bukan menghasilkan perilaku aneh di produksi. Kunci Gemini API yang kosong lebih baik menggagalkan *startup* daripada membuat chatbot gagal diam-diam pada permintaan pertama pengguna.
 
-**SDD-INF-10 — Docker Compose.** `INF-05` sudah menetapkan bawaannya sekaligus syarat pengecualiannya, jadi yang tersisa bukan memilih bebas melainkan memeriksa apakah syarat itu terpenuhi — dan `TBD-INF-A` belum menetapkannya. Keputusan #1 (single sekolah, satu instansi) juga menghapus argumen terkuat Kubernetes sejak awal: tidak ada armada instalasi yang perlu dikelola seragam.
+**SDD-INF-10 — Docker Compose.** `INF-05` sudah menetapkan bawaannya sekaligus syarat pengecualiannya, jadi yang tersisa bukan memilih bebas melainkan memeriksa apakah syarat itu terpenuhi — dan `SDD-INF-11` menetapkan bahwa ia **tidak** terpenuhi: sekolah tidak menjalankan klaster Kubernetes. Keputusan #1 (single sekolah, satu instansi) juga menghapus argumen terkuat Kubernetes sejak awal: tidak ada armada instalasi yang perlu dikelola seragam.
 
 Gesekan yang nyata hanya satu, dan sebaiknya dinyatakan terbuka: `SDD-INF-04` menuntut *rolling deploy* ber-*readiness gate*, dan Compose tidak menyediakannya sebagai fitur platform. Kubernetes memberikannya gratis (`readinessProbe`, rolling update, `preStop`, `Job` untuk migration). Yang membuat itu tidak cukup sebagai alasan adalah bahwa biayanya sudah dibayar kebijakan: `NFR-A-01` menetapkan ketersediaan ≥ 99,5% pada jam operasional — bukan angka yang menuntut deploy tanpa jeda — sementara `CD-06` dan `NFR-A-03` memindahkan deploy ke luar jam operasional dengan anggaran *downtime* terencana 4 jam/bulan (`NFR-A-04`). Keunggulan utama Kubernetes karena itu sebagian besar membeli sesuatu yang tidak sedang kurang, dengan menurunkan *control plane* kepada pihak yang §6 sudah tandai berisiko.
+
+**SDD-INF-11 — PostgreSQL terkelola, sisanya swa-kelola.** Keputusan ini memilah komponen menurut apa yang terjadi bila ia terabaikan, bukan menurut biaya.
+
+API, worker, Redis, dan reverse proxy gagal dengan **berisik**: layanan mati, alarm berbunyi, seseorang memperbaikinya. Menjalankannya sendiri di VPS dapat diterima karena kegagalannya terlihat pada hari yang sama.
+
+PostgreSQL gagal dengan **diam**. `SDD-INF-06` menuntut base backup harian + arsip WAL berkelanjutan, dan `SDD-INF-07` menuntut uji restore otomatis bulanan — dua kewajiban yang, bila dijadikan skrip milik sendiri, akan bertahan persis selama ada yang memeliharanya. Setelah hypercare `IMP-06` berakhir, pemeliharaan itu jatuh ke pihak yang §6 sudah tandai sebagai risiko dengan mitigasi berupa pelatihan. Arsip WAL yang berhenti tidak menampilkan gejala apa pun sampai ada yang mencoba memulihkan; pada saat itu RPO `NFR-R-01` sudah terlanggar berbulan-bulan tanpa satu pun alarm berbunyi.
+
+Menyerahkan PITR dan uji restore kepada penyedia memindahkan dua kewajiban itu dari disiplin ke kontrak. Harganya nyata dan ditanggung sadar — ia adalah baris biaya pada PRD 27.9, ditukar dengan satu-satunya komponen yang kehilangannya tidak dapat diperbaiki.
+
+Region Indonesia berlaku bagi seluruh komponen sebagai konsekuensi langsung `SDD-SEC-10`, bukan sebagai pilihan terpisah.
+
+**Kubernetes tidak dipakai.** `INF-05` membuka pengecualian hanya bila sekolah sudah menjalankannya; `SDD-INF-11` menetapkan tidak. `SDD-INF-10` karena itu berdiri tanpa syarat, dan §5 tidak lagi menyimpan cabang yang menunggu.
 
 **Docker Swarm mode** dipertimbangkan sebagai jalan tengah dan layak secara teknis: sintaks compose yang sama ditambah pembaruan bertahap ber-*readiness* sebagai fitur platform, tanpa *control plane*. Ia ditolak bukan karena kemampuannya melainkan karena ekologinya — pengembangan dan pengetahuan operasionalnya menipis, dan beban itu jatuh tepat ke sekolah setelah hypercare (`IMP-06`) berakhir.
 
@@ -90,15 +103,18 @@ CMD ["node", "dist/api/index.js"]        # worker: dist/worker/index.js
 ### 4.2 Topologi runtime
 
 ```
-reverse proxy (TLS, HSTS)  →  api ×2        →  postgres (primary)
-                                            →  redis
-                                            →  object storage (S3-compatible)
-                              worker ×1     →  postgres, redis, FCM, AV scanner
-                              av-scanner    →  ClamAV
-                              postgres-replica / arsip WAL
+VPS (region Indonesia)                         layanan terkelola (region Indonesia)
+──────────────────────────────────         ──────────────────────────────────
+reverse proxy (TLS, HSTS)  →  api ×2        →  postgres terkelola (SDD-INF-11)
+                              worker ×1     →  object storage (S3-compatible)
+                              av-scanner    →  FCM
+                              redis         
+                              ClamAV        
 ```
 
 Web (React build) disajikan sebagai aset statis dari CDN atau reverse proxy, bukan dari proses Node.
+
+**Replika dan arsip WAL tidak lagi menjadi container pada topologi ini.** Keduanya adalah tanggung jawab layanan PostgreSQL terkelola (`SDD-INF-11`) dan tampil sebagai konfigurasi langganan, bukan sebagai proses yang di-*compose*. Redis tetap swa-kelola di VPS: kehilangannya berarti kehilangan cache dan *rate limit* — degradasi yang `SDD-SEC-05` dan §6 sudah antisipasi — bukan kehilangan data.
 
 ### 4.3 Pipeline CI/CD
 
@@ -148,12 +164,12 @@ Rollback skema hanya lewat migration `down` yang telah diuji di staging — dan 
 
 | Aspek | Implementasi |
 |---|---|
-| Base backup | Harian, terenkripsi, ke penyimpanan terpisah (`BR-DR-03`) |
-| Arsip WAL | Berkelanjutan → PITR (`BR-DR-01`) |
+| Base backup | Harian, terenkripsi, ke penyimpanan terpisah (`BR-DR-03`) — **disediakan layanan terkelola** (`SDD-INF-11`) |
+| Arsip WAL | Berkelanjutan → PITR (`BR-DR-01`) — **disediakan layanan terkelola** (`SDD-INF-11`) |
 | Object storage | *Versioning* + replikasi ke bucket/wilayah lain (`BR-DR-02`) |
 | Konfigurasi | Parameter sistem, approval rules, matriks permission diekspor tiap perubahan (`BR-DR-06`) |
 | Retensi | 30 hari bergulir (`NFR-R-03`) |
-| Uji restore | Otomatis bulanan ke lingkungan sementara; hasil menjadi metrik (`SDD-INF-07`) |
+| Uji restore | Otomatis bulanan ke lingkungan sementara; hasil menjadi metrik (`SDD-INF-07`). **Tetap milik kita** — penyedia menjamin cadangan ada, bukan bahwa aplikasi berjalan di atas hasil pemulihannya |
 | DR drill penuh | Tiap 6 bulan (`NFR-R-04`), memakai runbook §4.6 |
 
 ### 4.6 DR runbook (kerangka)
@@ -181,7 +197,7 @@ Setiap langkah memiliki penanggung jawab bernama dan cara verifikasi. Runbook wa
 # Wajib — startup gagal bila kosong (SDD-INF-08)
 DATABASE_URL, REDIS_URL, S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY
 JWT_PRIVATE_KEY, JWT_PUBLIC_KEY, TOTP_ENCRYPTION_KEY
-ANTHROPIC_API_KEY, FCM_CREDENTIALS
+GEMINI_API_KEY, FCM_CREDENTIALS
 APP_BASE_URL, TZ=UTC
 
 # Opsional dengan bawaan
@@ -211,7 +227,11 @@ Menyalin data produksi ke staging tanpa anonimisasi dilarang keras; skrip anonim
 - Worker tunggal (`SDD-SYS-08`) berarti drain saat deploy menghentikan sementara pemrosesan job; karena job idempoten dan berjadwal, jeda beberapa menit dapat diterima.
 - Karena Compose tidak menyediakan *rolling deploy* ber-*readiness gate* (`SDD-INF-10`), `SDD-INF-04` dan `SDD-INF-05` menjadi **koreografi milik kita**: pemeriksaan kesehatan upstream pada reverse proxy, penggantian instance API satu per satu, `stop_grace_period` bagi drain worker, dan migration sebagai container sekali-jalan. Semuanya wajib diuji di staging dan ditutup *smoke test* (`CD-07`) — sebuah skrip deploy yang tidak diuji adalah *readiness gate* yang tidak ada.
 - Compose menggoda menaruh rahasia pada berkas `.env` di repositori. Itu dilarang `SEC-CFG-01`: nilai tetap berasal dari *secret manager* dan disuntikkan ke lingkungan proses (§4.7), dan `SEC-CFG-04` memindai repositori untuk memastikannya.
-- Pengecualian `INF-05` tetap terbuka dengan pemicu yang jelas: bila `TBD-INF-A` menetapkan sekolah sudah menjalankan Kubernetes, yang berpindah hanya bentuk manifest — image (`SDD-INF-01`), urutan deploy, dan job migration (`SDD-INF-03`) tidak berubah.
+- Pengecualian `INF-05` **tertutup**: `SDD-INF-11` menetapkan sekolah tidak menjalankan Kubernetes, sehingga Docker Compose (`SDD-INF-10`) berlaku tanpa syarat dan tidak ada cabang manifest kedua yang perlu dipelihara.
+- PostgreSQL terkelola (`SDD-INF-11`) memindahkan `SDD-INF-06` dari skrip menjadi konfigurasi langganan, tetapi **tidak** memindahkan `SDD-INF-07`: uji restore tetap milik kita, karena yang diuji adalah aplikasi berjalan di atas hasil pemulihan — bukan keberadaan berkas cadangan.
+- Akun DB ber-DDL yang terpisah dari akun aplikasi (`SDD-INF-03`, `SEC-CFG-03`) kini dibuat lewat antarmuka penyedia; batas hak istimewanya diverifikasi sekali saat penyediaan, bukan diasumsikan dari bawaan.
+- `DB_POOL_SIZE` (`TBD-AVL-C`) menjadi lebih terikat: batas koneksi ditetapkan tier langganan yang dipilih, bukan oleh konfigurasi PostgreSQL yang dapat kita ubah sendiri.
+- Residensi Indonesia (`SDD-SEC-10`) mengikat seluruh komponen §4.2 sekaligus, termasuk object storage `INF-02` dan lokasi cadangan `BR-DR-03`.
 
 ---
 
@@ -226,6 +246,8 @@ Menyalin data produksi ke staging tanpa anonimisasi dilarang keras; skrip anonim
 | Sertifikat TLS kedaluwarsa | Layanan tidak dapat diakses | Pembaruan otomatis + alarm < 14 hari |
 | Deploy di jam operasional | Gangguan bagi pengguna | Dibatasi kebijakan (`CD-06`); pipeline menolak tag produksi di luar jendela kecuali dipaksa dan dicatat |
 | Sekolah tidak punya kapasitas operasional | Sistem tidak terpelihara | Pelatihan Administrator (`IMP-07`); runbook tertulis; hypercare 8 minggu (`IMP-06`) |
+| Ketergantungan pada satu penyedia PostgreSQL terkelola | Perpindahan mahal; kenaikan harga sulit ditolak | Skema dan migration memakai PostgreSQL standar (`SDD-DB-12`), tanpa ekstensi khusus penyedia; ekspor logis rutin memastikan data selalu dapat dibawa keluar |
+| Region penyedia berubah atau layanan dipindah | Residensi `SDD-SEC-10` terlanggar tanpa disadari | Region dinyatakan dalam kontrak; diperiksa ulang pada rotasi kredensial 6 bulanan ([SDD-13 §4.4](13-security-design.md)) |
 
 ---
 
@@ -241,5 +263,6 @@ Menyalin data produksi ke staging tanpa anonimisasi dilarang keras; skrip anonim
 
 | ID | Pertanyaan |
 |---|---|
-| **TBD-INF-A** | Penyedia infrastruktur belum dipilih. Menentukan angka sizing dan biaya nyata (PRD 27.3, 27.9), serta apakah PostgreSQL terkelola atau dikelola sendiri. |
 | **TBD-AVL-C** *(dari SDD-01)* | `DB_POOL_SIZE` — bergantung batas koneksi penyedia; ditetapkan setelah uji beban. |
+
+**Tertutup 25 Agustus 2026:** `TBD-INF-A` → `SDD-INF-11`. Sizing dan biaya nyata tetap terbuka bersama `TBD-AVL-C`.

@@ -40,7 +40,7 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 | [06](phases/phase-06.md) | Analitik | 1 | 10 | `Not Started` | 0/10 | Menutup `M5` |
 | [07](phases/phase-07.md) | Integrasi & UAT | — | 14 | `Not Started` | 0/14 | |
 | [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 15 | `Not Started` | 0/15 | Menutup `M6` |
-| | **Total** | **22** | **162** | | **0/162** | |
+| | **Total** | **22** | **163** | | **0/163** | |
 
 ## Ringkasan milestone PRD
 
@@ -127,7 +127,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 |---|---|:---:|---|
 | `PR-08-01` … `PR-08-15` | `Not Started` | — | Rincian: [`phases/phase-08.md` §7](phases/phase-08.md) |
 
-**Cara memakai tabel ini.** Saat sebuah phase dimulai, ganti barisnya menjadi satu baris per PR. Selama phase belum dimulai, satu baris ringkas lebih jujur daripada 162 baris `Not Started` yang tidak ada yang membacanya.
+**Cara memakai tabel ini.** Saat sebuah phase dimulai, ganti barisnya menjadi satu baris per PR. Selama phase belum dimulai, satu baris ringkas lebih jujur daripada 163 baris `Not Started` yang tidak ada yang membacanya.
 
 ---
 
@@ -135,15 +135,12 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 
 | Yang terhalang | Menunggu | Sejak | Penanggung jawab |
 |---|---|---|---|
-| Phase 00 — `PR-00-06` | `TBD-SEC-B` (lingkup kepatuhan; `SDD-OBS-09` mengirim log ke luar premis) | — | Pemilik produk / sekolah |
-| Phase 01 | `TBD-AUTH-C` · `TBD-EVT-B` | — | Pemilik produk |
-| Phase 02 | `TBD-APR-A/B/C` · `TBD-NTF-B` | — | Pemilik produk |
-| Phase 03 | `TBD-AVL-B` · `TBD-FS-A` · `TBD-BHN-E` · `TBD-AI-A` | — | Pemilik produk |
-| Phase 08 | `TBD-SEC-A` (penyedia pentest) · `TBD-SEC-B` (lanjutan, lingkup kepatuhan) · `TBD-OBS-B` (penerima alarm) | — | Pemilik produk / sekolah |
+| Phase 08 | `TBD-SEC-A` (penyedia pentest) · `TBD-OBS-B` (penerima alarm) | — | Pemilik produk / sekolah |
+| `GL-07` (gerbang go-live) | `TBD-AI-D` (persetujuan pemrosesan data chatbot lintas yurisdiksi) | 2 September 2026 | Pemilik produk / sekolah |
 
-Daftar TBD lengkap beserta pertanyaannya: [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md) — **25 terbuka, 15 tertutup**. Jadwal penutupan yang diharapkan: [`ROADMAP.md` §8](ROADMAP.md).
+Daftar TBD lengkap beserta pertanyaannya: [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md) — **14 terbuka, 27 tertutup**. Jadwal penutupan yang diharapkan: [`ROADMAP.md` §8](ROADMAP.md).
 
-**Sembilan dari sepuluh TBD kelompok A memblokir Phase 01–03.** Pengerjaan dapat dimulai dari Phase 00 tanpa satu pun di antaranya terjawab, tetapi tidak dapat melampaui Phase 00 tanpa jawaban untuk dua TBD pertama.
+**Tidak ada penghalang TBD pada pengerjaan Phase 00–08.** Dua belas TBD ditutup 25 Agustus 2026 dalam empat batch, mengosongkan kelompok A dan D. Tiga belas TBD kelompok B masih terbuka tetapi tidak memblokir pengerjaan: seluruhnya parameter yang dikalibrasi Phase 07–08 setelah data staging tersedia. Yang berubah 2 September 2026: migrasi penyedia LLM ke Google Gemini membuka `TBD-AI-D` (kelompok A) — ia tidak memblokir satu PR pun, tetapi memblokir gerbang go-live `GL-07`.
 
 ## Pergeseran jadwal tercatat
 

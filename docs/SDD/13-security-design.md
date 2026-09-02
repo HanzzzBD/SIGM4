@@ -32,6 +32,7 @@ Otorisasi berada di [SDD-03](03-authorization.md); autentikasi di [SDD-04](04-au
 | **SDD-SEC-07** | Matriks uji otorisasi (`SEC-T-01`) **digenerate** dari registri route, bukan ditulis tangan. |
 | **SDD-SEC-08** | Pseudonimisasi (`DP-04`) diimplementasikan sebagai operasi **satu arah** pada kolom identitas, mempertahankan baris transaksi dan jejak audit. |
 | **SDD-SEC-09** | Akses produksi oleh pengembang berjalan lewat prosedur *break-glass* tercatat (`DP-11`), bukan kredensial tetap. |
+| **SDD-SEC-10** | **Lingkup kepatuhan formal adalah UU PDP No. 27/2022 saja** — tidak ada standar dinas pendidikan atau yayasan tambahan. Menyertainya satu batasan mengikat: **seluruh data sistem, termasuk log aplikasi, wajib berada pada wilayah Indonesia**. Batasan ini berlaku bagi setiap layanan pihak ketiga yang menerima data, dan menjadi kriteria seleksi — bukan pemeriksaan pasca-pemilihan. Menutup `TBD-SEC-B` (keputusan pemilik produk, 25 Agustus 2026; Keputusan #29). |
 
 ---
 
@@ -42,7 +43,7 @@ Otorisasi berada di [SDD-03](03-authorization.md); autentikasi di [SDD-04](04-au
 Dua field memerlukan perlindungan yang lebih kuat karena kompromi keduanya langsung membuka akses:
 
 - **Secret TOTP** — bocornya berarti 2FA seluruh Administrator dan Pimpinan Sekolah tidak berarti apa-apa (`BR-070`).
-- **Kredensial pihak ketiga** — kunci Claude API dan FCM.
+- **Kredensial pihak ketiga** — kunci Gemini API (`GEMINI_API_KEY`) dan FCM.
 
 Keduanya dienkripsi aplikasi dengan kunci di *secret manager*, terpisah dari kunci penandatangan JWT (`SEC-CFG-01`). Konsekuensi yang diterima: kehilangan kunci berarti seluruh 2FA harus didaftarkan ulang — prosedurnya didokumentasikan ([SDD-04 §6](04-authentication-session.md)).
 
@@ -113,7 +114,7 @@ Header `X-RateLimit-*` selalu disertakan. Redis tidak tersedia → *fail open* u
 | Kunci penandatangan JWT (Ed25519) | 6 bulan, tumpang tindih | `kid` pada header token (TBD-AUTH-B) |
 | Kunci enkripsi TOTP | Tidak dirotasi rutin | Rotasi memerlukan re-enkripsi seluruh secret |
 | Kredensial basis data | 6 bulan | Akun aplikasi tanpa DDL (`SEC-CFG-03`) |
-| Kunci Claude API | 12 bulan | Alarm biaya harian (`OBS-05`) |
+| Kunci Gemini API | 12 bulan | Alarm biaya harian (`OBS-05`) |
 | Kredensial FCM | 12 bulan | |
 | Kunci object storage | 12 bulan | |
 
@@ -169,10 +170,18 @@ UPDATE users SET
   pseudonymized_at = now()
 WHERE id = :id;
 -- Baris transaksi, denda, dan activity_logs TIDAK disentuh (AL-03, BR-008)
--- Foto berwajah: lihat TBD-FS-A
+-- Foto berwajah TIDAK disentuh: tetap bukti (DP-05a, SDD-FS-11)
 ```
 
 Operasi ini tercatat di activity log dan hanya dapat dijalankan Administrator dengan alasan wajib.
+
+**SDD-SEC-10 — cakupan kepatuhan sempit, residensi ketat.** Dua bagian keputusan ini menarik ke arah berlawanan dan sebaiknya dibaca bersama.
+
+Cakupan **tidak** diperluas: tidak ada standar formal di luar UU PDP, sehingga lingkup audit Phase 08 tetap `DP-01` … `DP-11` dan tidak bertambah satu kontrol pun. Yang dipersempit justru tempat data boleh berada. Alasannya adalah sifat subjek datanya — sistem ini menyimpan PII anak di bawah umur lewat role Siswa/OSIS (`FR-01.1`), dan `SDD-OBS-09` mengirim log aplikasi berisi PII itu ke layanan terkelola sejak logger dipasang (`PR-00-06`).
+
+Residensi karena itu bukan pembatasan tambahan atas arsitektur yang sudah jadi, melainkan syarat yang memilihkan vendornya. Ia murah bila ditetapkan sekarang — beberapa penyedia besar memiliki region Indonesia — dan mahal bila ditetapkan setelah data mengalir, karena migrasi backend observability berarti kehilangan riwayat, bukan sekadar mengganti endpoint.
+
+`SDD-OBS-04` (*redaction* di formatter) tetap menjadi kontrol yang menyertainya, bukan penggantinya: residensi menetapkan **di mana** data boleh berada, redaction menetapkan **apa** yang boleh ikut. Keduanya diperlukan.
 
 ---
 
@@ -182,6 +191,7 @@ Operasi ini tercatat di activity log dan hanya dapat dijalankan Administrator de
 - Enkripsi aplikasi pada secret TOTP menjadikan kunci itu artefak paling kritis di sistem: kehilangannya memaksa pendaftaran ulang 2FA seluruh role sensitif.
 - Matriks uji tergenerate berarti jumlah kasus uji tumbuh otomatis; waktu CI perlu dipantau seiring bertambahnya endpoint.
 - Pentest sebagai gerbang rilis (`GL-04`) memerlukan penjadwalan pihak ketiga pada M6 — ini dependensi eksternal pada jadwal, bukan tugas tim.
+- Residensi Indonesia (`SDD-SEC-10`) menjadi kriteria seleksi pada setiap pemilihan layanan pihak ketiga yang menerima data — backend observability (`PR-00-06`), penyedia infrastruktur (`SDD-INF-11`), dan object storage. Kriteria ini diperiksa **sebelum** kontrak, dan hasil pemeriksaannya dicatat.
 
 ---
 
@@ -195,6 +205,7 @@ Operasi ini tercatat di activity log dan hanya dapat dijalankan Administrator de
 | Temuan pentest terlambat | Rilis tertunda | Pentest dijadwalkan awal M6, bukan akhir |
 | Rantai hash log menjadi leher botol | Latensi tulis naik | Volume log rendah; bila terbukti bermasalah, perhitungan dipindah ke batch asinkron |
 | Pseudonimisasi dijalankan keliru | Data hilang tak terpulihkan | Operasi satu arah — memerlukan konfirmasi ganda dan alasan; tercatat permanen |
+| Layanan pihak ketiga memindahkan data ke region lain | Residensi `SDD-SEC-10` terlanggar tanpa disadari | Region dinyatakan dalam kontrak dan diverifikasi ulang saat kunci/kredensial dirotasi (§4.4) |
 
 ---
 
@@ -211,5 +222,5 @@ Operasi ini tercatat di activity log dan hanya dapat dijalankan Administrator de
 | ID | Pertanyaan |
 |---|---|
 | **TBD-SEC-A** | Penyedia pentest independen dan anggarannya belum ditetapkan — ini dependensi jadwal pada `GL-04`. |
-| **TBD-SEC-B** | Apakah sekolah memerlukan kepatuhan formal di luar UU PDP (mis. standar dinas pendidikan setempat). Berdampak pada cakupan audit. |
-| **TBD-FS-A** *(dari SDD-09)* | Perlakuan foto berwajah saat permintaan penghapusan data — pseudonimisasi identitas tidak menghapus wajah pada foto bukti. |
+
+**Tertutup 25 Agustus 2026:** `TBD-SEC-B` → `SDD-SEC-10` · `TBD-FS-A` → `SDD-FS-11` (`DP-05a`). Seluruh TBD berkas ini tertutup.
