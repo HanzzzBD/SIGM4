@@ -45,7 +45,7 @@
 | DP-AI-01 | Identitas yang dikirim ke penyedia LLM dibatasi pada **peran dan cakupan akses**, bukan identitas langsung. Nama pengguna **tidak** dikirim ke model; sapaan personal dirakit di sisi server setelah jawaban diterima |
 | DP-AI-02 | Hasil tool yang dikirim ke model wajib melalui *field allow-list*; field finansial dan data pribadi pengguna lain dihapus sebelum meninggalkan server |
 | DP-AI-03 | Untuk pengguna role Siswa/OSIS, tidak ada data pribadi pengguna lain yang boleh masuk ke konteks model dalam bentuk apapun |
-| DP-AI-04 | Penyedia LLM wajib dikonfigurasi agar **tidak menggunakan data untuk pelatihan model**; hal ini dinyatakan dalam DPA (DP-07) |
+| DP-AI-04 | Penyedia LLM dikonfigurasi agar **tidak menggunakan data untuk pelatihan model** apabila tier layanan yang dipakai menyediakan jaminan tersebut; jaminan itu dinyatakan dalam DPA (DP-07). **Pengecualian sejak 2 September 2026 (keputusan pemilik produk):** tier gratis Gemini Developer API diizinkan meskipun isinya dapat dipakai penyedia untuk meningkatkan produknya. Konsekuensi ini **wajib dinyatakan pada Pemberitahuan Privasi** (DP-01) sebelum chatbot aktif, dan berlaku pula atas pertanyaan yang diketik pengguna role Siswa/OSIS |
 | DP-AI-05 | Riwayat percakapan yang dihapus pengguna (FR-19.2 A1) menyisakan hanya metrik agregat tanpa isi pesan dan tanpa pengenal pengguna |
 
 

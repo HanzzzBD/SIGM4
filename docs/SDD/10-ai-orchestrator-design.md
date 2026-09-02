@@ -17,7 +17,7 @@
 | Ketersediaan | `NFR-A-05`, `AI-L-04` |
 | Keterbatasan yang diakui | `AI-L-01` … `AI-L-12` |
 
-Penyedia dan model ditetapkan PRD Bab 22.1: **Google Gemini Developer API — *paid tier*** dengan model **`gemini-3.6-flash`** (versi stabil/GA), dapat dikonfigurasi Administrator di antara model stabil/GA (`FR-20.1`). Otorisasi tool memakai `AuthContext` yang sama dengan seluruh sistem — lihat [SDD-03 §4.6](03-authorization.md).
+Penyedia dan model ditetapkan PRD Bab 22.1: **Google Gemini Developer API** — tier gratis sejak 2 September 2026 (`SDD-AI-17`) — dengan model **`gemini-3.6-flash`** (versi stabil/GA), dapat dikonfigurasi Administrator di antara model stabil/GA (`FR-20.1`). Otorisasi tool memakai `AuthContext` yang sama dengan seluruh sistem — lihat [SDD-03 §4.6](03-authorization.md).
 
 **Berkas ini merancang, belum mengimplementasikan.** Kode chatbot dibangun pada Phase 03 (`PR-03-20` … `PR-03-23`); saat berkas ini ditulis belum ada satu baris pun yang berjalan.
 
@@ -41,6 +41,8 @@ Penyedia dan model ditetapkan PRD Bab 22.1: **Google Gemini Developer API — *p
 | **SDD-AI-12** | Adapter penyedia LLM berada di satu berkas; seluruh modul lain memanggilnya lewat antarmuka `ChatProvider` agar `NFR-A-05` dapat ditegakkan di satu titik. |
 | **SDD-AI-13** | Ambang `SDD-AI-05` dipenuhi dengan **isi yang berguna**, bukan teks pengisi: aturan format keluaran (22.4), pola penolakan (`AI-SEC-01`), dan contoh dialog yang benar. Uji `PR-03-22` memverifikasi **dua** hal sekaligus — panjang awalan statis **dan** `total_cached_tokens > 0` pada permintaan kedua. Menutup `TBD-AI-A` (keputusan pemilik produk, 25 Agustus 2026; angka disesuaikan ke ambang Gemini 2 September 2026). |
 | **SDD-AI-14** | Permukaan API adalah **Interactions API** (`client.interactions.create`) dengan **`store: false`**. Tidak ada *state* percakapan yang disimpan di sisi penyedia: riwayat tetap milik SIGM4 (`ConversationStore`) dan dikirim utuh pada setiap permintaan. Konsekuensi yang diterima: `previous_interaction_id` dan eksekusi latar tidak dipakai, dan hanya *implicit caching* yang tersedia. |
+| **SDD-AI-16** | **Pemrosesan lintas yurisdiksi disetujui sekolah.** Persetujuan tertulis Kepala Sekolah diberikan 2 September 2026 (**nomor surat: TBD — menunggu salinan resmi**; ketiadaan nomor tidak menunda keputusan ini, tetapi wajib dilengkapi sebelum `GL-07` diperiksa); prompt dan hasil tool boleh diproses dan di-*cache* di yurisdiksi mana pun tempat penyedia memiliki fasilitas. Rancangan tidak berubah karenanya — `DP-AI-01`, `AI-SEC-03`, dan `store: false` tetap berlaku identik. Menutup `TBD-AI-D`; membuka `GL-07` bagian chatbot. Pencabutan persetujuan dijalankan lewat `AI-CTL-09`, bukan perubahan rancangan. |
+| **SDD-AI-17** | **Tier layanan adalah keputusan sekolah, bukan syarat rancangan.** Tier gratis diizinkan sejak 2 September 2026 (`DP-AI-04` dan `AI-SEC-08` disunting). Konsekuensi yang diterima: isi percakapan dapat dipakai penyedia untuk meningkatkan produknya, dan kuota serta batas laju tier gratis menjadi batasan ketersediaan — ditanggung `AI-CTL-06`, `RS-08`, dan penurunan anggun `NFR-A-05`. Seluruh kendali lain tidak bergantung tier: `store: false` (`SDD-AI-14`), allow-list (`AI-SEC-03`), tanpa identitas langsung (`DP-AI-01`). |
 | **SDD-AI-15** | Model **hanya** menerima *custom function tools* Bab 22.3. Seluruh tool bawaan sisi-server Google — Google Search, Google Maps, File Search, Code Execution, URL Context, Computer Use — dan seluruh MCP server jarak jauh **tidak pernah** dideklarasikan. |
 
 ---
@@ -270,8 +272,9 @@ Tiap butir dinilai empat dimensi (`AI-EV-03`) dan dijalankan untuk **ketujuh rol
 |---|---|
 | **TBD-AI-B** | Nilai `thinking_level` produksi. Rancangan ini memilih `"minimal"` demi latensi; keputusan final menunggu hasil eval terhadap `SC-10`. |
 | **TBD-AI-C** | Ambang biaya harian Gemini API yang memicu alarm (`OBS-05`) belum ditetapkan — bergantung anggaran sekolah (PRD 27.9). |
-| **TBD-AI-D** | Persetujuan tertulis sekolah atas pemrosesan data percakapan **lintas yurisdiksi**. Gemini Developer API tidak menjamin residensi data; paid tier menjamin data tidak dipakai melatih model, tetapi lokasi pemrosesan tidak dapat dibatasi. Memblokir `GL-07`, bukan Phase 03. |
 
 **Tertutup 25 Agustus 2026:** `TBD-AI-A` → `SDD-AI-13`. Tool bahan (`TBD-BHN-E`) masuk 22.3 dan diimplementasikan Phase 05.
+
+**Tertutup 2 September 2026:** `TBD-AI-D` → `SDD-AI-16`, atas surat pernyataan Kepala Sekolah tertanggal sama. `TBD-AI-C` tetap terbuka tetapi objeknya berubah: dengan tier gratis tidak ada tagihan yang diambang-batasi, sehingga alarm `OBS-05` perlu diarahkan ke kuota penyedia alih-alih biaya harian — penyesuaian itu milik `SDD-15`, bukan berkas ini.
 
 **Diperbarui 2 September 2026:** migrasi penyedia dari Claude API ke Google Gemini Developer API. `SDD-AI-14` dan `SDD-AI-15` baru; `SDD-AI-01` … `SDD-AI-13` disesuaikan ke Gemini tanpa berpindah topik. Angka `SDD-AI-05` naik 1.024 → 4.096 mengikuti ambang caching Gemini 3.x, dan `AI-CTL-02` naik ±8.000 → ±16.000 sebagai konsekuensinya.

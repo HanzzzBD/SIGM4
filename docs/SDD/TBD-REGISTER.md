@@ -2,7 +2,7 @@
 
 Berkas ini mengumpulkan seluruh titik dalam SDD yang **memerlukan keputusan** dan sengaja tidak diisi. Tidak ada angka, kebijakan, atau perilaku yang dikarang.
 
-**Status: 14 terbuka · 27 tertutup** — terkumpul dari 18 berkas SDD dan dari [proposal perubahan lingkup domain Bahan](../PRD/01-product/bahan-scope-change.md).
+**Status: 13 terbuka · 28 tertutup** — terkumpul dari 18 berkas SDD dan dari [proposal perubahan lingkup domain Bahan](../PRD/01-product/bahan-scope-change.md).
 
 ---
 
@@ -10,9 +10,7 @@ Berkas ini mengumpulkan seluruh titik dalam SDD yang **memerlukan keputusan** da
 
 Perlu keputusan pemilik produk. Tidak dapat ditetapkan tim teknis.
 
-| ID | Berkas | Pertanyaan |
-|---|---|---|
-| **TBD-AI-D** | [SDD-10](10-ai-orchestrator-design.md) | Persetujuan tertulis sekolah atas pemrosesan data percakapan chatbot **lintas yurisdiksi**. Gemini Developer API tidak menjamin residensi data; paid tier menjamin data tidak dipakai melatih model, tetapi lokasi pemrosesan tidak dapat dibatasi (`RS-21`). Memblokir `GL-07`, tidak memblokir Phase 03. |
+_Seluruhnya tertutup — lihat [Tertutup](#tertutup)._
 
 ## B. Parameter operasional — sebaiknya ditunda sampai staging berdiri
 
@@ -53,12 +51,12 @@ _Seluruhnya tertutup — lihat [Tertutup](#tertutup)._
 
 | Kelompok | Jumlah | Kapan diputuskan |
 |---|---|---|
-| A — Kebijakan produk | 1 | `TBD-AI-D` dibuka 2 September 2026; wajib tertutup sebelum `GL-07` |
+| A — Kebijakan produk | 0 | Dikosongkan kembali 2 September 2026 — `TBD-AI-D` tertutup hari yang sama saat ia dibuka |
 | B — Parameter operasional | 13 | Setelah staging berdiri & uji beban dijalankan |
 | C — Pilihan teknis | 0 | Seluruhnya tertutup 6 Agustus 2026 |
 | D — Konten | 0 | Seluruhnya tertutup 25 Agustus 2026 |
 
-Kelompok B sengaja ditunda: menetapkan ukuran pool koneksi atau TTL cache tanpa data pengukuran hanya memindahkan tebakan ke dokumen. **Kelompok C dan D seluruhnya tertutup.** Kelompok A berisi satu butir yang dibuka kembali oleh migrasi penyedia LLM 2 September 2026: `TBD-AI-D` menunggu keputusan sekolah, bukan pengukuran. Ia **tidak memblokir Phase 00 hingga Phase 06** — chatbot tetap dibangun dan dievaluasi pada Phase 03 — tetapi memblokir gerbang go-live `GL-07`. Bila persetujuan tidak diberikan, jalur yang tersedia adalah menonaktifkan chatbot lewat `AI-CTL-09`, bukan mengganti rancangannya.
+Kelompok B sengaja ditunda: menetapkan ukuran pool koneksi atau TTL cache tanpa data pengukuran hanya memindahkan tebakan ke dokumen. **Kelompok A, C, dan D seluruhnya tertutup.** `TBD-AI-D` dibuka dan ditutup pada hari yang sama, 2 September 2026: migrasi penyedia LLM membukanya, surat pernyataan Kepala Sekolah menutupnya. Tidak ada lagi keputusan yang belum diambil — yang tersisa seluruhnya angka yang menunggu pengukuran.
 
 ---
 
@@ -92,6 +90,7 @@ Kelompok B sengaja ditunda: menetapkan ukuran pool koneksi atau TTL cache tanpa 
 | **TBD-AVL-B** | [SDD-01](01-availability-concurrency.md) | Endpoint reservasi: tetap satu `/reservations` atau dipecah per jenis. | `SDD-01 §8` · **UXD-15** — tetap satu rumpun `/reservations`; `BR-017`…`BR-025` berlaku identik bagi kedua jenis | 25 Agustus 2026 |
 | **TBD-FS-A** | [SDD-09](09-file-storage-design.md) · [SDD-13](13-security-design.md) | Perlakuan foto berwajah saat permintaan penghapusan data (`DP-04`). | `SDD-FS-11` · `DP-05a` · **UXD-14** — dipertahankan sebagai bukti; **wajib** dinyatakan pada Pemberitahuan Privasi | 25 Agustus 2026 |
 | **TBD-BHN-E** | [ai-features](../PRD/03-architecture/ai-features.md) | Apakah chatbot perlu tool berdomain Bahan? | 22.3 — dua tool (`get_material_stock`, `get_low_stock_materials`) ditambahkan; diimplementasikan `PR-05-25` di Phase 05 | 25 Agustus 2026 |
+| **TBD-AI-D** | [SDD-10](10-ai-orchestrator-design.md) | Persetujuan tertulis sekolah atas pemrosesan data percakapan chatbot **lintas yurisdiksi** (`RS-21`). | `SDD-AI-16` — **disetujui**, atas surat pernyataan Kepala Sekolah (nomor surat **TBD**, menunggu salinan resmi). Ditutup pada hari yang sama saat dibuka. Pemakaian tier gratis diputuskan terpisah (`SDD-AI-17`, `DP-AI-04` disunting) | 2 September 2026 |
 | **TBD-AI-A** | [SDD-10](10-ai-orchestrator-design.md) | Panjang dan isi final prefiks statis system prompt (ambang caching penyedia). | `SDD-AI-13` — diperkaya dengan isi berguna; uji memverifikasi panjang **dan** cache benar-benar kena. Angka disesuaikan ke ambang Gemini 3.x (≥ 4.096, sasaran ≥ 4.500) pada migrasi 2 September 2026 | 25 Agustus 2026 |
 
 Kolom **Keputusan** memuat ID keputusan SDD — atau ID keputusan UX (`UXD-xx`) bila yang memutuskan adalah pemilik produk, bukan arsitek — dan bukan uraiannya — uraian, opsi yang ditolak, dan konsekuensinya ada di berkas SDD pemiliknya.

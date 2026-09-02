@@ -7,6 +7,25 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 ---
 
 
+## 2 September 2026 — `TBD-AI-D` tertutup & tier gratis diizinkan
+
+**Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). Satu TBD ditutup; **kelompok A kembali kosong**.
+
+Dua keputusan pemilik produk pada hari yang sama. `TBD-AI-D` — dibuka pagi itu juga oleh migrasi penyedia LLM — ditutup oleh surat pernyataan Kepala Sekolah (`SDD-AI-16`), sehingga `GL-07` bagian chatbot terbuka. Nomor suratnya **belum dicatat** — ditandai TBD di `SDD-AI-16` dan wajib dilengkapi sebelum `GL-07` diperiksa. Terpisah dari itu, sekolah tidak menganggarkan biaya chatbot dan memilih **tier gratis** (`SDD-AI-17`), yang menuntut `DP-AI-04` disunting di PRD lebih dulu.
+
+| Yang berubah | Berkas yang menyesuaikan |
+|---|---|
+| `TBD-AI-D` tertutup; kelompok A kosong | `SDD/TBD-REGISTER.md` · `SDD/10-ai-orchestrator-design.md` · `ROADMAP.md` §8 · `IMPLEMENTATION-STATUS.md` · `README.md` · `../../CLAUDE.md` |
+| Dua keputusan SDD baru: `SDD-AI-16` (persetujuan) dan `SDD-AI-17` (tier) | `SDD/10-ai-orchestrator-design.md` §2 |
+| Requirement PRD `DP-AI-04`, `AI-SEC-08`, Bab 22.1, `AS-15`, `RS-21`, Bab 27.9 | dicatat di `PRD/CHANGELOG.md`, bukan di sini |
+
+**Dampak pada lintasan kritis:** tidak ada. Tidak ada PR yang berubah lingkupnya; `PR-03-20` … `PR-03-23` dan `PR-05-25` tetap seperti rencana. Yang berubah adalah kredensial yang dipakai dan sebuah gerbang rilis yang tidak lagi tertahan.
+
+**Dua butir sengaja dibiarkan terbuka** dan dicatat di `PRD/CHANGELOG.md`: penyaringan PII pada teks bebas pengguna, dan ID risiko tersendiri bagi pemakaian isi percakapan oleh penyedia. Keduanya menunggu keputusan pemilik produk, bukan pengukuran.
+
+---
+
+
 ## 2 September 2026 — Migrasi penyedia LLM: Claude API → Google Gemini
 
 **Status TBD: 14 terbuka · 27 tertutup** — A (1) · B (13) · C (0) · D (0). Satu TBD **dibuka**, tidak ada yang ditutup.

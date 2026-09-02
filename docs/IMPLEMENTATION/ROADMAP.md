@@ -198,9 +198,9 @@ Beberapa phase tidak dapat diselesaikan sebelum TBD tertentu ditutup. Daftar len
 | ~~`TBD-AI-A`~~ | D | ~~`PR-03-22`~~ | ✅ **Tertutup 25 Agustus 2026** — `SDD-AI-13` |
 | ~~`TBD-SEC-B`~~ | A | ~~`PR-00-06` · `PR-08-01` … `PR-08-06`~~ | ✅ **Tertutup 25 Agustus 2026** — `SDD-SEC-10` · `SDD-OBS-10` |
 | ~~`TBD-INF-A`~~ | B | ~~`PR-00-18`~~ | ✅ **Tertutup 25 Agustus 2026** — `SDD-INF-11` |
-| `TBD-AI-D` | A | `GL-07` (gerbang go-live) | Sebelum go-live — dibuka 2 September 2026 oleh migrasi penyedia LLM |
+| ~~`TBD-AI-D`~~ | A | ~~`GL-07` (gerbang go-live)~~ | ✅ **Tertutup 2 September 2026** — `SDD-AI-16`, disetujui sekolah pada hari yang sama saat dibuka |
 | kelompok B (13 sisanya) | B | kalibrasi parameter | Phase 07–08, setelah data staging ada |
-| kelompok A (1) | A | `GL-07` | `TBD-AI-D`; sisanya tertutup 25 Agustus 2026 |
+| kelompok A (0) | A | — | Dikosongkan kembali 2 September 2026 |
 | kelompok C (0) | C | — | Seluruhnya tertutup 6 Agustus 2026 |
 | kelompok D (0) | D | — | Seluruhnya tertutup 25 Agustus 2026 |
 

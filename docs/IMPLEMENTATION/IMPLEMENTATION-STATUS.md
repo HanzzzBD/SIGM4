@@ -138,9 +138,9 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | Phase 08 | `TBD-SEC-A` (penyedia pentest) · `TBD-OBS-B` (penerima alarm) | — | Pemilik produk / sekolah |
 | `GL-07` (gerbang go-live) | `TBD-AI-D` (persetujuan pemrosesan data chatbot lintas yurisdiksi) | 2 September 2026 | Pemilik produk / sekolah |
 
-Daftar TBD lengkap beserta pertanyaannya: [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md) — **14 terbuka, 27 tertutup**. Jadwal penutupan yang diharapkan: [`ROADMAP.md` §8](ROADMAP.md).
+Daftar TBD lengkap beserta pertanyaannya: [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md) — **13 terbuka, 28 tertutup**. Jadwal penutupan yang diharapkan: [`ROADMAP.md` §8](ROADMAP.md).
 
-**Tidak ada penghalang TBD pada pengerjaan Phase 00–08.** Dua belas TBD ditutup 25 Agustus 2026 dalam empat batch, mengosongkan kelompok A dan D. Tiga belas TBD kelompok B masih terbuka tetapi tidak memblokir pengerjaan: seluruhnya parameter yang dikalibrasi Phase 07–08 setelah data staging tersedia. Yang berubah 2 September 2026: migrasi penyedia LLM ke Google Gemini membuka `TBD-AI-D` (kelompok A) — ia tidak memblokir satu PR pun, tetapi memblokir gerbang go-live `GL-07`.
+**Tidak ada penghalang TBD pada pengerjaan Phase 00–08, dan tidak ada lagi gerbang rilis yang tertahan.** Dua belas TBD ditutup 25 Agustus 2026 dalam empat batch. Migrasi penyedia LLM 2 September 2026 sempat membuka `TBD-AI-D` (kelompok A), dan surat pernyataan Kepala Sekolah menutupnya pada hari yang sama (`SDD-AI-16`) — `GL-07` bagian chatbot terbuka. Tiga belas TBD kelompok B masih terbuka tetapi tidak memblokir apa pun: seluruhnya parameter yang dikalibrasi Phase 07–08 setelah data staging tersedia.
 
 ## Pergeseran jadwal tercatat
 

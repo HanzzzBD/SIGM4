@@ -142,7 +142,7 @@ Dilarang keras menyalin data produksi ke staging tanpa anonimisasi (lihat DP-08)
 | Redis | Rendah | |
 | Object storage + bandwidth | Rendah–menengah | Tumbuh seiring foto |
 | Firebase FCM | Gratis pada volume ini | |
-| Gemini API (paid tier) | **Variabel — perlu pemantauan** | Fungsi jumlah percakapan × token; dikendalikan batas harian (RS-08) dan *prompt caching* (Bab 22.8) |
+| Gemini API (tier gratis sejak 2 September 2026) | **Nol biaya, terbatas kuota** | Tidak ada tagihan; yang dipantau adalah kuota dan batas laju penyedia. Batas harian (RS-08) dan *prompt caching* (Bab 22.8) tetap berlaku sebagai kendali beban |
 | Cadangan & pemantauan | Rendah | |
 
 Angka absolut ditetapkan bersama penyedia infrastruktur pada tahap perencanaan teknis; yang mengikat di sini adalah **kewajiban memantau biaya Gemini API sebagai metrik operasional** (OBS-05).

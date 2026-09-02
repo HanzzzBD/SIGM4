@@ -6,7 +6,7 @@ Sistem memiliki **satu fitur AI**, yaitu **Chatbot Asisten SIGM4** — asisten p
 
 | Aspek | Ketentuan |
 |---|---|
-| **Model** | **Google Gemini Developer API — *paid tier*** dengan model `gemini-3.6-flash` (versi stabil/GA) sebagai model utama; dapat dikonfigurasi Administrator **di antara model stabil/GA saja**. Alias `latest`, versi *preview*, dan versi eksperimental dilarang karena siklus hidupnya tidak menjamin perilaku tetap. **Tier gratis dilarang** untuk data SIGM4: isinya dapat dipakai penyedia untuk meningkatkan produk |
+| **Model** | **Google Gemini Developer API — *paid tier*** dengan model `gemini-3.6-flash` (versi stabil/GA) sebagai model utama; dapat dikonfigurasi Administrator **di antara model stabil/GA saja**. Alias `latest`, versi *preview*, dan versi eksperimental dilarang karena siklus hidupnya tidak menjamin perilaku tetap. **Tier gratis diizinkan sejak 2 September 2026** (keputusan pemilik produk, `DP-AI-04`); konsekuensinya isi percakapan dapat dipakai penyedia untuk meningkatkan produknya, dan kuota serta batas laju tier gratis menjadi batasan operasional |
 | **Pola integrasi** | Tool calling (function calling) terhadap API internal, bukan pengiriman seluruh basis data ke model. Model hanya **mengusulkan** panggilan tool; yang menjalankannya adalah backend SIGM4, bukan SDK penyedia (BR-076) |
 | **Sifat akses** | Read-only, difilter permission pengguna pada lapisan query |
 | **Bahasa** | Bahasa Indonesia |
@@ -161,6 +161,6 @@ SC-10 menargetkan akurasi ≥ 85%, namun sebelumnya tidak ada cara mengukurnya. 
 | AI-SEC-05 | Instruksi sistem tidak dapat ditimpa oleh isi pesan pengguna; percobaan menimpa dicatat sebagai anomali dan ditinjau |
 | AI-SEC-06 | Untuk pengguna role Siswa/OSIS, berlaku pembatasan tambahan: tidak ada data pribadi pengguna lain dalam bentuk apapun yang masuk ke konteks model (DP-AI-03) |
 | AI-SEC-07 | **Moderasi**: percakapan yang memuat konten tidak pantas atau percobaan penyalahgunaan berulang ditandai, dan pengguna yang bersangkutan dapat dibatasi aksesnya ke chatbot oleh Administrator |
-| AI-SEC-08 | Penyedia LLM dikonfigurasi agar data tidak digunakan untuk pelatihan model, dan hal ini dinyatakan dalam DPA (DP-AI-04). Pada Gemini Developer API syarat ini hanya terpenuhi pada **paid tier**; tier gratis dilarang dipakai untuk data SIGM4 apa pun. Penyedia **tidak menjamin residensi data** — pemrosesan lintas yurisdiksi menjadi keputusan tersendiri (`TBD-AI-D`, `RS-21`) yang wajib tertutup sebelum GL-07 |
+| AI-SEC-08 | Penyedia LLM dikonfigurasi agar data tidak digunakan untuk pelatihan model **bila tier yang dipakai menyediakan jaminan itu**, dinyatakan dalam DPA (DP-AI-04). Pada Gemini Developer API jaminan tersebut hanya ada di paid tier; **tier gratis diizinkan sejak 2 September 2026** dengan konsekuensi isi percakapan dapat dipakai penyedia untuk meningkatkan produknya. Penyedia **tidak menjamin residensi data** — pemrosesan lintas yurisdiksi disetujui sekolah 2 September 2026 (`TBD-AI-D` tertutup, `RS-21`) |
 
 ---

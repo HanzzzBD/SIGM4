@@ -127,3 +127,35 @@ Chatbot M-19 berpindah dari Claude API ke **Google Gemini Developer API — *pai
 | 11 | 22.5 butir 2 menyertakan **nama pengguna** ke dalam system prompt dan butir 4 menyuruh model menyapa dengan nama, sementara `DP-AI-01`, 22.3, dan AC `FR-19.1` melarang nama dikirim ke penyedia LLM | Butir 2 dipersempit menjadi **role dan ringkasan cakupan permission**; butir 4 menyatakan model tidak menyapa dengan nama karena tidak menerimanya, dan sapaan personal disisipkan server pada jawaban yang sudah jadi. `DP-AI-01` yang berlaku; 22.5 adalah satu-satunya baris yang menyimpang |
 
 Kontradiksi ini sudah ada sebelum migrasi dan tidak disebabkan olehnya; ia ditemukan saat penelusuran ulang Bab 22 dan diperbaiki di lapisan yang memilikinya.
+
+---
+
+## Revisi — Persetujuan Sekolah & Tier Layanan LLM (2 September 2026)
+
+Dua keputusan pemilik produk pada hari yang sama, dicatat terpisah karena menjawab pertanyaan yang berbeda.
+
+**Pertama — pemrosesan lintas yurisdiksi disetujui.** Surat pernyataan Kepala Sekolah menutup `TBD-AI-D` (`SDD-AI-16`); `GL-07` bagian chatbot terbuka. Rancangan tidak berubah karenanya. Nomor surat **belum dicatat** (TBD) dan wajib dilengkapi sebelum `GL-07` diperiksa.
+
+**Kedua — tier gratis diizinkan.** Sekolah tidak menganggarkan biaya chatbot, dan memilih tier gratis dengan konsekuensinya diterima secara sadar (`SDD-AI-17`).
+
+### Requirement yang berubah
+
+| ID | Sebelum | Sesudah | Alasan |
+|---|---|---|---|
+| **`DP-AI-04`** | Penyedia LLM **wajib** dikonfigurasi agar tidak memakai data untuk pelatihan model | Kewajiban berlaku **bila tier yang dipakai menyediakan jaminan itu**; tier gratis diizinkan sebagai pengecualian tertulis, dan konsekuensinya wajib dinyatakan pada Pemberitahuan Privasi (`DP-01`) | Keputusan pemilik produk. Ini baris yang menanggung beban — `AI-SEC-08` hanya menerapkannya |
+| `AI-SEC-08` | Syarat hanya terpenuhi pada paid tier; tier gratis **dilarang** untuk data SIGM4 apa pun | Tier gratis **diizinkan**, dengan konsekuensi isi percakapan dapat dipakai penyedia untuk meningkatkan produknya | Konsekuensi langsung `DP-AI-04` |
+| Bab 22.1 — Model | Tier gratis dilarang | Tier gratis diizinkan; kuota dan batas laju menjadi batasan operasional | Idem |
+| `AS-15` | Mengandaikan akun **berbayar** beserta anggarannya | Anggaran **bukan lagi prasyarat**; kuota dan batas laju tier gratis menjadi batasan yang ditanggung `AI-CTL-06` dan `RS-08` | Sekolah tidak menganggarkan chatbot |
+| `RS-21` | Mitigasi memuat "paid tier (tanpa pemakaian untuk pelatihan model)" | Mitigasi itu **dicabut**; persetujuan lintas yurisdiksi sudah diberikan sehingga bagian itu tertutup | Mitigasi yang tidak lagi berlaku tidak boleh tetap tertulis seolah berlaku |
+| Bab 27.9 — Biaya | Gemini API paid tier: variabel, perlu pemantauan | Nol biaya, terbatas kuota | Idem |
+
+**Tidak berubah:** `DP-AI-01`, `DP-AI-02`, `DP-AI-03`, `DP-AI-05`, `AI-SEC-01` … `AI-SEC-07`, `BR-075` … `BR-079`, katalog 12 tool 22.3, `store: false`, dan batas 5 iterasi. Perubahan tier tidak menyentuh model ancaman: yang berubah adalah apa yang boleh dilakukan penyedia terhadap data yang sampai padanya, bukan data apa yang sampai.
+
+### Yang belum diselesaikan
+
+| Butir | Keadaan |
+|---|---|
+| Penyaringan PII pada **teks bebas pengguna** | `AI-SEC-02` menyaring nilai field yang kembali lewat hasil tool, bukan pertanyaan yang diketik pengguna. Pengguna yang menyebut namanya sendiri mengirimkannya ke penyedia. Belum ada requirement yang menanganinya — **perlu keputusan pemilik produk** |
+| Risiko "isi percakapan dipakai meningkatkan produk penyedia" | Belum punya ID risiko sendiri; kini tercatat hanya sebagai konsekuensi pada `DP-AI-04`. Kandidat `RS-22` — **belum dibuat**, menunggu keputusan |
+| `TBD-AI-C` | Tetap terbuka, tetapi objeknya berubah: tanpa tagihan, alarm `OBS-05` perlu diarahkan ke kuota penyedia alih-alih biaya harian (`SDD-15`) |
+
