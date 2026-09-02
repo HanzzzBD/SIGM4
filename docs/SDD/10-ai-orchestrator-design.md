@@ -12,7 +12,7 @@
 | Aturan bisnis | `BR-075` … `BR-079` |
 | Tool & prompt | Bab 22.3, 22.4, 22.5 |
 | Evaluasi | `AI-EV-01` … `AI-EV-07`, `SC-10` |
-| Kendali biaya & performa | `AI-CTL-01` … `AI-CTL-10` |
+| Kendali kuota & performa | `AI-CTL-01` … `AI-CTL-10` |
 | Privasi & injeksi | `AI-SEC-01` … `AI-SEC-08`, `DP-AI-01` … `DP-AI-05` |
 | Ketersediaan | `NFR-A-05`, `AI-L-04` |
 | Keterbatasan yang diakui | `AI-L-01` … `AI-L-12` |
@@ -68,7 +68,7 @@ Dua jebakan yang khusus mengancam sistem ini:
 1. **Minimum 4.096 token** untuk seluruh keluarga Gemini 3.x — empat kali ambang yang berlaku pada rancangan sebelumnya. Awalan yang lebih pendek tidak di-cache dan **tidak ada galat**, hanya `usage.total_cached_tokens: 0`.
 2. **Deklarasi tool ikut membentuk awalan.** Menambah, menghapus, atau mengurutkan ulang tool membatalkan seluruh cache. Daftar tool karena itu **statis dan terurut deterministik** — tidak dibangun per pengguna berdasarkan permission (penyaringan terjadi di lapisan eksekusi, bukan di daftar tool).
 
-Ambang 4.096 token itu yang memaksa `AI-CTL-02` dinaikkan dari ±8.000 ke ±16.000 token masukan (keputusan pemilik produk, 2 September 2026). Dengan anggaran lama, awalan statis akan memakan lebih dari separuh jendela dan riwayat 10 pesan yang dijanjikan Bab 22.3 tidak lagi muat — caching dibayar dengan memori percakapan. Menaikkan anggaran membuat keduanya dapat hidup bersama; biaya tambahannya sebagian besar kembali lewat tarif token yang di-cache.
+Ambang 4.096 token itu yang memaksa `AI-CTL-02` dinaikkan dari ±8.000 ke ±16.000 token masukan (keputusan pemilik produk, 2 September 2026). Dengan anggaran lama, awalan statis akan memakan lebih dari separuh jendela dan riwayat 10 pesan yang dijanjikan Bab 22.3 tidak lagi muat — caching dibayar dengan memori percakapan. Menaikkan anggaran membuat keduanya dapat hidup bersama; pada tier berbayar, biaya tambahannya sebagian besar kembali lewat tarif token yang di-cache.
 
 **SDD-AI-06 — loop manual, dan *automatic function calling* dimatikan.** SDK Google dapat menjalankan fungsi tool sendiri. Di sistem ini setiap eksekusi tool wajib melewati `AuthContext` pengguna penanya (`BR-076`) dan melewati *allow-list* field sebelum hasilnya kembali ke model (`AI-SEC-03`, `DP-AI-02`). Eksekusi otomatis melewati kedua gerbang itu, jadi ia dimatikan secara eksplisit — bukan diasumsikan tidak aktif. Menulis loop sendiri juga membuat batas 5 iterasi (`AI-CTL-03`) menjadi milik kami.
 
@@ -243,9 +243,9 @@ Tiap butir dinilai empat dimensi (`AI-EV-03`) dan dijalankan untuk **ketujuh rol
 
 | Risiko | Dampak | Mitigasi |
 |---|---|---|
-| Awalan statis < 4.096 token | Caching diam-diam mati; biaya naik berlipat | Uji memverifikasi panjang awalan **dan** `total_cached_tokens > 0` pada permintaan kedua |
+| Awalan statis < 4.096 token | Caching diam-diam mati; latensi naik, dan pada tier berbayar biaya berlipat | Uji memverifikasi panjang awalan **dan** `total_cached_tokens > 0` pada permintaan kedua |
 | Waktu/ID menyelinap ke awalan | Cache tidak pernah kena | Awalan dibangun dari konstanta; uji membandingkan byte awalan dua permintaan berturut-turut |
-| `thinking_level` hilang saat penyuntingan | Diam-diam kembali ke `"medium"`; latensi & biaya naik | `total_thought_tokens` dipantau; uji memeriksa field terkirim pada setiap permintaan |
+| `thinking_level` hilang saat penyuntingan | Diam-diam kembali ke `"medium"`; latensi naik dan konsumsi token membengkak | `total_thought_tokens` dipantau; uji memeriksa field terkirim pada setiap permintaan |
 | Parameter sampling terkirim | Diabaikan diam-diam, penulis mengira variasi terkendali | Uji memeriksa permintaan **tidak memuat** `temperature`/`top_p`/`top_k` |
 | `store` berubah menjadi `true` | Percakapan sekolah tersimpan 55 hari di sisi penyedia, di luar `BR-078` dan `DP-AI-05` | Nilai dikunci konstanta di `ChatProvider`; uji memeriksa `store: false` pada setiap permintaan |
 | *Automatic function calling* aktif kembali | Tool berjalan tanpa `AuthContext` dan tanpa allow-list — kebocoran lintas scope | Dimatikan eksplisit; uji memastikan `ToolExecutor` adalah satu-satunya jalur eksekusi |

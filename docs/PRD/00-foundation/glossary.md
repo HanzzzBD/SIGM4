@@ -33,7 +33,7 @@
 | **Pseudonimisasi** | Penggantian identitas dengan penanda tak-terbalikkan, sementara catatan transaksi dipertahankan |
 | **Golden set** | Kumpulan pertanyaan berlabel untuk mengukur akurasi chatbot secara berulang (Bab 22.7) |
 | **Prompt injection** | Upaya menyisipkan instruksi ke dalam masukan atau data agar model menyimpang dari perannya |
-| **Prompt caching** | Penggunaan ulang bagian statis prompt untuk menekan biaya token |
+| **Prompt caching** | Penggunaan ulang bagian statis prompt antar-permintaan agar awalannya tidak diproses ulang — menekan latensi; pada tier berbayar juga menekan tarif token |
 | **Break-glass** | Prosedur akses darurat berotorisasi ketika jalur normal tidak tersedia (FR-01.6) |
 | **SSE** | *Server-Sent Events* — aliran satu arah server ke klien untuk notifikasi real-time |
 | **Write-off** | Penghapusan aset dari inventaris aktif melalui persetujuan dan berita acara (M-21) |

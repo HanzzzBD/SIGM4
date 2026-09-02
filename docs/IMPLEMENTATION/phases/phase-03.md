@@ -121,7 +121,7 @@ M-05  M-06  M-07  M-11  M-14  M-19   ← tanpa ketergantungan antar-modul
 | `PR-03-17` | Skema pengadaan + pengajuan usulan | M | Ph02 | `FR-14.1`, `BR-060` `BR-061` | Anggaran & justifikasi tervalidasi |
 | `PR-03-18` | Persetujuan usulan pengadaan | M | 17, Ph02 | `FR-14.2`, `BR-062` `BR-063` | Rule bertingkat sesuai nilai usulan |
 | `PR-03-19` | Penerimaan barang → pembuatan aset + **isi `procurement_id`** | L | 18, Ph02 | `FR-14.3`, `BR-064` `BR-065`, `SDD-DB-08` | Aset baru ber-`procurement_id`; aset lama tetap `NULL` dan sah |
-| `PR-03-20` | Orkestrator AI: klien, streaming, kendali biaya | L | Ph02 | `FR-19.1`, `SDD-AI-01/03/04/14/15`, `AI-CTL-02` | `interactions.create` dengan `store: false`; tanpa `temperature`/`top_p`/`top_k`; `thinking_level` eksplisit; hanya custom function tool |
+| `PR-03-20` | Orkestrator AI: klien, streaming, kendali kuota | L | Ph02 | `FR-19.1`, `SDD-AI-01/02/03/04/14/15`, `AI-CTL-02` | `interactions.create` dengan `store: false`; tanpa `temperature`/`top_p`/`top_k`; `thinking_level` eksplisit; hanya custom function tool |
 | `PR-03-21` | Definisi tool chatbot + guardrail permission di lapisan kueri | L | 20 | `BR-075` `BR-076`, `SDD-AI-05/06/15` | Automatic function calling SDK dimatikan; tool menerima `AuthContext`; data di luar scope tidak pernah terbaca |
 | `PR-03-22` | Prompt caching (awalan statis, sasaran ≥ 4.500 token) | M | 20 | `SDD-AI-04/05/13`, `AI-CTL-01` | Uji memverifikasi **panjang awalan** dan `usage.total_cached_tokens > 0` pada permintaan kedua; metrik `chat_cache_read_ratio` terpantau |
 | `PR-03-23` | Riwayat percakapan + evaluasi + eval harness | M | 21 | `FR-19.2`, `BR-077` … `BR-079`, `SDD-AI-09/10` | Eval berjalan di CI terhadap `SC-10` |
@@ -175,7 +175,7 @@ M-05  M-06  M-07  M-11  M-14  M-19   ← tanpa ketergantungan antar-modul
 |---|---|---|---|
 | Blokade jadwal tetap dimaterialisasi seluruh tahun ajaran | Ledakan baris `booking_slots` | Horizon bergulir; kebijakan arsip menunggu **TBD-AVL-A** | `FR-07.5` |
 | Guardrail chatbot diterapkan di lapisan prompt, bukan kueri | Kebocoran data lintas scope — risiko keamanan tertinggi di phase ini | `AuthContext` wajib pada setiap tool; uji lintas-scope masuk gerbang keluar | `BR-076`, `SDD-AI-06` |
-| Awalan statis menyusut di bawah 4.096 token akibat suntingan kemudian | Prompt caching mati diam-diam, biaya membengkak | Sasaran `SDD-AI-13` adalah ≥ 4.500 token — margin yang disengaja. Uji memverifikasi panjang **dan** cache benar-benar kena; metrik rasio cache dipantau sejak hari pertama | `SDD-AI-05` · `SDD-AI-13` |
+| Awalan statis menyusut di bawah 4.096 token akibat suntingan kemudian | Prompt caching mati diam-diam, latensi membengkak | Sasaran `SDD-AI-13` adalah ≥ 4.500 token — margin yang disengaja. Uji memverifikasi panjang **dan** cache benar-benar kena; metrik rasio cache dipantau sejak hari pertama | `SDD-AI-05` · `SDD-AI-13` |
 | `store: true` lolos ke produksi | Percakapan sekolah tersimpan 55 hari di sisi penyedia, di luar `BR-078` dan `DP-AI-05` | Nilai dikunci konstanta di `ChatProvider`; uji memeriksa `store: false` pada setiap permintaan | `SDD-AI-14` · `DP-AI-05` |
 | Enam modul paralel menyulitkan integrasi di akhir phase | Penumpukan konflik merge di pekan terakhir | Merge harian ke `develop`; tidak ada cabang berumur > 3 hari | `BRANCHING-STRATEGY` |
 | Pemindaian AV memperlambat unggah dari mobile | Pengguna mengira aplikasi menggantung | Pemindaian asinkron dengan status berkas eksplisit | `SDD-FS-05` |

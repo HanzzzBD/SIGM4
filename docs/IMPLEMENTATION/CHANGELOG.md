@@ -7,6 +7,30 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 ---
 
 
+## 2 September 2026 — Penamaan ulang Bab 22.8 & pembingkaian ulang biaya menyentuh Phase 03 & 05
+
+**Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). **Tidak ada TBD yang dibuka maupun ditutup.**
+
+### Diubah
+
+PRD Bab 22.8 berganti judul menjadi "Kendali **Kuota**, Performa & Keandalan", dan pembingkaian *prompt caching* dikoreksi dari "menekan biaya" menjadi "menekan pemrosesan ulang awalan → **latensi**; tarif token hanya pada tier berbayar" — `SDD-10` §4.6 mencatat token yang di-cache tetap terhitung, hanya bertarif diskon (`PRD/CHANGELOG.md`, 2 September 2026). Empat baris di folder ini menyalin kosakata lama dan ikut menyesuaikan.
+
+| Berkas | Sebelum | Sesudah |
+|---|---|---|
+| `phases/phase-03.md` — judul `PR-03-20` | Orkestrator AI: klien, streaming, kendali **biaya** | Orkestrator AI: klien, streaming, kendali **kuota** |
+| `phases/phase-03.md` — rujukan `PR-03-20` | `SDD-AI-01/03/04/14/15` | `SDD-AI-01/**02**/03/04/14/15` |
+| `phases/phase-03.md` — risiko awalan statis | "Prompt caching mati diam-diam, **biaya membengkak**" | "Prompt caching mati diam-diam, **latensi membengkak**" |
+| `phases/phase-05.md` — risiko `PR-05-25` | "**Biaya** Gemini API melonjak sesaat pada rilis; latensi naik…" | "**Latensi** naik sesaat pada rilis…; **pada tier berbayar** biaya ikut melonjak" |
+
+**Rujukan `SDD-AI-02` ditambahkan, bukan diperluas.** Acceptance `PR-03-20` sudah mensyaratkan "`thinking_level` eksplisit" dan task breakdown-nya sudah mengutip `SDD-AI-02` (`phase-03.md:152`); hanya kolom rujukan baris PR yang tertinggal. Celah telusur, bukan penambahan lingkup.
+
+Penamaan ulang judul PR sengaja **tidak** dikerjakan pada sinkronisasi 2 September 2026 sebelumnya: mengubah judul PR menyentuh rencana phase, sementara `CLAUDE.md` mensyaratkan judul PR mengikuti rencana phase. Penggantinya diputuskan pemilik produk lebih dulu.
+
+**Dampak pada lintasan kritis:** tidak ada. Total PR tetap **163**. `PR-03-20` dan `PR-05-25` tidak berubah lingkup, kompleksitas, dependensi, maupun acceptance-nya. Tidak ada perubahan pada `interactions.create`, `store: false`, maupun `thinking_level` — audit 2 September 2026 menegaskan ketiganya adalah **hasil** migrasi Gemini (`SDD-AI-14`, `SDD-AI-02`), bukan sisa kosakata Claude API.
+
+---
+
+
 ## 2 September 2026 — Sinkronisasi turunan: alarm kuota & sisa rujukan `TBD-AI-D`
 
 **Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). **Tidak ada TBD yang dibuka maupun ditutup**; entri ini murni menyelaraskan lapisan turunan dengan dua keputusan yang sudah diambil hari itu (`SDD-AI-16`, `SDD-AI-17`).

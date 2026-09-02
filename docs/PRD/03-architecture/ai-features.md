@@ -99,7 +99,7 @@ Sistem memiliki **satu fitur AI**, yaitu **Chatbot Asisten SIGM4** — asisten p
 |---|---|
 | **Keamanan tidak bergantung pada prompt** | Pembatasan hak akses ditegakkan pada lapisan tool dan query SQL. Prompt hanyalah lapisan tambahan, bukan pengaman utama. |
 | **Tool-first** | Model tidak menerima *dump* data; ia meminta data melalui tool sesuai kebutuhan pertanyaan. |
-| **Konteks minimum** | Hanya 10 pesan terakhir yang dikirim, untuk menekan biaya token dan menjaga fokus. |
+| **Konteks minimum** | Hanya 10 pesan terakhir yang dikirim, untuk menekan konsumsi token dan menjaga fokus. |
 | **Jawaban berbasis bukti** | Model diinstruksikan selalu merujuk pengenal data konkret sehingga jawaban dapat diverifikasi pengguna. |
 | **Ketahanan terhadap prompt injection** | Masukan pengguna diperlakukan sebagai data, bukan instruksi; instruksi sistem tidak dapat ditimpa oleh isi pesan pengguna. |
 | **Evaluasi berkelanjutan** | Umpan balik 👍/👎 dan daftar pertanyaan yang gagal dijawab dipakai untuk menyempurnakan prompt dan cakupan tool. |
@@ -112,7 +112,7 @@ Sistem memiliki **satu fitur AI**, yaitu **Chatbot Asisten SIGM4** — asisten p
 | AI-L-02 | Kualitas jawaban bergantung pada kelengkapan dan kemutakhiran data inventaris | Sosialisasi disiplin pencatatan; chatbot menyatakan bila data tidak ditemukan |
 | AI-L-03 | Risiko halusinasi tetap ada meskipun kecil | Instruksi tool-first, kewajiban merujuk pengenal data, dan evaluasi berkala melalui umpan balik pengguna |
 | AI-L-04 | Bergantung pada ketersediaan layanan LLM pihak ketiga | *Graceful degradation*: chatbot dinonaktifkan sementara, modul lain tetap berjalan normal |
-| AI-L-05 | Menimbulkan biaya per penggunaan (token) | Batas percakapan harian per pengguna yang dapat dikonfigurasi; konteks dibatasi 10 pesan |
+| AI-L-05 | Setiap pemakaian mengonsumsi kuota token penyedia; pada tier berbayar juga menimbulkan biaya | Batas percakapan harian per pengguna yang dapat dikonfigurasi; konteks dibatasi 10 pesan |
 | AI-L-06 | Tidak memahami pertanyaan di luar domain sarana prasarana | Menyatakan keterbatasannya dan mengarahkan ke pihak yang tepat |
 | AI-L-07 | Tidak dapat mengakses dokumen berformat gambar atau PDF hasil pindaian | Chatbot mengarahkan pengguna membuka dokumen aset secara langsung |
 | AI-L-08 | Latensi jawaban lebih tinggi dibanding pencarian biasa (hingga 8 detik) | Indikator pemrosesan; pencarian manual tetap tersedia sebagai alternatif |
@@ -135,11 +135,11 @@ SC-10 menargetkan akurasi ≥ 85%, namun sebelumnya tidak ada cara mengukurnya. 
 | AI-EV-06 | Pertanyaan yang memperoleh umpan balik 👎 dan pertanyaan yang gagal dijawab ditinjau berkala dan menjadi kandidat penambahan golden set |
 | AI-EV-07 | Hasil evaluasi terakhir ditampilkan pada menu Monitoring Chatbot (FR-19.2) sebagai bukti pemenuhan SC-10 |
 
-## 22.8 Kendali Biaya, Performa & Keandalan
+## 22.8 Kendali Kuota, Performa & Keandalan
 
 | Kode | Requirement |
 |---|---|
-| AI-CTL-01 | **Prompt caching** diaktifkan atas bagian statis dari system prompt (peran, batasan, aturan format, definisi tool). Hanya konteks pengguna dan riwayat yang berubah per permintaan. Ini menekan biaya secara langsung dan memitigasi RS-08 |
+| AI-CTL-01 | **Prompt caching** diaktifkan atas bagian statis dari system prompt (peran, batasan, aturan format, definisi tool). Hanya konteks pengguna dan riwayat yang berubah per permintaan. Ini menekan pemrosesan ulang awalan pada setiap permintaan — langsung menekan latensi (AI-CTL-07), dan pada tier berbayar menekan tarif token; memitigasi RS-08 |
 | AI-CTL-02 | **Anggaran token per pesan** ditetapkan: masukan maksimum ±16.000 token, keluaran maksimum ±1.000 token. Melebihi batas, konteks riwayat dipangkas dari yang terlama. Batas masukan dinaikkan dari ±8.000 pada 2 September 2026 karena ambang caching model (SDD-10) menuntut prefiks statis yang lebih panjang; tanpa kenaikan itu jendela 10 pesan tidak lagi muat |
 | AI-CTL-03 | **Batas iterasi tool: maksimum 5 panggilan per pesan pengguna.** Setelah batas tercapai, model wajib menjawab dengan data yang telah diperoleh atau menyatakan tidak dapat menjawab |
 | AI-CTL-04 | **Timeout**: 20 detik per panggilan ke penyedia LLM; 5 detik per eksekusi tool. Melewati batas → jalur *fallback* (FR-19.1 A4) |

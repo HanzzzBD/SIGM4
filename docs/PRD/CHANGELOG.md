@@ -159,3 +159,35 @@ Dua keputusan pemilik produk pada hari yang sama, dicatat terpisah karena menjaw
 | Risiko "isi percakapan dipakai meningkatkan produk penyedia" | Belum punya ID risiko sendiri; kini tercatat hanya sebagai konsekuensi pada `DP-AI-04`. Kandidat `RS-22` — **belum dibuat**, menunggu keputusan |
 | `TBD-AI-C` | Tetap terbuka, tetapi objeknya berubah: tanpa tagihan, alarm `OBS-05` **sudah** diarahkan ke konsumsi kuota dan batas laju penyedia (`SDD-15` §4.3 & §4.6, disinkronkan 2 September 2026). Yang tersisa hanyalah **angkanya**, dan itu menunggu pengukuran — bukan keputusan |
 
+---
+
+## Revisi — Penamaan Bab 22.8 & Pembingkaian Ulang Kendali Biaya (2 September 2026)
+
+Judul bab masih berbunyi **"Kendali Biaya"** setelah keputusan tier gratis (`DP-AI-04`, `SDD-AI-17`) menghapus tagihan sepenuhnya. Penamaan ulangnya sengaja ditunda dari sinkronisasi hari yang sama karena merembet ke judul `PR-03-20` pada rencana phase; dikerjakan tersendiri setelah pemilik produk memutuskan penggantinya.
+
+Audit lanjutan atas frasa "biaya" yang tersisa menemukan hal yang tidak dapat diselesaikan dengan mengganti kata: **`SDD-10` §4.6 mencatat `usage.total_cached_tokens` terbaca dengan *tarif diskon*** — *prompt caching* menekan **tarif** per token, bukan **jumlah** token yang terhitung. Pada tier gratis tidak ada tarif yang dapat ditekan, sehingga manfaat caching yang tersisa adalah **latensi**. "Konteks minimum" (Bab 22.5) berperilaku sebaliknya: ia benar-benar mengurangi token yang dikirim. Kedua baris karena itu dibingkai berbeda.
+
+### Yang berubah
+
+| Bagian | Sebelum | Sesudah | Alasan |
+|---|---|---|---|
+| Judul Bab 22.8 | Kendali **Biaya**, Performa & Keandalan | Kendali **Kuota**, Performa & Keandalan | Yang dikendalikan bab ini kini kuota, batas laju, dan anggaran token — bukan tagihan |
+| `AI-CTL-01` | *Prompt caching* "menekan **biaya** secara langsung dan memitigasi RS-08" | "menekan **pemrosesan ulang awalan** pada setiap permintaan — langsung menekan **latensi** (`AI-CTL-07`), dan **pada tier berbayar** menekan **tarif token**; memitigasi `RS-08`" | `SDD-10` §4.6: token yang di-cache tetap terhitung, hanya bertarif diskon. Klaim "menekan kuota" akan bertentangan dengan SDD |
+| Bab 22.5 — *Konteks minimum* | "untuk menekan **biaya token**" | "untuk menekan **konsumsi token**" | Berbeda dari caching: mengirim lebih sedikit pesan benar-benar mengurangi token masukan yang terhitung, pada tier mana pun |
+| Glosarium — *Prompt caching* | "Penggunaan ulang bagian statis prompt untuk menekan **biaya token**" | "…**antar-permintaan agar awalannya tidak diproses ulang** — menekan **latensi**; pada tier berbayar juga menekan **tarif token**" | Idem `SDD-10` §4.6; definisi kini benar pada kedua tier |
+| `RS-08` | "**Biaya** penggunaan Gemini API membengkak melebihi anggaran" · kategori **Biaya** | "**Kuota atau batas laju** Gemini API habis sehingga chatbot berhenti melayani; pada tier berbayar, tagihan membengkak melebihi anggaran" · kategori **Ketersediaan** | `AS-15` dan `SDD-AI-17` sudah menunjuk `RS-08` sebagai penanggung kuota & batas laju sejak 2 September 2026; baris risikonya sendiri belum menyusul dan berselisih dengan keduanya. **Mitigasi, Dampak, dan Kemungkinan tidak berubah** |
+| `AI-L-05` | "Menimbulkan **biaya** per penggunaan (token)" | "Setiap pemakaian **mengonsumsi kuota token** penyedia; pada tier berbayar juga menimbulkan biaya" | Keterbatasannya nyata, tetapi wujudnya konsumsi kuota — bukan tagihan. **Mitigasi tidak berubah** |
+| Bab 29.4 — tangga *scope-cut* baris 5 | "…menghemat **biaya API** sekaligus" | "…melepas **kuota dan ketergantungan layanan LLM pihak ketiga** sekaligus" | Tidak ada biaya yang dihemat pada tier gratis; yang benar-benar dilepas adalah kuota dan ketergantungan `AI-L-04` |
+
+**Kategori risiko:** *Ketersediaan* adalah kategori baru pada tabel Bab 24 — dasarnya `SDD-AI-17` ("kuota serta batas laju tier gratis menjadi batasan **ketersediaan**"). Kategori *Biaya* kini tidak dipakai baris mana pun.
+
+**Tidak ada requirement yang berubah isinya.** `AI-CTL-01` … `AI-CTL-10` tetap sepuluh, dengan ID, angka ambang, dan kewajiban yang sama; `RS-08` dan `AI-L-05` tetap satu baris dengan mitigasi yang sama; tangga *scope-cut* tetap enam anak tangga dengan urutan yang sama. Yang disunting adalah **apa yang diklaim ditekan**, bukan mekanisme maupun kewajibannya.
+
+**Turunan yang menyesuaikan:** `PRD/README.md` (label indeks `ai-features.md`: "biaya" → "kuota") · `SDD/10-ai-orchestrator-design.md` §1, §3, dan dua baris §6 · `SDD/README.md` (ringkasan SDD-10) · judul `PR-03-20`, rujukan `SDD-AI-02`, dan baris risiko `phases/phase-03.md` · baris risiko `phases/phase-05.md` — seluruh berkas `IMPLEMENTATION/` dicatat pula di `IMPLEMENTATION/CHANGELOG.md`.
+
+### Yang sengaja tidak diubah
+
+| Bagian | Alasan |
+|---|---|
+| `SDD-10` §3 — thinking "itu **biaya** tanpa manfaat" | Kiasan atas token dan waktu yang terbuang, bukan klaim tentang tagihan. Kalimatnya sendiri sudah menyebut "menghabiskan token dan waktu" |
+| Bab 27.9 — "**Nol biaya**, terbatas kuota" | Justru pernyataan yang benar setelah tier gratis; disunting pada revisi sebelumnya |
