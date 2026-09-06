@@ -20,6 +20,10 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 |---|---|---|
 | 6 September 2026 | `PR-00-01` tergabung ke `develop`: monorepo `apps/*` dan `packages/schemas`, TypeScript, lint, serta uji batas antar-pohon dan lapisan tersedia. | [#6](https://github.com/HanzzzBD/SIGM4/pull/6) |
 | 6 September 2026 | `PR-00-02` tergabung ke `develop`: batas impor antar-modul ditambahkan; uji negatif `check_import_boundaries.mjs` lulus 10 dari 10 kasus. | [#9](https://github.com/HanzzzBD/SIGM4/pull/9) |
+| 6 September 2026 | `PR-00-03` tergabung ke `develop`: Dockerfile multi-stage + compose pengembangan. | [#11](https://github.com/HanzzzBD/SIGM4/pull/11) |
+| 6 September 2026 | Audit keputusan stack sebelum `PR-00-04`. Empat celah ditemukan — perkakas yang dirujuk rencana PR tetapi tidak pernah dinyatakan di berkas mana pun — lalu ditutup pemilik produk pada hari yang sama: `SDD-DB-15`, `SDD-REPO-11`, `SDD-INF-12`, `SDD-FE-13`. Tidak ada requirement, business rule, maupun kriteria penerimaan yang berubah. | — |
+| 6 September 2026 | Sapuan audit **kedua** atas sisa `docs/`, dijalankan setelah sapuan pertama selesai. Sembilan celah lagi dengan pola sama ditemukan dan ditutup hari itu juga: `SDD-INF-13`, `SDD-SEC-11`, `SDD-API-13`, `SDD-FE-14/15/16`, `SDD-MOB-11/12`, `SDD-FS-12`. Tiga di antaranya memblokir `PR-00-09`, `PR-00-17`, dan `PR-00-18`. | — |
+| 6 September 2026 | Sapuan audit **ketiga**, atas lima butir menggantung di luar keputusan stack. Tiga ditutup: `SDD-SYS-10` (letak `SlotService`), proteksi cabang `main`/`develop` dinyalakan, dan `TS5083` diperbaiki di cabang `chore/`. Dua tetap terbuka karena bergantung pihak luar — nomor surat `SDD-AI-16` dan pemilik `CODEOWNERS`. | — |
 
 ## 2. Keputusan yang diambil
 
@@ -27,6 +31,7 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 
 | # | Keputusan | Alasan | Menaikkan ke PRD/SDD? |
 |:---:|---|---|:---:|
+| 2 | Audit stack 6 September 2026 tidak menghasilkan keputusan di log ini. Keempat celah dinaikkan lebih dulu ke SDD pemiliknya (`SDD-DB-15`, `SDD-REPO-11`, `SDD-INF-12`, `SDD-FE-13`) dan dicatat di [`TBD-REGISTER.md`](../../SDD/TBD-REGISTER.md) sebagai `TBD-DB-B`, `TBD-QA-A`, `TBD-INF-C`, `TBD-FE-C` — dibuka dan ditutup pada hari yang sama. | Ketiganya menyentuh bentuk kode dan perkakas, bukan requirement, sehingga masuk kelompok C. Menuliskannya hanya di log akan membuat `PR-00-04` dan `PR-00-05` berdiri di atas keputusan yang tidak beralamat ID. | Ya — sudah dinaikkan; log ini hanya mencatat bahwa hal itu terjadi. |
 | 1 | Cuplikan Dockerfile `SDD-16 §4.1` diadaptasi ke tata letak monorepo saat `PR-00-03`: seluruh manifest workspace disalin sebelum `npm ci`, tahap runtime ikut menyalin manifest dan `dist` tiap workspace yang dipakainya, dan hanya `apps/api` yang dibangun. | Cuplikan itu ditulis untuk satu paket, sebelum `SDD-17` menetapkan monorepo. `npm ci` menolak berjalan tanpa seluruh manifest yang disebut `package-lock.json`; `node_modules` datar menaruh `@sigm4/schemas` sebagai symlink, sehingga tanpa direktori tujuannya impor gagal saat proses dinyalakan. Ketiga perintah inti (`npm ci`, `npm run build`, `npm prune --omit=dev`) tetap dipakai apa adanya sesuai `SDD-REPO-03`. | Tidak — bentuknya sudah ditetapkan `SDD-REPO-03`/`SDD-REPO-09`. Yang tertinggal adalah cuplikan `SDD-16 §4.1`; penyelarasannya diusulkan sebagai suntingan SDD tersendiri, bukan bagian PR implementasi. |
 
 ## 3. Penyimpangan dari rencana
@@ -41,13 +46,19 @@ PR yang tidak ada pada daftar [`phase-00.md` §7](../phases/phase-00.md).
 
 | ID | Judul | Mengapa tidak terencana |
 |---|---|---|
-| — | — | — |
+| `chore/tsconfig-akar-typecheck` | `tsconfig.json` akar agar `npm run typecheck` hijau | Bukan PR bernomor. `TS5083` sudah ada sejak `PR-00-01` dan tercatat di §7, tetapi berada di luar scope `PR-00-02` maupun `PR-00-03`; memasukkannya ke salah satunya akan mencampur perbaikan perkakas dengan pekerjaan yang sedang ditinjau (`CLAUDE.md` — "sekalian rapikan"). `PR-00-17` menuntut perintah ini hijau, jadi ia tidak dapat menunggu lebih lama. |
 
 Kolom ketiga adalah yang paling berharga di seluruh log ini. Pola yang berulang di sana menunjukkan di mana perencanaan phase berikutnya perlu diperbaiki.
 
 ## 5. Butir yang wajib tercatat pada phase ini
 
-- [ ] Runner migration yang dipakai memenuhi kedua syarat `SDD-DB-12` — opt-out transaksi per-migration dan *advisory lock*
+- [ ] Runner migration **dbmate** (`SDD-DB-12`) dibuktikan memenuhi kedua syaratnya di `PR-00-05` — opt-out transaksi per-migration dan *advisory lock*. Nama yang dikunci tidak menggantikan pembuktian
+- [ ] Tipe tabel Kysely (`SDD-DB-15`) disegarkan pada PR yang sama dengan migration yang mengubah bentuk tabel — tidak pernah tertinggal ke PR berikutnya
+- [ ] Perpanjangan sertifikat certbot (`SDD-INF-13`, `INF-06`) terpantau alarm — kegagalannya tidak boleh baru diketahui saat sertifikat kedaluwarsa
+- [ ] *Readiness gate* `SDD-INF-04` dibuktikan di staging: Nginx OSS hanya memeriksa upstream secara **pasif**, sehingga gerbangnya sepenuhnya bersandar pada skrip deploy `SDD-INF-10`
+- [ ] Ukuran image setelah Chromium masuk (`SDD-FS-12`) diukur dan dicatat di §8 — bila menjadi persoalan, jalannya memisahkan image (`SDD-INF-01`), bukan mengganti pembangkit PDF
+- [ ] `CODEOWNERS` diganti tim arsitek, lalu *required approvals* dan *Code Owners review* dinyalakan bersamaan (`GITHUB-CI-STATE §4`) — keduanya sengaja mati selama pemiliknya satu orang
+- [ ] Nomor surat persetujuan lintas yurisdiksi (`SDD-AI-16`) dilengkapi sebelum `GL-07` diperiksa — pelacakannya sudah ada di `phase-08.md` §8/§9 dan `RELEASE-PLAN.md` §2
 - [ ] Pembangkitan OpenAPI dari skema Zod berjalan (`SDD-API-11`, `SDD-API-02`) dan `/api/docs` tidak aktif di produksi (`SDD-API-12`)
 - [ ] Perkakas observability terpasang sesuai `SDD-OBS-09`, dan penyedianya **ber-region Indonesia** (`SDD-OBS-10`, `SDD-SEC-10`) — region diverifikasi sebelum kontrak, bukan sesudahnya
 - [ ] Koreografi deploy `SDD-INF-10` teruji di staging — penggantian instance API satu per satu dan drain worker
@@ -57,7 +68,22 @@ Kolom ketiga adalah yang paling berharga di seluruh log ini. Pola yang berulang 
 
 | TBD | Keputusan | Diputuskan oleh | Tanggal |
 |---|---|---|---|
-| — | — | — | — |
+| `TBD-DB-B` | `SDD-DB-15` — akses data memakai **Kysely + `pg`**; skema tetap milik berkas `.sql` (`SDD-DB-08`) | Pemilik produk | 6 September 2026 |
+| `TBD-QA-A` | `SDD-REPO-11` — **Vitest** (unit & integration) · **Playwright** (E2E Web) · **Maestro** (E2E Mobile) | Pemilik produk | 6 September 2026 |
+| `TBD-INF-C` | `SDD-INF-12` — penyedia CI/CD adalah **GitHub Actions** | Pemilik produk | 6 September 2026 |
+| `TBD-FE-C` | `SDD-FE-13` — **Radix UI** bawaan; **React Aria** hanya untuk tanggal/kalender dan number field | Pemilik produk | 6 September 2026 |
+| `TBD-INF-D` | `SDD-INF-13` — *reverse proxy* **Nginx**; certbot sebagai komponen tersendiri | Pemilik produk | 6 September 2026 |
+| `TBD-SEC-C` | `SDD-SEC-11` — **CodeQL · Dependabot · Trivy · OWASP ZAP** | Pemilik produk | 6 September 2026 |
+| `TBD-API-C` | `SDD-API-13` — **`zod-openapi`** lewat registri route `PR-00-09` | Pemilik produk | 6 September 2026 |
+| `TBD-FE-D` | `SDD-FE-14` — **Vite**, satu konfigurasi dengan Vitest | Pemilik produk | 6 September 2026 |
+| `TBD-FE-E` | `SDD-FE-15` — **TanStack Router** | Pemilik produk | 6 September 2026 |
+| `TBD-FE-F` | `SDD-FE-16` — **axios**, identik di web dan mobile | Pemilik produk | 6 September 2026 |
+| `TBD-MOB-C` | `SDD-MOB-11` — **expo-sqlite** untuk antrean unggah | Pemilik produk | 6 September 2026 |
+| `TBD-MOB-D` | `SDD-MOB-12` — **expo-router** | Pemilik produk | 6 September 2026 |
+| `TBD-FS-C` | `SDD-FS-12` — **Playwright (Chromium)** HTML → PDF | Pemilik produk | 6 September 2026 |
+| `TBD-SYS-A` | `SDD-SYS-10` — `SlotService` di *shared kernel* `shared/booking/`; `SDD-SYS-06` disunting | Pemilik produk | 6 September 2026 |
+
+Ketiga belasnya dibuka dan ditutup pada hari yang sama, dalam dua sapuan. Yang dicatat bukan penundaannya melainkan **temuannya**: `SDD-DB-12` menyebut "kelas dbmate/Postgrator" tanpa nama, `PRD 30` menetapkan ambang cakupan tanpa alat pengukur, `SDD-17 §4.1` menetapkan letak workflow tanpa penyedianya, dan `SDD-FE-12` menulis "Radix UI / React Aria" dengan garis miring. Empat kali pola yang sama — kelas keputusan ditulis, anggotanya tidak — dan keempatnya baru terlihat saat PR yang memakainya hendak dikerjakan. Sapuan kedua atas sisa `docs/` menemukan sembilan lagi dengan pola identik; satu di antaranya (`INF-06` "Nginx/Caddy") bahkan sudah berselisih dengan dua berkas yang menulis "Nginx" dalam prosa. **Temuan yang sebenarnya bukan ketiga belas perkakasnya, melainkan bahwa pola ini tidak terdeteksi sampai ada yang menyisirnya** — tidak ada validator yang menangkap kelas keputusan tanpa anggota.
 
 Setiap TBD yang tertutup wajib juga diperbarui di [`../../SDD/TBD-REGISTER.md`](../../SDD/TBD-REGISTER.md). Menutupnya hanya di sini membuat register menjadi salah.
 
@@ -65,7 +91,7 @@ Setiap TBD yang tertutup wajib juga diperbarui di [`../../SDD/TBD-REGISTER.md`](
 
 | Masalah | Dampak | Penyelesaian | Terbuka? |
 |---|---|---|:---:|
-| `npm run typecheck` di akar gagal: `TS5083`, `tsconfig.json` akar tidak ada. | Validasi typecheck akar belum dapat dijalankan; lint dan build per-workspace tetap hijau. | Belum ditangani; kegagalan sudah ada pada basis `PR-00-02` dan berada di luar scope-nya. | ya |
+| `npm run typecheck` di akar gagal: `TS5083`, `tsconfig.json` akar tidak ada. | Validasi typecheck akar belum dapat dijalankan; lint dan build per-workspace tetap hijau. | **Selesai 6 September 2026** lewat cabang `chore/tsconfig-akar-typecheck`: berkas solution akar (`files: []` + `references` ke empat proyek) ditambahkan. Tidak ada compiler option baru — `composite: true` sudah ada di `tsconfig.base.json`. `typecheck`, `lint`, `build`, dan `check:boundaries` hijau. | tidak |
 
 ## 8. Hasil pengukuran
 

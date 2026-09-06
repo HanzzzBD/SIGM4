@@ -55,7 +55,7 @@ Tidak ada. Ini titik masuk proyek.
 | Berkas | Keputusan yang diterapkan |
 |---|---|
 | [`00-system-architecture.md`](../../SDD/00-system-architecture.md) | `SDD-SYS-01` … `SDD-SYS-09` |
-| [`05-database-design.md`](../../SDD/05-database-design.md) | `SDD-DB-01` … `SDD-DB-03`, `SDD-DB-08`, `SDD-DB-10`, `SDD-DB-11` |
+| [`05-database-design.md`](../../SDD/05-database-design.md) | `SDD-DB-01` … `SDD-DB-03`, `SDD-DB-08`, `SDD-DB-10` … `SDD-DB-12`, `SDD-DB-15` |
 | [`06-api-design.md`](../../SDD/06-api-design.md) | `SDD-API-01` … `SDD-API-04` |
 | [`07-event-flow.md`](../../SDD/07-event-flow.md) | `SDD-EVT-01`, `SDD-EVT-03`, `SDD-EVT-04` (infrastruktur outbox) |
 | [`15-observability-logging.md`](../../SDD/15-observability-logging.md) | `SDD-OBS-02` … `SDD-OBS-04`, `SDD-OBS-06` |
@@ -80,12 +80,12 @@ Tidak ada. Ini titik masuk proyek.
 | `PR-00-01` | Kerangka repo, TypeScript, lint, struktur folder | M | — | `SDD-SYS-01/02`, `SDD-REPO-01` … `SDD-REPO-03`, `SDD-REPO-07/08` | `npm run lint` & `build` hijau; impor lintas lapisan ditolak; impor lintas pohon `apps/*` ditolak |
 | `PR-00-02` | Aturan lint impor antar-modul | S | 01 | `SDD-SYS-02` | Impor `modules/*/repositories/*` dari modul lain gagal CI |
 | `PR-00-03` | Dockerfile multi-stage + compose pengembangan | M | 01 | `SDD-INF-01/02` | `docker compose up` menyalakan seluruh dependensi |
-| `PR-00-04` | Koneksi DB, helper transaksi, base repository ber-`AuthContext` | M | 01 | `SDD-AUTH-02`, `SDD-SYS-06` | Metode repository tanpa `ctx` gagal kompilasi |
-| `PR-00-05` | Migration runner + `0001` ekstensi + `0002` enum | M | 04 | `SDD-DB-02/08` | `btree_gist` aktif; seluruh enum Bab 11.3 terbentuk |
+| `PR-00-04` | Koneksi DB, helper transaksi, base repository ber-`AuthContext` | M | 01 | `SDD-AUTH-02`, `SDD-SYS-06`, `SDD-DB-15` | Metode repository tanpa `ctx` gagal kompilasi |
+| `PR-00-05` | Migration runner + `0001` ekstensi + `0002` enum | M | 04 | `SDD-DB-02/08/12` | `btree_gist` aktif; seluruh enum Bab 11.3 terbentuk |
 | `PR-00-06` | Shared kernel: `Clock`, `ErrorMapper`, `request_id`, logger terstruktur | M | 04 | `SDD-SYS-06/07`, `SDD-OBS-02/03/04` | `new Date()` di luar `shared/clock` ditolak lint; log ter-*redact* |
 | `PR-00-07` | `DocumentNumberService` + tabel `document_counters` | S | 05 | `SEQ-01` … `SEQ-04`, `SDD-AVL-09` | 1.000 permintaan paralel menghasilkan 1.000 nomor unik |
 | `PR-00-08` | `BusinessCalendarService` + `work_days`/`holidays` | M | 05 | `CAL-01` … `CAL-03`, `SDD-APR-06` | Hitung jam kerja melewati akhir pekan & hari libur benar |
-| `PR-00-09` | Registri route + validasi permission saat startup + OpenAPI | M | 06 | `PM-01`, `SDD-API-02/03`, `SDD-AUTH-01` | Route tanpa deklarasi permission menggagalkan *bootstrap* |
+| `PR-00-09` | Registri route + validasi permission saat startup + OpenAPI | M | 06 | `PM-01`, `SDD-API-02/03/13`, `SDD-AUTH-01` | Route tanpa deklarasi permission menggagalkan *bootstrap* |
 | `PR-00-10` | `idempotency_keys` + middleware idempotensi | M | 05, 09 | `ID-01` … `ID-05`, `SDD-AVL-08` | Kunci sama + body sama → respons tersimpan; body beda → 409 |
 | `PR-00-11` | Worker skeleton: antrean, *distributed lock*, penjadwal | M | 06 | `JOB-01` `JOB-02` `JOB-04`, `SDD-AVL-10` | Dua instance worker → job dieksekusi tepat sekali |
 | `PR-00-12` | Tabel `event_outbox` + dispatcher | M | 11 | `SDD-EVT-03/04/09` | Event terbit hanya setelah commit; urut per agregat |
@@ -93,8 +93,8 @@ Tidak ada. Ini titik masuk proyek.
 | `PR-00-14` | Health endpoint (live/ready/ringkasan) | S | 06 | `NFR-A-07`, `OBS-06`, `AI-CTL-10`, `SDD-OBS-06` | `llm`/`fcm` mati tidak membuat `ready` gagal |
 | `PR-00-15` | Header keamanan + rate limit berjenjang | M | 09 | `NFR-S-07` `NFR-S-11`, `SDD-SEC-03/05` | CSP tanpa `unsafe-inline`; kelas limit terpisah aktif |
 | `PR-00-16` | Seed: 78 permission, 7 role, matriks, `work_days`, parameter | M | 05 | Lampiran C, `SDD-DB-10` | Uji membandingkan hasil seed dengan Lampiran C baris per baris |
-| `PR-00-17` | Pipeline CI: lint → uji → SAST → SCA → build → image scan | L | 01, 03 | `CD-01` `CD-02`, `ST-01` `ST-02` | Cakupan < 70% atau kerentanan High → pipeline merah |
-| `PR-00-18` | Deploy staging + job migration + smoke test | M | 17 | `CD-03` `CD-04` `CD-07`, `SDD-INF-03/04` | Merge ke `staging` men-deploy lingkungan staging otomatis (`CD-03`) |
+| `PR-00-17` | Pipeline CI: lint → uji → SAST → SCA → build → image scan | L | 01, 03 | `CD-01` `CD-02`, `ST-01` `ST-02`, `SDD-INF-12`, `SDD-REPO-11`, `SDD-SEC-11` | Cakupan < 70% atau kerentanan High → pipeline merah |
+| `PR-00-18` | Deploy staging + job migration + smoke test | M | 17 | `CD-03` `CD-04` `CD-07`, `SDD-INF-03/04/13` | Merge ke `staging` men-deploy lingkungan staging otomatis (`CD-03`) |
 
 ## 8. Task Breakdown
 

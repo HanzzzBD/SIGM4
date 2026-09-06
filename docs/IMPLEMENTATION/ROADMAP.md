@@ -199,6 +199,17 @@ Beberapa phase tidak dapat diselesaikan sebelum TBD tertentu ditutup. Daftar len
 | ~~`TBD-SEC-B`~~ | A | ~~`PR-00-06` · `PR-08-01` … `PR-08-06`~~ | ✅ **Tertutup 25 Agustus 2026** — `SDD-SEC-10` · `SDD-OBS-10` |
 | ~~`TBD-INF-A`~~ | B | ~~`PR-00-18`~~ | ✅ **Tertutup 25 Agustus 2026** — `SDD-INF-11` |
 | ~~`TBD-AI-D`~~ | A | ~~`GL-07` (gerbang go-live)~~ | ✅ **Tertutup 2 September 2026** — `SDD-AI-16`, disetujui sekolah pada hari yang sama saat dibuka |
+| ~~`TBD-DB-B`~~ | C | ~~`PR-00-04`~~ | ✅ **Tertutup 6 September 2026** — `SDD-DB-15` (Kysely + `pg`), dibuka & ditutup hari itu juga |
+| ~~`TBD-QA-A`~~ | C | ~~`PR-00-17`~~ | ✅ **Tertutup 6 September 2026** — `SDD-REPO-11` (Vitest · Playwright · Maestro) |
+| ~~`TBD-INF-C`~~ | C | ~~`PR-00-17`~~ | ✅ **Tertutup 6 September 2026** — `SDD-INF-12` (GitHub Actions) |
+| ~~`TBD-FE-C`~~ | C | ~~`PR-02-30`~~ | ✅ **Tertutup 6 September 2026** — `SDD-FE-13` (Radix bawaan; React Aria untuk tanggal & number field) |
+| ~~`TBD-INF-D`~~ | C | ~~`PR-00-18`~~ | ✅ **Tertutup 6 September 2026** — `SDD-INF-13` (Nginx + certbot) |
+| ~~`TBD-SEC-C`~~ | C | ~~`PR-00-17`~~ | ✅ **Tertutup 6 September 2026** — `SDD-SEC-11` (CodeQL · Dependabot · Trivy · ZAP) |
+| ~~`TBD-API-C`~~ | C | ~~`PR-00-09`~~ | ✅ **Tertutup 6 September 2026** — `SDD-API-13` (`zod-openapi`) |
+| ~~`TBD-FE-D` `TBD-FE-E` `TBD-FE-F`~~ | C | ~~`PR-02-26` … `PR-02-30`~~ | ✅ **Tertutup 6 September 2026** — `SDD-FE-14` Vite · `SDD-FE-15` TanStack Router · `SDD-FE-16` axios |
+| ~~`TBD-MOB-C` `TBD-MOB-D`~~ | C | ~~Phase 03~~ | ✅ **Tertutup 6 September 2026** — `SDD-MOB-11` expo-sqlite · `SDD-MOB-12` expo-router |
+| ~~`TBD-FS-C`~~ | C | ~~Phase 05–06 (ekspor & berita acara)~~ | ✅ **Tertutup 6 September 2026** — `SDD-FS-12` (Playwright/Chromium) |
+| ~~`TBD-SYS-A`~~ | C | ~~`PR-02-17`~~ | ✅ **Tertutup 6 September 2026** — `SDD-SYS-10` (`SlotService` di *shared kernel* `shared/booking/`) |
 | kelompok B (13 sisanya) | B | kalibrasi parameter | Phase 07–08, setelah data staging ada |
 | kelompok A (0) | A | — | Dikosongkan kembali 2 September 2026 |
 | kelompok C (0) | C | — | Seluruhnya tertutup 6 Agustus 2026 |
@@ -207,6 +218,8 @@ Beberapa phase tidak dapat diselesaikan sebelum TBD tertentu ditutup. Daftar len
 **`TBD-SEC-B` ditutup sebelum `PR-00-06`, sesuai jadwal.** Ia dimajukan ke Phase 00 karena `SDD-OBS-09` memilih *backend* observability terkelola, sehingga log aplikasi berisi PII meninggalkan infrastruktur sekolah sejak logger terstruktur dipasang — lingkup kepatuhan harus diketahui **saat perkakas dipilih**, bukan sesudahnya. Hasilnya (`SDD-SEC-10`): cakupan kepatuhan tetap UU PDP saja, disertai kewajiban **residensi wilayah Indonesia** yang menjadi kriteria gugur pada seleksi `PR-00-06` (`SDD-OBS-10`). `SDD-OBS-04` (*redaction* di formatter) adalah kontrol yang menyertainya, bukan penggantinya.
 
 **`TBD-INF-A` ditutup sebelum `PR-00-18`, sesuai jadwal.** `PR-00-18` men-deploy staging beserta job migration-nya, dan lingkungan itu tidak dapat berdiri sebelum penyedia infrastrukturnya dipilih. Hasilnya (`SDD-INF-11`): **VPS ber-region Indonesia + PostgreSQL terkelola**, Docker Compose tetap (`SDD-INF-10`), pengecualian Kubernetes `INF-05` tidak berlaku. Yang berpindah hanya waktunya, bukan kelompoknya: sizing dan biaya nyata tetap ditetapkan setelah uji beban bersama `TBD-AVL-C`.
+
+**Audit stack 6 September 2026 — dua sapuan, tiga belas perkakas.** Sapuan pertama menutup empat celah yang memblokir Phase 00 (akses data, perkakas uji, penyedia CI, primitif headless). Sapuan kedua menyisir sisa `docs/` dan menemukan sembilan lagi dengan pola sama — reverse proxy, perkakas keamanan CI, pembangkit OpenAPI, build tool web, router web, klien HTTP, penyimpanan antrean mobile, navigasi mobile, dan pembangkit PDF. Ketiga belasnya dibuka sebagai TBD kelompok C dan ditutup pada hari yang sama, sebelum `PR-00-04` dimulai. Dua hal sengaja **tidak** ikut ditutup dan dicatat sebagai *gerbang tertunda* di [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md): vendor observability (menunggu verifikasi region Indonesia, `SDD-OBS-10`, seleksi `PR-00-06`) dan versi lini Expo (menunggu verifikasi `NFR-C-03`, Phase 03). Keduanya menunggu **verifikasi**, bukan orang, sehingga tidak dihitung sebagai TBD.
 
 **Tidak ada TBD yang memblokir pengerjaan satu PR pun.** Dua belas TBD ditutup 25 Agustus 2026 dalam empat batch, mengosongkan kelompok A dan D sekaligus; `TBD-AI-D` membukanya kembali pada 2 September 2026, tetapi ia menunggu di gerbang go-live (`GL-07`), bukan di depan sebuah PR — chatbot tetap dibangun dan dievaluasi Phase 03. Yang tersisa adalah 13 parameter operasional kelompok B, seluruhnya dijadwalkan Phase 07–08 setelah data staging tersedia — parameter yang menunggu **pengukuran**, bukan keputusan yang menunggu **orang**. Butir berisiko tertinggi pada roadmap ini karena itu tidak lagi berupa keputusan yang belum diambil, melainkan pengukuran yang belum dijalankan.
 

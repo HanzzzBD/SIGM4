@@ -1,6 +1,6 @@
 # Status Implementasi
 
-**Diperbarui:** 6 September 2026 — `PR-00-01` dan `PR-00-02` tergabung ke `develop`; `PR-00-03` terbuka menunggu tinjauan.
+**Diperbarui:** 6 September 2026 — `PR-00-01` … `PR-00-03` tergabung ke `develop`. Proteksi cabang `main` dan `develop` aktif; `PR-00-04` siap dimulai.
 
 Berkas ini memiliki status **per phase dan per pull request**. Ia **tidak** memiliki status per requirement — itu milik [`../PRD/06-quality/traceability.md`](../PRD/06-quality/traceability.md). Dua tingkat berbeda, tanpa tumpang tindih:
 
@@ -31,7 +31,7 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 
 | Phase | Nama | Modul | PR | Status | Selesai | Catatan |
 |:---:|---|:---:|:---:|---|:---:|---|
-| [00](phases/phase-00.md) | Foundation | — | 18 | `In Progress` | 2/18 | `PR-00-01` dan `PR-00-02` tergabung; `PR-00-03` menunggu tinjauan |
+| [00](phases/phase-00.md) | Foundation | — | 18 | `In Progress` | 3/18 | `PR-00-01` … `PR-00-03` tergabung; keputusan stack `PR-00-04` … `PR-00-18` seluruhnya terkunci |
 | [01](phases/phase-01.md) | Master Data Independen | 4 | 14 | `Not Started` | 0/14 | |
 | [02](phases/phase-02.md) | Inti Sistem | 5 | 30 | `Not Started` | 0/30 | Phase terbesar; di lintasan kritis |
 | [03](phases/phase-03.md) | Layanan Aset & Reservasi | 6 | 23 | `Not Started` | 0/23 | Menutup `M1` |
@@ -40,7 +40,7 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 | [06](phases/phase-06.md) | Analitik | 1 | 10 | `Not Started` | 0/10 | Menutup `M5` |
 | [07](phases/phase-07.md) | Integrasi & UAT | — | 14 | `Not Started` | 0/14 | |
 | [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 15 | `Not Started` | 0/15 | Menutup `M6` |
-| | **Total** | **22** | **163** | | **2/163** | |
+| | **Total** | **22** | **163** | | **3/163** | |
 
 ## Ringkasan milestone PRD
 
@@ -79,7 +79,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 |---|---|:---:|---|
 | `PR-00-01` | `Done` | [#6](https://github.com/HanzzzBD/SIGM4/pull/6) | Kerangka repo, TypeScript, lint, struktur folder |
 | `PR-00-02` | `Done` | [#9](https://github.com/HanzzzBD/SIGM4/pull/9) | Aturan lint impor antar-modul |
-| `PR-00-03` | `In Review` | [#11](https://github.com/HanzzzBD/SIGM4/pull/11) | Dockerfile multi-stage + compose pengembangan |
+| `PR-00-03` | `Done` | [#11](https://github.com/HanzzzBD/SIGM4/pull/11) | Dockerfile multi-stage + compose pengembangan |
 | `PR-00-04` … `PR-00-18` | `Not Started` | — | Rincian: [`phases/phase-00.md` §7](phases/phase-00.md) |
 
 ### Phase 01 — Master Data Independen · `Not Started`
@@ -140,7 +140,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 |---|---|---|---|
 | Phase 08 | `TBD-SEC-A` (penyedia pentest) · `TBD-OBS-B` (penerima alarm) | — | Pemilik produk / sekolah |
 
-Daftar TBD lengkap beserta pertanyaannya: [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md) — **13 terbuka, 28 tertutup**. Jadwal penutupan yang diharapkan: [`ROADMAP.md` §8](ROADMAP.md).
+Daftar TBD lengkap beserta pertanyaannya: [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md) — **13 terbuka, 42 tertutup**. Jadwal penutupan yang diharapkan: [`ROADMAP.md` §8](ROADMAP.md).
 
 **Tidak ada penghalang TBD pada pengerjaan Phase 00–08, dan tidak ada lagi gerbang rilis yang tertahan oleh keputusan yang belum diambil.** Dua belas TBD ditutup 25 Agustus 2026 dalam empat batch. Migrasi penyedia LLM 2 September 2026 sempat membuka `TBD-AI-D` (kelompok A), dan surat pernyataan Kepala Sekolah menutupnya pada hari yang sama (`SDD-AI-16`) — `GL-07` bagian chatbot terbuka. Tiga belas TBD kelompok B masih terbuka tetapi tidak memblokir apa pun: seluruhnya parameter yang dikalibrasi Phase 07–08 setelah data staging tersedia. `GL-07` masih menunggu satu butir administratif — salinan resmi surat persetujuan lintas yurisdiksi, yang nomornya belum tercatat (`SDD-AI-16`); itu dokumen yang belum lengkap, bukan keputusan yang belum diambil.
 

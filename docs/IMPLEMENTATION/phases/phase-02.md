@@ -120,7 +120,7 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | `PR-02-14` | Mutasi lokasi aset + riwayat | M | 11, Ph01 | `FR-04.4`, `BR-006` … `BR-008` | Mutasi ke lokasi nonaktif ditolak |
 | `PR-02-15` | Manajemen kategori aset | S | 10 | `FR-04.5`, `BR-009` … `BR-012` | Kategori terpakai tidak dapat dihapus |
 | `PR-02-16` | Skema `booking_slots` + exclusion constraint + `btree_gist` | M | 10, Ph01 | `CI-01`, `SDD-AVL-01/02/03` | Dua slot bertumpang tindih → `23P01` |
-| `PR-02-17` | `SlotService`: reservasi, pelepasan, aktivasi + pemetaan 409 | L | 16 | `CI-02` `CI-03`, `SDD-AVL-04/05` | 100 permintaan serentak → tepat satu berhasil |
+| `PR-02-17` | `SlotService`: reservasi, pelepasan, aktivasi + pemetaan 409 | L | 16 | `CI-02` `CI-03`, `SDD-AVL-04/05`, `SDD-SYS-10` | 100 permintaan serentak → tepat satu berhasil |
 | `PR-02-18` | Skema approval: `approval_rules`, `instances`, `steps` + `rule_snapshot` | M | Ph01 | `FR-10.1`, Lampiran D.5, `SDD-APR-03` | Snapshot beku; perubahan aturan tidak menyentuh instance berjalan |
 | `PR-02-19` | Evaluator DSL kondisi (`RE-01` … `RE-08`) | L | 18 | Lampiran D.2, `SDD-APR-01/02` | Seluruh operator D.2 teruji, termasuk kasus batas |
 | `PR-02-20` | Resolusi approver + delegasi + fallback | M | 19 | `RE-09` … `RE-13`, `SDD-APR-04/05/13/14` | Approver nonaktif → langkah dilewati beralasan `approver nonaktif`, lalu jalur fallback `RE-11`; `fallback_approver` kosong berarti Administrator |

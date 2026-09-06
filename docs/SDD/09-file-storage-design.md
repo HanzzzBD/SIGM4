@@ -32,6 +32,7 @@
 | **SDD-FS-08** | Bucket bersifat **privat sepenuhnya**. Tidak ada objek yang dapat diakses tanpa tanda tangan, termasuk foto pada halaman publik QR — karena halaman itu memang tidak menampilkan foto (`DP-05`). |
 | **SDD-FS-09** | Berkas yatim (terunggah tetapi tidak pernah ditautkan ke entitas) dibersihkan job harian setelah **24 jam**. |
 | **SDD-FS-11** | Foto berwajah **tidak ikut dipseudonimkan maupun dihapus** saat `DP-04` dilayani (`DP-05a`). Tidak ada pipeline pengaburan wajah di sistem ini. Perlindungan foto tetap bersandar sepenuhnya pada `DP-05`: permission eksplisit, URL bertanda tangan berbatas waktu, dan larangan mutlak muncul di halaman publik QR (`SDD-FS-08`). Menutup `TBD-FS-A` (keputusan pemilik produk, 25 Agustus 2026; `UXD-14`). |
+| **SDD-FS-12** | PDF yang dihasilkan sistem (§4.5 — berita acara `FR-13.3`/`FR-21.2`, label QR `NFR-P-07`) dirender **worker** dari HTML+CSS cetak memakai **Playwright (Chromium)**, mesin yang sama dengan E2E Web (`SDD-REPO-11`). Kepatuhan `NFR-C-07` (PDF 1.7, A4) diverifikasi uji, bukan diasumsikan. Chromium ikut ke dalam image bersama (`SDD-INF-01`) — konsekuensinya dicatat [SDD-16 §5](16-infrastructure-deployment.md). |
 
 ---
 
@@ -46,6 +47,12 @@
 **SDD-FS-06 — kunci buram.** Nama berkas asli sering memuat informasi (`Faktur-Proyektor-Lab2-2026.pdf`) dan nama orang. Karena bucket privat, kebocoran nama objek seharusnya tidak terjadi — tetapi kunci buram menghilangkan seluruh kelas risiko itu, termasuk dari log akses object storage.
 
 **SDD-FS-07 — thumbnail asinkron.** Katalog aset dan daftar tiket kerusakan menampilkan banyak gambar sekaligus. Menyalurkan foto 1600 px (`MOB-MED-01`) untuk setiap kartu akan melanggar anggaran `NFR-P-03` (LCP ≤ 2,5 detik pada 4G).
+
+**SDD-FS-12 — satu mesin render, dipakai dua kali.** Dua keluaran PDF sistem ini menuntut hal yang berlawanan: 200 label QR (`NFR-P-07`, ≤ 30 detik) adalah tata letak berulang yang sederhana, sedangkan berita acara (`FR-13.3`, `FR-21.2`) adalah dokumen berformat yang isinya akan berubah seiring PRD. **pdfkit** unggul pada yang pertama — nol biner tambahan, memori kecil dan terduga pada worker satu instance (`JOB-02`) — dan mahal pada yang kedua, karena setiap perubahan tata letak menjadi penyesuaian koordinat.
+
+Playwright dipilih karena `SDD-REPO-11` sudah memasukkannya ke dalam repositori untuk E2E Web: mesin rendernya sudah ada, dan tim sudah harus mengenalnya. Tata letak menjadi HTML+CSS cetak — grid label dan dokumen berformat sama-sama menjadi pekerjaan CSS biasa, dan pratinjaunya dapat dibuka di peramban saat ditulis. **@react-pdf/renderer** ditolak di tengah: ia menghindari Chromium tetapi hanya mendukung subset CSS, sehingga `NFR-C-07` dan tata letak cetak justru menjadi verifikasi tambahan tanpa menghilangkan pekerjaan tata letaknya.
+
+Harganya tidak disembunyikan dan tidak kecil: Chromium ikut ke image yang dibagi API dan worker (`SDD-INF-01`), memperbesar image dan permukaan pindai `CD-01`. Ia diterima sebagai konsekuensi tercatat di [SDD-16 §5](16-infrastructure-deployment.md), dengan satu batas: bila ukuran image menjadi persoalan nyata, jalannya adalah **memisahkan image** — perubahan pada `SDD-INF-01` yang dinyatakan — bukan mengganti pembangkit PDF diam-diam. `NFR-P-07` diukur pada uji beban, bukan diasumsikan dari pilihan ini.
 
 **SDD-FS-11 — foto mengikuti penalaran `DP-04`, bukan mengecualikannya.** `DP-04` sudah menghadapi pertanyaan yang sama untuk data teks dan menjawabnya: permintaan penghapusan dilayani lewat **pseudonimisasi**, bukan penghapusan, justru agar catatan transaksi bertahan bagi audit sekolah (`BR-008`, `AL-03`). Memperlakukan foto secara berbeda akan membalik penalaran itu pada satu jenis data saja, tanpa alasan yang membedakannya.
 

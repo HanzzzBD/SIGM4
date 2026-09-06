@@ -6,6 +6,144 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 
 ---
 
+## 6 September 2026 — sapuan ketiga: butir menggantung di luar keputusan stack
+
+**Status TBD: 13 terbuka · 42 tertutup** — A (0) · B (13) · C (0) · D (0). Satu TBD dibuka & ditutup pada hari yang sama (`TBD-SYS-A`). Tidak ada requirement, business rule, maupun ambang yang berubah.
+
+Lima butir yang dua sapuan sebelumnya laporkan tetapi tidak kerjakan, ditinjau ulang. **Tiga ditutup, dua tetap terbuka karena bergantung pihak di luar repositori.**
+
+### Ditutup
+
+| Butir | Tindakan |
+|---|---|
+| Letak kode `SlotService` | `SDD-SYS-10` — ***shared kernel*** `shared/booking/`. Daftar tertutup `SDD-SYS-06` disunting untuk memuatnya. Angka yang dipakai memutuskan dikoreksi lebih dulu: `BRANCHING §3.1` menulis "tiga modul", `SDD-01` sebenarnya menyebut **enam** (M-04, M-07, M-08, M-09, M-12, M-21) |
+| Branch protection | Dinyalakan pada `main` dan `develop` lewat `gh api` dan diverifikasi kembali dari API: wajib lewat PR, larang force push, larang penghapusan, larang bypass admin, wajib resolusi percakapan, dismiss stale approval |
+| `npm run typecheck` (`TS5083`) | Cabang `chore/tsconfig-akar-typecheck` — `tsconfig.json` akar bertipe solution. Tidak ada compiler option baru. Empat perintah verifikasi hijau |
+
+### Tetap terbuka — bergantung pihak luar
+
+| Butir | Mengapa tidak dapat ditutup di repositori |
+|---|---|
+| Nomor surat `SDD-AI-16` | Menunggu salinan resmi dari sekolah. **Pelacakannya sudah lengkap** — `phase-08.md` §8 dan §9, `RELEASE-PLAN.md` §2, `IMPLEMENTATION-STATUS.md` — sejak celah telusurnya ditutup hari ini juga. Yang kurang dokumennya, bukan pencatatannya |
+| Pemilik `CODEOWNERS` | Menuntut username GitHub tim arsitek yang belum terbentuk |
+
+### Dua temuan baru saat memasang proteksi cabang
+
+| Temuan | Akibat pada `GITHUB-CI-STATE §4` |
+|---|---|
+| **Required approvals + Code Owners review akan mengunci repositori.** GitHub tidak mengizinkan orang menyetujui PR-nya sendiri, dan `CODEOWNERS` hanya berisi `@HanzzzBD` | Kedua baris ditandai ⏸ **ditunda**, bukan dinyalakan. Dinyalakan bersamaan dengan penggantian `CODEOWNERS`. Menyalakannya sekarang akan menghentikan setiap merge, termasuk PR yang sedang terbuka |
+| **Metode merge per-cabang tidak dapat ditegakkan.** `allow_squash_merge` / `allow_merge_commit` adalah setelan **tingkat repositori**, bukan cabang | Baris "squash saja untuk `develop`" dan "merge commit saja untuk `main`/`staging`" ditandai ❌ **tidak dapat disetel**; `BRANCHING §3` pada titik ini berlaku sebagai disiplin peninjau, bukan pagar |
+| *Require branches to be up to date* hanya tersedia bersama required status check | Ditandai ⏳ menunggu `PR-00-17`, bukan "belum disetel" |
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `SDD/00-system-architecture.md` | `SDD-SYS-10` baru; `SDD-SYS-06` memuat `SlotService` dan dinyatakan tertutup; `shared/booking/` masuk pohon §4.1 |
+| `SDD/TBD-REGISTER.md` | `TBD-SYS-A` tertutup; hitungan `13 · 42` |
+| `BRANCHING-STRATEGY.md` §3.1 | Jumlah modul dikoreksi tiga → enam; path `shared/booking/` dicantumkan |
+| `GITHUB-CI-STATE.md` §2, §4, §6 | Tabel §4 memperoleh kolom Status dengan keadaan nyata; dua catatan keterbatasan GitHub; §6 tidak lagi mencantumkan letak `SlotService` sebagai terbuka |
+| `phases/phase-02.md` | `PR-02-17` merujuk `SDD-SYS-10` |
+| `logs/phase-00.md` §1, §4, §5, §7 | Sapuan ketiga; `chore/` tercatat sebagai pekerjaan di luar rencana beserta alasannya; `TS5083` ditutup; dua butir wajib baru |
+| `ROADMAP.md` §8 · `SDD/README.md` · `IMPLEMENTATION-STATUS.md` · `README.md` · `UX/UX-SPEC.md` | Hitungan register diselaraskan ke `42 tertutup` |
+
+**Dampak pada lintasan kritis:** `PR-02-17` tidak lagi menunggu keputusan letak kode, dan `PR-00-17` memperoleh satu perintah verifikasi yang sudah hijau. Total PR tetap **163**.
+
+
+## 6 September 2026 — sapuan audit kedua: sembilan perkakas sisanya dikunci
+
+**Status TBD: 13 terbuka · 41 tertutup** — A (0) · B (13) · C (0) · D (0). Sembilan TBD **dibuka dan ditutup pada hari yang sama**, seluruhnya kelompok C. Tidak ada requirement, business rule, kriteria penerimaan, maupun angka ambang yang berubah.
+
+Sapuan pertama hari itu menutup empat celah yang memblokir Phase 00. Sapuan kedua menyisir **sisa** `docs/` untuk pola yang sama — kelas keputusan ditulis, anggotanya tidak — dan menemukan sembilan lagi. Satu di antaranya sudah menjadi kontradiksi aktif: `INF-06` menulis "Nginx/Caddy" sementara `deployment-ops.md` §Topologi dan `SDD-13 §3` sudah menulis "Nginx" dalam prosa.
+
+### TBD dibuka & ditutup
+
+| TBD | Pemilik | Keputusan |
+|---|---|---|
+| `TBD-INF-D` | `SDD-INF-13` | **Nginx**. Dua konsekuensi dicatat terbuka: certbot menjadi komponen tersendiri bagi `INF-06`, dan *readiness gate* `SDD-INF-04` bersandar pada pemeriksaan **pasif** + skrip deploy `SDD-INF-10` karena *active health check* hanya ada di NGINX Plus |
+| `TBD-SEC-C` | `SDD-SEC-11` | **CodeQL** (`ST-01`) · **Dependabot** (`ST-02`) · **Trivy** (`CD-01`) · **OWASP ZAP** (`ST-03`). Snyk ditolak karena menambah pihak penerima data terhadap `SDD-SEC-10` |
+| `TBD-API-C` | `SDD-API-13` | **`zod-openapi`** lewat registri route `SDD-API §4.1` yang sudah ada; registri kedua ditolak karena melanggar `SDD-API-02` |
+| `TBD-FE-D` | `SDD-FE-14` | **Vite** — satu konfigurasi melayani build dan Vitest (`SDD-REPO-11`) |
+| `TBD-FE-E` | `SDD-FE-15` | **TanStack Router** — *search param* divalidasi skema Zod, menjadikan `SDD-FE-10` kontrak yang diperiksa kompilator |
+| `TBD-FE-F` | `SDD-FE-16` | **axios** — bentuk identik di web dan mobile untuk mutex refresh (`SDD-FE-07`, `SDD-MOB-09`) dan gerbang `426` (`SDD-MOB-05`) |
+| `TBD-MOB-C` | `SDD-MOB-11` | **expo-sqlite** — antrean bersifat transaksional; kunci–nilai ditolak karena blob yang ditulis ulang rusak saat proses mati di tengah tulis |
+| `TBD-MOB-D` | `SDD-MOB-12` | **expo-router** — path rute adalah path `deep_link` `SDD-NTF-09`, tanpa tabel penerjemah yang gagal secara diam |
+| `TBD-FS-C` | `SDD-FS-12` | **Playwright (Chromium)** HTML → PDF, mesin yang sama dengan E2E Web. Biaya ukuran image dicatat `SDD-16 §5` |
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `SDD/16-infrastructure-deployment.md` | `SDD-INF-13` baru; §4.2 menamai nginx + certbot; §4.3 menamai perkakas tiap tahap keamanan; dua konsekuensi baru di §5 (certbot, Chromium pada image) |
+| `SDD/13-security-design.md` | `SDD-SEC-11` baru (§2, §3) |
+| `SDD/06-api-design.md` | `SDD-API-13` baru (§2, §3) |
+| `SDD/11-frontend-architecture.md` | `SDD-FE-14`, `SDD-FE-15`, `SDD-FE-16` baru (§2, §3) |
+| `SDD/12-mobile-architecture.md` | `SDD-MOB-11`, `SDD-MOB-12` baru; §4.1 menamai axios, expo-sqlite, expo-router |
+| `SDD/09-file-storage-design.md` | `SDD-FS-12` baru (§2, §3) |
+| `SDD/17-repo-layout.md` §4.1 | `apps/web/vite.config.ts` masuk pohon berkas |
+| `SDD/TBD-REGISTER.md` | Sembilan baris tertutup; hitungan `13 · 41` |
+| `ROADMAP.md` §8 | Sembilan baris jadwal; ringkasan audit menjadi "dua sapuan" |
+| `phases/phase-00.md` §7 | `PR-00-09`, `PR-00-17`, `PR-00-18` merujuk `SDD-API-13`, `SDD-SEC-11`, `SDD-INF-13` |
+| `logs/phase-00.md` §1, §5, §6 | Sapuan kedua dicatat; sembilan TBD tertutup; tiga butir wajib baru |
+| `SDD/README.md` · `IMPLEMENTATION-STATUS.md` · `README.md` · `UX/UX-SPEC.md` | Hitungan register diselaraskan ke `41 tertutup` |
+
+**Yang sengaja tidak diubah:** `INF-06` tetap menulis "Nginx/Caddy". PRD menetapkan ruang pilihannya; SDD memilih di dalamnya. Menyunting PRD agar menyebut satu nama akan menaikkan keputusan teknis menjadi requirement — arah aliran yang salah.
+
+**Dampak pada lintasan kritis:** `PR-00-09`, `PR-00-17`, dan `PR-00-18` tidak lagi terhalang perkakas tanpa nama. Total PR tetap **163**.
+
+
+## 6 September 2026 — audit keputusan stack: empat perkakas dikunci, tiga dokumen usang dibetulkan
+
+**Status TBD: 13 terbuka · 32 tertutup** — A (0) · B (13) · C (0) · D (0). Empat TBD **dibuka dan ditutup pada hari yang sama**, seluruhnya kelompok C. Tidak ada requirement, business rule, kriteria penerimaan, maupun angka ambang yang berubah.
+
+Audit sebelum `PR-00-04` menemukan pola yang berulang empat kali: **kelas keputusan sudah ditulis, anggotanya tidak.** `SDD-DB-12` menyebut "kelas dbmate/Postgrator"; `PRD 30` menetapkan ambang cakupan tanpa alat pengukur; `SDD-17 §4.1` menetapkan letak `.github/workflows/` tanpa penyedianya; `SDD-FE-12` menulis "Radix UI / React Aria" dengan garis miring. Keempatnya baru terlihat saat PR yang memakainya hendak dikerjakan. Pustaka akses data bahkan tidak punya kelas — ia tidak disebut satu kali pun di seluruh `docs/`.
+
+### TBD dibuka & ditutup
+
+| TBD | Pemilik | Keputusan |
+|---|---|---|
+| `TBD-DB-B` | `SDD-DB-15` | **Kysely + `pg`** — *query builder* ber-tipe yang tidak memiliki skema. Prisma dan Drizzle ditolak karena memiliki skema, bertabrakan dengan `SDD-DB-08`; `pg` polos ditolak karena `SDD-AUTH-05` kehilangan titik penegakan seragam |
+| `TBD-QA-A` | `SDD-REPO-11` | **Vitest** (unit & integration, ketiga pohon) · **Playwright** (E2E Web) · **Maestro** (E2E Mobile di atas dev build Expo) |
+| `TBD-INF-C` | `SDD-INF-12` | **GitHub Actions**, dengan gerbang `CD-01`/`CD-02` sebagai *required status check* |
+| `TBD-FE-C` | `SDD-FE-13` | **Radix UI** bawaan; **React Aria** hanya untuk pemilih tanggal/kalender dan number field. Daftar tertutup |
+
+`SDD-DB-12` juga **dipertajam** — bukan dibuka ulang: kelasnya tidak berubah, namanya (**dbmate**) kini tertulis, dan kedua kemampuan wajib tetap diverifikasi di `PR-00-05`.
+
+### Gerbang yang sengaja tetap tertunda
+
+| Gerbang | Alasan |
+|---|---|
+| Vendor observability terkelola | `SDD-OBS-09` sudah final (OpenTelemetry + backend terkelola). `SDD-OBS-10` menjadikan region Indonesia **kriteria gugur** yang diverifikasi sebelum kontrak — memilih nama sekarang mendahului verifikasi itu. Ditutup pada seleksi `PR-00-06` |
+| Versi Expo / React Native | `SDD-MOB-10` sudah final. Lantai OS lini wajib diverifikasi terhadap `NFR-C-03` sebelum dikunci; Phase 03 |
+
+Keduanya dicatat di `TBD-REGISTER.md` sebagai **gerbang tertunda** dan **tidak dihitung sebagai TBD** — keputusannya menunggu verifikasi, bukan menunggu orang.
+
+### Dokumen usang yang dibetulkan
+
+| Berkas | Yang salah | Menjadi |
+|---|---|---|
+| `SDD/README.md` | Kelompok A dihitung **1** (`TBD-AI-D` masih terbuka) | 0 — `TBD-AI-D` tertutup 2 September 2026 (`SDD-AI-16`); hitungan register ikut ditulis |
+| `SDD/11-frontend-architecture.md` §3, §5 | `TBD-FE-B` disebut "masih terbuka", padahal §TBD berkas yang sama menyatakannya tertutup 22 Agustus 2026 | Dirujuk sebagai tertutup lewat `UXD-12` |
+| `UX/UX-SPEC.md` §Ringkasan | "Keputusan masih terbuka \| **5**", padahal `UX/DECISIONS.md` §12.3 kosong sejak 25 Agustus 2026 | 0, dengan rujukan ke §12.2 |
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `SDD/05-database-design.md` | `SDD-DB-15` baru (§2, §3, §5); `SDD-DB-12` menamai dbmate; konsekuensi pemetaan kolom Bahasa Indonesia ditulis ulang terhadap tipe tabel Kysely |
+| `SDD/17-repo-layout.md` | `SDD-REPO-11` baru; §4.1 menamai dbmate dan GitHub Actions pada pohon berkas; §4.4 memperoleh `npm run test` |
+| `SDD/16-infrastructure-deployment.md` | `SDD-INF-12` baru (§2, §3, §5) — penyedia CI beserta konsekuensi *required status check* |
+| `SDD/11-frontend-architecture.md` | `SDD-FE-13` baru; `SDD-FE-12` merujuknya alih-alih menyebut dua pustaka |
+| `SDD/00-system-architecture.md` | `shared/db/` pada §4.1 merujuk `SDD-DB-15` |
+| `SDD/TBD-REGISTER.md` | Empat baris tertutup; hitungan `13 · 32`; bagian **Gerbang tertunda** baru |
+| `DESIGN/DESIGN-SYSTEM.md` §6.2, §9 | Baris "Radix UI / React Aria" diganti pembagian `SDD-FE-13` |
+| `phases/phase-00.md` §6, §7 | `PR-00-04`, `PR-00-05`, `PR-00-17` merujuk ID keputusan yang baru dikunci |
+| `logs/phase-00.md` §1, §2, §5, §6 | Audit dicatat; empat TBD tertutup; dua butir wajib baru pada §5 |
+| `GITHUB-CI-STATE.md` §Sumber, §3, §6 | Penyedia CI berpindah dari "Yang masih terbuka" menjadi aturan bersumber; vendor observability menggantikannya di §6 |
+
+**Dampak pada lintasan kritis:** `PR-00-04`, `PR-00-05`, dan `PR-00-17` tidak lagi berdiri di atas perkakas yang tidak beralamat ID. Total PR tetap **163**; tidak ada PR yang ditambah, dipecah, atau dijadwal ulang.
+
+
 ## 6 September 2026 — status Phase 00 dan pencatatan pelaksanaan disegarkan
 
 **Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). Tidak ada requirement, keputusan desain, maupun business rule yang berubah.

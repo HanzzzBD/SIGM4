@@ -36,6 +36,8 @@ Keputusan platform sudah ditetapkan PRD Bab 27.1 dan tidak diulang. Berkas ini m
 | **SDD-INF-09** | Zona waktu container dan basis data **UTC**, dipaksa lewat variabel lingkungan dan diverifikasi saat startup (`INF-07`). |
 | **SDD-INF-10** | Orkestrasi memakai **Docker Compose**, bawaan `INF-05`. *Rolling deploy* `SDD-INF-04` dicapai lewat **koreografi pipeline** — reverse proxy (`INF-06`) memeriksa kesehatan upstream, instance API diganti satu per satu — bukan lewat fitur platform. Pengecualian Kubernetes pada `INF-05` **tidak berlaku**: `SDD-INF-11` menetapkan sekolah tidak menjalankan klaster Kubernetes. |
 | **SDD-INF-11** | **Penyedia infrastruktur: VPS ber-region Indonesia** untuk API, worker, Redis, dan reverse proxy, ditambah **PostgreSQL sebagai layanan terkelola ber-region Indonesia** — bukan container PostgreSQL yang dipelihara sendiri. Object storage `INF-02` mengikuti batasan region yang sama (`SDD-SEC-10`). Menutup `TBD-INF-A` (keputusan pemilik produk, 25 Agustus 2026). Yang diputuskan **hanya penyedianya**; sizing dan biaya nyata (PRD 27.3, 27.9) tetap ditetapkan setelah uji beban `NFR-P-09` bersama `TBD-AVL-C`. |
+| **SDD-INF-12** | **Penyedia CI/CD adalah GitHub Actions.** Seluruh tahap §4.3 dijalankan sebagai *workflow* di `.github/workflows/` ([SDD-17 §4.1](17-repo-layout.md)). Gerbang `CD-01`/`CD-02` ditegakkan sebagai *required status check* pada `develop`, `staging`, dan `main`; penegakan itu adalah bagian dari keputusan ini, bukan setelan opsional sesudahnya. Pipeline dibangun `PR-00-17` dan `PR-00-18`. |
+| **SDD-INF-13** | *Reverse proxy* adalah **Nginx**, memilih satu dari dua nama yang `INF-06` sebut. Perpanjangan sertifikat Let's Encrypt (`INF-06`) dijalankan **certbot sebagai komponen tersendiri** pada topologi §4.2, bukan oleh proxy. Pemeriksaan kesehatan upstream `SDD-INF-04` memakai mekanisme **pasif** Nginx OSS (`max_fails`/`fail_timeout`) ditambah *readiness gate* pada skrip deploy milik kita (`SDD-INF-10`); *active health check* tidak dipakai karena hanya tersedia pada NGINX Plus. |
 
 ---
 
@@ -52,6 +54,18 @@ Keputusan platform sudah ditetapkan PRD Bab 27.1 dan tidak diulang. Berkas ini m
 **SDD-INF-07 — restore diuji otomatis.** Cadangan yang tidak pernah dipulihkan bukan cadangan. `BR-DR-04` mewajibkan uji berkala; mengotomasinya membuat kegagalan terdeteksi dalam sebulan, bukan saat bencana.
 
 **SDD-INF-08 — konfigurasi divalidasi saat startup.** Konfigurasi yang salah sebaiknya mencegah proses berjalan, bukan menghasilkan perilaku aneh di produksi. Kunci Gemini API yang kosong lebih baik menggagalkan *startup* daripada membuat chatbot gagal diam-diam pada permintaan pertama pengguna.
+
+**SDD-INF-13 — Nginx, dan dua konsekuensi yang ikut dengannya.** `INF-06` menyebut dua nama; memilih di antaranya bukan soal selera karena `deployment-ops.md` §Topologi dan [SDD-13 §3](13-security-design.md) sudah menulis "Nginx" dalam prosa, sehingga garis miring itu sebenarnya sudah berselisih dengan dua berkas. Keputusan ini menyelaraskannya ke arah yang sudah tertulis.
+
+Yang tidak boleh disembunyikan adalah harganya, karena Caddy — kandidat yang ditolak — menyediakan keduanya secara bawaan. **Pertama**, HTTPS otomatis: Nginx tidak memperbarui sertifikatnya sendiri, sehingga `INF-06` ("diperbarui otomatis") menuntut certbot hadir sebagai komponen dan pembaruannya ikut dipantau — sebuah sertifikat yang gagal diperpanjang mematikan seluruh sistem dan gejalanya baru muncul pada hari ke-90. **Kedua**, `SDD-INF-04` menuntut *readiness gate*, dan Nginx OSS hanya memiliki pemeriksaan **pasif**: ia menandai upstream mati setelah permintaan nyata gagal, bukan sebelumnya. Konsekuensinya bukan bahwa `SDD-INF-04` tidak terpenuhi, melainkan bahwa pemenuhannya berpindah sepenuhnya ke skrip deploy — yang memang sudah menjadi milik kita menurut `SDD-INF-10`, dan yang §5 sudah wajibkan diuji di staging serta ditutup *smoke test* (`CD-07`).
+
+Alasan menerimanya: keduanya jatuh pada pekerjaan yang sudah ada pemiliknya, sementara keunggulan Nginx — jumlah contoh operasional dan kemudahan mencari jawaban saat ada yang salah — jatuh tepat pada pihak yang [§6](#6-risiko-teknis) tandai sebagai risiko kapasitas operasional.
+
+**SDD-INF-12 — GitHub Actions, dinyatakan alih-alih tersirat.** Sebelum keputusan ini yang ditetapkan hanyalah **letak** berkasnya — `.github/workflows/` pada [SDD-17 §4.1](17-repo-layout.md) — sehingga penyedianya tersirat dari tata letak dan tidak pernah tertulis di mana pun. Itu bukan detail administratif: `CD-01` dan `CD-02` adalah gerbang yang **memblokir merge**, dan sebuah gerbang yang memblokir merge hanya ada bila ia berupa *required status check* pada penyedia yang sama dengan tempat pull request dinilai. Repositori, `CODEOWNERS` (`BRANCHING §3.1`), template PR, dan proteksi cabang sudah berada di GitHub; menaruh eksekusi pipeline di tempat lain berarti gerbang rilis dinilai di satu sistem dan ditegakkan di sistem lain.
+
+Penyedia lain ditolak atas dasar itu, bukan atas dasar fitur. **GitLab CI** membawa tahap SAST/SCA/DAST bawaan yang relevan bagi `ST-01`…`ST-03`, tetapi menuntut repositori dan seluruh perkakas tata kelolanya ikut pindah atau dicerminkan — dan cermin adalah dua sumber. **CI swa-kelola** ditolak dengan alasan yang sama dengan penolakan observability swa-kelola pada [SDD-15 §3](15-observability-logging.md): ia menambah satu layanan lagi yang dioperasikan sekolah, tepat pada risiko kapasitas operasional yang §6 sudah tandai.
+
+Keputusan ini **tidak** mengubah isi maupun urutan §4.3. Tahapnya ditetapkan `CD-01`; yang ditetapkan di sini hanya siapa yang menjalankannya.
 
 **SDD-INF-10 — Docker Compose.** `INF-05` sudah menetapkan bawaannya sekaligus syarat pengecualiannya, jadi yang tersisa bukan memilih bebas melainkan memeriksa apakah syarat itu terpenuhi — dan `SDD-INF-11` menetapkan bahwa ia **tidak** terpenuhi: sekolah tidak menjalankan klaster Kubernetes. Keputusan #1 (single sekolah, satu instansi) juga menghapus argumen terkuat Kubernetes sejak awal: tidak ada armada instalasi yang perlu dikelola seragam.
 
@@ -105,14 +119,14 @@ CMD ["node", "dist/api/index.js"]        # worker: dist/worker/index.js
 ```
 VPS (region Indonesia)                         layanan terkelola (region Indonesia)
 ──────────────────────────────────         ──────────────────────────────────
-reverse proxy (TLS, HSTS)  →  api ×2        →  postgres terkelola (SDD-INF-11)
-                              worker ×1     →  object storage (S3-compatible)
+nginx (TLS, HSTS)          →  api ×2        →  postgres terkelola (SDD-INF-11)
+certbot (renewal INF-06)      worker ×1     →  object storage (S3-compatible)
                               av-scanner    →  FCM
                               redis         
                               ClamAV        
 ```
 
-Web (React build) disajikan sebagai aset statis dari CDN atau reverse proxy, bukan dari proses Node.
+Web (hasil build Vite, `SDD-FE-14`) disajikan sebagai aset statis dari CDN atau reverse proxy, bukan dari proses Node.
 
 **Replika dan arsip WAL tidak lagi menjadi container pada topologi ini.** Keduanya adalah tanggung jawab layanan PostgreSQL terkelola (`SDD-INF-11`) dan tampil sebagai konfigurasi langganan, bukan sebagai proses yang di-*compose*. Redis tetap swa-kelola di VPS: kehilangannya berarti kehilangan cache dan *rate limit* — degradasi yang `SDD-SEC-05` dan §6 sudah antisipasi — bukan kehilangan data.
 
@@ -124,11 +138,11 @@ push / PR
  ├─ unit test                 gagal < 70% cakupan inti → stop   (CD-02, NFR-M-03)
  ├─ integration test          termasuk uji konkurensi CC-01..07
  ├─ uji otorisasi tergenerate SEC-T-01
- ├─ SAST                      ST-01
- ├─ SCA                       ST-02 — Critical/High → stop
+ ├─ SAST                      ST-01  CodeQL      (SDD-SEC-11)
+ ├─ SCA                       ST-02  Dependabot  — Critical/High → stop
  ├─ build image
- ├─ image scan                CD-01
- └─ deploy staging  →  DAST (ST-03)  →  smoke test (CD-07)
+ ├─ image scan                CD-01  Trivy
+ └─ deploy staging  →  DAST (ST-03, OWASP ZAP)  →  smoke test (CD-07)
 
 tag rilis
  ├─ migration job (akun DDL)                        CD-04
@@ -225,6 +239,9 @@ Menyalin data produksi ke staging tanpa anonimisasi dilarang keras; skrip anonim
 - PITR menambah kebutuhan penyimpanan arsip WAL yang harus dipantau bersama disk (`OBS-05`).
 - Aturan expand/contract berarti perubahan skema yang menghapus kolom memerlukan **dua rilis** — perlu diperhitungkan dalam perencanaan milestone.
 - Worker tunggal (`SDD-SYS-08`) berarti drain saat deploy menghentikan sementara pemrosesan job; karena job idempoten dan berjadwal, jeda beberapa menit dapat diterima.
+- **certbot menjadi komponen kelima pada topologi §4.2** (`SDD-INF-13`), dan kegagalan perpanjangannya wajib memicu alarm (`OBS-05`) — bukan diketahui saat sertifikat sudah kedaluwarsa.
+- **Pembangkit PDF membawa Chromium ke dalam image** (`SDD-FS-12`). Karena API dan worker berbagi satu image (`SDD-INF-01`), image API ikut membesar dan permukaan yang dipindai `CD-01` ikut bertambah. Diterima sadar; bila ukurannya menjadi persoalan, jalannya adalah memisahkan image — perubahan pada `SDD-INF-01`, bukan penggantian pembangkit PDF secara diam-diam.
+- `SDD-INF-12` menjadikan proteksi cabang bagian dari infrastruktur, bukan kebiasaan: daftar *required status check* pada `develop`, `staging`, dan `main` wajib disetel manual di GitHub dan **tidak dapat diberkaskan** — keadaannya dilacak [`IMPLEMENTATION/GITHUB-CI-STATE.md §4`](../IMPLEMENTATION/GITHUB-CI-STATE.md). Pipeline yang hijau tanpa setelan itu tidak memblokir apa pun.
 - Karena Compose tidak menyediakan *rolling deploy* ber-*readiness gate* (`SDD-INF-10`), `SDD-INF-04` dan `SDD-INF-05` menjadi **koreografi milik kita**: pemeriksaan kesehatan upstream pada reverse proxy, penggantian instance API satu per satu, `stop_grace_period` bagi drain worker, dan migration sebagai container sekali-jalan. Semuanya wajib diuji di staging dan ditutup *smoke test* (`CD-07`) — sebuah skrip deploy yang tidak diuji adalah *readiness gate* yang tidak ada.
 - Compose menggoda menaruh rahasia pada berkas `.env` di repositori. Itu dilarang `SEC-CFG-01`: nilai tetap berasal dari *secret manager* dan disuntikkan ke lingkungan proses (§4.7), dan `SEC-CFG-04` memindai repositori untuk memastikannya.
 - Pengecualian `INF-05` **tertutup**: `SDD-INF-11` menetapkan sekolah tidak menjalankan Kubernetes, sehingga Docker Compose (`SDD-INF-10`) berlaku tanpa syarat dan tidak ada cabang manifest kedua yang perlu dipelihara.
