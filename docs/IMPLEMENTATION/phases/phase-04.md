@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Milestone PRD** | `M2` (M-08) · `M3` (M-12) · `M4` (M-13) — lihat §3.1 |
-| **Status** | `Not Started` |
+| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
 | **Modul PRD** | M-08 Reservasi Aset · M-12 Pemeliharaan · M-13 Stock Opname |
 | **Bergantung pada** | Phase 03 |
 | **Memblokir** | Phase 05 |

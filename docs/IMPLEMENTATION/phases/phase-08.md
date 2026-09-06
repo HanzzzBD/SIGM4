@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Milestone PRD** | `M6 — Pengerasan & Kesiapan Rilis` — **menutup M6** dan seluruh gerbang 29.3 |
-| **Status** | `Not Started` |
+| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
 | **Modul PRD** | — (tidak ada modul baru) |
 | **Bergantung pada** | Phase 07 |
 | **Memblokir** | — (phase terakhir; keluarannya adalah go-live) |

@@ -6,6 +6,22 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 
 ---
 
+## 6 September 2026 — status Phase 00 dan pencatatan pelaksanaan disegarkan
+
+**Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). Tidak ada requirement, keputusan desain, maupun business rule yang berubah.
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `IMPLEMENTATION-STATUS.md` | Phase 00 menjadi `In Progress`, `PR-00-01` dan `PR-00-02` tercatat `Done`, total kemajuan menjadi 2/163 |
+| `logs/phase-00.md` | Mencatat dua PR yang tergabung, penyimpangan pembentukan `develop`, dan kegagalan `npm run typecheck` akar yang belum ditangani |
+| `BRANCHING-STRATEGY.md` §0 | Keadaan transisi diselaraskan: `develop` dan `apps/` sudah ada, `staging` dan pipeline masih menunggu PR-00-18 dan PR-00-17 |
+| `CLAUDE.md` | Pembaruan status dan log phase menjadi langkah wajib sebelum pekerjaan PR dilaporkan selesai |
+| README, header phase/log, dan template phase | Tidak lagi menyimpan nilai status sendiri; seluruhnya merujuk `IMPLEMENTATION-STATUS.md`, dan validator menolak header yang menyalin status |
+
+**Dampak pada lintasan kritis:** tidak ada. Total PR tetap **163**; perubahan ini hanya membetulkan catatan pelaksanaan agar keadaan aktual dapat ditelusuri.
+
 
 ## 6 September 2026 — `GITHUB-CI-STATE.md` §3: batas antar-modul ditegakkan `PR-00-02`
 

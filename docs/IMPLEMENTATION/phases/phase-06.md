@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Milestone PRD** | `M5 — Insight, Notifikasi & AI` (M-16) — **menutup M5** |
-| **Status** | `Not Started` |
+| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
 | **Modul PRD** | M-16 Analitik & Laporan |
 | **Bergantung pada** | Phase 05 |
 | **Memblokir** | Phase 07 |

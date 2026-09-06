@@ -1,6 +1,6 @@
 # Implementation Documentation — SIGM4
 
-**Status:** rencana lengkap, pengerjaan belum dimulai. 9 phase · 163 pull request · 22 modul.
+**Status:** rencana lengkap: 9 phase · 163 pull request · 22 modul. Kemajuan aktual per phase dan PR hanya dicatat di [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md).
 
 ---
 

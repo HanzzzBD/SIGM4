@@ -4,8 +4,8 @@
 |---|---|
 | **Phase** | [`phases/phase-00.md`](../phases/phase-00.md) |
 | **Milestone PRD** | `M0` |
-| **Status** | `Not Started` — lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
-| **Mulai** | — |
+| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
+| **Mulai** | 6 September 2026 |
 | **Selesai** | — |
 
 Log ini mencatat **apa yang benar-benar terjadi** selama phase berjalan: keputusan yang diambil, hal yang berbeda dari rencana, dan angka hasil pengukuran. Ia bukan salinan rencana — rencananya ada di [`phases/phase-00.md`](../phases/phase-00.md).
@@ -18,7 +18,8 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 
 | Tanggal | Yang terjadi | PR terkait |
 |---|---|---|
-| — | — | — |
+| 6 September 2026 | `PR-00-01` tergabung ke `develop`: monorepo `apps/*` dan `packages/schemas`, TypeScript, lint, serta uji batas antar-pohon dan lapisan tersedia. | [#6](https://github.com/HanzzzBD/SIGM4/pull/6) |
+| 6 September 2026 | `PR-00-02` tergabung ke `develop`: batas impor antar-modul ditambahkan; uji negatif `check_import_boundaries.mjs` lulus 10 dari 10 kasus. | [#9](https://github.com/HanzzzBD/SIGM4/pull/9) |
 
 ## 2. Keputusan yang diambil
 
@@ -32,7 +33,7 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 
 | Yang direncanakan | Yang dikerjakan | Sebab | Dampak pada phase berikutnya |
 |---|---|---|---|
-| — | — | — | — |
+| `develop` direncanakan berdiri bersama `staging` pada `PR-00-18`. | `develop` dibuat manual dari `main` pada 6 September 2026 saat pemulihan cabang; jalur kerja sejak itu `feature/*` → PR → `develop`. `staging` tetap scope `PR-00-18`. | Cabang `main` lokal sempat menyimpang dari `origin/main`; pemulihan memerlukan cabang integrasi lebih dahulu. | Tidak mengubah scope Phase 00; `BRANCHING-STRATEGY.md` dan `GITHUB-CI-STATE.md` disegarkan agar keadaan aktual tidak disamarkan. |
 
 ## 4. PR di luar rencana
 
@@ -64,7 +65,7 @@ Setiap TBD yang tertutup wajib juga diperbarui di [`../../SDD/TBD-REGISTER.md`](
 
 | Masalah | Dampak | Penyelesaian | Terbuka? |
 |---|---|---|:---:|
-| — | — | — | — |
+| `npm run typecheck` di akar gagal: `TS5083`, `tsconfig.json` akar tidak ada. | Validasi typecheck akar belum dapat dijalankan; lint dan build per-workspace tetap hijau. | Belum ditangani; kegagalan sudah ada pada basis `PR-00-02` dan berada di luar scope-nya. | ya |
 
 ## 8. Hasil pengukuran
 

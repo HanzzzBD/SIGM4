@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Milestone PRD** | `M3` (M-09) — **menutup M3** · `M4` (M-21, M-22) — **menutup M4** |
-| **Status** | `Not Started` |
+| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
 | **Modul PRD** | M-09 Peminjaman · M-21 Penghapusan Aset · M-22 Manajemen Bahan |
 | **Bergantung pada** | Phase 04 |
 | **Memblokir** | Phase 06 |

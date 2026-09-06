@@ -4,7 +4,7 @@
 |---|---|
 | **Phase** | [`phases/phase-03.md`](../phases/phase-03.md) |
 | **Milestone PRD** | `M1 — **menutup M1**` |
-| **Status** | `Not Started` — lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
+| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
 | **Mulai** | — |
 | **Selesai** | — |
 

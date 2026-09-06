@@ -49,6 +49,24 @@ for b in broken:
 phase_files = sorted((IMPL / "phases").glob("phase-*.md"))
 check("Sembilan berkas phase ada", len(phase_files) == 9, f"{len(phase_files)} ditemukan")
 
+# Status phase/PR hanya dimiliki IMPLEMENTATION-STATUS.md. Header phase dan log
+# sengaja hanya menunjuk ke sana supaya satu perubahan status tidak meninggalkan
+# salinan yang basi di banyak berkas.
+STATUS_REF = "| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |"
+log_files = sorted((IMPL / "logs").glob("phase-*.md"))
+wrong_status_ref = []
+for p in phase_files + log_files:
+    status_line = next((line for line in texts[p].splitlines()
+                        if line.startswith("| **Status** |")), "")
+    if status_line != STATUS_REF:
+        wrong_status_ref.append(str(p.relative_to(IMPL)))
+template_status_line = next((line for line in texts[IMPL / "templates" / "PHASE-TEMPLATE.md"].splitlines()
+                             if line.startswith("| **Status** |")), "")
+if template_status_line != STATUS_REF:
+    wrong_status_ref.append("templates/PHASE-TEMPLATE.md")
+check("Header phase dan log hanya merujuk status kanonik", not wrong_status_ref,
+      ", ".join(wrong_status_ref))
+
 phase_modules = {}
 for p in phase_files:
     header = texts[p].split("## 1.")[0]

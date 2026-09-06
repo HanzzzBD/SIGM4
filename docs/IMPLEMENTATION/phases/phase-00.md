@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Milestone PRD** | `M0 — Fondasi Teknis` — [delivery-plan.md](../../PRD/01-product/delivery-plan.md) |
-| **Status** | `Not Started` |
+| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
 | **Modul PRD** | — (infrastruktur; belum ada modul fungsional) |
 | **Bergantung pada** | — |
 | **Memblokir** | Seluruh phase berikutnya |

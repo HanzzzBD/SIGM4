@@ -1,6 +1,6 @@
 # Status Implementasi
 
-**Diperbarui:** belum pernah — pengerjaan belum dimulai.
+**Diperbarui:** 6 September 2026 — `PR-00-01` dan `PR-00-02` tergabung ke `develop`.
 
 Berkas ini memiliki status **per phase dan per pull request**. Ia **tidak** memiliki status per requirement — itu milik [`../PRD/06-quality/traceability.md`](../PRD/06-quality/traceability.md). Dua tingkat berbeda, tanpa tumpang tindih:
 
@@ -31,7 +31,7 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 
 | Phase | Nama | Modul | PR | Status | Selesai | Catatan |
 |:---:|---|:---:|:---:|---|:---:|---|
-| [00](phases/phase-00.md) | Foundation | — | 18 | `Not Started` | 0/18 | |
+| [00](phases/phase-00.md) | Foundation | — | 18 | `In Progress` | 2/18 | `PR-00-01` dan `PR-00-02` tergabung |
 | [01](phases/phase-01.md) | Master Data Independen | 4 | 14 | `Not Started` | 0/14 | |
 | [02](phases/phase-02.md) | Inti Sistem | 5 | 30 | `Not Started` | 0/30 | Phase terbesar; di lintasan kritis |
 | [03](phases/phase-03.md) | Layanan Aset & Reservasi | 6 | 23 | `Not Started` | 0/23 | Menutup `M1` |
@@ -40,7 +40,7 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 | [06](phases/phase-06.md) | Analitik | 1 | 10 | `Not Started` | 0/10 | Menutup `M5` |
 | [07](phases/phase-07.md) | Integrasi & UAT | — | 14 | `Not Started` | 0/14 | |
 | [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 15 | `Not Started` | 0/15 | Menutup `M6` |
-| | **Total** | **22** | **163** | | **0/163** | |
+| | **Total** | **22** | **163** | | **2/163** | |
 
 ## Ringkasan milestone PRD
 
@@ -48,7 +48,7 @@ Definisi dan kriteria keluar milestone ada di [PRD 29.2](../PRD/01-product/deliv
 
 | Milestone | Terisi di phase | Status | Ditutup pada |
 |---|---|---|:---:|
-| `M0 — Fondasi Teknis` | 00 | `Not Started` | Phase 00 |
+| `M0 — Fondasi Teknis` | 00 | `In Progress` | Phase 00 |
 | `M1 — Identitas & Data Induk` | 01, 02, 03 | `Not Started` | Phase 03 |
 | `M2 — Mesin Persetujuan & Pemesanan` | 02, 03, 04 | `Not Started` | Phase 04 |
 | `M3 — Siklus Operasional` | 03, 04, 05 | `Not Started` | Phase 05 |
@@ -73,11 +73,13 @@ Definisi tiap gerbang: [PRD 29.3](../PRD/01-product/delivery-plan.md). Urutan pe
 
 Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul lengkap, kompleksitas, dependensi, dan acceptance tiap PR ada di berkas phase-nya dan tidak disalin ke sini.
 
-### Phase 00 — Foundation · `Not Started`
+### Phase 00 — Foundation · `In Progress`
 
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
-| `PR-00-01` … `PR-00-18` | `Not Started` | — | Rincian: [`phases/phase-00.md` §7](phases/phase-00.md) |
+| `PR-00-01` | `Done` | [#6](https://github.com/HanzzzBD/SIGM4/pull/6) | Kerangka repo, TypeScript, lint, struktur folder |
+| `PR-00-02` | `Done` | [#9](https://github.com/HanzzzBD/SIGM4/pull/9) | Aturan lint impor antar-modul |
+| `PR-00-03` … `PR-00-18` | `Not Started` | — | Rincian: [`phases/phase-00.md` §7](phases/phase-00.md) |
 
 ### Phase 01 — Master Data Independen · `Not Started`
 

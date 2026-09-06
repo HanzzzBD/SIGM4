@@ -5,7 +5,7 @@ SMKN 4 Bandung · 22 modul · monorepo tiga pohon.
 
 | Item | Keterangan |
 |---|---|
-| **Status** | Dokumentasi lengkap · **kode belum ada** |
+| **Status** | Dokumentasi lengkap · kemajuan implementasi ada di [`IMPLEMENTATION-STATUS.md`](docs/IMPLEMENTATION/IMPLEMENTATION-STATUS.md) |
 | **Rencana** | 9 phase · 163 PR — [`docs/IMPLEMENTATION/README.md`](docs/IMPLEMENTATION/README.md) |
 | **Platform** | Web responsif (Express + React) · Mobile native (React Native) |
 | **Skala target** | ± 5.000 unit aset · 1.000 pengguna · 100–150 concurrent |
@@ -64,4 +64,4 @@ python scripts/gen_trace.py      # regenerasi papan skor traceability
 python scripts/validate_impl.py  # validasi docs/IMPLEMENTATION
 ```
 
-Perintah npm workspaces (`npm ci`, `npm run lint`) ditetapkan [`SDD-17 §4.4`](docs/SDD/17-repo-layout.md) — belum berlaku sampai `apps/` dibuat di Phase 00.
+Perintah npm workspaces (`npm ci`, `npm run lint`) ditetapkan [`SDD-17 §4.4`](docs/SDD/17-repo-layout.md). Jalankan setelah dependensi terpasang dengan `npm ci`.
