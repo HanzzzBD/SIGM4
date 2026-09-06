@@ -1,0 +1,14 @@
+{
+  "name": "@sigm4/api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Pohon backend SIGM4 — entrypoint sigm4-api dan sigm4-worker dari satu basis kode (SDD-REPO-04)",
+  "scripts": {
+    "build": "tsc --build",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@sigm4/schemas": "*"
+  }
+}
