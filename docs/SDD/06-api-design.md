@@ -34,10 +34,17 @@
 | **SDD-API-10** | Endpoint yang mengembalikan berkas **tidak pernah** menyalurkan byte melalui API; selalu mengembalikan URL bertanda tangan (lihat [SDD-09](09-file-storage-design.md)). |
 | **SDD-API-11** | Pustaka skema runtime yang dimaksud `SDD-API-01` adalah **Zod**. Skema Zod adalah satu-satunya definisi; tipe statis dan OpenAPI diturunkan darinya. |
 | **SDD-API-12** | `/api/docs` **tetap tidak diaktifkan di produksi** (Bab 17.1); ia tersedia di development dan staging. Sebagai gantinya `openapi.json` diterbitkan pipeline sebagai **artefak rilis bertanda versi**. Pencabutan larangan ini menuntut perubahan Bab 17.1 lebih dulu — bukan wewenang SDD. |
+| **SDD-API-13** | Pembangkit OpenAPI yang dimaksud `SDD-API-02` adalah **`zod-openapi`**, dipakai lewat **registri route yang sudah ada** (§4.1, dipindai saat *bootstrap*). Registri itu tetap satu-satunya daftar route: OpenAPI **dan** matriks uji otorisasi `SEC-T-01` sama-sama diturunkan darinya. Tidak ada registri kedua yang mendaftarkan route untuk keperluan dokumentasi. |
 
 ---
 
 ## 3. Alasan
+
+**SDD-API-13 — satu registri, dua keluaran.** `SDD-API-11 §3` menjadikan "generator OpenAPI paling matang" sebagai alasan memilih Zod tetapi tidak menyebut generatornya, sehingga penopang `NFR-M-05` menggantung pada perkakas yang belum ada namanya.
+
+Yang menentukan pilihan bukan kelengkapan fitur melainkan bentuk integrasinya. §4.1 sudah menetapkan registri route yang dipindai saat *bootstrap*, dan registri itu sudah memikul dua kewajiban: memvalidasi bahwa setiap route mendeklarasikan permission-nya (`PM-01`) dan membangun matriks uji otorisasi (`SEC-T-01`). **`@asteasolutions/zod-to-openapi`** ditolak karena bekerja lewat `OpenAPIRegistry` miliknya sendiri — route lalu terdaftar di dua tempat, dan dua daftar atas objek yang sama adalah persis bentuk yang `SDD-API-02` ada untuk menghapusnya. **`z.toJSONSchema` bawaan Zod** cukup untuk skemanya tetapi menyisakan path, method, parameter, dan respons sebagai perekat OpenAPI 3.1 milik kita sendiri — infrastruktur tanpa kandungan domain, pada bagian yang `NFR-M-05` justru tuntut tidak rapuh.
+
+`zod-openapi` memperkaya skema Zod di tempatnya berada dan merakit dokumen dari daftar yang kita berikan, sehingga registri §4.1 tetap menjadi satu-satunya sumber. Konsekuensinya sengaja: route yang lupa didaftarkan tidak menghasilkan dokumentasi yang salah — ia menggagalkan *bootstrap*, karena daftar yang sama juga yang menegakkan `PM-01`.
 
 **SDD-API-01/02 — satu sumber skema.** Menulis validasi, tipe TypeScript, dan OpenAPI secara terpisah menjamin ketiganya menyimpang dalam hitungan minggu. `NFR-M-05` menuntut dokumentasi API selalu sinkron dengan implementasi — itu hanya realistis bila dokumentasi diturunkan dari kode yang benar-benar dieksekusi saat memvalidasi permintaan.
 

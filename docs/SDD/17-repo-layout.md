@@ -35,10 +35,19 @@ Berkas ini menutup celah tersebut dan tidak lebih dari itu. **Isi masing-masing 
 | **SDD-REPO-08** | Aturan lint impor [SDD-00 §4.2](00-system-architecture.md) **ber-akar pada `apps/api`**, bukan pada repositori. Tiap pohon memiliki konfigurasi lint sendiri di atas satu basis bersama di akar. |
 | **SDD-REPO-09** | Berkas infrastruktur [SDD-16 §4.1](16-infrastructure-deployment.md) dan [§4.8](16-infrastructure-deployment.md) — `Dockerfile` dan `docker-compose.yml` — berada di **akar repositori** dengan konteks build akar, dibatasi `.dockerignore`. |
 | **SDD-REPO-10** | Paket internal **tidak diversi dan tidak dipublikasikan**; ia dikonsumsi lewat protokol workspace. Konsekuensi yang disengaja: perubahan skema dan seluruh konsumennya selalu berada dalam **satu** commit. |
+| **SDD-REPO-11** | **Perkakas uji ditetapkan seragam bagi seluruh pohon.** Unit dan integration memakai **Vitest** di `apps/api`, `apps/web`, dan `packages/schemas`; cakupan `CD-02`/`NFR-M-03` diukur dengannya. E2E berjalan pada dua level terpisah sesuai [PRD 30.1](../PRD/06-quality/test-strategy.md): **Playwright** untuk E2E Web, **Maestro** untuk E2E Mobile di atas *dev build* Expo (`SDD-MOB-10`). Uji konkurensi `CC-01`…`CC-07` dan uji otorisasi tergenerate `SEC-T-01` adalah integration test — dijalankan Vitest terhadap PostgreSQL nyata, bukan *mock*. |
 
 ---
 
 ## 3. Alasan
+
+**SDD-REPO-11 — satu runner untuk tiga pohon, dua runner untuk dua level E2E.** [PRD 30.1](../PRD/06-quality/test-strategy.md) sudah menetapkan piramida, ambang cakupan, dan pemisahan E2E Web (15 alur) dari E2E Mobile (9 alur); yang tidak pernah ditetapkan adalah dengan apa semuanya dijalankan. Selama itu kosong, gerbang `CD-02` tidak dapat ditulis sebagai perintah — sebuah ambang cakupan tanpa alat pengukur bukan gerbang.
+
+**Vitest** dipilih untuk lapis unit dan integration karena `SDD-REPO-03` (npm workspaces polos, tanpa Turborepo/Nx) membuat keseragaman perkakas menjadi satu-satunya hal yang membuat `npm run test` di akar bermakna. Ia menjalankan TypeScript ESM tanpa lapisan transpilasi tambahan, sehingga tidak ada konfigurasi paralel yang harus dijaga tetap sinkron dengan `tsconfig` tiap pohon (`SDD-REPO-08`). Jest ditolak bukan karena kemampuannya melainkan karena biaya itu; `node:test` ditolak karena pelaporan cakupannya masih perlu dirakit sendiri, padahal justru laporan itulah yang menjadi gerbang.
+
+**Playwright** dan **Maestro** memisahkan dua hal yang PRD 30.1 memang pisahkan. Playwright menjawab matriks peramban [PRD 30.6](../PRD/06-quality/test-strategy.md) dalam satu runner. Maestro menjalankan alur di atas *dev build* Expo (`SDD-MOB-10`) tanpa menyuntik kode ke dalam aplikasi, sehingga yang diuji adalah artefak yang dikirim ke store, bukan varian uji darinya — dan alurnya berupa YAML deklaratif, yang penting karena [PRD 30.8](../PRD/06-quality/test-strategy.md) menempatkan UAT pada pihak sekolah, bukan pada tim yang menulis kodenya. Detox ditolak karena menuntut konfigurasi native dan waktu build CI yang jauh lebih panjang untuk keuntungan stabilitas yang belum terbukti dibutuhkan pada sembilan alur.
+
+Yang **tidak** ditetapkan di sini: cakupan, alur mana yang diuji, dan ambang lulus — seluruhnya milik [PRD 30](../PRD/06-quality/test-strategy.md). Berkas ini hanya menetapkan perkakasnya.
 
 **SDD-REPO-01 — monorepo.** Yang memutuskan bukan preferensi soal jumlah repositori, melainkan satu kewajiban yang sudah tertulis di dua berkas: `SDD-FE-05` menuntut skema validasi **dibagi dengan backend** "sehingga aturan form dan aturan API tidak menyimpang", dan `SDD-MOB-01` memperluasnya ke mobile. [SDD-11 §5](11-frontend-architecture.md) menyatakan tuntutan sebenarnya dengan tepat: perubahan skema menyentuh frontend dan backend **dalam satu perubahan**.
 
@@ -87,16 +96,17 @@ sigm4/
 ├── .dockerignore                # mengecualikan apps/web, apps/mobile  (SDD-REPO-09)
 ├── Dockerfile                   # image sigm4-api + sigm4-worker  → SDD-16 §4.1
 ├── docker-compose.yml           # dependensi pengembangan          → SDD-16 §4.8
-├── .github/workflows/           # pipeline CI/CD                   → SDD-16 §4.3
+├── .github/workflows/           # pipeline CI/CD  GitHub Actions   → SDD-16 §4.3, SDD-INF-12
 │
 ├── apps/
 │   ├── api/                     # POHON BACKEND — isi src/ milik SDD-00 §4.1
 │   │   ├── src/                 #   shared · modules · api · worker   (SDD-SYS-04, SDD-SYS-06/08)
-│   │   ├── migrations/          #   berkas .sql                       → SDD-05 §4.5, SDD-DB-12
+│   │   ├── migrations/          #   berkas .sql, dijalankan dbmate    → SDD-05 §4.5, SDD-DB-12
 │   │   └── eslint.config.js     #   aturan impor SDD-00 §4.2, ber-akar di sini  (SDD-REPO-08)
 │   │
 │   ├── web/                     # POHON WEB — isi src/ milik SDD-11 §4.1
 │   │   ├── src/                 #   app · shared · modules · pages     (SDD-FE-01)
+│   │   ├── vite.config.ts       #   build + Vitest, satu konfigurasi   (SDD-FE-14, SDD-REPO-11)
 │   │   └── eslint.config.js
 │   │
 │   └── mobile/                  # POHON MOBILE — isi src/ milik SDD-12 §4.1
@@ -148,6 +158,7 @@ Uji negatif yang sudah diwajibkan `PR-00-02` bagi batas modul berlaku dengan ben
 | `npm run lint` | Seluruh workspace — bentuk yang sudah tertulis pada Acceptance `PR-00-01`, tidak berubah |
 | `npm run lint -w apps/api` | Satu pohon |
 | `npm ci` | Akar; memasang seluruh workspace dari satu lockfile |
+| `npm run test` | Seluruh workspace — Vitest (`SDD-REPO-11`); E2E Playwright/Maestro dijalankan perintah terpisah, bukan bagian baris ini |
 
 `SDD-REPO-03` dipilih justru agar baris pertama tetap sah apa adanya.
 

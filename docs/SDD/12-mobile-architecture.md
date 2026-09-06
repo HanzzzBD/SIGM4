@@ -36,10 +36,22 @@ Basis teknologi ditetapkan Keputusan #3: **React Native** (Android & iOS).
 | **SDD-MOB-08** | Token disimpan di Keychain/Keystore melalui satu modul `SecureStore`; tidak ada jalur lain yang boleh menulis token. |
 | **SDD-MOB-09** | Refresh token diserialisasi dengan *mutex* pada interceptor, sama alasannya dengan web (`SDD-FE-07`). |
 | **SDD-MOB-10** | Aplikasi dibangun di atas **Expo SDK** (*dev build*, bukan Expo Go) dan memakai **EAS Update** untuk pembaruan OTA. Versi React Native mengikuti lini Expo yang dipilih dan **wajib diverifikasi memenuhi `NFR-C-03` sebelum dikunci**. Kanal OTA hanya mengirim bundel JavaScript; perubahan yang menyentuh kode native tetap lewat store dan gerbang `426` (`SDD-MOB-05`). |
+| **SDD-MOB-11** | Antrean unggah `SDD-MOB-02` dipersistensi ke **expo-sqlite**. Setiap perubahan status antrean adalah transaksi SQLite, sehingga aplikasi yang mati di tengah unggah tidak merusak antrean. Basis data ini menyimpan **hanya** antrean unggah — batas `MOB-SEC-06` dapat diperiksa dengan membaca isinya. |
+| **SDD-MOB-12** | Navigasi memakai **expo-router**. `deep_link` `SDD-NTF-09` berupa path relatif aplikasi dipetakan **langsung** ke rute berbasis berkas; tidak ada tabel penerjemah path → nama layar yang harus dijaga sinkron. |
 
 ---
 
 ## 3. Alasan
+
+**SDD-MOB-11 — antrean adalah data transaksional, bukan sekantong nilai.** `SDD-MOB-02` menuntut antrean bertahan lintas sesi dan `SDD-MOB-04` menyimpan `file_id` yang ditukar URL presign baru pada setiap percobaan — artinya barisnya bertambah, berubah status, dicoba ulang, dan dihapus setelah sukses, sementara `SDD-MOB-06` menambah laju tulis dengan mengirim per pemindaian.
+
+**MMKV** dan **AsyncStorage** ditolak pada sifat itu, bukan pada kinerjanya. Keduanya penyimpanan kunci–nilai, sehingga antrean berurut menjadi satu blob yang diserialisasi ulang setiap perubahan — dan proses yang mati di tengah penulisan blob merusak seluruh antrean, bukan satu barisnya. Itu kegagalan yang persis terjadi di keadaan yang antrean ini ada untuk melayaninya: jaringan lemah, aplikasi lama di latar, baterai habis.
+
+SQLite memberi penulisan atomik per baris dan kueri "ambil yang belum terkirim" apa adanya. Ia juga membuat `MOB-SEC-06` — tidak ada data operasional permanen di perangkat selain antrean dan token — menjadi klaim yang **dapat diperiksa**: satu berkas basis data yang isinya dapat dibuka dan dihitung, bukan sebaran kunci yang harus dipercaya. Karena `SDD-MOB-10` sudah memilih Expo, `expo-sqlite` tidak menambah modul native di luar lini yang dipakai.
+
+**SDD-MOB-12 — path notifikasi adalah path rute.** `SDD-NTF-09` sengaja menyimpan `deep_link` sebagai path relatif aplikasi agar satu nilai berlaku sama di web dan mobile. **React Navigation** memenuhi itu lewat konfigurasi `linking` — sebuah daftar pemetaan tersendiri yang wajib ikut berubah setiap kali rute bertambah. Daftar seperti itu gagal secara diam: bila ia tertinggal, notifikasi berhenti membuka layarnya dan tidak ada satu pun uji yang merah, karena tidak ada yang bertugas membandingkan daftar itu dengan rute yang benar-benar ada.
+
+expo-router menghapus daftarnya: path **adalah** letak berkas rutenya, sehingga `/reservations/1234` bekerja karena rutenya ada, bukan karena ada yang ingat mendaftarkannya. Ia dibangun di atas React Navigation, jadi tidak ada kemampuan navigasi yang ditutup — termasuk gerbang `426` `SDD-MOB-05`, yang tetap berupa layar penghalang di atas seluruh tumpukan.
 
 **SDD-MOB-02/03 — antrean menyimpan berkas terkompresi.** Ini menyelesaikan masalah nyata di lapangan: lima foto tiket kerusakan (`FR-11.1`) dari kamera ponsel modern bisa mencapai 20 MB. Mengompresinya lebih dulu (`MOB-MED-01`: sisi terpanjang 1600 px, ≤ 500 KB) menurunkan itu menjadi ≈ 2,5 MB — perbedaan antara unggahan yang selesai di jaringan sekolah dan yang tidak. Menyimpan berkas mentah di antrean juga akan menghabiskan penyimpanan perangkat teknisi dalam sehari.
 
@@ -65,11 +77,11 @@ Yang perlu ditegaskan agar keputusan ini tidak salah dibaca: OTA **tidak** mengg
 
 ```
 src/
-├── app/                 # navigasi, provider, gerbang versi & sesi
+├── app/                 # rute expo-router, provider, gerbang versi & sesi (SDD-MOB-12)
 ├── shared/
-│   ├── api/             # klien, interceptor, refresh mutex (SDD-MOB-09)
+│   ├── api/             # axios, interceptor, refresh mutex (SDD-MOB-09, SDD-FE-16)
 │   ├── secure/          # SecureStore — satu-satunya penulis token (SDD-MOB-08)
-│   ├── upload/          # antrean unggah persisten (SDD-MOB-02)
+│   ├── upload/          # antrean unggah persisten, expo-sqlite (SDD-MOB-02, SDD-MOB-11)
 │   ├── camera/          # pemindai QR + kompresi foto (SDD-MOB-03)
 │   ├── schemas/         # dibagi dengan web (SDD-MOB-01)
 │   └── enums/           # dibagi dengan web

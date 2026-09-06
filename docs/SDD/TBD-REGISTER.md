@@ -2,7 +2,7 @@
 
 Berkas ini mengumpulkan seluruh titik dalam SDD yang **memerlukan keputusan** dan sengaja tidak diisi. Tidak ada angka, kebijakan, atau perilaku yang dikarang.
 
-**Status: 13 terbuka · 28 tertutup** — terkumpul dari 18 berkas SDD dan dari [proposal perubahan lingkup domain Bahan](../PRD/01-product/bahan-scope-change.md).
+**Status: 13 terbuka · 42 tertutup** — terkumpul dari 18 berkas SDD dan dari [proposal perubahan lingkup domain Bahan](../PRD/01-product/bahan-scope-change.md).
 
 ---
 
@@ -38,7 +38,7 @@ Menebaknya sekarang tidak menambah nilai; ditetapkan setelah uji beban `NFR-P-09
 
 Tidak mengubah requirement; hanya bentuk kode dan perkakas.
 
-_Seluruhnya tertutup — lihat [Tertutup](#tertutup)._
+_Seluruhnya tertutup — lihat [Tertutup](#tertutup)._ **Tiga belas** di antaranya dibuka dan ditutup pada hari yang sama, 6 September 2026, dalam dua sapuan audit yang menemukan pola sama berulang: **kelas keputusan sudah ditulis, anggotanya tidak.** Sapuan pertama menutup empat (`TBD-DB-B`, `TBD-QA-A`, `TBD-INF-C`, `TBD-FE-C`); sapuan kedua menyisir sisa `docs/` dan menutup sembilan lagi (`TBD-INF-D`, `TBD-SEC-C`, `TBD-API-C`, `TBD-FE-D`, `TBD-FE-E`, `TBD-FE-F`, `TBD-MOB-C`, `TBD-MOB-D`, `TBD-FS-C`). Tidak ada requirement yang berubah pada keduanya.
 
 ## D. Konten yang belum final
 
@@ -52,8 +52,17 @@ _Seluruhnya tertutup — lihat [Tertutup](#tertutup)._
 |---|---|---|
 | A — Kebijakan produk | 0 | Dikosongkan kembali 2 September 2026 — `TBD-AI-D` tertutup hari yang sama saat ia dibuka |
 | B — Parameter operasional | 13 | Setelah staging berdiri & uji beban dijalankan |
-| C — Pilihan teknis | 0 | Seluruhnya tertutup 6 Agustus 2026 |
+| C — Pilihan teknis | 0 | Delapan tertutup 6 Agustus 2026; **empat belas** lagi dibuka & ditutup 6 September 2026 dalam tiga sapuan audit |
 | D — Konten | 0 | Seluruhnya tertutup 25 Agustus 2026 |
+
+### Gerbang tertunda — bukan TBD
+
+Dua hal berikut **sengaja belum berupa pilihan** dan **tidak dihitung sebagai TBD**, karena keputusannya bukan menunggu orang melainkan menunggu verifikasi yang hasilnya menggugurkan kandidat. Keduanya dicatat di sini agar tidak salah dibaca sebagai celah yang terlewat.
+
+| Gerbang | Yang sudah final | Yang menunggu | Ditutup di |
+|---|---|---|---|
+| Vendor observability terkelola | `SDD-OBS-09` — instrumentasi **OpenTelemetry**, *backend* terkelola. Netralitas OTel membuat penggantian vendor berbiaya konfigurasi, bukan penulisan ulang | Nama vendornya. `SDD-OBS-10` menjadikan **region Indonesia kriteria gugur** yang diverifikasi **sebelum kontrak**; memilih nama sekarang mendahului verifikasi itu | Seleksi `PR-00-06` — [`logs/phase-00.md` §5](../IMPLEMENTATION/logs/phase-00.md) |
+| Versi Expo / React Native | `SDD-MOB-10` — **Expo SDK** (*dev build*) + **EAS Update** | Nomor lininya. Lantai OS tiap lini wajib diverifikasi memenuhi `NFR-C-03` (Android 8.0/API 26, iOS 14) sebelum dikunci; bila lantainya di atas itu, jalannya adalah **perubahan requirement**, bukan penurunan diam-diam | Phase 03 — [`phases/phase-03.md` §10](../IMPLEMENTATION/phases/phase-03.md) |
 
 Kelompok B sengaja ditunda: menetapkan ukuran pool koneksi atau TTL cache tanpa data pengukuran hanya memindahkan tebakan ke dokumen. **Kelompok A, C, dan D seluruhnya tertutup.** `TBD-AI-D` dibuka dan ditutup pada hari yang sama, 2 September 2026: migrasi penyedia LLM membukanya, surat pernyataan Kepala Sekolah menutupnya. Tidak ada lagi keputusan yang belum diambil — yang tersisa seluruhnya angka yang menunggu pengukuran.
 
@@ -90,6 +99,20 @@ Kelompok B sengaja ditunda: menetapkan ukuran pool koneksi atau TTL cache tanpa 
 | **TBD-FS-A** | [SDD-09](09-file-storage-design.md) · [SDD-13](13-security-design.md) | Perlakuan foto berwajah saat permintaan penghapusan data (`DP-04`). | `SDD-FS-11` · `DP-05a` · **UXD-14** — dipertahankan sebagai bukti; **wajib** dinyatakan pada Pemberitahuan Privasi | 25 Agustus 2026 |
 | **TBD-BHN-E** | [ai-features](../PRD/03-architecture/ai-features.md) | Apakah chatbot perlu tool berdomain Bahan? | 22.3 — dua tool (`get_material_stock`, `get_low_stock_materials`) ditambahkan; diimplementasikan `PR-05-25` di Phase 05 | 25 Agustus 2026 |
 | **TBD-AI-D** | [SDD-10](10-ai-orchestrator-design.md) | Persetujuan tertulis sekolah atas pemrosesan data percakapan chatbot **lintas yurisdiksi** (`RS-21`). | `SDD-AI-16` — **disetujui**, atas surat pernyataan Kepala Sekolah (nomor surat **TBD**, menunggu salinan resmi). Ditutup pada hari yang sama saat dibuka. Pemakaian tier gratis diputuskan terpisah (`SDD-AI-17`, `DP-AI-04` disunting) | 2 September 2026 |
+| **TBD-SYS-A** | [SDD-00](00-system-architecture.md) · [SDD-01](01-availability-concurrency.md) | Letak kode `SlotService`. Disebut `BRANCHING §3.1` dan dibangun `PR-02-17`, tetapi tidak ditetapkan berkas SDD mana pun — padahal enam modul memakainya. | `SDD-SYS-10` — ***shared kernel*** `shared/booking/`; daftar tertutup `SDD-SYS-06` disunting untuk memuatnya. Penempatan di dalam modul dan modul teknis tersendiri sama-sama ditolak | 6 September 2026 |
+| **TBD-INF-D** | [SDD-16](16-infrastructure-deployment.md) | *Reverse proxy*. `INF-06` menyebut dua nama ("Nginx/Caddy") sementara `deployment-ops.md` §Topologi dan `SDD-13 §3` sudah menulis "Nginx" dalam prosa — garis miring yang sudah berselisih dengan dua berkas. | `SDD-INF-13` — **Nginx**; certbot menjadi komponen tersendiri bagi `INF-06`, dan *readiness gate* `SDD-INF-04` bersandar pada pemeriksaan pasif + skrip deploy `SDD-INF-10` | 6 September 2026 |
+| **TBD-SEC-C** | [SDD-13](13-security-design.md) · [SDD-16](16-infrastructure-deployment.md) | Perkakas tahap keamanan pipeline. `ST-01` … `ST-03` dan `CD-01` menetapkan tahapnya tanpa satu nama pun, sehingga `PR-00-17` tidak dapat menulis pipeline-nya. | `SDD-SEC-11` — **CodeQL** · **Dependabot** · **Trivy** · **OWASP ZAP**; Snyk ditolak karena menambah pihak penerima data terhadap `SDD-SEC-10` | 6 September 2026 |
+| **TBD-API-C** | [SDD-06](06-api-design.md) | Pembangkit OpenAPI. `SDD-API-11 §3` menjadikan "generator OpenAPI paling matang" sebagai alasan memilih Zod, lalu tidak menyebut generatornya. | `SDD-API-13` — **`zod-openapi`** lewat registri route §4.1 yang sudah ada; registri kedua ditolak | 6 September 2026 |
+| **TBD-FE-D** | [SDD-11](11-frontend-architecture.md) | *Build tool* `apps/web`. Tidak disebut di berkas mana pun. | `SDD-FE-14` — **Vite**, berbagi satu konfigurasi dengan Vitest (`SDD-REPO-11`) | 6 September 2026 |
+| **TBD-FE-E** | [SDD-11](11-frontend-architecture.md) | Router web. `SDD-FE-10` menjadikan filter di URL sumber kebenaran, sehingga router menopang requirement — tetapi tak bernama. | `SDD-FE-15` — **TanStack Router**; *search param* divalidasi skema Zod | 6 September 2026 |
+| **TBD-FE-F** | [SDD-11](11-frontend-architecture.md) · [SDD-12](12-mobile-architecture.md) | Klien HTTP. `SDD-FE-07`/`SDD-MOB-09` menuntut mutex refresh pada interceptor, `SDD-MOB-05` menuntut gerbang `426` — tempatnya tak bernama. | `SDD-FE-16` — **axios**, bentuk identik di web dan mobile | 6 September 2026 |
+| **TBD-MOB-C** | [SDD-12](12-mobile-architecture.md) | Penyimpanan persisten antrean unggah. `SDD-MOB-02` menuntut bertahan lintas sesi; `MOB-SEC-06` membatasi apa yang boleh permanen di perangkat. | `SDD-MOB-11` — **expo-sqlite**; kunci–nilai ditolak karena antrean bersifat transaksional | 6 September 2026 |
+| **TBD-MOB-D** | [SDD-12](12-mobile-architecture.md) · [SDD-08](08-notification-design.md) | Navigasi mobile. `SDD-NTF-09` menyimpan `deep_link` sebagai path relatif aplikasi; pemetaannya ke layar tak ditetapkan. | `SDD-MOB-12` — **expo-router**; path rute adalah path notifikasi, tanpa tabel penerjemah | 6 September 2026 |
+| **TBD-FS-C** | [SDD-09](09-file-storage-design.md) · [SDD-16](16-infrastructure-deployment.md) | Pembangkit PDF sistem (`FR-13.3`, `FR-21.2`, `NFR-P-07`, `NFR-C-07`). Nol nama pustaka di seluruh `docs/`. | `SDD-FS-12` — **Playwright (Chromium)** dari HTML+CSS cetak, mesin yang sama dengan E2E Web; biaya ukuran image dicatat `SDD-16 §5` | 6 September 2026 |
+| **TBD-DB-B** | [SDD-05](05-database-design.md) · [SDD-00](00-system-architecture.md) | Pustaka akses data pada `repositories/`. Tidak pernah dinyatakan di berkas mana pun, padahal `PR-00-04` membangun base repository di atasnya. | `SDD-DB-15` — **Kysely + `pg`**; ORM yang memiliki skema ditolak karena bertabrakan dengan `SDD-DB-08` | 6 September 2026 |
+| **TBD-QA-A** | [SDD-17](17-repo-layout.md) · [PRD 30](../PRD/06-quality/test-strategy.md) | Perkakas uji. PRD 30 menetapkan piramida, ambang cakupan, dan 18 alur E2E tanpa satu nama perkakas pun, sehingga gerbang `CD-02` tidak dapat ditulis sebagai perintah. | `SDD-REPO-11` — **Vitest** (unit & integration) · **Playwright** (E2E Web) · **Maestro** (E2E Mobile) | 6 September 2026 |
+| **TBD-INF-C** | [SDD-16](16-infrastructure-deployment.md) · [SDD-17](17-repo-layout.md) | Penyedia CI. Yang ditetapkan hanya letak `.github/workflows/` (`SDD-17 §4.1`), sehingga penyedianya tersirat dari tata letak dan tidak pernah tertulis. | `SDD-INF-12` — **GitHub Actions**, dengan gerbang `CD-01`/`CD-02` sebagai *required status check* | 6 September 2026 |
+| **TBD-FE-C** | [SDD-11](11-frontend-architecture.md) · [DESIGN](../DESIGN/DESIGN-SYSTEM.md) | Primitif headless mana. `SDD-FE-12` menulis "Radix UI / React Aria" — garis miring yang ikut menurun ke `DESIGN-SYSTEM.md` dan `COMPONENTS.md`. | `SDD-FE-13` — **Radix UI bawaan**; **React Aria** hanya untuk pemilih tanggal/kalender dan number field. Daftar tertutup | 6 September 2026 |
 | **TBD-AI-A** | [SDD-10](10-ai-orchestrator-design.md) | Panjang dan isi final prefiks statis system prompt (ambang caching penyedia). | `SDD-AI-13` — diperkaya dengan isi berguna; uji memverifikasi panjang **dan** cache benar-benar kena. Angka disesuaikan ke ambang Gemini 3.x (≥ 4.096, sasaran ≥ 4.500) pada migrasi 2 September 2026 | 25 Agustus 2026 |
 
 Kolom **Keputusan** memuat ID keputusan SDD — atau ID keputusan UX (`UXD-xx`) bila yang memutuskan adalah pemilik produk, bukan arsitek — dan bukan uraiannya — uraian, opsi yang ditolak, dan konsekuensinya ada di berkas SDD pemiliknya.

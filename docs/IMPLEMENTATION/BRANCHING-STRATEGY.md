@@ -86,7 +86,7 @@ Sebagian PR menyentuh tulang punggung yang dipakai bersama banyak modul. Perubah
 
 | Yang tersentuh | Alasan |
 |---|---|
-| `SlotService` / skema `booking_slots` | Melayani M-07, M-08, M-09 — tiga modul, satu semantik |
+| `SlotService` / skema `booking_slots` — `shared/booking/` (`SDD-SYS-10`) | Melayani **enam** modul (M-04, M-07, M-08, M-09, M-12, M-21) dengan satu semantik; berada di *shared kernel*, bukan di dalam modul |
 | Evaluator DSL / mesin approval | Melayani enam modul berpersetujuan |
 | Lapisan permission / `AuthContext` | Setiap kebocoran di sini adalah kebocoran menyeluruh |
 | Migration apa pun | `expand → migrate → contract` (`CD-04`, `SDD-DB-08`) |

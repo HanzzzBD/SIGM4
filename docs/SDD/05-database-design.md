@@ -37,7 +37,8 @@ Skema khusus `booking_slots`, `idempotency_keys`, dan `document_counters` didefi
 | **SDD-DB-11** | Akun aplikasi tidak memiliki hak DDL; migration dijalankan akun terpisah (`SEC-CFG-03`). Akun aplikasi juga **tidak** punya `UPDATE`/`DELETE` pada `activity_logs` (`AL-03b`). |
 | **SDD-DB-13** | Saldo bahan disimpan sebagai **ledger + saldo termaterialisasi**: `material_transactions` adalah kebenaran, `material_balances` adalah agregat turunannya yang diperbarui **dalam transaksi yang sama**. Tidak ada saldo yang dihitung ulang saat baca (`BR-081`, `BR-092`). |
 | **SDD-DB-14** | Pengurangan saldo bahan mengunci baris `material_balances` dengan `SELECT … FOR UPDATE` sebelum memeriksa kecukupan. Larangan saldo negatif (`BR-083`) ditegakkan **CHECK constraint + row lock**, bukan hanya validasi service. |
-| **SDD-DB-12** | Berkas migration §4.5 dijalankan **runner SQL siap pakai** (kelas dbmate/Postgrator) — bukan runner buatan sendiri, bukan pula perkakas ber-DSL JavaScript. Dua kemampuan bersifat wajib, bukan preferensi: **opt-out transaksi per-migration** dan *advisory lock*. |
+| **SDD-DB-12** | Berkas migration §4.5 dijalankan **dbmate** — runner SQL siap pakai, bukan runner buatan sendiri, bukan pula perkakas ber-DSL JavaScript. Dua kemampuan bersifat wajib, bukan preferensi: **opt-out transaksi per-migration** dan *advisory lock*; keduanya diverifikasi pada `PR-00-05` sebelum migration pertama ditulis. |
+| **SDD-DB-15** | Akses data memakai **Kysely di atas driver `pg`** — *query builder* ber-tipe yang **tidak memiliki skema**. Berkas `.sql` §4.3/§4.4 tetap satu-satunya sumber skema (`SDD-DB-08`); tipe tabel Kysely adalah cerminan yang diturunkan dari basis data, bukan pendefinisinya. Fitur PostgreSQL yang ditetapkan berkas ini — *exclusion constraint* (`CI-01`), `tstzrange`, native enum (`SDD-DB-02`), partial unique index (`SDD-DB-05`), `SELECT … FOR UPDATE` (`SDD-DB-14`), tabel terpartisi (`SDD-DB-07`) — ditulis sebagai SQL mentah lewat *template* `sql` tanpa kehilangan tipe. ORM yang memiliki skema sendiri tidak dipakai. |
 
 ---
 
@@ -59,6 +60,12 @@ Konsekuensi yang diterima: menambah nilai enum memerlukan migration (`ALTER TYPE
 
 **SDD-DB-09 — jangan indeks isi JSON.** Menggoda untuk memberi GIN pada `nilai_sesudah` agar bisa mencari "siapa mengubah kondisi menjadi Rusak Berat". Ditolak karena indeks GIN pada jsonb yang sering ditulis memperlambat setiap operasi tulis di seluruh sistem, sementara `FR-18.2` hanya menuntut filter berdasarkan tanggal, pengguna, role, modul, aksi, dan entitas — semuanya kolom biasa.
 
+**SDD-DB-15 — query builder, bukan ORM.** Batasan yang mengikat pilihan ini seluruhnya sudah ada di berkas ini, dan hanya satu di antaranya yang menentukan: `SDD-DB-08` menempatkan kepemilikan skema pada berkas `.sql` tulisan tangan. Perkakas yang **juga** memiliki skema karena itu gugur bukan karena kemampuannya, melainkan karena ia menciptakan sumber kedua bagi hal yang `SDD-DB-08` sudah tetapkan pemiliknya — alasan yang sama persis dengan penolakan perkakas ber-DSL pada `SDD-DB-12`.
+
+**Prisma** ditolak atas dasar itu, dan kemampuannya memperkuat penolakan alih-alih melunakkannya: *exclusion constraint*, `tstzrange`, dan partisi RANGE tidak dapat dinyatakan pada modelnya, sehingga `CI-01` dan `SDD-DB-07` — dua hal yang paling perlu dijaga — justru jatuh ke `$queryRaw` yang kehilangan tipe. **Drizzle** ditolak lebih tipis: ia mendukung fitur-fitur itu, tetapi skemanya dideklarasikan di TypeScript; memakainya hanya sebagai pembaca skema berarti membayar ketergantungan untuk sebagian kecil nilainya. **`pg` polos** ditolak karena harganya jatuh di tempat lain: tanpa lapisan ber-tipe, setiap repository menulis pemetaan barisnya sendiri, dan `SDD-AUTH-05` (`AuthContext` pada setiap repository) kehilangan satu titik yang dapat menegakkannya secara seragam.
+
+Kysely menyisakan skema persis di tempat `SDD-DB-08` menaruhnya sambil memberi tipe pada kueri. Konvensi nama kolom Bahasa Indonesia bukan hambatan bagi pilihan ini melainkan alasannya: karena tidak ada pemetaan otomatis berbahasa Inggris yang perlu dilawan, tipe tabel ditulis apa adanya — `tanggal_jatuh_tempo` tetap `tanggal_jatuh_tempo`.
+
 **SDD-DB-12 — runner SQL, bukan DSL dan bukan buatan sendiri.** Bentuk artefaknya sudah ditetapkan `SDD-DB-08` dan §4.5: berkas `.sql` bernomor maju-saja dengan pasangan `down` yang diuji. Yang belum ditetapkan hanya siapa yang menjalankannya, dan tiga jalur dipertimbangkan.
 
 **Perkakas ber-DSL JavaScript** (mis. node-pg-migrate) ditolak. Ia mendukung `down`, opt-out transaksi, dan advisory lock — jadi penolakannya bukan soal kemampuan. Persoalannya, satu-satunya nilai tambahnya adalah DSL-nya, dan batasan berkas ini membuat DSL itu tidak boleh dipakai: fitur PostgreSQL yang sudah ditetapkan di sini — exclusion constraint (`CI-01`), partial unique index (§4.3), partisi RANGE (§4.4), GIN terbatas (`SDD-DB-09`) — tetap harus ditulis sebagai SQL mentah. Yang tersisa hanyalah permukaan tambahan yang mengundang skema ditulis dalam JavaScript, padahal yang di-*review* dan yang harus cocok dengan §4.3/§4.4 adalah SQL-nya.
@@ -66,6 +73,8 @@ Konsekuensi yang diterima: menambah nilai enum memerlukan migration (`ALTER TYPE
 **Runner buatan sendiri** ditolak karena harganya tidak sepadan. Advisory lock (agar dua job migration tidak berlomba, `SDD-INF-03`), urutan, tabel versi, checksum berkas yang telah diterapkan, dan eksekusi `down` semuanya menjadi kode yang harus ditulis dan diuji — infrastruktur murni tanpa kandungan domain, di proyek yang sudah punya cukup permukaan untuk dipelihara.
 
 **Runner SQL siap pakai** menyisakan berkas persis seperti §4.5 sambil menyediakan mekanisme itu. Dua kemampuannya dinyatakan wajib karena lahir dari keputusan yang sudah diambil, bukan dari selera: opt-out transaksi per-migration dituntut konsekuensi `SDD-DB-02` (`ALTER TYPE … ADD VALUE` tidak dapat di-*rollback* dalam transaksi) dan akan dituntut lagi oleh `CREATE INDEX CONCURRENTLY` pada tabel yang sudah berisi data; advisory lock dituntut `SDD-INF-03` yang menjalankan migration sebagai job terpisah. Runner yang tidak memenuhi keduanya tidak memenuhi syarat, sekalipun populer.
+
+**dbmate dipilih di dalam kelas itu.** Ia menyimpan `migrate:up` dan `migrate:down` pada satu berkas `.sql`, sehingga pasangan `down` yang `SDD-DB-08` wajibkan berada tepat di sebelah `up`-nya alih-alih pada berkas terpisah yang mudah tertinggal. Ia juga berupa biner mandiri, sehingga `SDD-INF-03` — migration sebagai job sekali-jalan dengan akun DDL terpisah — tidak menuntut *runtime* aplikasi ikut hadir di dalam container job. Postgrator, kandidat lain di kelas yang sama, tidak gugur karena cacat; ia hanya mengembalikan sebagian mekanisme yang menjadi alasan memakai runner siap pakai kepada kita. Kedua kemampuan wajib di atas tetap **diverifikasi** pada `PR-00-05`; memilih nama tidak menggantikan pembuktian.
 
 ---
 
@@ -258,9 +267,10 @@ Baris `material_balances` dibuat saat bahan pertama kali bertransaksi di suatu l
 
 - Penambahan nilai enum selalu menjadi migration tersendiri dan tidak dapat digabung dengan perubahan lain dalam satu transaksi.
 - Rantai hash `activity_logs` mengharuskan penulisan log **berurutan per partisi**; penulisan paralel memerlukan penguncian ringan pada baris terakhir. Ini diterima karena volume log rendah (±150.000/tahun ≈ 0,005 tulis/detik rata-rata).
-- Konvensi nama kolom Bahasa Indonesia berarti pemetaan ORM tidak dapat mengandalkan konvensi otomatis berbahasa Inggris; pemetaan ditulis eksplisit.
+- Konvensi nama kolom Bahasa Indonesia berarti tidak ada pemetaan otomatis berbahasa Inggris yang dapat diandalkan; nama kolom dipakai apa adanya pada tipe tabel `SDD-DB-15`, ditulis eksplisit dan diperiksa terhadap basis data.
+- Tipe tabel `SDD-DB-15` adalah artefak turunan, bukan sumber. Setiap migration yang mengubah bentuk tabel mewajibkan tipe itu ikut disegarkan pada PR yang sama — bila tidak, kompilator berhenti mencerminkan skema dan berubah menjadi kebohongan yang diperiksa CI.
 - Aturan expand→contract berarti perubahan skema yang menghapus kolom memerlukan **dua rilis**.
-- Runner migration (`SDD-DB-12`) menjadi dependensi yang ikut ke dalam image (`SDD-INF-01`) dan dijalankan sebagai job terpisah dengan akun DDL (`SDD-INF-03`, `SEC-CFG-03`). Penggantian runner di kemudian hari hanya menyentuh cara berkas dijalankan, bukan isinya — berkas `.sql` tetap portabel.
+- Runner migration dbmate (`SDD-DB-12`) menjadi dependensi yang ikut ke dalam image (`SDD-INF-01`) dan dijalankan sebagai job terpisah dengan akun DDL (`SDD-INF-03`, `SEC-CFG-03`). Penggantian runner di kemudian hari hanya menyentuh cara berkas dijalankan, bukan isinya — berkas `.sql` tetap portabel.
 - Runner tidak membangkitkan `down`; ia tetap ditulis tangan dan diuji sebagaimana `SDD-DB-08` mensyaratkan. Memilih perkakas tidak mengurangi kewajiban itu.
 
 ---

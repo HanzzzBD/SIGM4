@@ -10,6 +10,8 @@ Berkas ini **tidak menetapkan aturan**. Seluruh aturan sudah ada di tempat lain;
 | Letak `.github/workflows/` | [`SDD-17 §4.1`](../SDD/17-repo-layout.md) |
 | Template & klasifikasi komentar | [`templates/PULL-REQUEST.md`](templates/PULL-REQUEST.md) |
 | Gerbang rilis `GL-01` … `GL-12` | [`delivery-plan.md`](../PRD/01-product/delivery-plan.md) |
+| Penyedia CI & perkakas uji | `SDD-INF-12` (GitHub Actions) · `SDD-REPO-11` (Vitest · Playwright · Maestro) |
+| Perkakas tahap keamanan | `SDD-SEC-11` (CodeQL · Dependabot · Trivy · OWASP ZAP) |
 | Pembangun pipeline | `PR-00-17` · `PR-00-18` — [`phase-00.md`](phases/phase-00.md) |
 
 Bila berkas ini bertentangan dengan salah satu di atas, **yang di atas yang berlaku**.
@@ -27,7 +29,7 @@ Karena itu sebagian aturan **belum dapat ditaati**, bukan karena diabaikan. Memb
 | Aturan | Sumber | Current State | Target State | Penutup selisih |
 |---|---|---|---|---|
 | `feature/*` → `develop` → `staging` → `main` | `CD-03` | `main` dan `develop` hidup sejak 6 September 2026; `staging` **belum ada** | Empat cabang hidup sesuai `CD-03` | `staging` — `PR-00-18` |
-| Tidak ada dorongan langsung ke `develop`/`staging`/`main` | `BRANCHING §3` | Riwayat masuk lewat PR; sejak `PR-00-01` sasarannya `develop`, sebelumnya `main` | Ketiganya terlindungi; hanya lewat PR | Branch protection §4 |
+| Tidak ada dorongan langsung ke `develop`/`staging`/`main` | `BRANCHING §3` | **Ditegakkan** sejak 6 September 2026 pada `main` dan `develop` (§4) | Ketiganya terlindungi; hanya lewat PR | `staging` — `PR-00-18` |
 | Penamaan `feature/` `fix/` `hotfix/` `chore/` | `BRANCHING §2` | Dipatuhi; **satu penyimpangan**: `docs/domain-aset-bahan-m22` | Seluruh cabang bernama sesuai daftar | Pekerjaan dokumentasi memakai `chore/` |
 | Umur cabang ≤ 3 hari | `BRANCHING §1` | Tidak terukur | Terpantau saat phase berjalan | — |
 | Squash ke `develop`; merge commit ke `staging`/`main` | `BRANCHING §3` | Berlaku sejak `develop` hidup — `PR-00-01` digabungkan dengan *squash*; masih kebiasaan, belum ditegakkan setelan | Diatur pada branch protection | Branch protection §4 |
@@ -49,13 +51,15 @@ lint → unit test → integration test → uji otorisasi tergenerate
 | Tahap | Gerbang | Current State | Dibangun oleh |
 |---|---|---|---|
 | lint | Impor lintas modul melanggar batas → gagal | Lint menegakkan batas antar-pohon (`SDD-REPO-06/07`), batas lapisan, dan — sejak `PR-00-02` — batas antar-**modul** (`SDD-SYS-02/03`, `SDD-00 §4.2`); seluruhnya dibuktikan uji negatif `scripts/check_import_boundaries.mjs`. Yang belum ada tinggal pemasangannya di CI | `PR-00-17` |
-| unit test | Cakupan logika inti < 70% → **stop** (`CD-02`, `NFR-M-03`) | Belum ada | `PR-00-17` |
+| unit test | Cakupan logika inti < 70% → **stop** (`CD-02`, `NFR-M-03`) | Belum ada — runner-nya **Vitest** (`SDD-REPO-11`) | `PR-00-17` |
 | integration test | Termasuk uji konkurensi `CC-01`…`CC-07` | Belum ada | `PR-00-17` |
 | uji otorisasi tergenerate | `SEC-T-01` | Belum ada | `PR-00-17` |
-| SAST | `ST-01` | Belum ada | `PR-00-17` |
-| SCA | Critical/High → **stop** (`ST-02`) | Belum ada | `PR-00-17` |
-| build + image scan | `CD-01` | Belum ada | `PR-00-17` |
-| deploy staging → DAST → smoke test | `ST-03`, `CD-07` | Belum ada | `PR-00-18` |
+| SAST | `ST-01` | Belum ada — perkakasnya **CodeQL** (`SDD-SEC-11`) | `PR-00-17` |
+| SCA | Critical/High → **stop** (`ST-02`) | Belum ada — perkakasnya **Dependabot** (`SDD-SEC-11`) | `PR-00-17` |
+| build + image scan | `CD-01` | Belum ada — pemindainya **Trivy** (`SDD-SEC-11`) | `PR-00-17` |
+| deploy staging → DAST → smoke test | `ST-03`, `CD-07` | Belum ada — DAST memakai **OWASP ZAP** (`SDD-SEC-11`); proxy staging **Nginx + certbot** (`SDD-INF-13`) | `PR-00-18` |
+
+Penyedianya kini tertulis, bukan tersirat: **GitHub Actions** (`SDD-INF-12`, 6 September 2026); perkakas tahap uji adalah **Vitest**, **Playwright**, dan **Maestro** (`SDD-REPO-11`); perkakas tahap keamanan adalah **CodeQL**, **Dependabot**, **Trivy**, dan **OWASP ZAP** (`SDD-SEC-11`). Seluruh tahap pada tabel di atas kini punya nama perkakas — yang tersisa hanyalah menulis workflow-nya di `PR-00-17`.
 
 **`.github/workflows/` sengaja masih kosong.** Sejak `PR-00-01`, alasannya bukan lagi ketiadaan sasaran — `npm run lint` dan `npm run build` sudah hijau dan dapat dipanggil CI hari ini. Yang tersisa adalah urutan pekerjaan: menulis pipeline sekarang mendahului `PR-00-17`, sementara tahap uji, SAST, SCA, dan pemindaian image belum punya apa pun untuk dijalankan. Pipeline ditulis sekali di `PR-00-17`, bukan dirintis sepotong lalu ditulis ulang.
 
@@ -75,18 +79,26 @@ Merge ke `main` mensyaratkan seluruh gerbang rilis `GL-01`…`GL-12` (`BRANCHING
 
 Branch protection **tidak dapat diatur lewat berkas**. Daftar berikut menerjemahkan `BRANCHING §3` dan `CD-01`/`CD-02` menjadi setelan yang perlu dinyalakan pada Settings → Branches. Belum satupun aktif.
 
-| Cabang | Setelan | Aturan yang ditegakkan |
-|---|---|---|
-| `main`, `staging`, `develop` | Require a pull request before merging | `BRANCHING §3` — tanpa dorongan langsung |
-| `main`, `staging`, `develop` | Require review from Code Owners | `BRANCHING §3.1` — tinjauan arsitek wajib |
-| `develop` | Minimal 1 approval | `BRANCHING §3` |
-| `develop` | Allow squash merge **saja** | `BRANCHING §3` — satu PR satu commit |
-| `staging`, `main` | Allow merge commit **saja** | `BRANCHING §3` — batas antar-phase tetap terbaca |
-| ketiganya | Require status checks to pass | `CD-01`, `CD-02` — berlaku setelah `PR-00-17` |
-| ketiganya | Do not allow bypassing the above settings | `BRANCHING §3` — "hanya bermanfaat bila tidak pernah ada pengecualian" |
-| ketiganya | Require branches to be up to date before merging | Mencegah penggabungan di atas basis usang |
+| Cabang | Setelan | Aturan yang ditegakkan | Status |
+|---|---|---|---|
+| `main`, `develop` | Require a pull request before merging | `BRANCHING §3` — tanpa dorongan langsung | ✅ **aktif** 6 September 2026 |
+| `main`, `develop` | Block force push | `BRANCHING §3` | ✅ **aktif** |
+| `main`, `develop` | Block branch deletion | `BRANCHING §3` | ✅ **aktif** |
+| `main`, `develop` | Do not allow bypassing (termasuk admin) | `BRANCHING §3` — "hanya bermanfaat bila tidak pernah ada pengecualian" | ✅ **aktif** |
+| `main`, `develop` | Require conversation resolution | `BRANCHING §4` — komentar terklasifikasi tidak menggantung | ✅ **aktif** |
+| `main`, `develop` | Dismiss stale approvals | `BRANCHING §3` | ✅ **aktif** |
+| `main`, `staging`, `develop` | Require review from Code Owners | `BRANCHING §3.1` — tinjauan arsitek wajib | ⏸ **ditunda** — lihat catatan di bawah |
+| `develop` | Minimal 1 approval | `BRANCHING §3` | ⏸ **ditunda** — lihat catatan di bawah |
+| ketiganya | Require status checks to pass | `CD-01`, `CD-02` | ⏳ menunggu `PR-00-17` |
+| ketiganya | Require branches to be up to date before merging | Mencegah penggabungan di atas basis usang | ⏳ menunggu `PR-00-17` — GitHub hanya menyediakannya **bersama** required status check |
+| `develop` | Allow squash merge **saja** | `BRANCHING §3` — satu PR satu commit | ❌ **tidak dapat diberkaskan maupun disetel** — lihat catatan di bawah |
+| `staging`, `main` | Allow merge commit **saja** | `BRANCHING §3` — batas antar-phase tetap terbaca | ❌ idem |
 
-`main` dan `develop` sudah ada, sehingga setelan bagi keduanya dapat dinyalakan sekarang; `staging` menunggu `PR-00-18`. Baris *Require status checks to pass* tetap menunggu `PR-00-17` karena belum ada check yang dapat disyaratkan. Per 6 September 2026 keduanya diperiksa lewat `gh api` dan menjawab `Branch not protected` — belum satu pun setelan aktif.
+**Dua baris tinjauan sengaja ditunda, bukan terlewat.** `CODEOWNERS` saat ini hanya berisi `@HanzzzBD`, dan GitHub tidak mengizinkan seseorang menyetujui pull request-nya sendiri. Menyalakan *required approvals* atau *Code Owners review* sekarang berarti **tidak ada satu pun PR yang dapat digabungkan** — termasuk `PR-00-03` yang sedang terbuka. Keduanya dinyalakan bersamaan dengan penggantian `CODEOWNERS` begitu tim arsitek terbentuk; sampai saat itu `BRANCHING §3.1` ditegakkan sebagai kebiasaan, dan keadaan itu tercatat jujur di §6 alih-alih disamarkan sebagai setelan yang menunggu.
+
+**Metode merge per-cabang tidak dapat ditegakkan GitHub.** `allow_squash_merge`, `allow_merge_commit`, dan `allow_rebase_merge` adalah setelan **tingkat repositori**, bukan tingkat cabang — sehingga "squash saja untuk `develop`" dan "merge commit saja untuk `main`/`staging`" tidak dapat berdiri bersamaan sebagai setelan. Ketiganya kini aktif di repositori, dan `BRANCHING §3` pada titik ini berlaku sebagai **disiplin peninjau**, bukan sebagai pagar. Menonaktifkan salah satunya justru akan melanggar baris yang lain.
+
+Per 6 September 2026 proteksi **dinyalakan** pada `main` dan `develop` lewat `gh api`, dan hasilnya diverifikasi kembali dari API. `staging` menunggu `PR-00-18`. Enam setelan aktif, dua ditunda karena tim, dua menunggu `PR-00-17`, dan dua tidak dapat disetel sama sekali — rinciannya pada tabel di atas.
 
 ## 5. Berkas governance yang sudah ada
 
@@ -102,5 +114,5 @@ Branch protection **tidak dapat diatur lewat berkas**. Daftar berikut menerjemah
 | Hal | Mengapa belum ditutup |
 |---|---|
 | Pemilik pada `CODEOWNERS` | Tim belum terbentuk; `@HanzzzBD` dipakai sementara. Satu orang yang meninjau pekerjaannya sendiri bukan tinjauan — wajib diganti tim arsitek begitu tim ada |
-| Letak kode `SlotService` | Disebut `BRANCHING §3.1` dan `PR-02-17`, tetapi **tidak ditetapkan SDD mana pun**. Path-nya ditambahkan ke `CODEOWNERS` pada `PR-02-17` |
-| Penyedia CI | Tidak pernah dinyatakan. Yang ditetapkan hanya **letaknya** — `.github/workflows/` (`SDD-17 §4.1`) — sehingga GitHub Actions tersirat dari tata letak, bukan dari keputusan tertulis |
+| Pemilik pada `CODEOWNERS` untuk `shared/booking/` | Letaknya kini ditetapkan `SDD-SYS-10` (*shared kernel*, `apps/api/src/shared/booking/`); barisnya ditambahkan ke `CODEOWNERS` pada `PR-02-17` sesuai rencana, bukan lebih awal |
+| Vendor observability | `SDD-OBS-09` menetapkan *backend* terkelola dan `SDD-OBS-10` menjadikan region Indonesia **kriteria gugur** yang diverifikasi sebelum kontrak; namanya ditetapkan pada seleksi `PR-00-06`, bukan lebih awal |

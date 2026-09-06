@@ -33,6 +33,7 @@ Otorisasi berada di [SDD-03](03-authorization.md); autentikasi di [SDD-04](04-au
 | **SDD-SEC-08** | Pseudonimisasi (`DP-04`) diimplementasikan sebagai operasi **satu arah** pada kolom identitas, mempertahankan baris transaksi dan jejak audit. |
 | **SDD-SEC-09** | Akses produksi oleh pengembang berjalan lewat prosedur *break-glass* tercatat (`DP-11`), bukan kredensial tetap. |
 | **SDD-SEC-10** | **Lingkup kepatuhan formal adalah UU PDP No. 27/2022 saja** — tidak ada standar dinas pendidikan atau yayasan tambahan. Menyertainya satu batasan mengikat: **seluruh data sistem, termasuk log aplikasi, wajib berada pada wilayah Indonesia**. Batasan ini berlaku bagi setiap layanan pihak ketiga yang menerima data, dan menjadi kriteria seleksi — bukan pemeriksaan pasca-pemilihan. Menutup `TBD-SEC-B` (keputusan pemilik produk, 25 Agustus 2026; Keputusan #29). |
+| **SDD-SEC-11** | Perkakas tahap keamanan pipeline ([SDD-16 §4.3](16-infrastructure-deployment.md)): **CodeQL** untuk SAST (`ST-01`), **Dependabot** untuk SCA (`ST-02`), **Trivy** untuk pemindaian image (`CD-01`), dan **OWASP ZAP** *baseline scan* terhadap staging untuk DAST (`ST-03`). Ambang penghenti pipeline tetap milik `ST-02` — Critical/High menggagalkan, bukan memperingatkan. |
 
 ---
 
@@ -174,6 +175,12 @@ WHERE id = :id;
 ```
 
 Operasi ini tercatat di activity log dan hanya dapat dijalankan Administrator dengan alasan wajib.
+
+**SDD-SEC-11 — perkakas yang tinggal di tempat pull request dinilai.** `ST-01`…`ST-03` menetapkan tahapnya sejak awal tanpa satu nama pun, sehingga `PR-00-17` tidak dapat menulis pipeline-nya. Kriteria pemilihannya bukan kedalaman analisis melainkan tempat temuannya muncul: temuan keamanan yang berada di sistem lain dari tempat merge diputuskan adalah temuan yang dibaca belakangan, dan `ST-02` justru menuntutnya menghentikan pipeline.
+
+Karena `SDD-INF-12` sudah mengunci GitHub Actions, CodeQL dan Dependabot berada persis di sana — tanpa langganan, tanpa token pihak ketiga, dan tanpa data dependensi meninggalkan penyedia yang sudah dipakai. Itu sekaligus menjawab `SDD-SEC-10`: perkakas yang mengirim kode atau daftar dependensi ke vendor ketiga akan menambah pihak yang tunduk pada batasan residensi, dan **Snyk ditolak** justru pada titik itu, bukan pada kemampuannya. **Semgrep** ditolak lebih tipis — aturan kustomnya menarik, tetapi penegakan aturan repo ini sendiri sudah menjadi milik lint (`SDD-SYS-02`, `SDD-REPO-08`) dan dibuktikan uji negatif; memindahkannya menjadi temuan keamanan hanya memindahkan tempat gagalnya.
+
+Trivy dan OWASP ZAP dipilih karena keduanya berjalan sebagai langkah biasa di dalam workflow: Trivy memindai image yang baru dibangun sebelum ia dipromosikan, ZAP memindai staging setelah ia berdiri (`CD-07` menyusul). Keduanya sumber terbuka dan tidak menambah pihak penerima data.
 
 **SDD-SEC-10 — cakupan kepatuhan sempit, residensi ketat.** Dua bagian keputusan ini menarik ke arah berlawanan dan sebaiknya dibaca bersama.
 
