@@ -7,7 +7,31 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 ---
 
 
-## 3 September 2026 — Celah telusur: nomor surat `GL-07`, `DP-AI-04`, dan `AI-CTL-07`…`AI-CTL-10`
+## 6 September 2026 — `GITHUB-CI-STATE.md` disegarkan setelah `develop` hidup & `PR-00-01` tergabung
+
+**Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). Tidak ada TBD, requirement, maupun keputusan yang berubah.
+
+### Diubah
+
+Berkas ini mencatat *current state*, sehingga ia menjadi salah begitu keadaannya berubah. Dua peristiwa 6 September 2026 membuat tujuh baris di dalamnya tidak lagi akurat: `develop` mulai hidup, dan `PR-00-01` menggabungkan kerangka monorepo sehingga `apps/*` beserta lint dan TypeScript-nya benar-benar ada.
+
+| Bagian | Sebelum | Sesudah |
+|---|---|---|
+| §1 | "`apps/` belum ada, tidak ada kode untuk di-*lint*, diuji, dibangun" | `apps/*` dan `packages/schemas` ada; `npm run lint` dan `npm run build` punya sasaran nyata. Yang belum ada adalah pipeline yang menjalankannya |
+| §2 — topologi | "Hanya `main` hidup; `develop` dan `staging` belum ada" · penutup `PR-00-18` | `main` dan `develop` hidup; hanya `staging` yang menunggu `PR-00-18` |
+| §2 — dorongan langsung | "Seluruh riwayat masuk lewat `main`" | Sejak `PR-00-01` sasarannya `develop` |
+| §2 — squash | "Belum berlaku — `develop` belum ada" | Berlaku; `PR-00-01` digabungkan dengan *squash*, masih sebagai kebiasaan karena setelan belum aktif |
+| §3 — baris lint | "Belum ada" | Lint ada sejak `PR-00-01`, menegakkan batas antar-pohon dan batas lapisan, dibuktikan uji negatif. Batas antar-**modul** dan pemasangannya di CI tetap `PR-00-02` dan `PR-00-17` |
+| §3 — `.github/workflows/` | Kosong "karena `apps/` belum ada" | Kosong karena urutan pekerjaan, bukan ketiadaan sasaran — alasan lamanya sudah gugur |
+| §4 — penutup | "Selama `develop` dan `staging` belum ada, hanya `main` yang dapat disetel" | `main` dan `develop` dapat disetel sekarang; `staging` menunggu `PR-00-18` |
+
+**Penyimpangan baru dicatat.** `develop` dibuat **manual** pada 6 September 2026 saat pemulihan cabang, bukan oleh `PR-00-18` sebagaimana §2 merencanakannya. Ia dibuat dari `main` pada SHA identik lalu menerima isinya lewat PR seperti biasa. Dicatat sejajar dengan penyimpangan `docs/domain-aset-bahan-m22` yang sudah ada, karena rencana dan kenyataan berbeda dan yang berlaku adalah kenyataan.
+
+**Yang sengaja tidak diubah.** §4 tetap berbunyi "belum satupun aktif": `main` dan `develop` diperiksa lewat `gh api` pada tanggal yang sama dan dua-duanya menjawab `Branch not protected`. Menyalakan branch protection adalah tindakan di Settings GitHub yang mengubah perilaku repositori bagi semua orang — keputusan tersendiri, bukan efek samping penyegaran catatan. §5 dan §6 tidak tersentuh.
+
+**Dampak pada lintasan kritis:** tidak ada. Total PR tetap **163**. Tidak ada requirement, business rule, ambang, ID, maupun PR baru.
+
+## 6 September 2026 — Celah telusur: nomor surat `GL-07`, `DP-AI-04`, dan `AI-CTL-07`…`AI-CTL-10`
 
 **Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). **Tidak ada TBD yang dibuka maupun ditutup**, dan tidak ada keputusan tertutup yang diubah.
 
