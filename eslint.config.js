@@ -7,8 +7,11 @@ import tseslint from 'typescript-eslint';
 import importPlugin from 'eslint-plugin-import';
 import globals from 'globals';
 
+/** Akar repositori — seluruh zona di bawah ditulis relatif terhadap ini. */
+export const akarRepo = import.meta.dirname;
+
 /** Zona batas antar-pohon — tabel SDD-17 §4.2. */
-const zonaAntarPohon = [
+export const zonaAntarPohon = [
   // Impor lintas apps/* dilarang seluruhnya (SDD-REPO-07).
   { target: './apps/api', from: './apps/web' },
   { target: './apps/api', from: './apps/mobile' },
@@ -41,7 +44,9 @@ export default tseslint.config(
       'import/resolver': { typescript: { project: ['./apps/*/tsconfig.json', './packages/*/tsconfig.json'] } },
     },
     rules: {
-      'import/no-restricted-paths': ['error', { zones: zonaAntarPohon }],
+      // basePath eksplisit: sejak ESLint 10 konfigurasi ini juga dimuat dari
+      // konfigurasi per-pohon, sehingga jalur zona tidak boleh bergantung pada cwd.
+      'import/no-restricted-paths': ['error', { basePath: akarRepo, zones: zonaAntarPohon }],
       // Jalur relatif yang menyelinap keluar akar pohonnya. Lapis kedua penegakan
       // ada pada rootDir tiap tsconfig — lint dapat dimatikan sebaris, rootDir tidak
       // (SDD-17 §4.3).
