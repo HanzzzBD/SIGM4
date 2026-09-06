@@ -7,6 +7,20 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 ---
 
 
+## 6 September 2026 — `GITHUB-CI-STATE.md` §3: batas antar-modul ditegakkan `PR-00-02`
+
+**Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). Tidak ada TBD, requirement, maupun keputusan yang berubah.
+
+### Diubah
+
+`PR-00-02` menutup batas antar-modul `SDD-00 §4.2` baris 1 (`SDD-SYS-02`, `SDD-SYS-03`), sehingga satu baris §3 menjadi salah.
+
+| Bagian | Sebelum | Sesudah |
+|---|---|---|
+| §3 — baris lint | "Batas antar-**modul** dan pemasangannya di CI belum" · dibangun `PR-00-02`, `PR-00-17` | Batas antar-modul ditegakkan sejak `PR-00-02` dan dibuktikan uji negatif; yang tersisa tinggal pemasangannya di CI · dibangun `PR-00-17` |
+
+**Dampak pada lintasan kritis:** tidak ada. Total PR tetap **163**. Tidak ada requirement, business rule, ambang, ID, maupun PR baru.
+
 ## 6 September 2026 — `GITHUB-CI-STATE.md` disegarkan setelah `develop` hidup & `PR-00-01` tergabung
 
 **Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). Tidak ada TBD, requirement, maupun keputusan yang berubah.
