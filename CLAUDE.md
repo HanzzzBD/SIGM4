@@ -6,7 +6,7 @@ Panduan kerja AI agent di repositori **SIGM4**. Berkas ini **tidak memuat requir
 
 SIGM4 — Sistem Informasi Management Aset, sarana dan prasarana sekolah. 22 modul, monorepo tiga pohon (`apps/api`, `apps/web`, `apps/mobile`) + `packages/schemas` sesuai [`SDD-17 §4.1`](docs/SDD/17-repo-layout.md).
 
-**Status saat ini: dokumentasi lengkap, kode belum ada.** Repo baru berisi `docs/` dan `scripts/`. Rencana pengerjaan: 9 phase · 163 PR — [`docs/IMPLEMENTATION/README.md`](docs/IMPLEMENTATION/README.md).
+**Status saat ini** selalu dibaca dari [`IMPLEMENTATION-STATUS.md`](docs/IMPLEMENTATION/IMPLEMENTATION-STATUS.md); jangan menyalin status phase atau PR ke berkas ini. Rencana total tetap 9 phase · 163 PR — [`docs/IMPLEMENTATION/README.md`](docs/IMPLEMENTATION/README.md).
 
 ## Source of truth
 
@@ -31,7 +31,8 @@ Bila terjadi pertentangan, yang berlaku adalah lapisan di atasnya; yang diperbai
 3. **Baca SDD terkait** untuk keputusan desain yang mengikat, lalu **berkas phase** ([`phases/`](docs/IMPLEMENTATION/phases/) §7) untuk urutan dan dependensi PR.
 3a. **Untuk pekerjaan web/mobile,** baca juga [`docs/UX/`](docs/UX/) — halaman (`P-xx`), alur (`F-xx`), dan keadaan layar — lalu [`docs/DESIGN/`](docs/DESIGN/) untuk token dan komponen (`C-xx`). Jangan merancang layar atau memilih warna sendiri; keduanya sudah ditetapkan.
 4. **Kerjakan satu PR sesuai rencana phase.** Bukan modul utuh, bukan gabungan beberapa PR.
-5. **Selesaikan checklist PR** di bawah sebelum melapor selesai.
+5. **Perbarui catatan pelaksanaan sebelum melapor selesai.** Ubah [`IMPLEMENTATION-STATUS.md`](docs/IMPLEMENTATION/IMPLEMENTATION-STATUS.md) saat cabang/PR berubah status, lalu isi log phase aktif di [`logs/phase-NN.md`](docs/IMPLEMENTATION/logs/) untuk PR yang tergabung, penyimpangan dari rencana, blocker/masalah, keputusan, dan hasil pengukuran yang benar-benar terjadi. PR normal yang selesai tetap dicatat; log bukan hanya untuk requirement baru atau PR di luar rencana.
+6. **Selesaikan checklist PR** di bawah sebelum melapor selesai.
 
 Jangan menebak titik yang belum ditetapkan. TBD terkumpul di [`docs/SDD/TBD-REGISTER.md`](docs/SDD/TBD-REGISTER.md) — 13 terbuka, seluruhnya kelompok B: parameter operasional yang dikalibrasi Phase 07–08 setelah data staging ada. Kelompok A, C, dan D kosong; tidak ada phase maupun gerbang rilis yang terhalang keputusan yang belum diambil.
 
@@ -44,7 +45,7 @@ python scripts/gen_trace.py      # regenerasi papan skor traceability
 python scripts/validate_impl.py  # validasi docs/IMPLEMENTATION
 ```
 
-Perintah npm workspaces (`npm ci`, `npm run lint`, `npm run lint -w apps/api`) ditetapkan [`SDD-17 §4.4`](docs/SDD/17-repo-layout.md) — belum berlaku sampai `apps/` dibuat di Phase 00.
+Perintah npm workspaces (`npm ci`, `npm run lint`, `npm run lint -w apps/api`) ditetapkan [`SDD-17 §4.4`](docs/SDD/17-repo-layout.md) dan sudah berlaku sejak `PR-00-01` membuat `apps/` di Phase 00.
 
 ## Aturan implementasi
 
@@ -80,7 +81,7 @@ Skala PR: **S** ≤ 200 baris berubah · **M** ≤ 400 · **L** > 400 dan wajib 
 - **Jangan menyalin teks antar-lapisan.** SDD, UX, DESIGN, dan IMPLEMENTATION merujuk PRD lewat ID, tidak mengulang isinya. UX merujuk perilaku PRD/SDD; DESIGN merujuk perilaku UX dan hanya menetapkan tampilannya.
 - **Perubahan PRD mengalir ke bawah.** Setelah menyunting PRD, periksa apakah SDD, UX, dan DESIGN yang merujuk baris itu ikut perlu disesuaikan — terutama tabel permission, enum, dan daftar endpoint.
 - **Keputusan UX & visual punya ID sendiri.** `UXD-xx` di [`docs/UX/DECISIONS.md`](docs/UX/DECISIONS.md), `DSD-xx` di [`docs/DESIGN/DESIGN-SYSTEM.md §8`](docs/DESIGN/DESIGN-SYSTEM.md). Keputusan yang belum diambil ditandai `BLOCKED` dan **tidak boleh** diputuskan sendiri.
-- **Requirement baru tidak lahir saat implementasi.** Bila muncul kebutuhan requirement/business rule/keputusan desain baru, naikkan ke PRD atau SDD lebih dulu; catat di [`logs/phase-NN.md`](docs/IMPLEMENTATION/logs/) bahwa hal itu terjadi. Proyek ini tidak memakai berkas ADR terpisah — keputusan masuk ke SDD ([`ADR-REFERENCE.md`](docs/IMPLEMENTATION/templates/ADR-REFERENCE.md)).
+- **Requirement baru tidak lahir saat implementasi.** Bila muncul kebutuhan requirement/business rule/keputusan desain baru, naikkan ke PRD atau SDD lebih dulu; catat di [`logs/phase-NN.md`](docs/IMPLEMENTATION/logs/) bahwa hal itu terjadi. Log phase juga wajib mencatat pelaksanaan rutin yang nyata: PR tergabung, penyimpangan, blocker, keputusan, dan hasil ukur. Proyek ini tidak memakai berkas ADR terpisah — keputusan masuk ke SDD ([`ADR-REFERENCE.md`](docs/IMPLEMENTATION/templates/ADR-REFERENCE.md)).
 - **Log phase mencatat apa yang benar-benar terjadi**, bukan salinan rencana.
 - Setelah menyunting `docs/`, jalankan `audit_docs.py` (dan `validate_impl.py` bila menyentuh `IMPLEMENTATION/`).
 
@@ -130,6 +131,7 @@ Deskripsi PR memakai [`templates/PULL-REQUEST.md`](docs/IMPLEMENTATION/templates
 - [ ] OpenAPI diperbarui bila kontrak berubah (`NFR-M-05`)
 - [ ] Tidak ada `TODO` maupun data uji pada jalur produksi
 - [ ] Bagian "Perubahan skema", "Rollback", dan "Tinjauan arsitek" terisi
+- [ ] [`IMPLEMENTATION-STATUS.md`](docs/IMPLEMENTATION/IMPLEMENTATION-STATUS.md) dan log phase aktif diperbarui dengan status serta fakta pelaksanaan PR ini
 - [ ] Tidak ada refactor, rename, atau pembersihan gaya di luar scope PR ini
 - [ ] PR berkompleksitas `L` menjelaskan mengapa tidak dipecah
 - [ ] PR di luar rencana phase menjelaskan alasannya, dan dicatat di log phase

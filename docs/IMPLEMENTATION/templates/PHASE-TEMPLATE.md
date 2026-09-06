@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Milestone PRD** | `M?` — [delivery-plan.md](../../PRD/01-product/delivery-plan.md) |
-| **Status** | `Not Started` |
+| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
 | **Modul PRD** | M-xx, M-yy |
 | **Bergantung pada** | Phase NN-1 |
 | **Memblokir** | Phase NN+1 |

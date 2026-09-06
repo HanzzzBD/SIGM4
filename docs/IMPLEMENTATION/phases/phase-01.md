@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Milestone PRD** | `M1` (M-02, M-03, M-20) · `M5` (M-18) — lihat §3.1 |
-| **Status** | `Not Started` |
+| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
 | **Modul PRD** | M-02 User & Role · M-03 Lokasi · M-18 Activity Log · M-20 Konfigurasi Sistem |
 | **Bergantung pada** | Phase 00 |
 | **Memblokir** | Phase 02 |

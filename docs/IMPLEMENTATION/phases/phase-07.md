@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Milestone PRD** | Bagian `M6 — Pengerasan & Kesiapan Rilis` — gerbang `GL-01`, `GL-02` |
-| **Status** | `Not Started` |
+| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
 | **Modul PRD** | — (tidak ada modul baru; seluruh 22 modul diuji sebagai satu sistem) |
 | **Bergantung pada** | Phase 06 |
 | **Memblokir** | Phase 08 |

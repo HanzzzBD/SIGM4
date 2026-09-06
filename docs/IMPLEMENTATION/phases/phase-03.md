@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Milestone PRD** | `M1` (M-05) · `M2` (M-07) · `M3` (M-06, M-11) · `M4` (M-14) · `M5` (M-19) — lihat §3.1 |
-| **Status** | `Not Started` |
+| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
 | **Modul PRD** | M-05 QR · M-06 Dokumen · M-07 Reservasi Ruangan · M-11 Kerusakan · M-14 Pengadaan · M-19 Chatbot |
 | **Bergantung pada** | Phase 02 |
 | **Memblokir** | Phase 04 |

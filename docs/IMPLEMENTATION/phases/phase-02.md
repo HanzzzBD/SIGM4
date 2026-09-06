@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Milestone PRD** | `M1` (M-01, M-04) · `M2` (M-10, Bab 26) · `M5` (M-15, M-17) — lihat §3.1 |
-| **Status** | `Not Started` |
+| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
 | **Modul PRD** | M-01 Autentikasi · M-04 Aset · M-10 Approval · M-15 Dashboard · M-17 Notifikasi |
 | **Bergantung pada** | Phase 01 |
 | **Memblokir** | Phase 03 |
