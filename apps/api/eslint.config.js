@@ -1,8 +1,30 @@
 // Aturan impor SDD-00 §4.2, ber-akar pada apps/api (SDD-REPO-08): setiap pola
 // diberi awalan `./apps/api/`, sehingga `modules/*` di sini TIDAK pernah mengenai
 // apps/web/src/modules/* — persis bentuk yang diminta SDD-17 §4.3.
+import { readdirSync } from 'node:fs';
 import importPlugin from 'eslint-plugin-import';
 import basis, { akarRepo, zonaAntarPohon } from '../../eslint.config.js';
+
+// Folder modul dibaca dari disk, bukan didaftar ulang di sini. Daftar yang harus
+// disunting tangan akan tertinggal dari isi src/modules, dan modul yang terlewat
+// darinya berjalan tanpa batas sama sekali — tanpa satu pun galat yang menandainya.
+// Pemetaan 22 modul PRD -> folder tetap milik SDD-00 §4.4 (SDD-SYS-04).
+const modul = readdirSync(new URL('./src/modules/', import.meta.url), { withFileTypes: true })
+  .filter((entri) => entri.isDirectory())
+  .map((entri) => entri.name);
+
+/**
+ * Batas antar-modul — tabel SDD-00 §4.2 baris 1 (SDD-SYS-02, SDD-SYS-03).
+ * Satu zona per modul: dari dalam modul itu, seluruh isi modul LAIN tertutup
+ * kecuali `index.ts`-nya. Isi modulnya sendiri dikecualikan lebih dulu, sebab
+ * `repositories/` privat terhadap modul lain — bukan terhadap modulnya sendiri.
+ */
+const zonaAntarModul = modul.map((nama) => ({
+  target: `./apps/api/src/modules/${nama}`,
+  from: './apps/api/src/modules/**',
+  except: [`**/modules/${nama}/**`, '**/modules/*/index.ts'],
+  message: 'Modul lain hanya boleh disentuh lewat index.ts-nya (SDD-SYS-03); repositories/ dan controllers/ privat (SDD-00 §4.2).',
+}));
 
 /** Batas lapisan di dalam pohon backend — tabel SDD-00 §4.2. */
 const zonaLapisan = [
@@ -10,8 +32,7 @@ const zonaLapisan = [
   // menjadi simpul ketergantungan melingkar (SDD-SYS-06, SDD-00 §4.2 baris 3).
   { target: './apps/api/src/shared', from: './apps/api/src/modules' },
   // Entrypoint hanya boleh menyentuh permukaan publik modul; internal modul
-  // tertutup baginya (SDD-SYS-03). Batas antar-modul yang lebih halus
-  // (modules/*/repositories/*) ditegakkan PR-00-02.
+  // tertutup baginya (SDD-SYS-03).
   // `from` sengaja ditulis sebagai glob: eslint-plugin-import hanya memperlakukan
   // `except` sebagai pola glob bila `from` pun glob.
   { target: './apps/api/src/api', from: './apps/api/src/modules/**', except: ['**/modules/*/index.ts'] },
@@ -38,7 +59,7 @@ export default [
     rules: {
       'import/no-restricted-paths': ['error', {
         basePath: akarRepo,
-        zones: [...zonaAntarPohon, ...zonaLapisan],
+        zones: [...zonaAntarPohon, ...zonaLapisan, ...zonaAntarModul],
       }],
     },
   },

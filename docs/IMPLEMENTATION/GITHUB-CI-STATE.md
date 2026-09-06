@@ -48,7 +48,7 @@ lint → unit test → integration test → uji otorisasi tergenerate
 
 | Tahap | Gerbang | Current State | Dibangun oleh |
 |---|---|---|---|
-| lint | Impor lintas modul melanggar batas → gagal | Lint ada sejak `PR-00-01` dan menegakkan batas antar-pohon (`SDD-REPO-06/07`) serta batas lapisan (`SDD-00 §4.2`), dibuktikan uji negatif `scripts/check_import_boundaries.mjs`. Batas antar-**modul** dan pemasangannya di CI belum | `PR-00-02`, `PR-00-17` |
+| lint | Impor lintas modul melanggar batas → gagal | Lint menegakkan batas antar-pohon (`SDD-REPO-06/07`), batas lapisan, dan — sejak `PR-00-02` — batas antar-**modul** (`SDD-SYS-02/03`, `SDD-00 §4.2`); seluruhnya dibuktikan uji negatif `scripts/check_import_boundaries.mjs`. Yang belum ada tinggal pemasangannya di CI | `PR-00-17` |
 | unit test | Cakupan logika inti < 70% → **stop** (`CD-02`, `NFR-M-03`) | Belum ada | `PR-00-17` |
 | integration test | Termasuk uji konkurensi `CC-01`…`CC-07` | Belum ada | `PR-00-17` |
 | uji otorisasi tergenerate | `SEC-T-01` | Belum ada | `PR-00-17` |
