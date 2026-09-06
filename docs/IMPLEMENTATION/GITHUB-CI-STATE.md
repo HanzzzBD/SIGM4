@@ -18,7 +18,7 @@ Bila berkas ini bertentangan dengan salah satu di atas, **yang di atas yang berl
 
 ## 1. Mengapa ada dua keadaan
 
-Repositori sedang berada pada tahap **dokumentasi**: `apps/` belum ada, tidak ada kode untuk di-*lint*, diuji, dibangun, maupun dipindai. Seluruh pipeline `CD-01` dibangun `PR-00-17`, dan lingkungan staging beserta job migration dibangun `PR-00-18` — keduanya di Phase 00.
+Phase 00 baru dimulai. `PR-00-01` sudah membuat ketiga pohon `apps/*` beserta `packages/schemas`, lengkap dengan lint dan TypeScript-nya, sehingga `npm run lint` dan `npm run build` kini punya sasaran nyata. Yang belum ada adalah **pipeline yang menjalankannya**: seluruh tahap `CD-01` dibangun `PR-00-17`, dan lingkungan staging beserta job migration dibangun `PR-00-18` — keduanya di Phase 00.
 
 Karena itu sebagian aturan **belum dapat ditaati**, bukan karena diabaikan. Membedakan keduanya penting: aturan yang tidak dapat ditaati dan aturan yang dilanggar menuntut tindakan yang berbeda.
 
@@ -26,13 +26,16 @@ Karena itu sebagian aturan **belum dapat ditaati**, bukan karena diabaikan. Memb
 
 | Aturan | Sumber | Current State | Target State | Penutup selisih |
 |---|---|---|---|---|
-| `feature/*` → `develop` → `staging` → `main` | `CD-03` | Hanya `main` hidup; `develop` dan `staging` **belum ada** | Empat cabang hidup sesuai `CD-03` | `PR-00-18` |
-| Tidak ada dorongan langsung ke `develop`/`staging`/`main` | `BRANCHING §3` | Seluruh riwayat masuk lewat `main` | Ketiganya terlindungi; hanya lewat PR | Branch protection §4 |
+| `feature/*` → `develop` → `staging` → `main` | `CD-03` | `main` dan `develop` hidup sejak 6 September 2026; `staging` **belum ada** | Empat cabang hidup sesuai `CD-03` | `staging` — `PR-00-18` |
+| Tidak ada dorongan langsung ke `develop`/`staging`/`main` | `BRANCHING §3` | Riwayat masuk lewat PR; sejak `PR-00-01` sasarannya `develop`, sebelumnya `main` | Ketiganya terlindungi; hanya lewat PR | Branch protection §4 |
 | Penamaan `feature/` `fix/` `hotfix/` `chore/` | `BRANCHING §2` | Dipatuhi; **satu penyimpangan**: `docs/domain-aset-bahan-m22` | Seluruh cabang bernama sesuai daftar | Pekerjaan dokumentasi memakai `chore/` |
 | Umur cabang ≤ 3 hari | `BRANCHING §1` | Tidak terukur | Terpantau saat phase berjalan | — |
-| Squash ke `develop`; merge commit ke `staging`/`main` | `BRANCHING §3` | Belum berlaku — `develop` belum ada | Diatur pada branch protection | Branch protection §4 |
+| Squash ke `develop`; merge commit ke `staging`/`main` | `BRANCHING §3` | Berlaku sejak `develop` hidup — `PR-00-01` digabungkan dengan *squash*; masih kebiasaan, belum ditegakkan setelan | Diatur pada branch protection | Branch protection §4 |
 
-**Penyimpangan tercatat.** Cabang `docs/domain-aset-bahan-m22` memakai jenis di luar daftar `BRANCHING §2` dan digabungkan langsung ke `main`. Keduanya terjadi sebelum bagian *Current State* pada `BRANCHING-STRATEGY` ditulis. Cabang sudah tergabung dan tidak diganti nama; pekerjaan dokumentasi berikutnya memakai `chore/`.
+**Penyimpangan tercatat.**
+
+- Cabang `docs/domain-aset-bahan-m22` memakai jenis di luar daftar `BRANCHING §2` dan digabungkan langsung ke `main`. Keduanya terjadi sebelum bagian *Current State* pada `BRANCHING-STRATEGY` ditulis. Cabang sudah tergabung dan tidak diganti nama; pekerjaan dokumentasi berikutnya memakai `chore/`.
+- **`develop` dibuat manual pada 6 September 2026**, saat pemulihan cabang setelah `main` lokal sempat menyimpang dari `origin/main` — bukan oleh `PR-00-18` sebagaimana tabel di atas merencanakannya. Ia dibuat dari `main` pada SHA yang identik, lalu menerima isinya lewat PR seperti biasa. `staging` tetap menunggu `PR-00-18`.
 
 ## 3. Pipeline CI/CD
 
@@ -45,7 +48,7 @@ lint → unit test → integration test → uji otorisasi tergenerate
 
 | Tahap | Gerbang | Current State | Dibangun oleh |
 |---|---|---|---|
-| lint | Impor lintas modul melanggar batas → gagal | Belum ada | `PR-00-02`, `PR-00-17` |
+| lint | Impor lintas modul melanggar batas → gagal | Lint ada sejak `PR-00-01` dan menegakkan batas antar-pohon (`SDD-REPO-06/07`) serta batas lapisan (`SDD-00 §4.2`), dibuktikan uji negatif `scripts/check_import_boundaries.mjs`. Batas antar-**modul** dan pemasangannya di CI belum | `PR-00-02`, `PR-00-17` |
 | unit test | Cakupan logika inti < 70% → **stop** (`CD-02`, `NFR-M-03`) | Belum ada | `PR-00-17` |
 | integration test | Termasuk uji konkurensi `CC-01`…`CC-07` | Belum ada | `PR-00-17` |
 | uji otorisasi tergenerate | `SEC-T-01` | Belum ada | `PR-00-17` |
@@ -54,7 +57,7 @@ lint → unit test → integration test → uji otorisasi tergenerate
 | build + image scan | `CD-01` | Belum ada | `PR-00-17` |
 | deploy staging → DAST → smoke test | `ST-03`, `CD-07` | Belum ada | `PR-00-18` |
 
-**`.github/workflows/` sengaja masih kosong.** Menulis pipeline sekarang berarti mendahului `PR-00-17` dan `PR-00-18`, dan setiap tahapnya tidak punya sasaran karena `apps/` belum ada — berkasnya akan gagal atau di-*skip* sampai Phase 00, lalu ditulis ulang di sana.
+**`.github/workflows/` sengaja masih kosong.** Sejak `PR-00-01`, alasannya bukan lagi ketiadaan sasaran — `npm run lint` dan `npm run build` sudah hijau dan dapat dipanggil CI hari ini. Yang tersisa adalah urutan pekerjaan: menulis pipeline sekarang mendahului `PR-00-17`, sementara tahap uji, SAST, SCA, dan pemindaian image belum punya apa pun untuk dijalankan. Pipeline ditulis sekali di `PR-00-17`, bukan dirintis sepotong lalu ditulis ulang.
 
 ### Migration & deploy produksi
 
@@ -83,7 +86,7 @@ Branch protection **tidak dapat diatur lewat berkas**. Daftar berikut menerjemah
 | ketiganya | Do not allow bypassing the above settings | `BRANCHING §3` — "hanya bermanfaat bila tidak pernah ada pengecualian" |
 | ketiganya | Require branches to be up to date before merging | Mencegah penggabungan di atas basis usang |
 
-Selama `develop` dan `staging` belum ada, setelan yang dapat dinyalakan hanya untuk `main`.
+`main` dan `develop` sudah ada, sehingga setelan bagi keduanya dapat dinyalakan sekarang; `staging` menunggu `PR-00-18`. Baris *Require status checks to pass* tetap menunggu `PR-00-17` karena belum ada check yang dapat disyaratkan. Per 6 September 2026 keduanya diperiksa lewat `gh api` dan menjawab `Branch not protected` — belum satu pun setelan aktif.
 
 ## 5. Berkas governance yang sudah ada
 
