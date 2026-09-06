@@ -27,7 +27,7 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 
 | # | Keputusan | Alasan | Menaikkan ke PRD/SDD? |
 |:---:|---|---|:---:|
-| — | — | — | — |
+| 1 | Cuplikan Dockerfile `SDD-16 §4.1` diadaptasi ke tata letak monorepo saat `PR-00-03`: seluruh manifest workspace disalin sebelum `npm ci`, tahap runtime ikut menyalin manifest dan `dist` tiap workspace yang dipakainya, dan hanya `apps/api` yang dibangun. | Cuplikan itu ditulis untuk satu paket, sebelum `SDD-17` menetapkan monorepo. `npm ci` menolak berjalan tanpa seluruh manifest yang disebut `package-lock.json`; `node_modules` datar menaruh `@sigm4/schemas` sebagai symlink, sehingga tanpa direktori tujuannya impor gagal saat proses dinyalakan. Ketiga perintah inti (`npm ci`, `npm run build`, `npm prune --omit=dev`) tetap dipakai apa adanya sesuai `SDD-REPO-03`. | Tidak — bentuknya sudah ditetapkan `SDD-REPO-03`/`SDD-REPO-09`. Yang tertinggal adalah cuplikan `SDD-16 §4.1`; penyelarasannya diusulkan sebagai suntingan SDD tersendiri, bukan bagian PR implementasi. |
 
 ## 3. Penyimpangan dari rencana
 
