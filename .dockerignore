@@ -1,0 +1,46 @@
+# Konteks build adalah akar repositori (SDD-REPO-09); berkas ini yang membatasinya.
+# Dua alasan, bukan satu: konteks yang besar memperlambat setiap build, dan apa pun
+# yang masuk ke konteks dapat berakhir di dalam image.
+
+# Dependensi & keluaran build dari mesin pengembang. node_modules WAJIB tidak ikut:
+# ia dibangun ulang oleh `npm ci` di dalam image, dan salinan dari host dapat memuat
+# binary yang ditautkan ke platform lain.
+node_modules
+**/node_modules
+dist
+**/dist
+**/*.tsbuildinfo
+
+# Git & metadata perkakas
+.git
+.gitignore
+.gitattributes
+.github
+
+# Dokumentasi dan perkakasnya — tidak dijalankan runtime mana pun
+docs
+scripts
+wireframe
+*.md
+PRD.md
+Deskripsi.txt
+*.svg
+
+# Berkas infrastruktur itu sendiri
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Konfigurasi khusus pengembangan
+.vscode
+.idea
+.claude
+eslint.config.js
+**/eslint.config.js
+
+# Rahasia tidak pernah berada di repositori (SEC-CFG-01) — baris ini adalah lapis
+# kedua, agar berkas env yang tidak sengaja dibuat di lokal tidak ikut ke image.
+.env
+.env.*
+*.pem
+*.key
