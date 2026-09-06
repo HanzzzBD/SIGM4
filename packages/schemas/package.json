@@ -1,0 +1,14 @@
+{
+  "name": "@sigm4/schemas",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Satu-satunya paket bersama: skema Zod dan peta kode->label enum (SDD-REPO-05)",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "scripts": {
+    "build": "tsc --build",
+    "lint": "eslint src"
+  }
+}
