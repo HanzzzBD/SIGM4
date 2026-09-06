@@ -62,7 +62,7 @@ Keluaran phase ini bukan kode, melainkan **keputusan bahwa sistem boleh dipakai*
 | [`delivery-plan.md`](../../PRD/01-product/delivery-plan.md) | `GL-01` … `GL-12` · `IMP-05` … `IMP-08` · 29.7 |
 | [`nfr.md`](../../PRD/03-architecture/nfr.md) | Bab 9.1 (target performa), `NFR-A-xx`, `NFR-SC-xx` |
 | [`security.md`](../../PRD/03-architecture/security.md) | `ST-01` … `ST-06` |
-| [`privacy-compliance.md`](../../PRD/03-architecture/privacy-compliance.md) | Bab 28 · `DP-01` … `DP-06` (UU No. 27/2022) |
+| [`privacy-compliance.md`](../../PRD/03-architecture/privacy-compliance.md) | Bab 28 · `DP-01` … `DP-06` · `DP-AI-04` (UU No. 27/2022) |
 | [`deployment-ops.md`](../../PRD/03-architecture/deployment-ops.md) | `BR-DR-01` … `BR-DR-05`, `CD-05`, `OBS-07` |
 | [`mobile-requirements.md`](../../PRD/05-mobile/mobile-requirements.md) | Persyaratan store |
 
@@ -103,7 +103,7 @@ Keluaran phase ini bukan kode, melainkan **keputusan bahwa sistem boleh dipakai*
 | `PR-08-09` | Alerting produksi + jalur eskalasi | M | Ph00 | `OBS-07`, `SDD-OBS-07`, **TBD-OBS-B** | Setiap alarm punya penerima bernama |
 | `PR-08-10` | Perkakas migrasi data produksi + validasi | L | Ph07 | `GL-08`, `IMP-01` `IMP-03` | ≥95% aset (`SC-01`), ≥95% ber-QR (`SC-02`) |
 | `PR-08-11` | **Contract**: hapus `users.unit_kerja` | S | Ph07 | `SDD-DB-08`, `WU-01` | Nol pembaca tersisa, dibuktikan pencarian kode |
-| `PR-08-12` | Pemberitahuan privasi + alur persetujuan wali di produksi | M | Ph01 | `GL-07`, `DP-02`, Bab 28 | Seluruh akun siswa aktif punya persetujuan |
+| `PR-08-12` | Pemberitahuan privasi + alur persetujuan wali di produksi | M | Ph01 | `GL-07`, `DP-01` `DP-02`, `DP-AI-04`, Bab 28 | Seluruh akun siswa aktif punya persetujuan; pemberitahuan privasi menyatakan konsekuensi tier gratis chatbot sebelum chatbot aktif (`DP-AI-04`) |
 | `PR-08-13` | Pengerasan mobile + versi paksa + berkas rilis store | M | Ph07 | `GL-11`, `SDD-MOB-08/09/10` | Lolos tinjauan kedua store |
 | `PR-08-14` | Uji rencana rollback pada staging berdata produksi tiruan | M | 07 | `GL-12`, `CD-05` | Rollback dijalankan sungguhan dan terukur waktunya |
 | `PR-08-15` | Dokumen serah terima `IMP-08` | L | seluruhnya | `IMP-08` | Delapan dokumen lengkap dan terbaca pihak sekolah |
@@ -119,6 +119,7 @@ Keluaran phase ini bukan kode, melainkan **keputusan bahwa sistem boleh dipakai*
 | Pelatihan per role | `GL-10`, `IMP-07` | Materi terpisah: Petugas Sarpras, Teknisi, Approver, pengguna umum |
 | Tinjauan store | `GL-11` | Di luar kendali tim; jalur kritis terpanjang di phase ini |
 | Pengumpulan persetujuan wali | `GL-07` | Bergantung pada sekolah; mulai sejak Phase 07 |
+| Salinan resmi surat persetujuan lintas yurisdiksi | `GL-07` | Nomor surat belum tercatat (`SDD-AI-16`); wajib dilengkapi sebelum gerbang diperiksa |
 
 ### `PR-08-11` — Langkah *contract*
 - [ ] Buktikan nol pembaca `users.unit_kerja` lewat pencarian kode menyeluruh
@@ -137,7 +138,7 @@ Keluaran phase ini bukan kode, melainkan **keputusan bahwa sistem boleh dipakai*
 - [ ] `GL-03`: uji beban memenuhi seluruh target Bab 9.1 pada 150 concurrent user
 - [ ] `GL-04`: nol temuan pentest High/Critical terbuka
 - [ ] `GL-06`: DR drill berhasil, runbook terverifikasi
-- [ ] `GL-07`: pemberitahuan privasi terbit, DPA tertandatangani, persetujuan wali lengkap
+- [ ] `GL-07`: pemberitahuan privasi terbit, DPA tertandatangani, persetujuan wali lengkap, nomor surat persetujuan lintas yurisdiksi tercatat (`SDD-AI-16`)
 - [ ] `GL-08`: ≥95% aset terdaftar (`SC-01`), ≥95% berlabel QR (`SC-02`)
 - [ ] `GL-10`: pelatihan selesai; minimal dua Administrator aktif (`BR-070a`)
 - [ ] `GL-11`: aplikasi disetujui Google Play dan App Store

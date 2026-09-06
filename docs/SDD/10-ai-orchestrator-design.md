@@ -12,12 +12,12 @@
 | Aturan bisnis | `BR-075` … `BR-079` |
 | Tool & prompt | Bab 22.3, 22.4, 22.5 |
 | Evaluasi | `AI-EV-01` … `AI-EV-07`, `SC-10` |
-| Kendali biaya & performa | `AI-CTL-01` … `AI-CTL-10` |
+| Kendali kuota & performa | `AI-CTL-01` … `AI-CTL-10` |
 | Privasi & injeksi | `AI-SEC-01` … `AI-SEC-08`, `DP-AI-01` … `DP-AI-05` |
 | Ketersediaan | `NFR-A-05`, `AI-L-04` |
 | Keterbatasan yang diakui | `AI-L-01` … `AI-L-12` |
 
-Penyedia dan model ditetapkan PRD Bab 22.1: **Google Gemini Developer API — *paid tier*** dengan model **`gemini-3.6-flash`** (versi stabil/GA), dapat dikonfigurasi Administrator di antara model stabil/GA (`FR-20.1`). Otorisasi tool memakai `AuthContext` yang sama dengan seluruh sistem — lihat [SDD-03 §4.6](03-authorization.md).
+Penyedia dan model ditetapkan PRD Bab 22.1: **Google Gemini Developer API** — tier gratis sejak 2 September 2026 (`SDD-AI-17`) — dengan model **`gemini-3.6-flash`** (versi stabil/GA), dapat dikonfigurasi Administrator di antara model stabil/GA (`FR-20.1`). Otorisasi tool memakai `AuthContext` yang sama dengan seluruh sistem — lihat [SDD-03 §4.6](03-authorization.md).
 
 **Berkas ini merancang, belum mengimplementasikan.** Kode chatbot dibangun pada Phase 03 (`PR-03-20` … `PR-03-23`); saat berkas ini ditulis belum ada satu baris pun yang berjalan.
 
@@ -41,6 +41,8 @@ Penyedia dan model ditetapkan PRD Bab 22.1: **Google Gemini Developer API — *p
 | **SDD-AI-12** | Adapter penyedia LLM berada di satu berkas; seluruh modul lain memanggilnya lewat antarmuka `ChatProvider` agar `NFR-A-05` dapat ditegakkan di satu titik. |
 | **SDD-AI-13** | Ambang `SDD-AI-05` dipenuhi dengan **isi yang berguna**, bukan teks pengisi: aturan format keluaran (22.4), pola penolakan (`AI-SEC-01`), dan contoh dialog yang benar. Uji `PR-03-22` memverifikasi **dua** hal sekaligus — panjang awalan statis **dan** `total_cached_tokens > 0` pada permintaan kedua. Menutup `TBD-AI-A` (keputusan pemilik produk, 25 Agustus 2026; angka disesuaikan ke ambang Gemini 2 September 2026). |
 | **SDD-AI-14** | Permukaan API adalah **Interactions API** (`client.interactions.create`) dengan **`store: false`**. Tidak ada *state* percakapan yang disimpan di sisi penyedia: riwayat tetap milik SIGM4 (`ConversationStore`) dan dikirim utuh pada setiap permintaan. Konsekuensi yang diterima: `previous_interaction_id` dan eksekusi latar tidak dipakai, dan hanya *implicit caching* yang tersedia. |
+| **SDD-AI-16** | **Pemrosesan lintas yurisdiksi disetujui sekolah.** Persetujuan tertulis Kepala Sekolah diberikan 2 September 2026 (**nomor surat: TBD — menunggu salinan resmi**; ketiadaan nomor tidak menunda keputusan ini, tetapi wajib dilengkapi sebelum `GL-07` diperiksa); prompt dan hasil tool boleh diproses dan di-*cache* di yurisdiksi mana pun tempat penyedia memiliki fasilitas. Rancangan tidak berubah karenanya — `DP-AI-01`, `AI-SEC-03`, dan `store: false` tetap berlaku identik. Menutup `TBD-AI-D`; membuka `GL-07` bagian chatbot. Pencabutan persetujuan dijalankan lewat `AI-CTL-09`, bukan perubahan rancangan. |
+| **SDD-AI-17** | **Tier layanan adalah keputusan sekolah, bukan syarat rancangan.** Tier gratis diizinkan sejak 2 September 2026 (`DP-AI-04` dan `AI-SEC-08` disunting). Konsekuensi yang diterima: isi percakapan dapat dipakai penyedia untuk meningkatkan produknya, dan kuota serta batas laju tier gratis menjadi batasan ketersediaan — ditanggung `AI-CTL-06`, `RS-08`, dan penurunan anggun `NFR-A-05`. Seluruh kendali lain tidak bergantung tier: `store: false` (`SDD-AI-14`), allow-list (`AI-SEC-03`), tanpa identitas langsung (`DP-AI-01`). |
 | **SDD-AI-15** | Model **hanya** menerima *custom function tools* Bab 22.3. Seluruh tool bawaan sisi-server Google — Google Search, Google Maps, File Search, Code Execution, URL Context, Computer Use — dan seluruh MCP server jarak jauh **tidak pernah** dideklarasikan. |
 
 ---
@@ -66,7 +68,7 @@ Dua jebakan yang khusus mengancam sistem ini:
 1. **Minimum 4.096 token** untuk seluruh keluarga Gemini 3.x — empat kali ambang yang berlaku pada rancangan sebelumnya. Awalan yang lebih pendek tidak di-cache dan **tidak ada galat**, hanya `usage.total_cached_tokens: 0`.
 2. **Deklarasi tool ikut membentuk awalan.** Menambah, menghapus, atau mengurutkan ulang tool membatalkan seluruh cache. Daftar tool karena itu **statis dan terurut deterministik** — tidak dibangun per pengguna berdasarkan permission (penyaringan terjadi di lapisan eksekusi, bukan di daftar tool).
 
-Ambang 4.096 token itu yang memaksa `AI-CTL-02` dinaikkan dari ±8.000 ke ±16.000 token masukan (keputusan pemilik produk, 2 September 2026). Dengan anggaran lama, awalan statis akan memakan lebih dari separuh jendela dan riwayat 10 pesan yang dijanjikan Bab 22.3 tidak lagi muat — caching dibayar dengan memori percakapan. Menaikkan anggaran membuat keduanya dapat hidup bersama; biaya tambahannya sebagian besar kembali lewat tarif token yang di-cache.
+Ambang 4.096 token itu yang memaksa `AI-CTL-02` dinaikkan dari ±8.000 ke ±16.000 token masukan (keputusan pemilik produk, 2 September 2026). Dengan anggaran lama, awalan statis akan memakan lebih dari separuh jendela dan riwayat 10 pesan yang dijanjikan Bab 22.3 tidak lagi muat — caching dibayar dengan memori percakapan. Menaikkan anggaran membuat keduanya dapat hidup bersama; pada tier berbayar, biaya tambahannya sebagian besar kembali lewat tarif token yang di-cache.
 
 **SDD-AI-06 — loop manual, dan *automatic function calling* dimatikan.** SDK Google dapat menjalankan fungsi tool sendiri. Di sistem ini setiap eksekusi tool wajib melewati `AuthContext` pengguna penanya (`BR-076`) dan melewati *allow-list* field sebelum hasilnya kembali ke model (`AI-SEC-03`, `DP-AI-02`). Eksekusi otomatis melewati kedua gerbang itu, jadi ia dimatikan secara eksplisit — bukan diasumsikan tidak aktif. Menulis loop sendiri juga membuat batas 5 iterasi (`AI-CTL-03`) menjadi milik kami.
 
@@ -97,7 +99,7 @@ AiOrchestrator
 ├── ToolRegistry        — 12 tool Bab 22.3, terurut deterministik
 ├── ToolExecutor        — AuthContext + allow-list field  (BR-076, AI-SEC-03)
 ├── ConversationStore   — chat_sessions / chat_messages, jendela 10 pesan
-├── UsageMeter          — token & biaya per pengguna       (AI-CTL-08)
+├── UsageMeter          — token & kuota per pengguna       (AI-CTL-08)
 └── EvalHarness         — golden set, dijalankan CI        (AI-EV-01…07)
 ```
 
@@ -214,14 +216,14 @@ evals/chatbot/
 
 Tiap butir dinilai empat dimensi (`AI-EV-03`) dan dijalankan untuk **ketujuh role** (`AI-EV-05`). Kebocoran lintas hak akses dihitung **kegagalan kritis**, bukan penurunan skor — target nol (`PO-08`). Penurunan akurasi > 5% dibanding basis sebelumnya memblokir rilis.
 
-### 4.8 Kendali biaya
+### 4.8 Kendali pemakaian & kuota
 
 | Kendali | Implementasi |
 |---|---|
 | Batas harian per pengguna | Penghitung di Redis, kunci `chat:quota:{user}:{tanggal}` |
 | Rate limit 10/menit | Kelas rate limit tersendiri (`NFR-S-07`, `AI-CTL-06`) |
 | Anggaran token | Riwayat dipangkas dari yang terlama hingga ≤ 16.000 token masukan (`AI-CTL-02`), diukur `models.countTokens` |
-| Pemantauan biaya | `UsageMeter` menjumlahkan `usage` per respons, termasuk `total_thought_tokens`; alarm bila biaya harian melewati ambang (`OBS-05`, `TBD-AI-C`) |
+| Pemantauan pemakaian | `UsageMeter` menjumlahkan `usage` per respons, termasuk `total_thought_tokens`; alarm bila konsumsi kuota atau penolakan batas laju penyedia melewati ambang (`OBS-05`, `TBD-AI-C`). Sejak tier gratis (`SDD-AI-17`) tidak ada tagihan yang diambang-batasi |
 | Pengalih mati | Parameter sistem menonaktifkan chatbot tanpa deployment (`AI-CTL-09`) |
 
 ---
@@ -233,7 +235,7 @@ Tiap butir dinilai empat dimensi (`AI-EV-03`) dan dijalankan untuk **ketujuh rol
 - `store: false` berarti tidak ada pemulihan percakapan dari sisi penyedia. Bila `chat_messages` hilang, percakapan hilang — konsekuensi yang diterima, dan alasan tambahan mengapa `BR-DR-01` berlaku atas tabel ini seperti atas tabel lain.
 - `thinking_level: "minimal"` adalah pilihan yang bergantung pada hasil eval. Bila `SC-10` tidak tercapai, keputusan ini yang pertama ditinjau — dan konsekuensinya terhadap `FR-19.1` harus dibicarakan, bukan diserap diam-diam.
 - Karena parameter sampling diabaikan penyedia, tidak ada cara menurunkan variasi jawaban selain prompt. Konsistensi diuji lewat golden set, bukan diasumsikan.
-- Penyedia **tidak menjamin residensi data**: prompt dan hasil tool dapat diproses atau di-*cache* di yurisdiksi mana pun. Paid tier menjamin data tidak dipakai melatih model (`DP-AI-04`, `AI-SEC-08`) dan tunduk pada DPA Google, tetapi persetujuan sekolah atas pemrosesan lintas yurisdiksi adalah keputusan tersendiri — `TBD-AI-D`, `RS-21`, prasyarat `GL-07`.
+- Penyedia **tidak menjamin residensi data**: prompt dan hasil tool dapat diproses atau di-*cache* di yurisdiksi mana pun. Jaminan bahwa data tidak dipakai melatih model hanya ada di paid tier (`DP-AI-04`, `AI-SEC-08`), dan sekolah memilih tier gratis (`SDD-AI-17`) — konsekuensinya diterima secara sadar. Persetujuan sekolah atas pemrosesan lintas yurisdiksi **sudah diberikan 2 September 2026** (`SDD-AI-16`, menutup `TBD-AI-D`), sehingga `GL-07` bagian chatbot tidak lagi tertahan; `RS-21` tetap tercatat sebagai risiko yang dimitigasi, bukan penghalang.
 
 ---
 
@@ -241,17 +243,17 @@ Tiap butir dinilai empat dimensi (`AI-EV-03`) dan dijalankan untuk **ketujuh rol
 
 | Risiko | Dampak | Mitigasi |
 |---|---|---|
-| Awalan statis < 4.096 token | Caching diam-diam mati; biaya naik berlipat | Uji memverifikasi panjang awalan **dan** `total_cached_tokens > 0` pada permintaan kedua |
+| Awalan statis < 4.096 token | Caching diam-diam mati; latensi naik, dan pada tier berbayar biaya berlipat | Uji memverifikasi panjang awalan **dan** `total_cached_tokens > 0` pada permintaan kedua |
 | Waktu/ID menyelinap ke awalan | Cache tidak pernah kena | Awalan dibangun dari konstanta; uji membandingkan byte awalan dua permintaan berturut-turut |
-| `thinking_level` hilang saat penyuntingan | Diam-diam kembali ke `"medium"`; latensi & biaya naik | `total_thought_tokens` dipantau; uji memeriksa field terkirim pada setiap permintaan |
+| `thinking_level` hilang saat penyuntingan | Diam-diam kembali ke `"medium"`; latensi naik dan konsumsi token membengkak | `total_thought_tokens` dipantau; uji memeriksa field terkirim pada setiap permintaan |
 | Parameter sampling terkirim | Diabaikan diam-diam, penulis mengira variasi terkendali | Uji memeriksa permintaan **tidak memuat** `temperature`/`top_p`/`top_k` |
 | `store` berubah menjadi `true` | Percakapan sekolah tersimpan 55 hari di sisi penyedia, di luar `BR-078` dan `DP-AI-05` | Nilai dikunci konstanta di `ChatProvider`; uji memeriksa `store: false` pada setiap permintaan |
 | *Automatic function calling* aktif kembali | Tool berjalan tanpa `AuthContext` dan tanpa allow-list — kebocoran lintas scope | Dimatikan eksplisit; uji memastikan `ToolExecutor` adalah satu-satunya jalur eksekusi |
 | Tool bawaan Google dideklarasikan | Isi percakapan dikirim ke layanan lain; langkah tidak melewati `ToolExecutor` | `SDD-AI-15`; uji memeriksa daftar tool hanya memuat 12 nama Bab 22.3 |
 | `status` tidak diperiksa | Klien meledak pada `failed` | `guard(status)` wajib sebelum membaca keluaran; diuji dengan respons tiruan |
 | Injeksi lewat data | Model menuruti instruksi dari nama aset | Pembungkusan data + sanitasi (`AI-SEC-01/02`); red-teaming wajib (`ST-06`) |
-| Tokenizer keliru menaikkan biaya | Anggaran token meleset | Pengukuran dengan `models.countTokens` terhadap model produksi, bukan estimasi |
-| Kunci API bocor | Penyalahgunaan berbayar | Secret manager (`SEC-CFG-01`), rotasi 12 bulan (`SEC-CFG-02`), alarm biaya harian |
+| Tokenizer keliru menaikkan pemakaian | Anggaran token meleset | Pengukuran dengan `models.countTokens` terhadap model produksi, bukan estimasi |
+| Kunci API bocor | Kuota tier gratis dihabiskan pihak lain; chatbot mati bagi pengguna sah | Secret manager (`SEC-CFG-01`), rotasi 12 bulan (`SEC-CFG-02`), alarm konsumsi kuota & batas laju (`OBS-05`) |
 | Model stabil dihentikan penyedia | Chatbot berhenti tanpa perubahan di sisi kami | Hanya versi stabil/GA yang dipakai (Bab 22.1); `AI-CTL-09` mematikan chatbot tanpa deployment sampai model pengganti dievaluasi `AI-EV-04` |
 
 ---
@@ -269,9 +271,10 @@ Tiap butir dinilai empat dimensi (`AI-EV-03`) dan dijalankan untuk **ketujuh rol
 | ID | Pertanyaan |
 |---|---|
 | **TBD-AI-B** | Nilai `thinking_level` produksi. Rancangan ini memilih `"minimal"` demi latensi; keputusan final menunggu hasil eval terhadap `SC-10`. |
-| **TBD-AI-C** | Ambang biaya harian Gemini API yang memicu alarm (`OBS-05`) belum ditetapkan — bergantung anggaran sekolah (PRD 27.9). |
-| **TBD-AI-D** | Persetujuan tertulis sekolah atas pemrosesan data percakapan **lintas yurisdiksi**. Gemini Developer API tidak menjamin residensi data; paid tier menjamin data tidak dipakai melatih model, tetapi lokasi pemrosesan tidak dapat dibatasi. Memblokir `GL-07`, bukan Phase 03. |
+| **TBD-AI-C** | Ambang konsumsi kuota dan batas laju Gemini API yang memicu alarm (`OBS-05`) belum ditetapkan. Sejak tier gratis (`SDD-AI-17`) objeknya bukan lagi biaya harian — tidak ada tagihan yang diambang-batasi (PRD 27.9); alarmnya dirancang [SDD-15 §4.6](15-observability-logging.md). |
 
 **Tertutup 25 Agustus 2026:** `TBD-AI-A` → `SDD-AI-13`. Tool bahan (`TBD-BHN-E`) masuk 22.3 dan diimplementasikan Phase 05.
+
+**Tertutup 2 September 2026:** `TBD-AI-D` → `SDD-AI-16`, atas surat pernyataan Kepala Sekolah tertanggal sama. `TBD-AI-C` tetap terbuka tetapi objeknya berubah: dengan tier gratis tidak ada tagihan yang diambang-batasi, sehingga alarm `OBS-05` diarahkan ke konsumsi kuota dan batas laju penyedia alih-alih biaya harian. Penyesuaian itu **sudah diterapkan** pada [SDD-15 §4.3 dan §4.6](15-observability-logging.md); yang belum ada hanyalah angkanya.
 
 **Diperbarui 2 September 2026:** migrasi penyedia dari Claude API ke Google Gemini Developer API. `SDD-AI-14` dan `SDD-AI-15` baru; `SDD-AI-01` … `SDD-AI-13` disesuaikan ke Gemini tanpa berpindah topik. Angka `SDD-AI-05` naik 1.024 → 4.096 mengikuti ambang caching Gemini 3.x, dan `AI-CTL-02` naik ±8.000 → ±16.000 sebagai konsekuensinya.

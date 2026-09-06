@@ -163,7 +163,7 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 |---|---|---|---|
 | Penghapusan diimplementasikan sebagai `DELETE` baris | Riwayat dan activity log pecah — tidak dapat dipulihkan | Uji eksplisit: aset terhapus harus tetap terbaca di riwayat lama | `BR-008` |
 | ~~`TBD-FS-A` belum terjawab saat `PR-05-02`~~ | — | ✅ **Tertutup 25 Agustus 2026**: foto dipertahankan sebagai bukti (`DP-05a`, `SDD-FS-11`); yang wajib dipastikan kini adalah Pemberitahuan Privasi menyatakannya | `DP-04` · `DP-05a` |
-| `PR-05-25` membatalkan prompt cache bagi seluruh pengguna | Biaya Gemini API melonjak sesaat pada rilis; latensi naik sampai prefiks baru terbentuk | Disengaja dan terjadwal bersama rilis, bukan perubahan runtime (`SDD-10 §5`). `AI-EV-04` dijalankan ulang sebelum rilis | `TBD-BHN-E` · `AI-CTL-01` |
+| `PR-05-25` membatalkan prompt cache bagi seluruh pengguna | Latensi naik sesaat pada rilis sampai prefiks baru terbentuk; pada tier berbayar biaya ikut melonjak | Disengaja dan terjadwal bersama rilis, bukan perubahan runtime (`SDD-10 §5`). `AI-EV-04` dijalankan ulang sebelum rilis | `TBD-BHN-E` · `AI-CTL-01` |
 | Denda dihitung dengan hari kalender | Sengketa dengan orang tua siswa | `BusinessCalendarService` Phase 00 dipakai, bukan aritmetika tanggal langsung | `CAL-01` |
 | `SL-04` terlupa ditutup | Aturan Phase 01 tinggal setengah selamanya | Termasuk gerbang keluar phase ini, bukan catatan tersendiri | `SL-04` |
 | Perpanjangan bertabrakan dengan reservasi menyusul | Dua pihak mengklaim aset yang sama | Pemeriksaan `booking_slots` sebelum perpanjangan disetujui | `BR-035` |

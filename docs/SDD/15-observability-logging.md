@@ -129,7 +129,7 @@ http_errors_total{class,route,error_code}
 | `scheduled_job_duration_seconds{job}` | `JOB-05` |
 | `scheduled_job_failures_total{job}` | `JOB-06` |
 | `file_scan_pending_count` | Berkas tertahan AV (`NFR-S-18`) |
-| `chat_tokens_total{user}` / `chat_cost_daily` | `AI-CTL-08` |
+| `chat_tokens_total{user}` / `chat_quota_consumed_total{user}` / `chat_rate_limited_total` | `AI-CTL-08` — sejak tier gratis (`SDD-AI-17`) tidak ada tagihan; yang diukur adalah konsumsi kuota penyedia dan penolakan karena batas laju (HTTP 429) |
 | `chat_cache_read_ratio` | Bukti caching aktif (`AI-CTL-01`), dari `usage.total_cached_tokens` — nol berarti caching mati diam-diam |
 | `chat_thought_tokens_total` | Bukti `thinking_level` masih `"minimal"` (`SDD-AI-02`) — lonjakan berarti permintaan kembali ke bawaan `"medium"` |
 | `sse_connections_active` | Beban notifikasi real-time (`NTF-03`) |
@@ -189,7 +189,7 @@ GET /health          → ringkasan untuk kartu Kesehatan Integrasi (OBS-06)
 | Sertifikat TLS | < 14 hari | Tinggi | Perbarui |
 | Kegagalan tulis activity log | Sekali | Kritis | `AL-08` — transaksi lanjut tapi jejak hilang |
 | Rantai hash log terputus | Sekali | Kritis | Dugaan manipulasi; eskalasi ke Kepala Sekolah |
-| Biaya harian Gemini API | > ambang | Sedang | Tinjau pemakaian; pertimbangkan pengalih (`AI-CTL-09`) |
+| Konsumsi kuota / batas laju Gemini API | > ambang (**TBD-AI-C**) | Sedang | Kuota harian tier gratis mendekati habis atau 429 berulang; tinjau pemakaian, pertimbangkan pengalih (`AI-CTL-09`) |
 | `chat_cache_read_ratio` = 0 | 1 jam | Sedang | Prefiks statis berubah? cache mati (`AI-CTL-01`) |
 | Break-glass dijalankan | Sekali | Kritis | Verifikasi otorisasi tertulis (`FR-01.6`) |
 | Lonjakan login gagal | > 50/menit | Tinggi | Dugaan credential stuffing |
@@ -227,7 +227,7 @@ Ketiga sistem pertama dikorelasikan lewat `request_id`; activity log memuat `req
 | Volume log membanjiri agregator | Biaya naik, pencarian melambat | Level `info` di produksi; `debug` hanya sementara & bertenggat |
 | Redaction terlewat pada field baru | PII masuk log | Daftar tolak + uji yang sengaja mengirim objek sensitif |
 | Alarm terlalu berisik | Diabaikan | Ambang dikalibrasi pada staging; setiap alarm punya runbook |
-| Metrik kardinalitas tinggi | Sistem metrik membengkak | `user_id` tidak dipakai sebagai label kecuali pada metrik biaya AI yang volumenya kecil |
+| Metrik kardinalitas tinggi | Sistem metrik membengkak | `user_id` tidak dipakai sebagai label kecuali pada metrik pemakaian AI yang volumenya kecil |
 | Tracing menambah latensi | Regresi performa | Hanya lima alur; *sampling* diaktifkan bila overhead terukur |
 | Rantai hash gagal diverifikasi karena bug, bukan manipulasi | Alarm palsu tingkat kritis | Verifikasi diuji pada data uji sebelum diaktifkan di produksi |
 
@@ -246,5 +246,7 @@ Ketiga sistem pertama dikorelasikan lewat `request_id`; activity log memuat `req
 | ID | Pertanyaan |
 |---|---|
 | **TBD-OBS-B** | Penerima alarm (*on-call*) dan jalur eskalasinya belum ditetapkan — `OBS-07` mewajibkannya sebelum go-live. Ini keputusan organisasi sekolah, bukan teknis. |
+
+**`TBD-AI-C` menyentuh berkas ini.** Ambang alarm konsumsi kuota dan batas laju §4.6 belum berangka; pertanyaannya dimiliki [SDD-10 §8](10-ai-orchestrator-design.md) dan tercatat di [register](TBD-REGISTER.md). Angkanya menunggu pengukuran pemakaian nyata, bukan keputusan yang belum diambil.
 
 **Tertutup 25 Agustus 2026:** `TBD-EVT-B` → `SDD-EVT-10` (kartu baca-saja pada Dashboard Administrator; pemrosesan ulang tetap operasional).

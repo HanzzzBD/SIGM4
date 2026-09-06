@@ -54,7 +54,7 @@ Bila jadwal tertekan, lingkup dipotong berurutan dari atas. Butir di bawah garis
 | 2 | Preferensi notifikasi per jenis (FR-17.3) — sementara memakai preset per role | Notifikasi wajib tetap terkirim |
 | 3 | Reservasi berulang (FR-07.2 A4) | Pengguna mengajukan per tanggal |
 | 4 | Delegasi approver (FR-10.2 A3) | Ketidakhadiran ditangani lewat eskalasi |
-| 5 | Chatbot AI (M-19) ditunda ke rilis berikutnya | Pencarian manual tetap tersedia; menghemat biaya API sekaligus |
+| 5 | Chatbot AI (M-19) ditunda ke rilis berikutnya | Pencarian manual tetap tersedia; melepas kuota dan ketergantungan layanan LLM pihak ketiga sekaligus |
 | 6 | Laporan analitik lanjutan (Kebutuhan Pengadaan, Tren Kerusakan) | Dashboard dasar tetap ada |
 | — | **GARIS BATAS** | |
 | ✗ | Inventaris, QR, lokasi, reservasi, peminjaman, approval, kerusakan, work order, opname, activity log, RBAC, keamanan, kepatuhan PDP | Tidak dapat dipotong |

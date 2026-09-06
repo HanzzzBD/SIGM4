@@ -90,7 +90,7 @@ Tidak ada. Ini titik masuk proyek.
 | `PR-00-11` | Worker skeleton: antrean, *distributed lock*, penjadwal | M | 06 | `JOB-01` `JOB-02` `JOB-04`, `SDD-AVL-10` | Dua instance worker → job dieksekusi tepat sekali |
 | `PR-00-12` | Tabel `event_outbox` + dispatcher | M | 11 | `SDD-EVT-03/04/09` | Event terbit hanya setelah commit; urut per agregat |
 | `PR-00-13` | `AuditLogger` + `activity_logs` terpartisi + rantai hash | L | 05, 06 | `AL-01` `AL-03a` `AL-03b`, `NFR-S-03d`, `SDD-DB-07/09` | Partisi bulan berjalan ada; rantai terverifikasi; akun app tanpa UPDATE/DELETE |
-| `PR-00-14` | Health endpoint (live/ready/ringkasan) | S | 06 | `NFR-A-07`, `OBS-06`, `SDD-OBS-06` | `llm`/`fcm` mati tidak membuat `ready` gagal |
+| `PR-00-14` | Health endpoint (live/ready/ringkasan) | S | 06 | `NFR-A-07`, `OBS-06`, `AI-CTL-10`, `SDD-OBS-06` | `llm`/`fcm` mati tidak membuat `ready` gagal |
 | `PR-00-15` | Header keamanan + rate limit berjenjang | M | 09 | `NFR-S-07` `NFR-S-11`, `SDD-SEC-03/05` | CSP tanpa `unsafe-inline`; kelas limit terpisah aktif |
 | `PR-00-16` | Seed: 78 permission, 7 role, matriks, `work_days`, parameter | M | 05 | Lampiran C, `SDD-DB-10` | Uji membandingkan hasil seed dengan Lampiran C baris per baris |
 | `PR-00-17` | Pipeline CI: lint → uji → SAST → SCA → build → image scan | L | 01, 03 | `CD-01` `CD-02`, `ST-01` `ST-02` | Cakupan < 70% atau kerentanan High → pipeline merah |

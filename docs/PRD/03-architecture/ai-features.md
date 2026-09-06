@@ -6,7 +6,7 @@ Sistem memiliki **satu fitur AI**, yaitu **Chatbot Asisten SIGM4** — asisten p
 
 | Aspek | Ketentuan |
 |---|---|
-| **Model** | **Google Gemini Developer API — *paid tier*** dengan model `gemini-3.6-flash` (versi stabil/GA) sebagai model utama; dapat dikonfigurasi Administrator **di antara model stabil/GA saja**. Alias `latest`, versi *preview*, dan versi eksperimental dilarang karena siklus hidupnya tidak menjamin perilaku tetap. **Tier gratis dilarang** untuk data SIGM4: isinya dapat dipakai penyedia untuk meningkatkan produk |
+| **Model** | **Google Gemini Developer API — *tier gratis* sejak 2 September 2026** (keputusan pemilik produk, `DP-AI-04`) dengan model `gemini-3.6-flash` (versi stabil/GA) sebagai model utama; dapat dikonfigurasi Administrator **di antara model stabil/GA saja**. Alias `latest`, versi *preview*, dan versi eksperimental dilarang karena siklus hidupnya tidak menjamin perilaku tetap. Konsekuensi tier gratis: isi percakapan dapat dipakai penyedia untuk meningkatkan produknya, dan kuota serta batas laju penyedia menjadi batasan operasional — bukan biaya. Paid tier tidak dilarang; tier adalah keputusan sekolah, bukan syarat rancangan (`SDD-AI-17`) |
 | **Pola integrasi** | Tool calling (function calling) terhadap API internal, bukan pengiriman seluruh basis data ke model. Model hanya **mengusulkan** panggilan tool; yang menjalankannya adalah backend SIGM4, bukan SDK penyedia (BR-076) |
 | **Sifat akses** | Read-only, difilter permission pengguna pada lapisan query |
 | **Bahasa** | Bahasa Indonesia |
@@ -99,7 +99,7 @@ Sistem memiliki **satu fitur AI**, yaitu **Chatbot Asisten SIGM4** — asisten p
 |---|---|
 | **Keamanan tidak bergantung pada prompt** | Pembatasan hak akses ditegakkan pada lapisan tool dan query SQL. Prompt hanyalah lapisan tambahan, bukan pengaman utama. |
 | **Tool-first** | Model tidak menerima *dump* data; ia meminta data melalui tool sesuai kebutuhan pertanyaan. |
-| **Konteks minimum** | Hanya 10 pesan terakhir yang dikirim, untuk menekan biaya token dan menjaga fokus. |
+| **Konteks minimum** | Hanya 10 pesan terakhir yang dikirim, untuk menekan konsumsi token dan menjaga fokus. |
 | **Jawaban berbasis bukti** | Model diinstruksikan selalu merujuk pengenal data konkret sehingga jawaban dapat diverifikasi pengguna. |
 | **Ketahanan terhadap prompt injection** | Masukan pengguna diperlakukan sebagai data, bukan instruksi; instruksi sistem tidak dapat ditimpa oleh isi pesan pengguna. |
 | **Evaluasi berkelanjutan** | Umpan balik 👍/👎 dan daftar pertanyaan yang gagal dijawab dipakai untuk menyempurnakan prompt dan cakupan tool. |
@@ -112,7 +112,7 @@ Sistem memiliki **satu fitur AI**, yaitu **Chatbot Asisten SIGM4** — asisten p
 | AI-L-02 | Kualitas jawaban bergantung pada kelengkapan dan kemutakhiran data inventaris | Sosialisasi disiplin pencatatan; chatbot menyatakan bila data tidak ditemukan |
 | AI-L-03 | Risiko halusinasi tetap ada meskipun kecil | Instruksi tool-first, kewajiban merujuk pengenal data, dan evaluasi berkala melalui umpan balik pengguna |
 | AI-L-04 | Bergantung pada ketersediaan layanan LLM pihak ketiga | *Graceful degradation*: chatbot dinonaktifkan sementara, modul lain tetap berjalan normal |
-| AI-L-05 | Menimbulkan biaya per penggunaan (token) | Batas percakapan harian per pengguna yang dapat dikonfigurasi; konteks dibatasi 10 pesan |
+| AI-L-05 | Setiap pemakaian mengonsumsi kuota token penyedia; pada tier berbayar juga menimbulkan biaya | Batas percakapan harian per pengguna yang dapat dikonfigurasi; konteks dibatasi 10 pesan |
 | AI-L-06 | Tidak memahami pertanyaan di luar domain sarana prasarana | Menyatakan keterbatasannya dan mengarahkan ke pihak yang tepat |
 | AI-L-07 | Tidak dapat mengakses dokumen berformat gambar atau PDF hasil pindaian | Chatbot mengarahkan pengguna membuka dokumen aset secara langsung |
 | AI-L-08 | Latensi jawaban lebih tinggi dibanding pencarian biasa (hingga 8 detik) | Indikator pemrosesan; pencarian manual tetap tersedia sebagai alternatif |
@@ -135,18 +135,18 @@ SC-10 menargetkan akurasi ≥ 85%, namun sebelumnya tidak ada cara mengukurnya. 
 | AI-EV-06 | Pertanyaan yang memperoleh umpan balik 👎 dan pertanyaan yang gagal dijawab ditinjau berkala dan menjadi kandidat penambahan golden set |
 | AI-EV-07 | Hasil evaluasi terakhir ditampilkan pada menu Monitoring Chatbot (FR-19.2) sebagai bukti pemenuhan SC-10 |
 
-## 22.8 Kendali Biaya, Performa & Keandalan
+## 22.8 Kendali Kuota, Performa & Keandalan
 
 | Kode | Requirement |
 |---|---|
-| AI-CTL-01 | **Prompt caching** diaktifkan atas bagian statis dari system prompt (peran, batasan, aturan format, definisi tool). Hanya konteks pengguna dan riwayat yang berubah per permintaan. Ini menekan biaya secara langsung dan memitigasi RS-08 |
+| AI-CTL-01 | **Prompt caching** diaktifkan atas bagian statis dari system prompt (peran, batasan, aturan format, definisi tool). Hanya konteks pengguna dan riwayat yang berubah per permintaan. Ini menekan pemrosesan ulang awalan pada setiap permintaan — langsung menekan latensi (AI-CTL-07), dan pada tier berbayar menekan tarif token; memitigasi RS-08 |
 | AI-CTL-02 | **Anggaran token per pesan** ditetapkan: masukan maksimum ±16.000 token, keluaran maksimum ±1.000 token. Melebihi batas, konteks riwayat dipangkas dari yang terlama. Batas masukan dinaikkan dari ±8.000 pada 2 September 2026 karena ambang caching model (SDD-10) menuntut prefiks statis yang lebih panjang; tanpa kenaikan itu jendela 10 pesan tidak lagi muat |
 | AI-CTL-03 | **Batas iterasi tool: maksimum 5 panggilan per pesan pengguna.** Setelah batas tercapai, model wajib menjawab dengan data yang telah diperoleh atau menyatakan tidak dapat menjawab |
 | AI-CTL-04 | **Timeout**: 20 detik per panggilan ke penyedia LLM; 5 detik per eksekusi tool. Melewati batas → jalur *fallback* (FR-19.1 A4) |
 | AI-CTL-05 | **Retry**: maksimum 2 percobaan ulang untuk galat sementara (429, 5xx) dengan *exponential backoff*; galat permanen tidak diulang |
 | AI-CTL-06 | **Rate limit per pengguna: 10 pesan per menit**, melengkapi batas harian yang sudah ada, agar kuota harian tidak habis dalam satu menit dan sistem tidak terbebani |
 | AI-CTL-07 | **Streaming respons** diaktifkan agar jawaban tampil bertahap; ini membuat latensi hingga 8 detik (AI-L-08) terasa responsif, bukan menggantung |
-| AI-CTL-08 | Penggunaan token per pengguna dan biaya harian dicatat dan ditampilkan pada Dashboard Administrator, dengan alarm bila melewati ambang (OBS-05) |
+| AI-CTL-08 | Penggunaan token per pengguna dan konsumsi kuota penyedia dicatat dan ditampilkan pada Dashboard Administrator, dengan alarm bila melewati ambang (OBS-05). Sejak tier gratis diizinkan (DP-AI-04) tidak ada biaya harian yang diambang-batasi; yang dipantau adalah kuota dan batas laju penyedia |
 | AI-CTL-09 | Administrator dapat menonaktifkan chatbot sepenuhnya melalui parameter sistem tanpa memengaruhi modul lain (NFR-A-05) |
 | AI-CTL-10 | Kegagalan layanan LLM tidak pernah menghasilkan galat pada modul lain; kartu chatbot menampilkan status gangguan (OBS-06) |
 
@@ -161,6 +161,6 @@ SC-10 menargetkan akurasi ≥ 85%, namun sebelumnya tidak ada cara mengukurnya. 
 | AI-SEC-05 | Instruksi sistem tidak dapat ditimpa oleh isi pesan pengguna; percobaan menimpa dicatat sebagai anomali dan ditinjau |
 | AI-SEC-06 | Untuk pengguna role Siswa/OSIS, berlaku pembatasan tambahan: tidak ada data pribadi pengguna lain dalam bentuk apapun yang masuk ke konteks model (DP-AI-03) |
 | AI-SEC-07 | **Moderasi**: percakapan yang memuat konten tidak pantas atau percobaan penyalahgunaan berulang ditandai, dan pengguna yang bersangkutan dapat dibatasi aksesnya ke chatbot oleh Administrator |
-| AI-SEC-08 | Penyedia LLM dikonfigurasi agar data tidak digunakan untuk pelatihan model, dan hal ini dinyatakan dalam DPA (DP-AI-04). Pada Gemini Developer API syarat ini hanya terpenuhi pada **paid tier**; tier gratis dilarang dipakai untuk data SIGM4 apa pun. Penyedia **tidak menjamin residensi data** — pemrosesan lintas yurisdiksi menjadi keputusan tersendiri (`TBD-AI-D`, `RS-21`) yang wajib tertutup sebelum GL-07 |
+| AI-SEC-08 | Penyedia LLM dikonfigurasi agar data tidak digunakan untuk pelatihan model **bila tier yang dipakai menyediakan jaminan itu**, dinyatakan dalam DPA (DP-AI-04). Pada Gemini Developer API jaminan tersebut hanya ada di paid tier; **tier gratis diizinkan sejak 2 September 2026** dengan konsekuensi isi percakapan dapat dipakai penyedia untuk meningkatkan produknya. Penyedia **tidak menjamin residensi data** — pemrosesan lintas yurisdiksi disetujui sekolah 2 September 2026 (`TBD-AI-D` tertutup, `RS-21`) |
 
 ---

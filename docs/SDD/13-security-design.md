@@ -72,7 +72,7 @@ Password **tidak** masuk daftar ini karena sudah di-hash Argon2id (`SDD-SESS-01`
 | Berkas berbahaya | Unggahan | Presign + validasi MIME ganda + AV ([SDD-09](09-file-storage-design.md)) |
 | Kebocoran data anak | Foto, chatbot, lingkungan non-produksi | `DP-02`, `DP-05`, `DP-08`, `DP-AI-03` |
 | Manipulasi jejak audit | Akses DB langsung | Rantai hash + hak DB terbatas (`AL-03a`, `AL-03b`) |
-| Penyalahgunaan biaya AI | Kuota | `AI-CTL-06`, `AI-CTL-08` |
+| Penyalahgunaan kuota AI | Kuota & batas laju penyedia | `AI-CTL-06`, `AI-CTL-08` |
 
 ### 4.2 Header keamanan
 
@@ -114,7 +114,7 @@ Header `X-RateLimit-*` selalu disertakan. Redis tidak tersedia → *fail open* u
 | Kunci penandatangan JWT (Ed25519) | 6 bulan, tumpang tindih | `kid` pada header token (TBD-AUTH-B) |
 | Kunci enkripsi TOTP | Tidak dirotasi rutin | Rotasi memerlukan re-enkripsi seluruh secret |
 | Kredensial basis data | 6 bulan | Akun aplikasi tanpa DDL (`SEC-CFG-03`) |
-| Kunci Gemini API | 12 bulan | Alarm biaya harian (`OBS-05`) |
+| Kunci Gemini API | 12 bulan | Alarm konsumsi kuota & batas laju (`OBS-05`) |
 | Kredensial FCM | 12 bulan | |
 | Kunci object storage | 12 bulan | |
 

@@ -198,9 +198,9 @@ Beberapa phase tidak dapat diselesaikan sebelum TBD tertentu ditutup. Daftar len
 | ~~`TBD-AI-A`~~ | D | ~~`PR-03-22`~~ | ✅ **Tertutup 25 Agustus 2026** — `SDD-AI-13` |
 | ~~`TBD-SEC-B`~~ | A | ~~`PR-00-06` · `PR-08-01` … `PR-08-06`~~ | ✅ **Tertutup 25 Agustus 2026** — `SDD-SEC-10` · `SDD-OBS-10` |
 | ~~`TBD-INF-A`~~ | B | ~~`PR-00-18`~~ | ✅ **Tertutup 25 Agustus 2026** — `SDD-INF-11` |
-| `TBD-AI-D` | A | `GL-07` (gerbang go-live) | Sebelum go-live — dibuka 2 September 2026 oleh migrasi penyedia LLM |
+| ~~`TBD-AI-D`~~ | A | ~~`GL-07` (gerbang go-live)~~ | ✅ **Tertutup 2 September 2026** — `SDD-AI-16`, disetujui sekolah pada hari yang sama saat dibuka |
 | kelompok B (13 sisanya) | B | kalibrasi parameter | Phase 07–08, setelah data staging ada |
-| kelompok A (1) | A | `GL-07` | `TBD-AI-D`; sisanya tertutup 25 Agustus 2026 |
+| kelompok A (0) | A | — | Dikosongkan kembali 2 September 2026 |
 | kelompok C (0) | C | — | Seluruhnya tertutup 6 Agustus 2026 |
 | kelompok D (0) | D | — | Seluruhnya tertutup 25 Agustus 2026 |
 
@@ -208,7 +208,7 @@ Beberapa phase tidak dapat diselesaikan sebelum TBD tertentu ditutup. Daftar len
 
 **`TBD-INF-A` ditutup sebelum `PR-00-18`, sesuai jadwal.** `PR-00-18` men-deploy staging beserta job migration-nya, dan lingkungan itu tidak dapat berdiri sebelum penyedia infrastrukturnya dipilih. Hasilnya (`SDD-INF-11`): **VPS ber-region Indonesia + PostgreSQL terkelola**, Docker Compose tetap (`SDD-INF-10`), pengecualian Kubernetes `INF-05` tidak berlaku. Yang berpindah hanya waktunya, bukan kelompoknya: sizing dan biaya nyata tetap ditetapkan setelah uji beban bersama `TBD-AVL-C`.
 
-**Tidak ada TBD yang memblokir pengerjaan satu PR pun.** Dua belas TBD ditutup 25 Agustus 2026 dalam empat batch, mengosongkan kelompok A dan D sekaligus; `TBD-AI-D` membukanya kembali pada 2 September 2026, tetapi ia menunggu di gerbang go-live (`GL-07`), bukan di depan sebuah PR — chatbot tetap dibangun dan dievaluasi Phase 03. Yang tersisa adalah 13 parameter operasional kelompok B, seluruhnya dijadwalkan Phase 07–08 setelah data staging tersedia — parameter yang menunggu **pengukuran**, bukan keputusan yang menunggu **orang**. Butir berisiko tertinggi pada roadmap ini karena itu tidak lagi berupa keputusan yang belum diambil. Menundanya berarti menunda lintasan kritis secara langsung. Ini butir tunggal berisiko tertinggi pada roadmap, dan satu-satunya yang tidak dapat diselesaikan oleh tim pengembang.
+**Tidak ada TBD yang memblokir pengerjaan satu PR pun.** Dua belas TBD ditutup 25 Agustus 2026 dalam empat batch, mengosongkan kelompok A dan D sekaligus; `TBD-AI-D` membukanya kembali pada 2 September 2026, tetapi ia menunggu di gerbang go-live (`GL-07`), bukan di depan sebuah PR — chatbot tetap dibangun dan dievaluasi Phase 03. Yang tersisa adalah 13 parameter operasional kelompok B, seluruhnya dijadwalkan Phase 07–08 setelah data staging tersedia — parameter yang menunggu **pengukuran**, bukan keputusan yang menunggu **orang**. Butir berisiko tertinggi pada roadmap ini karena itu tidak lagi berupa keputusan yang belum diambil, melainkan pengukuran yang belum dijalankan.
 
 ---
 

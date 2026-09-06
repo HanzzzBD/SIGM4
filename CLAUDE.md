@@ -33,7 +33,7 @@ Bila terjadi pertentangan, yang berlaku adalah lapisan di atasnya; yang diperbai
 4. **Kerjakan satu PR sesuai rencana phase.** Bukan modul utuh, bukan gabungan beberapa PR.
 5. **Selesaikan checklist PR** di bawah sebelum melapor selesai.
 
-Jangan menebak titik yang belum ditetapkan. TBD terkumpul di [`docs/SDD/TBD-REGISTER.md`](docs/SDD/TBD-REGISTER.md) — 25 terbuka; kelompok A memblokir Phase 01–03 dan **tidak boleh diselesaikan sendiri**.
+Jangan menebak titik yang belum ditetapkan. TBD terkumpul di [`docs/SDD/TBD-REGISTER.md`](docs/SDD/TBD-REGISTER.md) — 13 terbuka, seluruhnya kelompok B: parameter operasional yang dikalibrasi Phase 07–08 setelah data staging ada. Kelompok A, C, dan D kosong; tidak ada phase maupun gerbang rilis yang terhalang keputusan yang belum diambil.
 
 ### Perkakas
 

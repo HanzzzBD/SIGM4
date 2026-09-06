@@ -114,7 +114,7 @@ Tiga berkas ini berlaku meski tidak selalu disebut, dan menjadi fondasi SDD:
 | [nfr.md](03-architecture/nfr.md) | NFR performa, ketersediaan, keandalan, skalabilitas, aksesibilitas |
 | [system-overview.md](03-architecture/system-overview.md) | Arsitektur tingkat tinggi, state diagram, scheduled jobs, use case |
 | [activity-log.md](03-architecture/activity-log.md) | Prinsip pencatatan & struktur entri |
-| [ai-features.md](03-architecture/ai-features.md) | Tool, prompt strategy, evaluasi, biaya, privasi AI |
+| [ai-features.md](03-architecture/ai-features.md) | Tool, prompt strategy, evaluasi, kuota, privasi AI |
 | *-index.md | **Digenerate** — jangan disunting |
 
 ### 04 · Frontend · 05 · Mobile · 06 · Quality · 07 · SDD · 08 · UX · 09 · DESIGN

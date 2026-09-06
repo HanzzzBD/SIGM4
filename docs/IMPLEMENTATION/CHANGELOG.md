@@ -7,6 +7,90 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 ---
 
 
+## 3 September 2026 — Celah telusur: nomor surat `GL-07`, `DP-AI-04`, dan `AI-CTL-07`…`AI-CTL-10`
+
+**Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). **Tidak ada TBD yang dibuka maupun ditutup**, dan tidak ada keputusan tertutup yang diubah.
+
+### Diubah
+
+Audit 3 September 2026 menemukan tiga kewajiban yang sudah tertulis di lapisan atas tetapi tidak punya pemegang di lapisan bawah — tidak satu pun tertangkap `audit_docs.py` maupun `validate_impl.py`, karena keduanya memeriksa keberadaan ID, bukan apakah sebuah kewajiban punya tempat untuk diperiksa.
+
+| Celah | Diperbaiki di |
+|---|---|
+| `SDD-AI-16` mewajibkan nomor surat persetujuan lintas yurisdiksi dilengkapi **sebelum `GL-07` diperiksa**, tetapi tidak ada checklist mana pun yang memuatnya | `phases/phase-08.md` §8 (Kegiatan non-PR) · `phases/phase-08.md` §9 (acceptance `GL-07`) · `RELEASE-PLAN.md` §2 (bukti penutup `GL-07`) · `IMPLEMENTATION-STATUS.md` |
+| `DP-AI-04` mewajibkan konsekuensi tier gratis dinyatakan pada Pemberitahuan Privasi (`DP-01`) sebelum chatbot aktif; tidak dirujuk satu PR pun | `phases/phase-08.md` — rujukan & acceptance `PR-08-12`, serta baris `privacy-compliance.md` pada §4 |
+| Cakupan `ai-features.md` di Phase 03 tertulis `AI-CTL-01` … `AI-CTL-06`, padahal Bab 22.8 kini sampai `AI-CTL-10` dan phase itu mengerjakan `AI-CTL-07` dan `AI-CTL-08`; `AI-CTL-09` dan `AI-CTL-10` tidak dirujuk PR mana pun | `phases/phase-03.md` — §4 cakupan, rujukan & task breakdown `PR-03-20` · `phases/phase-00.md` — rujukan `PR-00-14` |
+
+**Pemegang yang dipilih, dan alasannya.** `AI-CTL-09` (pengalih penonaktifan chatbot) diberikan kepada `PR-03-20`, bukan `PR-01-10` yang memiliki mekanisme `system_settings`: `SDD-AI-12` menaruh penegakan `NFR-A-05` pada adapter `ChatProvider` yang dibangun `PR-03-20`, dan pengalih itu khusus chatbot — Phase 01 belum dapat mengujinya karena chatbot baru ada di Phase 03. `AI-CTL-10` dibagi menurut pemilik yang sudah ada: paruh `OBS-06` (health endpoint, `llm` mati tidak menggagalkan `ready`) memang sudah dikerjakan `PR-00-14` dan kini dirujuk di sana; paruh jalur 503 → `FR-19.1 A4` ada di adapter `PR-03-20`, sesuai `SDD-10` §4.5. `DP-AI-04` diberikan kepada `PR-08-12` karena PR itu satu-satunya yang menerbitkan Pemberitahuan Privasi di produksi.
+
+**Kosmetik.** Kelompok D `SDD/TBD-REGISTER.md` menyisakan header tabel kosong; kini memakai catatan yang sama dengan kelompok A dan C. Kalimat pembuka `README.md` §TBD masih berbunyi seolah kelompok A terakhir dikosongkan 25 Agustus 2026, padahal ia dikosongkan ulang 2 September.
+
+**Dampak pada lintasan kritis:** tidak ada. Total PR tetap **163**; tidak ada PR bertambah, berpindah phase, berubah kompleksitas, maupun berubah dependensi. Tidak ada requirement, business rule, ambang, nomor surat, maupun ID baru — seluruh perubahan adalah rujukan dan butir checklist atas kewajiban yang sudah tertulis di PRD atau SDD. `GL-07` **tidak** dinyatakan tertahan kembali: yang belum lengkap adalah dokumennya, bukan keputusannya (`SDD-AI-16` tetap tertutup).
+
+## 2 September 2026 — Penamaan ulang Bab 22.8 & pembingkaian ulang biaya menyentuh Phase 03 & 05
+
+**Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). **Tidak ada TBD yang dibuka maupun ditutup.**
+
+### Diubah
+
+PRD Bab 22.8 berganti judul menjadi "Kendali **Kuota**, Performa & Keandalan", dan pembingkaian *prompt caching* dikoreksi dari "menekan biaya" menjadi "menekan pemrosesan ulang awalan → **latensi**; tarif token hanya pada tier berbayar" — `SDD-10` §4.6 mencatat token yang di-cache tetap terhitung, hanya bertarif diskon (`PRD/CHANGELOG.md`, 2 September 2026). Empat baris di folder ini menyalin kosakata lama dan ikut menyesuaikan.
+
+| Berkas | Sebelum | Sesudah |
+|---|---|---|
+| `phases/phase-03.md` — judul `PR-03-20` | Orkestrator AI: klien, streaming, kendali **biaya** | Orkestrator AI: klien, streaming, kendali **kuota** |
+| `phases/phase-03.md` — rujukan `PR-03-20` | `SDD-AI-01/03/04/14/15` | `SDD-AI-01/**02**/03/04/14/15` |
+| `phases/phase-03.md` — risiko awalan statis | "Prompt caching mati diam-diam, **biaya membengkak**" | "Prompt caching mati diam-diam, **latensi membengkak**" |
+| `phases/phase-05.md` — risiko `PR-05-25` | "**Biaya** Gemini API melonjak sesaat pada rilis; latensi naik…" | "**Latensi** naik sesaat pada rilis…; **pada tier berbayar** biaya ikut melonjak" |
+
+**Rujukan `SDD-AI-02` ditambahkan, bukan diperluas.** Acceptance `PR-03-20` sudah mensyaratkan "`thinking_level` eksplisit" dan task breakdown-nya sudah mengutip `SDD-AI-02` (`phase-03.md:152`); hanya kolom rujukan baris PR yang tertinggal. Celah telusur, bukan penambahan lingkup.
+
+Penamaan ulang judul PR sengaja **tidak** dikerjakan pada sinkronisasi 2 September 2026 sebelumnya: mengubah judul PR menyentuh rencana phase, sementara `CLAUDE.md` mensyaratkan judul PR mengikuti rencana phase. Penggantinya diputuskan pemilik produk lebih dulu.
+
+**Dampak pada lintasan kritis:** tidak ada. Total PR tetap **163**. `PR-03-20` dan `PR-05-25` tidak berubah lingkup, kompleksitas, dependensi, maupun acceptance-nya. Tidak ada perubahan pada `interactions.create`, `store: false`, maupun `thinking_level` — audit 2 September 2026 menegaskan ketiganya adalah **hasil** migrasi Gemini (`SDD-AI-14`, `SDD-AI-02`), bukan sisa kosakata Claude API.
+
+---
+
+
+## 2 September 2026 — Sinkronisasi turunan: alarm kuota & sisa rujukan `TBD-AI-D`
+
+**Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). **Tidak ada TBD yang dibuka maupun ditutup**; entri ini murni menyelaraskan lapisan turunan dengan dua keputusan yang sudah diambil hari itu (`SDD-AI-16`, `SDD-AI-17`).
+
+Dua keputusan 2 September 2026 tidak seluruhnya mengalir ke bawah. Keputusan tier gratis (`SDD-AI-17`) menghapus tagihan, tetapi delapan tempat masih mendefinisikan alarm `OBS-05` sebagai *biaya harian Gemini API* — termasuk `SDD-15`, yang dicatat sebagai pemilik penyesuaian itu tetapi tidak pernah disunting. Penutupan `TBD-AI-D` (`SDD-AI-16`) juga menyisakan tiga klaim bahwa ia masih memblokir `GL-07`, salah satunya berselisih dengan paragraf empat baris di bawahnya pada berkas yang sama.
+
+| Yang berubah | Berkas yang menyesuaikan |
+|---|---|
+| Alarm & metrik `OBS-05`: biaya harian → konsumsi kuota + batas laju penyedia | `SDD/15-observability-logging.md` §4.3 §4.6 §6 §8 · `SDD/10-ai-orchestrator-design.md` §4.1 §4.8 §6 §8 · `SDD/13-security-design.md` §4.1 §4.4 · `SDD/TBD-REGISTER.md` · `phases/phase-03.md` |
+| Sisa rujukan `TBD-AI-D` sebagai penghalang `GL-07` dihapus | `IMPLEMENTATION-STATUS.md` (baris tabel *Penghalang aktif*) · `phases/phase-03.md` · `SDD/10-ai-orchestrator-design.md` §5 |
+| Hitungan register diselaraskan `13 terbuka · 28 tertutup` | `UX/UX-SPEC.md` §Tindak lanjut |
+| Kalimat menggantung sisa `TBD-AI-D` terbuka | `ROADMAP.md` §8 |
+| Requirement PRD `AI-CTL-08`, `OBS-05`, Bab 22.1, Bab 27.9 | dicatat di `PRD/CHANGELOG.md`, bukan di sini |
+
+**Tidak ada keputusan, requirement, angka ambang, maupun ID baru.** `TBD-AI-C` tetap terbuka dan tetap tanpa angka — yang berubah hanya rumusan pertanyaannya, mengikuti `SDD-AI-17`. Register kini mencatatnya menyentuh `SDD-10` **dan** `SDD-15`.
+
+**Dampak pada lintasan kritis:** tidak ada. Total PR tetap **163**; tidak ada PR bertambah, berpindah phase, atau berubah kompleksitas.
+
+---
+
+
+## 2 September 2026 — `TBD-AI-D` tertutup & tier gratis diizinkan
+
+**Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). Satu TBD ditutup; **kelompok A kembali kosong**.
+
+Dua keputusan pemilik produk pada hari yang sama. `TBD-AI-D` — dibuka pagi itu juga oleh migrasi penyedia LLM — ditutup oleh surat pernyataan Kepala Sekolah (`SDD-AI-16`), sehingga `GL-07` bagian chatbot terbuka. Nomor suratnya **belum dicatat** — ditandai TBD di `SDD-AI-16` dan wajib dilengkapi sebelum `GL-07` diperiksa. Terpisah dari itu, sekolah tidak menganggarkan biaya chatbot dan memilih **tier gratis** (`SDD-AI-17`), yang menuntut `DP-AI-04` disunting di PRD lebih dulu.
+
+| Yang berubah | Berkas yang menyesuaikan |
+|---|---|
+| `TBD-AI-D` tertutup; kelompok A kosong | `SDD/TBD-REGISTER.md` · `SDD/10-ai-orchestrator-design.md` · `ROADMAP.md` §8 · `IMPLEMENTATION-STATUS.md` · `README.md` · `../../CLAUDE.md` |
+| Dua keputusan SDD baru: `SDD-AI-16` (persetujuan) dan `SDD-AI-17` (tier) | `SDD/10-ai-orchestrator-design.md` §2 |
+| Requirement PRD `DP-AI-04`, `AI-SEC-08`, Bab 22.1, `AS-15`, `RS-21`, Bab 27.9 | dicatat di `PRD/CHANGELOG.md`, bukan di sini |
+
+**Dampak pada lintasan kritis:** tidak ada. Tidak ada PR yang berubah lingkupnya; `PR-03-20` … `PR-03-23` dan `PR-05-25` tetap seperti rencana. Yang berubah adalah kredensial yang dipakai dan sebuah gerbang rilis yang tidak lagi tertahan.
+
+**Dua butir sengaja dibiarkan terbuka** dan dicatat di `PRD/CHANGELOG.md`: penyaringan PII pada teks bebas pengguna, dan ID risiko tersendiri bagi pemakaian isi percakapan oleh penyedia. Keduanya menunggu keputusan pemilik produk, bukan pengukuran.
+
+---
+
+
 ## 2 September 2026 — Migrasi penyedia LLM: Claude API → Google Gemini
 
 **Status TBD: 14 terbuka · 27 tertutup** — A (1) · B (13) · C (0) · D (0). Satu TBD **dibuka**, tidak ada yang ditutup.
