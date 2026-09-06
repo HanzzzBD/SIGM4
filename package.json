@@ -5,7 +5,7 @@
   "description": "SIGM4 — Sistem Informasi Management Aset, sarana dan prasarana sekolah",
   "license": "UNLICENSED",
   "engines": {
-    "node": ">=22"
+    "node": "^20.19.0 || ^22.13.0 || >=24"
   },
   "workspaces": [
     "apps/*",
@@ -18,12 +18,17 @@
     "check:boundaries": "node scripts/check_import_boundaries.mjs"
   },
   "devDependencies": {
-    "@eslint/js": "^9.15.0",
-    "eslint": "^9.15.0",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.10.0",
     "eslint-import-resolver-typescript": "^3.6.3",
     "eslint-plugin-import": "^2.31.0",
     "globals": "^15.12.0",
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.15.0"
+  },
+  "overrides": {
+    "eslint-plugin-import": {
+      "eslint": "$eslint"
+    }
   }
 }
