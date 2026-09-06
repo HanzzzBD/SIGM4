@@ -139,7 +139,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 
 Daftar TBD lengkap beserta pertanyaannya: [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md) — **13 terbuka, 28 tertutup**. Jadwal penutupan yang diharapkan: [`ROADMAP.md` §8](ROADMAP.md).
 
-**Tidak ada penghalang TBD pada pengerjaan Phase 00–08, dan tidak ada lagi gerbang rilis yang tertahan.** Dua belas TBD ditutup 25 Agustus 2026 dalam empat batch. Migrasi penyedia LLM 2 September 2026 sempat membuka `TBD-AI-D` (kelompok A), dan surat pernyataan Kepala Sekolah menutupnya pada hari yang sama (`SDD-AI-16`) — `GL-07` bagian chatbot terbuka. Tiga belas TBD kelompok B masih terbuka tetapi tidak memblokir apa pun: seluruhnya parameter yang dikalibrasi Phase 07–08 setelah data staging tersedia.
+**Tidak ada penghalang TBD pada pengerjaan Phase 00–08, dan tidak ada lagi gerbang rilis yang tertahan oleh keputusan yang belum diambil.** Dua belas TBD ditutup 25 Agustus 2026 dalam empat batch. Migrasi penyedia LLM 2 September 2026 sempat membuka `TBD-AI-D` (kelompok A), dan surat pernyataan Kepala Sekolah menutupnya pada hari yang sama (`SDD-AI-16`) — `GL-07` bagian chatbot terbuka. Tiga belas TBD kelompok B masih terbuka tetapi tidak memblokir apa pun: seluruhnya parameter yang dikalibrasi Phase 07–08 setelah data staging tersedia. `GL-07` masih menunggu satu butir administratif — salinan resmi surat persetujuan lintas yurisdiksi, yang nomornya belum tercatat (`SDD-AI-16`); itu dokumen yang belum lengkap, bukan keputusan yang belum diambil.
 
 ## Pergeseran jadwal tercatat
 

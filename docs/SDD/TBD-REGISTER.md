@@ -42,8 +42,7 @@ _Seluruhnya tertutup — lihat [Tertutup](#tertutup)._
 
 ## D. Konten yang belum final
 
-| ID | Berkas | Pertanyaan |
-|---|---|---|
+_Seluruhnya tertutup — lihat [Tertutup](#tertutup)._
 
 ---
 

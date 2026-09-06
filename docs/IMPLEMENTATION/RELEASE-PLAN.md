@@ -30,7 +30,7 @@ Definisi tiap gerbang ada di [PRD 29.3](../PRD/01-product/delivery-plan.md) dan 
 | `GL-04` | Phase 08 | Laporan pentest tanpa temuan High/Critical terbuka |
 | `GL-05` | Phase 07 | Laporan `ST-05` (otorisasi 7 role) + `ST-06` (red-teaming chatbot) |
 | `GL-06` | Phase 08 | Catatan DR drill + runbook terverifikasi |
-| `GL-07` | Phase 08 | Pemberitahuan privasi terbit · DPA tertandatangani · persetujuan wali terkumpul |
+| `GL-07` | Phase 08 | Pemberitahuan privasi terbit · DPA tertandatangani · persetujuan wali terkumpul · salinan surat persetujuan lintas yurisdiksi (`SDD-AI-16`) |
 | `GL-08` | Phase 08 | ≥95% aset terdaftar (`SC-01`) · ≥95% berlabel QR (`SC-02`) |
 | `GL-09` | Phase 07 | Approval rules terkonfigurasi & diverifikasi lewat pratinjau (`RE-07`) |
 | `GL-10` | Phase 08 | Catatan pelatihan per role · minimal dua Administrator aktif (`BR-070a`) |

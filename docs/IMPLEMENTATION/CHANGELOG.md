@@ -7,6 +7,26 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 ---
 
 
+## 3 September 2026 — Celah telusur: nomor surat `GL-07`, `DP-AI-04`, dan `AI-CTL-07`…`AI-CTL-10`
+
+**Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). **Tidak ada TBD yang dibuka maupun ditutup**, dan tidak ada keputusan tertutup yang diubah.
+
+### Diubah
+
+Audit 3 September 2026 menemukan tiga kewajiban yang sudah tertulis di lapisan atas tetapi tidak punya pemegang di lapisan bawah — tidak satu pun tertangkap `audit_docs.py` maupun `validate_impl.py`, karena keduanya memeriksa keberadaan ID, bukan apakah sebuah kewajiban punya tempat untuk diperiksa.
+
+| Celah | Diperbaiki di |
+|---|---|
+| `SDD-AI-16` mewajibkan nomor surat persetujuan lintas yurisdiksi dilengkapi **sebelum `GL-07` diperiksa**, tetapi tidak ada checklist mana pun yang memuatnya | `phases/phase-08.md` §8 (Kegiatan non-PR) · `phases/phase-08.md` §9 (acceptance `GL-07`) · `RELEASE-PLAN.md` §2 (bukti penutup `GL-07`) · `IMPLEMENTATION-STATUS.md` |
+| `DP-AI-04` mewajibkan konsekuensi tier gratis dinyatakan pada Pemberitahuan Privasi (`DP-01`) sebelum chatbot aktif; tidak dirujuk satu PR pun | `phases/phase-08.md` — rujukan & acceptance `PR-08-12`, serta baris `privacy-compliance.md` pada §4 |
+| Cakupan `ai-features.md` di Phase 03 tertulis `AI-CTL-01` … `AI-CTL-06`, padahal Bab 22.8 kini sampai `AI-CTL-10` dan phase itu mengerjakan `AI-CTL-07` dan `AI-CTL-08`; `AI-CTL-09` dan `AI-CTL-10` tidak dirujuk PR mana pun | `phases/phase-03.md` — §4 cakupan, rujukan & task breakdown `PR-03-20` · `phases/phase-00.md` — rujukan `PR-00-14` |
+
+**Pemegang yang dipilih, dan alasannya.** `AI-CTL-09` (pengalih penonaktifan chatbot) diberikan kepada `PR-03-20`, bukan `PR-01-10` yang memiliki mekanisme `system_settings`: `SDD-AI-12` menaruh penegakan `NFR-A-05` pada adapter `ChatProvider` yang dibangun `PR-03-20`, dan pengalih itu khusus chatbot — Phase 01 belum dapat mengujinya karena chatbot baru ada di Phase 03. `AI-CTL-10` dibagi menurut pemilik yang sudah ada: paruh `OBS-06` (health endpoint, `llm` mati tidak menggagalkan `ready`) memang sudah dikerjakan `PR-00-14` dan kini dirujuk di sana; paruh jalur 503 → `FR-19.1 A4` ada di adapter `PR-03-20`, sesuai `SDD-10` §4.5. `DP-AI-04` diberikan kepada `PR-08-12` karena PR itu satu-satunya yang menerbitkan Pemberitahuan Privasi di produksi.
+
+**Kosmetik.** Kelompok D `SDD/TBD-REGISTER.md` menyisakan header tabel kosong; kini memakai catatan yang sama dengan kelompok A dan C. Kalimat pembuka `README.md` §TBD masih berbunyi seolah kelompok A terakhir dikosongkan 25 Agustus 2026, padahal ia dikosongkan ulang 2 September.
+
+**Dampak pada lintasan kritis:** tidak ada. Total PR tetap **163**; tidak ada PR bertambah, berpindah phase, berubah kompleksitas, maupun berubah dependensi. Tidak ada requirement, business rule, ambang, nomor surat, maupun ID baru — seluruh perubahan adalah rujukan dan butir checklist atas kewajiban yang sudah tertulis di PRD atau SDD. `GL-07` **tidak** dinyatakan tertahan kembali: yang belum lengkap adalah dokumennya, bukan keputusannya (`SDD-AI-16` tetap tertutup).
+
 ## 2 September 2026 — Penamaan ulang Bab 22.8 & pembingkaian ulang biaya menyentuh Phase 03 & 05
 
 **Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). **Tidak ada TBD yang dibuka maupun ditutup.**
