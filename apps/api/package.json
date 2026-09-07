@@ -14,7 +14,9 @@
   "dependencies": {
     "@sigm4/schemas": "*",
     "kysely": "0.29.5",
-    "pg": "8.23.0"
+    "pg": "8.23.0",
+    "zod": "4.5.4",
+    "zod-openapi": "6.0.2"
   },
   "devDependencies": {
     "@types/pg": "^8.23.1"
