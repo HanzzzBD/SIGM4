@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@vitest/coverage-v8": "^5.0.0",
     "dbmate": "^2.35.1",
     "eslint": "^10.10.0",
     "eslint-import-resolver-typescript": "^3.6.3",
