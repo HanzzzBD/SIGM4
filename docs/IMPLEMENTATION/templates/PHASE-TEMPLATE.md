@@ -55,11 +55,25 @@ M-xx → M-yy
 
 ## 7. Pull Request Plan
 
-| PR | Judul | Kompleksitas | Bergantung | FR/SDD | Acceptance |
+| PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
 |---|---|:---:|---|---|---|
 | `PR-NN-01` | … | S/M/L | — | … | … |
 
-Kompleksitas: **S** ≤ 200 baris berubah · **M** ≤ 400 · **L** > 400 (harus dijustifikasi di deskripsi PR).
+Dua estimasi, dua kolom. **`Kode`** memperkirakan baris **kode produksi**; **`Uji`** memperkirakan baris **uji**. Keduanya memakai skala yang sama: **S** ≤ 200 baris berubah · **M** ≤ 400 · **L** > 400.
+
+Yang dijustifikasi di deskripsi PR adalah kolom **`Kode`** — ia yang menentukan apakah sebuah PR dapat ditinjau sungguh-sungguh sekali duduk. Uji yang panjang tidak membuat PR sulit ditinjau dengan cara yang sama: ia dibaca sebagai daftar hal yang dibuktikan, bukan sebagai perilaku yang harus dilacak.
+
+**Mengapa dipisah.** Sampai `PR-00-07` kolomnya hanya satu, dan empat PR berturut "meleset" dari perkiraannya — padahal setiap kali kode produksinya justru berada di dalam batas. `PR-00-07` yang membuktikannya: diperkirakan `S` (≤ 200), terkirim 417 baris, dan kode produksinya **134 baris**. Perkiraannya benar; yang keliru adalah membaca satu angka sebagai dua hal.
+
+**Cara mengisi kolom `Uji`.** Dasarnya `Uji` = `Kode`, digeser oleh bentuk acceptance-nya — sebab acceptance-lah yang menentukan bagaimana sesuatu harus dibuktikan:
+
+| Geser | Kapan | Mengapa |
+|---|---|---|
+| **+1 kelas** | Acceptance menuntut bukti terhadap PostgreSQL nyata, konkurensi, atau matriks role × endpoint | Uji integrasi selalu lebih panjang daripada uji berkas — ia menyiapkan keadaan, menjalankannya, lalu membersihkannya |
+| **−1 kelas** | Acceptance dipenuhi dengan *menjalankan* sesuatu (compose, pipeline, deploy), bukan dengan menguji logika | Tidak ada logika yang dapat diuji unit |
+| tetap | Selain itu | Uji berkas cenderung sepanjang kode yang diujinya |
+
+Aturan ini dikalibrasi terhadap empat PR Phase 00 yang sudah terukur dan mereproduksi keempatnya. Angka nyatanya dicatat [`logs/phase-00.md` §8](../logs/phase-00.md); bila PR berikutnya menyimpang, **aturannya** yang disesuaikan, bukan angkanya yang dibulatkan diam-diam.
 
 ## 8. Task Breakdown
 

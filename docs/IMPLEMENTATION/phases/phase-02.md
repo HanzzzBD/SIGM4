@@ -102,38 +102,38 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 
 ## 7. Pull Request Plan
 
-| PR | Judul | Kompleksitas | Bergantung | FR/SDD | Acceptance |
-|---|---|:---:|---|---|---|
-| `PR-02-01` | Hash password Argon2id + kebijakan kata sandi | S | Ph01 | `NFR-S-01`, `SDD-SESS-01` | Parameter Argon2id sesuai `SDD-SESS-01` |
-| `PR-02-02` | Login + akses token EdDSA + rotasi refresh token | L | 01 | `FR-01.1`, `SDD-SESS-02/03/04` | Refresh dipakai ulang → seluruh rantai dicabut |
-| `PR-02-03` | Penguncian akun + `NT-40` + audit percobaan gagal | M | 02 | `FR-01.1 A2`, `BR-070` `BR-070a` | 5 gagal → kunci; pesan galat tidak membocorkan keberadaan akun |
-| `PR-02-04` | Logout + pencabutan sesi + daftar perangkat | M | 02 | `FR-01.2`, `SDD-SESS-06` | Token tercabut ditolak ≤ 60 detik |
-| `PR-02-05` | Lupa & reset password (token sekali pakai) | M | 02 | `FR-01.3`, `NT-41` | Respons seragam untuk email ada/tidak ada |
-| `PR-02-06` | Ganti password + kelola profil + pencabutan sesi lain | S | 04 | `FR-01.4` | Ganti password mencabut sesi lain |
-| `PR-02-07` | 2FA TOTP: pendaftaran, verifikasi, kode pemulihan | L | 02 | `FR-01.5`, `SDD-SESS-07/08/09` | Role sensitif tidak dapat melewati 2FA |
-| `PR-02-08` | Break-glass CLI + jejak audit wajib | M | 07 | `FR-01.6`, `BR-070c` | Setiap pemakaian menghasilkan alarm & entri log |
-| `PR-02-09` | Middleware otorisasi + penyaringan field per permission | M | Ph01 | `PM-02` `PM-03`, `SDD-AUTH-01/05/06` | Uji otorisasi tergenerate mencakup 100% route |
-| `PR-02-10` | Skema `assets`, `asset_categories`, `asset_condition_history` | M | Ph01 | `FR-04.1`, `SDD-DB-04` | `procurement_id` ada, nullable, tanpa FK aktif ke M-14 |
-| `PR-02-11` | Pendaftaran aset + penomoran + validasi kategori | M | 10 | `FR-04.1`, `BR-001` … `BR-004` | Nomor aset unik di bawah beban paralel |
-| `PR-02-12` | Pencarian & penyaringan aset + paginasi | M | 10 | `FR-04.2`, `SDD-API-05`, `SDD-PERF-01` | 10.000 aset, p95 sesuai anggaran `SDD-PERF` |
-| `PR-02-13` | Perubahan kondisi aset + riwayat | M | 11 | `FR-04.3`, `BR-005` `BR-005a` `BR-005b` | Transisi kondisi terlarang ditolak |
-| `PR-02-14` | Mutasi lokasi aset + riwayat | M | 11, Ph01 | `FR-04.4`, `BR-006` … `BR-008` | Mutasi ke lokasi nonaktif ditolak |
-| `PR-02-15` | Manajemen kategori aset | S | 10 | `FR-04.5`, `BR-009` … `BR-012` | Kategori terpakai tidak dapat dihapus |
-| `PR-02-16` | Skema `booking_slots` + exclusion constraint + `btree_gist` | M | 10, Ph01 | `CI-01`, `SDD-AVL-01/02/03` | Dua slot bertumpang tindih → `23P01` |
-| `PR-02-17` | `SlotService`: reservasi, pelepasan, aktivasi + pemetaan 409 | L | 16 | `CI-02` `CI-03`, `SDD-AVL-04/05`, `SDD-SYS-10` | 100 permintaan serentak → tepat satu berhasil |
-| `PR-02-18` | Skema approval: `approval_rules`, `instances`, `steps` + `rule_snapshot` | M | Ph01 | `FR-10.1`, Lampiran D.5, `SDD-APR-03` | Snapshot beku; perubahan aturan tidak menyentuh instance berjalan |
-| `PR-02-19` | Evaluator DSL kondisi (`RE-01` … `RE-08`) | L | 18 | Lampiran D.2, `SDD-APR-01/02` | Seluruh operator D.2 teruji, termasuk kasus batas |
-| `PR-02-20` | Resolusi approver + delegasi + fallback | M | 19 | `RE-09` … `RE-13`, `SDD-APR-04/05/13/14` | Approver nonaktif → langkah dilewati beralasan `approver nonaktif`, lalu jalur fallback `RE-11`; `fallback_approver` kosong berarti Administrator |
-| `PR-02-21` | Eksekusi persetujuan + *first-responder-wins* | L | 20 | `FR-10.2`, `BR-035` … `BR-039a`, `SDD-APR-07` | Dua approver serentak → satu 200, satu 409 |
-| `PR-02-22` | SLA, pengingat, eskalasi (job terjadwal) | M | 21, Ph00 | `BR-040` … `BR-043`, `SDD-APR-06`, `SDD-APR-15` | Perhitungan memakai jam operasional terkonfigurasi (`CAL-01`); tenggat di luar jam itu tidak bertambah |
-| `PR-02-23` | Riwayat & pelacakan persetujuan | S | 21 | `FR-10.3` | Linimasa menampilkan seluruh langkah + alasan |
-| `PR-02-24` | Antarmuka konfigurasi approval rule + pratinjau | M | 19 | `FR-10.1`, `RE-01` | Pratinjau menunjukkan jalur yang akan terpilih |
-| `PR-02-25` | Skema notifikasi + penerbitan dari event domain | M | Ph00 | `FR-17.1`, `SDD-NTF-01/02` | Notifikasi terbit hanya setelah transaksi commit |
-| `PR-02-26` | SSE + Redis Pub/Sub fanout multi-instance | L | 25 | `FR-17.1`, `SDD-NTF-03/04/05` | Dua instance API → satu notifikasi, satu kali tampil |
-| `PR-02-27` | Push FCM + registrasi token + penanganan token mati | M | 25 | `FR-17.2`, `SDD-NTF-06/07` | Token tidak valid dibersihkan otomatis |
-| `PR-02-28` | Preferensi notifikasi | S | 25 | `FR-17.3`, **UXD-05** | Enam kelompok `jenis` sesuai `SDD-08 §4.5`, bukan per modul |
-| `PR-02-29` | Kerangka dashboard + kartu per role | L | 09 | `FR-15.1`, `BR-073` `BR-074`, `SDD-PERF-03` | Kartu di luar permission tidak dirender **dan** tidak dikirim server |
-| `PR-02-30` | Kerangka aplikasi web: routing, state, render berbasis permission | L | 09 | `SDD-FE-01` … `SDD-FE-06`, `SDD-FE-11/12`, **UXD-12** | TanStack Query + primitif headless & token sendiri; satu set token warna — tanpa mode gelap |
+| PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
+|---|---|:---:|:---:|---|---|---|
+| `PR-02-01` | Hash password Argon2id + kebijakan kata sandi | S | S | Ph01 | `NFR-S-01`, `SDD-SESS-01` | Parameter Argon2id sesuai `SDD-SESS-01` |
+| `PR-02-02` | Login + akses token EdDSA + rotasi refresh token | L | L | 01 | `FR-01.1`, `SDD-SESS-02/03/04` | Refresh dipakai ulang → seluruh rantai dicabut |
+| `PR-02-03` | Penguncian akun + `NT-40` + audit percobaan gagal | M | M | 02 | `FR-01.1 A2`, `BR-070` `BR-070a` | 5 gagal → kunci; pesan galat tidak membocorkan keberadaan akun |
+| `PR-02-04` | Logout + pencabutan sesi + daftar perangkat | M | M | 02 | `FR-01.2`, `SDD-SESS-06` | Token tercabut ditolak ≤ 60 detik |
+| `PR-02-05` | Lupa & reset password (token sekali pakai) | M | M | 02 | `FR-01.3`, `NT-41` | Respons seragam untuk email ada/tidak ada |
+| `PR-02-06` | Ganti password + kelola profil + pencabutan sesi lain | S | S | 04 | `FR-01.4` | Ganti password mencabut sesi lain |
+| `PR-02-07` | 2FA TOTP: pendaftaran, verifikasi, kode pemulihan | L | L | 02 | `FR-01.5`, `SDD-SESS-07/08/09` | Role sensitif tidak dapat melewati 2FA |
+| `PR-02-08` | Break-glass CLI + jejak audit wajib | M | M | 07 | `FR-01.6`, `BR-070c` | Setiap pemakaian menghasilkan alarm & entri log |
+| `PR-02-09` | Middleware otorisasi + penyaringan field per permission | M | M | Ph01 | `PM-02` `PM-03`, `SDD-AUTH-01/05/06` | Uji otorisasi tergenerate mencakup 100% route |
+| `PR-02-10` | Skema `assets`, `asset_categories`, `asset_condition_history` | M | M | Ph01 | `FR-04.1`, `SDD-DB-04` | `procurement_id` ada, nullable, tanpa FK aktif ke M-14 |
+| `PR-02-11` | Pendaftaran aset + penomoran + validasi kategori | M | L | 10 | `FR-04.1`, `BR-001` … `BR-004` | Nomor aset unik di bawah beban paralel |
+| `PR-02-12` | Pencarian & penyaringan aset + paginasi | M | M | 10 | `FR-04.2`, `SDD-API-05`, `SDD-PERF-01` | 10.000 aset, p95 sesuai anggaran `SDD-PERF` |
+| `PR-02-13` | Perubahan kondisi aset + riwayat | M | M | 11 | `FR-04.3`, `BR-005` `BR-005a` `BR-005b` | Transisi kondisi terlarang ditolak |
+| `PR-02-14` | Mutasi lokasi aset + riwayat | M | M | 11, Ph01 | `FR-04.4`, `BR-006` … `BR-008` | Mutasi ke lokasi nonaktif ditolak |
+| `PR-02-15` | Manajemen kategori aset | S | S | 10 | `FR-04.5`, `BR-009` … `BR-012` | Kategori terpakai tidak dapat dihapus |
+| `PR-02-16` | Skema `booking_slots` + exclusion constraint + `btree_gist` | M | L | 10, Ph01 | `CI-01`, `SDD-AVL-01/02/03` | Dua slot bertumpang tindih → `23P01` |
+| `PR-02-17` | `SlotService`: reservasi, pelepasan, aktivasi + pemetaan 409 | L | L | 16 | `CI-02` `CI-03`, `SDD-AVL-04/05`, `SDD-SYS-10` | 100 permintaan serentak → tepat satu berhasil |
+| `PR-02-18` | Skema approval: `approval_rules`, `instances`, `steps` + `rule_snapshot` | M | M | Ph01 | `FR-10.1`, Lampiran D.5, `SDD-APR-03` | Snapshot beku; perubahan aturan tidak menyentuh instance berjalan |
+| `PR-02-19` | Evaluator DSL kondisi (`RE-01` … `RE-08`) | L | L | 18 | Lampiran D.2, `SDD-APR-01/02` | Seluruh operator D.2 teruji, termasuk kasus batas |
+| `PR-02-20` | Resolusi approver + delegasi + fallback | M | M | 19 | `RE-09` … `RE-13`, `SDD-APR-04/05/13/14` | Approver nonaktif → langkah dilewati beralasan `approver nonaktif`, lalu jalur fallback `RE-11`; `fallback_approver` kosong berarti Administrator |
+| `PR-02-21` | Eksekusi persetujuan + *first-responder-wins* | L | L | 20 | `FR-10.2`, `BR-035` … `BR-039a`, `SDD-APR-07` | Dua approver serentak → satu 200, satu 409 |
+| `PR-02-22` | SLA, pengingat, eskalasi (job terjadwal) | M | M | 21, Ph00 | `BR-040` … `BR-043`, `SDD-APR-06`, `SDD-APR-15` | Perhitungan memakai jam operasional terkonfigurasi (`CAL-01`); tenggat di luar jam itu tidak bertambah |
+| `PR-02-23` | Riwayat & pelacakan persetujuan | S | S | 21 | `FR-10.3` | Linimasa menampilkan seluruh langkah + alasan |
+| `PR-02-24` | Antarmuka konfigurasi approval rule + pratinjau | M | M | 19 | `FR-10.1`, `RE-01` | Pratinjau menunjukkan jalur yang akan terpilih |
+| `PR-02-25` | Skema notifikasi + penerbitan dari event domain | M | M | Ph00 | `FR-17.1`, `SDD-NTF-01/02` | Notifikasi terbit hanya setelah transaksi commit |
+| `PR-02-26` | SSE + Redis Pub/Sub fanout multi-instance | L | L | 25 | `FR-17.1`, `SDD-NTF-03/04/05` | Dua instance API → satu notifikasi, satu kali tampil |
+| `PR-02-27` | Push FCM + registrasi token + penanganan token mati | M | M | 25 | `FR-17.2`, `SDD-NTF-06/07` | Token tidak valid dibersihkan otomatis |
+| `PR-02-28` | Preferensi notifikasi | S | S | 25 | `FR-17.3`, **UXD-05** | Enam kelompok `jenis` sesuai `SDD-08 §4.5`, bukan per modul |
+| `PR-02-29` | Kerangka dashboard + kartu per role | L | L | 09 | `FR-15.1`, `BR-073` `BR-074`, `SDD-PERF-03` | Kartu di luar permission tidak dirender **dan** tidak dikirim server |
+| `PR-02-30` | Kerangka aplikasi web: routing, state, render berbasis permission | L | L | 09 | `SDD-FE-01` … `SDD-FE-06`, `SDD-FE-11/12`, **UXD-12** | TanStack Query + primitif headless & token sendiri; satu set token warna — tanpa mode gelap |
 
 ## 8. Task Breakdown
 

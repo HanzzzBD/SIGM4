@@ -100,31 +100,31 @@ M-05  M-06  M-07  M-11  M-14  M-19   ← tanpa ketergantungan antar-modul
 
 ## 7. Pull Request Plan
 
-| PR | Judul | Kompleksitas | Bergantung | FR/SDD | Acceptance |
-|---|---|:---:|---|---|---|
-| `PR-03-01` | Pembuatan QR + payload + penyimpanan | M | Ph02 | `FR-05.1`, `BR-001` `BR-002` | Payload tidak memuat data pribadi |
-| `PR-03-02` | Cetak QR massal (PDF, tata letak label) | M | 01 | `FR-05.1 A2` | 100 label satu berkas |
-| `PR-03-03` | Endpoint pemindaian + resolusi ke aset | S | 01 | `FR-05.2` | QR tak dikenal → galat jelas, bukan 500 |
-| `PR-03-04` | Layanan berkas: presigned URL unggah/unduh | M | Ph02 | `FR-06.1`, `SDD-FS-01/02/03` | URL kedaluwarsa sesuai `SDD-FS-02` |
-| `PR-03-05` | Pemindaian antivirus + karantina | M | 04 | `SDD-FS-04/05` | Berkas terinfeksi tidak pernah dapat diunduh |
-| `PR-03-06` | Metadata dokumen aset + CRUD + hak akses | M | 04 | `FR-06.1`, `BR-073` | Dokumen di luar scope pengguna tidak terlihat |
-| `PR-03-07` | Turunan gambar + siklus hidup berkas | M | 05 | `SDD-FS-06/07` | Berkas yatim terbersihkan job terjadwal |
-| `PR-03-08` | Skema reservasi ruangan + integrasi `booking_slots` | M | Ph02 | `FR-07.2`, `SDD-AVL-06` | Slot terbentuk dalam transaksi yang sama |
-| `PR-03-09` | Kalender ketersediaan ruangan | L | 08 | `FR-07.1`, `AV-01` … `AV-05`, `SDD-FE-07/08` | Konflik terlihat sebelum pengajuan dikirim |
-| `PR-03-10` | Pengajuan reservasi + pemicuan approval | L | 08, Ph02 | `FR-07.2`, `BR-017` … `BR-023c` | Pengajuan bertabrakan → 409 dengan penjelasan |
-| `PR-03-11` | Pembatalan & perubahan reservasi + pelepasan slot | M | 10 | `FR-07.3`, `BR-024` `BR-024a` `BR-024b` | Slot terlepas seketika saat batal |
-| `PR-03-12` | Penggunaan & penyelesaian reservasi | M | 10 | `FR-07.4`, `BR-025` `BR-030` | Aktivasi slot mengikuti sekuens 15.2 |
-| `PR-03-13` | Blokade jadwal tetap + blokade manual | L | 08 | `FR-07.5` | Jadwal berulang menutup ruangan tanpa membuat ribuan baris berlebih |
-| `PR-03-14` | Skema laporan kerusakan + pengajuan dari mobile | M | Ph02 | `FR-11.1`, `BR-044` `BR-045` | Foto wajib; unggah antre saat luring |
-| `PR-03-15` | Verifikasi & tindak lanjut laporan | M | 14 | `FR-11.2`, `BR-032`, `BR-052` | Titik ekstensi work order disiapkan, belum diisi |
-| `PR-03-16` | Pemantauan status kerusakan | S | 14 | `FR-11.3` | Pelapor melihat perkembangan tanpa akses penuh |
-| `PR-03-17` | Skema pengadaan + pengajuan usulan | M | Ph02 | `FR-14.1`, `BR-060` `BR-061` | Anggaran & justifikasi tervalidasi |
-| `PR-03-18` | Persetujuan usulan pengadaan | M | 17, Ph02 | `FR-14.2`, `BR-062` `BR-063` | Rule bertingkat sesuai nilai usulan |
-| `PR-03-19` | Penerimaan barang → pembuatan aset + **isi `procurement_id`** | L | 18, Ph02 | `FR-14.3`, `BR-064` `BR-065`, `SDD-DB-08` | Aset baru ber-`procurement_id`; aset lama tetap `NULL` dan sah |
-| `PR-03-20` | Orkestrator AI: klien, streaming, kendali kuota | L | Ph02 | `FR-19.1`, `SDD-AI-01/02/03/04/12/14/15`, `AI-CTL-02` `AI-CTL-07` `AI-CTL-09` `AI-CTL-10` | `interactions.create` dengan `store: false`; tanpa `temperature`/`top_p`/`top_k`; `thinking_level` eksplisit; hanya custom function tool |
-| `PR-03-21` | Definisi tool chatbot + guardrail permission di lapisan kueri | L | 20 | `BR-075` `BR-076`, `SDD-AI-05/06/15` | Automatic function calling SDK dimatikan; tool menerima `AuthContext`; data di luar scope tidak pernah terbaca |
-| `PR-03-22` | Prompt caching (awalan statis, sasaran ≥ 4.500 token) | M | 20 | `SDD-AI-04/05/13`, `AI-CTL-01` | Uji memverifikasi **panjang awalan** dan `usage.total_cached_tokens > 0` pada permintaan kedua; metrik `chat_cache_read_ratio` terpantau |
-| `PR-03-23` | Riwayat percakapan + evaluasi + eval harness | M | 21 | `FR-19.2`, `BR-077` … `BR-079`, `SDD-AI-09/10` | Eval berjalan di CI terhadap `SC-10` |
+| PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
+|---|---|:---:|:---:|---|---|---|
+| `PR-03-01` | Pembuatan QR + payload + penyimpanan | M | M | Ph02 | `FR-05.1`, `BR-001` `BR-002` | Payload tidak memuat data pribadi |
+| `PR-03-02` | Cetak QR massal (PDF, tata letak label) | M | M | 01 | `FR-05.1 A2` | 100 label satu berkas |
+| `PR-03-03` | Endpoint pemindaian + resolusi ke aset | S | S | 01 | `FR-05.2` | QR tak dikenal → galat jelas, bukan 500 |
+| `PR-03-04` | Layanan berkas: presigned URL unggah/unduh | M | M | Ph02 | `FR-06.1`, `SDD-FS-01/02/03` | URL kedaluwarsa sesuai `SDD-FS-02` |
+| `PR-03-05` | Pemindaian antivirus + karantina | M | M | 04 | `SDD-FS-04/05` | Berkas terinfeksi tidak pernah dapat diunduh |
+| `PR-03-06` | Metadata dokumen aset + CRUD + hak akses | M | L | 04 | `FR-06.1`, `BR-073` | Dokumen di luar scope pengguna tidak terlihat |
+| `PR-03-07` | Turunan gambar + siklus hidup berkas | M | M | 05 | `SDD-FS-06/07` | Berkas yatim terbersihkan job terjadwal |
+| `PR-03-08` | Skema reservasi ruangan + integrasi `booking_slots` | M | L | Ph02 | `FR-07.2`, `SDD-AVL-06` | Slot terbentuk dalam transaksi yang sama |
+| `PR-03-09` | Kalender ketersediaan ruangan | L | L | 08 | `FR-07.1`, `AV-01` … `AV-05`, `SDD-FE-07/08` | Konflik terlihat sebelum pengajuan dikirim |
+| `PR-03-10` | Pengajuan reservasi + pemicuan approval | L | L | 08, Ph02 | `FR-07.2`, `BR-017` … `BR-023c` | Pengajuan bertabrakan → 409 dengan penjelasan |
+| `PR-03-11` | Pembatalan & perubahan reservasi + pelepasan slot | M | L | 10 | `FR-07.3`, `BR-024` `BR-024a` `BR-024b` | Slot terlepas seketika saat batal |
+| `PR-03-12` | Penggunaan & penyelesaian reservasi | M | L | 10 | `FR-07.4`, `BR-025` `BR-030` | Aktivasi slot mengikuti sekuens 15.2 |
+| `PR-03-13` | Blokade jadwal tetap + blokade manual | L | L | 08 | `FR-07.5` | Jadwal berulang menutup ruangan tanpa membuat ribuan baris berlebih |
+| `PR-03-14` | Skema laporan kerusakan + pengajuan dari mobile | M | M | Ph02 | `FR-11.1`, `BR-044` `BR-045` | Foto wajib; unggah antre saat luring |
+| `PR-03-15` | Verifikasi & tindak lanjut laporan | M | M | 14 | `FR-11.2`, `BR-032`, `BR-052` | Titik ekstensi work order disiapkan, belum diisi |
+| `PR-03-16` | Pemantauan status kerusakan | S | S | 14 | `FR-11.3` | Pelapor melihat perkembangan tanpa akses penuh |
+| `PR-03-17` | Skema pengadaan + pengajuan usulan | M | M | Ph02 | `FR-14.1`, `BR-060` `BR-061` | Anggaran & justifikasi tervalidasi |
+| `PR-03-18` | Persetujuan usulan pengadaan | M | M | 17, Ph02 | `FR-14.2`, `BR-062` `BR-063` | Rule bertingkat sesuai nilai usulan |
+| `PR-03-19` | Penerimaan barang → pembuatan aset + **isi `procurement_id`** | L | L | 18, Ph02 | `FR-14.3`, `BR-064` `BR-065`, `SDD-DB-08` | Aset baru ber-`procurement_id`; aset lama tetap `NULL` dan sah |
+| `PR-03-20` | Orkestrator AI: klien, streaming, kendali kuota | L | L | Ph02 | `FR-19.1`, `SDD-AI-01/02/03/04/12/14/15`, `AI-CTL-02` `AI-CTL-07` `AI-CTL-09` `AI-CTL-10` | `interactions.create` dengan `store: false`; tanpa `temperature`/`top_p`/`top_k`; `thinking_level` eksplisit; hanya custom function tool |
+| `PR-03-21` | Definisi tool chatbot + guardrail permission di lapisan kueri | L | L | 20 | `BR-075` `BR-076`, `SDD-AI-05/06/15` | Automatic function calling SDK dimatikan; tool menerima `AuthContext`; data di luar scope tidak pernah terbaca |
+| `PR-03-22` | Prompt caching (awalan statis, sasaran ≥ 4.500 token) | M | M | 20 | `SDD-AI-04/05/13`, `AI-CTL-01` | Uji memverifikasi **panjang awalan** dan `usage.total_cached_tokens > 0` pada permintaan kedua; metrik `chat_cache_read_ratio` terpantau |
+| `PR-03-23` | Riwayat percakapan + evaluasi + eval harness | M | M | 21 | `FR-19.2`, `BR-077` … `BR-079`, `SDD-AI-09/10` | Eval berjalan di CI terhadap `SC-10` |
 
 ## 8. Task Breakdown
 

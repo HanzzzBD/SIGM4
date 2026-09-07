@@ -90,23 +90,23 @@ Keluaran phase ini bukan kode, melainkan **keputusan bahwa sistem boleh dipakai*
 
 ## 7. Pull Request Plan
 
-| PR | Judul | Kompleksitas | Bergantung | FR/SDD | Acceptance |
-|---|---|:---:|---|---|---|
-| `PR-08-01` | Harness uji beban + skenario 150 concurrent user | L | Ph07 | `GL-03`, `SDD-PERF-05` | Skenario mencerminkan pemakaian nyata, bukan satu endpoint |
-| `PR-08-02` | Optimasi hasil uji beban — batch temuan | M | 01 | Bab 9.1 | Setiap optimasi menunjuk angka sebelum/sesudah |
-| `PR-08-03` | Penetapan parameter operasional dari pengukuran (TBD kelompok B) | M | 01 | `TBD-AVL-C/D`, `TBD-PERF-A`, `TBD-EVT-A` | Tiap nilai punya dasar pengukuran, bukan tebakan |
-| `PR-08-04` | Pengerasan keamanan pra-pentest | M | Ph07 | `SDD-SEC-04/05/06`, `NFR-S-07` | Pemindaian otomatis bersih sebelum penguji manusia masuk |
-| `PR-08-05` | Penutupan temuan pentest — batch 1 | M | pentest | `GL-04`, `ST-04` | Nol temuan High/Critical terbuka |
-| `PR-08-06` | Penutupan temuan pentest — batch 2 | M | 05 | `GL-04` | Verifikasi ulang oleh penguji |
-| `PR-08-07` | Backup terverifikasi + skrip pemulihan | M | Ph00 | `BR-DR-01` … `BR-DR-04` | Pemulihan diuji dari backup nyata, bukan asumsi |
-| `PR-08-08` | DR runbook + pelaksanaan drill | M | 07 | `GL-06`, `BR-DR-05` | RTO/RPO terukur dan memenuhi target |
-| `PR-08-09` | Alerting produksi + jalur eskalasi | M | Ph00 | `OBS-07`, `SDD-OBS-07`, **TBD-OBS-B** | Setiap alarm punya penerima bernama |
-| `PR-08-10` | Perkakas migrasi data produksi + validasi | L | Ph07 | `GL-08`, `IMP-01` `IMP-03` | ≥95% aset (`SC-01`), ≥95% ber-QR (`SC-02`) |
-| `PR-08-11` | **Contract**: hapus `users.unit_kerja` | S | Ph07 | `SDD-DB-08`, `WU-01` | Nol pembaca tersisa, dibuktikan pencarian kode |
-| `PR-08-12` | Pemberitahuan privasi + alur persetujuan wali di produksi | M | Ph01 | `GL-07`, `DP-01` `DP-02`, `DP-AI-04`, Bab 28 | Seluruh akun siswa aktif punya persetujuan; pemberitahuan privasi menyatakan konsekuensi tier gratis chatbot sebelum chatbot aktif (`DP-AI-04`) |
-| `PR-08-13` | Pengerasan mobile + versi paksa + berkas rilis store | M | Ph07 | `GL-11`, `SDD-MOB-08/09/10` | Lolos tinjauan kedua store |
-| `PR-08-14` | Uji rencana rollback pada staging berdata produksi tiruan | M | 07 | `GL-12`, `CD-05` | Rollback dijalankan sungguhan dan terukur waktunya |
-| `PR-08-15` | Dokumen serah terima `IMP-08` | L | seluruhnya | `IMP-08` | Delapan dokumen lengkap dan terbaca pihak sekolah |
+| PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
+|---|---|:---:|:---:|---|---|---|
+| `PR-08-01` | Harness uji beban + skenario 150 concurrent user | L | L | Ph07 | `GL-03`, `SDD-PERF-05` | Skenario mencerminkan pemakaian nyata, bukan satu endpoint |
+| `PR-08-02` | Optimasi hasil uji beban — batch temuan | M | M | 01 | Bab 9.1 | Setiap optimasi menunjuk angka sebelum/sesudah |
+| `PR-08-03` | Penetapan parameter operasional dari pengukuran (TBD kelompok B) | M | M | 01 | `TBD-AVL-C/D`, `TBD-PERF-A`, `TBD-EVT-A` | Tiap nilai punya dasar pengukuran, bukan tebakan |
+| `PR-08-04` | Pengerasan keamanan pra-pentest | M | M | Ph07 | `SDD-SEC-04/05/06`, `NFR-S-07` | Pemindaian otomatis bersih sebelum penguji manusia masuk |
+| `PR-08-05` | Penutupan temuan pentest — batch 1 | M | M | pentest | `GL-04`, `ST-04` | Nol temuan High/Critical terbuka |
+| `PR-08-06` | Penutupan temuan pentest — batch 2 | M | M | 05 | `GL-04` | Verifikasi ulang oleh penguji |
+| `PR-08-07` | Backup terverifikasi + skrip pemulihan | M | M | Ph00 | `BR-DR-01` … `BR-DR-04` | Pemulihan diuji dari backup nyata, bukan asumsi |
+| `PR-08-08` | DR runbook + pelaksanaan drill | M | M | 07 | `GL-06`, `BR-DR-05` | RTO/RPO terukur dan memenuhi target |
+| `PR-08-09` | Alerting produksi + jalur eskalasi | M | M | Ph00 | `OBS-07`, `SDD-OBS-07`, **TBD-OBS-B** | Setiap alarm punya penerima bernama |
+| `PR-08-10` | Perkakas migrasi data produksi + validasi | L | L | Ph07 | `GL-08`, `IMP-01` `IMP-03` | ≥95% aset (`SC-01`), ≥95% ber-QR (`SC-02`) |
+| `PR-08-11` | **Contract**: hapus `users.unit_kerja` | S | S | Ph07 | `SDD-DB-08`, `WU-01` | Nol pembaca tersisa, dibuktikan pencarian kode |
+| `PR-08-12` | Pemberitahuan privasi + alur persetujuan wali di produksi | M | M | Ph01 | `GL-07`, `DP-01` `DP-02`, `DP-AI-04`, Bab 28 | Seluruh akun siswa aktif punya persetujuan; pemberitahuan privasi menyatakan konsekuensi tier gratis chatbot sebelum chatbot aktif (`DP-AI-04`) |
+| `PR-08-13` | Pengerasan mobile + versi paksa + berkas rilis store | M | M | Ph07 | `GL-11`, `SDD-MOB-08/09/10` | Lolos tinjauan kedua store |
+| `PR-08-14` | Uji rencana rollback pada staging berdata produksi tiruan | M | M | 07 | `GL-12`, `CD-05` | Rollback dijalankan sungguhan dan terukur waktunya |
+| `PR-08-15` | Dokumen serah terima `IMP-08` | L | L | seluruhnya | `IMP-08` | Delapan dokumen lengkap dan terbaca pihak sekolah |
 
 ## 8. Task Breakdown
 

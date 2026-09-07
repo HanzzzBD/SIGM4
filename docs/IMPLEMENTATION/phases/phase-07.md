@@ -75,22 +75,22 @@ Bila sebuah cacat integrasi baru ditemukan di Phase 08, artinya phase ini gagal.
 
 ## 7. Pull Request Plan
 
-| PR | Judul | Kompleksitas | Bergantung | FR/SDD | Acceptance |
-|---|---|:---:|---|---|---|
-| `PR-07-01` | Kerangka uji E2E + data uji berskala nyata | L | Ph06 | `test-strategy.md` | 5.000 aset, 500 pengguna, satu tahun ajaran |
-| `PR-07-02` | E2E: siklus hidup aset penuh (pengadaan → penghapusan) | L | 01 | Bab 15 | Satu aset melewati seluruh transisi status |
-| `PR-07-03` | E2E: reservasi ruangan → penggunaan → penyelesaian | M | 01 | `FR-07.1` … `FR-07.4` | Termasuk jalur pembatalan dan bentrok |
-| `PR-07-04` | E2E: reservasi aset → pinjam → kembali → denda | L | 01 | `FR-08.x`, `FR-09.x` | Termasuk keterlambatan dan perpanjangan |
-| `PR-07-05` | E2E: kerusakan → work order → servis → verifikasi | M | 01 | `FR-11.x`, `FR-12.x`, `BR-052` | Kriteria keluar `M3` PRD |
-| `PR-07-06` | E2E: opname → selisih → tindak lanjut → penghapusan | M | 01 | `FR-13.x`, `FR-21.x`, `BR-012` | Aset hilang sampai ke berita acara |
-| `PR-07-07` | E2E: approval bertingkat lintas jenis pengaju | M | 01 | `FR-10.x`, Lampiran D | Satu konfigurasi rule melayani empat pengaju berbeda |
-| `PR-07-08` | Uji otorisasi tujuh role menyeluruh | L | 01 | `GL-05`, `ST-05`, `PM-02` `PM-03` | Nol kebocoran lintas role |
-| `PR-07-09` | Rekonsiliasi silang: analitik ⇄ operasional ⇄ activity log | M | 01, Ph06 | `FR-16.1`, `AL-01` | Selisih nol; bila ada, terjelaskan |
-| `PR-07-10` | Eval chatbot penuh: *golden set* + red-teaming per role | L | 01, Ph03 | `SC-10`, `ST-06`, `SDD-AI-11` | Kriteria `GL-05` bagian chatbot |
-| `PR-07-11` | Uji korelasi `request_id` lintas modul | S | 01 | `SDD-OBS-05` | Satu permintaan tertelusur dari API sampai worker |
-| `PR-07-12` | Verifikasi matriks keterlacakan otomatis | M | 02 … 08 | `traceability.md` | FR tanpa uji menggagalkan CI |
-| `PR-07-13` | Perbaikan cacat integrasi — batch 1 | M | 02 … 09 | — | Setiap perbaikan menunjuk uji E2E yang gagal |
-| `PR-07-14` | Perbaikan cacat integrasi — batch 2 (pasca-UAT) | M | UAT | — | Hanya cacat; permintaan fitur ditolak ke CR |
+| PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
+|---|---|:---:|:---:|---|---|---|
+| `PR-07-01` | Kerangka uji E2E + data uji berskala nyata | L | L | Ph06 | `test-strategy.md` | 5.000 aset, 500 pengguna, satu tahun ajaran |
+| `PR-07-02` | E2E: siklus hidup aset penuh (pengadaan → penghapusan) | L | L | 01 | Bab 15 | Satu aset melewati seluruh transisi status |
+| `PR-07-03` | E2E: reservasi ruangan → penggunaan → penyelesaian | M | M | 01 | `FR-07.1` … `FR-07.4` | Termasuk jalur pembatalan dan bentrok |
+| `PR-07-04` | E2E: reservasi aset → pinjam → kembali → denda | L | L | 01 | `FR-08.x`, `FR-09.x` | Termasuk keterlambatan dan perpanjangan |
+| `PR-07-05` | E2E: kerusakan → work order → servis → verifikasi | M | M | 01 | `FR-11.x`, `FR-12.x`, `BR-052` | Kriteria keluar `M3` PRD |
+| `PR-07-06` | E2E: opname → selisih → tindak lanjut → penghapusan | M | M | 01 | `FR-13.x`, `FR-21.x`, `BR-012` | Aset hilang sampai ke berita acara |
+| `PR-07-07` | E2E: approval bertingkat lintas jenis pengaju | M | M | 01 | `FR-10.x`, Lampiran D | Satu konfigurasi rule melayani empat pengaju berbeda |
+| `PR-07-08` | Uji otorisasi tujuh role menyeluruh | L | L | 01 | `GL-05`, `ST-05`, `PM-02` `PM-03` | Nol kebocoran lintas role |
+| `PR-07-09` | Rekonsiliasi silang: analitik ⇄ operasional ⇄ activity log | M | M | 01, Ph06 | `FR-16.1`, `AL-01` | Selisih nol; bila ada, terjelaskan |
+| `PR-07-10` | Eval chatbot penuh: *golden set* + red-teaming per role | L | L | 01, Ph03 | `SC-10`, `ST-06`, `SDD-AI-11` | Kriteria `GL-05` bagian chatbot |
+| `PR-07-11` | Uji korelasi `request_id` lintas modul | S | S | 01 | `SDD-OBS-05` | Satu permintaan tertelusur dari API sampai worker |
+| `PR-07-12` | Verifikasi matriks keterlacakan otomatis | M | M | 02 … 08 | `traceability.md` | FR tanpa uji menggagalkan CI |
+| `PR-07-13` | Perbaikan cacat integrasi — batch 1 | M | M | 02 … 09 | — | Setiap perbaikan menunjuk uji E2E yang gagal |
+| `PR-07-14` | Perbaikan cacat integrasi — batch 2 (pasca-UAT) | M | M | UAT | — | Hanya cacat; permintaan fitur ditolak ke CR |
 
 > `PR-07-13` dan `PR-07-14` sengaja tidak dirinci — isinya ditentukan temuan. Kompleksitas **M** adalah pagu; bila satu perbaikan melampauinya, ia dipecah menjadi PR tersendiri.
 

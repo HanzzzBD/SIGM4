@@ -10,7 +10,7 @@ Urutan phase dan graf dependensinya ada di [`ROADMAP.md`](ROADMAP.md) dan tidak 
 
 ## 1. Ringkasan volume
 
-| Phase | Modul | PR | Kompleksitas dominan | Catatan |
+| Phase | Modul | PR | Kompleksitas dominan (`Kode`) | Catatan |
 |:---:|:---:|:---:|---|---|
 | 00 | — | 18 | M | Tidak ada modul fungsional; seluruhnya kerangka |
 | 01 | 4 | 14 | S–M | Paralelisme tertinggi — empat modul saling bebas |
@@ -23,7 +23,7 @@ Urutan phase dan graf dependensinya ada di [`ROADMAP.md`](ROADMAP.md) dan tidak 
 | 08 | — | 15 | S–M | Pengerasan; banyak aktivitas non-PR |
 | **Total** | **22** | **163** | | |
 
-Skala kompleksitas PR mengikuti [`templates/PHASE-TEMPLATE.md`](templates/PHASE-TEMPLATE.md): **S** ≤ 200 baris berubah · **M** ≤ 400 · **L** > 400 dan wajib disertai alasan di deskripsi PR.
+Skala kompleksitas PR mengikuti [`templates/PHASE-TEMPLATE.md`](templates/PHASE-TEMPLATE.md): **S** ≤ 200 baris berubah · **M** ≤ 400 · **L** > 400 dan wajib disertai alasan di deskripsi PR. Sejak 7 September 2026 §7 tiap phase memisahkannya menjadi **dua kolom** — `Kode` untuk baris kode produksi, `Uji` untuk baris uji. Kolom **Kompleksitas dominan** pada tabel di atas mengacu pada `Kode`.
 
 **Phase 02 memuat 20% seluruh PR proyek.** Bila jadwal meleset, di sinilah paling mungkin terjadi — dan konsekuensinya menjalar ke seluruh phase sesudahnya karena ia berada di lintasan kritis.
 
