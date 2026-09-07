@@ -86,8 +86,13 @@ describe.skipIf(process.env['DATABASE_URL'] === undefined)(
     });
 
     it('down mencabut seluruhnya, lalu up memulihkannya (CD-04, CD-05)', async () => {
-      dbmate('down');
-      dbmate('down');
+      // Jumlah migration TIDAK dipatok: ia bertambah tiap PR, dan angka yang
+      // dipatok di sini akan menjadikan uji ini gagal atas penambahan yang sah
+      // alih-alih atas kerusakan yang nyata.
+      const terpasang = await kueri<{ n: string }>(
+        'SELECT count(*)::text AS n FROM schema_migrations',
+      );
+      for (let sisa = Number(terpasang[0]?.n ?? 0); sisa > 0; sisa -= 1) dbmate('down');
       expect((await kueri<{ enums: string; ext: string }>(HITUNG))[0]).toEqual({
         enums: '0',
         ext: '0',

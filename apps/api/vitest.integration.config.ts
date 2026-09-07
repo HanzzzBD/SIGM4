@@ -13,5 +13,16 @@ export default defineConfig({
     hookTimeout: 60_000,
     // Berbagi satu basis data: berkas uji tidak boleh berjalan paralel.
     fileParallelism: false,
+    // Cakupan diukur terpisah dari uji berkas: sebagian kode — koneksi DB
+    // (PR-00-04) dan penerbitan nomor (PR-00-07) — hanya dapat dijalankan
+    // terhadap PostgreSQL nyata. Menggabungkan kedua laporan menjadi satu
+    // gerbang adalah pekerjaan PR-00-17.
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary'],
+      reportsDirectory: './coverage-integration',
+      include: ['src/**/*.ts'],
+      exclude: ['src/**/index.ts', 'src/api/**', 'src/worker/**'],
+    },
   },
 });
