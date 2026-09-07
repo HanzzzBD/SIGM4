@@ -10,7 +10,7 @@ Yang ada di sini hanyalah **cara kerja sehari-hari di dalam model itu**: penamaa
 
 ## 0. Keadaan saat ini — transisi tersisa
 
-**Model pada §1 belum dapat dijalankan utuh.** `develop` sudah hidup sejak 6 September 2026; `staging` belum ada dan baru dibangun bersama lingkungannya pada [`PR-00-18`](phases/phase-00.md). `apps/` sudah dibuat oleh `PR-00-01`, sehingga lint dan build sudah memiliki sasaran nyata. Pipeline `CD-01` tetap belum ada; pembuatannya adalah scope `PR-00-17`.
+**Model pada §1 belum dapat dijalankan utuh.** `develop` sudah hidup sejak 6 September 2026; `staging` belum ada dan baru dibangun bersama lingkungannya pada [`PR-00-18`](phases/phase-00.md). `apps/` sudah dibuat oleh `PR-00-01`, dan sejak `PR-00-04`/`PR-00-05` uji berkas maupun uji integrasi ikut berdiri — sehingga lint, build, dan test sudah memiliki sasaran nyata. Pipeline `CD-01` tetap belum ada; pembuatannya adalah scope `PR-00-17`.
 
 Selama masa transisi ini berlaku:
 

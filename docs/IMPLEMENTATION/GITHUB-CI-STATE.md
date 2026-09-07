@@ -20,7 +20,7 @@ Bila berkas ini bertentangan dengan salah satu di atas, **yang di atas yang berl
 
 ## 1. Mengapa ada dua keadaan
 
-Phase 00 baru dimulai. `PR-00-01` sudah membuat ketiga pohon `apps/*` beserta `packages/schemas`, lengkap dengan lint dan TypeScript-nya, sehingga `npm run lint` dan `npm run build` kini punya sasaran nyata. Yang belum ada adalah **pipeline yang menjalankannya**: seluruh tahap `CD-01` dibangun `PR-00-17`, dan lingkungan staging beserta job migration dibangun `PR-00-18` — keduanya di Phase 00.
+Phase 00 berjalan; `PR-00-01` … `PR-00-05` tergabung ke `develop`. Ketiga pohon `apps/*` beserta `packages/schemas` berdiri lengkap dengan lint dan TypeScript-nya; **Vitest terpasang sejak `PR-00-04`** dan **jalur migration berdiri sejak `PR-00-05`**, sehingga `npm run lint`, `build`, `test`, dan `test:integration` seluruhnya punya sasaran nyata dan hijau secara lokal. Yang belum ada adalah **pipeline yang menjalankannya**: seluruh tahap `CD-01` dibangun `PR-00-17`, dan lingkungan staging beserta job migration dibangun `PR-00-18` — keduanya di Phase 00.
 
 Karena itu sebagian aturan **belum dapat ditaati**, bukan karena diabaikan. Membedakan keduanya penting: aturan yang tidak dapat ditaati dan aturan yang dilanggar menuntut tindakan yang berbeda.
 
@@ -51,8 +51,8 @@ lint → unit test → integration test → uji otorisasi tergenerate
 | Tahap | Gerbang | Current State | Dibangun oleh |
 |---|---|---|---|
 | lint | Impor lintas modul melanggar batas → gagal | Lint menegakkan batas antar-pohon (`SDD-REPO-06/07`), batas lapisan, dan — sejak `PR-00-02` — batas antar-**modul** (`SDD-SYS-02/03`, `SDD-00 §4.2`); seluruhnya dibuktikan uji negatif `scripts/check_import_boundaries.mjs`. Yang belum ada tinggal pemasangannya di CI | `PR-00-17` |
-| unit test | Cakupan logika inti < 70% → **stop** (`CD-02`, `NFR-M-03`) | Belum ada — runner-nya **Vitest** (`SDD-REPO-11`) | `PR-00-17` |
-| integration test | Termasuk uji konkurensi `CC-01`…`CC-07` | Belum ada | `PR-00-17` |
+| unit test | Cakupan logika inti < 70% → **stop** (`CD-02`, `NFR-M-03`) | **Vitest terpasang** sejak `PR-00-04` (`SDD-REPO-11`); `npm test` menjalankan 5 berkas / 44 uji, hijau. Yang belum ada: tahapnya di CI dan gerbang cakupannya | `PR-00-17` |
+| integration test | Termasuk uji konkurensi `CC-01`…`CC-07` | **Berdiri** sejak `PR-00-05`: `npm run test:integration -w apps/api` menjalankan 2 berkas / 9 uji terhadap PostgreSQL nyata (`SDD-REPO-11`). `CC-01`…`CC-07` sendiri baru mungkin setelah `booking_slots` ada (`PR-02-16`) | `PR-00-17` |
 | uji otorisasi tergenerate | `SEC-T-01` | Belum ada | `PR-00-17` |
 | SAST | `ST-01` | Belum ada — perkakasnya **CodeQL** (`SDD-SEC-11`) | `PR-00-17` |
 | SCA | Critical/High → **stop** (`ST-02`) | Belum ada — perkakasnya **Dependabot** (`SDD-SEC-11`) | `PR-00-17` |
@@ -61,7 +61,7 @@ lint → unit test → integration test → uji otorisasi tergenerate
 
 Penyedianya kini tertulis, bukan tersirat: **GitHub Actions** (`SDD-INF-12`, 6 September 2026); perkakas tahap uji adalah **Vitest**, **Playwright**, dan **Maestro** (`SDD-REPO-11`); perkakas tahap keamanan adalah **CodeQL**, **Dependabot**, **Trivy**, dan **OWASP ZAP** (`SDD-SEC-11`). Seluruh tahap pada tabel di atas kini punya nama perkakas — yang tersisa hanyalah menulis workflow-nya di `PR-00-17`.
 
-**`.github/workflows/` sengaja masih kosong.** Sejak `PR-00-01`, alasannya bukan lagi ketiadaan sasaran — `npm run lint` dan `npm run build` sudah hijau dan dapat dipanggil CI hari ini. Yang tersisa adalah urutan pekerjaan: menulis pipeline sekarang mendahului `PR-00-17`, sementara tahap uji, SAST, SCA, dan pemindaian image belum punya apa pun untuk dijalankan. Pipeline ditulis sekali di `PR-00-17`, bukan dirintis sepotong lalu ditulis ulang.
+**`.github/workflows/` sengaja masih kosong** — diperiksa ulang 7 September 2026, direktorinya memang belum ada. Sejak `PR-00-01`, alasannya bukan lagi ketiadaan sasaran — `npm run lint` dan `npm run build` sudah hijau dan dapat dipanggil CI hari ini. Yang tersisa adalah urutan pekerjaan: menulis pipeline sekarang mendahului `PR-00-17`, sementara tahap uji, SAST, SCA, dan pemindaian image belum punya apa pun untuk dijalankan. Pipeline ditulis sekali di `PR-00-17`, bukan dirintis sepotong lalu ditulis ulang.
 
 ### Migration & deploy produksi
 
