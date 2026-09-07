@@ -28,8 +28,9 @@ Berkas ini menetapkan bentuk sistem secara keseluruhan. Seluruh SDD lain beroper
 | **SDD-SYS-03** | Komunikasi antar-modul hanya melalui **service interface** yang diekspor modul pemilik. Repository bersifat privat terhadap modulnya. |
 | **SDD-SYS-04** | 22 modul PRD dipetakan satu-ke-satu ke folder `src/modules/`. Tidak ada modul kode yang tidak punya padanan di PRD. |
 | **SDD-SYS-05** | Efek samping lintas modul (notifikasi, activity log, pembatalan slot) dijalankan lewat **domain event**, bukan panggilan langsung berantai. Rinciannya di [SDD-07](07-event-flow.md). |
-| **SDD-SYS-06** | Terdapat *shared kernel* berisi: `AuthContext`, `BusinessCalendarService`, `Clock`, `DocumentNumberService`, `ErrorMapper`, `EventBus`, `AuditLogger`, `SlotService` (`SDD-SYS-10`), `Logger` dan `RequestContext` (`SDD-SYS-11`). Modul boleh bergantung padanya; ia tidak boleh bergantung pada modul. Daftar ini **tertutup** — penambahan menuntut suntingan berkas ini. |
+| **SDD-SYS-06** | Terdapat *shared kernel* berisi: `AuthContext`, `BusinessCalendarService`, `Clock`, `DocumentNumberService`, `ErrorMapper`, `EventBus`, `AuditLogger`, `SlotService` (`SDD-SYS-10`), `Logger` dan `RequestContext` (`SDD-SYS-11`), `RouteRegistry` (`SDD-SYS-12`). Modul boleh bergantung padanya; ia tidak boleh bergantung pada modul. Daftar ini **tertutup** — penambahan menuntut suntingan berkas ini. |
 | **SDD-SYS-11** | `Logger` dan `RequestContext` bermukim di *shared kernel* `shared/observability/`, bukan di `api/`. Alasannya memaksa: `SDD-SYS-02` melarang `shared/*` dan `modules/*` mengimpor entrypoint, sehingga logger yang tinggal di `api/` membuat seluruh kernel dan seluruh modul tidak dapat mencatat log. Folder itu sekaligus menjadi rumah bagi metrik (`SDD-OBS-05`) dan tracing (`SDD-OBS-08`) saat Phase 08 membangunnya — satu entri pada daftar tertutup, bukan tiga. |
+| **SDD-SYS-12** | `defineRoute` dan `RouteRegistry` bermukim di *shared kernel* `shared/http/`, bukan di `api/`. Letaknya dipaksa aturan impor: `SDD-06 §4.6` menempatkan deklarasi route di `modules/*/routes.ts`, dan §4.2 hanya mengizinkan `modules/*` mengimpor `shared/*`. Folder itu sekaligus menjadi rumah rantai middleware §4.2 yang `PR-00-10` dan `PR-00-15` perluas. **Generator OpenAPI tidak ikut** — ia tinggal di `api/`, sebab hanya *entrypoint* yang menerbitkan dokumen dan *shared kernel* tidak perlu tahu caranya. |
 | **SDD-SYS-07** | Waktu **selalu** diambil dari `Clock` yang di-*inject*, tidak pernah dari `new Date()` langsung. Ini prasyarat `TD-04` (test hook waktu). |
 | **SDD-SYS-08** | Worker berbagi basis kode dengan API namun memiliki *entrypoint* terpisah dan **tidak** membuka port HTTP kecuali `/health`. |
 | **SDD-SYS-09** | Chatbot AI berjalan sebagai modul di dalam monolith (`AI Orchestrator`), bukan layanan terpisah — tetapi seluruh panggilannya ke penyedia LLM melewati satu adapter agar `NFR-A-05` (graceful degradation) dapat ditegakkan di satu titik. |
@@ -70,6 +71,7 @@ src/
 │   ├── errors/                 #   ErrorMapper -> kode galat Bab 17.3
 │   ├── audit/                  #   AuditLogger (AL-01)
 │   ├── observability/          #   Logger, RequestContext (SDD-SYS-11, SDD-OBS-02/03/04)
+│   ├── http/                   #   defineRoute, RouteRegistry (SDD-SYS-12, SDD-API-03)
 │   ├── booking/                #   SlotService + booking_slots (SDD-SYS-10)
 │   └── db/                     #   koneksi, transaksi, tipe repository (SDD-DB-15)
 │
