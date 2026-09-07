@@ -80,7 +80,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-00-01` | `Done` | [#6](https://github.com/HanzzzBD/SIGM4/pull/6) | Kerangka repo, TypeScript, lint, struktur folder |
 | `PR-00-02` | `Done` | [#9](https://github.com/HanzzzBD/SIGM4/pull/9) | Aturan lint impor antar-modul |
 | `PR-00-03` | `Done` | [#11](https://github.com/HanzzzBD/SIGM4/pull/11) | Dockerfile multi-stage + compose pengembangan |
-| `PR-00-04` | `In Review` | — | Koneksi DB, helper transaksi, base repository ber-`AuthContext` |
+| `PR-00-04` | `In Review` | [#14](https://github.com/HanzzzBD/SIGM4/pull/14) | Koneksi DB, helper transaksi, base repository ber-`AuthContext` |
 | `PR-00-05` … `PR-00-18` | `Not Started` | — | Rincian: [`phases/phase-00.md` §7](phases/phase-00.md) |
 
 ### Phase 01 — Master Data Independen · `Not Started`
