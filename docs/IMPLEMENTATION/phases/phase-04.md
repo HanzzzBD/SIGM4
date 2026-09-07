@@ -86,22 +86,22 @@ M-08 ──(paralel, tanpa ketergantungan internal)
 
 ## 7. Pull Request Plan
 
-| PR | Judul | Kompleksitas | Bergantung | FR/SDD | Acceptance |
-|---|---|:---:|---|---|---|
-| `PR-04-01` | Ketersediaan aset di atas `booking_slots` (`resource_type='asset'`) | M | Ph03 | `FR-08.1`, `SDD-AVL-06` | Satu constraint melayani ruangan & aset |
-| `PR-04-02` | Pengajuan reservasi aset + approval | L | 01, Ph02 | `FR-08.2`, `BR-017` … `BR-023c` | Status aset ditetapkan saat aktivasi slot, bukan saat approval |
-| `PR-04-03` | Pembatalan reservasi aset + pelepasan slot | M | 02 | `FR-08.3`, `BR-024` `BR-024a` `BR-024b` | Slot `Released`, tidak dihapus |
-| `PR-04-04` | Kalender & pencarian ketersediaan aset (UI) | M | 01 | `FR-08.1`, `AV-01` … `AV-05` | Menampilkan alternatif saat penuh |
-| `PR-04-05` | Skema work order + pembuatan korektif | M | Ph03 | `FR-12.1`, `BR-046` `BR-047` | Prioritas & tenggat sesuai tingkat kerusakan |
-| `PR-04-06` | Jembatan `BR-052`: kerusakan terverifikasi → work order | M | 05, Ph03 | `BR-052`, `SDD-EVT-05` | Satu laporan tidak menghasilkan work order ganda |
-| `PR-04-07` | Jadwal pemeliharaan preventif + job pembangkit | L | 05 | `FR-12.2`, `BR-048` `BR-049`, `CAL-01` … `CAL-03` | Jadwal melompati hari libur |
-| `PR-04-08` | Eksekusi work order oleh teknisi (mobile, luring) | L | 05 | `FR-12.3`, `BR-050` `BR-051`, `SDD-MOB-05` | Antrean unggah bertahan saat aplikasi ditutup |
-| `PR-04-09` | Verifikasi & penutupan work order | M | 08 | `FR-12.4`, `BR-053` | Penutupan memutakhirkan kondisi aset (`BR-005b`) |
-| `PR-04-10` | Riwayat servis aset | S | 09 | `FR-12.5` | Riwayat menyatu dengan linimasa aset |
-| `PR-04-11` | Skema sesi opname + pembuatan sesi | M | Ph03 | `FR-13.1`, `BR-054` `BR-055` | Satu sesi aktif per cakupan |
-| `PR-04-12` | Pelaksanaan opname via pemindaian (mobile, luring, massal) | L | 11, Ph03 | `FR-13.2`, `BR-056` `BR-057`, `SDD-MOB-03` | 200 pemindaian luring tersinkron tanpa duplikat |
-| `PR-04-13` | Rekonsiliasi & penyelesaian sesi opname | L | 12 | `FR-13.3`, `BR-058` `BR-059`, `BR-012` | Selisih menghasilkan tindak lanjut, bukan sekadar laporan |
-| `PR-04-14` | Laporan hasil opname + ekspor | S | 13 | `FR-13.3` | Ekspor tercatat di activity log |
+| PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
+|---|---|:---:|:---:|---|---|---|
+| `PR-04-01` | Ketersediaan aset di atas `booking_slots` (`resource_type='asset'`) | M | L | Ph03 | `FR-08.1`, `SDD-AVL-06` | Satu constraint melayani ruangan & aset |
+| `PR-04-02` | Pengajuan reservasi aset + approval | L | L | 01, Ph02 | `FR-08.2`, `BR-017` … `BR-023c` | Status aset ditetapkan saat aktivasi slot, bukan saat approval |
+| `PR-04-03` | Pembatalan reservasi aset + pelepasan slot | M | L | 02 | `FR-08.3`, `BR-024` `BR-024a` `BR-024b` | Slot `Released`, tidak dihapus |
+| `PR-04-04` | Kalender & pencarian ketersediaan aset (UI) | M | M | 01 | `FR-08.1`, `AV-01` … `AV-05` | Menampilkan alternatif saat penuh |
+| `PR-04-05` | Skema work order + pembuatan korektif | M | M | Ph03 | `FR-12.1`, `BR-046` `BR-047` | Prioritas & tenggat sesuai tingkat kerusakan |
+| `PR-04-06` | Jembatan `BR-052`: kerusakan terverifikasi → work order | M | M | 05, Ph03 | `BR-052`, `SDD-EVT-05` | Satu laporan tidak menghasilkan work order ganda |
+| `PR-04-07` | Jadwal pemeliharaan preventif + job pembangkit | L | L | 05 | `FR-12.2`, `BR-048` `BR-049`, `CAL-01` … `CAL-03` | Jadwal melompati hari libur |
+| `PR-04-08` | Eksekusi work order oleh teknisi (mobile, luring) | L | L | 05 | `FR-12.3`, `BR-050` `BR-051`, `SDD-MOB-05` | Antrean unggah bertahan saat aplikasi ditutup |
+| `PR-04-09` | Verifikasi & penutupan work order | M | M | 08 | `FR-12.4`, `BR-053` | Penutupan memutakhirkan kondisi aset (`BR-005b`) |
+| `PR-04-10` | Riwayat servis aset | S | S | 09 | `FR-12.5` | Riwayat menyatu dengan linimasa aset |
+| `PR-04-11` | Skema sesi opname + pembuatan sesi | M | M | Ph03 | `FR-13.1`, `BR-054` `BR-055` | Satu sesi aktif per cakupan |
+| `PR-04-12` | Pelaksanaan opname via pemindaian (mobile, luring, massal) | L | L | 11, Ph03 | `FR-13.2`, `BR-056` `BR-057`, `SDD-MOB-03` | 200 pemindaian luring tersinkron tanpa duplikat |
+| `PR-04-13` | Rekonsiliasi & penyelesaian sesi opname | L | L | 12 | `FR-13.3`, `BR-058` `BR-059`, `BR-012` | Selisih menghasilkan tindak lanjut, bukan sekadar laporan |
+| `PR-04-14` | Laporan hasil opname + ekspor | S | S | 13 | `FR-13.3` | Ekspor tercatat di activity log |
 
 ## 8. Task Breakdown
 

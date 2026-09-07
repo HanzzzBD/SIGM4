@@ -60,7 +60,7 @@ Batasan yang tidak boleh dibantah tanpa persetujuan pemilik produk — daftar le
 
 **Kerjakan yang diminta PR itu saja.** Perbaikan yang terlihat sambil lalu — rename, reorganisasi berkas, pembersihan gaya, penggantian pustaka, "sekalian rapikan" — tidak masuk PR yang sedang berjalan. Catat sebagai butir tersendiri, jangan kerjakan. Batas `S` ≤ 200 baris ada supaya PR dapat ditinjau sungguh-sungguh sekali duduk; refactor sambil lalu menembusnya dan menyembunyikan perubahan perilaku di antara perubahan kosmetik. Refactor yang memang perlu jadi PR-nya sendiri, dengan alasan tertulis bila di luar rencana phase ([`BRANCHING-STRATEGY §2`](docs/IMPLEMENTATION/BRANCHING-STRATEGY.md)).
 
-Skala PR: **S** ≤ 200 baris berubah · **M** ≤ 400 · **L** > 400 dan wajib menjelaskan mengapa tidak dipecah.
+Skala PR: **S** ≤ 200 baris berubah · **M** ≤ 400 · **L** > 400 dan wajib menjelaskan mengapa tidak dipecah. Skala ini mengukur **kode produksi**; baris uji diperkirakan terpisah pada kolom `Uji` di [`phases/*.md` §7](docs/IMPLEMENTATION/phases/) — aturan pengisiannya di [`PHASE-TEMPLATE.md`](docs/IMPLEMENTATION/templates/PHASE-TEMPLATE.md).
 
 ## Aturan coding
 
