@@ -79,7 +79,7 @@ CREATE TABLE stored_files (
     checksum     text,                          -- SHA-256, diisi saat confirm
     scan_status  file_scan_status NOT NULL DEFAULT 'PENDING',
     scanned_at   timestamptz,
-    owner_type   text,                          -- 'asset_document' | 'damage_photo' | …
+    owner_type   file_owner_type,               -- SDD-DB-02: ASSET_DOCUMENT | DAMAGE_PHOTO | …
     owner_id     bigint,                        -- NULL = yatim (SDD-FS-09)
     uploaded_by  bigint NOT NULL REFERENCES users(id),
     created_at   timestamptz NOT NULL DEFAULT now()

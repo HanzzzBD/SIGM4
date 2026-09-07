@@ -16,14 +16,19 @@
     "typecheck": "tsc --build",
     "build": "npm run build --workspaces --if-present",
     "check:boundaries": "node scripts/check_import_boundaries.mjs",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "db:migrate": "node scripts/migrate.mjs up",
+    "db:rollback": "node scripts/migrate.mjs down",
+    "db:status": "node scripts/migrate.mjs status"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "dbmate": "^2.35.1",
     "eslint": "^10.10.0",
     "eslint-import-resolver-typescript": "^3.6.3",
     "eslint-plugin-import": "^2.31.0",
     "globals": "^15.12.0",
+    "pg": "^8.23.0",
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.15.0",
     "vitest": "^5.0.0"

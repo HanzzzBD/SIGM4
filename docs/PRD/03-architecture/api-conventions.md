@@ -59,17 +59,17 @@
 
 ## 17.3 Kode Status & Kode Galat
 
-| HTTP | Kondisi | Contoh `error.code` |
+| HTTP | Kondisi | `error.code` |
 |---|---|---|
 | 200 | Berhasil (baca/ubah) | — |
 | 201 | Berhasil dibuat | — |
 | 204 | Berhasil tanpa konten | — |
 | 400 | Permintaan tidak valid | `INVALID_REQUEST` |
 | 401 | Belum terautentikasi / token kedaluwarsa | `UNAUTHENTICATED`, `TOKEN_EXPIRED` |
-| 403 | Tidak memiliki hak akses | `FORBIDDEN`, `INSUFFICIENT_PERMISSION` |
+| 403 | Tidak memiliki hak akses | `FORBIDDEN`, `INSUFFICIENT_PERMISSION`, `CORE_PERMISSION_LOCKED` |
 | 404 | Sumber daya tidak ditemukan | `NOT_FOUND` |
 | 409 | Konflik status data | `RESERVATION_CONFLICT`, `ASSET_NOT_AVAILABLE`, `DUPLICATE_CODE`, `APPROVAL_ALREADY_DECIDED`, `IDEMPOTENCY_KEY_REUSED`, `REQUEST_IN_PROGRESS` |
-| 422 | Validasi bisnis gagal | `VALIDATION_ERROR`, `BORROWER_BLOCKED`, `DURATION_EXCEEDED` |
+| 422 | Validasi bisnis gagal | `VALIDATION_ERROR`, `BORROWER_BLOCKED`, `DURATION_EXCEEDED`, `INSUFFICIENT_BALANCE`, `EXCEEDS_APPROVED_QTY` |
 | 422 | Validasi aturan approval gagal | `INVALID_RULE_DEFINITION` |
 | 423 | Akun terkunci | `ACCOUNT_LOCKED` |
 | 426 | Versi aplikasi mobile tidak lagi didukung | `UPGRADE_REQUIRED` |

@@ -30,7 +30,7 @@
 | **SDD-NTF-07** | Anti-spam (maksimum 1×/hari per objek, Bab 20.1) ditegakkan **unique index** pada basis data, bukan pemeriksaan aplikasi. |
 | **SDD-NTF-08** | Pengiriman FCM memakai **batch multicast** per pengguna, dengan pembersihan token tidak valid berdasarkan respons FCM (`FR-17.2 A2`). |
 | **SDD-NTF-09** | Setiap notifikasi menyimpan `deep_link` sebagai **path relatif aplikasi** (mis. `/reservations/1234`), bukan URL absolut — agar berlaku sama di web dan mobile. |
-| **SDD-NTF-10** | `notifications_archive` **dapat dibaca pemiliknya sendiri** lewat filter arsip pada endpoint daftar yang sudah ada (`FR-17.1 A2`), bukan hanya lewat pemeriksaan administratif. Karena itu tabel arsip memperoleh indeks `(user_id, dibuat_pada DESC)`. Tidak ada endpoint maupun permission baru — `notification.manage_own` tetap berlaku dan *scope* pemilik ditegakkan di repository (`SDD-AUTH-02`). Menutup `TBD-NTF-B` (keputusan pemilik produk, 25 Agustus 2026; `UXD-10`). |
+| **SDD-NTF-10** | `notifications_archive` **dapat dibaca pemiliknya sendiri** lewat filter arsip pada endpoint daftar yang sudah ada (`FR-17.1 A2`), bukan hanya lewat pemeriksaan administratif. Karena itu tabel arsip memperoleh indeks `(user_id, created_at DESC)`. Tidak ada endpoint maupun permission baru — `notification.manage_own` tetap berlaku dan *scope* pemilik ditegakkan di repository (`SDD-AUTH-02`). Menutup `TBD-NTF-B` (keputusan pemilik produk, 25 Agustus 2026; `UXD-10`). |
 
 ---
 
@@ -66,7 +66,7 @@ CREATE TABLE notifications (
     deep_link      text,                        -- SDD-NTF-09
     wajib          boolean     NOT NULL DEFAULT false,
     dibaca_pada    timestamptz,
-    dibuat_pada    timestamptz NOT NULL DEFAULT now(),
+    created_at     timestamptz NOT NULL DEFAULT now(),
     dedupe_key     text                          -- SDD-NTF-07
 );
 
@@ -74,7 +74,7 @@ CREATE UNIQUE INDEX notifications_dedupe
     ON notifications (dedupe_key) WHERE dedupe_key IS NOT NULL;
 
 CREATE INDEX notifications_inbox
-    ON notifications (user_id, dibuat_pada DESC);
+    ON notifications (user_id, created_at DESC);
 CREATE INDEX notifications_unread
     ON notifications (user_id) WHERE dibaca_pada IS NULL;
 
@@ -82,7 +82,7 @@ CREATE TABLE notification_deliveries (
     id              bigserial PRIMARY KEY,
     notification_id bigint NOT NULL REFERENCES notifications(id),
     kanal           notification_channel NOT NULL,  -- SDD-DB-02; Bab 11.3 "Kanal Notifikasi"
-    status          text   NOT NULL,            -- 'pending'|'sent'|'failed'|'skipped'
+    status          delivery_status NOT NULL,   -- SDD-DB-02
     attempts        int    NOT NULL DEFAULT 0,
     last_error      text,
     sent_at         timestamptz
@@ -139,12 +139,12 @@ Payload push tidak memuat nilai finansial maupun identitas pengguna lain — kon
 
 ```sql
 CREATE TYPE notification_group AS ENUM (
-    'persetujuan',
-    'reservasi_peminjaman',
-    'denda_kewajiban',
-    'kerusakan_perawatan',
-    'opname_pengadaan',
-    'akun_sistem'
+    'PERSETUJUAN',
+    'RESERVASI_PEMINJAMAN',
+    'DENDA_KEWAJIBAN',
+    'KERUSAKAN_PERAWATAN',
+    'OPNAME_PENGADAAN',
+    'AKUN_SISTEM'
 );
 
 CREATE TABLE notification_preferences (
@@ -162,12 +162,14 @@ Ketiadaan baris berarti "aktif" — sehingga pengguna baru menerima segalanya ta
 
 | `jenis` | Kode `NT-xx` | Memuat notifikasi wajib? |
 |---|---|---|
-| `persetujuan` | `NT-01`…`NT-07`, `NT-47` | Ya — seluruhnya |
-| `reservasi_peminjaman` | `NT-08`…`NT-14`, `NT-27`, `NT-46` | Sebagian |
-| `denda_kewajiban` | `NT-15`…`NT-18` | Sebagian |
-| `kerusakan_perawatan` | `NT-19`…`NT-26`, `NT-28`, `NT-29` | Sebagian |
-| `opname_pengadaan` | `NT-30`…`NT-36`, `NT-43`…`NT-45` | Sebagian |
-| `akun_sistem` | `NT-37`…`NT-42`, `NT-48` | Sebagian |
+| `PERSETUJUAN` | `NT-01`…`NT-07`, `NT-47` | Ya — seluruhnya |
+| `RESERVASI_PEMINJAMAN` | `NT-08`…`NT-14`, `NT-27`, `NT-46` | Sebagian |
+| `DENDA_KEWAJIBAN` | `NT-15`…`NT-18` | Sebagian |
+| `KERUSAKAN_PERAWATAN` | `NT-19`…`NT-26`, `NT-28`, `NT-29` | Sebagian |
+| `OPNAME_PENGADAAN` | `NT-30`…`NT-36`, `NT-43`…`NT-45`, `NT-49`…`NT-51` | Sebagian |
+| `AKUN_SISTEM` | `NT-37`…`NT-42`, `NT-38a`, `NT-48` | Sebagian |
+
+Seluruh **52** kode `NT-xx` terpetakan; tidak boleh ada kode tanpa kelompok, sebab `SDD-NTF-06` memeriksa preferensi per kelompok saat pengiriman dan notifikasi tanpa kelompok tidak punya perilaku yang terdefinisi. `NT-49`…`NT-51` (bahan habis pakai, M-22) masuk `OPNAME_PENGADAAN` yang memang sudah memuat alur logistik — mengikuti `UXD-16` yang menolak Bahan menjadi grup tersendiri.
 
 Templat `SDD-NTF-04` membawa `jenis` sebagai bagian definisi tiap kode `NT-xx`, sehingga pemetaan di atas hidup di kode bersama templatnya — bukan sebagai tabel terpisah yang dapat menyimpang.
 
@@ -181,7 +183,7 @@ Arsip dibaca pemiliknya sendiri (`SDD-NTF-10`):
 
 ```sql
 CREATE INDEX notifications_archive_owner
-    ON notifications_archive (user_id, dibuat_pada DESC);
+    ON notifications_archive (user_id, created_at DESC);
 ```
 
 Endpoint daftar notifikasi menerima penanda arsip sebagai **parameter kueri**, bukan endpoint kedua; permintaan tanpa penanda itu tidak pernah menyentuh tabel arsip. Kedua tabel tidak pernah di-`UNION` dalam satu respons — filter arsip adalah pilihan yang saling meniadakan, sepola dengan tab pada P-13.

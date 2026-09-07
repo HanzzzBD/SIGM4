@@ -25,7 +25,7 @@ Skema khusus `booking_slots`, `idempotency_keys`, dan `document_counters` didefi
 | ID | Keputusan |
 |---|---|
 | **SDD-DB-01** | Kunci primer memakai `bigserial` (integer berurut), bukan UUID. Pengecualian: `assets.uuid` yang memang diwajibkan `FR-05.1` untuk QR. |
-| **SDD-DB-02** | Enum disimpan sebagai **PostgreSQL native enum** dengan nilai berupa **kode teknis huruf besar** (`BAIK`, `RUSAK_RINGAN`, `MENUNGGU_PERSETUJUAN`), sesuai ketetapan pemisahan kode ↔ label pada Bab 11.3. |
+| **SDD-DB-02** | Enum disimpan sebagai **PostgreSQL native enum** dengan nilai berupa **kode teknis huruf besar** (`BAIK`, `RUSAK_RINGAN`, `MENUNGGU_PERSETUJUAN`), sesuai ketetapan pemisahan kode ↔ label pada Bab 11.3. Aturan ini berlaku bagi **setiap himpunan nilai tetap**, bukan hanya yang terdaftar Bab 11.3: kolom berhimpunan tertutup tidak boleh bertipe `text` berkomentar. Satu pengecualian tertulis — `booking_resource` dan `booking_origin` tetap huruf kecil karena [`glossary.md`](../PRD/00-foundation/glossary.md) memakukan `resource_type='asset'` sebagai kontrak teknis yang tidak berubah. |
 | **SDD-DB-03** | Seluruh kolom waktu bertipe `timestamptz`. Tidak ada `timestamp` polos di mana pun. |
 | **SDD-DB-04** | *Soft delete* memakai kolom eksplisit per entitas (`status`, `dihapuskan`), **bukan** kolom generik `deleted_at`. Alasannya: PRD memberi makna berbeda pada tiap penonaktifan. |
 | **SDD-DB-05** | Uniqueness bersyarat memakai **partial unique index**, bukan `UNIQUE` biasa — khususnya `assets.nomor_seri` yang unik hanya bila diisi (`BR-003`). |
@@ -110,7 +110,17 @@ created_by  bigint REFERENCES users(id),
 updated_by  bigint REFERENCES users(id)
 ```
 
-`updated_at` dipelihara trigger, bukan aplikasi, agar tidak bisa lupa. Tabel master data acuan (`work_days`, `holidays`) dikecualikan.
+`updated_at` dipelihara trigger, bukan aplikasi, agar tidak bisa lupa.
+
+**Cakupan "transaksional".** Yang dimaksud adalah tabel **entitas domain** — sesuatu yang dibuat, disunting, dan dipertanggungjawabkan seseorang (`assets`, `reservations`, `loans`, `work_orders`, …). Tiga kelompok dikecualikan, dan pengecualiannya bukan kelonggaran melainkan konsekuensi bentuknya:
+
+| Kelompok | Contoh | Yang tidak berlaku, dan mengapa |
+|---|---|---|
+| Master data acuan | `work_days`, `holidays` | Tidak dimiliki siapa pun; tidak ada pelaku yang perlu dicatat |
+| *Append-only* | `activity_logs`, `material_transactions`, `event_outbox` | `updated_at`/`updated_by` mustahil bermakna pada baris yang tidak pernah disunting — `AL-03b` bahkan mencabut hak `UPDATE` dari akun aplikasi |
+| Infrastruktur | `idempotency_keys`, `document_counters`, `booking_slots`, `refresh_tokens`, `stored_files`, `notification_*` | Mekanisme, bukan entitas; kolom waktunya sudah punya nama yang bermakna sendiri (`expires_at`, `sent_at`, `slot_range`) |
+
+Nama kolomnya tetap **`created_at`/`created_by`** di mana pun ia hadir — bukan `dibuat_pada`/`dibuat_oleh` — karena §4.1 sudah menempatkannya di antara nama teknis lintas domain. Satu pengecualian: `activity_logs.waktu` tetap `waktu`, sebab ia kolom partisi RANGE (`SDD-DB-07`) dan maknanya adalah *kapan peristiwa terjadi*, bukan kapan barisnya dibuat.
 
 ### 4.3 Pola uniqueness bersyarat
 
@@ -146,7 +156,7 @@ CREATE TABLE activity_logs (
     nilai_sebelum jsonb,
     nilai_sesudah jsonb,
     keterangan    text,
-    hasil         text        NOT NULL,
+    hasil         activity_result NOT NULL,   -- SDD-DB-02
     request_id    text,
     prev_hash     bytea,                   -- rantai hash (NFR-S-03d)
     row_hash      bytea NOT NULL,
@@ -190,7 +200,7 @@ Aturannya: satu rilis tidak boleh memuat expand dan contract untuk kolom yang sa
 
 | Seed | Sumber kebenaran | Idempoten karena |
 |---|---|---|
-| 78 kode permission | [Lampiran C](../PRD/00-foundation/roles-permissions.md) | `ON CONFLICT (kode) DO UPDATE` |
+| 79 kode permission | [Lampiran C](../PRD/00-foundation/roles-permissions.md) | `ON CONFLICT (kode) DO UPDATE` |
 | 7 role bawaan + matriks | Bab 5 & Bab 18 | idem |
 | Aturan approval bawaan | `RE-06` — konstanta kode, bukan baris | tidak di-seed (lihat SDD-APR §4.3) |
 | `work_days` Senin–Sabtu | [Lampiran E.2](../PRD/00-foundation/conventions.md) | idem |
@@ -219,11 +229,11 @@ CREATE TABLE material_transactions (
     jenis          material_transaction_type NOT NULL,  -- SDD-DB-02
     jumlah         integer     NOT NULL,
     saldo_sesudah  integer     NOT NULL,
-    referensi_tipe text,
+    referensi_jenis text,
     referensi_id   bigint,
     alasan         text,                                -- BR-088: wajib saat PENYESUAIAN
-    dibuat_oleh    bigint      NOT NULL REFERENCES users(id),
-    dibuat_pada    timestamptz NOT NULL,                -- SDD-DB-03, dari Clock (SDD-SYS-07)
+    created_by     bigint      NOT NULL REFERENCES users(id),
+    created_at     timestamptz NOT NULL,                -- SDD-DB-03, dari Clock (SDD-SYS-07)
     CONSTRAINT material_transactions_jumlah_nonzero CHECK (jumlah <> 0),
     -- BR-088 ditegakkan skema, bukan hanya service
     CONSTRAINT material_transactions_alasan_penyesuaian
@@ -232,7 +242,7 @@ CREATE TABLE material_transactions (
 
 -- kartu stok FR-22.2: selalu dibaca per bahan, berurutan waktu
 CREATE INDEX material_transactions_kartu_stok_idx
-    ON material_transactions (material_id, room_id, dibuat_pada DESC);
+    ON material_transactions (material_id, room_id, created_at DESC);
 ```
 
 **Urutan wajib setiap mutasi saldo** — dijalankan seluruhnya dalam **satu** transaksi (`SDD-EVT-02`):

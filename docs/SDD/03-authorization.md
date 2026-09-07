@@ -94,7 +94,7 @@ for (const route of router.stack) {
 }
 ```
 
-Endpoint publik (`/auth/login`, `/auth/password/forgot`, `/public/assets/:uuid`) menandai dirinya `public: true` secara eksplisit — sehingga daftar endpoint tanpa autentikasi dapat di-*review* sebagai satu daftar pendek.
+Endpoint publik (`/auth/login`, `/auth/password/forgot`, `/public/assets/:uuid`, `/health/live`, `/health/ready`) menandai dirinya `public: true` secara eksplisit — sehingga daftar endpoint tanpa autentikasi dapat di-*review* sebagai satu daftar pendek. Kedua *probe* kesehatan ada di daftar ini karena `OBS-04` menuntut pemantauan *uptime* dari luar, dan pemantau luar tidak memegang token; keduanya hanya menjawab hidup/siap. `/health` **tidak** publik — ia membeberkan status DB, Redis, storage, AV, FCM, dan LLM, sehingga menuntut `setting.view` (`SDD-AUTH-08`).
 
 ### 4.2 `AuthContext`
 

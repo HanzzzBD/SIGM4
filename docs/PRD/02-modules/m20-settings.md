@@ -84,6 +84,9 @@ _Tidak ada aturan bisnis yang dimiliki modul ini._
 |---|---|---|---|
 | GET | `/settings` | `setting.view` | Baca parameter sistem |
 | PUT | `/settings` | `setting.manage` | Perbarui parameter sistem |
+| GET | `/health/live` | publik | Liveness probe — tanpa memeriksa dependensi (`OBS-04`) |
+| GET | `/health/ready` | publik | Readiness probe — DB, Redis, storage siap |
+| GET | `/health` | `setting.view` | Ringkasan kesehatan dependensi untuk kartu Kesehatan Integrasi (`OBS-06`) |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).

@@ -9,7 +9,7 @@
 | Kelompok | ID |
 |---|---|
 | Konvensi & kontrak | Bab 17.1 – 17.3, 17.5 |
-| Daftar endpoint | 119 endpoint, dimiliki modul masing-masing (bagian 7) |
+| Daftar endpoint | 124 endpoint, dimiliki modul masing-masing (bagian 7) |
 | Otorisasi | `PM-01` … `PM-04`, `NFR-S-05` |
 | Idempotensi | `ID-01` … `ID-05` |
 | Performa | `NFR-P-01`, `NFR-P-02` |
@@ -64,7 +64,7 @@ Zod dipilih karena ketiga batasan itu menunjuk ke arah yang sama: generator Open
 
 **SDD-API-12 — `/api/docs` tetap dilarang di produksi.** Pertanyaannya bukan apakah proteksi autentikasi cukup aman, melainkan siapa yang berwenang menjawabnya. Bab 17.1 adalah teks **PRD**, dan [README SDD](README.md) menetapkan PRD berlaku di atas SDD; mengaktifkan `/api/docs` di produksi karena itu bukan pilihan teknis melainkan perubahan requirement.
 
-Alasan larangannya juga masih berdiri sendiri. `NFR-M-05` menuntut dokumentasi **tersinkron**, bukan **terhosting di produksi** — dan sinkronisasi sudah dijamin `SDD-API-02` (digenerate dari kode yang benar-benar dieksekusi saat memvalidasi permintaan), sehingga menyajikannya di produksi tidak menambah kepatuhan apa pun. Di sisi lain, menerbitkan katalog 119 endpoint beserta skemanya bergerak berlawanan dengan `SDD-AUTH-08` dan 17.5 poin 3, dan gerbang autentikasinya sendiri menjadi route baru yang wajib masuk matriks `SEC-T-01` serta lingkup DAST `ST-03`.
+Alasan larangannya juga masih berdiri sendiri. `NFR-M-05` menuntut dokumentasi **tersinkron**, bukan **terhosting di produksi** — dan sinkronisasi sudah dijamin `SDD-API-02` (digenerate dari kode yang benar-benar dieksekusi saat memvalidasi permintaan), sehingga menyajikannya di produksi tidak menambah kepatuhan apa pun. Di sisi lain, menerbitkan katalog 124 endpoint beserta skemanya bergerak berlawanan dengan `SDD-AUTH-08` dan 17.5 poin 3, dan gerbang autentikasinya sendiri menjadi route baru yang wajib masuk matriks `SEC-T-01` serta lingkup DAST `ST-03`.
 
 Yang ditambahkan keputusan ini adalah penutup celah praktisnya: `openapi.json` per tag rilis diterbitkan sebagai artefak pipeline. Tanpa itu, kebutuhan nyata membandingkan kontrak antar-versi (`MOB-VER-05`, `NFR-C-09`) tidak punya jalur resmi — dan kebutuhan yang tidak punya jalur resmi pada akhirnya membuat orang mengaktifkan `/api/docs` di produksi.
 
