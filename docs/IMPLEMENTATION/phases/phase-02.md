@@ -184,7 +184,7 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | ~~`TBD-APR-A/B/C` belum terjawab~~ | — | ✅ **Tertutup 25 Agustus 2026** — `SDD-APR-13` · `SDD-APR-14` · `SDD-APR-15` · `RE-13` | TBD-REGISTER |
 | `booking_slots` dianggap "belum perlu" lalu ditunda ke Phase 03 | Skema ketersediaan disisipkan setelah reservasi jalan — persis kegagalan yang `CI-01` cegah | Tidak dapat ditunda; termasuk gerbang keluar phase | `CI-01`, `RS-03` |
 | Deteksi pemakaian ulang refresh token memutus sesi sah karena balapan jaringan | Pengguna terlempar keluar | Tenggang idempotensi rotasi; diuji pada jaringan mobile | `SDD-SESS-05` |
-| ~~`TBD-NTF-B` belum terjawab~~ | — | ✅ **Tertutup 25 Agustus 2026** — `SDD-NTF-10` · `UXD-10`: arsip dibaca pemiliknya lewat filter; tabel arsip memperoleh indeks `(user_id, dibuat_pada DESC)` | TBD-REGISTER |
+| ~~`TBD-NTF-B` belum terjawab~~ | — | ✅ **Tertutup 25 Agustus 2026** — `SDD-NTF-10` · `UXD-10`: arsip dibaca pemiliknya lewat filter; tabel arsip memperoleh indeks `(user_id, created_at DESC)` | TBD-REGISTER |
 
 ## 11. Rollback Strategy
 

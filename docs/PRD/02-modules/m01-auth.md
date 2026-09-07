@@ -58,7 +58,7 @@ sequenceDiagram
             AUTH->>LOG: Catat 2FA_FAILED
             API-->>C: 401 "Kode tidak valid"
         else TOTP benar
-            AUTH->>DB: Reset penghitung gagal, set last_login_at
+            AUTH->>DB: Reset penghitung gagal, set login_terakhir_pada
             AUTH->>LOG: Catat LOGIN_SUCCESS
             AUTH-->>API: access_token + refresh_token
             API-->>C: 200 {tokens, user, permissions}
@@ -99,7 +99,7 @@ sequenceDiagram
 
 **Post Conditions**
 - Sesi aktif terbentuk; token tersimpan aman (web: `httpOnly cookie`; mobile: Keychain/Keystore).
-- Waktu `last_login_at` diperbarui.
+- Waktu `login_terakhir_pada` diperbarui.
 
 **Acceptance Criteria**
 - [ ] Login berhasil dengan kredensial valid pada web dan mobile.

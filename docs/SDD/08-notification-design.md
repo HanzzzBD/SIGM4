@@ -30,7 +30,7 @@
 | **SDD-NTF-07** | Anti-spam (maksimum 1×/hari per objek, Bab 20.1) ditegakkan **unique index** pada basis data, bukan pemeriksaan aplikasi. |
 | **SDD-NTF-08** | Pengiriman FCM memakai **batch multicast** per pengguna, dengan pembersihan token tidak valid berdasarkan respons FCM (`FR-17.2 A2`). |
 | **SDD-NTF-09** | Setiap notifikasi menyimpan `deep_link` sebagai **path relatif aplikasi** (mis. `/reservations/1234`), bukan URL absolut — agar berlaku sama di web dan mobile. |
-| **SDD-NTF-10** | `notifications_archive` **dapat dibaca pemiliknya sendiri** lewat filter arsip pada endpoint daftar yang sudah ada (`FR-17.1 A2`), bukan hanya lewat pemeriksaan administratif. Karena itu tabel arsip memperoleh indeks `(user_id, dibuat_pada DESC)`. Tidak ada endpoint maupun permission baru — `notification.manage_own` tetap berlaku dan *scope* pemilik ditegakkan di repository (`SDD-AUTH-02`). Menutup `TBD-NTF-B` (keputusan pemilik produk, 25 Agustus 2026; `UXD-10`). |
+| **SDD-NTF-10** | `notifications_archive` **dapat dibaca pemiliknya sendiri** lewat filter arsip pada endpoint daftar yang sudah ada (`FR-17.1 A2`), bukan hanya lewat pemeriksaan administratif. Karena itu tabel arsip memperoleh indeks `(user_id, created_at DESC)`. Tidak ada endpoint maupun permission baru — `notification.manage_own` tetap berlaku dan *scope* pemilik ditegakkan di repository (`SDD-AUTH-02`). Menutup `TBD-NTF-B` (keputusan pemilik produk, 25 Agustus 2026; `UXD-10`). |
 
 ---
 
@@ -66,7 +66,7 @@ CREATE TABLE notifications (
     deep_link      text,                        -- SDD-NTF-09
     wajib          boolean     NOT NULL DEFAULT false,
     dibaca_pada    timestamptz,
-    dibuat_pada    timestamptz NOT NULL DEFAULT now(),
+    created_at     timestamptz NOT NULL DEFAULT now(),
     dedupe_key     text                          -- SDD-NTF-07
 );
 
@@ -74,7 +74,7 @@ CREATE UNIQUE INDEX notifications_dedupe
     ON notifications (dedupe_key) WHERE dedupe_key IS NOT NULL;
 
 CREATE INDEX notifications_inbox
-    ON notifications (user_id, dibuat_pada DESC);
+    ON notifications (user_id, created_at DESC);
 CREATE INDEX notifications_unread
     ON notifications (user_id) WHERE dibaca_pada IS NULL;
 
@@ -183,7 +183,7 @@ Arsip dibaca pemiliknya sendiri (`SDD-NTF-10`):
 
 ```sql
 CREATE INDEX notifications_archive_owner
-    ON notifications_archive (user_id, dibuat_pada DESC);
+    ON notifications_archive (user_id, created_at DESC);
 ```
 
 Endpoint daftar notifikasi menerima penanda arsip sebagai **parameter kueri**, bukan endpoint kedua; permintaan tanpa penanda itu tidak pernah menyentuh tabel arsip. Kedua tabel tidak pernah di-`UNION` dalam satu respons — filter arsip adalah pilihan yang saling meniadakan, sepola dengan tab pada P-13.

@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **119** baris, dikumpulkan dari 22 berkas modul.
+> Total: **124** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -30,9 +30,13 @@
 | GET | `/audit-sessions/{id}/report` | `audit.view` | Unduh berita acara PDF | [M-13](../02-modules/m13-audit-stocktake.md) |
 | GET | `/chat/sessions` | Bearer | Riwayat percakapan sendiri | [M-19](../02-modules/m19-chatbot.md) |
 | GET | `/damage-reports/open` | `damage.view` | Tiket terbuka untuk aset tertentu | [M-11](../02-modules/m11-damage-reports.md) |
+| GET | `/damage-reports/{id}` | `damage.view` | Detail tiket beserta foto | [M-11](../02-modules/m11-damage-reports.md) |
 | GET | `/damage-reports` | `damage.view` | Daftar tiket (tersaring sesuai role) | [M-11](../02-modules/m11-damage-reports.md) |
 | GET | `/dashboard` | Sesuai role | Data dashboard sesuai role pengguna | [M-15](../02-modules/m15-dashboard.md) |
 | GET | `/fines` | `fine.view` | Daftar denda | [M-09](../02-modules/m09-loans.md) |
+| GET | `/health/live` | publik | Liveness probe — tanpa memeriksa dependensi (`OBS-04`) | [M-20](../02-modules/m20-settings.md) |
+| GET | `/health/ready` | publik | Readiness probe — DB, Redis, storage siap | [M-20](../02-modules/m20-settings.md) |
+| GET | `/health` | `setting.view` | Ringkasan kesehatan dependensi untuk kartu Kesehatan Integrasi (`OBS-06`) | [M-20](../02-modules/m20-settings.md) |
 | GET | `/loans/by-asset/{uuid}` | `loan.manage` | Peminjaman aktif atas suatu unit | [M-09](../02-modules/m09-loans.md) |
 | GET | `/loans/ready-checkout` | `loan.manage` | Reservasi siap diserahkan hari ini | [M-09](../02-modules/m09-loans.md) |
 | GET | `/loans` | `loan.view` | Daftar peminjaman (tab aktif/terlambat/selesai) | [M-09](../02-modules/m09-loans.md) |
@@ -80,6 +84,7 @@
 | POST | `/assets/{id}/reinstate` | `disposal.reinstate` | Pulihkan aset yang telah dihapuskan | [M-21](../02-modules/m21-disposal.md) |
 | POST | `/assets` | `asset.create` | Buat aset (mendukung `jumlah_unit` untuk N record) | [M-04](../02-modules/m04-assets.md) |
 | POST | `/audit-sessions/{id}/approve` | `audit.approve` | Setujui & terapkan penyesuaian | [M-13](../02-modules/m13-audit-stocktake.md) |
+| POST | `/audit-sessions/{id}/complete-location` | `audit.execute` | Tandai satu lokasi selesai diperiksa | [M-13](../02-modules/m13-audit-stocktake.md) |
 | POST | `/audit-sessions/{id}/finalize` | `audit.manage` | Hasilkan rekonsiliasi | [M-13](../02-modules/m13-audit-stocktake.md) |
 | POST | `/audit-sessions/{id}/scan` | `audit.execute` | Catat hasil pemindaian | [M-13](../02-modules/m13-audit-stocktake.md) |
 | POST | `/audit-sessions/{id}/submit` | `audit.manage` | Kirim untuk persetujuan | [M-13](../02-modules/m13-audit-stocktake.md) |
