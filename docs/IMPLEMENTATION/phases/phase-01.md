@@ -23,7 +23,7 @@ Administrator dapat masuk ke sistem yang sudah "berisi": membuat pengguna dan ro
 - M-03: hierarki Gedung → Area → Ruangan, pencarian aset per lokasi *(tanpa data aset — kembali di Phase 02)*
 - M-18: penelusuran & ekspor activity log *(penulisannya sudah ada sejak Phase 00)*
 - M-20: parameter sistem, kalender akademik, unit kerja, siklus akun siswa
-- Master data Lampiran E: `academic_years`, `academic_terms`, `holidays`, `work_units`
+- Master data Lampiran E: `academic_years`, `academic_terms`, `work_units`, dan penautan `holidays` → `academic_years` *(tabel `holidays` sendiri sudah dibuat `PR-00-08`, karena `BusinessCalendarService` menuntutnya sejak Phase 00)*
 
 **Tidak termasuk**
 
@@ -100,7 +100,7 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 | `PR-01-08` | Penelusuran activity log + filter + detail sebelum/sesudah | M | M | Ph00 | `FR-18.2` | Filter kombinasi ≤ 3 detik; tampilan bukan JSON mentah |
 | `PR-01-09` | Ekspor activity log + pencatatan aksi ekspor itu sendiri | S | S | 08 | `FR-18.2`, `AL-10` | Ekspor tercatat sebagai aktivitas tersendiri |
 | `PR-01-10` | `system_settings` + endpoint baca/tulis + validasi rentang | M | M | Ph00 | `FR-20.1` | Nilai di luar rentang ditolak dengan penjelasan |
-| `PR-01-11` | Kalender akademik: `academic_years`, `terms`, `holidays` | M | M | 10 | Lampiran E.2, `AC-YR-01` … `04` | Tepat satu tahun ajaran aktif |
+| `PR-01-11` | Kalender akademik: `academic_years`, `terms`, + `academic_year_id` pada `holidays` | M | M | 10 | Lampiran E.2, `AC-YR-01` … `04` | Tepat satu tahun ajaran aktif |
 | `PR-01-12` | `work_units` + migrasi `users.unit_kerja` → `work_unit_id` | M | M | 02, 10 | Lampiran E.3, `WU-01` … `03` | Pola expand→migrate; kolom lama belum dihapus |
 | `PR-01-13` | Siklus akun siswa: kenaikan kelas massal, kelulusan | M | M | 02, 11 | Lampiran E.4, `SL-01` … `SL-06` | Siswa berkewajiban aktif tidak dapat dinonaktifkan |
 | `PR-01-14` | Gerbang persetujuan wali (`consent_guardian_at`) | S | S | 02 | `DP-02`, `SL-06`, `NT-48` | Akun siswa tanpa penanda tidak dapat diaktifkan |
