@@ -37,6 +37,10 @@ docker-compose.yml
 .claude
 eslint.config.js
 **/eslint.config.js
+# Uji tidak dijalankan runtime mana pun dan tidak ikut ter-emit ke dist (PR-00-04).
+**/tests
+**/tsconfig.test.json
+**/vitest.config.ts
 
 # Rahasia tidak pernah berada di repositori (SEC-CFG-01) — baris ini adalah lapis
 # kedua, agar berkas env yang tidak sengaja dibuat di lokal tidak ikut ke image.

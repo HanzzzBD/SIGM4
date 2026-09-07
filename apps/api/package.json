@@ -6,9 +6,15 @@
   "description": "Pohon backend SIGM4 — entrypoint sigm4-api dan sigm4-worker dari satu basis kode (SDD-REPO-04)",
   "scripts": {
     "build": "tsc --build",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "test": "tsc -p tsconfig.test.json && vitest run"
   },
   "dependencies": {
-    "@sigm4/schemas": "*"
+    "@sigm4/schemas": "*",
+    "kysely": "0.29.5",
+    "pg": "8.23.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1"
   }
 }
