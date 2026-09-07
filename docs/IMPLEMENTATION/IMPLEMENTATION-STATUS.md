@@ -1,6 +1,6 @@
 # Status Implementasi
 
-**Diperbarui:** 7 September 2026 — `PR-00-01` … `PR-00-03` tergabung ke `develop`; `PR-00-04` terbuka dan menunggu tinjauan. Proteksi cabang `main` dan `develop` aktif.
+**Diperbarui:** 7 September 2026 — `PR-00-01` … `PR-00-04` tergabung ke `develop`; `PR-00-05` siap dimulai. Proteksi cabang `main` dan `develop` aktif.
 
 Berkas ini memiliki status **per phase dan per pull request**. Ia **tidak** memiliki status per requirement — itu milik [`../PRD/06-quality/traceability.md`](../PRD/06-quality/traceability.md). Dua tingkat berbeda, tanpa tumpang tindih:
 
@@ -31,7 +31,7 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 
 | Phase | Nama | Modul | PR | Status | Selesai | Catatan |
 |:---:|---|:---:|:---:|---|:---:|---|
-| [00](phases/phase-00.md) | Foundation | — | 18 | `In Progress` | 3/18 | `PR-00-01` … `PR-00-03` tergabung; `PR-00-04` menunggu tinjauan; keputusan stack `PR-00-05` … `PR-00-18` seluruhnya terkunci |
+| [00](phases/phase-00.md) | Foundation | — | 18 | `In Progress` | 4/18 | `PR-00-01` … `PR-00-04` tergabung; keputusan stack `PR-00-05` … `PR-00-18` seluruhnya terkunci |
 | [01](phases/phase-01.md) | Master Data Independen | 4 | 14 | `Not Started` | 0/14 | |
 | [02](phases/phase-02.md) | Inti Sistem | 5 | 30 | `Not Started` | 0/30 | Phase terbesar; di lintasan kritis |
 | [03](phases/phase-03.md) | Layanan Aset & Reservasi | 6 | 23 | `Not Started` | 0/23 | Menutup `M1` |
@@ -40,7 +40,7 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 | [06](phases/phase-06.md) | Analitik | 1 | 10 | `Not Started` | 0/10 | Menutup `M5` |
 | [07](phases/phase-07.md) | Integrasi & UAT | — | 14 | `Not Started` | 0/14 | |
 | [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 15 | `Not Started` | 0/15 | Menutup `M6` |
-| | **Total** | **22** | **163** | | **3/163** | |
+| | **Total** | **22** | **163** | | **4/163** | |
 
 ## Ringkasan milestone PRD
 
@@ -80,7 +80,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-00-01` | `Done` | [#6](https://github.com/HanzzzBD/SIGM4/pull/6) | Kerangka repo, TypeScript, lint, struktur folder |
 | `PR-00-02` | `Done` | [#9](https://github.com/HanzzzBD/SIGM4/pull/9) | Aturan lint impor antar-modul |
 | `PR-00-03` | `Done` | [#11](https://github.com/HanzzzBD/SIGM4/pull/11) | Dockerfile multi-stage + compose pengembangan |
-| `PR-00-04` | `In Review` | [#14](https://github.com/HanzzzBD/SIGM4/pull/14) | Koneksi DB, helper transaksi, base repository ber-`AuthContext` |
+| `PR-00-04` | `Done` | [#14](https://github.com/HanzzzBD/SIGM4/pull/14) | Koneksi DB, helper transaksi, base repository ber-`AuthContext` |
 | `PR-00-05` … `PR-00-18` | `Not Started` | — | Rincian: [`phases/phase-00.md` §7](phases/phase-00.md) |
 
 ### Phase 01 — Master Data Independen · `Not Started`

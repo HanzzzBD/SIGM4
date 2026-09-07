@@ -81,7 +81,7 @@ CREATE INDEX notifications_unread
 CREATE TABLE notification_deliveries (
     id              bigserial PRIMARY KEY,
     notification_id bigint NOT NULL REFERENCES notifications(id),
-    kanal           text   NOT NULL,            -- 'in_app' | 'push'
+    kanal           notification_channel NOT NULL,  -- SDD-DB-02; Bab 11.3 "Kanal Notifikasi"
     status          text   NOT NULL,            -- 'pending'|'sent'|'failed'|'skipped'
     attempts        int    NOT NULL DEFAULT 0,
     last_error      text,

@@ -27,7 +27,7 @@ Satu tabel tunggal menampung seluruh pemesanan waktu, baik atas ruangan maupun a
 | `resource_type` | enum | `room` \| `asset` |
 | `resource_id` | bigint | FK ke `rooms.id` atau `assets.id` |
 | `slot_range` | tstzrange | Rentang waktu `[mulai, selesai)` — half-open agar slot berurutan tidak dianggap bentrok |
-| `status` | enum | `Tentative` \| `Confirmed` \| `Active` \| `Released` |
+| `status` | enum | `TENTATIVE` \| `CONFIRMED` \| `ACTIVE` \| `RELEASED` |
 | `origin` | enum | `reservation` \| `loan` \| `maintenance` \| `fixed_schedule` \| `manual_block` |
 | `reservation_id` | bigint FK null | Terisi bila `origin = reservation` |
 | `loan_id` | bigint FK null | Terisi bila `origin = loan` |
@@ -47,6 +47,8 @@ Satu tabel tunggal menampung seluruh pemesanan waktu, baik atas ruangan maupun a
 
 Slot `Released` dipertahankan sebagai arsip untuk analitik utilisasi (SC-05, Bab 16) dan tidak dihapus.
 
+> **Kode teknis kolom `status`.** Nama status pada tabel di atas dan pada prosa di seluruh dokumen adalah **nama keadaan**; nilai yang disimpan basis data adalah kode huruf besar `TENTATIVE`, `CONFIRMED`, `ACTIVE`, `RELEASED` — mengikuti ketetapan pemisahan kode ↔ label pada Bab 11.3. Dua kolom enum lain pada tabel ini **tidak** ikut: `resource_type` (`room`, `asset`) dan `origin` (`reservation`, `loan`, `maintenance`, `fixed_schedule`, `manual_block`) tetap huruf kecil, karena [`glossary.md`](../00-foundation/glossary.md) sudah memakukan `resource_type='asset'` sebagai kontrak teknis yang tidak berubah.
+
 ## 26.3 Penegakan Integritas di Lapisan Basis Data
 
 Validasi aplikasi **tidak cukup** untuk mencegah *race condition* (RS-11). Aturan berikut wajib ditegakkan oleh basis data:
@@ -60,7 +62,7 @@ ALTER TABLE booking_slots
     resource_id   WITH =,
     slot_range    WITH &&
   )
-  WHERE (status IN ('Tentative','Confirmed','Active'));
+  WHERE (status IN ('TENTATIVE','CONFIRMED','ACTIVE'));
 ```
 
 | Kode | Aturan integritas | Penegakan |
@@ -85,7 +87,7 @@ LANGKAH:
        AND (role = Siswa/OSIS -> boleh_dipinjam_siswa = true)
        AND aset aktif (tidak dihapuskan)
   2. Kurangi kandidat yang memiliki slot beririsan [T1,T2)
-     dengan status IN ('Tentative','Confirmed','Active')
+     dengan status IN ('TENTATIVE','CONFIRMED','ACTIVE')
   3. Kembalikan jumlah tersedia per kategori + daftar unit
 OUTPUT : jumlah tersedia, daftar unit, dan tanggal bebas terdekat bila 0
 ```
