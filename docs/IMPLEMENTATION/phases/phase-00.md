@@ -28,6 +28,7 @@ Setelah phase ini, sebuah perubahan kode dapat berjalan dari *commit* hingga *st
 - Worker skeleton: antrean, *distributed lock*, tabel outbox dan dispatcher-nya
 - Health endpoint, log terstruktur, korelasi `request_id`
 - Seed: 79 permission, 7 role bawaan, `work_days`, parameter sistem
+- Tabel kalender kerja `work_days` dan `holidays` — **tanpa** `academic_year_id`, yang menyusul di `PR-01-11` bersama `academic_years` (migration `expand`)
 
 **Tidak termasuk**
 
@@ -44,7 +45,7 @@ Tidak ada. Ini titik masuk proyek.
 | Berkas | ID yang dilayani |
 |---|---|
 | [`roles-permissions.md`](../../PRD/00-foundation/roles-permissions.md) | Lampiran C — 79 kode permission, `PM-01` … `PM-06` |
-| [`conventions.md`](../../PRD/00-foundation/conventions.md) | `CAL-01` … `CAL-03`, `work_days` |
+| [`conventions.md`](../../PRD/00-foundation/conventions.md) | `CAL-01` … `CAL-03`, `work_days`, `holidays` (Lampiran E.2) |
 | [`nfr.md`](../../PRD/03-architecture/nfr.md) | `NFR-M-01` `NFR-M-02` `NFR-M-04` `NFR-M-06` `NFR-M-09` |
 | [`deployment-ops.md`](../../PRD/03-architecture/deployment-ops.md) | `INF-01` … `INF-07`, `CD-01` … `CD-07`, `OBS-01` … `OBS-07` |
 | [`api-conventions.md`](../../PRD/03-architecture/api-conventions.md) | Bab 17.1–17.3 |
