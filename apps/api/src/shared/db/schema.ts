@@ -9,7 +9,7 @@
 // 0001-0002 (PR-00-05) hanya membuat ekstensi dan tipe enum — bukan tabel —
 // sehingga peta ini memang kosong sampai 0003.
 
-import type { ColumnType } from 'kysely';
+import type { ColumnType, Generated } from 'kysely';
 
 /**
  * `document_counters` (0003, PR-00-07). Penghitung nomor dokumen per
@@ -26,7 +26,29 @@ export interface DocumentCountersTable {
   value: ColumnType<string, string | number | undefined, string | number>;
 }
 
+/**
+ * `work_days` (0004, PR-00-08). Hari kerja pekanan; `hari` memakai penomoran
+ * ISO-8601 — 1 = Senin … 7 = Minggu (Lampiran E.2, CAL-01).
+ */
+export interface WorkDaysTable {
+  hari: number;
+  aktif: boolean;
+}
+
+/**
+ * `holidays` (0004, PR-00-08). `academic_year_id` sengaja belum ada — ia
+ * ditambahkan `PR-01-11` bersama `academic_years` sebagai migration `expand`.
+ */
+export interface HolidaysTable {
+  id: Generated<string>;
+  tanggal: ColumnType<string, string, string>;
+  nama: string;
+  jenis: 'NASIONAL' | 'SEKOLAH' | 'CUTI_BERSAMA';
+}
+
 /** Peta nama tabel -> bentuk barisnya. Diisi bersama migration pemiliknya. */
 export interface Database {
   document_counters: DocumentCountersTable;
+  work_days: WorkDaysTable;
+  holidays: HolidaysTable;
 }

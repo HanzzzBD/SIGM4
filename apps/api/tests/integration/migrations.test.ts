@@ -77,7 +77,11 @@ describe.skipIf(process.env['DATABASE_URL'] === undefined)(
         .map((nilai) => nilai.join(','))
         .filter((nilai) => !aktual.has(nilai));
       expect(hilang).toEqual([]);
-      expect(rows).toHaveLength(bab113.size);
+      // Jumlah TOTAL sengaja tidak dipatok: sejak `SDD-DB-02` diperluas, tipe enum
+      // di luar Bab 11.3 dibuat oleh migration yang membuat tabelnya — mis.
+      // `holiday_type` pada 0004. Mematok totalnya akan menggagalkan uji ini atas
+      // penambahan yang sah, bukan atas kelompok Bab 11.3 yang benar-benar hilang.
+      expect(rows.length).toBeGreaterThanOrEqual(bab113.size);
     });
 
     it('nilai tersimpan sebagai kode teknis huruf besar, bukan label (SDD-DB-02)', async () => {
@@ -99,10 +103,9 @@ describe.skipIf(process.env['DATABASE_URL'] === undefined)(
       });
 
       dbmate('up');
-      expect((await kueri<{ enums: string; ext: string }>(HITUNG))[0]).toEqual({
-        enums: String(bab113.size),
-        ext: '2',
-      });
+      const pulih = (await kueri<{ enums: string; ext: string }>(HITUNG))[0];
+      expect(Number(pulih?.enums)).toBeGreaterThanOrEqual(bab113.size);
+      expect(pulih?.ext).toBe('2');
     });
   },
 );
