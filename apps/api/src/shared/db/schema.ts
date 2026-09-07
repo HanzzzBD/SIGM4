@@ -46,9 +46,25 @@ export interface HolidaysTable {
   jenis: 'NASIONAL' | 'SEKOLAH' | 'CUTI_BERSAMA';
 }
 
+/**
+ * `idempotency_keys` (0005, PR-00-10). `status_code` dan `response_body` NULL
+ * hanya di dalam transaksi yang sedang menulisnya — deteksi permintaan berjalan
+ * memakai advisory lock, bukan kolom ini (`SDD-01 §4.4`).
+ */
+export interface IdempotencyKeysTable {
+  key: string;
+  endpoint: string;
+  request_hash: string;
+  status_code: number | null;
+  response_body: unknown;
+  created_at: Generated<Date>;
+  expires_at: Generated<Date>;
+}
+
 /** Peta nama tabel -> bentuk barisnya. Diisi bersama migration pemiliknya. */
 export interface Database {
   document_counters: DocumentCountersTable;
   work_days: WorkDaysTable;
   holidays: HolidaysTable;
+  idempotency_keys: IdempotencyKeysTable;
 }

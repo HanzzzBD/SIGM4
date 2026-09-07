@@ -1,6 +1,6 @@
 # Status Implementasi
 
-**Diperbarui:** 7 September 2026 — `PR-00-01` … `PR-00-08` tergabung ke `develop`; `PR-00-09` menunggu tinjauan. Audit konsistensi lintas dokumen selesai: 15 temuan, 12 keputusan pemilik produk. Proteksi cabang `main` dan `develop` aktif.
+**Diperbarui:** 7 September 2026 — `PR-00-01` … `PR-00-09` tergabung ke `develop`; `PR-00-10` menunggu tinjauan. Audit konsistensi lintas dokumen selesai: 15 temuan, 12 keputusan pemilik produk. Proteksi cabang `main` dan `develop` aktif.
 
 Berkas ini memiliki status **per phase dan per pull request**. Ia **tidak** memiliki status per requirement — itu milik [`../PRD/06-quality/traceability.md`](../PRD/06-quality/traceability.md). Dua tingkat berbeda, tanpa tumpang tindih:
 
@@ -31,7 +31,7 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 
 | Phase | Nama | Modul | PR | Status | Selesai | Catatan |
 |:---:|---|:---:|:---:|---|:---:|---|
-| [00](phases/phase-00.md) | Foundation | — | 18 | `In Progress` | 8/18 | `PR-00-01` … `PR-00-08` tergabung; `PR-00-09` menunggu tinjauan; keputusan stack `PR-00-10` … `PR-00-18` seluruhnya terkunci |
+| [00](phases/phase-00.md) | Foundation | — | 18 | `In Progress` | 9/18 | `PR-00-01` … `PR-00-09` tergabung; `PR-00-10` menunggu tinjauan; keputusan stack `PR-00-11` … `PR-00-18` seluruhnya terkunci |
 | [01](phases/phase-01.md) | Master Data Independen | 4 | 14 | `Not Started` | 0/14 | |
 | [02](phases/phase-02.md) | Inti Sistem | 5 | 30 | `Not Started` | 0/30 | Phase terbesar; di lintasan kritis |
 | [03](phases/phase-03.md) | Layanan Aset & Reservasi | 6 | 23 | `Not Started` | 0/23 | Menutup `M1` |
@@ -40,7 +40,7 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 | [06](phases/phase-06.md) | Analitik | 1 | 10 | `Not Started` | 0/10 | Menutup `M5` |
 | [07](phases/phase-07.md) | Integrasi & UAT | — | 14 | `Not Started` | 0/14 | |
 | [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 15 | `Not Started` | 0/15 | Menutup `M6` |
-| | **Total** | **22** | **163** | | **8/163** | |
+| | **Total** | **22** | **163** | | **9/163** | |
 
 ## Ringkasan milestone PRD
 
@@ -85,8 +85,9 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-00-06` | `Done` | [#20](https://github.com/HanzzzBD/SIGM4/pull/20) | Shared kernel: `Clock`, `ErrorMapper`, `request_id`, logger terstruktur |
 | `PR-00-07` | `Done` | [#21](https://github.com/HanzzzBD/SIGM4/pull/21) | `DocumentNumberService` + tabel `document_counters` |
 | `PR-00-08` | `Done` | [#23](https://github.com/HanzzzBD/SIGM4/pull/23) | `BusinessCalendarService` + `work_days`/`holidays` |
-| `PR-00-09` | `In Review` | — | Registri route + validasi permission saat startup + OpenAPI |
-| `PR-00-10` … `PR-00-18` | `Not Started` | — | Rincian: [`phases/phase-00.md` §7](phases/phase-00.md) |
+| `PR-00-09` | `Done` | [#24](https://github.com/HanzzzBD/SIGM4/pull/24) | Registri route + validasi permission saat startup + OpenAPI |
+| `PR-00-10` | `In Review` | — | `idempotency_keys` + middleware idempotensi |
+| `PR-00-11` … `PR-00-18` | `Not Started` | — | Rincian: [`phases/phase-00.md` §7](phases/phase-00.md) |
 
 ### Phase 01 — Master Data Independen · `Not Started`
 
