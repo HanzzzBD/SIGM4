@@ -1,0 +1,22 @@
+{
+  // Typecheck bagi uji. Terpisah dari tsconfig.json karena rootDir build adalah
+  // ./src: berkas uji tidak boleh ikut ter-emit ke dist dan masuk image produksi
+  // (CLAUDE.md — tidak ada data uji pada jalur produksi).
+  //
+  // `npm run test -w apps/api` menjalankan proyek ini SEBELUM Vitest, sebab uji
+  // negatif pada tests/shared/db/repository.test.ts berupa @ts-expect-error: ia
+  // hanya menjadi gerbang bila ada yang benar-benar mengkompilasinya.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    // rootDir diluaskan ke akar pohon (bukan ke luarnya): tests/ ikut ter-typecheck,
+    // sementara batas antar-pohon SDD-17 §4.3 tetap ditegakkan kompilator.
+    "rootDir": ".",
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts"]
+}
