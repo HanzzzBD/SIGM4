@@ -73,8 +73,13 @@ Harga yang dibayar: kehilangan foreign key pada `resource_id`. Dimitigasi oleh S
 ```sql
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
+-- Nilai booking_status memakai kode huruf besar (SDD-DB-02); nama keadaan pada
+-- §4.3 dan pada prosa dokumen lain adalah label, bukan nilai kolom. booking_resource
+-- dan booking_origin sengaja TIDAK ikut: glossary PRD memakukan resource_type='asset'
+-- sebagai kontrak teknis yang tidak berubah.
+
 CREATE TYPE booking_resource AS ENUM ('room', 'asset');
-CREATE TYPE booking_status   AS ENUM ('Tentative', 'Confirmed', 'Active', 'Released');
+CREATE TYPE booking_status   AS ENUM ('TENTATIVE', 'CONFIRMED', 'ACTIVE', 'RELEASED');
 CREATE TYPE booking_origin   AS ENUM ('reservation', 'loan', 'maintenance',
                                       'fixed_schedule', 'manual_block');
 
@@ -94,11 +99,11 @@ CREATE TABLE booking_slots (
     created_at      timestamptz NOT NULL DEFAULT now(),
 
     CONSTRAINT slot_range_required
-        CHECK (parent_slot_id IS NOT NULL OR slot_range IS NOT NULL OR status = 'Released'),
+        CHECK (parent_slot_id IS NOT NULL OR slot_range IS NOT NULL OR status = 'RELEASED'),
     CONSTRAINT slot_range_bounds
         CHECK (slot_range IS NULL OR (lower_inc(slot_range) AND NOT upper_inc(slot_range))),
     CONSTRAINT tentative_needs_ttl
-        CHECK (status <> 'Tentative' OR expires_at IS NOT NULL)
+        CHECK (status <> 'TENTATIVE' OR expires_at IS NOT NULL)
 );
 
 -- CI-01: penegak nol double-booking
@@ -108,15 +113,15 @@ ALTER TABLE booking_slots
         resource_type WITH =,
         resource_id   WITH =,
         slot_range    WITH &&
-    ) WHERE (status IN ('Tentative','Confirmed','Active') AND slot_range IS NOT NULL);
+    ) WHERE (status IN ('TENTATIVE','CONFIRMED','ACTIVE') AND slot_range IS NOT NULL);
 
 -- AV-01
 CREATE INDEX booking_slots_lookup
     ON booking_slots USING gist (resource_type, resource_id, slot_range)
-    WHERE status IN ('Tentative','Confirmed','Active');
+    WHERE status IN ('TENTATIVE','CONFIRMED','ACTIVE');
 
 CREATE INDEX booking_slots_expiry
-    ON booking_slots (expires_at) WHERE status = 'Tentative';
+    ON booking_slots (expires_at) WHERE status = 'TENTATIVE';
 
 -- AV-02
 CREATE INDEX assets_availability
@@ -167,14 +172,14 @@ allocateUnits(categoryId, qty, range, userCtx, preferredIds?):
           AND NOT EXISTS (                          -- AV-01 memakai indeks GiST
                 SELECT 1 FROM booking_slots s
                  WHERE s.resource_type = 'asset' AND s.resource_id = a.id
-                   AND s.status IN ('Tentative','Confirmed','Active')
+                   AND s.status IN ('TENTATIVE','CONFIRMED','ACTIVE')
                    AND s.slot_range && :range)
         ORDER BY a.id                               -- CI-02: urutan lock
         LIMIT :qty
         FOR UPDATE OF a SKIP LOCKED                 -- SDD-AVL-05
 
   5. IF count(candidates) < qty -> ROLLBACK, 409 ASSET_NOT_AVAILABLE
-  6. INSERT booking_slots (status='Tentative', expires_at=ttl()) untuk tiap kandidat
+  6. INSERT booking_slots (status='TENTATIVE', expires_at=ttl()) untuk tiap kandidat
        -> exclusion constraint adalah pemutus akhir (CI-01)
   7. INSERT reservation + reservation_items
   8. buildApprovalInstance()                        -- lihat SDD-02
@@ -247,7 +252,7 @@ Format dirakit aplikasi sesuai `SEQ-01`, divalidasi terhadap regex `SEQ-04` pada
 | Job | Jadwal (UTC, lihat `JOB-04`) | Idempoten karena |
 |---|---|---|
 | `slot-activation` | tiap 5 menit | `UPDATE … WHERE status <> target` |
-| `tentative-slot-expiry` | tiap 15 menit | `WHERE status='Tentative' AND expires_at < now()` |
+| `tentative-slot-expiry` | tiap 15 menit | `WHERE status='TENTATIVE' AND expires_at < now()` |
 | `loan-overdue` | 17:05 (= 00:05 WIB) | denda diperiksa unik per `(loan_item_id, tanggal)` |
 | `reservation-expiry` | 16:00 (= 23:00 WIB) | transisi hanya dari `Confirmed` |
 
