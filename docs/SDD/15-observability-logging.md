@@ -61,7 +61,7 @@ Menyimpan activity log di agregator akan melanggar `AL-09` (retensi) dan `AL-03`
 
 **OpenTelemetry berlaku tanpa syarat**, terlepas dari backend mana pun yang dipilih. Ia memisahkan instrumentasi — metrik domain §4.3, lima trace §4.4, propagasi `request_id` (`SDD-OBS-03`) — dari tempat data itu bermuara, sehingga penggantian backend menjadi perubahan konfigurasi alih-alih penulisan ulang kode aplikasi. Karena bagian kedua keputusan ini justru yang paling mungkin ditinjau ulang, netralitas itu bernilai langsung, bukan spekulatif.
 
-**Backend terkelola dipilih atas dasar kapasitas operasional, bukan kemampuan teknis.** Stack swa-kelola (Prometheus + Grafana + Loki + Tempo) memenuhi seluruh kebutuhan §4.3–§4.7 dan punya keunggulan nyata: tidak ada data yang meninggalkan infrastruktur sekolah, dan tidak ada biaya per-GB. Ia ditolak karena menambahkan empat layanan pada host yang topologinya sudah padat ([SDD-16 §4.2](16-infrastructure-deployment.md)), menjadikan retensi §4.7 sebagai persoalan disk sekolah, dan membuat alarm "disk > 80%" ikut menjaga sistem pemantauannya sendiri — semuanya pada pihak yang [SDD-16 §6](16-infrastructure-deployment.md) sudah tandai sebagai risiko dengan mitigasi berupa pelatihan dan hypercare berbatas waktu. Perlu dicatat pula bahwa swa-kelola penuh tetap tidak menghilangkan komponen luar: `OBS-04` menuntut pemantauan *uptime* **eksternal** atas `/health`, karena pemantau yang berada di host yang sama akan mati bersama host yang dipantaunya.
+**Backend terkelola dipilih atas dasar kapasitas operasional, bukan kemampuan teknis.** Stack swa-kelola (Prometheus + Grafana + Loki + Tempo) memenuhi seluruh kebutuhan §4.3–§4.7 dan punya keunggulan nyata: tidak ada data yang meninggalkan infrastruktur sekolah, dan tidak ada biaya per-GB. Ia ditolak karena menambahkan empat layanan pada host yang topologinya sudah padat ([SDD-16 §4.2](16-infrastructure-deployment.md)), menjadikan retensi §4.7 sebagai persoalan disk sekolah, dan membuat alarm "disk > 80%" ikut menjaga sistem pemantauannya sendiri — semuanya pada pihak yang [SDD-16 §6](16-infrastructure-deployment.md) sudah tandai sebagai risiko dengan mitigasi berupa pelatihan dan hypercare berbatas waktu. Perlu dicatat pula bahwa swa-kelola penuh tetap tidak menghilangkan komponen luar: `OBS-04` menuntut pemantauan *uptime* **eksternal** atas `/health/live`, karena pemantau yang berada di host yang sama akan mati bersama host yang dipantaunya.
 
 Yang **tidak** ikut ke backend mana pun adalah activity log. `SDD-OBS-01` sudah menetapkannya sebagai sistem terpisah di PostgreSQL berantai hash; memindahkannya ke agregator akan melanggar `AL-09` dan `AL-03`. Keputusan ini karena itu hanya menyangkut log aplikasi, metrik, dan trace.
 
@@ -153,9 +153,9 @@ Span membawa `request_id`; span worker menjadi anak dari span permintaan yang me
 ### 4.5 Health check
 
 ```
-GET /health/live     → 200 selama proses hidup (tanpa memeriksa dependensi)
-GET /health/ready    → 200 hanya bila DB, Redis, dan storage siap
-GET /health          → ringkasan untuk kartu Kesehatan Integrasi (OBS-06)
+GET /health/live     → 200 selama proses hidup (tanpa memeriksa dependensi)   public: true
+GET /health/ready    → 200 hanya bila DB, Redis, dan storage siap             public: true
+GET /health          → ringkasan untuk kartu Kesehatan Integrasi (OBS-06)     setting.view
 ```
 
 ```json

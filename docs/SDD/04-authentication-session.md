@@ -77,7 +77,7 @@ CREATE TABLE refresh_tokens (
     user_id      bigint      NOT NULL REFERENCES users(id),
     family_id    uuid        NOT NULL,
     token_hash   bytea       NOT NULL UNIQUE,   -- SHA-256 (SDD-SESS-03)
-    platform     text        NOT NULL,          -- 'web' | 'android' | 'ios'
+    platform     device_platform NOT NULL,      -- SDD-DB-02: WEB | ANDROID | IOS
     issued_at    timestamptz NOT NULL DEFAULT now(),
     expires_at   timestamptz NOT NULL,
     rotated_at   timestamptz,                   -- terisi saat ditukar

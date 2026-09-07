@@ -25,7 +25,7 @@ Skema khusus `booking_slots`, `idempotency_keys`, dan `document_counters` didefi
 | ID | Keputusan |
 |---|---|
 | **SDD-DB-01** | Kunci primer memakai `bigserial` (integer berurut), bukan UUID. Pengecualian: `assets.uuid` yang memang diwajibkan `FR-05.1` untuk QR. |
-| **SDD-DB-02** | Enum disimpan sebagai **PostgreSQL native enum** dengan nilai berupa **kode teknis huruf besar** (`BAIK`, `RUSAK_RINGAN`, `MENUNGGU_PERSETUJUAN`), sesuai ketetapan pemisahan kode ↔ label pada Bab 11.3. |
+| **SDD-DB-02** | Enum disimpan sebagai **PostgreSQL native enum** dengan nilai berupa **kode teknis huruf besar** (`BAIK`, `RUSAK_RINGAN`, `MENUNGGU_PERSETUJUAN`), sesuai ketetapan pemisahan kode ↔ label pada Bab 11.3. Aturan ini berlaku bagi **setiap himpunan nilai tetap**, bukan hanya yang terdaftar Bab 11.3: kolom berhimpunan tertutup tidak boleh bertipe `text` berkomentar. Satu pengecualian tertulis — `booking_resource` dan `booking_origin` tetap huruf kecil karena [`glossary.md`](../PRD/00-foundation/glossary.md) memakukan `resource_type='asset'` sebagai kontrak teknis yang tidak berubah. |
 | **SDD-DB-03** | Seluruh kolom waktu bertipe `timestamptz`. Tidak ada `timestamp` polos di mana pun. |
 | **SDD-DB-04** | *Soft delete* memakai kolom eksplisit per entitas (`status`, `dihapuskan`), **bukan** kolom generik `deleted_at`. Alasannya: PRD memberi makna berbeda pada tiap penonaktifan. |
 | **SDD-DB-05** | Uniqueness bersyarat memakai **partial unique index**, bukan `UNIQUE` biasa — khususnya `assets.nomor_seri` yang unik hanya bila diisi (`BR-003`). |
@@ -146,7 +146,7 @@ CREATE TABLE activity_logs (
     nilai_sebelum jsonb,
     nilai_sesudah jsonb,
     keterangan    text,
-    hasil         text        NOT NULL,
+    hasil         activity_result NOT NULL,   -- SDD-DB-02
     request_id    text,
     prev_hash     bytea,                   -- rantai hash (NFR-S-03d)
     row_hash      bytea NOT NULL,
@@ -190,7 +190,7 @@ Aturannya: satu rilis tidak boleh memuat expand dan contract untuk kolom yang sa
 
 | Seed | Sumber kebenaran | Idempoten karena |
 |---|---|---|
-| 78 kode permission | [Lampiran C](../PRD/00-foundation/roles-permissions.md) | `ON CONFLICT (kode) DO UPDATE` |
+| 79 kode permission | [Lampiran C](../PRD/00-foundation/roles-permissions.md) | `ON CONFLICT (kode) DO UPDATE` |
 | 7 role bawaan + matriks | Bab 5 & Bab 18 | idem |
 | Aturan approval bawaan | `RE-06` — konstanta kode, bukan baris | tidak di-seed (lihat SDD-APR §4.3) |
 | `work_days` Senin–Sabtu | [Lampiran E.2](../PRD/00-foundation/conventions.md) | idem |

@@ -173,7 +173,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
 | **chat_sessions** | Sesi percakapan chatbot | id, user_id, judul, dimulai_pada, terakhir_aktif | ± 5.000 |
-| **chat_messages** | Pesan dalam percakapan | id, session_id, peran (user/assistant), isi, tools_dipanggil (JSON), token_input, token_output, umpan_balik, waktu | ± 25.000 |
+| **chat_messages** | Pesan dalam percakapan | id, session_id, peran (`USER`/`ASSISTANT`), isi, tools_dipanggil (JSON), token_input, token_output, umpan_balik, waktu | ± 25.000 |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
 

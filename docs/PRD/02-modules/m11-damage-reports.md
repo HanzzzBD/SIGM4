@@ -225,6 +225,7 @@ flowchart TD
 |---|---|---|---|
 | POST | `/damage-reports` | `damage.create` | Buat tiket kerusakan |
 | GET | `/damage-reports` | `damage.view` | Daftar tiket (tersaring sesuai role) |
+| GET | `/damage-reports/{id}` | `damage.view` | Detail tiket beserta foto |
 | GET | `/damage-reports/open` | `damage.view` | Tiket terbuka untuk aset tertentu |
 | POST | `/damage-reports/{id}/verify` | `damage.verify` | Verifikasi / tolak tiket |
 
