@@ -6,7 +6,7 @@ Data induk yang relatif stabil dan menjadi acuan seluruh transaksi.
 
 | Entitas | Deskripsi | Atribut Utama | Pemilik Data |
 |---|---|---|---|
-| **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, unit_kerja, telepon, foto, status, 2fa_enabled, must_change_password, last_login_at | Administrator |
+| **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, unit_kerja, telepon, foto, status, 2fa_enabled, must_change_password, login_terakhir_pada | Administrator |
 | **roles** | Peran pengguna | id, nama, deskripsi, is_system | Administrator |
 | **permissions** | Daftar hak akses granular | id, modul, aksi, kode | Sistem |
 | **role_permissions** | Relasi role–permission | role_id, permission_id | Administrator |
@@ -37,7 +37,7 @@ Data yang tumbuh seiring operasional harian.
 | **loans** | Transaksi peminjaman | id, nomor, reservation_id, peminjam_id, petugas_serah_id, tanggal_pinjam, tanggal_jatuh_tempo, tanggal_kembali, status | ± 2.500 |
 | **loan_items** | Unit yang dipinjam & kondisinya | id, loan_id, asset_id, kondisi_awal, kondisi_akhir, foto_awal, foto_akhir, status_kembali | ± 5.000 |
 | **fines** | Denda keterlambatan & ganti rugi | id, **loan_item_id**, loan_id, peminjam_id, jenis (`Keterlambatan`/`Ganti Rugi`), hari_terlambat, tarif_per_hari, jumlah_sebelum_cap, jumlah, status, tanggal_bayar, nomor_bukti, jumlah_dibebaskan, alasan_pembebasan, dibebaskan_oleh | ± 300 |
-| **damage_reports** | Tiket laporan kerusakan | id, nomor, pelapor_id, asset_id, room_id, deskripsi, urgensi, status, loan_id, verified_by, verified_at | ± 600 |
+| **damage_reports** | Tiket laporan kerusakan | id, nomor, pelapor_id, asset_id, room_id, deskripsi, urgensi, status, loan_id, diverifikasi_oleh, diverifikasi_pada | ± 600 |
 | **damage_report_photos** | Foto laporan kerusakan | id, damage_report_id, path, urutan | ± 1.800 |
 | **work_orders** | Perintah kerja pemeliharaan | id, nomor, jenis (`PREVENTIF`/`KOREKTIF`), asset_id, room_id, damage_report_id, teknisi_id, prioritas, deskripsi, target_selesai, waktu_mulai, waktu_selesai, biaya, catatan_teknisi, hasil, status | ± 700 |
 | **work_order_costs** | Rincian biaya & sparepart | id, work_order_id, deskripsi, jumlah, harga_satuan, total | ± 1.000 |
@@ -49,7 +49,7 @@ Data yang tumbuh seiring operasional harian.
 | **material_categories** | Kategori bahan — terpisah dari kategori aset | id, nama, kode, keterangan, status | ± 15 |
 | **materials** | Master jenis bahan | id, uuid, nama, material_category_id, satuan_id, stok_minimum, room_id_default, keterangan, status | ± 300 |
 | **material_balances** | Saldo per bahan per lokasi penyimpanan | id, material_id, room_id, saldo | ± 900 |
-| **material_transactions** | Peristiwa yang mengubah saldo bahan | id, material_id, room_id, jenis, jumlah, saldo_sesudah, referensi_tipe, referensi_id, alasan, dibuat_oleh, dibuat_pada | ± 20.000 |
+| **material_transactions** | Peristiwa yang mengubah saldo bahan | id, material_id, room_id, jenis, jumlah, saldo_sesudah, referensi_jenis, referensi_id, alasan, created_by, created_at | ± 20.000 |
 | **material_requests** | Permintaan bahan | id, nomor, pemohon_id, keperluan, status, approval_instance_id, diserahkan_oleh, diserahkan_pada | ± 1.500 |
 | **material_request_items** | Baris permintaan bahan | id, material_request_id, material_id, jumlah_diminta, jumlah_disetujui, jumlah_diserahkan | ± 3.000 |
 | **material_units** | Master satuan bahan (dimiliki M-20) | id, nama, simbol, keterangan, status | ± 20 |
@@ -58,19 +58,20 @@ Data yang tumbuh seiring operasional harian.
 | **asset_disposal_items** | Aset dalam usulan penghapusan | id, disposal_id, asset_id, nilai_perolehan_snapshot, biaya_pemeliharaan_snapshot, keputusan, keterangan | ± 300 |
 | **booking_slots** | Interval pemesanan ruangan & unit aset (Bab 26.2) | id, resource_type, resource_id, slot_range, status, origin, reservation_id, loan_id, work_order_id, parent_slot_id, expires_at | ± 12.000 |
 | **idempotency_keys** | Penyimpanan hasil operasi idempoten (Bab 26.5) | key, request_hash, status_code, response_body, created_at, expires_at | ± 20.000 |
-| **approval_instances** | Instance persetujuan berjalan | id, jenis_pengajuan, referensi_id, rule_id, rule_snapshot (JSON), langkah_aktif, status, dibuat_pada, diselesaikan_pada | ± 3.500 |
+| **approval_instances** | Instance persetujuan berjalan | id, jenis_pengajuan, referensi_id, rule_id, rule_snapshot (JSON), langkah_aktif, status, created_at, diselesaikan_pada | ± 3.500 |
 | **approval_steps** | Keputusan per langkah | id, instance_id, urutan, approver_id, keputusan, catatan, diputuskan_pada, sla_deadline, dilewati, alasan_dilewati | ± 5.000 |
 | **asset_documents** | Dokumen pendukung aset | id, asset_id, jenis, nama_berkas, path, ukuran, mime, garansi_mulai, garansi_selesai, diunggah_oleh | ± 2.000 |
 | **asset_movements** | Riwayat mutasi lokasi | id, asset_id, room_asal_id, room_tujuan_id, tanggal, alasan, dilakukan_oleh | ± 1.000 |
 | **asset_condition_history** | Riwayat perubahan kondisi | id, asset_id, kondisi_lama, kondisi_baru, alasan, referensi_jenis, referensi_id, diubah_oleh, diubah_pada | ± 1.500 |
-| **notifications** | Notifikasi pengguna | id, user_id, jenis, judul, isi, referensi_jenis, referensi_id, kanal, dibaca_pada, dikirim_pada | ± 40.000 |
+| **notifications** | Notifikasi pengguna | id, user_id, jenis, judul, isi, referensi_jenis, referensi_id, dibaca_pada, created_at | ± 40.000 |
+| **notification_deliveries** | Hasil pengiriman **per kanal** untuk satu notifikasi — satu notifikasi dapat dikirim in-app dan push dengan nasib berbeda (`FR-17.2 A3`, `A4`) | id, notification_id, kanal, status, attempts, sent_at | ± 70.000 |
 | **device_tokens** | Token perangkat untuk push | id, user_id, token, platform, terakhir_aktif | ± 1.500 |
 | **activity_logs** | Jejak audit seluruh aktivitas | id, user_id, role, ip, user_agent, modul, aksi, entitas, entitas_id, nilai_sebelum (JSON), nilai_sesudah (JSON), hasil, waktu | ± 150.000 |
 | **chat_sessions** | Sesi percakapan chatbot | id, user_id, judul, dimulai_pada, terakhir_aktif | ± 5.000 |
 | **chat_messages** | Pesan dalam percakapan | id, session_id, peran (user/assistant), isi, tools_dipanggil (JSON), token_input, token_output, umpan_balik, waktu | ± 25.000 |
 | **password_reset_requests** | Permintaan reset password | id, user_id, status, metode_verifikasi, diminta_pada, diproses_oleh, diproses_pada, kedaluwarsa_pada | ± 100 |
 | **asset_photos** | Foto aset (menggantikan field tunggal `assets.foto`) | id, asset_id, path, urutan, is_primary, diunggah_oleh | ± 6.000 |
-| **stored_files** | Registri berkas terpusat & status pemindaian AV | id, path, mime, ukuran, checksum, scan_status (`pending`/`clean`/`infected`), scanned_at, owner_type, owner_id | ± 12.000 |
+| **stored_files** | Registri berkas terpusat & status pemindaian AV | id, object_key, mime, ukuran, checksum, scan_status (`PENDING`/`CLEAN`/`INFECTED`/`FAILED`), scanned_at, owner_type, owner_id | ± 12.000 |
 
 ## 11.3 Reference Data
 
@@ -232,7 +233,7 @@ erDiagram
         string unit_kerja
         enum status
         boolean two_fa_enabled
-        datetime last_login_at
+        datetime login_terakhir_pada
     }
 
     ASSETS {
