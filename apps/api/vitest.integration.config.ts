@@ -22,7 +22,7 @@ export default defineConfig({
       reporter: ['text', 'json-summary'],
       reportsDirectory: './coverage-integration',
       include: ['src/**/*.ts'],
-      exclude: ['src/**/index.ts', 'src/api/**', 'src/worker/**'],
+      exclude: ['src/**/index.ts', 'src/worker/**'],
     },
   },
 });

@@ -18,7 +18,11 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       // Barrel hanya meneruskan ekspor; menghitungnya menggelembungkan angka
       // tanpa menambah satu pun cabang yang benar-benar diuji.
-      exclude: ['src/**/index.ts', 'src/api/**', 'src/worker/**'],
+      // `src/api/**` TIDAK lagi dikecualikan: sejak PR-00-09 ia berisi logika
+      // nyata (generator OpenAPI), dan mengecualikannya berarti mengukur cakupan
+      // atas sebagian kode saja. Barrel dan entrypoint tetap di luar hitungan —
+      // keduanya hanya meneruskan, tanpa cabang yang dapat diuji.
+      exclude: ['src/**/index.ts', 'src/worker/**'],
     },
   },
 });
