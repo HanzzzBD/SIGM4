@@ -82,7 +82,8 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-00-03` | `Done` | [#11](https://github.com/HanzzzBD/SIGM4/pull/11) | Dockerfile multi-stage + compose pengembangan |
 | `PR-00-04` | `Done` | [#14](https://github.com/HanzzzBD/SIGM4/pull/14) | Koneksi DB, helper transaksi, base repository ber-`AuthContext` |
 | `PR-00-05` | `Done` | [#16](https://github.com/HanzzzBD/SIGM4/pull/16) → [#18](https://github.com/HanzzzBD/SIGM4/pull/18) | Migration runner + `0001` ekstensi + `0002` enum. Tergabung ke `develop` lewat `#18` — lihat pergeseran di bawah |
-| `PR-00-06` … `PR-00-18` | `Not Started` | — | Rincian: [`phases/phase-00.md` §7](phases/phase-00.md) |
+| `PR-00-06` | `In Review` | — | Shared kernel: `Clock`, `ErrorMapper`, `request_id`, logger terstruktur |
+| `PR-00-07` … `PR-00-18` | `Not Started` | — | Rincian: [`phases/phase-00.md` §7](phases/phase-00.md) |
 
 ### Phase 01 — Master Data Independen · `Not Started`
 
