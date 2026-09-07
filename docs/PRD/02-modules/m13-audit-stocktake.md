@@ -265,6 +265,7 @@ flowchart TD
 | POST | `/audit-sessions` | `audit.manage` | Buat sesi opname |
 | GET | `/audit-sessions/{id}/items` | `audit.execute` | Daftar aset target (filter lokasi) |
 | POST | `/audit-sessions/{id}/scan` | `audit.execute` | Catat hasil pemindaian |
+| POST | `/audit-sessions/{id}/complete-location` | `audit.execute` | Tandai satu lokasi selesai diperiksa |
 | POST | `/audit-sessions/{id}/finalize` | `audit.manage` | Hasilkan rekonsiliasi |
 | POST | `/audit-sessions/{id}/submit` | `audit.manage` | Kirim untuk persetujuan |
 | POST | `/audit-sessions/{id}/approve` | `audit.approve` | Setujui & terapkan penyesuaian |
@@ -280,7 +281,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
 | **audit_sessions** | Sesi stock opname | id, nama, **domain (ASET/BAHAN — `BR-093`)**, periode_mulai, periode_selesai, cakupan (JSON), pelaksana_id, status, disetujui_oleh, disetujui_pada | ± 8 |
-| **audit_items** | Hasil pemeriksaan per aset yang termasuk snapshot target | id, audit_session_id, asset_id (FK wajib), lokasi_sistem, lokasi_aktual, kondisi_sistem, kondisi_aktual, hasil (ditemukan/salah_lokasi/tidak_ditemukan/perbedaan_kondisi), keterangan, foto, diperiksa_oleh, diperiksa_pada | ± 5.000 per sesi |
+| **audit_items** | Hasil pemeriksaan per aset yang termasuk snapshot target | id, audit_session_id, asset_id (FK wajib), lokasi_sistem, lokasi_aktual, kondisi_sistem, kondisi_aktual, hasil (`DITEMUKAN`/`SALAH_LOKASI`/`TIDAK_DITEMUKAN`/`PERBEDAAN_KONDISI` — `stocktake_result` tanpa `TEMUAN_BARU`, yang tidak dapat berdiri di sini karena `asset_id` wajib; temuan baru dimiliki `audit_new_findings`), keterangan, foto, diperiksa_oleh, diperiksa_pada | ± 5.000 per sesi |
 | **audit_material_items** | Hasil hitungan fisik per bahan pada sesi domain Bahan | id, audit_session_id, material_id, room_id, saldo_sistem, jumlah_fisik, selisih, keterangan, diperiksa_oleh, diperiksa_pada | ± 300 per sesi |
 | **audit_new_findings** | Aset fisik yang ditemukan tanpa data sistem (tanpa FK ke `assets`) | id, audit_session_id, deskripsi, kategori_perkiraan_id, kondisi, room_id, foto, keterangan, ditemukan_oleh, asset_id_hasil (terisi setelah didaftarkan) | ± 50 per sesi |
 

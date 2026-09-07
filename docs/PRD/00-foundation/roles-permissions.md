@@ -13,7 +13,7 @@ Berkas ini memuat bagian **normatif**: daftar role, matriks akses, katalog kode 
 | Bab 5 — daftar role & aturan role | Normatif | Berkas ini (PRD) |
 | Bab 18 — matriks permission per role | Normatif (ringkasan bagi non-teknis) | Berkas ini (PRD) |
 | Lampiran C.1 — konvensi penamaan & scope | Normatif | Berkas ini (PRD) |
-| Lampiran C.2 — katalog 78 kode permission | Normatif — sumber kebenaran tunggal RBAC | Berkas ini (PRD) |
+| Lampiran C.2 — katalog 79 kode permission | Normatif — sumber kebenaran tunggal RBAC | Berkas ini (PRD) |
 | Lampiran C.3 — aturan penegakan (`PM-01`…`PM-06`) | Normatif | Berkas ini (PRD) |
 | Middleware, `AuthContext`, scope di repository, serializer | **Rancangan** | [`../../SDD/03-authorization.md`](../../SDD/03-authorization.md) |
 | Cache permission, urutan gerbang sesi, otorisasi tool AI | **Rancangan** | [`../../SDD/03-authorization.md`](../../SDD/03-authorization.md) |
