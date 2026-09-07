@@ -8,7 +8,8 @@
     "build": "tsc --build",
     "lint": "eslint src",
     "test": "tsc -p tsconfig.test.json && vitest run",
-    "test:integration": "vitest run --config vitest.integration.config.ts"
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@sigm4/schemas": "*",

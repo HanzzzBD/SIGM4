@@ -61,6 +61,27 @@ export default [
         basePath: akarRepo,
         zones: [...zonaAntarPohon, ...zonaLapisan, ...zonaAntarModul],
       }],
+      // SDD-SYS-07 — waktu selalu dari Clock yang di-inject. Aturan ini yang
+      // membuatnya mengikat: tanpanya, `new Date()` akan menyelinap kembali satu
+      // per satu dan TD-04 (uji jatuh tempo, TTL, SLA, eskalasi) kehilangan
+      // satu-satunya titik yang dapat digantikan. shared/clock dikecualikan di
+      // bawah — ia justru tempat panggilan itu seharusnya berada.
+      'no-restricted-syntax': ['error',
+        {
+          selector: "NewExpression[callee.name='Date'][arguments.length=0]",
+          message: 'Waktu selalu dari Clock yang di-inject (SDD-SYS-07). Pakai clock.now(), bukan new Date().',
+        },
+        {
+          selector: "CallExpression[callee.object.name='Date'][callee.property.name='now']",
+          message: 'Waktu selalu dari Clock yang di-inject (SDD-SYS-07). Pakai clock.now(), bukan Date.now().',
+        },
+      ],
     },
+  },
+  {
+    // Satu-satunya tempat `new Date()` boleh dipanggil (SDD-SYS-07). Pengecualian
+    // ini sengaja berupa berkas, bukan komentar sebaris yang bisa disalin ke mana-mana.
+    files: ['src/shared/clock/**/*.ts'],
+    rules: { 'no-restricted-syntax': 'off' },
   },
 ];
