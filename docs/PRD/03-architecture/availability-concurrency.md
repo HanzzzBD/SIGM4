@@ -114,14 +114,28 @@ OUTPUT : jumlah tersedia, daftar unit, dan tanggal bebas terdekat bila 0
 
 ## 26.6 Penomoran Dokumen Aman Konkurensi
 
-Berlaku untuk `RSV-RG-…`, `RSV-BR-…`, `PJM-…`, `KRS-…`, `WO-…`, `PGD-…`, `OPN-…`, `HPS-…`.
+Berlaku untuk `RSV-RG-…`, `RSV-BR-…`, `PJM-…`, `KRS-…`, `WO-…`, `PGD-…`, `OPN-…`, `HPS-…`, `PMB-…`.
+
+| Prefiks | Entitas pemilik | Modul |
+|---|---|---|
+| `RSV-RG` | `reservations` (ruangan) | M-07 |
+| `RSV-BR` | `reservations` (aset) | M-08 |
+| `PJM` | `loans` | M-09 |
+| `KRS` | `damage_reports` | M-11 |
+| `WO` | `work_orders` | M-12 |
+| `OPN` | `audit_sessions` | M-13 |
+| `PGD` | `procurements` | M-14 |
+| `HPS` | `asset_disposals` | M-21 |
+| `PMB` | `material_requests` | M-22 |
+
+Tabel ini ada karena dua celah yang saling berlawanan pernah hidup berdampingan di sini: `material_requests` memiliki kolom `nomor` tanpa prefiks — sehingga `NT-50` tidak punya nomor untuk dirender — sementara `OPN` memiliki prefiks tanpa entitas yang menyimpannya, padahal berita acara opname adalah dokumen pertanggungjawaban yang 11.4 simpan permanen. Keduanya ditutup 7 September 2026.
 
 | Kode | Requirement |
 |---|---|
 | SEQ-01 | Format nomor: `{PREFIX}-{TAHUN}-{URUT:4}` dengan urutan direset setiap tahun anggaran, contoh `RSV-RG-2026-0001` |
 | SEQ-02 | Nomor **wajib** dihasilkan dari sequence basis data per (prefix, tahun), bukan dari `MAX(nomor)+1` |
 | SEQ-03 | Nomor bersifat *gap-tolerant*: kegagalan transaksi boleh menyisakan lompatan nomor; nomor tidak pernah digunakan ulang |
-| SEQ-04 | Regex validasi: `^(RSV-RG\|RSV-BR\|PJM\|KRS\|WO\|PGD\|OPN\|HPS)-\d{4}-\d{4,}$` |
+| SEQ-04 | Regex validasi: `^(RSV-RG\|RSV-BR\|PJM\|KRS\|WO\|PGD\|OPN\|HPS\|PMB)-\d{4}-\d{4,}$`. Setiap prefiks memiliki tepat satu entitas pemilik, dan setiap entitas berkolom `nomor` memiliki prefiks — daftar di bawah menutup keduanya |
 
 ## 26.7 Eksekusi Pekerjaan Terjadwal pada Lingkungan Multi-Instance
 
