@@ -4,3 +4,5 @@ export type { HttpMethod, RateLimitClass, RouteDefinition } from './route.js';
 export { defineRoute, routeKey } from './route.js';
 export type { RouteViolation } from './registry.js';
 export { RouteRegistrationError, RouteRegistry } from './registry.js';
+export type { IdempotentRequest, IdempotentResult } from './idempotency.js';
+export { hashRequestBody, runIdempotent } from './idempotency.js';

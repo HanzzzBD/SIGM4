@@ -218,16 +218,18 @@ Alur (`ID-01` … `ID-05`):
 
 ```
 BEGIN
-  pg_advisory_xact_lock(hashtext(key))              -- serialisasi per kunci
+  IF NOT pg_try_advisory_xact_lock(hashtext(key))
+                           -> 409 REQUEST_IN_PROGRESS        (ID-05)
   row := SELECT * FROM idempotency_keys WHERE key = :key
-  IF row IS NULL           -> INSERT (status_code NULL) ; jalankan bisnis ;
+  IF row IS NULL           -> INSERT ; jalankan bisnis ;
                               UPDATE hasil ; COMMIT ; 201
-  IF row.status_code NULL  -> 409 REQUEST_IN_PROGRESS        (ID-05)
   IF row.request_hash <> h -> 409 IDEMPOTENCY_KEY_REUSED     (ID-04)
   ELSE                     -> kembalikan response tersimpan  (ID-03)
 ```
 
 Advisory lock bersifat transaksional, jadi lepas otomatis saat commit/rollback — tidak ada kunci menggantung bila proses mati.
+
+**Kuncinya `try`, bukan menunggu — dan itu yang membuat `ID-05` ada.** Versi pertama alur ini memakai `pg_advisory_xact_lock` yang memblokir, lalu memeriksa `status_code NULL` untuk mendeteksi permintaan yang sedang berjalan. Pemeriksaan itu **tidak dapat menyala**: `SDD-AVL-08` menempatkan kunci dan efeknya pada satu transaksi, sehingga baris ber-`status_code NULL` tidak pernah terlihat sesi lain — permintaan kedua menunggu sampai yang pertama commit, lalu melihat baris yang sudah selesai. `ID-05` karena itu tidak akan pernah tercapai, dan permintaan kedua menahan satu koneksi pool selama bisnis berjalan. Dengan `pg_try_advisory_xact_lock`, kegagalan mengambil kunci **itu sendiri** adalah bukti ada permintaan berkunci sama yang sedang berjalan — dijawab seketika, tanpa menahan koneksi. Kolom `status_code` tetap ada karena `ID-02` mewajibkannya disimpan, bukan sebagai penanda *in-flight*. Dikoreksi 7 September 2026 (keputusan pemilik produk, `PR-00-10`).
 
 ### 4.5 Penomoran dokumen
 
