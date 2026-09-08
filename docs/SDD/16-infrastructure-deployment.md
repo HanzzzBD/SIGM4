@@ -218,6 +218,8 @@ APP_BASE_URL, TZ=UTC
 LOG_LEVEL=info, DB_POOL_SIZE=<TBD-AVL-C>, CHAT_ENABLED=true
 ```
 
+**Dua akun basis data, dua variabel.** `DATABASE_URL` memuat akun **aplikasi** — `sigm4_app`, tanpa hak DDL dan tanpa `UPDATE`/`DELETE` atas `activity_logs` (`SEC-CFG-03`, `AL-03b`, `SDD-DB-11`). `MIGRATION_DATABASE_URL` memuat akun **migration** ber-DDL yang memiliki skema, dan **hanya** job migration (`SDD-INF-03`) yang membacanya; proses API dan worker tidak pernah menerimanya. Bila ia tidak diisi, jalur migration jatuh kembali ke `DATABASE_URL` — kemudahan pengembangan yang di production ditutup oleh kenyataan bahwa akun aplikasi memang tidak dapat menjalankan DDL.
+
 Rahasia berasal dari *secret manager* (`SEC-CFG-01`), tidak pernah dari berkas di repositori. Validasi skema saat startup mencetak **nama** variabel yang hilang, tidak pernah nilainya.
 
 ### 4.8 Lingkungan
