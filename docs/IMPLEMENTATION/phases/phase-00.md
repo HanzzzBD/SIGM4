@@ -94,7 +94,7 @@ Tidak ada. Ini titik masuk proyek.
 | `PR-00-14` | Health endpoint (live/ready/ringkasan) | S | S | 06 | `NFR-A-07`, `OBS-06`, `AI-CTL-10`, `SDD-OBS-06` | `llm`/`fcm` mati tidak membuat `ready` gagal |
 | `PR-00-15` | Header keamanan + rate limit berjenjang | M | M | 09 | `NFR-S-07` `NFR-S-11`, `SDD-SEC-03/05` | CSP tanpa `unsafe-inline`; kelas limit terpisah aktif |
 | `PR-00-16` | Seed: 79 permission, 7 role, matriks, `work_days`, parameter | M | L | 05 | Lampiran C, `SDD-DB-10` | Uji membandingkan hasil seed dengan Lampiran C baris per baris |
-| `PR-00-17` | Pipeline CI: lint → uji → SAST → SCA → build → image scan | L | M | 01, 03 | `CD-01` `CD-02`, `ST-01` `ST-02`, `SDD-INF-12`, `SDD-REPO-11`, `SDD-SEC-11` | Cakupan < 70% atau kerentanan High → pipeline merah |
+| `PR-00-17` | Pipeline CI: lint → uji → SAST → SCA → build → image scan | L | M | 01, 03 | `CD-01` `CD-02`, `ST-01` `ST-02`, `SDD-INF-12`, `SDD-REPO-11`, `SDD-SEC-11`, `AL-03b` | Cakupan < 70% atau kerentanan High → pipeline merah; `APP_DATABASE_URL`+`APP_DB_PASSWORD` tersedia sehingga acceptance `AL-03b` benar-benar berjalan |
 | `PR-00-18` | Deploy staging + job migration + smoke test | M | S | 17 | `CD-03` `CD-04` `CD-07`, `SDD-INF-03/04/13` | Merge ke `staging` men-deploy lingkungan staging otomatis (`CD-03`) |
 
 ## 8. Task Breakdown
