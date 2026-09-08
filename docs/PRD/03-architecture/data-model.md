@@ -108,6 +108,8 @@ Data acuan bernilai tetap yang digunakan sebagai enumerasi dan dropdown.
 | **Jenis Pengajuan (Approval)** | Reservasi Ruangan, Reservasi Aset, Perpanjangan Peminjaman, Pengadaan Barang, Penghapusan Aset, Permintaan Bahan |
 | **Kanal Notifikasi** | In-App, Push |
 | **Prioritas** | Rendah, Sedang, Tinggi, Mendesak |
+| **Jenis Hari Libur** | Nasional, Sekolah, Cuti Bersama |
+| **Hasil Aktivitas** | Sukses, Gagal |
 
 ## 11.4 Kebijakan Retensi Data
 

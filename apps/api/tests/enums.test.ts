@@ -1,4 +1,4 @@
-// Uji pembanding: Bab 11.3 PRD <-> 0002_enums.sql (SDD-DB-02).
+// Uji pembanding: Bab 11.3 PRD <-> migration enum (SDD-DB-02).
 //
 // Nilai enum dibaca LANGSUNG dari berkas PRD dan diturunkan menjadi kode teknis
 // secara mekanis, bukan disalin ke dalam berkas ini. Salinan akan ikut disunting
@@ -10,24 +10,34 @@
 // `<domain>_<konsep>` dalam Bahasa Inggris. Pemetaannya ada di helpers/bab113.ts,
 // dan ketidaklengkapannya sendiri ikut diuji di bawah.
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { AKAR, NAMA_TIPE, bacaBab113, kodeTeknis } from './helpers/bab113.js';
 
-const MIGRATION = new URL('apps/api/migrations/0002_enums.sql', AKAR);
+const DIR_MIGRATION = new URL('apps/api/migrations/', AKAR);
 
-/** Membaca `CREATE TYPE <nama> AS ENUM (...)` dari migration-nya. */
+/**
+ * Membaca `CREATE TYPE <nama> AS ENUM (...)` dari SELURUH migration, bukan hanya
+ * `0002_enums.sql`.
+ *
+ * Sebagian besar tipe memang lahir di 0002, tetapi tidak semua dapat: sebuah
+ * kelompok Bab 11.3 yang baru ketahuan belakangan — `activity_result` pada
+ * `PR-00-13` — tidak boleh ditambahkan ke migration yang sudah diterapkan.
+ * Yang diuji adalah invariannya ("setiap kelompok punya tipe"), bukan tempatnya.
+ */
 function bacaMigration(): ReadonlyMap<string, readonly string[]> {
-  const teks = readFileSync(MIGRATION, 'utf8');
-  const naik = teks.split('-- migrate:up')[1]?.split('-- migrate:down')[0] ?? '';
   const tipe = new Map<string, readonly string[]>();
-  for (const cocok of naik.matchAll(/CREATE TYPE\s+(\w+)\s+AS ENUM\s*\(([^)]*)\)/g)) {
-    const [, nama, isi] = cocok;
-    if (nama === undefined || isi === undefined) continue;
-    tipe.set(
-      nama,
-      [...isi.matchAll(/'([^']*)'/g)].map((m) => m[1] ?? ''),
-    );
+  for (const berkas of readdirSync(DIR_MIGRATION).filter((f) => f.endsWith('.sql')).sort()) {
+    const teks = readFileSync(new URL(berkas, DIR_MIGRATION), 'utf8');
+    const naik = teks.split('-- migrate:up')[1]?.split('-- migrate:down')[0] ?? '';
+    for (const cocok of naik.matchAll(/CREATE TYPE\s+(\w+)\s+AS ENUM\s*\(([^)]*)\)/g)) {
+      const [, nama, isi] = cocok;
+      if (nama === undefined || isi === undefined) continue;
+      tipe.set(
+        nama,
+        [...isi.matchAll(/'([^']*)'/g)].map((m) => m[1] ?? ''),
+      );
+    }
   }
   return tipe;
 }
@@ -48,7 +58,7 @@ describe('kodeTeknis (ketetapan audit Bab 11.3)', () => {
   });
 });
 
-describe('0002_enums.sql terhadap Bab 11.3', () => {
+describe('migration enum terhadap Bab 11.3', () => {
   it('membaca kelompok dari PRD, bukan dari daftar di dalam uji ini', () => {
     expect(bab113.size).toBeGreaterThan(20);
     expect(bab113.get('Kondisi Aset')).toEqual(['BAIK', 'RUSAK_RINGAN', 'RUSAK_BERAT', 'HILANG']);
@@ -90,8 +100,13 @@ describe('0002_enums.sql terhadap Bab 11.3', () => {
   });
 
   it('setiap tipe punya pasangan DROP pada migrate:down (CD-05)', () => {
-    const turun = readFileSync(MIGRATION, 'utf8').split('-- migrate:down')[1] ?? '';
-    const dijatuhkan = new Set([...turun.matchAll(/DROP TYPE IF EXISTS (\w+)/g)].map((m) => m[1]));
+    // Dibaca dari seluruh migration, sama seperti pembacaan CREATE-nya: tipe yang
+    // lahir di berkas lain harus dijatuhkan oleh berkas itu juga.
+    const dijatuhkan = new Set<string>();
+    for (const berkas of readdirSync(DIR_MIGRATION).filter((f) => f.endsWith('.sql'))) {
+      const turun = readFileSync(new URL(berkas, DIR_MIGRATION), 'utf8').split('-- migrate:down')[1] ?? '';
+      for (const m of turun.matchAll(/DROP TYPE IF EXISTS (\w+)/g)) dijatuhkan.add(m[1] ?? '');
+    }
     expect([...migration.keys()].filter((t) => !dijatuhkan.has(t))).toEqual([]);
   });
 });

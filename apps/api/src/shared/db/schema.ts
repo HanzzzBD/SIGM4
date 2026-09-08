@@ -86,6 +86,40 @@ export interface EventOutboxTable {
   last_error: string | null;
 }
 
+/**
+ * `activity_logs` (0008, PR-00-13). Terpartisi RANGE per bulan (`SDD-DB-07`);
+ * bentuk kolomnya persis `SDD-05` §4.4.
+ *
+ * `waktu` tetap bernama `waktu` — pengecualian tertulis pada `SDD-05` §4.2,
+ * sebab ia kolom partisi dan maknanya *kapan peristiwa terjadi*, bukan kapan
+ * barisnya dibuat.
+ *
+ * Tabel ini **append-only** dan itu ditegakkan basis data: akun aplikasi tidak
+ * memegang `UPDATE`/`DELETE` (`AL-03b`, migration 0007–0008). Tipe ini tidak
+ * dapat mencegah kueri `updateTable('activity_logs')` ditulis, tetapi kueri itu
+ * akan ditolak `42501` saat berjalan.
+ */
+export interface ActivityLogsTable {
+  id: Generated<string>;
+  waktu: ColumnType<Date, Date | string, never>;
+  user_id: string | null;
+  user_nama: string | null;
+  role: string | null;
+  ip: string | null;
+  user_agent: string | null;
+  modul: string;
+  aksi: string;
+  entitas: string | null;
+  entitas_id: string | null;
+  nilai_sebelum: ColumnType<unknown, string | null, never>;
+  nilai_sesudah: ColumnType<unknown, string | null, never>;
+  keterangan: string | null;
+  hasil: 'SUKSES' | 'GAGAL';
+  request_id: string | null;
+  prev_hash: Buffer | null;
+  row_hash: Buffer;
+}
+
 /** Peta nama tabel -> bentuk barisnya. Diisi bersama migration pemiliknya. */
 export interface Database {
   document_counters: DocumentCountersTable;
@@ -93,4 +127,5 @@ export interface Database {
   holidays: HolidaysTable;
   idempotency_keys: IdempotencyKeysTable;
   event_outbox: EventOutboxTable;
+  activity_logs: ActivityLogsTable;
 }
