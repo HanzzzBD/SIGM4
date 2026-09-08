@@ -52,6 +52,7 @@ pertimbangkan apakah PR ini seharusnya dua PR.>
 - [ ] Pipeline hijau (`CD-01`); cakupan logika inti ≥ 70% (`CD-02`)
 - [ ] Unit test logika bisnis + integration test endpoint (29.5)
 - [ ] Otorisasi diuji termasuk kasus penolakan (29.5)
+- [ ] Uji acceptance & keamanan benar-benar **mengeksekusi** kondisi yang diklaimnya; prasyarat lingkungan yang hilang membuat suite **FAILED**, bukan *skipped*
 - [ ] Activity log tercatat untuk setiap operasi tulis (`AL-01`)
 - [ ] Endpoint mendeklarasikan permission-nya (`PM-01`)
 - [ ] Repository menerima `AuthContext` (`SDD-AUTH-05`)
@@ -83,6 +84,8 @@ Untuk PR berkompleksitas `L`: mengapa tidak dipecah.>
 **Bagian "Requirement yang dilayani" tidak boleh kosong.** PR tanpa rujukan PRD maupun SDD berarti mengerjakan sesuatu yang tidak diminta. Bila memang tidak ada — misalnya perbaikan perkakas — tulis `chore` dan jelaskan; jangan biarkan kosong.
 
 **"Uji yang gagal bila logika ini dicabut" adalah baris terpenting.** Uji yang tetap hijau setelah logikanya dihapus tidak menguji apa pun. Baris ini memaksa penulis memeriksanya sendiri sebelum peninjau harus menemukannya.
+
+**Uji hijau belum tentu uji yang berjalan.** Phase 00 menemukan pola *false green* tiga kali berturut sejak `PR-00-12`: aturan yang ditegakkan di beberapa tempat sehingga mencabut satu tidak memerahkan apa pun, uji yang menyentuh koneksi lain alih-alih transaksi yang diklaimnya, dan suite yang **ter-skip diam-diam** karena prasyarat lingkungannya kosong — yang terakhir lolos di CI tanpa membuktikan apa pun. Karena itu prasyarat yang hilang wajib membuat suite **FAILED**, dan penjaganya ditulis sebagai **uji**, bukan sebagai `beforeAll`: `beforeAll` yang melempar ditandai Vitest sebagai *skipped*, bukan *failed*.
 
 **PR berkompleksitas `L` wajib menjelaskan mengapa tidak dipecah.** Skalanya: `S` ≤ 200 baris berubah · `M` ≤ 400 · `L` > 400. Batas ini soal berapa banyak yang dapat ditinjau dengan sungguh-sungguh dalam sekali duduk, bukan soal kerapian.
 
