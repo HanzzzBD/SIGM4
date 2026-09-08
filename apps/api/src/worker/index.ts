@@ -9,13 +9,52 @@
 // penjadwal.
 
 import { getRedis } from '../shared/cache/index.js';
+import { ensurePartitions, verifyChain } from '../shared/audit/index.js';
 import { SystemClock } from '../shared/clock/index.js';
+import { getDb } from '../shared/db/index.js';
 import { EventHandlerRegistry, OutboxDispatcher } from '../shared/events/index.js';
-import { JobRegistry, createQueue, createWorker, scheduleAll } from './scheduler.js';
+import { JobRegistry, createQueue, createWorker, scheduleAll, wibCronToUtc } from './scheduler.js';
 import { startOutboxPoller } from './outbox-poller.js';
 
-/** Registri pekerjaan milik proses ini. Sampai Phase 02, ia sengaja kosong. */
-export const registry = new JobRegistry();
+/**
+ * Registri pekerjaan milik proses ini (`SDD-01 §4.6`).
+ *
+ * Dua pekerjaan activity log lahir di sini karena keduanya menjaga infrastruktur,
+ * bukan domain: tanpa partisi bulan berikutnya, penulisan log berhenti total di
+ * hari pertama bulan itu (`SDD-05 §4.4`); tanpa verifikasi harian, penyuntingan
+ * langsung di basis data tidak pernah ketahuan (`NFR-S-03d`). Pekerjaan domain
+ * menyusul Phase 02.
+ */
+export const registry = new JobRegistry().register(
+  {
+    name: 'activity-log-partition',
+    cron: wibCronToUtc(20, 0),
+    handler: async () => {
+      await ensurePartitions(getDb(), new SystemClock());
+    },
+  },
+  {
+    name: 'activity-log-verify',
+    cron: wibCronToUtc(40, 0),
+    handler: async () => {
+      const clock = new SystemClock();
+      const sekarang = clock.now();
+      // Hanya bulan berjalan: rantai diperiksa maju setiap hari, dan bulan lama
+      // sudah diperiksa pada harinya. Rentang penuh adalah pekerjaan runbook
+      // (`SDD-OBS-07`), bukan job harian.
+      const dari = new Date(Date.UTC(sekarang.getUTCFullYear(), sekarang.getUTCMonth(), 1));
+      const sampai = new Date(Date.UTC(sekarang.getUTCFullYear(), sekarang.getUTCMonth() + 1, 1));
+      const hasil = await verifyChain(getDb(), dari, sampai);
+      if (hasil.kerusakan.length > 0) {
+        // Alarm OBS-05. Rantai TIDAK diperbaiki: memperbaikinya berarti menulis
+        // ulang hash atas isi yang sudah berubah — menghapus buktinya.
+        throw new Error(
+          `Rantai activity log rusak pada ${String(hasil.kerusakan.length)} entri (AL-03a).`,
+        );
+      }
+    },
+  },
+);
 
 /**
  * Handler event asinkron. Kosong sampai konsumen pertamanya lahir — katalog

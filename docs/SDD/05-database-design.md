@@ -173,6 +173,14 @@ Partisi bulan berikutnya dibuat otomatis oleh job terjadwal; kegagalannya memicu
 
 **Rantai hash** (`NFR-S-03d`, `AL-03a`): `row_hash = sha256(prev_hash || kanonikal(baris))`. Job harian memverifikasi rantai per partisi dan mengalarmi bila terputus. Karena `activity_logs` bersifat *append-only* dan akun aplikasi tidak punya `UPDATE`/`DELETE` (`SDD-DB-11`), rantai hanya perlu diverifikasi, tidak diperbaiki.
 
+**Rantainya SATU untuk seluruh tabel, melintasi batas partisi.** Hanya entri pertama yang ber-`prev_hash` NULL; entri pertama tiap bulan menunjuk entri terakhir bulan sebelumnya. Verifikasi tetap berjalan partisi demi partisi, dengan membawa hash batas dari partisi sebelumnya sebagai titik awal.
+
+Rantai per partisi akan lebih murah disisipkan — cukup melihat ekor bulan berjalan — tetapi ia buta terhadap kegagalan yang paling perlu terlihat: **penghapusan satu partisi utuh**. Bila tiap bulan memulai rantai baru ber-`prev_hash` NULL, tidak ada satu pun entri yang menunjuk ke luar bulannya, sehingga hilangnya seluruh Agustus tidak memutus rantai mana pun. `AL-09` melarang penghapusan permanen, dan rantai inilah yang seharusnya membuktikannya.
+
+**Penyisipan bersifat serial**, dan itu konsekuensi yang diterima: rantai hash tidak dapat dihitung dua kali secara paralel tanpa bercabang. Penulisan mengambil advisory lock bernama tetap sebelum membaca ekor rantai, sehingga dua transaksi tidak pernah membaca ekor yang sama. Pada volume `NFR-SC-03` (±150.000 entri/tahun) biayanya tidak berarti; bila suatu saat berarti, yang berubah adalah bentuk buktinya, bukan kuncinya.
+
+**Kanonikalisasi baris** ditetapkan eksplisit karena hash bergantung padanya sampai ke byte: field digabung dalam urutan tetap `waktu|user_id|user_nama|role|ip|user_agent|modul|aksi|entitas|entitas_id|nilai_sebelum|nilai_sesudah|keterangan|hasil|request_id`, dipisah ``, dengan NULL sebagai string kosong, `jsonb` dalam bentuk terurut kunci, dan `waktu` sebagai ISO-8601 UTC bermilidetik. Urutan atau pemisah yang berbeda menghasilkan rantai yang tidak dapat diverifikasi ulang.
+
 ### 4.5 Strategi migration
 
 ```

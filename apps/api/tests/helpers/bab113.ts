@@ -68,4 +68,6 @@ export const NAMA_TIPE: ReadonlyMap<string, string> = new Map([
   ['Jenis Pengajuan (Approval)', 'approval_request_type'],
   ['Kanal Notifikasi', 'notification_channel'],
   ['Prioritas', 'priority_level'],
+  ['Jenis Hari Libur', 'holiday_type'],
+  ['Hasil Aktivitas', 'activity_result'],
 ]);
