@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@sigm4/schemas": "*",
+    "bullmq": "6.3.4",
+    "ioredis": "6.0.0",
     "kysely": "0.29.5",
     "pg": "8.23.0",
     "zod": "4.5.4",

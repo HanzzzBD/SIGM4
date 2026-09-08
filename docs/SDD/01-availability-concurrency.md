@@ -257,6 +257,7 @@ Format dirakit aplikasi sesuai `SEQ-01`, divalidasi terhadap regex `SEQ-04` pada
 | `tentative-slot-expiry` | tiap 15 menit | `WHERE status='TENTATIVE' AND expires_at < now()` |
 | `loan-overdue` | 17:05 (= 00:05 WIB) | denda diperiksa unik per `(loan_item_id, tanggal)` |
 | `reservation-expiry` | 16:00 (= 23:00 WIB) | transisi hanya dari `Confirmed` |
+| `approval-sla-check` | tiap 30 menit | pengingat `NT-06` dibatasi 1×/hari per objek; eskalasi hanya dari langkah yang masih aktif |
 
 Setiap job menulis entri `activity_log` berpelaku `SYSTEM` (`JOB-05`, `AL-06`).
 
