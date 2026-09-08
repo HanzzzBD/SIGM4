@@ -61,10 +61,36 @@ export interface IdempotencyKeysTable {
   expires_at: Generated<Date>;
 }
 
+/**
+ * `event_outbox` (0006, PR-00-12). Transactional outbox — SDD-07 §4.1.
+ *
+ * `id` dan `aggregate_id` bertipe `bigint` di basis data dan kembali sebagai
+ * **string** dari driver `pg`; itu dipertahankan apa adanya dengan alasan yang
+ * sama seperti `document_counters.value`.
+ *
+ * Tiga kolom terakhir adalah pembukuan dispatcher, dan itulah sebabnya tabel ini
+ * **bukan** *append-only*: `SDD-05` §4.2 menggolongkannya infrastruktur, dan
+ * `AL-03b` yang mencabut hak `UPDATE` hanya menyebut `activity_logs`.
+ */
+export interface EventOutboxTable {
+  id: Generated<string>;
+  event_name: string;
+  aggregate_type: string;
+  aggregate_id: ColumnType<string, string | number, string | number>;
+  payload: unknown;
+  actor_id: string | null;
+  request_id: string | null;
+  occurred_at: Generated<Date>;
+  processed_at: Date | null;
+  attempts: Generated<number>;
+  last_error: string | null;
+}
+
 /** Peta nama tabel -> bentuk barisnya. Diisi bersama migration pemiliknya. */
 export interface Database {
   document_counters: DocumentCountersTable;
   work_days: WorkDaysTable;
   holidays: HolidaysTable;
   idempotency_keys: IdempotencyKeysTable;
+  event_outbox: EventOutboxTable;
 }
