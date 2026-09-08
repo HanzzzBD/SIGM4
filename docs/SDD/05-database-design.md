@@ -117,8 +117,8 @@ updated_by  bigint REFERENCES users(id)
 | Kelompok | Contoh | Yang tidak berlaku, dan mengapa |
 |---|---|---|
 | Master data acuan | `work_days`, `holidays` | Tidak dimiliki siapa pun; tidak ada pelaku yang perlu dicatat |
-| *Append-only* | `activity_logs`, `material_transactions`, `event_outbox` | `updated_at`/`updated_by` mustahil bermakna pada baris yang tidak pernah disunting — `AL-03b` bahkan mencabut hak `UPDATE` dari akun aplikasi |
-| Infrastruktur | `idempotency_keys`, `document_counters`, `booking_slots`, `refresh_tokens`, `stored_files`, `notification_*` | Mekanisme, bukan entitas; kolom waktunya sudah punya nama yang bermakna sendiri (`expires_at`, `sent_at`, `slot_range`) |
+| *Append-only* | `activity_logs`, `material_transactions` | `updated_at`/`updated_by` mustahil bermakna pada baris yang tidak pernah disunting — `AL-03b` bahkan mencabut hak `UPDATE` dari akun aplikasi atas `activity_logs` |
+| Infrastruktur | `idempotency_keys`, `document_counters`, `booking_slots`, `refresh_tokens`, `stored_files`, `notification_*`, `event_outbox` | Mekanisme, bukan entitas; kolom waktunya sudah punya nama yang bermakna sendiri (`expires_at`, `sent_at`, `slot_range`) |
 
 Nama kolomnya tetap **`created_at`/`created_by`** di mana pun ia hadir — bukan `dibuat_pada`/`dibuat_oleh` — karena §4.1 sudah menempatkannya di antara nama teknis lintas domain. Satu pengecualian: `activity_logs.waktu` tetap `waktu`, sebab ia kolom partisi RANGE (`SDD-DB-07`) dan maknanya adalah *kapan peristiwa terjadi*, bukan kapan barisnya dibuat.
 
