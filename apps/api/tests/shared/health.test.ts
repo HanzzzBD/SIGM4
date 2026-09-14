@@ -94,10 +94,14 @@ describe("HealthRegistry — kesiapan (SDD-15 §4.5)", () => {
         expect(await health.readiness()).toBe(false);
         const r = await readyResponse(health);
         expect(r.statusCode).toBe(503);
+        // Amplop galat Bab 17.2 dengan kode Bab 17.3 `SERVICE_NOT_READY`.
         expect(r.body).toEqual({
             success: false,
-            data: { status: "not_ready" },
-            meta: null,
+            error: {
+                code: "SERVICE_NOT_READY",
+                message: "Layanan belum siap menerima permintaan.",
+            },
+            request_id: expect.stringMatching(/^req_/),
         });
     });
 

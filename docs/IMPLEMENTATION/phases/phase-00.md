@@ -13,7 +13,7 @@
 
 ## 1. Objective
 
-Setelah phase ini, sebuah perubahan kode dapat berjalan dari *commit* hingga *staging* tanpa campur tangan manual: pipeline hijau, migration terjalankan, `/health` melaporkan seluruh dependensi, dan katalog permission ter-*seed*. Belum ada fitur yang dapat dipakai pengguna — yang selesai adalah **jalur pengirimannya**.
+Setelah phase ini, sebuah perubahan kode dapat berjalan dari *commit* hingga *staging* tanpa campur tangan manual: pipeline hijau, migration terjalankan, registri `/health` berdiri dengan *liveness* dan *readiness* terpisah, dan katalog permission ter-*seed*. Belum ada fitur yang dapat dipakai pengguna — yang selesai adalah **jalur pengirimannya**.
 
 ## 2. Scope
 
@@ -95,7 +95,7 @@ Tidak ada. Ini titik masuk proyek.
 | `PR-00-15` | Header keamanan + rate limit berjenjang | M | M | 09 | `NFR-S-07` `NFR-S-11`, `SDD-SEC-03/05` | CSP tanpa `unsafe-inline`; kelas limit terpisah aktif |
 | `PR-00-16` | Seed: 79 permission, 7 role, matriks, `work_days`, parameter | M | L | 05 | Lampiran C, `SDD-DB-10` | Uji membandingkan hasil seed dengan Lampiran C baris per baris |
 | `PR-00-17` | Pipeline CI: lint → uji → SAST → SCA → build → image scan | L | M | 01, 03 | `CD-01` `CD-02`, `ST-01` `ST-02`, `SDD-INF-12`, `SDD-REPO-11`, `SDD-SEC-11`, `AL-03b` | Cakupan < 70% atau kerentanan High → pipeline merah; `APP_DATABASE_URL`+`APP_DB_PASSWORD` tersedia sehingga acceptance `AL-03b` benar-benar berjalan |
-| `PR-00-18` | Deploy staging + job migration + smoke test | M | S | 17 | `CD-03` `CD-04` `CD-07`, `SDD-INF-03/04/13` | Merge ke `staging` men-deploy lingkungan staging otomatis (`CD-03`) |
+| `PR-00-18` | Deploy staging + job migration + smoke test | M | S | 17 | `CD-03` `CD-04` `CD-07`, `SDD-INF-03/04/13`, `SDD-SYS-08` | Merge ke `staging` men-deploy lingkungan staging otomatis (`CD-03`); worker berjalan sebagai proses dan `/health/ready`-nya tervalidasi di runtime — **blocking** sejak `PR-00-14` |
 
 ## 8. Task Breakdown
 
@@ -128,7 +128,8 @@ Tidak ada. Ini titik masuk proyek.
 ## 9. Acceptance Checklist
 
 - [ ] Pipeline hijau dari commit hingga deploy staging tanpa langkah manual
-- [ ] `/health` melaporkan status DB, Redis, object storage, AV, FCM, LLM (`OBS-06`)
+- [ ] `/health` memisahkan *liveness* dan *readiness* serta melaporkan DB dan Redis; keenam dependensi `OBS-06` dilengkapi bertahap sampai `PR-03-20` — diperiksa di [`phase-03.md` §9](phase-03.md)
+- [ ] Worker berjalan sebagai proses dan `/health/ready`-nya tervalidasi di runtime (`SDD-SYS-08`) — **blocking**, `PR-00-18`
 - [ ] Route tanpa deklarasi permission menggagalkan *bootstrap* (`PM-01`)
 - [ ] Seed permission identik dengan Lampiran C
 - [ ] Dua instance worker tidak menjalankan job yang sama dua kali (`JOB-02`)
@@ -161,7 +162,7 @@ Ini satu-satunya phase yang boleh di-*reset* total. Setelah Phase 01, aturan exp
 
 **Tambahan khusus phase ini:**
 
-- [ ] Kriteria keluar `M0` PRD terpenuhi: pipeline hijau · deploy staging otomatis · `/health` melaporkan seluruh dependensi
+- [ ] Kriteria keluar `M0` PRD terpenuhi: pipeline hijau · deploy staging otomatis · `/health` memisahkan *liveness* dan *readiness* dan melaporkan dependensi yang integrasinya sudah dibangun
 - [ ] Seluruh 18 PR ter-*merge* ke `develop`
 - [ ] `scripts/audit_docs.py` masih LULUS (dokumentasi tidak rusak oleh perubahan kode)
 - [ ] Log phase ([`logs/phase-00.md`](../logs/phase-00.md)) terisi keputusan implementasi dan blocker yang muncul

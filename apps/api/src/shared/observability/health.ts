@@ -10,6 +10,8 @@
 // LLM `PR-03-20`.
 
 import { performance } from "node:perf_hooks";
+import type { KodeGalat } from "../errors/index.js";
+import { konteksSaatIni, requestIdBaru } from "./request-context.js";
 
 export type HealthStatus = "up" | "degraded" | "down";
 
@@ -154,11 +156,21 @@ export function pingCheck(
 
 export interface ProbeResponse {
     readonly statusCode: 200 | 503;
-    readonly body: {
-        readonly success: boolean;
-        readonly data: { readonly status: string };
-        readonly meta: null;
-    };
+    readonly body:
+        | {
+              readonly success: true;
+              readonly data: { readonly status: string };
+              readonly meta: null;
+          }
+        | {
+              readonly success: false;
+              // Diikat ke katalog: mencabut kodenya dari Bab 17.3 gagal kompilasi.
+              readonly error: {
+                  readonly code: Extract<KodeGalat, "SERVICE_NOT_READY">;
+                  readonly message: string;
+              };
+              readonly request_id: string;
+          };
 }
 
 /** `/health/live` — 200 selama proses hidup, tanpa menyentuh dependensi (SDD-15 §4.5). */
@@ -183,10 +195,14 @@ export async function readyResponse(
           }
         : {
               statusCode: 503,
+              // Amplop galat Bab 17.2 dengan `SERVICE_NOT_READY` (Bab 17.3).
               body: {
                   success: false,
-                  data: { status: "not_ready" },
-                  meta: null,
+                  error: {
+                      code: "SERVICE_NOT_READY",
+                      message: "Layanan belum siap menerima permintaan.",
+                  },
+                  request_id: konteksSaatIni()?.requestId ?? requestIdBaru(),
               },
           };
 }

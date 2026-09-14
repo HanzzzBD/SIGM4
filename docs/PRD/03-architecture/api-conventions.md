@@ -76,6 +76,7 @@
 | 429 | Melebihi rate limit | `RATE_LIMIT_EXCEEDED` |
 | 500 | Kesalahan internal | `INTERNAL_ERROR` |
 | 503 | Layanan eksternal tidak tersedia | `LLM_UNAVAILABLE`, `STORAGE_UNAVAILABLE` |
+| 503 | Instance belum siap menerima trafik (probe *readiness*) | `SERVICE_NOT_READY` |
 
 ## 17.4 Daftar Endpoint Utama
 
