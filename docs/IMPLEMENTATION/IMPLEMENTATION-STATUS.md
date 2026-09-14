@@ -1,6 +1,6 @@
 # Status Implementasi
 
-**Diperbarui:** 14 September 2026 — `PR-00-01` … `PR-00-13` tergabung ke `develop`; `PR-00-14` menunggu tinjauan, ditumpuk di atas `chore/format-kode-prettier`. Audit konsistensi lintas dokumen selesai: 15 temuan, 12 keputusan pemilik produk. Proteksi cabang `main` dan `develop` aktif.
+**Diperbarui:** 14 September 2026 — `PR-00-01` … `PR-00-13` tergabung ke `develop`; `PR-00-14` menunggu tinjauan; format ulang Prettier tergabung lewat [#30](https://github.com/HanzzzBD/SIGM4/pull/30). Audit konsistensi lintas dokumen selesai: 15 temuan, 12 keputusan pemilik produk. Proteksi cabang `main` dan `develop` aktif.
 
 Berkas ini memiliki status **per phase dan per pull request**. Ia **tidak** memiliki status per requirement — itu milik [`../PRD/06-quality/traceability.md`](../PRD/06-quality/traceability.md). Dua tingkat berbeda, tanpa tumpang tindih:
 
@@ -90,7 +90,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-00-11` | `Done` | [#26](https://github.com/HanzzzBD/SIGM4/pull/26) | Worker skeleton: antrean, *distributed lock*, penjadwal |
 | `PR-00-12` | `Done` | [#27](https://github.com/HanzzzBD/SIGM4/pull/27) | Tabel `event_outbox` + dispatcher |
 | `PR-00-13` | `Done` | [#28](https://github.com/HanzzzBD/SIGM4/pull/28) · [#29](https://github.com/HanzzzBD/SIGM4/pull/29) | `AuditLogger` + `activity_logs` terpartisi + rantai hash |
-| `PR-00-14` | `In Review` | — | Health endpoint (live/ready/ringkasan). Ditumpuk di atas `chore/format-kode-prettier` |
+| `PR-00-14` | `In Review` | — | Health endpoint (live/ready/ringkasan) |
 | `PR-00-15` … `PR-00-18` | `Not Started` | — | Rincian: [`phases/phase-00.md` §7](phases/phase-00.md) |
 
 ### Phase 01 — Master Data Independen · `Not Started`
