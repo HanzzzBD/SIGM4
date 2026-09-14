@@ -106,6 +106,8 @@ X-Robots-Tag              : noindex, nofollow      # halaman publik QR saja
 | `chat` | 10/menit | user | Redis |
 | `upload` | 60/jam | user | Redis |
 
+Kelas berkunci `user` memakai IP klien bila permintaan belum terautentikasi — probe publik dan seluruh trafik sebelum autentikasi ada (keputusan pemilik produk, 14 September 2026).
+
 Header `X-RateLimit-*` selalu disertakan. Redis tidak tersedia → *fail open* untuk kelas non-keamanan, *fail closed* untuk `login` (yang penghitung akunnya di PostgreSQL dan tetap berjalan).
 
 ### 4.4 Pengelolaan rahasia

@@ -1,6 +1,6 @@
 # Status Implementasi
 
-**Diperbarui:** 14 September 2026 — `PR-00-01` … `PR-00-14` tergabung ke `develop`; format ulang Prettier tergabung lewat [#30](https://github.com/HanzzzBD/SIGM4/pull/30). Tiga keputusan pemilik produk atas butir terbuka `PR-00-14` dikerjakan di `fix/PR-00-14-kode-galat-readiness`. Audit konsistensi lintas dokumen selesai: 15 temuan, 12 keputusan pemilik produk. Proteksi cabang `main` dan `develop` aktif.
+**Diperbarui:** 14 September 2026 — `PR-00-01` … `PR-00-14` tergabung ke `develop`, termasuk format ulang Prettier ([#30](https://github.com/HanzzzBD/SIGM4/pull/30)) dan tindak lanjut `PR-00-14` ([#32](https://github.com/HanzzzBD/SIGM4/pull/32)); `PR-00-15` menunggu tinjauan. Audit konsistensi lintas dokumen selesai: 15 temuan, 12 keputusan pemilik produk. Proteksi cabang `main` dan `develop` aktif.
 
 Berkas ini memiliki status **per phase dan per pull request**. Ia **tidak** memiliki status per requirement — itu milik [`../PRD/06-quality/traceability.md`](../PRD/06-quality/traceability.md). Dua tingkat berbeda, tanpa tumpang tindih:
 
@@ -31,7 +31,7 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 
 | Phase | Nama | Modul | PR | Status | Selesai | Catatan |
 |:---:|---|:---:|:---:|---|:---:|---|
-| [00](phases/phase-00.md) | Foundation | — | 18 | `In Progress` | 14/18 | `PR-00-01` … `PR-00-14` tergabung. Kelengkapan `/health` tidak wajib di Phase 00 — diisi bertahap sampai `PR-03-20`. **Blocking:** worker sebagai proses, target `PR-00-18` — [log §10](logs/phase-00.md) |
+| [00](phases/phase-00.md) | Foundation | — | 18 | `In Progress` | 14/18 | `PR-00-01` … `PR-00-14` tergabung; `PR-00-15` menunggu tinjauan. Kelengkapan `/health` tidak wajib di Phase 00 — diisi bertahap sampai `PR-03-20`. **Blocking:** worker sebagai proses, target `PR-00-18` — [log §10](logs/phase-00.md) |
 | [01](phases/phase-01.md) | Master Data Independen | 4 | 14 | `Not Started` | 0/14 | |
 | [02](phases/phase-02.md) | Inti Sistem | 5 | 30 | `Not Started` | 0/30 | Phase terbesar; di lintasan kritis |
 | [03](phases/phase-03.md) | Layanan Aset & Reservasi | 6 | 23 | `Not Started` | 0/23 | Menutup `M1` |
@@ -90,8 +90,9 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-00-11` | `Done` | [#26](https://github.com/HanzzzBD/SIGM4/pull/26) | Worker skeleton: antrean, *distributed lock*, penjadwal |
 | `PR-00-12` | `Done` | [#27](https://github.com/HanzzzBD/SIGM4/pull/27) | Tabel `event_outbox` + dispatcher |
 | `PR-00-13` | `Done` | [#28](https://github.com/HanzzzBD/SIGM4/pull/28) · [#29](https://github.com/HanzzzBD/SIGM4/pull/29) | `AuditLogger` + `activity_logs` terpartisi + rantai hash |
-| `PR-00-14` | `Done` | [#31](https://github.com/HanzzzBD/SIGM4/pull/31) | Health endpoint (live/ready/ringkasan). Tindak lanjut `SERVICE_NOT_READY` di `fix/PR-00-14-kode-galat-readiness` |
-| `PR-00-15` … `PR-00-18` | `Not Started` | — | Rincian: [`phases/phase-00.md` §7](phases/phase-00.md) |
+| `PR-00-14` | `Done` | [#31](https://github.com/HanzzzBD/SIGM4/pull/31) | Health endpoint (live/ready/ringkasan). Tindak lanjut `SERVICE_NOT_READY`: [#32](https://github.com/HanzzzBD/SIGM4/pull/32) |
+| `PR-00-15` | `In Review` | — | Header keamanan + rate limit berjenjang |
+| `PR-00-16` … `PR-00-18` | `Not Started` | — | Rincian: [`phases/phase-00.md` §7](phases/phase-00.md) |
 
 ### Phase 01 — Master Data Independen · `Not Started`
 

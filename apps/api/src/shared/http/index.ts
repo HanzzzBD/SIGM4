@@ -1,6 +1,13 @@
 // Permukaan publik shared/http (SDD-SYS-12, SDD-API-03).
-// Rantai middleware SDD-06 §4.2 menyusul di PR-00-10 dan PR-00-15.
+// Perakitan middleware Express milik entrypoint `api/`; yang di sini bebas kerangka.
 export type { HttpMethod, RateLimitClass, RouteDefinition } from "./route.js";
+export type {
+    HasilLimit,
+    KelasLimit,
+    Pemohon,
+    RateLimiter,
+} from "./rate-limit.js";
+export { KELAS_LIMIT, RedisRateLimiter, kunciLimit } from "./rate-limit.js";
 export { defineRoute, routeKey } from "./route.js";
 export type { RouteViolation } from "./registry.js";
 export { RouteRegistrationError, RouteRegistry } from "./registry.js";

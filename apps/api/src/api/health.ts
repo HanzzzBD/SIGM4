@@ -7,6 +7,7 @@ import express from "express";
 import type { RequestHandler, Router } from "express";
 import { z } from "zod";
 import { defineRoute } from "../shared/http/index.js";
+import type { RouteDefinition } from "../shared/http/index.js";
 import type {
     HealthRegistry,
     ProbeResponse,
@@ -47,7 +48,7 @@ export const healthLiveRoute = defineRoute({
     method: "GET",
     path: "/health/live",
     public: true,
-    rateLimitClass: "read",
+    rateLimitClass: "default",
     module: MODUL,
     summary: "Liveness — proses hidup",
     response: ProbeSchema,
@@ -57,7 +58,7 @@ export const healthReadyRoute = defineRoute({
     method: "GET",
     path: "/health/ready",
     public: true,
-    rateLimitClass: "read",
+    rateLimitClass: "default",
     module: MODUL,
     summary: "Readiness — DB, Redis, dan storage siap",
     response: ProbeSchema,
@@ -67,7 +68,7 @@ export const healthSummaryRoute = defineRoute({
     method: "GET",
     path: "/health",
     permission: "setting.view",
-    rateLimitClass: "read",
+    rateLimitClass: "default",
     module: MODUL,
     summary:
         "Ringkasan kesehatan dependensi untuk kartu Kesehatan Integrasi (OBS-06)",
@@ -78,15 +79,25 @@ function kirim(res: express.Response, r: ProbeResponse): void {
     res.status(r.statusCode).json(r.body);
 }
 
-/** Router kedua probe publik. */
-export function healthRouter(health: HealthRegistry): Router {
+/**
+ * Router kedua probe publik. `batasi` memasang rate limit menurut kelas yang
+ * dideklarasikan route itu sendiri (SDD-06 §4.2).
+ */
+export function healthRouter(
+    health: HealthRegistry,
+    batasi: (route: RouteDefinition) => RequestHandler,
+): Router {
     const router = express.Router();
-    router.get(healthLiveRoute.path, (_req, res) => {
+    router.get(healthLiveRoute.path, batasi(healthLiveRoute), (_req, res) => {
         kirim(res, liveResponse());
     });
-    router.get(healthReadyRoute.path, async (_req, res) => {
-        kirim(res, await readyResponse(health));
-    });
+    router.get(
+        healthReadyRoute.path,
+        batasi(healthReadyRoute),
+        async (_req, res) => {
+            kirim(res, await readyResponse(health));
+        },
+    );
     return router;
 }
 
