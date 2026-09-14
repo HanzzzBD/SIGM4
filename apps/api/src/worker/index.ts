@@ -17,13 +17,22 @@ import {
     OutboxDispatcher,
 } from "../shared/events/index.js";
 import {
+    HealthRegistry,
+    databaseCheck,
+    redisCheck,
+} from "../shared/observability/index.js";
+import {
     JobRegistry,
     createQueue,
     createWorker,
     scheduleAll,
     wibCronToUtc,
 } from "./scheduler.js";
+import { createHealthServer } from "./health-server.js";
 import { startOutboxPoller } from "./outbox-poller.js";
+
+/** Port container — `EXPOSE 3000` pada image bersama (SDD-16 §4.1, SDD-INF-01). */
+const HEALTH_PORT = 3000;
 
 /**
  * Registri pekerjaan milik proses ini (`SDD-01 §4.6`).
@@ -85,6 +94,12 @@ export const eventHandlers = new EventHandlerRegistry();
  */
 export async function bootstrap(): Promise<void> {
     const connection = getRedis();
+    createHealthServer(
+        new HealthRegistry().register(
+            databaseCheck(getDb()),
+            redisCheck(connection),
+        ),
+    ).listen(HEALTH_PORT);
     const queue = createQueue(connection);
     await scheduleAll(queue, registry);
     createWorker(connection, registry);

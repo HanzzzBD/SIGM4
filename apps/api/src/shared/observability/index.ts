@@ -10,3 +10,18 @@ export {
     requestIdBaru,
 } from "./request-context.js";
 export { DITUTUP, KUNCI_TERTUTUP, redact } from "./redact.js";
+export type {
+    CheckResult,
+    DependencyName,
+    HealthCheck,
+    HealthStatus,
+    HealthSummary,
+    ProbeResponse,
+} from "./health.js";
+export {
+    HealthRegistry,
+    liveResponse,
+    pingCheck,
+    readyResponse,
+} from "./health.js";
+export { databaseCheck, redisCheck } from "./probes.js";
