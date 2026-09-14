@@ -130,7 +130,7 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | `PR-02-24` | Antarmuka konfigurasi approval rule + pratinjau | M | M | 19 | `FR-10.1`, `RE-01` | Pratinjau menunjukkan jalur yang akan terpilih |
 | `PR-02-25` | Skema notifikasi + penerbitan dari event domain | M | M | Ph00 | `FR-17.1`, `SDD-NTF-01/02` | Notifikasi terbit hanya setelah transaksi commit |
 | `PR-02-26` | SSE + Redis Pub/Sub fanout multi-instance | L | L | 25 | `FR-17.1`, `SDD-NTF-03/04/05` | Dua instance API → satu notifikasi, satu kali tampil |
-| `PR-02-27` | Push FCM + registrasi token + penanganan token mati | M | M | 25 | `FR-17.2`, `SDD-NTF-06/07` | Token tidak valid dibersihkan otomatis |
+| `PR-02-27` | Push FCM + registrasi token + penanganan token mati | M | M | 25 | `FR-17.2`, `SDD-NTF-06/07` | Token tidak valid dibersihkan otomatis; pemeriksaan `fcm` terdaftar di `/health` tanpa memengaruhi `ready` (`OBS-06`) |
 | `PR-02-28` | Preferensi notifikasi | S | S | 25 | `FR-17.3`, **UXD-05** | Enam kelompok `jenis` sesuai `SDD-08 §4.5`, bukan per modul |
 | `PR-02-29` | Kerangka dashboard + kartu per role | L | L | 09 | `FR-15.1`, `BR-073` `BR-074`, `SDD-PERF-03` | Kartu di luar permission tidak dirender **dan** tidak dikirim server |
 | `PR-02-30` | Kerangka aplikasi web: routing, state, render berbasis permission | L | L | 09 | `SDD-FE-01` … `SDD-FE-06`, `SDD-FE-11/12`, **UXD-12** | TanStack Query + primitif headless & token sendiri; satu set token warna — tanpa mode gelap |

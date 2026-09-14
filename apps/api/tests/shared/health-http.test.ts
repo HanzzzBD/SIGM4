@@ -76,7 +76,12 @@ describe("sigm4-api — /api/v1/health/*", () => {
 
     it("ready → 503 saat redis down", async () => {
         const url = await buka(createApp(health({ ...siap, redis: "down" })));
-        expect((await fetch(`${url}/api/v1/health/ready`)).status).toBe(503);
+        const res = await fetch(`${url}/api/v1/health/ready`);
+        expect(res.status).toBe(503);
+        expect(await res.json()).toMatchObject({
+            success: false,
+            error: { code: "SERVICE_NOT_READY" },
+        });
     });
 
     it("/health ringkasan TIDAK terpasang tanpa middleware permission (PM-02) → 404", async () => {

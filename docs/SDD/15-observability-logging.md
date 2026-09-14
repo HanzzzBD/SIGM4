@@ -174,6 +174,8 @@ GET /health          → ringkasan untuk kartu Kesehatan Integrasi (OBS-06)     
 
 `llm` dan `fcm` **tidak pernah** membuat `/health/ready` gagal — gangguan keduanya tidak boleh mengeluarkan instance dari rotasi (`NFR-A-05`, `NFR-A-06`).
 
+`/health/ready` yang tidak siap menjawab `503 SERVICE_NOT_READY` (Bab 17.3) dalam amplop galat Bab 17.2. Jawabannya tidak memuat nama dependensi apa pun — rinciannya milik `/health` yang menuntut `setting.view` (`SDD-AUTH-01 §4.1`).
+
 ### 4.6 Alarm
 
 | Alarm | Ambang | Keparahan | Runbook menjawab |

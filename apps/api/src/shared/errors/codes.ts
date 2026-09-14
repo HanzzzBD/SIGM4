@@ -32,6 +32,7 @@ export const KODE_GALAT = {
     INTERNAL_ERROR: 500,
     LLM_UNAVAILABLE: 503,
     STORAGE_UNAVAILABLE: 503,
+    SERVICE_NOT_READY: 503,
 } as const satisfies Record<string, number>;
 
 export type KodeGalat = keyof typeof KODE_GALAT;
