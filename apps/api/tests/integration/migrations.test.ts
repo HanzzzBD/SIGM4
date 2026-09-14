@@ -6,9 +6,9 @@
 // `npm run test:integration -w apps/api`; ia sengaja TIDAK ikut `npm test` karena
 // menuntut dependensi yang tidak ada di setiap mesin (PR-00-17 menyediakannya di CI).
 
-import { beforeAll, describe, expect, it } from 'vitest';
-import { bacaBab113, kodeTeknis } from '../helpers/bab113.js';
-import { dbmate, kueri } from '../helpers/db.js';
+import { beforeAll, describe, expect, it } from "vitest";
+import { bacaBab113, kodeTeknis } from "../helpers/bab113.js";
+import { dbmate, kueri } from "../helpers/db.js";
 
 const bab113 = bacaBab113();
 
@@ -18,51 +18,58 @@ const HITUNG = `
          (SELECT count(*) FROM pg_extension WHERE extname IN ('btree_gist','pgcrypto'))::text AS ext
 `;
 
-describe.skipIf(process.env['DATABASE_URL'] === undefined)(
-  'migration 0001-0002 terhadap PostgreSQL nyata',
-  () => {
-    beforeAll(() => {
-      dbmate('up');
-    });
+describe.skipIf(process.env["DATABASE_URL"] === undefined)(
+    "migration 0001-0002 terhadap PostgreSQL nyata",
+    () => {
+        beforeAll(() => {
+            dbmate("up");
+        });
 
-    it('btree_gist dan pgcrypto aktif', async () => {
-      const rows = await kueri<{ extname: string }>(
-        "SELECT extname FROM pg_extension WHERE extname IN ('btree_gist','pgcrypto') ORDER BY 1",
-      );
-      expect(rows.map((r) => r.extname)).toEqual(['btree_gist', 'pgcrypto']);
-    });
+        it("btree_gist dan pgcrypto aktif", async () => {
+            const rows = await kueri<{ extname: string }>(
+                "SELECT extname FROM pg_extension WHERE extname IN ('btree_gist','pgcrypto') ORDER BY 1",
+            );
+            expect(rows.map((r) => r.extname)).toEqual([
+                "btree_gist",
+                "pgcrypto",
+            ]);
+        });
 
-    it('btree_gist benar-benar dapat dipakai exclusion constraint (CI-01)', async () => {
-      // Pembuktian yang sesungguhnya: baris di pg_extension tidak menjamin kelas
-      // operatornya terpasang. Constraint di bawah memadukan operator kesetaraan
-      // skalar dengan irisan rentang di SATU indeks GiST — persis bentuk
-      // SDD-01 §4.1, dan mustahil dibuat tanpa btree_gist.
-      await kueri(`
+        it("btree_gist benar-benar dapat dipakai exclusion constraint (CI-01)", async () => {
+            // Pembuktian yang sesungguhnya: baris di pg_extension tidak menjamin kelas
+            // operatornya terpasang. Constraint di bawah memadukan operator kesetaraan
+            // skalar dengan irisan rentang di SATU indeks GiST — persis bentuk
+            // SDD-01 §4.1, dan mustahil dibuat tanpa btree_gist.
+            await kueri(`
         CREATE TABLE probe_ci01 (
           resource_id bigint    NOT NULL,
           rentang     tstzrange NOT NULL,
           EXCLUDE USING gist (resource_id WITH =, rentang WITH &&)
         )
       `);
-      try {
-        await kueri(
-          "INSERT INTO probe_ci01 VALUES (1, '[2026-09-07 08:00+00,2026-09-07 10:00+00)')",
-        );
-        // Irisan pada resource yang sama harus ditolak basis data dengan 23P01.
-        await expect(
-          kueri("INSERT INTO probe_ci01 VALUES (1, '[2026-09-07 09:00+00,2026-09-07 11:00+00)')"),
-        ).rejects.toMatchObject({ code: '23P01' });
-        // Resource berbeda pada rentang yang sama tetap boleh.
-        await expect(
-          kueri("INSERT INTO probe_ci01 VALUES (2, '[2026-09-07 09:00+00,2026-09-07 11:00+00)')"),
-        ).resolves.toEqual([]);
-      } finally {
-        await kueri('DROP TABLE probe_ci01');
-      }
-    });
+            try {
+                await kueri(
+                    "INSERT INTO probe_ci01 VALUES (1, '[2026-09-07 08:00+00,2026-09-07 10:00+00)')",
+                );
+                // Irisan pada resource yang sama harus ditolak basis data dengan 23P01.
+                await expect(
+                    kueri(
+                        "INSERT INTO probe_ci01 VALUES (1, '[2026-09-07 09:00+00,2026-09-07 11:00+00)')",
+                    ),
+                ).rejects.toMatchObject({ code: "23P01" });
+                // Resource berbeda pada rentang yang sama tetap boleh.
+                await expect(
+                    kueri(
+                        "INSERT INTO probe_ci01 VALUES (2, '[2026-09-07 09:00+00,2026-09-07 11:00+00)')",
+                    ),
+                ).resolves.toEqual([]);
+            } finally {
+                await kueri("DROP TABLE probe_ci01");
+            }
+        });
 
-    it('seluruh enum Bab 11.3 terbentuk, dengan nilai dan urutan yang sama', async () => {
-      const rows = await kueri<{ typname: string; labels: string }>(`
+        it("seluruh enum Bab 11.3 terbentuk, dengan nilai dan urutan yang sama", async () => {
+            const rows = await kueri<{ typname: string; labels: string }>(`
         SELECT t.typname, string_agg(e.enumlabel, ',' ORDER BY e.enumsortorder) AS labels
           FROM pg_type t
           JOIN pg_enum e ON e.enumtypid = t.oid
@@ -70,42 +77,51 @@ describe.skipIf(process.env['DATABASE_URL'] === undefined)(
          WHERE n.nspname = 'public'
          GROUP BY t.typname
       `);
-      const aktual = new Set(rows.map((r) => r.labels));
+            const aktual = new Set(rows.map((r) => r.labels));
 
-      // Nilai harapan datang dari PRD, bukan dari daftar di dalam uji ini.
-      const hilang = [...bab113.values()]
-        .map((nilai) => nilai.join(','))
-        .filter((nilai) => !aktual.has(nilai));
-      expect(hilang).toEqual([]);
-      // Jumlah TOTAL sengaja tidak dipatok: sejak `SDD-DB-02` diperluas, tipe enum
-      // di luar Bab 11.3 dibuat oleh migration yang membuat tabelnya — mis.
-      // `holiday_type` pada 0004. Mematok totalnya akan menggagalkan uji ini atas
-      // penambahan yang sah, bukan atas kelompok Bab 11.3 yang benar-benar hilang.
-      expect(rows.length).toBeGreaterThanOrEqual(bab113.size);
-    });
+            // Nilai harapan datang dari PRD, bukan dari daftar di dalam uji ini.
+            const hilang = [...bab113.values()]
+                .map((nilai) => nilai.join(","))
+                .filter((nilai) => !aktual.has(nilai));
+            expect(hilang).toEqual([]);
+            // Jumlah TOTAL sengaja tidak dipatok: sejak `SDD-DB-02` diperluas, tipe enum
+            // di luar Bab 11.3 dibuat oleh migration yang membuat tabelnya — mis.
+            // `holiday_type` pada 0004. Mematok totalnya akan menggagalkan uji ini atas
+            // penambahan yang sah, bukan atas kelompok Bab 11.3 yang benar-benar hilang.
+            expect(rows.length).toBeGreaterThanOrEqual(bab113.size);
+        });
 
-    it('nilai tersimpan sebagai kode teknis huruf besar, bukan label (SDD-DB-02)', async () => {
-      const rows = await kueri<{ enumlabel: string }>('SELECT enumlabel FROM pg_enum');
-      expect(rows.map((r) => r.enumlabel).filter((l) => l !== kodeTeknis(l))).toEqual([]);
-    });
+        it("nilai tersimpan sebagai kode teknis huruf besar, bukan label (SDD-DB-02)", async () => {
+            const rows = await kueri<{ enumlabel: string }>(
+                "SELECT enumlabel FROM pg_enum",
+            );
+            expect(
+                rows.map((r) => r.enumlabel).filter((l) => l !== kodeTeknis(l)),
+            ).toEqual([]);
+        });
 
-    it('down mencabut seluruhnya, lalu up memulihkannya (CD-04, CD-05)', async () => {
-      // Jumlah migration TIDAK dipatok: ia bertambah tiap PR, dan angka yang
-      // dipatok di sini akan menjadikan uji ini gagal atas penambahan yang sah
-      // alih-alih atas kerusakan yang nyata.
-      const terpasang = await kueri<{ n: string }>(
-        'SELECT count(*)::text AS n FROM schema_migrations',
-      );
-      for (let sisa = Number(terpasang[0]?.n ?? 0); sisa > 0; sisa -= 1) dbmate('down');
-      expect((await kueri<{ enums: string; ext: string }>(HITUNG))[0]).toEqual({
-        enums: '0',
-        ext: '0',
-      });
+        it("down mencabut seluruhnya, lalu up memulihkannya (CD-04, CD-05)", async () => {
+            // Jumlah migration TIDAK dipatok: ia bertambah tiap PR, dan angka yang
+            // dipatok di sini akan menjadikan uji ini gagal atas penambahan yang sah
+            // alih-alih atas kerusakan yang nyata.
+            const terpasang = await kueri<{ n: string }>(
+                "SELECT count(*)::text AS n FROM schema_migrations",
+            );
+            for (let sisa = Number(terpasang[0]?.n ?? 0); sisa > 0; sisa -= 1)
+                dbmate("down");
+            expect(
+                (await kueri<{ enums: string; ext: string }>(HITUNG))[0],
+            ).toEqual({
+                enums: "0",
+                ext: "0",
+            });
 
-      dbmate('up');
-      const pulih = (await kueri<{ enums: string; ext: string }>(HITUNG))[0];
-      expect(Number(pulih?.enums)).toBeGreaterThanOrEqual(bab113.size);
-      expect(pulih?.ext).toBe('2');
-    });
-  },
+            dbmate("up");
+            const pulih = (
+                await kueri<{ enums: string; ext: string }>(HITUNG)
+            )[0];
+            expect(Number(pulih?.enums)).toBeGreaterThanOrEqual(bab113.size);
+            expect(pulih?.ext).toBe("2");
+        });
+    },
 );

@@ -2,17 +2,17 @@
 //
 // Modul menerbitkan lewat `publish`; hanya entrypoint worker yang menyentuh
 // `OutboxDispatcher`.
-export type { DomainEvent } from './event-bus.js';
-export { EventPublishError, publish, publishAll } from './event-bus.js';
+export type { DomainEvent } from "./event-bus.js";
+export { EventPublishError, publish, publishAll } from "./event-bus.js";
 export type {
-  DispatcherOptions,
-  EventHandler,
-  OutboxEvent,
-  TickResult,
-} from './dispatcher.js';
+    DispatcherOptions,
+    EventHandler,
+    OutboxEvent,
+    TickResult,
+} from "./dispatcher.js";
 export {
-  BACKOFF_BASE_MS,
-  EventHandlerRegistry,
-  MAX_ATTEMPTS,
-  OutboxDispatcher,
-} from './dispatcher.js';
+    BACKOFF_BASE_MS,
+    EventHandlerRegistry,
+    MAX_ATTEMPTS,
+    OutboxDispatcher,
+} from "./dispatcher.js";

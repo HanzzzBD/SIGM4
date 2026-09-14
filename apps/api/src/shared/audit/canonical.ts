@@ -6,28 +6,28 @@
 // job verifikasi. Urutan field atau pemisah yang berbeda antara penulis dan
 // pemeriksa menghasilkan rantai yang "terputus" tanpa ada yang menyunting apa pun.
 
-import { createHash } from 'node:crypto';
+import { createHash } from "node:crypto";
 
 /** Pemisah field: U+001F UNIT SEPARATOR, yang tidak muncul pada teks yang wajar. */
-const PEMISAH = '\u001f';
+const PEMISAH = "\u001f";
 
 /** Urutan field pada kanonikalisasi. **Tidak boleh** diubah tanpa migrasi rantai. */
 export const URUTAN_FIELD = [
-  'waktu',
-  'user_id',
-  'user_nama',
-  'role',
-  'ip',
-  'user_agent',
-  'modul',
-  'aksi',
-  'entitas',
-  'entitas_id',
-  'nilai_sebelum',
-  'nilai_sesudah',
-  'keterangan',
-  'hasil',
-  'request_id',
+    "waktu",
+    "user_id",
+    "user_nama",
+    "role",
+    "ip",
+    "user_agent",
+    "modul",
+    "aksi",
+    "entitas",
+    "entitas_id",
+    "nilai_sebelum",
+    "nilai_sesudah",
+    "keterangan",
+    "hasil",
+    "request_id",
 ] as const;
 
 export type FieldKanonik = (typeof URUTAN_FIELD)[number];
@@ -41,25 +41,29 @@ export type BarisKanonik = Readonly<Record<FieldKanonik, unknown>>;
  * urutan kunci berubah di antara dua versi kode.
  */
 export function jsonTerurut(nilai: unknown): string {
-  if (nilai === null || typeof nilai !== 'object') return JSON.stringify(nilai) ?? 'null';
-  if (Array.isArray(nilai)) return `[${nilai.map(jsonTerurut).join(',')}]`;
-  const isi = Object.keys(nilai as Record<string, unknown>)
-    .sort()
-    .map((k) => `${JSON.stringify(k)}:${jsonTerurut((nilai as Record<string, unknown>)[k])}`);
-  return `{${isi.join(',')}}`;
+    if (nilai === null || typeof nilai !== "object")
+        return JSON.stringify(nilai) ?? "null";
+    if (Array.isArray(nilai)) return `[${nilai.map(jsonTerurut).join(",")}]`;
+    const isi = Object.keys(nilai as Record<string, unknown>)
+        .sort()
+        .map(
+            (k) =>
+                `${JSON.stringify(k)}:${jsonTerurut((nilai as Record<string, unknown>)[k])}`,
+        );
+    return `{${isi.join(",")}}`;
 }
 
 /** Satu field menjadi teks. NULL/undefined menjadi string kosong (`SDD-05 §4.4`). */
 function keTeks(nilai: unknown): string {
-  if (nilai === null || nilai === undefined) return '';
-  if (nilai instanceof Date) return nilai.toISOString(); // ISO-8601 UTC bermilidetik
-  if (typeof nilai === 'object') return jsonTerurut(nilai);
-  return String(nilai);
+    if (nilai === null || nilai === undefined) return "";
+    if (nilai instanceof Date) return nilai.toISOString(); // ISO-8601 UTC bermilidetik
+    if (typeof nilai === "object") return jsonTerurut(nilai);
+    return String(nilai);
 }
 
 /** Bentuk kanonik sebuah baris — masukan bagi hash, dan hanya itu. */
 export function kanonikal(baris: BarisKanonik): string {
-  return URUTAN_FIELD.map((f) => keTeks(baris[f])).join(PEMISAH);
+    return URUTAN_FIELD.map((f) => keTeks(baris[f])).join(PEMISAH);
 }
 
 /**
@@ -69,9 +73,12 @@ export function kanonikal(baris: BarisKanonik): string {
  * itu yang membuat setiap entri terikat pada seluruh riwayat sebelumnya, bukan
  * hanya pada isinya sendiri.
  */
-export function hashBaris(prevHash: Buffer | null, baris: BarisKanonik): Buffer {
-  const hash = createHash('sha256');
-  if (prevHash !== null) hash.update(prevHash);
-  hash.update(kanonikal(baris), 'utf8');
-  return hash.digest();
+export function hashBaris(
+    prevHash: Buffer | null,
+    baris: BarisKanonik,
+): Buffer {
+    const hash = createHash("sha256");
+    if (prevHash !== null) hash.update(prevHash);
+    hash.update(kanonikal(baris), "utf8");
+    return hash.digest();
 }

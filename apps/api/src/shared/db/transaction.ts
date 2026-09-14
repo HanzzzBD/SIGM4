@@ -2,11 +2,11 @@
 // dijalankan sinkron di dalam blok ini; efek yang boleh tertunda terbit ke outbox
 // di dalamnya juga (PR-00-12) — tidak pernah setelah COMMIT.
 
-import type { Kysely, Transaction } from 'kysely';
-import type { AuthContext } from '../auth/index.js';
-import { assertAuthContext } from '../auth/index.js';
-import { getDb } from './connection.js';
-import type { Database } from './schema.js';
+import type { Kysely, Transaction } from "kysely";
+import type { AuthContext } from "../auth/index.js";
+import { assertAuthContext } from "../auth/index.js";
+import { getDb } from "./connection.js";
+import type { Database } from "./schema.js";
 
 /** Eksekutor kueri: koneksi pool atau transaksi berjalan. Repository tidak membedakannya. */
 export type QueryExecutor = Kysely<Database> | Transaction<Database>;
@@ -17,8 +17,8 @@ export type QueryExecutor = Kysely<Database> | Transaction<Database>;
  * di tengah jalan (SDD-AUTH-02).
  */
 export interface TransactionScope {
-  readonly ctx: AuthContext;
-  readonly tx: Transaction<Database>;
+    readonly ctx: AuthContext;
+    readonly tx: Transaction<Database>;
 }
 
 /**
@@ -27,13 +27,13 @@ export interface TransactionScope {
  * bawaan PostgreSQL yang kebetulan sama bukan jaminan yang dapat dirujuk.
  */
 export async function withTransaction<T>(
-  ctx: AuthContext,
-  fn: (scope: TransactionScope) => Promise<T>,
-  db: Kysely<Database> = getDb(),
+    ctx: AuthContext,
+    fn: (scope: TransactionScope) => Promise<T>,
+    db: Kysely<Database> = getDb(),
 ): Promise<T> {
-  assertAuthContext(ctx);
-  return db
-    .transaction()
-    .setIsolationLevel('read committed') // CI-03
-    .execute((tx) => fn({ ctx, tx }));
+    assertAuthContext(ctx);
+    return db
+        .transaction()
+        .setIsolationLevel("read committed") // CI-03
+        .execute((tx) => fn({ ctx, tx }));
 }

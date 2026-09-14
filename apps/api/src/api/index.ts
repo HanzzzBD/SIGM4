@@ -8,7 +8,7 @@
 // (idempotensi) dan PR-00-15 (header keamanan, rate limit); route pertama yang
 // benar-benar dilayani lahir di Phase 01.
 
-import { RouteRegistry } from '../shared/http/index.js';
+import { RouteRegistry } from "../shared/http/index.js";
 
 /**
  * Registri milik proses ini. Modul mendaftarkan route-nya lewat `registry.register`
@@ -22,5 +22,5 @@ export const registry = new RouteRegistry();
  * terbuka.
  */
 export function bootstrap(): RouteRegistry {
-  return registry.validateOrThrow();
+    return registry.validateOrThrow();
 }

@@ -9,7 +9,7 @@
 // 0001-0002 (PR-00-05) hanya membuat ekstensi dan tipe enum — bukan tabel —
 // sehingga peta ini memang kosong sampai 0003.
 
-import type { ColumnType, Generated } from 'kysely';
+import type { ColumnType, Generated } from "kysely";
 
 /**
  * `document_counters` (0003, PR-00-07). Penghitung nomor dokumen per
@@ -21,9 +21,9 @@ import type { ColumnType, Generated } from 'kysely';
  * hal itu lebih berbahaya daripada tipe yang merepotkan.
  */
 export interface DocumentCountersTable {
-  prefix: string;
-  year: number;
-  value: ColumnType<string, string | number | undefined, string | number>;
+    prefix: string;
+    year: number;
+    value: ColumnType<string, string | number | undefined, string | number>;
 }
 
 /**
@@ -31,8 +31,8 @@ export interface DocumentCountersTable {
  * ISO-8601 — 1 = Senin … 7 = Minggu (Lampiran E.2, CAL-01).
  */
 export interface WorkDaysTable {
-  hari: number;
-  aktif: boolean;
+    hari: number;
+    aktif: boolean;
 }
 
 /**
@@ -40,10 +40,10 @@ export interface WorkDaysTable {
  * ditambahkan `PR-01-11` bersama `academic_years` sebagai migration `expand`.
  */
 export interface HolidaysTable {
-  id: Generated<string>;
-  tanggal: ColumnType<string, string, string>;
-  nama: string;
-  jenis: 'NASIONAL' | 'SEKOLAH' | 'CUTI_BERSAMA';
+    id: Generated<string>;
+    tanggal: ColumnType<string, string, string>;
+    nama: string;
+    jenis: "NASIONAL" | "SEKOLAH" | "CUTI_BERSAMA";
 }
 
 /**
@@ -52,13 +52,13 @@ export interface HolidaysTable {
  * memakai advisory lock, bukan kolom ini (`SDD-01 §4.4`).
  */
 export interface IdempotencyKeysTable {
-  key: string;
-  endpoint: string;
-  request_hash: string;
-  status_code: number | null;
-  response_body: unknown;
-  created_at: Generated<Date>;
-  expires_at: Generated<Date>;
+    key: string;
+    endpoint: string;
+    request_hash: string;
+    status_code: number | null;
+    response_body: unknown;
+    created_at: Generated<Date>;
+    expires_at: Generated<Date>;
 }
 
 /**
@@ -73,17 +73,17 @@ export interface IdempotencyKeysTable {
  * `AL-03b` yang mencabut hak `UPDATE` hanya menyebut `activity_logs`.
  */
 export interface EventOutboxTable {
-  id: Generated<string>;
-  event_name: string;
-  aggregate_type: string;
-  aggregate_id: ColumnType<string, string | number, string | number>;
-  payload: unknown;
-  actor_id: string | null;
-  request_id: string | null;
-  occurred_at: Generated<Date>;
-  processed_at: Date | null;
-  attempts: Generated<number>;
-  last_error: string | null;
+    id: Generated<string>;
+    event_name: string;
+    aggregate_type: string;
+    aggregate_id: ColumnType<string, string | number, string | number>;
+    payload: unknown;
+    actor_id: string | null;
+    request_id: string | null;
+    occurred_at: Generated<Date>;
+    processed_at: Date | null;
+    attempts: Generated<number>;
+    last_error: string | null;
 }
 
 /**
@@ -100,32 +100,32 @@ export interface EventOutboxTable {
  * akan ditolak `42501` saat berjalan.
  */
 export interface ActivityLogsTable {
-  id: Generated<string>;
-  waktu: ColumnType<Date, Date | string, never>;
-  user_id: string | null;
-  user_nama: string | null;
-  role: string | null;
-  ip: string | null;
-  user_agent: string | null;
-  modul: string;
-  aksi: string;
-  entitas: string | null;
-  entitas_id: string | null;
-  nilai_sebelum: ColumnType<unknown, string | null, never>;
-  nilai_sesudah: ColumnType<unknown, string | null, never>;
-  keterangan: string | null;
-  hasil: 'SUKSES' | 'GAGAL';
-  request_id: string | null;
-  prev_hash: Buffer | null;
-  row_hash: Buffer;
+    id: Generated<string>;
+    waktu: ColumnType<Date, Date | string, never>;
+    user_id: string | null;
+    user_nama: string | null;
+    role: string | null;
+    ip: string | null;
+    user_agent: string | null;
+    modul: string;
+    aksi: string;
+    entitas: string | null;
+    entitas_id: string | null;
+    nilai_sebelum: ColumnType<unknown, string | null, never>;
+    nilai_sesudah: ColumnType<unknown, string | null, never>;
+    keterangan: string | null;
+    hasil: "SUKSES" | "GAGAL";
+    request_id: string | null;
+    prev_hash: Buffer | null;
+    row_hash: Buffer;
 }
 
 /** Peta nama tabel -> bentuk barisnya. Diisi bersama migration pemiliknya. */
 export interface Database {
-  document_counters: DocumentCountersTable;
-  work_days: WorkDaysTable;
-  holidays: HolidaysTable;
-  idempotency_keys: IdempotencyKeysTable;
-  event_outbox: EventOutboxTable;
-  activity_logs: ActivityLogsTable;
+    document_counters: DocumentCountersTable;
+    work_days: WorkDaysTable;
+    holidays: HolidaysTable;
+    idempotency_keys: IdempotencyKeysTable;
+    event_outbox: EventOutboxTable;
+    activity_logs: ActivityLogsTable;
 }

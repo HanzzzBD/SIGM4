@@ -5,14 +5,14 @@
 // sebagai job BullMQ juga akan menumpuk dua mekanisme percobaan ulang —
 // `JOB-06` (3 kali) di atas backoff outbox sendiri (5 kali, `SDD-07 §4.2`).
 
-import type { OutboxDispatcher } from '../shared/events/index.js';
+import type { OutboxDispatcher } from "../shared/events/index.js";
 
 /** Jeda antar putaran saat outbox kosong. Belum dikalibrasi (Phase 07–08). */
 export const POLL_INTERVAL_MS = 1_000;
 
 export interface Poller {
-  /** Menghentikan pemungutan; putaran yang sedang berjalan tetap diselesaikan. */
-  stop(): Promise<void>;
+    /** Menghentikan pemungutan; putaran yang sedang berjalan tetap diselesaikan. */
+    stop(): Promise<void>;
 }
 
 /**
@@ -23,32 +23,32 @@ export interface Poller {
  * ketika tidak ada apa pun yang dapat dikerjakan sekarang.
  */
 export function startOutboxPoller(
-  dispatcher: OutboxDispatcher,
-  jedaMs: number = POLL_INTERVAL_MS,
+    dispatcher: OutboxDispatcher,
+    jedaMs: number = POLL_INTERVAL_MS,
 ): Poller {
-  let berjalan = true;
-  let tidur: NodeJS.Timeout | undefined;
-  let bangunkan: (() => void) | undefined;
+    let berjalan = true;
+    let tidur: NodeJS.Timeout | undefined;
+    let bangunkan: (() => void) | undefined;
 
-  const putaran = (async () => {
-    while (berjalan) {
-      const hasil = await dispatcher.tick();
-      if (hasil.processed > 0 || hasil.failed > 0) continue;
-      await new Promise<void>((selesai) => {
-        bangunkan = selesai;
-        tidur = setTimeout(selesai, jedaMs);
-      });
-    }
-  })();
+    const putaran = (async () => {
+        while (berjalan) {
+            const hasil = await dispatcher.tick();
+            if (hasil.processed > 0 || hasil.failed > 0) continue;
+            await new Promise<void>((selesai) => {
+                bangunkan = selesai;
+                tidur = setTimeout(selesai, jedaMs);
+            });
+        }
+    })();
 
-  return {
-    async stop() {
-      berjalan = false;
-      // Membatalkan timer saja akan menggantung `putaran` selamanya: promise
-      // tidurnya tidak pernah selesai, dan `stop()` menunggunya.
-      if (tidur !== undefined) clearTimeout(tidur);
-      bangunkan?.();
-      await putaran;
-    },
-  };
+    return {
+        async stop() {
+            berjalan = false;
+            // Membatalkan timer saja akan menggantung `putaran` selamanya: promise
+            // tidurnya tidak pernah selesai, dan `stop()` menunggunya.
+            if (tidur !== undefined) clearTimeout(tidur);
+            bangunkan?.();
+            await putaran;
+        },
+    };
 }
