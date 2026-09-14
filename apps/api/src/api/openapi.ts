@@ -8,15 +8,15 @@
 // Berada di `api/`, bukan di `shared/http/`: hanya *entrypoint* yang menerbitkan
 // dokumen, dan *shared kernel* tidak perlu tahu caranya (`SDD-SYS-12`).
 
-import { createDocument } from 'zod-openapi';
-import type { RouteDefinition, RouteRegistry } from '../shared/http/index.js';
+import { createDocument } from "zod-openapi";
+import type { RouteDefinition, RouteRegistry } from "../shared/http/index.js";
 
 /** Prefiks versi API (Bab 17.1). Path route sendiri ditulis tanpa awalan ini. */
-const BASE_PATH = '/api/v1';
+const BASE_PATH = "/api/v1";
 
 /** `:id` gaya Express → `{id}` gaya OpenAPI. */
 function toOpenApiPath(path: string): string {
-  return BASE_PATH + path.replace(/:([A-Za-z_][A-Za-z0-9_]*)/g, '{$1}');
+    return BASE_PATH + path.replace(/:([A-Za-z_][A-Za-z0-9_]*)/g, "{$1}");
 }
 
 /**
@@ -25,24 +25,32 @@ function toOpenApiPath(path: string): string {
  * kode galat sudah dimiliki Bab 17.3, dan mengulangnya per route akan menjadi
  * salinan kedua yang menyimpang.
  */
-function errorResponses(route: RouteDefinition): Record<string, { description: string }> {
-  const responses: Record<string, { description: string }> = {
-    '400': { description: 'INVALID_REQUEST — skema masukan tidak terpenuhi' },
-    '429': { description: 'RATE_LIMIT_EXCEEDED' },
-    '500': { description: 'INTERNAL_ERROR' },
-  };
-  if (route.public !== true) {
-    responses['401'] = { description: 'UNAUTHENTICATED / TOKEN_EXPIRED' };
-    responses['403'] = { description: 'FORBIDDEN / INSUFFICIENT_PERMISSION' };
-  }
-  if (route.idempotent === true) {
-    responses['409'] = { description: 'IDEMPOTENCY_KEY_REUSED / REQUEST_IN_PROGRESS' };
-  }
-  return responses;
+function errorResponses(
+    route: RouteDefinition,
+): Record<string, { description: string }> {
+    const responses: Record<string, { description: string }> = {
+        "400": {
+            description: "INVALID_REQUEST — skema masukan tidak terpenuhi",
+        },
+        "429": { description: "RATE_LIMIT_EXCEEDED" },
+        "500": { description: "INTERNAL_ERROR" },
+    };
+    if (route.public !== true) {
+        responses["401"] = { description: "UNAUTHENTICATED / TOKEN_EXPIRED" };
+        responses["403"] = {
+            description: "FORBIDDEN / INSUFFICIENT_PERMISSION",
+        };
+    }
+    if (route.idempotent === true) {
+        responses["409"] = {
+            description: "IDEMPOTENCY_KEY_REUSED / REQUEST_IN_PROGRESS",
+        };
+    }
+    return responses;
 }
 
 export interface OpenApiOptions {
-  readonly version: string;
+    readonly version: string;
 }
 
 /**
@@ -52,40 +60,46 @@ export interface OpenApiOptions {
  * permission akan mengiklankan endpoint yang seharusnya tidak pernah berjalan.
  */
 export function buildOpenApiDocument(
-  registry: RouteRegistry,
-  options: OpenApiOptions,
+    registry: RouteRegistry,
+    options: OpenApiOptions,
 ): ReturnType<typeof createDocument> {
-  registry.validateOrThrow();
+    registry.validateOrThrow();
 
-  const paths: Record<string, Record<string, unknown>> = {};
-  for (const route of registry.all()) {
-    const path = toOpenApiPath(route.path);
-    const operation: Record<string, unknown> = {
-      summary: route.summary ?? `${route.method} ${route.path}`,
-      tags: [route.module],
-      // Permission dibawa sebagai ekstensi, bukan dibuang: `SEC-T-01` menurunkan
-      // matriks ujinya dari registri, dan pembaca dokumen berhak tahu hak apa
-      // yang dituntut sebuah endpoint.
-      'x-permission': route.public === true ? null : route.permission,
-      'x-rate-limit-class': route.rateLimitClass,
-      responses: {
-        [route.method === 'POST' ? '201' : '200']: {
-          description: 'Berhasil',
-          content: { 'application/json': { schema: route.response } },
-        },
-        ...errorResponses(route),
-      },
-    };
-    if (route.params !== undefined) operation['requestParams'] = { path: route.params };
-    if (route.body !== undefined) {
-      operation['requestBody'] = { content: { 'application/json': { schema: route.body } } };
+    const paths: Record<string, Record<string, unknown>> = {};
+    for (const route of registry.all()) {
+        const path = toOpenApiPath(route.path);
+        const operation: Record<string, unknown> = {
+            summary: route.summary ?? `${route.method} ${route.path}`,
+            tags: [route.module],
+            // Permission dibawa sebagai ekstensi, bukan dibuang: `SEC-T-01` menurunkan
+            // matriks ujinya dari registri, dan pembaca dokumen berhak tahu hak apa
+            // yang dituntut sebuah endpoint.
+            "x-permission": route.public === true ? null : route.permission,
+            "x-rate-limit-class": route.rateLimitClass,
+            responses: {
+                [route.method === "POST" ? "201" : "200"]: {
+                    description: "Berhasil",
+                    content: { "application/json": { schema: route.response } },
+                },
+                ...errorResponses(route),
+            },
+        };
+        if (route.params !== undefined)
+            operation["requestParams"] = { path: route.params };
+        if (route.body !== undefined) {
+            operation["requestBody"] = {
+                content: { "application/json": { schema: route.body } },
+            };
+        }
+        paths[path] = {
+            ...paths[path],
+            [route.method.toLowerCase()]: operation,
+        };
     }
-    paths[path] = { ...paths[path], [route.method.toLowerCase()]: operation };
-  }
 
-  return createDocument({
-    openapi: '3.1.0',
-    info: { title: 'SIGM4 API', version: options.version },
-    paths: paths as never,
-  });
+    return createDocument({
+        openapi: "3.1.0",
+        info: { title: "SIGM4 API", version: options.version },
+        paths: paths as never,
+    });
 }

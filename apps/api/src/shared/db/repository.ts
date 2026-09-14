@@ -2,9 +2,9 @@
 // metode repository, bukan isi filternya: penerjemahan scope -> klausa WHERE
 // (SDD-03 §4.2) milik repository tiap modul, karena kolom pemiliknya berbeda-beda.
 
-import type { AuthContext } from '../auth/index.js';
-import { assertAuthContext } from '../auth/index.js';
-import type { QueryExecutor } from './transaction.js';
+import type { AuthContext } from "../auth/index.js";
+import { assertAuthContext } from "../auth/index.js";
+import type { QueryExecutor } from "./transaction.js";
 
 /**
  * Batasan tipe: setiap metode publik repository menerima `AuthContext` sebagai
@@ -16,19 +16,21 @@ import type { QueryExecutor } from './transaction.js';
  * baris di produksi.
  */
 export type ScopedRepository<T> = {
-  [K in keyof T]: T[K] extends (...args: infer A) => unknown
-    ? A extends [AuthContext, ...unknown[]]
-      ? T[K]
-      : never
-    : T[K];
+    [K in keyof T]: T[K] extends (...args: infer A) => unknown
+        ? A extends [AuthContext, ...unknown[]]
+            ? T[K]
+            : never
+        : T[K];
 };
 
 /**
  * Gerbang kompilasi. Repository dipublikasikan lewat fungsi ini, bukan diekspor
  * langsung — sebuah aturan yang tidak pernah dijalankan tidak menolak apa pun.
  */
-export function defineRepository<T extends ScopedRepository<T>>(repository: T): T {
-  return repository;
+export function defineRepository<T extends ScopedRepository<T>>(
+    repository: T,
+): T {
+    return repository;
 }
 
 /**
@@ -37,15 +39,15 @@ export function defineRepository<T extends ScopedRepository<T>>(repository: T): 
  * terhadap permintaan yang sedang berjalan.
  */
 export abstract class BaseRepository {
-  protected constructor(private readonly executor: QueryExecutor) {}
+    protected constructor(private readonly executor: QueryExecutor) {}
 
-  /**
-   * Satu-satunya jalan menuju query builder, dan ia menuntut `ctx` disebut ulang
-   * pada setiap kueri. Pemeriksaan runtime menutup celah bagi pemanggil yang
-   * menembus tipe lewat cast.
-   */
-  protected query(ctx: AuthContext): QueryExecutor {
-    assertAuthContext(ctx);
-    return this.executor;
-  }
+    /**
+     * Satu-satunya jalan menuju query builder, dan ia menuntut `ctx` disebut ulang
+     * pada setiap kueri. Pemeriksaan runtime menutup celah bagi pemanggil yang
+     * menembus tipe lewat cast.
+     */
+    protected query(ctx: AuthContext): QueryExecutor {
+        assertAuthContext(ctx);
+        return this.executor;
+    }
 }

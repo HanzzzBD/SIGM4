@@ -10,38 +10,41 @@
 // tangan setiap fungsi. Ia sengaja TIDAK dipakai untuk AuthContext: SDD-AUTH-02
 // mewajibkan ctx sebagai parameter, justru agar kelalaian gagal saat kompilasi.
 
-import { AsyncLocalStorage } from 'node:async_hooks';
-import { randomUUID } from 'node:crypto';
+import { AsyncLocalStorage } from "node:async_hooks";
+import { randomUUID } from "node:crypto";
 
 export interface RequestContext {
-  readonly requestId: string;
-  /** Modul yang sedang menangani — mengisi field wajib `modul` pada log. */
-  readonly modul: string;
-  readonly userId?: number;
-  readonly role?: string;
+    readonly requestId: string;
+    /** Modul yang sedang menangani — mengisi field wajib `modul` pada log. */
+    readonly modul: string;
+    readonly userId?: number;
+    readonly role?: string;
 }
 
 const penyimpanan = new AsyncLocalStorage<RequestContext>();
 
 /** Membangkitkan `request_id` baru. Prefiks membuatnya dikenali di agregator. */
 export function requestIdBaru(): string {
-  return `req_${randomUUID().replaceAll('-', '').slice(0, 20)}`;
+    return `req_${randomUUID().replaceAll("-", "").slice(0, 20)}`;
 }
 
 /** Menjalankan `fn` dengan konteks terpasang; seluruh await di dalamnya mewarisinya. */
 export function denganKonteks<T>(ctx: RequestContext, fn: () => T): T {
-  return penyimpanan.run(ctx, fn);
+    return penyimpanan.run(ctx, fn);
 }
 
 /** Konteks yang sedang berlaku, atau `undefined` di luar permintaan/job. */
 export function konteksSaatIni(): RequestContext | undefined {
-  return penyimpanan.getStore();
+    return penyimpanan.getStore();
 }
 
 /**
  * Menurunkan konteks anak — dipakai worker saat memungut pekerjaan yang lahir
  * dari sebuah permintaan, agar `request_id` asalnya tidak putus (`SDD-OBS-03`).
  */
-export function konteksTurunan(induk: RequestContext, modul: string): RequestContext {
-  return { ...induk, modul };
+export function konteksTurunan(
+    induk: RequestContext,
+    modul: string,
+): RequestContext {
+    return { ...induk, modul };
 }
