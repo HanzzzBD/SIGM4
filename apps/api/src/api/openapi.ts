@@ -12,7 +12,7 @@ import { createDocument } from "zod-openapi";
 import type { RouteDefinition, RouteRegistry } from "../shared/http/index.js";
 
 /** Prefiks versi API (Bab 17.1). Path route sendiri ditulis tanpa awalan ini. */
-const BASE_PATH = "/api/v1";
+export const BASE_PATH = "/api/v1";
 
 /** `:id` gaya Express → `{id}` gaya OpenAPI. */
 function toOpenApiPath(path: string): string {
