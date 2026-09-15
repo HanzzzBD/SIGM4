@@ -22,27 +22,11 @@ import {
 } from "../shared/observability/index.js";
 
 export interface SecurityConfig {
-    /** Origin object storage untuk `img-src` (SDD-13 §4.2). */
+    /**
+     * Origin object storage untuk `img-src` (SDD-13 §4.2) — dari
+     * `S3_PUBLIC_ENDPOINT` lewat skema `shared/config` (SDD-FS-13, SDD-SYS-14).
+     */
     readonly objectStorageOrigin: string;
-}
-
-/** Konfigurasi dari lingkungan (SDD-INF-08); pesan menyebut nama variabel, bukan nilainya. */
-export function readSecurityConfig(
-    env: NodeJS.ProcessEnv = process.env,
-): SecurityConfig {
-    const endpoint = env["S3_ENDPOINT"]?.trim();
-    if (!endpoint) {
-        throw new Error(
-            "Variabel lingkungan S3_ENDPOINT wajib diisi (SDD-INF-08).",
-        );
-    }
-    try {
-        return { objectStorageOrigin: new URL(endpoint).origin };
-    } catch {
-        throw new Error(
-            "Variabel lingkungan S3_ENDPOINT harus URL absolut (SDD-INF-08).",
-        );
-    }
 }
 
 const nonce = (_req: IncomingMessage, res: ServerResponse): string =>

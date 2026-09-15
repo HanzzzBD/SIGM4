@@ -2,46 +2,20 @@
 
 import { Kysely, PostgresDialect } from "kysely";
 import pg from "pg";
+import { parseDatabaseEnv } from "../config/index.js";
+import type { DatabaseEnv } from "../config/index.js";
 import type { Database } from "./schema.js";
 
-/**
- * Bawaan pool. Nilai produksinya adalah `TBD-AVL-C` — dikalibrasi setelah uji beban
- * Phase 07-08 dan dibatasi tier langganan penyedia (SDD-16 §5), bukan ditebak di sini.
- */
-const UKURAN_POOL_BAWAAN = 10;
-
-export interface DatabaseConfig {
-    readonly connectionString: string;
-    readonly poolSize: number;
-}
+export type DatabaseConfig = DatabaseEnv;
 
 /**
- * Membaca konfigurasi dari variabel lingkungan (SDD-INF-08). Konfigurasi tidak
- * valid menggagalkan startup; pesannya menyebut NAMA variabel, tidak pernah
- * nilainya (SDD-16 §4.7).
+ * Membaca konfigurasi dari variabel lingkungan. Aturannya milik skema
+ * `shared/config` (SDD-SYS-14), bukan ditulis ulang di sini.
  */
 export function readDatabaseConfig(
     env: NodeJS.ProcessEnv = process.env,
 ): DatabaseConfig {
-    const connectionString = env["DATABASE_URL"]?.trim();
-    if (!connectionString) {
-        throw new Error(
-            "Variabel lingkungan DATABASE_URL wajib diisi (SDD-INF-08).",
-        );
-    }
-
-    const mentah = env["DB_POOL_SIZE"]?.trim();
-    if (mentah === undefined || mentah === "") {
-        return { connectionString, poolSize: UKURAN_POOL_BAWAAN };
-    }
-
-    const poolSize = Number(mentah);
-    if (!Number.isInteger(poolSize) || poolSize < 1) {
-        throw new Error(
-            "Variabel lingkungan DB_POOL_SIZE harus bilangan bulat >= 1 (SDD-INF-08).",
-        );
-    }
-    return { connectionString, poolSize };
+    return parseDatabaseEnv(env);
 }
 
 /** Membangun instance Kysely baru di atas pool `pg` sendiri. */

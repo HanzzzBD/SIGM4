@@ -209,7 +209,7 @@ Setiap langkah memiliki penanggung jawab bernama dan cara verifikasi. Runbook wa
 
 ```
 # Wajib — startup gagal bila kosong (SDD-INF-08)
-DATABASE_URL, REDIS_URL, S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY
+DATABASE_URL, REDIS_URL, S3_ENDPOINT, S3_PUBLIC_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY
 JWT_PRIVATE_KEY, JWT_PUBLIC_KEY, TOTP_ENCRYPTION_KEY
 GEMINI_API_KEY, FCM_CREDENTIALS
 APP_BASE_URL, TZ=UTC
@@ -217,6 +217,8 @@ APP_BASE_URL, TZ=UTC
 # Opsional dengan bawaan
 LOG_LEVEL=info, DB_POOL_SIZE=<TBD-AVL-C>, CHAT_ENABLED=true
 ```
+
+**Validasi bertahap.** Daftar di atas adalah keadaan akhir. Skema `shared/config` (`SDD-SYS-14`) memuat sebuah variabel sejak PR pertama yang memakainya; sebelum itu variabel tersebut tidak dituntut. `S3_ENDPOINT` dipakai operasi sisi server, sedangkan `S3_PUBLIC_ENDPOINT` — origin yang dapat dijangkau peramban dan aplikasi mobile — dipakai presigned URL dan `img-src` (`SDD-FS-13`).
 
 **Dua akun basis data, dua variabel.** `DATABASE_URL` memuat akun **aplikasi** — `sigm4_app`, tanpa hak DDL dan tanpa `UPDATE`/`DELETE` atas `activity_logs` (`SEC-CFG-03`, `AL-03b`, `SDD-DB-11`). `MIGRATION_DATABASE_URL` memuat akun **migration** ber-DDL yang memiliki skema, dan **hanya** job migration (`SDD-INF-03`) yang membacanya; proses API dan worker tidak pernah menerimanya. Bila ia tidak diisi, jalur migration jatuh kembali ke `DATABASE_URL` — kemudahan pengembangan yang di production ditutup oleh kenyataan bahwa akun aplikasi memang tidak dapat menjalankan DDL.
 

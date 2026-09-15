@@ -33,6 +33,7 @@
 | **SDD-FS-09** | Berkas yatim (terunggah tetapi tidak pernah ditautkan ke entitas) dibersihkan job harian setelah **24 jam**. |
 | **SDD-FS-11** | Foto berwajah **tidak ikut dipseudonimkan maupun dihapus** saat `DP-04` dilayani (`DP-05a`). Tidak ada pipeline pengaburan wajah di sistem ini. Perlindungan foto tetap bersandar sepenuhnya pada `DP-05`: permission eksplisit, URL bertanda tangan berbatas waktu, dan larangan mutlak muncul di halaman publik QR (`SDD-FS-08`). Menutup `TBD-FS-A` (keputusan pemilik produk, 25 Agustus 2026; `UXD-14`). |
 | **SDD-FS-12** | PDF yang dihasilkan sistem (§4.5 — berita acara `FR-13.3`/`FR-21.2`, label QR `NFR-P-07`) dirender **worker** dari HTML+CSS cetak memakai **Playwright (Chromium)**, mesin yang sama dengan E2E Web (`SDD-REPO-11`). Kepatuhan `NFR-C-07` (PDF 1.7, A4) diverifikasi uji, bukan diasumsikan. Chromium ikut ke dalam image bersama (`SDD-INF-01`) — konsekuensinya dicatat [SDD-16 §5](16-infrastructure-deployment.md). |
+| **SDD-FS-13** | URL object storage memakai gaya **path-style** (`{endpoint}/{bucket}/{key}`), didukung AWS S3 maupun MinIO tanpa DNS wildcard, sehingga seluruh berkas berbagi satu origin bagi CSP `img-src`. Dua endpoint dibedakan: `S3_ENDPOINT` untuk operasi sisi server (worker, API), dan `S3_PUBLIC_ENDPOINT` — origin yang dapat dijangkau peramban dan aplikasi mobile — untuk menandatangani presigned URL dan menyusun `img-src` ([SDD-13 §4.2](13-security-design.md)). Pemilihan SDK S3 tetap milik `PR-03-04` (keputusan pemilik produk, 15 September 2026). |
 
 ---
 

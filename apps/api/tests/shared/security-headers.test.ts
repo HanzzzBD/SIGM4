@@ -9,7 +9,6 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
 import { createApp } from "../../src/api/index.js";
-import { readSecurityConfig } from "../../src/api/security.js";
 import { FixedClock } from "../../src/shared/clock/index.js";
 import {
     HealthRegistry,
@@ -126,23 +125,5 @@ describe("header keamanan lain (NFR-S-11, SDD-13 §4.2)", () => {
 
     it("probe publik ikut membawa X-RateLimit-* (NFR-S-07 — seluruh respons route)", async () => {
         expect((await ambil()).headers.get("x-ratelimit-limit")).toBe("100");
-    });
-});
-
-describe("readSecurityConfig (SDD-INF-08)", () => {
-    it("mengambil origin dari S3_ENDPOINT", () => {
-        expect(
-            readSecurityConfig({ S3_ENDPOINT: "http://minio:9000/bucket/" }),
-        ).toEqual({ objectStorageOrigin: "http://minio:9000" });
-    });
-
-    it("gagal startup tanpa S3_ENDPOINT, menyebut nama variabelnya", () => {
-        expect(() => readSecurityConfig({})).toThrow(/S3_ENDPOINT wajib diisi/);
-    });
-
-    it("gagal startup bila S3_ENDPOINT bukan URL absolut, tanpa membocorkan nilainya", () => {
-        expect(() =>
-            readSecurityConfig({ S3_ENDPOINT: "rahasia-bukan-url" }),
-        ).toThrow(/^(?!.*rahasia).*S3_ENDPOINT harus URL absolut/);
     });
 });

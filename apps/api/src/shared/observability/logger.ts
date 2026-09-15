@@ -6,10 +6,12 @@
 // ke sini.
 
 import type { Clock } from "../clock/index.js";
+import { parseLogLevel } from "../config/index.js";
+import type { Level } from "../config/index.js";
 import { konteksSaatIni } from "./request-context.js";
 import { redact } from "./redact.js";
 
-export type Level = "debug" | "info" | "warn" | "error";
+export type { Level };
 
 const URUTAN: Record<Level, number> = {
     debug: 10,
@@ -37,13 +39,6 @@ export interface OpsiLogger {
     readonly modulBawaan?: string;
 }
 
-function levelDariEnv(env: NodeJS.ProcessEnv): Level {
-    const mentah = env["LOG_LEVEL"]?.trim().toLowerCase();
-    return mentah !== undefined && mentah in URUTAN
-        ? (mentah as Level)
-        : "info";
-}
-
 /**
  * Logger terstruktur. Tidak ada log teks bebas di jalur produksi (`SDD-OBS-02`):
  * pesan selalu berpasangan dengan objek field, dan objek itu selalu melewati
@@ -57,7 +52,8 @@ export class Logger {
 
     constructor(opsi: OpsiLogger) {
         this.clock = opsi.clock;
-        this.ambang = URUTAN[opsi.level ?? levelDariEnv(process.env)];
+        // LOG_LEVEL tidak dikenal ditolak skema, tidak lagi diam-diam jadi `info`.
+        this.ambang = URUTAN[opsi.level ?? parseLogLevel(process.env)];
         this.tulis =
             opsi.tulis ?? ((baris) => process.stdout.write(baris + "\n"));
         this.modulBawaan = opsi.modulBawaan ?? "app";
