@@ -6,6 +6,22 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 
 ---
 
+## 15 September 2026 — `PR-00-18`: deploy staging pada staging tiruan
+
+Tidak ada TBD, requirement, maupun business rule baru. Keputusan pemilik produk 50–53 dicatat di [`logs/phase-00.md` §2](logs/phase-00.md).
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `GITHUB-CI-STATE.md` §2, §3 | Deploy staging dan smoke test berstatus ditulis & terbukti pada staging tiruan; DAST dipisah sebagai tahap tanpa PR pemilik |
+| `IMPLEMENTATION-STATUS.md` | `PR-00-17` `Done`; `PR-00-18` `In Progress`; Phase 00 17/18 |
+| `logs/phase-00.md` §1, §2, §3, §5, §7, §8, §10 | Pelaksanaan, keputusan 50–53, butir blocking worker ditutup, hasil staging tiruan, serah terima infrastruktur |
+
+Total PR tetap **163**.
+
+---
+
 ## 15 September 2026 — `PR-00-17`: pipeline CI berdiri
 
 Tidak ada TBD, requirement, maupun business rule baru. Keputusan pemilik produk 44–49 dicatat di [`logs/phase-00.md` §2](logs/phase-00.md).

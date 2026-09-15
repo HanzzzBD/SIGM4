@@ -28,7 +28,7 @@ Karena itu sebagian aturan **belum dapat ditaati**, bukan karena diabaikan. Memb
 
 | Aturan | Sumber | Current State | Target State | Penutup selisih |
 |---|---|---|---|---|
-| `feature/*` → `develop` → `staging` → `main` | `CD-03` | `main` dan `develop` hidup sejak 6 September 2026; `staging` **belum ada** | Empat cabang hidup sesuai `CD-03` | `staging` — `PR-00-18` |
+| `feature/*` → `develop` → `staging` → `main` | `CD-03` | `main` dan `develop` hidup sejak 6 September 2026; `staging` **belum ada** — artefak deploy-nya siap sejak `PR-00-18` | Empat cabang hidup sesuai `CD-03` | `staging` — dibuat pemilik repositori ([log §10](logs/phase-00.md)) |
 | Tidak ada dorongan langsung ke `develop`/`staging`/`main` | `BRANCHING §3` | **Ditegakkan** sejak 6 September 2026 pada `main` dan `develop` (§4) | Ketiganya terlindungi; hanya lewat PR | `staging` — `PR-00-18` |
 | Penamaan `feature/` `fix/` `hotfix/` `chore/` | `BRANCHING §2` | Dipatuhi; **satu penyimpangan**: `docs/domain-aset-bahan-m22` | Seluruh cabang bernama sesuai daftar | Pekerjaan dokumentasi memakai `chore/` |
 | Umur cabang ≤ 3 hari | `BRANCHING §1` | Tidak terukur | Terpantau saat phase berjalan | — |
@@ -58,7 +58,8 @@ lint → unit test → integration test (+ cakupan) → build image
 | SAST | `ST-01`; High/Critical → **stop** | **Berjalan** — job `sast`: **CodeQL** `security-extended`; gagal bila SARIF memuat `security-severity` ≥ 7,0 | `PR-00-17` ✅ |
 | SCA | Critical/High → **stop** (`ST-02`) | **Berjalan** — job `sca`: `dependency-review-action` (PR) + `npm audit --audit-level=high`; harian lewat `sca-harian.yml` atas `develop` dan `main`; **Dependabot** alerts & security updates menyala 15 September 2026, pemutakhiran versi lewat `.github/dependabot.yml` ke `develop` (keputusan 45, 48) | `PR-00-17` ✅ |
 | image scan | `CD-01`; HIGH/CRITICAL → **stop** | **Berjalan** — job `image-scan`: **Trivy** atas artefak job `build`, tanpa pengecualian. Runtime image tanpa npm/npx/corepack/yarn + `apk upgrade` (keputusan 47) | `PR-00-17` ✅ |
-| deploy staging → DAST → smoke test | `ST-03`, `CD-07` | Belum ada — DAST memakai **OWASP ZAP** (`SDD-SEC-11`); proxy staging **Nginx + certbot** (`SDD-INF-13`) | `PR-00-18` |
+| deploy staging → smoke test | `CD-03`, `CD-04`, `CD-07` | **Ditulis** — job `publikasi-image` (GHCR, tag SHA) dan `deploy-staging` (SSH → `deploy/staging/deploy.sh`: migration → api ×2 dengan readiness gate → worker; lalu `smoke-test.sh` dari runner) pada push ke `staging`. Terbukti pada **staging tiruan**; belum pernah berjalan pada staging nyata — cabang, environment, secret, dan VPS belum ada | `PR-00-18` ✅ (tiruan) |
+| DAST | `ST-03` | Belum ada — **OWASP ZAP** (`SDD-SEC-11`); **tidak ada PR pemilik** di rencana phase mana pun ([log §7](logs/phase-00.md)) | ⚠️ belum berpemilik |
 
 Seluruh tahap berada di `.github/workflows/ci.yml` dan dirangkum job **`CI lulus`** — satu-satunya *required status check* (`SDD-INF-12`). Job pertama menyaring jalur (`SDD-17 §5`): perubahan yang hanya menyentuh `docs/IMPLEMENTATION`, `docs/UX`, `docs/DESIGN`, atau berkas di luar pohon backend melewati uji, build, dan image scan; **`docs/PRD` dan `docs/SDD` tidak dilewati** karena uji pembanding membacanya. Setiap action dipatok ke SHA commit.
 
@@ -66,11 +67,11 @@ Seluruh tahap berada di `.github/workflows/ci.yml` dan dirangkum job **`CI lulus
 
 | Aturan | Sumber | Status |
 |---|---|---|
-| Migration job terpisah sebelum instance baru menerima trafik | `CD-04` | Target — `PR-00-18` |
+| Migration job terpisah sebelum instance baru menerima trafik | `CD-04` | Ditulis `PR-00-18` — container sekali-jalan dari image yang sama; terbukti pada staging tiruan |
 | `expand → migrate → contract`; `contract` hanya di `PR-08-11` | `CD-04`, [`DELIVERY-PLAN §6`](DELIVERY-PLAN.md) | Berlaku sejak migration pertama |
 | Image 5 rilis terakhir dipertahankan; rollback ≤ 15 menit | `CD-05` | Target — Phase 08 |
 | Deploy produksi di luar jam operasional, diumumkan H-2 | `CD-06` | Target — go-live |
-| Smoke test pasca-deploy | `CD-07` | Target — `PR-00-18` |
+| Smoke test pasca-deploy | `CD-07` | Ditulis `PR-00-18` — jalur pengiriman (live, ready, header, 404); alur kritis menyusul PR endpoint-nya |
 
 Merge ke `main` mensyaratkan seluruh gerbang rilis `GL-01`…`GL-12` (`BRANCHING §3`). Gerbang itu bersifat go-live sekali, bukan per-PR.
 

@@ -8,6 +8,7 @@
 // Yang dibangun PR-00-11 adalah kerangkanya: antrean, kunci terdistribusi, dan
 // penjadwal.
 
+import { pathToFileURL } from "node:url";
 import { getRedis } from "../shared/cache/index.js";
 import { ensurePartitions, verifyChain } from "../shared/audit/index.js";
 import { SystemClock } from "../shared/clock/index.js";
@@ -19,6 +20,7 @@ import {
 } from "../shared/events/index.js";
 import {
     HealthRegistry,
+    Logger,
     databaseCheck,
     redisCheck,
 } from "../shared/observability/index.js";
@@ -120,4 +122,23 @@ export async function bootstrap(
             clock: new SystemClock(),
         }),
     );
+}
+
+// Hanya bila berkas ini dijalankan sebagai proses (command worker pada compose
+// staging), bukan saat diimpor uji. Tanpa penjaga ini `bootstrap()` tidak pernah
+// dipanggil siapa pun dan worker tidak menyala sebagai proses — butir blocking
+// keputusan 24, ditutup PR-00-18 (SDD-SYS-08).
+if (
+    process.argv[1] !== undefined &&
+    import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+    bootstrap().catch((galat: unknown) => {
+        // Level eksplisit: LOG_LEVEL yang tidak valid bisa jadi penyebab kegagalannya.
+        new Logger({
+            clock: new SystemClock(),
+            modulBawaan: "worker",
+            level: "error",
+        }).error("Proses gagal menyala", galat);
+        process.exit(1);
+    });
 }

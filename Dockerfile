@@ -62,6 +62,13 @@ COPY --from=build --chown=app:app /app/packages/schemas/dist ./packages/schemas/
 COPY --from=build --chown=app:app /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build --chown=app:app /app/apps/api/dist ./apps/api/dist
 
+# Perkakas job migration (SDD-INF-03, keputusan 53): container sekali-jalan dari
+# image yang SAMA — `node scripts/migrate.mjs up` dengan MIGRATION_DATABASE_URL —
+# sehingga api, worker, dan skema yang dijalankannya berasal dari satu tag
+# (SDD-INF-01). dbmate ikut lewat node_modules sebagai dependensi runtime.
+COPY --from=build --chown=app:app /app/scripts/migrate.mjs ./scripts/migrate.mjs
+COPY --from=build --chown=app:app /app/apps/api/migrations ./apps/api/migrations
+
 USER app
 
 # TZ=UTC dipaksa di sini dan diverifikasi lagi saat startup (SDD-INF-09, INF-07).
