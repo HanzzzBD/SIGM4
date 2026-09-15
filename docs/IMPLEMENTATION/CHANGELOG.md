@@ -6,6 +6,30 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 
 ---
 
+## 15 September 2026 — peninjau kedua pada `CODEOWNERS`; tinjauan wajib di `develop`
+
+Tidak ada TBD, requirement, maupun business rule yang berubah.
+
+Butir "Pemilik `CODEOWNERS`" yang sapuan ketiga (6 September 2026) tinggalkan sebagai bergantung pihak luar **ditutup**: pemilik produk menetapkan `@PM-Codexpert` (PM, kolaborator berakses `write`) sebagai peninjau. Dengan dua pemilik, dua setelan tinjauan yang ditunda di `GITHUB-CI-STATE §4` dapat dinyalakan tanpa mengunci repositori — di `develop`.
+
+### Dua temuan saat menyalakannya
+
+| Temuan | Akibat |
+|---|---|
+| **Baris spesifik `CODEOWNERS` mengalahkan `*`.** [#35](https://github.com/HanzzzBD/SIGM4/pull/35) hanya menambahkan `@PM-Codexpert` pada `*`; sembilan baris lain tetap berisi `@HanzzzBD` saja | Setiap PR `@HanzzzBD` yang menyentuh migration, `shared/auth`, `shared/audit`, `m10`, `m07`, `.github/`, `docs/PRD`, `docs/SDD`, atau `packages/schemas` tidak akan pernah dapat digabungkan. `@PM-Codexpert` kini dicantumkan pada **setiap** baris |
+| **GitHub membaca `CODEOWNERS` dari cabang tujuan.** `main` masih memuat versi satu-pemilik sampai isi `develop` dipromosikan | Code Owners review di `main` tetap ⏸ **ditunda**; menyalakannya sekarang mengunci setiap PR `@HanzzzBD` ke `main` |
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `.github/CODEOWNERS` | `@PM-Codexpert` pada seluruh baris; catatan pemilik ditulis ulang |
+| `GITHUB-CI-STATE.md` §4, §6 | Code Owners review + minimal 1 approval ✅ di `develop`; `main` ditunda dengan alasan tertulis; butir pemilik `CODEOWNERS` diganti butir tinjauan wajib `main` |
+| `logs/phase-00.md` §1, §4 | Pelaksanaan dan cabang `chore/` di luar rencana tercatat |
+
+**Akibat bagi alur kerja:** setiap PR ke `develop` kini wajib disetujui satu code owner selain penulisnya. Total PR tetap **163**.
+
+
 ## 6 September 2026 — sapuan ketiga: butir menggantung di luar keputusan stack
 
 **Status TBD: 13 terbuka · 42 tertutup** — A (0) · B (13) · C (0) · D (0). Satu TBD dibuka & ditutup pada hari yang sama (`TBD-SYS-A`). Tidak ada requirement, business rule, maupun ambang yang berubah.
