@@ -17,7 +17,7 @@ const showAsset = defineRoute({
     method: "GET",
     path: "/assets/:id",
     permission: "asset.view",
-    rateLimitClass: "read",
+    rateLimitClass: "default",
     module: "m04-assets",
     summary: "Detail aset",
     params: z.object({ id: z.coerce.number().int().positive() }),
@@ -28,7 +28,7 @@ const createReservation = defineRoute({
     method: "POST",
     path: "/reservations",
     permission: "reservation.create",
-    rateLimitClass: "write",
+    rateLimitClass: "default",
     module: "m07-reservation-room",
     idempotent: true,
     body: z.object({ room_id: z.number() }),
@@ -39,7 +39,7 @@ const login = defineRoute({
     method: "POST",
     path: "/auth/login",
     public: true,
-    rateLimitClass: "auth",
+    rateLimitClass: "login",
     module: "m01-auth",
     body: z.object({ email: z.string(), password: z.string() }),
     response: z.object({ ok: z.boolean() }),
@@ -82,7 +82,7 @@ describe("buildOpenApiDocument", () => {
     it("membawa permission sebagai ekstensi — sumber matriks SEC-T-01 tetap terbaca", () => {
         const op = dokumen(showAsset).paths["/api/v1/assets/{id}"]!["get"]!;
         expect(op["x-permission"]).toBe("asset.view");
-        expect(op["x-rate-limit-class"]).toBe("read");
+        expect(op["x-rate-limit-class"]).toBe("default");
     });
 
     it("route ber-permission mengiklankan 401 dan 403", () => {
@@ -137,7 +137,7 @@ describe("buildOpenApiDocument", () => {
         const cacat = {
             method: "GET",
             path: "/assets",
-            rateLimitClass: "read",
+            rateLimitClass: "default",
             module: "m04-assets",
             response: AssetSchema,
         } as unknown as RouteDefinition;

@@ -26,7 +26,7 @@ Otorisasi berada di [SDD-03](03-authorization.md); autentikasi di [SDD-04](04-au
 | **SDD-SEC-01** | Enkripsi *at-rest* memakai **enkripsi tingkat volume/penyimpanan**, bukan enkripsi kolom aplikasi — kecuali dua field yang dikecualikan di bawah. |
 | **SDD-SEC-02** | Dua field dienkripsi di **tingkat aplikasi** dengan kunci terpisah: `users.totp_secret_enc` dan `vault` kredensial pihak ketiga. Alasan pada §3. |
 | **SDD-SEC-03** | Header keamanan disetel oleh **middleware aplikasi**, bukan hanya reverse proxy — agar berlaku sama di semua lingkungan. |
-| **SDD-SEC-04** | CSP disusun **tanpa `unsafe-inline`**; skrip dan gaya memakai *nonce* per permintaan. |
+| **SDD-SEC-04** | CSP disusun **tanpa `unsafe-inline`**. Respons dinamis API memakai *nonce* per permintaan; halaman web — aset statis (`SDD-FE-14`) — memakai `'self'` ditambah **hash sha256** yang dihitung saat *build* bagi setiap skrip atau gaya inline (keputusan pemilik produk, 15 September 2026). |
 | **SDD-SEC-05** | Rate limit diimplementasikan sebagai **sliding window di Redis**, dengan kelas berbeda per kelompok endpoint (`NFR-S-07`). |
 | **SDD-SEC-06** | Pemindaian dependensi, SAST, dan pemindaian image adalah **gerbang pipeline**, bukan laporan pasca-rilis (`CD-02`). |
 | **SDD-SEC-07** | Matriks uji otorisasi (`SEC-T-01`) **digenerate** dari registri route, bukan ditulis tangan. |
@@ -52,7 +52,7 @@ Password **tidak** masuk daftar ini karena sudah di-hash Argon2id (`SDD-SESS-01`
 
 **SDD-SEC-03 — header di aplikasi.** Menyetel header keamanan hanya di Nginx berarti lingkungan pengembangan dan staging berjalan tanpanya, dan celah baru ditemukan saat pentest menjelang rilis. Middleware aplikasi membuat perilaku sama di mana pun, dan proxy tetap boleh menambah HSTS di lapisannya.
 
-**SDD-SEC-04 — CSP tanpa `unsafe-inline`.** `NFR-S-11` mewajibkan CSP. CSP dengan `unsafe-inline` praktis tidak menahan XSS — ia hanya memberi rasa aman. Nonce per permintaan menuntut sedikit kerja pada *build* frontend, dan itu harga yang wajar.
+**SDD-SEC-04 — CSP tanpa `unsafe-inline`.** `NFR-S-11` mewajibkan CSP. CSP dengan `unsafe-inline` praktis tidak menahan XSS — ia hanya memberi rasa aman. Nonce hanya dapat dibawa respons yang dirakit per permintaan, yaitu respons API. Web disajikan sebagai berkas statis (`SDD-16 §4.2`), sehingga bukti keaslian inline-nya dihitung sekali saat *build* sebagai hash — tetap tanpa `unsafe-inline`, dan tetap dapat di-*cache* CDN.
 
 **SDD-SEC-07 — matriks uji digenerate.** `SEC-T-01` menuntut pengujian setiap endpoint × 7 role × (data sendiri / data orang lain). Ditulis tangan, itu ratusan kasus yang akan tertinggal saat endpoint baru ditambah. Karena setiap route sudah mendeklarasikan permission-nya (`SDD-AUTH-01`), matriksnya dapat dihasilkan — dan endpoint baru otomatis ikut teruji.
 
@@ -105,6 +105,10 @@ X-Robots-Tag              : noindex, nofollow      # halaman publik QR saja
 | `qr-print` | 5/jam | user | Redis |
 | `chat` | 10/menit | user | Redis |
 | `upload` | 60/jam | user | Redis |
+
+Kelas `login` hanya menghitung **percobaan gagal** pada kedua sumbunya — login yang berhasil tidak mengurangi jatah, sehingga satu jaringan sekolah di balik satu IP publik tidak saling mengunci (keputusan pemilik produk, 15 September 2026).
+
+Kelas berkunci `user` memakai IP klien bila permintaan belum terautentikasi — probe publik dan seluruh trafik sebelum autentikasi ada (keputusan pemilik produk, 14 September 2026).
 
 Header `X-RateLimit-*` selalu disertakan. Redis tidak tersedia → *fail open* untuk kelas non-keamanan, *fail closed* untuk `login` (yang penghitung akunnya di PostgreSQL dan tetap berjalan).
 
@@ -194,7 +198,7 @@ Residensi karena itu bukan pembatasan tambahan atas arsitektur yang sudah jadi, 
 
 ## 5. Konsekuensi
 
-- CSP tanpa `unsafe-inline` mengharuskan *build* frontend menyuntikkan nonce; pustaka pihak ketiga yang menulis gaya inline harus dihindari atau dibungkus.
+- CSP tanpa `unsafe-inline` mengharuskan *build* web menghitung hash setiap skrip/gaya inline dan menuliskannya ke kebijakan CSP yang disajikan bersama aset statis; pustaka pihak ketiga yang menyisipkan tag `<style>` saat runtime harus dihindari atau dibungkus.
 - Enkripsi aplikasi pada secret TOTP menjadikan kunci itu artefak paling kritis di sistem: kehilangannya memaksa pendaftaran ulang 2FA seluruh role sensitif.
 - Matriks uji tergenerate berarti jumlah kasus uji tumbuh otomatis; waktu CI perlu dipantau seiring bertambahnya endpoint.
 - Pentest sebagai gerbang rilis (`GL-04`) memerlukan penjadwalan pihak ketiga pada M6 — ini dependensi eksternal pada jadwal, bukan tugas tim.

@@ -7,8 +7,15 @@
 
 import type { ZodType } from "zod";
 
-/** Kelas rate limit (`NFR-S-07`). Kelasnya sendiri disetel `PR-00-15`. */
-export type RateLimitClass = "auth" | "write" | "read" | "export" | "chat";
+/** Kelas rate limit — nama dan batasnya milik tabel `SDD-13 §4.3` (`NFR-S-07`). */
+export type RateLimitClass =
+    | "default"
+    | "login"
+    | "public-asset"
+    | "export"
+    | "qr-print"
+    | "chat"
+    | "upload";
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 

@@ -105,12 +105,12 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
 |---|---|:---:|:---:|---|---|---|
 | `PR-02-01` | Hash password Argon2id + kebijakan kata sandi | S | S | Ph01 | `NFR-S-01`, `SDD-SESS-01` | Parameter Argon2id sesuai `SDD-SESS-01` |
-| `PR-02-02` | Login + akses token EdDSA + rotasi refresh token | L | L | 01 | `FR-01.1`, `SDD-SESS-02/03/04` | Refresh dipakai ulang → seluruh rantai dicabut |
-| `PR-02-03` | Penguncian akun + `NT-40` + audit percobaan gagal | M | M | 02 | `FR-01.1 A2`, `BR-070` `BR-070a` | 5 gagal → kunci; pesan galat tidak membocorkan keberadaan akun |
+| `PR-02-02` | Login + akses token EdDSA + rotasi refresh token | L | L | 01 | `FR-01.1`, `SDD-SESS-02/03/04`, `NFR-S-07` | Refresh dipakai ulang → seluruh rantai dicabut; `POST /auth/login` berkelas limit `login`, yang hanya menghitung percobaan gagal (`SDD-13 §4.3`) |
+| `PR-02-03` | Penguncian akun + `NT-40` + audit percobaan gagal | M | M | 02 | `FR-01.1 A2`, `BR-070` `BR-070a`, `SDD-SESS-06/07`, `NFR-S-07`, `SEC-T-06` | 5 gagal → kunci; pesan galat tidak membocorkan keberadaan akun; sumbu akun (PostgreSQL) dan sumbu IP (Redis) login aktif bersamaan, keduanya hanya menghitung percobaan gagal |
 | `PR-02-04` | Logout + pencabutan sesi + daftar perangkat | M | M | 02 | `FR-01.2`, `SDD-SESS-06` | Token tercabut ditolak ≤ 60 detik |
 | `PR-02-05` | Lupa & reset password (token sekali pakai) | M | M | 02 | `FR-01.3`, `NT-41` | Respons seragam untuk email ada/tidak ada |
 | `PR-02-06` | Ganti password + kelola profil + pencabutan sesi lain | S | S | 04 | `FR-01.4` | Ganti password mencabut sesi lain |
-| `PR-02-07` | 2FA TOTP: pendaftaran, verifikasi, kode pemulihan | L | L | 02 | `FR-01.5`, `SDD-SESS-07/08/09` | Role sensitif tidak dapat melewati 2FA |
+| `PR-02-07` | 2FA TOTP: pendaftaran, verifikasi, kode pemulihan | L | L | 02 | `FR-01.5`, `SDD-SESS-08/09` | Role sensitif tidak dapat melewati 2FA |
 | `PR-02-08` | Break-glass CLI + jejak audit wajib | M | M | 07 | `FR-01.6`, `BR-070c` | Setiap pemakaian menghasilkan alarm & entri log |
 | `PR-02-09` | Middleware otorisasi + penyaringan field per permission | M | M | Ph01 | `PM-02` `PM-03`, `SDD-AUTH-01/05/06` | Uji otorisasi tergenerate mencakup 100% route |
 | `PR-02-10` | Skema `assets`, `asset_categories`, `asset_condition_history` | M | M | Ph01 | `FR-04.1`, `SDD-DB-04` | `procurement_id` ada, nullable, tanpa FK aktif ke M-14 |

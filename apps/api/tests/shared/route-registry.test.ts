@@ -22,7 +22,7 @@ const routeSah = defineRoute({
     method: "GET",
     path: "/assets/:id",
     permission: "asset.view",
-    rateLimitClass: "read",
+    rateLimitClass: "default",
     module: "m04-assets",
     params: z.object({ id: z.coerce.number().int().positive() }),
     response: OkSchema,
@@ -32,7 +32,7 @@ const routePublik = defineRoute({
     method: "POST",
     path: "/auth/login",
     public: true,
-    rateLimitClass: "auth",
+    rateLimitClass: "login",
     module: "m01-auth",
     body: z.object({ email: z.string(), password: z.string() }),
     response: OkSchema,
@@ -47,7 +47,7 @@ const routePublik = defineRoute({
 defineRoute({
     method: "GET",
     path: "/assets",
-    rateLimitClass: "read",
+    rateLimitClass: "default",
     module: "m04-assets",
     response: OkSchema,
 });
@@ -58,7 +58,7 @@ defineRoute({
     permission: "asset.view",
     // @ts-expect-error — `permission` dan `public` saling meniadakan
     public: true,
-    rateLimitClass: "read",
+    rateLimitClass: "default",
     module: "m04-assets",
     response: OkSchema,
 });
@@ -68,7 +68,7 @@ defineRoute({
     method: "GET",
     path: "/assets",
     permission: "asset.view",
-    rateLimitClass: "read",
+    rateLimitClass: "default",
     module: "m04-assets",
 });
 
@@ -90,7 +90,7 @@ function routeCacat(patch: Record<string, unknown>): RouteDefinition {
     return {
         method: "GET",
         path: "/assets",
-        rateLimitClass: "read",
+        rateLimitClass: "default",
         module: "m04-assets",
         response: OkSchema,
         ...patch,

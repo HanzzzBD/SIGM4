@@ -14,7 +14,11 @@ import {
 } from "../../src/api/health.js";
 import { createApp, registry } from "../../src/api/index.js";
 import { buildOpenApiDocument } from "../../src/api/openapi.js";
-import { HealthRegistry } from "../../src/shared/observability/index.js";
+import { FixedClock } from "../../src/shared/clock/index.js";
+import {
+    HealthRegistry,
+    Logger,
+} from "../../src/shared/observability/index.js";
 import type {
     CheckResult,
     DependencyName,
@@ -30,6 +34,27 @@ function health(
             probe: () => Promise.resolve({ status: s }),
         })),
     );
+}
+
+/** Aplikasi dengan limiter yang selalu meloloskan — rate limit diuji di berkasnya sendiri. */
+function aplikasi(h: HealthRegistry) {
+    return createApp({
+        health: h,
+        limiter: {
+            hit: () =>
+                Promise.resolve({
+                    lolos: true,
+                    batas: 100,
+                    sisa: 99,
+                    resetDetik: 60,
+                }),
+        },
+        security: { objectStorageOrigin: "http://minio:9000" },
+        logger: new Logger({
+            clock: new FixedClock(new Date("2026-09-14T00:00:00Z")),
+            tulis: () => undefined,
+        }),
+    });
 }
 
 const terbuka: Server[] = [];
@@ -58,7 +83,7 @@ describe("sigm4-api — /api/v1/health/*", () => {
     } as const;
 
     it("live → 200", async () => {
-        const url = await buka(createApp(health({ database: "down" })));
+        const url = await buka(aplikasi(health({ database: "down" })));
         const res = await fetch(`${url}/api/v1/health/live`);
         expect(res.status).toBe(200);
         expect(await res.json()).toEqual({
@@ -69,13 +94,13 @@ describe("sigm4-api — /api/v1/health/*", () => {
     });
 
     it("ready → 200 saat llm dan fcm down (acceptance PR-00-14)", async () => {
-        const url = await buka(createApp(health(siap)));
+        const url = await buka(aplikasi(health(siap)));
         const res = await fetch(`${url}/api/v1/health/ready`);
         expect(res.status).toBe(200);
     });
 
     it("ready → 503 saat redis down", async () => {
-        const url = await buka(createApp(health({ ...siap, redis: "down" })));
+        const url = await buka(aplikasi(health({ ...siap, redis: "down" })));
         const res = await fetch(`${url}/api/v1/health/ready`);
         expect(res.status).toBe(503);
         expect(await res.json()).toMatchObject({
@@ -85,7 +110,7 @@ describe("sigm4-api — /api/v1/health/*", () => {
     });
 
     it("/health ringkasan TIDAK terpasang tanpa middleware permission (PM-02) → 404", async () => {
-        const url = await buka(createApp(health(siap)));
+        const url = await buka(aplikasi(health(siap)));
         const res = await fetch(`${url}/api/v1/health`);
         expect(res.status).toBe(404);
         expect(await res.text()).not.toMatch(/database|llm/);

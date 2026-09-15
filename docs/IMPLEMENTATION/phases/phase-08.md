@@ -95,7 +95,7 @@ Keluaran phase ini bukan kode, melainkan **keputusan bahwa sistem boleh dipakai*
 | `PR-08-01` | Harness uji beban + skenario 150 concurrent user | L | L | Ph07 | `GL-03`, `SDD-PERF-05` | Skenario mencerminkan pemakaian nyata, bukan satu endpoint |
 | `PR-08-02` | Optimasi hasil uji beban — batch temuan | M | M | 01 | Bab 9.1 | Setiap optimasi menunjuk angka sebelum/sesudah |
 | `PR-08-03` | Penetapan parameter operasional dari pengukuran (TBD kelompok B) | M | M | 01 | `TBD-AVL-C/D`, `TBD-PERF-A`, `TBD-EVT-A` | Tiap nilai punya dasar pengukuran, bukan tebakan |
-| `PR-08-04` | Pengerasan keamanan pra-pentest | M | M | Ph07 | `SDD-SEC-04/05/06`, `NFR-S-07` | Pemindaian otomatis bersih sebelum penguji manusia masuk |
+| `PR-08-04` | Pengerasan keamanan pra-pentest | M | M | Ph07 | `SDD-SEC-04/05/06`, `NFR-S-07` | Pemindaian otomatis bersih sebelum penguji manusia masuk; CSP halaman web tanpa `unsafe-inline` — `'self'` + hash sha256 build-time (`SDD-SEC-04`) |
 | `PR-08-05` | Penutupan temuan pentest — batch 1 | M | M | pentest | `GL-04`, `ST-04` | Nol temuan High/Critical terbuka |
 | `PR-08-06` | Penutupan temuan pentest — batch 2 | M | M | 05 | `GL-04` | Verifikasi ulang oleh penguji |
 | `PR-08-07` | Backup terverifikasi + skrip pemulihan | M | M | Ph00 | `BR-DR-01` … `BR-DR-04` | Pemulihan diuji dari backup nyata, bukan asumsi |
