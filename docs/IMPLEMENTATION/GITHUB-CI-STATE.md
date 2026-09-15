@@ -76,7 +76,7 @@ Merge ke `main` mensyaratkan seluruh gerbang rilis `GL-01`…`GL-12` (`BRANCHING
 
 ## 4. Yang harus disetel manual di GitHub
 
-Branch protection **tidak dapat diatur lewat berkas**. Daftar berikut menerjemahkan `BRANCHING §3` dan `CD-01`/`CD-02` menjadi setelan yang perlu dinyalakan pada Settings → Branches. Belum satupun aktif.
+Branch protection **tidak dapat diatur lewat berkas**. Daftar berikut menerjemahkan `BRANCHING §3` dan `CD-01`/`CD-02` menjadi setelan yang perlu dinyalakan pada Settings → Branches. Status tiap baris diverifikasi dari API, bukan dari ingatan.
 
 | Cabang | Setelan | Aturan yang ditegakkan | Status |
 |---|---|---|---|
@@ -86,11 +86,12 @@ Branch protection **tidak dapat diatur lewat berkas**. Daftar berikut menerjemah
 | `main`, `develop` | Do not allow bypassing (termasuk admin) | `BRANCHING §3` — "hanya bermanfaat bila tidak pernah ada pengecualian" | ✅ **aktif** |
 | `main`, `develop` | Require conversation resolution | `BRANCHING §4` — komentar terklasifikasi tidak menggantung | ✅ **aktif** |
 | `main`, `develop` | Dismiss stale approvals | `BRANCHING §3` | ✅ **aktif** |
-| `develop` | Require review from Code Owners | `BRANCHING §3.1` — tinjauan arsitek wajib | ⚠️ **nonaktif menurut API** — tercatat aktif 15 September 2026, tetapi pembacaan API pada hari yang sama setelah #37 tergabung menunjukkan `require_code_owner_reviews: false` ([log §7](logs/phase-00.md)) |
+| `develop` | Require review from Code Owners | `BRANCHING §3.1` — tinjauan arsitek wajib | ✅ **aktif** — dinyalakan kembali 15 September 2026 bersama required status check, terverifikasi API `require_code_owner_reviews: true`. Sempat terbaca nonaktif setelah #37 tergabung ([log §7](logs/phase-00.md)) |
 | `main`, `staging` | Require review from Code Owners | `BRANCHING §3.1` | ⏸ **ditunda** — `main`: lihat catatan di bawah; `staging` menunggu `PR-00-18` |
-| `develop` | Minimal 1 approval | `BRANCHING §3` | ⚠️ **nonaktif menurut API** — `required_approving_review_count: 0` (idem) |
-| ketiganya | Require status checks to pass — check **`CI lulus`** | `CD-01`, `CD-02`, `SDD-INF-12` | ⏳ `develop`: workflow terbukti hijau pada PR #38, pemasangan menunggu pemilik repositori (keputusan 49) · `main`/`staging`: menyusul |
-| ketiganya | Require branches to be up to date before merging | Mencegah penggabungan di atas basis usang | ⏳ menunggu `PR-00-17` — GitHub hanya menyediakannya **bersama** required status check |
+| `develop` | Minimal 1 approval | `BRANCHING §3` | ✅ **aktif** — dinyalakan kembali 15 September 2026, terverifikasi API `required_approving_review_count: 1` |
+| `develop` | Require status checks to pass — check **`CI lulus`** (GitHub Actions, `app_id` 15368) | `CD-01`, `CD-02`, `SDD-INF-12` | ✅ **aktif** 15 September 2026 — dipasang pemilik repositori setelah `CI lulus` hijau pada PR #38 (keputusan 49); terverifikasi API. PR #38 sendiri langsung berstatus `BLOCKED` · `REVIEW_REQUIRED` |
+| `develop` | Require branches to be up to date before merging | Mencegah penggabungan di atas basis usang | ✅ **aktif** 15 September 2026 — `strict: true` |
+| `main`, `staging` | Require status checks to pass + up to date | idem | ⏳ `main`: menyusul bersama *Code Owners review*-nya (terverifikasi API: belum ada check) · `staging`: `PR-00-18` |
 | `develop` | Allow squash merge **saja** | `BRANCHING §3` — satu PR satu commit | ❌ **tidak dapat diberkaskan maupun disetel** — lihat catatan di bawah |
 | `staging`, `main` | Allow merge commit **saja** | `BRANCHING §3` — batas antar-phase tetap terbaca | ❌ idem |
 
@@ -100,7 +101,7 @@ Branch protection **tidak dapat diatur lewat berkas**. Daftar berikut menerjemah
 
 **Metode merge per-cabang tidak dapat ditegakkan GitHub.** `allow_squash_merge`, `allow_merge_commit`, dan `allow_rebase_merge` adalah setelan **tingkat repositori**, bukan tingkat cabang — sehingga "squash saja untuk `develop`" dan "merge commit saja untuk `main`/`staging`" tidak dapat berdiri bersamaan sebagai setelan. Ketiganya kini aktif di repositori, dan `BRANCHING §3` pada titik ini berlaku sebagai **disiplin peninjau**, bukan sebagai pagar. Menonaktifkan salah satunya justru akan melanggar baris yang lain.
 
-Per 6 September 2026 proteksi **dinyalakan** pada `main` dan `develop` lewat `gh api`, dan hasilnya diverifikasi kembali dari API. Per 15 September 2026 `develop` memperoleh dua setelan tinjauan, diverifikasi dengan cara yang sama. `staging` menunggu `PR-00-18`. `develop` kini delapan setelan aktif, `main` enam; *Code Owners review* `main` ditunda, dua setelan menunggu `PR-00-17`, dan dua tidak dapat disetel sama sekali — rinciannya pada tabel di atas.
+Per 6 September 2026 proteksi **dinyalakan** pada `main` dan `develop` lewat `gh api`, dan hasilnya diverifikasi kembali dari API. Per 15 September 2026 `develop` memperoleh dua setelan tinjauan, lalu — bersama `PR-00-17` — required status check `CI lulus` dan *branch up to date*; pembacaan API terakhir hari itu mengonfirmasi keempatnya aktif. `staging` menunggu `PR-00-18`. `develop` kini **sepuluh** setelan aktif, `main` enam; *Code Owners review* dan status check `main` ditunda, dan dua setelan tidak dapat disetel sama sekali — rinciannya pada tabel di atas.
 
 ## 5. Berkas governance yang sudah ada
 
