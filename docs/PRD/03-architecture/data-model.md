@@ -110,6 +110,7 @@ Data acuan bernilai tetap yang digunakan sebagai enumerasi dan dropdown.
 | **Prioritas** | Rendah, Sedang, Tinggi, Mendesak |
 | **Jenis Hari Libur** | Nasional, Sekolah, Cuti Bersama |
 | **Hasil Aktivitas** | Sukses, Gagal |
+| **Cakupan Data Permission** | All, Own, Assigned, Restricted |
 
 ## 11.4 Kebijakan Retensi Data
 

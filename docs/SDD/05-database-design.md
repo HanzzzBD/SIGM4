@@ -39,6 +39,7 @@ Skema khusus `booking_slots`, `idempotency_keys`, dan `document_counters` didefi
 | **SDD-DB-14** | Pengurangan saldo bahan mengunci baris `material_balances` dengan `SELECT … FOR UPDATE` sebelum memeriksa kecukupan. Larangan saldo negatif (`BR-083`) ditegakkan **CHECK constraint + row lock**, bukan hanya validasi service. |
 | **SDD-DB-12** | Berkas migration §4.5 dijalankan **dbmate** — runner SQL siap pakai, bukan runner buatan sendiri, bukan pula perkakas ber-DSL JavaScript. Dua kemampuan bersifat wajib, bukan preferensi: **opt-out transaksi per-migration** dan *advisory lock*. Keduanya wajib bagi **jalur migration**, bukan harus berasal dari runner-nya: verifikasi `PR-00-05` menunjukkan dbmate memenuhi yang pertama dan **tidak memiliki** yang kedua, sehingga advisory lock dipegang pembungkus milik kita yang memanggil dbmate (`scripts/migrate.mjs`). Pembagian ini ditetapkan setelah pembuktian, bukan sebelumnya. |
 | **SDD-DB-15** | Akses data memakai **Kysely di atas driver `pg`** — *query builder* ber-tipe yang **tidak memiliki skema**. Berkas `.sql` §4.3/§4.4 tetap satu-satunya sumber skema (`SDD-DB-08`); tipe tabel Kysely adalah cerminan yang diturunkan dari basis data, bukan pendefinisinya. Fitur PostgreSQL yang ditetapkan berkas ini — *exclusion constraint* (`CI-01`), `tstzrange`, native enum (`SDD-DB-02`), partial unique index (`SDD-DB-05`), `SELECT … FOR UPDATE` (`SDD-DB-14`), tabel terpartisi (`SDD-DB-07`) — ditulis sebagai SQL mentah lewat *template* `sql` tanpa kehilangan tipe. ORM yang memiliki skema sendiri tidak dipakai. |
+| **SDD-DB-16** | Scope data permission (Lampiran C.1) disimpan **per baris `role_permissions`** sebagai native enum `permission_scope`, bukan diturunkan dari kode saat runtime. Nilai bawaannya ditetapkan tafsir [`SDD-03 §4.8`](03-authorization.md). Lolos uji tiga syarat `SDD-AUTH-11`: ia menyimpan scope yang C.1 sudah definisikan, tanpa menambah permission maupun perilaku. |
 
 ---
 
@@ -211,8 +212,46 @@ Aturannya: satu rilis tidak boleh memuat expand dan contract untuk kolom yang sa
 | 79 kode permission | [Lampiran C](../PRD/00-foundation/roles-permissions.md) | `ON CONFLICT (kode) DO UPDATE` |
 | 7 role bawaan + matriks | Bab 5 & Bab 18 | idem |
 | Aturan approval bawaan | `RE-06` — konstanta kode, bukan baris | tidak di-seed (lihat SDD-APR §4.3) |
-| `work_days` Senin–Sabtu | [Lampiran E.2](../PRD/00-foundation/conventions.md) | idem |
-| Parameter sistem bawaan | `FR-20.1` | idem |
+| `work_days` Senin–Sabtu | [Lampiran E.2](../PRD/00-foundation/conventions.md) | `ON CONFLICT (hari) DO UPDATE` |
+| Parameter sistem bawaan | `FR-20.1` — katalog kunci & nilai bawaan ditetapkan bersama tabelnya di `PR-01-10` | idem |
+
+Seed permission, role, matriks, dan `work_days` lahir di `PR-00-16`; parameter sistem menyusul `PR-01-10` karena tabel `system_settings` dan validasi rentangnya milik PR itu.
+
+### 4.7 Skema RBAC
+
+```sql
+-- Lampiran C.1 — nilai ditulis sebagai kode teknis (SDD-DB-02, SDD-DB-16)
+CREATE TYPE permission_scope AS ENUM ('ALL', 'OWN', 'ASSIGNED', 'RESTRICTED');
+
+CREATE TABLE roles (
+    id        bigserial PRIMARY KEY,
+    kode      text    NOT NULL,        -- R-01 … R-07 untuk role bawaan (Bab 5)
+    nama      text    NOT NULL,
+    deskripsi text,
+    is_system boolean NOT NULL DEFAULT false,
+    CONSTRAINT roles_kode_uq UNIQUE (kode),
+    CONSTRAINT roles_nama_uq UNIQUE (nama)
+);
+
+CREATE TABLE permissions (
+    id        bigserial PRIMARY KEY,
+    kode      text    NOT NULL,        -- {domain}.{aksi} (C.1)
+    modul     text    NOT NULL,
+    aksi      text    NOT NULL,
+    deskripsi text    NOT NULL,
+    inti      boolean NOT NULL DEFAULT false,   -- 🔒 (FR-02.2 A1, SDD-AUTH-10)
+    CONSTRAINT permissions_kode_uq UNIQUE (kode)
+);
+
+CREATE TABLE role_permissions (
+    role_id       bigint           NOT NULL REFERENCES roles(id),
+    permission_id bigint           NOT NULL REFERENCES permissions(id),
+    scope         permission_scope NOT NULL,     -- tanpa bawaan (SDD-AUTH-02)
+    PRIMARY KEY (role_id, permission_id)
+);
+```
+
+`permissions` adalah master data acuan milik sistem, dan `role_permissions` relasi — keduanya dikecualikan dari kolom baku §4.2. `roles` adalah entitas domain (`FR-02.2 A2` membuat role kustom): kolom baku §4.2 beserta trigger `updated_at`-nya ditambahkan `PR-01-01` bersama `users`, karena `created_by` merujuk `users(id)`. `role_version` (`SDD-AUTH-04`) ditambahkan `PR-01-04`.
 
 ### 4.8 Saldo bahan — ledger dan agregat
 

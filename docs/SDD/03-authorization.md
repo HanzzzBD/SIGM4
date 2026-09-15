@@ -155,12 +155,12 @@ const MATERIAL_FIELDS = {
 };
 ```
 
-Yang tetap dijaga adalah **scope baris** pada permintaan bahan: pemohon hanya melihat permintaannya sendiri kecuali memiliki scope `all`.
+Yang tetap dijaga adalah **scope baris** pada permintaan bahan: pemohon hanya melihat permintaannya sendiri kecuali memiliki scope `all`. Scope itu dibaca dari **`material.request`**, bukan dari `material.view`: Bab 18 memberi Teknisi, Guru, dan Staf 🔍 — bukan 🟡 — pada saldo dan kartu stok, sehingga `material.view` mereka ber-scope `all` (§4.8). Pemegang `material.view` tanpa `material.request` (Pimpinan) melihat seluruh permintaan secara baca.
 
 ```ts
-switch (ctx.scopeOf('material.view')) {
-  case 'all': break;                                              // Admin, Petugas, Pimpinan
-  case 'own': qb.where('material_requests.pemohon_id', ctx.userId); break;
+// BR-074 — pemohon ber-scope own hanya melihat permintaannya sendiri
+if (ctx.can('material.request') && ctx.scopeOf('material.request') === 'own') {
+  qb.where('material_requests.pemohon_id', ctx.userId);           // Teknisi, Guru, Staf
 }
 ```
 
@@ -217,6 +217,44 @@ if (role.isAdministrator && removed.some(p => CORE_PERMISSIONS.has(p))) {
   throw new DomainError('CORE_PERMISSION_LOCKED');
 }
 ```
+
+### 4.8 Matriks bawaan — tafsir Lampiran C
+
+Seed role bawaan (`SDD-DB-10`, `SDD-05 §4.7`) memberi setiap role permission beserta scope-nya. Kolom "Role bawaan pemilik" Lampiran C dibaca apa adanya bila berisi nama role: `Nama` → scope `all`, `Nama(view)` → `all`, ``Nama(`own`)`` / `` `assigned` `` / `` `restricted` `` → scope tersebut. Tabel pertama memetakan nama singkatnya ke role Bab 5.
+
+| Nama singkat | Role |
+|---|---|
+| Admin | `R-01` |
+| Petugas | `R-02` |
+| Pimpinan | `R-03` |
+| Teknisi | `R-04` |
+| Guru | `R-05` |
+| Staf | `R-06` |
+| Siswa | `R-07` |
+
+Baris yang kolomnya **bukan** daftar role, atau yang Bab 18-nya bertanda 🟡 tanpa anotasi scope, ditafsirkan di bawah. Aturan tafsirnya satu (keputusan pemilik produk, 15 September 2026): **deskriptor non-role diselesaikan lewat Bab 18** — role bersimbol selain ❌ memperoleh permission, dan 🟡 menjadi scope selain `all` menurut tabel "Catatan cakupan" (C.1). Kolom "Tertulis di Lampiran C" wajib sama persis dengan Lampiran C; uji pembanding seed memerah bila Lampiran C berubah tanpa tafsir ini ikut disunting.
+
+| Kode | Tertulis di Lampiran C | Role bawaan (scope) | Dasar |
+|---|---|---|---|
+| `location.view` | Semua kecuali Siswa | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf | Bab 18 "Manajemen Lokasi" |
+| `asset.view` | Semua (scope berbeda) | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa(`restricted`) | Bab 18 "Inventaris Aset — lihat"; catatan "Siswa/OSIS — Inventaris & QR" |
+| `reservation.view` | Semua (scope berbeda) | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa(`restricted`) | Bab 18 "Reservasi Ruangan — lihat kalender"; catatan "Siswa/OSIS — Kalender ruangan" |
+| `reservation.cancel_own` | Semua pemohon | Admin, Petugas, Guru, Staf, Siswa | Pemegang `reservation.create` menurut Lampiran C |
+| `loan.view` | Semua (scope berbeda) | Admin, Petugas, Pimpinan, Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Peminjaman — lihat seluruh transaksi"; Teknisi ❌ |
+| `loan.extend` | Guru, Staf, Siswa, Petugas | Petugas, Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Peminjaman — ajukan perpanjangan" 🟡 |
+| `fine.view` | Semua (scope berbeda) | Admin, Petugas, Pimpinan, Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Denda — lihat seluruh"; Teknisi ❌ |
+| `approval.view` | Semua (scope berbeda) | Admin, Petugas, Pimpinan, Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Approval — lihat riwayat"; Teknisi ❌ |
+| `approval.decide` | Sesuai approval rules | Admin, Petugas, Pimpinan | Bab 18 "Approval — memutuskan"; approval rules tetap menyaring siapa yang benar-benar memutuskan |
+| `approval.delegate` | Approver aktif | Admin, Petugas, Pimpinan | Pemegang `approval.decide` |
+| `damage.create` | Semua role | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa | Bab 18 "Laporan Kerusakan — buat" |
+| `damage.view` | Semua (scope berbeda) | Admin, Petugas, Pimpinan, Teknisi(`own`), Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Laporan Kerusakan — lihat semua"; Teknisi `own` — kerusakan pada work order-nya terlihat lewat `workorder.view` |
+| `procurement.approve` | Sesuai approval rules | Admin, Petugas, Pimpinan | Bab 18 "Pengadaan — setujui" |
+| `material.request` | Admin, Petugas, Teknisi, Guru, Staf | Admin, Petugas, Teknisi(`own`), Guru(`own`), Staf(`own`) | `BR-074`; §4.3 |
+| `dashboard.view` | Semua role | Admin, Petugas, Pimpinan, Teknisi(`own`), Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Dashboard" 🟡 |
+| `notification.manage_own` | Semua role | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa | Bab 18 "Notifikasi pribadi" |
+| `chat.use` | Semua role (Siswa `restricted`) | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa(`restricted`) | Bab 18 "Chatbot AI" |
+
+Tafsir ini hanya menetapkan **bawaan**. Administrator tetap dapat menyesuaikannya lewat matriks (`FR-02.2`) sejak `PR-01-04`.
 
 ---
 

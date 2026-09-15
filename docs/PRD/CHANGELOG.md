@@ -191,3 +191,13 @@ Audit lanjutan atas frasa "biaya" yang tersisa menemukan hal yang tidak dapat di
 |---|---|
 | `SDD-10` §3 — thinking "itu **biaya** tanpa manfaat" | Kiasan atas token dan waktu yang terbuang, bukan klaim tentang tagihan. Kalimatnya sendiri sudah menyebut "menghabiskan token dan waktu" |
 | Bab 27.9 — "**Nol biaya**, terbatas kuota" | Justru pernyataan yang benar setelah tier gratis; disunting pada revisi sebelumnya |
+
+## Revisi — Kelompok "Cakupan Data Permission" pada Bab 11.3 (15 September 2026)
+
+`PR-00-16` menyimpan scope permission (Lampiran C.1) sebagai native enum per baris `role_permissions` (`SDD-DB-16`, keputusan pemilik produk). `SDD-DB-02` mewajibkan setiap himpunan nilai tetap bertipe enum, dan pola sejak `holiday_type` serta `activity_result` mendaftarkan kelompoknya di Bab 11.3.
+
+| Bagian | Perubahan |
+|---|---|
+| Bab 11.3 | Kelompok baru **Cakupan Data Permission**: All, Own, Assigned, Restricted |
+
+**Tidak ada requirement yang berubah isinya.** Keempat nilai sudah didefinisikan Lampiran C.1; yang ditambahkan hanya pendaftarannya sebagai data acuan.

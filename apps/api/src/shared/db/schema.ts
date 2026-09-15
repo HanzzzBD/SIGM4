@@ -120,6 +120,35 @@ export interface ActivityLogsTable {
     row_hash: Buffer;
 }
 
+/**
+ * `roles` (0009, PR-00-16). Kolom baku `SDD-05` §4.2 belum ada — ditambahkan
+ * `PR-01-01` bersama `users`, karena `created_by` merujuk tabel itu.
+ */
+export interface RolesTable {
+    id: Generated<string>;
+    kode: string;
+    nama: string;
+    deskripsi: string | null;
+    is_system: Generated<boolean>;
+}
+
+/** `permissions` (0009, PR-00-16). Katalog Lampiran C; `inti` = 🔒 (`SDD-AUTH-10`). */
+export interface PermissionsTable {
+    id: Generated<string>;
+    kode: string;
+    modul: string;
+    aksi: string;
+    deskripsi: string;
+    inti: Generated<boolean>;
+}
+
+/** `role_permissions` (0009, PR-00-16). Scope per baris — `SDD-DB-16`. */
+export interface RolePermissionsTable {
+    role_id: ColumnType<string, string | number, string | number>;
+    permission_id: ColumnType<string, string | number, string | number>;
+    scope: "ALL" | "OWN" | "ASSIGNED" | "RESTRICTED";
+}
+
 /** Peta nama tabel -> bentuk barisnya. Diisi bersama migration pemiliknya. */
 export interface Database {
     document_counters: DocumentCountersTable;
@@ -128,4 +157,7 @@ export interface Database {
     idempotency_keys: IdempotencyKeysTable;
     event_outbox: EventOutboxTable;
     activity_logs: ActivityLogsTable;
+    roles: RolesTable;
+    permissions: PermissionsTable;
+    role_permissions: RolePermissionsTable;
 }

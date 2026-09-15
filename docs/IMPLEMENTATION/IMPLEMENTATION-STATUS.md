@@ -1,6 +1,6 @@
 # Status Implementasi
 
-**Diperbarui:** 15 September 2026 — `PR-00-01` … `PR-00-15` tergabung ke `develop`, termasuk format ulang Prettier ([#30](https://github.com/HanzzzBD/SIGM4/pull/30)) dan tindak lanjut `PR-00-14` ([#32](https://github.com/HanzzzBD/SIGM4/pull/32)); tindak lanjut audit `PR-00-15` (keputusan 32–38) dikerjakan di `fix/PR-00-15-validasi-env-url-storage`. Audit konsistensi lintas dokumen selesai: 15 temuan, 12 keputusan pemilik produk. Proteksi cabang `main` dan `develop` aktif.
+**Diperbarui:** 15 September 2026 — `PR-00-01` … `PR-00-15` tergabung ke `develop`, termasuk format ulang Prettier ([#30](https://github.com/HanzzzBD/SIGM4/pull/30)), tindak lanjut `PR-00-14` ([#32](https://github.com/HanzzzBD/SIGM4/pull/32)), dan tindak lanjut audit `PR-00-15` ([#34](https://github.com/HanzzzBD/SIGM4/pull/34)); `PR-00-16` dikerjakan di `feature/PR-00-16-seed-rbac` (keputusan 39–43). Audit konsistensi lintas dokumen selesai: 15 temuan, 12 keputusan pemilik produk. Proteksi cabang `main` dan `develop` aktif.
 
 Berkas ini memiliki status **per phase dan per pull request**. Ia **tidak** memiliki status per requirement — itu milik [`../PRD/06-quality/traceability.md`](../PRD/06-quality/traceability.md). Dua tingkat berbeda, tanpa tumpang tindih:
 
@@ -92,7 +92,8 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-00-13` | `Done` | [#28](https://github.com/HanzzzBD/SIGM4/pull/28) · [#29](https://github.com/HanzzzBD/SIGM4/pull/29) | `AuditLogger` + `activity_logs` terpartisi + rantai hash |
 | `PR-00-14` | `Done` | [#31](https://github.com/HanzzzBD/SIGM4/pull/31) | Health endpoint (live/ready/ringkasan). Tindak lanjut `SERVICE_NOT_READY`: [#32](https://github.com/HanzzzBD/SIGM4/pull/32) |
 | `PR-00-15` | `Done` | [#33](https://github.com/HanzzzBD/SIGM4/pull/33) | Header keamanan + rate limit berjenjang, ditambah ujung rantai HTTP (`X-Request-Id`, 404, `errorMapper`) — keputusan 31. Tindak lanjut audit (keputusan 32–38): [#34](https://github.com/HanzzzBD/SIGM4/pull/34) |
-| `PR-00-16` … `PR-00-18` | `Not Started` | — | Rincian: [`phases/phase-00.md` §7](phases/phase-00.md) |
+| `PR-00-16` | `In Progress` | — | Skema RBAC + seed permission, role, matriks ber-scope, `work_days` di `feature/PR-00-16-seed-rbac`. Seed parameter sistem pindah ke `PR-01-10`, tabel `roles`/`permissions`/`role_permissions` ditarik dari `PR-01-01` — [log §3](logs/phase-00.md) |
+| `PR-00-17` … `PR-00-18` | `Not Started` | — | Rincian: [`phases/phase-00.md` §7](phases/phase-00.md) |
 
 ### Phase 01 — Master Data Independen · `Not Started`
 

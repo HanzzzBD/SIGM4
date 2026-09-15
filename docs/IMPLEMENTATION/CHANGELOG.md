@@ -6,6 +6,25 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 
 ---
 
+## 15 September 2026 — `PR-00-16` menarik skema RBAC; seed parameter sistem pindah ke `PR-01-10`
+
+Tidak ada TBD, requirement, maupun business rule baru. Keputusan pemilik produk 39–43 dicatat di [`logs/phase-00.md` §2](logs/phase-00.md).
+
+Rencana `PR-00-16` men-seed empat tabel yang baru dibuat Phase 01. Skema `roles`, `permissions`, `role_permissions` karena itu ditarik dari `PR-01-01`, dan seed parameter sistem diserahkan ke `PR-01-10` yang memiliki tabelnya.
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `phases/phase-00.md` §2, §7, §8 | Scope `PR-00-16` menjadi skema RBAC + seed permission, role, matriks ber-scope, `work_days`; kode `M` → `L`; task breakdown dilengkapi |
+| `phases/phase-01.md` §7 | `PR-01-01` menjadi `users` + kolom baku `roles`; `PR-01-10` ditambah seed parameter bawaan beserta syarat katalog kuncinya di SDD |
+| `IMPLEMENTATION-STATUS.md` | `PR-00-16` `In Progress` |
+| `logs/phase-00.md` §1, §2, §3, §7, §8, §10 | Pelaksanaan, keputusan 39–43, penyimpangan, hasil ukur, dan serah terima ke Phase 01 |
+
+Total PR tetap **163**.
+
+---
+
 ## 15 September 2026 — peninjau kedua pada `CODEOWNERS`; tinjauan wajib di `develop`
 
 Tidak ada TBD, requirement, maupun business rule yang berubah.

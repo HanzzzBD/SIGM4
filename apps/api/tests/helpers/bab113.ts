@@ -74,4 +74,5 @@ export const NAMA_TIPE: ReadonlyMap<string, string> = new Map([
     ["Prioritas", "priority_level"],
     ["Jenis Hari Libur", "holiday_type"],
     ["Hasil Aktivitas", "activity_result"],
+    ["Cakupan Data Permission", "permission_scope"],
 ]);
