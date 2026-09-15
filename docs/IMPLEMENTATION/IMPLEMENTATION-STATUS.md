@@ -91,7 +91,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-00-12` | `Done` | [#27](https://github.com/HanzzzBD/SIGM4/pull/27) | Tabel `event_outbox` + dispatcher |
 | `PR-00-13` | `Done` | [#28](https://github.com/HanzzzBD/SIGM4/pull/28) · [#29](https://github.com/HanzzzBD/SIGM4/pull/29) | `AuditLogger` + `activity_logs` terpartisi + rantai hash |
 | `PR-00-14` | `Done` | [#31](https://github.com/HanzzzBD/SIGM4/pull/31) | Health endpoint (live/ready/ringkasan). Tindak lanjut `SERVICE_NOT_READY`: [#32](https://github.com/HanzzzBD/SIGM4/pull/32) |
-| `PR-00-15` | `In Review` | — | Header keamanan + rate limit berjenjang |
+| `PR-00-15` | `In Review` | [#33](https://github.com/HanzzzBD/SIGM4/pull/33) | Header keamanan + rate limit berjenjang, ditambah ujung rantai HTTP (`X-Request-Id`, 404, `errorMapper`) — keputusan 31 |
 | `PR-00-16` … `PR-00-18` | `Not Started` | — | Rincian: [`phases/phase-00.md` §7](phases/phase-00.md) |
 
 ### Phase 01 — Master Data Independen · `Not Started`

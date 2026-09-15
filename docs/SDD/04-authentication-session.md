@@ -28,7 +28,7 @@ Otorisasi (siapa boleh apa) berada di [SDD-03](03-authorization.md). Berkas ini 
 | **SDD-SESS-04** | Rotasi refresh token memakai **rantai keluarga** (`family_id`). Pemakaian ulang token yang sudah dirotasi mencabut **seluruh keluarga** dan mencatat anomali (`NFR-S-03`). |
 | **SDD-SESS-05** | Web menyimpan token di `httpOnly; Secure; SameSite=Strict` cookie; mobile di Keychain/Keystore (`NFR-S-09`). Klien web **tidak pernah** membaca token dari JavaScript. |
 | **SDD-SESS-06** | Penghitung kegagalan login disimpan di **PostgreSQL**, bukan Redis. Penguncian akun adalah keputusan keamanan yang tidak boleh hilang saat cache di-*restart*. |
-| **SDD-SESS-07** | Rate limit login diterapkan **dua sumbu** — per akun dan per IP — sesuai `NFR-S-07`, dengan penghitung IP di Redis (boleh hilang) dan penghitung akun di PostgreSQL (tidak boleh hilang). |
+| **SDD-SESS-07** | Rate limit login diterapkan **dua sumbu** — per akun dan per IP — sesuai `NFR-S-07`, dengan penghitung IP di Redis (boleh hilang) dan penghitung akun di PostgreSQL (tidak boleh hilang). Kedua sumbu hanya menghitung **percobaan gagal** (keputusan pemilik produk, 15 September 2026). |
 | **SDD-SESS-08** | Secret TOTP dan kode cadangan disimpan **terenkripsi** dengan kunci aplikasi terpisah dari kunci JWT. Kode cadangan disimpan sebagai hash Argon2id (`BR-070c`). |
 | **SDD-SESS-09** | Verifikasi 2FA menghasilkan **klaim terpisah** pada sesi (`amr: ["pwd","otp"]`), sehingga gerbang `twoFactorVerified` (SDD-AUTH-09) memeriksa klaim, bukan tabel. |
 | **SDD-SESS-10** | *Challenge token* 2FA berumur **5 menit**, sekali pakai, dan tidak dapat dipakai sebagai access token. |

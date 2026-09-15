@@ -104,6 +104,11 @@ function tolak(res: Response, hasil?: HasilLimit): void {
     });
 }
 
+/** Respons dianggap kegagalan bila berstatus ≥ 400, kecuali 429 milik limiter sendiri. */
+function gagal(status: number): boolean {
+    return status >= 400 && status !== 429;
+}
+
 /**
  * `rateLimit(kelas)` pada rantai SDD-06 §4.2, dengan kelas dari deklarasi route.
  * Header `X-RateLimit-*` disertakan pada setiap respons route (`NFR-S-07`).
@@ -114,7 +119,7 @@ export function rateLimit(
     logger: Logger,
 ): RequestHandler {
     const kelas = route.rateLimitClass;
-    const { batas, gagalTertutup } = KELAS_LIMIT[kelas];
+    const { batas, gagalTertutup, hitung } = KELAS_LIMIT[kelas];
     return async (req, res, next) => {
         res.setHeader("X-RateLimit-Limit", batas);
         const userId = konteksSaatIni()?.userId;
@@ -125,7 +130,11 @@ export function rateLimit(
 
         let hasil: HasilLimit;
         try {
-            hasil = await limiter.hit(kelas, pemohon);
+            hasil = await limiter.hit(
+                kelas,
+                pemohon,
+                hitung === "gagal" ? "periksa" : "hit",
+            );
         } catch (galat) {
             // Redis tidak tersedia (SDD-13 §4.3, §6): `login` menolak, kelas lain
             // lolos — keduanya dengan alarm, karena perlindungannya sedang hilang.
@@ -143,10 +152,24 @@ export function rateLimit(
 
         res.setHeader("X-RateLimit-Remaining", hasil.sisa);
         res.setHeader("X-RateLimit-Reset", hasil.resetDetik);
-        if (hasil.lolos) {
-            next();
-        } else {
+        if (!hasil.lolos) {
             tolak(res, hasil);
+            return;
         }
+        if (hitung === "gagal") {
+            // Hasilnya baru diketahui setelah handler: hanya kegagalan yang dicatat
+            // (SDD-13 §4.3). Tidak atomik terhadap pemeriksaan — kegagalan yang
+            // benar-benar serentak dapat melampaui batas beberapa buah, dan sumbu
+            // akun di PostgreSQL tetap mengunci (SDD-SESS-07).
+            res.on("finish", () => {
+                if (!gagal(res.statusCode)) return;
+                limiter.hit(kelas, pemohon, "catat").catch((galat: unknown) => {
+                    logger.error("Percobaan gagal tidak dapat dicatat", galat, {
+                        kelas,
+                    });
+                });
+            });
+        }
+        next();
     };
 }

@@ -4,6 +4,7 @@ export type { HttpMethod, RateLimitClass, RouteDefinition } from "./route.js";
 export type {
     HasilLimit,
     KelasLimit,
+    ModeHit,
     Pemohon,
     RateLimiter,
 } from "./rate-limit.js";

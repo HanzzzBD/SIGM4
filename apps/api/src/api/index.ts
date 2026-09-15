@@ -5,8 +5,8 @@
 // Yang dibangun PR-00-09 adalah GERBANG bootstrap-nya: registri route divalidasi
 // sebelum apa pun berjalan, dan dokumen OpenAPI diturunkan darinya. PR-00-14
 // merakit server Express minimal agar kedua probe kesehatan dapat dipanggil;
-// PR-00-15 memasang header keamanan dan rate limit dari rantai SDD-06 §4.2.
-// Autentikasi dan permission menyusul di Phase 02 (PR-02-09).
+// PR-00-15 memasang dari rantai SDD-06 §4.2: `requestId`, header keamanan, rate
+// limit, 404, dan `errorMapper`. Autentikasi dan permission menyusul di Phase 02.
 
 import { pathToFileURL } from "node:url";
 import express from "express";
@@ -24,7 +24,8 @@ import {
 } from "../shared/observability/index.js";
 import { healthLiveRoute, healthReadyRoute, healthRouter } from "./health.js";
 import { BASE_PATH } from "./openapi.js";
-import { rateLimit, readSecurityConfig, securityHeaders } from "./security.js";
+import { awalRantai, ujungRantai } from "./chain.js";
+import { rateLimit, readSecurityConfig } from "./security.js";
 import type { SecurityConfig } from "./security.js";
 
 /** Port container — `EXPOSE 3000` pada Dockerfile (SDD-16 §4.1). */
@@ -62,13 +63,14 @@ export function createApp(deps: AppDeps): Express {
     // Satu hop: trafik produksi masuk lewat Nginx (SDD-16 §4.2), sehingga `req.ip`
     // adalah IP klien — kunci rate limit bagi permintaan tanpa pengguna.
     app.set("trust proxy", 1);
-    app.use(securityHeaders(deps.security));
+    app.use(awalRantai(deps));
     app.use(
         BASE_PATH,
         healthRouter(deps.health, (route) =>
             rateLimit(route, deps.limiter, deps.logger),
         ),
     );
+    app.use(ujungRantai(deps));
     return app;
 }
 
