@@ -18,7 +18,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 
 | Tanggal | Yang terjadi | PR terkait |
 |---|---|---|
-| 15 September 2026 | `PR-01-01` dibuka di `feature/PR-01-01-skema-users`. Sebelum migration ditulis, empat titik ternyata tidak dapat diterapkan dari docs apa adanya dan dinaikkan ke pemilik produk (keputusan 1–4): Bab 11.3 tidak mendaftarkan status pengguna, penanda 2FA berejaan tiga, akun berpassword sementara lahir sebelum hashing Argon2id tersedia, dan foto profil menuntut `stored_files` yang belum ada. | — |
+| 15 September 2026 | `PR-01-01` dibuka di `feature/PR-01-01-skema-users`. Sebelum migration ditulis, empat titik ternyata tidak dapat diterapkan dari docs apa adanya dan dinaikkan ke pemilik produk (keputusan 1–4): Bab 11.3 tidak mendaftarkan status pengguna, penanda 2FA berejaan tiga, akun berpassword sementara lahir sebelum hashing Argon2id tersedia, dan foto profil menuntut `stored_files` yang belum ada. | [#42](https://github.com/HanzzzBD/SIGM4/pull/42) |
 | 15 September 2026 | Rencana disunting sebelum phase dimulai: middleware otorisasi `PR-02-09` dipindah menjadi `PR-01-15` dan mendahului seluruh PR endpoint (keputusan 63). Phase 01 boleh dimulai selagi Phase 00 `In Review`, lewat `DELIVERY-PLAN §10` butir 1 (keputusan 62). Keduanya dicatat di [log phase-00 §2](phase-00.md). | — |
 
 ## 2. Keputusan yang diambil

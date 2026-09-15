@@ -100,7 +100,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
-| `PR-01-01` | `In Progress` | — | Skema `users` + kolom baku `roles`; cabang `feature/PR-01-01-skema-users` (keputusan 1–6 [log phase-01 §2](logs/phase-01.md)) |
+| `PR-01-01` | `In Progress` | [#42](https://github.com/HanzzzBD/SIGM4/pull/42) | Skema `users` + kolom baku `roles`; cabang `feature/PR-01-01-skema-users` (keputusan 1–6 [log phase-01 §2](logs/phase-01.md)) |
 | `PR-01-02` | `Not Started` | — | CRUD pengguna + soft delete + aturan Administrator terakhir |
 | `PR-01-03` | `Not Started` | — | Impor massal pengguna |
 | `PR-01-04` | `Not Started` | — | Matriks permission + `role_version` + cache |
