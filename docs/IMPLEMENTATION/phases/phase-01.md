@@ -90,7 +90,7 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 
 | PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
 |---|---|:---:|:---:|---|---|---|
-| `PR-01-01` | Skema `users`, `roles`, `permissions`, `role_permissions` | M | M | Ph00 | `FR-02.1`, `SDD-DB-04` | Migration naik-turun bersih |
+| `PR-01-01` | Skema `users` + kolom baku `roles` (skema RBAC dari `PR-00-16`) | M | M | Ph00 | `FR-02.1`, `SDD-DB-04`, `SDD-05 §4.7` | Migration naik-turun bersih; `users.role_id` merujuk role hasil seed |
 | `PR-01-02` | CRUD pengguna + soft delete + aturan Administrator terakhir | M | M | 01 | `FR-02.1`, `BR-067` `BR-068` `BR-070a` | Menonaktifkan Administrator terakhir ditolak |
 | `PR-01-03` | Impor massal pengguna (CSV/XLSX) | M | M | 02 | `FR-02.1 A4`, `IMPT-01` … `05` | 500 baris; baris gagal tidak menggagalkan berkas |
 | `PR-01-04` | Matriks permission + `role_version` + cache 60 detik | M | M | 01 | `FR-02.2`, `PM-05`, `SDD-AUTH-04/10` | Perubahan berlaku tanpa restart; permission inti tidak dapat dicabut |
@@ -99,7 +99,7 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 | `PR-01-07` | Daftar aset per lokasi *(kerangka; data menyusul Phase 02)* | S | S | 05 | `FR-03.2` | Endpoint mengembalikan struktur benar dengan daftar kosong |
 | `PR-01-08` | Penelusuran activity log + filter + detail sebelum/sesudah | M | M | Ph00 | `FR-18.2` | Filter kombinasi ≤ 3 detik; tampilan bukan JSON mentah |
 | `PR-01-09` | Ekspor activity log + pencatatan aksi ekspor itu sendiri | S | S | 08 | `FR-18.2`, `AL-10` | Ekspor tercatat sebagai aktivitas tersendiri |
-| `PR-01-10` | `system_settings` + endpoint baca/tulis + validasi rentang | M | M | Ph00 | `FR-20.1` | Nilai di luar rentang ditolak dengan penjelasan |
+| `PR-01-10` | `system_settings` + seed parameter bawaan + endpoint baca/tulis + validasi rentang | M | M | Ph00 | `FR-20.1`, `SDD-DB-10` | Nilai di luar rentang ditolak dengan penjelasan; katalog kunci & nilai bawaan ditetapkan di SDD sebelum di-seed |
 | `PR-01-11` | Kalender akademik: `academic_years`, `terms`, + `academic_year_id` pada `holidays` | M | M | 10 | Lampiran E.2, `AC-YR-01` … `04` | Tepat satu tahun ajaran aktif |
 | `PR-01-12` | `work_units` + migrasi `users.unit_kerja` → `work_unit_id` | M | M | 02, 10 | Lampiran E.3, `WU-01` … `03` | Pola expand→migrate; kolom lama belum dihapus |
 | `PR-01-13` | Siklus akun siswa: kenaikan kelas massal, kelulusan | M | M | 02, 11 | Lampiran E.4, `SL-01` … `SL-06` | Siswa berkewajiban aktif tidak dapat dinonaktifkan |

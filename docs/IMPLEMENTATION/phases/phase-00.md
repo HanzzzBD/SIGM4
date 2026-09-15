@@ -27,7 +27,7 @@ Setelah phase ini, sebuah perubahan kode dapat berjalan dari *commit* hingga *st
 - Registri route + validasi permission saat *startup*
 - Worker skeleton: antrean, *distributed lock*, tabel outbox dan dispatcher-nya
 - Health endpoint, log terstruktur, korelasi `request_id`
-- Seed: 79 permission, 7 role bawaan, `work_days`, parameter sistem
+- Skema inti RBAC (`roles`, `permissions`, `role_permissions` ber-scope) + seed: 79 permission, 7 role bawaan, matriks bawaan, `work_days` — tabel `users` menyusul `PR-01-01`, seed parameter sistem menyusul `PR-01-10`
 - Tabel kalender kerja `work_days` dan `holidays` — **tanpa** `academic_year_id`, yang menyusul di `PR-01-11` bersama `academic_years` (migration `expand`)
 
 **Tidak termasuk**
@@ -93,7 +93,7 @@ Tidak ada. Ini titik masuk proyek.
 | `PR-00-13` | `AuditLogger` + `activity_logs` terpartisi + rantai hash | L | L | 05, 06 | `AL-01` `AL-03a` `AL-03b`, `NFR-S-03d`, `SDD-DB-07/09` | Partisi bulan berjalan ada; rantai terverifikasi; akun app tanpa UPDATE/DELETE |
 | `PR-00-14` | Health endpoint (live/ready/ringkasan) | S | S | 06 | `NFR-A-07`, `OBS-06`, `AI-CTL-10`, `SDD-OBS-06` | `llm`/`fcm` mati tidak membuat `ready` gagal |
 | `PR-00-15` | Header keamanan + rate limit berjenjang | M | M | 09 | `NFR-S-07` `NFR-S-11` `NFR-R-10`, `SDD-SEC-03/05`, `SDD-OBS-03`, `SDD-API-04` | CSP tanpa `unsafe-inline`; kelas limit terpisah aktif; 404/500 berformat Bab 17.2 dengan `X-Request-Id`, tanpa membocorkan pesan galat asli |
-| `PR-00-16` | Seed: 79 permission, 7 role, matriks, `work_days`, parameter | M | L | 05 | Lampiran C, `SDD-DB-10` | Uji membandingkan hasil seed dengan Lampiran C baris per baris |
+| `PR-00-16` | Skema RBAC + seed: 79 permission, 7 role, matriks ber-scope, `work_days` | L | L | 05 | Lampiran C, `SDD-DB-10`, `SDD-DB-16`, `SDD-03 §4.8` | Uji membandingkan hasil seed dengan Lampiran C baris per baris, termasuk scope |
 | `PR-00-17` | Pipeline CI: lint → uji → SAST → SCA → build → image scan | L | M | 01, 03 | `CD-01` `CD-02`, `ST-01` `ST-02`, `SDD-INF-12`, `SDD-REPO-11`, `SDD-SEC-11`, `AL-03b` | Cakupan < 70% atau kerentanan High → pipeline merah; `APP_DATABASE_URL`+`APP_DB_PASSWORD` tersedia sehingga acceptance `AL-03b` benar-benar berjalan |
 | `PR-00-18` | Deploy staging + job migration + smoke test | M | S | 17 | `CD-03` `CD-04` `CD-07`, `SDD-INF-03/04/13`, `SDD-SYS-08` | Merge ke `staging` men-deploy lingkungan staging otomatis (`CD-03`); worker berjalan sebagai proses dan `/health/ready`-nya tervalidasi di runtime — **blocking** sejak `PR-00-14`; topologi origin web/API diputuskan bersama konfigurasi Nginx, lalu `cors` (`SDD-06 §4.2`) dipasang atau dinyatakan tidak diperlukan |
 
@@ -119,11 +119,13 @@ Tidak ada. Ini titik masuk proyek.
 - [ ] Cabut `UPDATE`/`DELETE` dari akun aplikasi (`AL-03b`)
 - [ ] Kegagalan tulis log → alarm, **tidak** rollback transaksi (`AL-08`)
 
-### `PR-00-16` — Seed permission
+### `PR-00-16` — Skema RBAC + seed permission
+- [ ] Migration `expand` `roles`, `permissions`, `role_permissions` + enum `permission_scope` (`SDD-05 §4.7`, `SDD-DB-16`)
 - [ ] Migration seed 79 kode dari Lampiran C, idempoten (`ON CONFLICT DO UPDATE`)
-- [ ] Seed 7 role + matriks Bab 18
+- [ ] Seed 7 role + matriks bawaan ber-scope: Lampiran C, ditafsirkan `SDD-03 §4.8` bila pemiliknya bukan daftar role
 - [ ] Tandai permission inti 🔒 agar tidak dapat dicabut (`FR-02.2 A1`)
-- [ ] Uji pembanding: hasil seed = Lampiran C, tanpa selisih
+- [ ] Seed `work_days` Senin–Sabtu aktif (Lampiran E.2)
+- [ ] Uji pembanding: hasil seed = Lampiran C + tafsir, tanpa selisih
 
 ## 9. Acceptance Checklist
 
