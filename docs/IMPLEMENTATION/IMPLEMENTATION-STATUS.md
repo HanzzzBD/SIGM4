@@ -1,6 +1,6 @@
 # Status Implementasi
 
-**Diperbarui:** 15 September 2026 — `PR-00-01` … `PR-00-18` tergabung ke `develop`, termasuk format ulang Prettier ([#30](https://github.com/HanzzzBD/SIGM4/pull/30)), tindak lanjut `PR-00-14` ([#32](https://github.com/HanzzzBD/SIGM4/pull/32)), tindak lanjut audit `PR-00-15` ([#34](https://github.com/HanzzzBD/SIGM4/pull/34)), `PR-00-16` ([#37](https://github.com/HanzzzBD/SIGM4/pull/37)), `PR-00-17` ([#38](https://github.com/HanzzzBD/SIGM4/pull/38)), dan `PR-00-18` ([#39](https://github.com/HanzzzBD/SIGM4/pull/39), keputusan 50–56; rencana kini 164 PR); tindak lanjut graceful shutdown `PR-00-18` dikerjakan di `fix/PR-00-18-graceful-shutdown` ([#40](https://github.com/HanzzzBD/SIGM4/pull/40), keputusan 57–61). Audit konsistensi lintas dokumen selesai: 15 temuan, 12 keputusan pemilik produk. Proteksi cabang `main` dan `develop` aktif.
+**Diperbarui:** 15 September 2026 — `PR-00-01` … `PR-00-18` tergabung ke `develop`, termasuk format ulang Prettier ([#30](https://github.com/HanzzzBD/SIGM4/pull/30)), tindak lanjut `PR-00-14` ([#32](https://github.com/HanzzzBD/SIGM4/pull/32)), tindak lanjut audit `PR-00-15` ([#34](https://github.com/HanzzzBD/SIGM4/pull/34)), `PR-00-16` ([#37](https://github.com/HanzzzBD/SIGM4/pull/37)), `PR-00-17` ([#38](https://github.com/HanzzzBD/SIGM4/pull/38)), dan `PR-00-18` ([#39](https://github.com/HanzzzBD/SIGM4/pull/39), keputusan 50–56; rencana kini 164 PR), beserta tindak lanjut graceful shutdown `PR-00-18` ([#40](https://github.com/HanzzzBD/SIGM4/pull/40), keputusan 57–61). Diverifikasi dari GitHub: #6–#40 seluruhnya tergabung, tidak ada PR terbuka. Audit konsistensi lintas dokumen selesai: 15 temuan, 12 keputusan pemilik produk. Proteksi cabang `main` dan `develop` aktif. Penyegaran dokumen pasca Phase 00 dan keputusan 62–65: [#41](https://github.com/HanzzzBD/SIGM4/pull/41). **Gerbang keluar Phase 00 menunggu infrastruktur staging nyata** — lihat [Penghalang aktif](#penghalang-aktif).
 
 Berkas ini memiliki status **per phase dan per pull request**. Ia **tidak** memiliki status per requirement — itu milik [`../PRD/06-quality/traceability.md`](../PRD/06-quality/traceability.md). Dua tingkat berbeda, tanpa tumpang tindih:
 
@@ -31,12 +31,12 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 
 | Phase | Nama | Modul | PR | Status | Selesai | Catatan |
 |:---:|---|:---:|:---:|---|:---:|---|
-| [00](phases/phase-00.md) | Foundation | — | 18 | `In Review` | 18/18 | Seluruh 18 PR tergabung; gerbang keluar belum lulus — deploy staging nyata belum terbukti. Tindak lanjut graceful shutdown berjalan. Kelengkapan `/health` tidak wajib di Phase 00 — diisi bertahap sampai `PR-03-20`. Butir blocking worker sebagai proses ditutup `PR-00-18`; deploy staging nyata menunggu infrastruktur — [log §10](logs/phase-00.md) |
-| [01](phases/phase-01.md) | Master Data Independen | 4 | 14 | `Not Started` | 0/14 | |
-| [02](phases/phase-02.md) | Inti Sistem | 5 | 30 | `Not Started` | 0/30 | Phase terbesar; di lintasan kritis |
+| [00](phases/phase-00.md) | Foundation | — | 18 | `In Review` | 18/18 | Seluruh 18 PR beserta tindak lanjutnya tergabung (#40 terakhir); gerbang keluar belum lulus — deploy staging nyata dan tiga lingkungan terpisah (`NFR-M-09`) belum terbukti. Kelengkapan `/health` tidak wajib di Phase 00 — diisi bertahap sampai `PR-03-20`. Butir blocking worker sebagai proses ditutup `PR-00-18`; deploy staging nyata menunggu infrastruktur — [log §10](logs/phase-00.md) |
+| [01](phases/phase-01.md) | Master Data Independen | 4 | 15 | `Not Started` | 0/15 | Boleh dimulai selagi Phase 00 `In Review` (keputusan 62); middleware otorisasi `PR-01-15` mendahului PR endpoint (keputusan 63) |
+| [02](phases/phase-02.md) | Inti Sistem | 5 | 29 | `Not Started` | 0/29 | Phase terbesar; di lintasan kritis. `PR-02-09` dipensiunkan → `PR-01-15` |
 | [03](phases/phase-03.md) | Layanan Aset & Reservasi | 6 | 23 | `Not Started` | 0/23 | Menutup `M1` |
 | [04](phases/phase-04.md) | Siklus Hidup Aset | 3 | 14 | `Not Started` | 0/14 | Menutup `M2` |
-| [05](phases/phase-05.md) | Penutupan Siklus | 2 | 14 | `Not Started` | 0/14 | Menutup `M3` & `M4` |
+| [05](phases/phase-05.md) | Penutupan Siklus | 3 | 25 | `Not Started` | 0/25 | Menutup `M3` & `M4` |
 | [06](phases/phase-06.md) | Analitik | 1 | 10 | `Not Started` | 0/10 | Menutup `M5` |
 | [07](phases/phase-07.md) | Integrasi & UAT | — | 14 | `Not Started` | 0/14 | |
 | [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 16 | `Not Started` | 0/16 | Menutup `M6` |
@@ -73,7 +73,7 @@ Definisi tiap gerbang: [PRD 29.3](../PRD/01-product/delivery-plan.md). Urutan pe
 
 Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul lengkap, kompleksitas, dependensi, dan acceptance tiap PR ada di berkas phase-nya dan tidak disalin ke sini.
 
-### Phase 00 — Foundation · `In Progress`
+### Phase 00 — Foundation · `In Review`
 
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
@@ -94,19 +94,19 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-00-15` | `Done` | [#33](https://github.com/HanzzzBD/SIGM4/pull/33) | Header keamanan + rate limit berjenjang, ditambah ujung rantai HTTP (`X-Request-Id`, 404, `errorMapper`) — keputusan 31. Tindak lanjut audit (keputusan 32–38): [#34](https://github.com/HanzzzBD/SIGM4/pull/34) |
 | `PR-00-16` | `Done` | [#37](https://github.com/HanzzzBD/SIGM4/pull/37) | Skema RBAC + seed permission, role, matriks ber-scope, `work_days`. Seed parameter sistem pindah ke `PR-01-10`, tabel `roles`/`permissions`/`role_permissions` ditarik dari `PR-01-01` — [log §3](logs/phase-00.md) |
 | `PR-00-17` | `Done` | [#38](https://github.com/HanzzzBD/SIGM4/pull/38) | Pipeline CI `ci.yml` (lint → uji → integrasi+cakupan → build → CodeQL → SCA → Trivy); required check `CI lulus` aktif di `develop`; runtime image tanpa npm (keputusan 47); berkas pnpm diabaikan (keputusan 44) — [log §2](logs/phase-00.md) |
-| `PR-00-18` | `Done` | [#39](https://github.com/HanzzzBD/SIGM4/pull/39) | Deploy staging (`deploy/staging/`, job `publikasi-image` + `deploy-staging`); dibuktikan pada staging tiruan — infrastruktur nyata belum ada (keputusan 50). Tindak lanjut graceful shutdown worker + API: [#40](https://github.com/HanzzzBD/SIGM4/pull/40) (keputusan 57–61) — [log §2](logs/phase-00.md) |
+| `PR-00-18` | `Done` | [#39](https://github.com/HanzzzBD/SIGM4/pull/39) | Deploy staging (`deploy/staging/`, job `publikasi-image` + `deploy-staging`); dibuktikan pada staging tiruan — infrastruktur nyata belum ada (keputusan 50). Tindak lanjut graceful shutdown worker + API tergabung: [#40](https://github.com/HanzzzBD/SIGM4/pull/40) (keputusan 57–61) — [log §2](logs/phase-00.md) |
 
 ### Phase 01 — Master Data Independen · `Not Started`
 
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
-| `PR-01-01` … `PR-01-14` | `Not Started` | — | Rincian: [`phases/phase-01.md` §7](phases/phase-01.md) |
+| `PR-01-01` … `PR-01-15` | `Not Started` | — | Rincian: [`phases/phase-01.md` §7](phases/phase-01.md) |
 
 ### Phase 02 — Inti Sistem · `Not Started`
 
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
-| `PR-02-01` … `PR-02-30` | `Not Started` | — | Rincian: [`phases/phase-02.md` §7](phases/phase-02.md) |
+| `PR-02-01` … `PR-02-30` (tanpa `PR-02-09`, pensiun) | `Not Started` | — | Rincian: [`phases/phase-02.md` §7](phases/phase-02.md) |
 
 ### Phase 03 — Layanan Aset & Reservasi · `Not Started`
 
@@ -124,7 +124,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
-| `PR-05-01` … `PR-05-14` | `Not Started` | — | Rincian: [`phases/phase-05.md` §7](phases/phase-05.md) |
+| `PR-05-01` … `PR-05-25` | `Not Started` | — | Rincian: [`phases/phase-05.md` §7](phases/phase-05.md) |
 
 ### Phase 06 — Analitik · `Not Started`
 
@@ -152,6 +152,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 
 | Yang terhalang | Menunggu | Sejak | Penanggung jawab |
 |---|---|---|---|
+| Gerbang keluar Phase 00 | Infrastruktur staging nyata — VPS, domain, PostgreSQL terkelola, object storage ber-region Indonesia — lalu cabang `staging`, environment, dan secret deploy (keputusan 50, 55); seleksi vendor observability ber-region Indonesia (keputusan 65) — [log §10](logs/phase-00.md) | 15 September 2026 | Pemilik produk / operator |
 | Phase 08 | `TBD-SEC-A` (penyedia pentest) · `TBD-OBS-B` (penerima alarm) | — | Pemilik produk / sekolah |
 
 Daftar TBD lengkap beserta pertanyaannya: [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md) — **13 terbuka, 42 tertutup**. Jadwal penutupan yang diharapkan: [`ROADMAP.md` §8](ROADMAP.md).
@@ -162,6 +163,7 @@ Daftar TBD lengkap beserta pertanyaannya: [`../SDD/TBD-REGISTER.md`](../SDD/TBD-
 
 | Tanggal | Phase | Pergeseran | Sebab | Dampak pada lintasan kritis |
 |---|---|---|---|---|
+| 15 September 2026 | 00 → 01 | Phase 01 boleh dimulai sebelum gerbang keluar Phase 00 lulus | Staging nyata belum tersedia (keputusan 50). `DELIVERY-PLAN §10` butir 1 dipakai: butir yang tertunda — deploy staging nyata, tiga lingkungan terpisah, seleksi vendor observability — tidak berada di lintasan kritis §3 dan tidak dituntut PR Phase 01 mana pun (keputusan 62) | Tidak ada, **selama** infrastruktur tersedia sebelum gerbang keluar Phase 01, yang menuntut verifikasi QA di staging (`BRANCHING §5`) |
 | 7 September 2026 | 00 | Tidak ada pergeseran jadwal; satu putaran integrasi terbuang | Tiga PR ditumpuk (`#15` ← `#16` ← `#17`) dan seluruhnya di-*squash-merge*. Squash melahirkan commit baru berisi hal yang sama dengan hash berbeda, sehingga tiap tingkat tumpukan melihat perubahan yang sama masuk dua kali; dan karena tiap PR menyasar basenya sendiri, hanya `#15` yang benar-benar mencapai `develop`. Cabang antara kemudian dihapus. Dipulihkan lewat `#18`. | Tidak ada — seluruh isi terpulihkan utuh. **Untuk `PR-00-06` ke atas: satu PR menyasar `develop` langsung; bila terpaksa bertumpuk, pakai merge commit, bukan squash.** |
 
 Pergeseran dicatat di sini **saat terjadi**, bukan saat direkap. Pergeseran yang diserap diam-diam adalah pergeseran yang muncul kembali sebagai kejutan menjelang go-live.

@@ -105,7 +105,7 @@ export function healthRouter(
  * Handler `/health` ringkasan. SENGAJA tidak dipasang `healthRouter` dan tidak
  * didaftarkan ke registri proses: ia membeberkan status seluruh dependensi dan
  * menuntut `setting.view`, sementara middleware yang menegakkannya lahir di
- * `PR-02-09` (`PM-02`). Memasangnya lebih dulu berarti endpoint tanpa penjaga.
+ * `PR-01-15` (`PM-02`). Memasangnya lebih dulu berarti endpoint tanpa penjaga.
  */
 export function healthSummaryHandler(health: HealthRegistry): RequestHandler {
     return async (_req, res) => {

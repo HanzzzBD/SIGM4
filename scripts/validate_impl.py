@@ -120,26 +120,37 @@ check("Setiap phase punya rujukan PRD dan SDD yang terisi", not empty_ref, "; ".
 
 # -------------------------------------------------------------- 6. PR unik
 pr_ids = re.findall(r"`(PR-\d{2}-\d{2})`", impl_text)
+# ID PR adalah alamat: PR yang dipindah phase tidak dinomori ulang, nomor lamanya
+# dipensiunkan lewat baris "**Pensiun** — dipindah ke `PR-..`" dan tidak dipakai ulang.
+RETIRED = re.compile(r"^\| `(PR-\d{2}-\d{2})` \| \*\*Pensiun\*\* — dipindah ke `(PR-\d{2}-\d{2})`", re.M)
 per_phase = {}
+retired = {}
 for p in phase_files:
-    ids = sorted(set(re.findall(r"^\| `(PR-\d{2}-\d{2})`", texts[p], re.M)))
-    per_phase[p.stem] = ids
-total = sum(len(v) for v in per_phase.values())
+    ret = dict(RETIRED.findall(texts[p]))
+    retired.update(ret)
+    ids = sorted(set(re.findall(r"^\| `(PR-\d{2}-\d{2})`", texts[p], re.M)) - set(ret))
+    per_phase[p.stem] = (ids, sorted(ret))
+total = sum(len(active) for active, _ in per_phase.values())
 check("Total PR = 164", total == 164, f"{total} ditemukan")
 
 gaps = []
-for ph, ids in per_phase.items():
-    nums = sorted(int(i[-2:]) for i in ids)
+for ph, (active, ret) in per_phase.items():
+    nums = sorted(int(i[-2:]) for i in active + ret)
     if nums != list(range(1, len(nums) + 1)):
         gaps.append(f"{ph}: {nums}")
 check("Nomor PR berurutan tanpa lompatan di setiap phase", not gaps, "; ".join(gaps))
+
+all_active = {i for active, _ in per_phase.values() for i in active}
+dangling = [f"{old} -> {new}" for old, new in retired.items() if new not in all_active]
+check("ID PR pensiun menunjuk PR yang ada", not dangling,
+      "; ".join(dangling) if dangling else f"{len(retired)} ID pensiun")
 
 # ------------------------------------------- 7. setiap PR punya acceptance
 no_acc = []
 for p in phase_files:
     for line in texts[p].splitlines():
         m = re.match(r"^\| `(PR-\d{2}-\d{2})` \|", line)
-        if m:
+        if m and m.group(1) not in retired:
             cells = [c.strip() for c in line.strip("|").split("|")]
             if len(cells) < 6 or not cells[-1] or not cells[-2]:
                 no_acc.append(m.group(1))

@@ -6,6 +6,28 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 
 ---
 
+## 15 September 2026 — penyegaran dokumen setelah Phase 00 seluruhnya tergabung; `PR-02-09` menjadi `PR-01-15`
+
+Tidak ada TBD, requirement, maupun business rule baru. Empat keputusan pemilik produk (62–65) dicatat di [`logs/phase-00.md` §2](logs/phase-00.md).
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `IMPLEMENTATION-STATUS.md` | #40 tergabung; judul bagian Phase 00 `In Progress` → `In Review`, selaras tabel ringkasan; gerbang keluar Phase 00 masuk Penghalang aktif; Phase 01 boleh dimulai (keputusan 62) dan tercatat di Pergeseran jadwal |
+| `logs/phase-00.md` §1, §2, §5, §7, §9, §10 | Verifikasi #6–#40 tergabung; keputusan 62–65; butir `cors` ditutup keputusan 51; butir job migration dan check `staging` diselaraskan dengan keputusan 53 dan 55; tiga temuan (metode merge, vendor observability, middleware otorisasi Phase 01) |
+| `GITHUB-CI-STATE.md` §1, §2, §3, §4, §6 | `staging` menunggu infrastruktur (keputusan 55), bukan `PR-00-18`; penyimpangan *merge commit* tercatat dan *squash* kembali wajib (keputusan 64); `SEC-T-01` milik `PR-01-15`; proteksi dibaca ulang dari API |
+| `BRANCHING-STRATEGY.md` §0 | Pipeline `CD-01` sudah berdiri; transisi berakhir saat cabang `staging` dibuat |
+| `ROADMAP.md` §8 | Seleksi vendor observability bersama penyediaan staging nyata (keputusan 65), bukan `PR-00-06` yang sudah lewat |
+| `phases/phase-01.md` §1, §2, §3, §5, §7 · `phases/phase-02.md` §3, §7 | **`PR-02-09` dipensiunkan, isinya menjadi `PR-01-15`** (keputusan 63); dependensi PR endpoint Phase 01 serta `PR-02-29`/`PR-02-30` disesuaikan |
+| `DELIVERY-PLAN.md` §1, §2 · `BRANCHING-STRATEGY.md` §1 · `logs/phase-01.md` · `logs/phase-02.md` | Phase 01: 14 → **15** PR; Phase 02: 30 → **29**; urutan wajib `PR-01-15` → PR endpoint |
+| `IMPLEMENTATION-STATUS.md` §Ringkasan · `DELIVERY-PLAN.md` §1 · `logs/phase-05.md` · `logs/phase-08.md` | Hitungan basi diselaraskan dengan berkas phase: Phase 05 **25** PR dan 3 modul (tertulis 14 atau 24, dan 2 modul); log Phase 08 **16** PR (tertulis 15) |
+| `scripts/validate_impl.py` | Menerima baris PR pensiun (`**Pensiun** — dipindah ke …`) yang menunjuk PR aktif; baris pensiun tidak dihitung |
+
+Total PR tetap **164**.
+
+---
+
 ## 15 September 2026 — tindak lanjut `PR-00-18`: graceful shutdown worker + API
 
 Tidak ada TBD, requirement, maupun business rule baru. Keputusan pemilik produk 57–61 dicatat di [`logs/phase-00.md` §2](logs/phase-00.md).

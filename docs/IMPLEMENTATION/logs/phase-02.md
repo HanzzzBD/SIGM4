@@ -78,7 +78,7 @@ Angka nyata, bukan perkiraan. Kosongkan bila belum diukur — jangan diisi tebak
 
 Diisi saat phase dinyatakan selesai. Daftar lengkapnya ada di [`phase-02.md` §9 dan §12](../phases/phase-02.md).
 
-- [ ] Seluruh 30 PR tergabung
+- [ ] Seluruh 29 PR tergabung (`PR-02-09` dipensiunkan)
 - [ ] Acceptance checklist phase terpenuhi
 - [ ] Definition of Done phase terpenuhi
 - [ ] Bagian 5 log ini terisi seluruhnya
