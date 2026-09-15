@@ -10,7 +10,8 @@
 #   1. tarik image          — satu tag untuk api, worker, dan migration
 #   2. job migration        — gagal = berhenti; instance lama tetap melayani
 #   3. api-1, lalu api-2    — masing-masing wajib `healthy` (readiness gate) sebelum
-#                             instance berikutnya disentuh; Nginx memindahkan trafik
+#                             instance berikutnya disentuh, lalu jeda serah agar
+#                             Nginx sempat memakai instance baru; Nginx memindahkan trafik
 #   4. worker               — diganti setelah API; wajib `healthy`
 #   5. proxy & certbot      — dinyalakan bila belum
 # Smoke test dari luar (CD-07) dijalankan pemanggil setelah skrip ini selesai.
@@ -22,6 +23,12 @@ IMAGE="${1:?Pemakaian: deploy.sh <image-ref>}"
 export SIGM4_IMAGE="$IMAGE"
 : "${SIGM4_DOMAIN:?SIGM4_DOMAIN wajib diisi}"
 BATAS_DETIK="${READY_TIMEOUT_DETIK:-180}"
+# Jeda serah (keputusan 61): container yang `healthy` belum tentu sudah dipakai
+# Nginx lagi — nama upstream baru diselesaikan ulang setelah `valid` resolver (5 s)
+# dan tanda gagal instance lama baru lepas setelah `fail_timeout` (5 s). Mengganti
+# instance berikutnya sebelum itu membuat kedua upstream dianggap mati sekaligus:
+# terbukti 3 dari 26 permintaan menjadi 502 "no live upstreams" di staging tiruan.
+JEDA_SERAH_DETIK="${JEDA_SERAH_DETIK:-12}"
 
 compose() { docker compose "$@"; }
 
@@ -59,6 +66,10 @@ for layanan in api-1 api-2; do
     echo "==> 3. Ganti $layanan"
     compose up -d --no-deps "$layanan"
     tunggu_sehat "$layanan"
+    if [[ "$layanan" == "api-1" ]]; then
+        echo "    jeda serah ${JEDA_SERAH_DETIK} s sebelum api-2"
+        sleep "$JEDA_SERAH_DETIK"
+    fi
 done
 
 echo "==> 4. Ganti worker"

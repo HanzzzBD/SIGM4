@@ -109,6 +109,20 @@ describe("sigm4-api — /api/v1/health/*", () => {
         });
     });
 
+    it("ready → 503 sejak proses berhenti, meski dependensi sehat (SDD-INF-04)", async () => {
+        const h = health(siap);
+        const url = await buka(aplikasi(h));
+        expect((await fetch(`${url}/api/v1/health/ready`)).status).toBe(200);
+        h.tandaiBerhenti();
+        const res = await fetch(`${url}/api/v1/health/ready`);
+        expect(res.status).toBe(503);
+        expect(await res.json()).toMatchObject({
+            error: { code: "SERVICE_NOT_READY" },
+        });
+        // Liveness tetap 200: proses masih hidup, hanya tidak menerima pekerjaan baru.
+        expect((await fetch(`${url}/api/v1/health/live`)).status).toBe(200);
+    });
+
     it("/health ringkasan TIDAK terpasang tanpa middleware permission (PM-02) → 404", async () => {
         const url = await buka(aplikasi(health(siap)));
         const res = await fetch(`${url}/api/v1/health`);

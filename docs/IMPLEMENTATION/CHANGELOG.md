@@ -6,6 +6,21 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 
 ---
 
+## 15 September 2026 — tindak lanjut `PR-00-18`: graceful shutdown worker + API
+
+Tidak ada TBD, requirement, maupun business rule baru. Keputusan pemilik produk 57–61 dicatat di [`logs/phase-00.md` §2](logs/phase-00.md).
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `IMPLEMENTATION-STATUS.md` | `PR-00-18` `Done`; Phase 00 18/18 berstatus `In Review` (gerbang keluar belum lulus); tindak lanjut graceful shutdown tercatat |
+| `logs/phase-00.md` §1, §2, §4, §5, §7, §8, §10 | Audit drain, keputusan 57–61, cabang di luar rencana, butir drain worker ditutup, tiga temuan saat pembuktian, hasil ukur |
+
+Total PR tetap **164**.
+
+---
+
 ## 15 September 2026 — `PR-00-18`: deploy staging pada staging tiruan
 
 Tidak ada TBD, requirement, maupun business rule baru. Keputusan pemilik produk 50–53 dicatat di [`logs/phase-00.md` §2](logs/phase-00.md).

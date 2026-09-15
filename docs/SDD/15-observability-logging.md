@@ -174,6 +174,8 @@ GET /health          → ringkasan untuk kartu Kesehatan Integrasi (OBS-06)     
 
 `llm` dan `fcm` **tidak pernah** membuat `/health/ready` gagal — gangguan keduanya tidak boleh mengeluarkan instance dari rotasi (`NFR-A-05`, `NFR-A-06`).
 
+Sejak proses menerima `SIGTERM`, `/health/ready` menjawab tidak siap **tanpa memanggil probe** — dependensi yang sehat tidak menjadikan instance yang sedang berhenti layak menerima pekerjaan; `/health/live` tetap 200 sampai proses keluar (`SDD-INF-04/05`).
+
 `/health/ready` yang tidak siap menjawab `503 SERVICE_NOT_READY` (Bab 17.3) dalam amplop galat Bab 17.2. Jawabannya tidak memuat nama dependensi apa pun — rinciannya milik `/health` yang menuntut `setting.view` (`SDD-AUTH-01 §4.1`).
 
 ### 4.6 Alarm

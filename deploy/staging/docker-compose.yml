@@ -64,6 +64,9 @@ services:
     # SDD-INF-04 — dua instance agar penggantian bergulir tidak memutus layanan.
     api-1:
         <<: *app
+        # Tenggat henti internal API 25 s (BATAS_HENTI_API_MS); 5 s sisanya untuk
+        # pemaksaan dan log sebelum SIGKILL.
+        stop_grace_period: 30s
         healthcheck: &api-ready
             test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/api/v1/health/ready"]
             interval: 5s
@@ -72,13 +75,15 @@ services:
             start_period: 15s
     api-2:
         <<: *app
+        stop_grace_period: 30s
         healthcheck: *api-ready
 
     # SDD-SYS-08 — proses terpisah dari image yang sama; satu-satunya port HTTP-nya /health.
     worker:
         <<: *app
         command: ["node", "apps/api/dist/worker/index.js"]
-        # SDD-INF-05 — waktu bagi pekerjaan berjalan untuk selesai sebelum dimatikan.
+        # SDD-INF-05 — tenggat drain internal 50 s (BATAS_DRAIN_WORKER_MS); 10 s
+        # sisanya untuk pemaksaan dan log sebelum SIGKILL.
         stop_grace_period: 60s
         healthcheck:
             test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/health/ready"]

@@ -76,6 +76,7 @@ src/
 │   ├── http/                   #   defineRoute, RouteRegistry (SDD-SYS-12, SDD-API-03)
 │   ├── cache/                  #   koneksi Redis (SDD-SYS-13, INF-03)
 │   ├── config/                 #   skema konfigurasi & validasi startup (SDD-SYS-14, SDD-INF-08/09)
+│   ├── lifecycle/              #   penghentian proses yang rapi — SIGTERM, drain, tenggat (SDD-INF-04/05)
 │   ├── booking/                #   SlotService + booking_slots (SDD-SYS-10)
 │   └── db/                     #   koneksi, transaksi, tipe repository (SDD-DB-15)
 │

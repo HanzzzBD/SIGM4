@@ -7,17 +7,21 @@
 # Satu origin (keputusan 51): web statis di `/`, API di `/api/v1`. Peramban tidak
 # pernah melakukan permintaan lintas origin, sehingga `cors` tidak dipasang.
 
-# DNS internal Docker. Nama upstream diselesaikan ulang tiap 10 detik: instance API
+# DNS internal Docker. Nama upstream diselesaikan ulang tiap 5 detik: instance API
 # yang diganti deploy.sh memperoleh IP baru, dan upstream yang hanya diselesaikan
 # saat Nginx menyala akan terus menunjuk container yang sudah tidak ada.
-resolver 127.0.0.11 valid=10s ipv6=off;
+resolver 127.0.0.11 valid=5s ipv6=off;
 
 upstream sigm4_api {
     zone sigm4_api 64k;
     # SDD-INF-13 — pemeriksaan PASIF Nginx OSS: instance yang gagal sekali dikeluarkan
-    # 10 detik. Gerbang sebenarnya adalah readiness gate deploy.sh (SDD-INF-04).
-    server api-1:3000 resolve max_fails=1 fail_timeout=10s;
-    server api-2:3000 resolve max_fails=1 fail_timeout=10s;
+    # 5 detik. Gerbang sebenarnya adalah readiness gate deploy.sh (SDD-INF-04).
+    #
+    # `valid` resolver dan `fail_timeout` di sini menentukan JEDA_SERAH_DETIK pada
+    # deploy.sh (keputusan 61): mengubah salah satunya tanpa menyesuaikan jeda itu
+    # mengembalikan 502 "no live upstreams" saat deploy bergulir.
+    server api-1:3000 resolve max_fails=1 fail_timeout=5s;
+    server api-2:3000 resolve max_fails=1 fail_timeout=5s;
     keepalive 16;
 }
 
