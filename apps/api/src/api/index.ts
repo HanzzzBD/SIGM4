@@ -8,15 +8,22 @@
 // PR-00-15 memasang dari rantai SDD-06 §4.2: `requestId`, header keamanan, rate
 // limit, 404, dan `errorMapper`. Autentikasi dan permission menyusul di Phase 02.
 
+import type { Server } from "node:http";
 import { pathToFileURL } from "node:url";
 import express from "express";
 import type { Express } from "express";
-import { getRedis } from "../shared/cache/index.js";
+import { closeRedis, getRedis } from "../shared/cache/index.js";
 import { SystemClock } from "../shared/clock/index.js";
 import { readApiConfig, zonaProses } from "../shared/config/index.js";
-import { assertDatabaseTimeZoneUtc, getDb } from "../shared/db/index.js";
+import {
+    assertDatabaseTimeZoneUtc,
+    closeDb,
+    getDb,
+} from "../shared/db/index.js";
 import { RedisRateLimiter, RouteRegistry } from "../shared/http/index.js";
 import type { RateLimiter } from "../shared/http/index.js";
+import { Penghenti, tutupServer } from "../shared/lifecycle/index.js";
+import type { LangkahHenti } from "../shared/lifecycle/index.js";
 import {
     HealthRegistry,
     Logger,
@@ -75,10 +82,53 @@ export function createApp(deps: AppDeps): Express {
     return app;
 }
 
+/**
+ * Tenggat henti API. `stop_grace_period` api pada deploy/staging adalah 30 s; sisa
+ * 5 s milik pemaksaan dan penulisan log sebelum SIGKILL datang (keputusan 59).
+ */
+export const BATAS_HENTI_API_MS = 25_000;
+
+/**
+ * Urutan henti sigm4-api (`SDD-INF-04`, keputusan 58): readiness tidak siap,
+ * port berhenti menerima koneksi baru sementara permintaan berjalan dituntaskan,
+ * lalu koneksi ditutup. Proxy memindahkan trafik ke instance lain karena koneksi
+ * baru ke instance ini ditolak.
+ */
+export function langkahHentiApi(
+    health: HealthRegistry,
+    server: Server,
+): LangkahHenti[] {
+    return [
+        {
+            nama: "tandai-berhenti",
+            jalankan: () => {
+                health.tandaiBerhenti();
+                return Promise.resolve();
+            },
+        },
+        {
+            nama: "tutup-server",
+            jalankan: () => tutupServer(server),
+            // Lewat tenggat: permintaan yang masih menggantung diputus.
+            paksa: () => {
+                server.closeAllConnections();
+                return Promise.resolve();
+            },
+        },
+        {
+            nama: "koneksi",
+            jalankan: async () => {
+                await closeRedis();
+                await closeDb();
+            },
+        },
+    ];
+}
+
 export async function start(
     env: NodeJS.ProcessEnv = process.env,
     zona: string = zonaProses(),
-): Promise<void> {
+): Promise<Penghenti> {
     // Konfigurasi divalidasi sebelum koneksi apa pun dibuka: proses menolak menyala
     // dengan konfigurasi tidak valid atau zona waktu bukan UTC (SDD-INF-08/09).
     const config = readApiConfig(env, zona);
@@ -90,16 +140,21 @@ export async function start(
         databaseCheck(getDb()),
         redisCheck(getRedis()),
     );
-    createApp({
+    const logger = new Logger({
+        clock,
+        modulBawaan: "api",
+        level: config.logLevel,
+    });
+    const server = createApp({
         health,
         limiter: new RedisRateLimiter(getRedis(), clock),
         security: { objectStorageOrigin: config.objectStoragePublicOrigin },
-        logger: new Logger({
-            clock,
-            modulBawaan: "api",
-            level: config.logLevel,
-        }),
+        logger,
     }).listen(PORT);
+    return new Penghenti(langkahHentiApi(health, server), {
+        batasMs: BATAS_HENTI_API_MS,
+        logger,
+    });
 }
 
 // Hanya bila berkas ini dijalankan sebagai proses (CMD Dockerfile), bukan saat diimpor.
@@ -107,13 +162,17 @@ if (
     process.argv[1] !== undefined &&
     import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
-    start().catch((galat: unknown) => {
-        // Level eksplisit: LOG_LEVEL yang tidak valid bisa jadi penyebab kegagalannya.
-        new Logger({
-            clock: new SystemClock(),
-            modulBawaan: "api",
-            level: "error",
-        }).error("Proses gagal menyala", galat);
-        process.exit(1);
-    });
+    // SIGTERM/SIGINT hanya ditangkap di sini, saat berjalan sebagai proses: tanpa
+    // penangkap, `node` sebagai PID 1 container mengabaikan SIGTERM (SDD-INF-04).
+    start()
+        .then((penghenti) => penghenti.pasang())
+        .catch((galat: unknown) => {
+            // Level eksplisit: LOG_LEVEL yang tidak valid bisa jadi penyebab kegagalannya.
+            new Logger({
+                clock: new SystemClock(),
+                modulBawaan: "api",
+                level: "error",
+            }).error("Proses gagal menyala", galat);
+            process.exit(1);
+        });
 }

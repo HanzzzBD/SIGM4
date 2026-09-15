@@ -14,6 +14,7 @@ import { ensurePartitions, verifyChain } from "../shared/audit/index.js";
 import { SystemClock } from "../shared/clock/index.js";
 import { readProcessConfig, zonaProses } from "../shared/config/index.js";
 import { assertDatabaseTimeZoneUtc, getDb } from "../shared/db/index.js";
+import { Penghenti } from "../shared/lifecycle/index.js";
 import {
     EventHandlerRegistry,
     OutboxDispatcher,
@@ -33,6 +34,7 @@ import {
 } from "./scheduler.js";
 import { createHealthServer } from "./health-server.js";
 import { startOutboxPoller } from "./outbox-poller.js";
+import { BATAS_DRAIN_WORKER_MS, langkahHentiWorker } from "./shutdown.js";
 
 /** Port container — `EXPOSE 3000` pada image bersama (SDD-16 §4.1, SDD-INF-01). */
 const HEALTH_PORT = 3000;
@@ -98,29 +100,40 @@ export const eventHandlers = new EventHandlerRegistry();
 export async function bootstrap(
     env: NodeJS.ProcessEnv = process.env,
     zona: string = zonaProses(),
-): Promise<void> {
+): Promise<Penghenti> {
     // Konfigurasi divalidasi sebelum koneksi apa pun dibuka: proses menolak menyala
     // dengan konfigurasi tidak valid atau zona waktu bukan UTC (SDD-INF-08/09).
-    readProcessConfig(env, zona);
+    const config = readProcessConfig(env, zona);
     // Sesi basis data dipaksa UTC oleh createDb; pemeriksaan ini membuktikannya (SDD-INF-09).
     await assertDatabaseTimeZoneUtc(getDb());
     const connection = getRedis();
-    createHealthServer(
-        new HealthRegistry().register(
-            databaseCheck(getDb()),
-            redisCheck(connection),
-        ),
-    ).listen(HEALTH_PORT);
+    const health = new HealthRegistry().register(
+        databaseCheck(getDb()),
+        redisCheck(connection),
+    );
+    const healthServer = createHealthServer(health).listen(HEALTH_PORT);
     const queue = createQueue(connection);
     await scheduleAll(queue, registry);
-    createWorker(connection, registry);
+    const worker = createWorker(connection, registry);
     // Dispatcher outbox berjalan di proses yang sama, tetapi bukan sebagai job —
     // alasannya di `outbox-poller.ts`.
-    startOutboxPoller(
+    const poller = startOutboxPoller(
         new OutboxDispatcher({
             registry: eventHandlers,
             clock: new SystemClock(),
         }),
+    );
+    // Setiap bagian yang menyala di atas punya pasangan penutupnya (SDD-INF-05).
+    return new Penghenti(
+        langkahHentiWorker({ health, worker, poller, queue, healthServer }),
+        {
+            batasMs: BATAS_DRAIN_WORKER_MS,
+            logger: new Logger({
+                clock: new SystemClock(),
+                modulBawaan: "worker",
+                level: config.logLevel,
+            }),
+        },
     );
 }
 
@@ -132,13 +145,17 @@ if (
     process.argv[1] !== undefined &&
     import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
-    bootstrap().catch((galat: unknown) => {
-        // Level eksplisit: LOG_LEVEL yang tidak valid bisa jadi penyebab kegagalannya.
-        new Logger({
-            clock: new SystemClock(),
-            modulBawaan: "worker",
-            level: "error",
-        }).error("Proses gagal menyala", galat);
-        process.exit(1);
-    });
+    // SIGTERM/SIGINT hanya ditangkap di sini, saat berjalan sebagai proses: tanpa
+    // penangkap, `node` sebagai PID 1 container mengabaikan SIGTERM (SDD-INF-05).
+    bootstrap()
+        .then((penghenti) => penghenti.pasang())
+        .catch((galat: unknown) => {
+            // Level eksplisit: LOG_LEVEL yang tidak valid bisa jadi penyebab kegagalannya.
+            new Logger({
+                clock: new SystemClock(),
+                modulBawaan: "worker",
+                level: "error",
+            }).error("Proses gagal menyala", galat);
+            process.exit(1);
+        });
 }

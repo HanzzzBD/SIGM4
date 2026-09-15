@@ -60,8 +60,22 @@ const BATAS_PROBE_MS = 2_000;
 
 export class HealthRegistry {
     private readonly checks = new Map<DependencyName, HealthCheck>();
+    private berhenti = false;
 
     constructor(private readonly batasMs: number = BATAS_PROBE_MS) {}
+
+    /**
+     * Proses sedang berhenti (drain, `SDD-INF-04/05`). Sejak dipanggil, readiness
+     * menjawab tidak siap tanpa memanggil probe apa pun: dependensi yang sehat
+     * tidak menjadikan instance yang sedang pergi layak menerima pekerjaan.
+     */
+    tandaiBerhenti(): void {
+        this.berhenti = true;
+    }
+
+    get sedangBerhenti(): boolean {
+        return this.berhenti;
+    }
 
     register(...checks: readonly HealthCheck[]): this {
         for (const check of checks) {
@@ -86,6 +100,7 @@ export class HealthRegistry {
      * probe yang berulang tiap beberapa detik.
      */
     async readiness(): Promise<boolean> {
+        if (this.berhenti) return false;
         const penentu = [...this.checks.values()].filter(
             (c) => MENENTUKAN_KESIAPAN[c.name],
         );
