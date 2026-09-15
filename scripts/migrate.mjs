@@ -54,6 +54,18 @@ const argumen = [
   ...process.argv.slice(2),
 ];
 
+/**
+ * URL bagi dbmate dengan zona sesi UTC dipaksakan (SDD-INF-09). Batas partisi
+ * `activity_logs` di 0008 ditulis sebagai tanggal pada kolom timestamptz, sehingga
+ * ditafsirkan memakai zona SESI migration — bukan zona server. Parameter yang
+ * tidak dikenal driver dikirim sebagai parameter sesi saat koneksi dibuka.
+ */
+function urlDbmate(url) {
+  const u = new URL(url);
+  u.searchParams.set('TimeZone', 'UTC');
+  return u.toString();
+}
+
 /** Literal SQL untuk sebuah string. Dipakai hanya pada sandi, yang tidak dapat diparameterkan. */
 function literal(nilai) {
   return `'${nilai.replaceAll("'", "''")}'`;
@@ -66,7 +78,7 @@ function jalankanDbmate() {
     // di atas, sehingga MIGRATION_DATABASE_URL berlaku juga baginya.
     const anak = spawn(process.execPath, [CLI, ...argumen], {
       stdio: 'inherit',
-      env: { ...process.env, DATABASE_URL },
+      env: { ...process.env, DATABASE_URL: urlDbmate(DATABASE_URL) },
     });
     anak.on('error', reject);
     anak.on('close', (kode) => resolve(kode ?? 1));

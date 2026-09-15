@@ -119,7 +119,7 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 | `PR-05-20` | Penyerahan bahan — row lock & batas jumlah | M | L | 19 | `FR-22.5`, `BR-083` `BR-087` `BR-089`, `SDD-DB-14` | 20 penyerahan simultan atas saldo 10 → tepat 10 unit keluar, sisanya ditolak `422` |
 | `PR-05-21` | Penyesuaian saldo dengan alasan wajib | S | S | 17 | `FR-22.6`, `BR-088` | Penyesuaian tanpa alasan ditolak skema, bukan hanya service |
 | `PR-05-22` | Stok minimum + `NT-49` lewat outbox | M | M | 17, Ph02 | `FR-22.7`, `BR-085`, `SDD-EVT-03` | Notifikasi terbit sekali saat ambang ditembus, tidak berulang tiap transaksi |
-| `PR-05-23` | QR bahan per jenis + pemindaian | S | S | 16, Ph03 | `BR-090`, `FR-05.1` `FR-05.2` | QR bahan membuka halaman bahan, tidak pernah dibaca sebagai unit aset |
+| `PR-05-23` | QR bahan per jenis + pemindaian | S | S | 16, Ph03 | `BR-090`, `FR-05.1` `FR-05.2` | QR bahan membuka halaman bahan, tidak pernah dibaca sebagai unit aset; payload memakai `APP_BASE_URL` yang sama dengan `PR-03-01` |
 | `PR-05-24` | Opname bahan: sesi domain `BAHAN` + layar mobile `MS-22`/`MS-23` | L | L | 17, Ph04 | `FR-13.4`, `BR-093` `BR-094` `BR-095`, `MOB-PERF-06` | Sesi campur domain ditolak; saldo berubah hanya setelah disetujui Pimpinan |
 | `PR-05-25` | Tool chatbot bahan: `get_material_stock` + `get_low_stock_materials` | S | S | 17, 22, Ph03 | 22.3, `BR-075` `BR-076`, `SDD-AUTH-07`, `SDD-AI-13`, `AI-SEC-03` | Kedua tool memanggil repository M-22 dengan `AuthContext` penanya; role tanpa hak atas M-22 menerima hasil kosong, bukan galat. Awalan statis terbentuk ulang dan `usage.total_cached_tokens > 0` pada permintaan kedua setelah rilis |
 

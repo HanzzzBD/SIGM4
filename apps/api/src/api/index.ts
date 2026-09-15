@@ -13,7 +13,8 @@ import express from "express";
 import type { Express } from "express";
 import { getRedis } from "../shared/cache/index.js";
 import { SystemClock } from "../shared/clock/index.js";
-import { getDb } from "../shared/db/index.js";
+import { readApiConfig, zonaProses } from "../shared/config/index.js";
+import { assertDatabaseTimeZoneUtc, getDb } from "../shared/db/index.js";
 import { RedisRateLimiter, RouteRegistry } from "../shared/http/index.js";
 import type { RateLimiter } from "../shared/http/index.js";
 import {
@@ -25,7 +26,7 @@ import {
 import { healthLiveRoute, healthReadyRoute, healthRouter } from "./health.js";
 import { BASE_PATH } from "./openapi.js";
 import { awalRantai, ujungRantai } from "./chain.js";
-import { rateLimit, readSecurityConfig } from "./security.js";
+import { rateLimit } from "./security.js";
 import type { SecurityConfig } from "./security.js";
 
 /** Port container — `EXPOSE 3000` pada Dockerfile (SDD-16 §4.1). */
@@ -74,7 +75,16 @@ export function createApp(deps: AppDeps): Express {
     return app;
 }
 
-export function start(): void {
+export async function start(
+    env: NodeJS.ProcessEnv = process.env,
+    zona: string = zonaProses(),
+): Promise<void> {
+    // Konfigurasi divalidasi sebelum koneksi apa pun dibuka: proses menolak menyala
+    // dengan konfigurasi tidak valid atau zona waktu bukan UTC (SDD-INF-08/09).
+    const config = readApiConfig(env, zona);
+    // Sesi basis data dipaksa UTC oleh createDb; pemeriksaan ini membuktikan
+    // paksaannya bekerja pada basis data yang sebenarnya (SDD-INF-09).
+    await assertDatabaseTimeZoneUtc(getDb());
     const clock = new SystemClock();
     const health = new HealthRegistry().register(
         databaseCheck(getDb()),
@@ -83,8 +93,12 @@ export function start(): void {
     createApp({
         health,
         limiter: new RedisRateLimiter(getRedis(), clock),
-        security: readSecurityConfig(),
-        logger: new Logger({ clock, modulBawaan: "api" }),
+        security: { objectStorageOrigin: config.objectStoragePublicOrigin },
+        logger: new Logger({
+            clock,
+            modulBawaan: "api",
+            level: config.logLevel,
+        }),
     }).listen(PORT);
 }
 
@@ -93,5 +107,13 @@ if (
     process.argv[1] !== undefined &&
     import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
-    start();
+    start().catch((galat: unknown) => {
+        // Level eksplisit: LOG_LEVEL yang tidak valid bisa jadi penyebab kegagalannya.
+        new Logger({
+            clock: new SystemClock(),
+            modulBawaan: "api",
+            level: "error",
+        }).error("Proses gagal menyala", galat);
+        process.exit(1);
+    });
 }

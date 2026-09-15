@@ -82,7 +82,7 @@ Strict-Transport-Security : max-age=31536000; includeSubDomains; preload
 Content-Security-Policy   : default-src 'self';
                             script-src 'self' 'nonce-{random}';
                             style-src  'self' 'nonce-{random}';
-                            img-src    'self' data: {object-storage-host};
+                            img-src    'self' data: {origin S3_PUBLIC_ENDPOINT};
                             connect-src 'self' {api-host};
                             frame-ancestors 'none'; base-uri 'self'
 X-Content-Type-Options    : nosniff

@@ -10,25 +10,21 @@
 // bukan di salah satu entrypoint.
 
 import { Redis } from "ioredis";
+import { parseRedisEnv } from "../config/index.js";
 
 export interface RedisConfig {
     readonly url: string;
 }
 
 /**
- * Membaca konfigurasi dari lingkungan (`SDD-INF-08`). Pesan galat menyebut NAMA
- * variabel, tidak pernah nilainya (`SDD-16 §4.7`) — URL Redis dapat memuat sandi.
+ * Membaca konfigurasi dari lingkungan. Aturannya milik skema `shared/config`
+ * (SDD-SYS-14); pesan galat menyebut NAMA variabel, tidak pernah nilainya —
+ * URL Redis dapat memuat sandi.
  */
 export function readRedisConfig(
     env: NodeJS.ProcessEnv = process.env,
 ): RedisConfig {
-    const url = env["REDIS_URL"]?.trim();
-    if (!url) {
-        throw new Error(
-            "Variabel lingkungan REDIS_URL wajib diisi (SDD-INF-08).",
-        );
-    }
-    return { url };
+    return parseRedisEnv(env);
 }
 
 /**
