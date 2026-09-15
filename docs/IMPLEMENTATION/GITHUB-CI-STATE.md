@@ -20,7 +20,7 @@ Bila berkas ini bertentangan dengan salah satu di atas, **yang di atas yang berl
 
 ## 1. Mengapa ada dua keadaan
 
-Phase 00 berjalan; `PR-00-01` … `PR-00-05` tergabung ke `develop`. Ketiga pohon `apps/*` beserta `packages/schemas` berdiri lengkap dengan lint dan TypeScript-nya; **Vitest terpasang sejak `PR-00-04`** dan **jalur migration berdiri sejak `PR-00-05`**, sehingga `npm run lint`, `build`, `test`, dan `test:integration` seluruhnya punya sasaran nyata dan hijau secara lokal. Yang belum ada adalah **pipeline yang menjalankannya**: seluruh tahap `CD-01` dibangun `PR-00-17`, dan lingkungan staging beserta job migration dibangun `PR-00-18` — keduanya di Phase 00.
+Phase 00 berjalan; `PR-00-01` … `PR-00-05` tergabung ke `develop`. Ketiga pohon `apps/*` beserta `packages/schemas` berdiri lengkap dengan lint dan TypeScript-nya; **Vitest terpasang sejak `PR-00-04`** dan **jalur migration berdiri sejak `PR-00-05`**, sehingga `npm run lint`, `build`, `test`, dan `test:integration` seluruhnya punya sasaran nyata dan hijau secara lokal. Sejak `PR-00-17` **pipeline yang menjalankannya berdiri** (`.github/workflows/ci.yml`, §3); yang tersisa adalah lingkungan staging beserta job migration, DAST, dan smoke test — `PR-00-18`.
 
 Karena itu sebagian aturan **belum dapat ditaati**, bukan karena diabaikan. Membedakan keduanya penting: aturan yang tidak dapat ditaati dan aturan yang dilanggar menuntut tindakan yang berbeda.
 
@@ -44,24 +44,23 @@ Karena itu sebagian aturan **belum dapat ditaati**, bukan karena diabaikan. Memb
 Urutan yang ditetapkan `CD-01` dan `SDD-16 §4.3`:
 
 ```
-lint → unit test → integration test → uji otorisasi tergenerate
-→ SAST → SCA → build image → image scan → deploy staging → DAST → smoke test
+lint → unit test → integration test (+ cakupan) → build image
+→ SAST → SCA → image scan → deploy staging → DAST → smoke test
 ```
 
 | Tahap | Gerbang | Current State | Dibangun oleh |
 |---|---|---|---|
-| lint | Impor lintas modul melanggar batas → gagal | Lint menegakkan batas antar-pohon (`SDD-REPO-06/07`), batas lapisan, dan — sejak `PR-00-02` — batas antar-**modul** (`SDD-SYS-02/03`, `SDD-00 §4.2`); seluruhnya dibuktikan uji negatif `scripts/check_import_boundaries.mjs`. Yang belum ada tinggal pemasangannya di CI | `PR-00-17` |
-| unit test | Cakupan logika inti < 70% → **stop** (`CD-02`, `NFR-M-03`) | **Vitest terpasang** sejak `PR-00-04` (`SDD-REPO-11`); `npm test` menjalankan 5 berkas / 44 uji, hijau. Yang belum ada: tahapnya di CI dan gerbang cakupannya | `PR-00-17` |
-| integration test | Termasuk uji konkurensi `CC-01`…`CC-07` | **Berdiri** sejak `PR-00-05`: `npm run test:integration -w apps/api` menjalankan 2 berkas / 9 uji terhadap PostgreSQL nyata (`SDD-REPO-11`). `CC-01`…`CC-07` sendiri baru mungkin setelah `booking_slots` ada (`PR-02-16`) | `PR-00-17` |
-| uji otorisasi tergenerate | `SEC-T-01` | Belum ada | `PR-00-17` |
-| SAST | `ST-01` | Belum ada — perkakasnya **CodeQL** (`SDD-SEC-11`) | `PR-00-17` |
-| SCA | Critical/High → **stop** (`ST-02`) | Belum ada — perkakasnya **Dependabot** (`SDD-SEC-11`) | `PR-00-17` |
-| build + image scan | `CD-01` | Belum ada — pemindainya **Trivy** (`SDD-SEC-11`) | `PR-00-17` |
+| lint | Impor lintas modul melanggar batas → gagal | **Berjalan** sejak `PR-00-17` — job `lint`: `npm run lint`, `typecheck`, dan uji negatif `check:boundaries` (`SDD-REPO-06/07`, `SDD-SYS-02/03`) | `PR-00-17` ✅ |
+| unit test | — | **Berjalan** — job `uji-berkas`: `npm run test` seluruh workspace | `PR-00-17` ✅ |
+| integration test | Cakupan gabungan unit+integrasi < 70% statements/lines → **stop** (`CD-02`, `NFR-M-03`, keputusan 46); uji ter-skip → **stop** | **Berjalan** — job `uji-integrasi` terhadap PostgreSQL 15 + Redis 7 sebagai *service container*, dengan `APP_DATABASE_URL`/`APP_DB_PASSWORD` sehingga `AL-03b` benar-benar berjalan. `CC-01`…`CC-07` baru mungkin setelah `booking_slots` ada (`PR-02-16`) | `PR-00-17` ✅ |
+| uji otorisasi tergenerate | `SEC-T-01` | Belum ada — belum ada endpoint berpermission; lahir bersama middleware permission Phase 01–02 dan diperiksa gerbang keluar `phase-01.md`/`phase-02.md` §9 | Phase 01–02 |
+| build image | `CD-01` | **Berjalan** — job `build`: `npm run build` + `docker build` konteks bersih; image diteruskan sebagai artefak | `PR-00-17` ✅ |
+| SAST | `ST-01`; High/Critical → **stop** | **Berjalan** — job `sast`: **CodeQL** `security-extended`; gagal bila SARIF memuat `security-severity` ≥ 7,0 | `PR-00-17` ✅ |
+| SCA | Critical/High → **stop** (`ST-02`) | **Berjalan** — job `sca`: `dependency-review-action` (PR) + `npm audit --audit-level=high`; harian lewat `sca-harian.yml` atas `develop` dan `main`; **Dependabot** alerts & security updates menyala 15 September 2026, pemutakhiran versi lewat `.github/dependabot.yml` ke `develop` (keputusan 45, 48) | `PR-00-17` ✅ |
+| image scan | `CD-01`; HIGH/CRITICAL → **stop** | **Berjalan** — job `image-scan`: **Trivy** atas artefak job `build`, tanpa pengecualian. Runtime image tanpa npm/npx/corepack/yarn + `apk upgrade` (keputusan 47) | `PR-00-17` ✅ |
 | deploy staging → DAST → smoke test | `ST-03`, `CD-07` | Belum ada — DAST memakai **OWASP ZAP** (`SDD-SEC-11`); proxy staging **Nginx + certbot** (`SDD-INF-13`) | `PR-00-18` |
 
-Penyedianya kini tertulis, bukan tersirat: **GitHub Actions** (`SDD-INF-12`, 6 September 2026); perkakas tahap uji adalah **Vitest**, **Playwright**, dan **Maestro** (`SDD-REPO-11`); perkakas tahap keamanan adalah **CodeQL**, **Dependabot**, **Trivy**, dan **OWASP ZAP** (`SDD-SEC-11`). Seluruh tahap pada tabel di atas kini punya nama perkakas — yang tersisa hanyalah menulis workflow-nya di `PR-00-17`.
-
-**`.github/workflows/` sengaja masih kosong** — diperiksa ulang 7 September 2026, direktorinya memang belum ada. Sejak `PR-00-01`, alasannya bukan lagi ketiadaan sasaran — `npm run lint` dan `npm run build` sudah hijau dan dapat dipanggil CI hari ini. Yang tersisa adalah urutan pekerjaan: menulis pipeline sekarang mendahului `PR-00-17`, sementara tahap uji, SAST, SCA, dan pemindaian image belum punya apa pun untuk dijalankan. Pipeline ditulis sekali di `PR-00-17`, bukan dirintis sepotong lalu ditulis ulang.
+Seluruh tahap berada di `.github/workflows/ci.yml` dan dirangkum job **`CI lulus`** — satu-satunya *required status check* (`SDD-INF-12`). Job pertama menyaring jalur (`SDD-17 §5`): perubahan yang hanya menyentuh `docs/IMPLEMENTATION`, `docs/UX`, `docs/DESIGN`, atau berkas di luar pohon backend melewati uji, build, dan image scan; **`docs/PRD` dan `docs/SDD` tidak dilewati** karena uji pembanding membacanya. Setiap action dipatok ke SHA commit.
 
 ### Migration & deploy produksi
 
