@@ -155,19 +155,19 @@ describe("parseLogLevel", () => {
 });
 
 describe("entrypoint menolak menyala dengan konfigurasi tidak valid", () => {
-    it("sigm4-api memakai skema API — S3_PUBLIC_ENDPOINT ikut dituntut", () => {
-        expect(() => start({ ...SAH }, "UTC")).toThrow(
+    it("sigm4-api memakai skema API — S3_PUBLIC_ENDPOINT ikut dituntut", async () => {
+        await expect(start({ ...SAH }, "UTC")).rejects.toThrow(
             /S3_PUBLIC_ENDPOINT wajib diisi/,
         );
     });
 
-    it("sigm4-api menolak zona proses bukan UTC sebelum membuka koneksi", () => {
-        expect(() =>
+    it("sigm4-api menolak zona proses bukan UTC sebelum membuka koneksi", async () => {
+        await expect(
             start(
                 { ...SAH, S3_PUBLIC_ENDPOINT: "http://localhost:9000" },
                 "Asia/Jakarta",
             ),
-        ).toThrow(/Zona waktu proses harus UTC/);
+        ).rejects.toThrow(/Zona waktu proses harus UTC/);
     });
 
     it("sigm4-worker memakai skema proses sebelum membuka koneksi", async () => {

@@ -102,7 +102,7 @@ M-05  M-06  M-07  M-11  M-14  M-19   ← tanpa ketergantungan antar-modul
 
 | PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
 |---|---|:---:|:---:|---|---|---|
-| `PR-03-01` | Pembuatan QR + payload + penyimpanan | M | M | Ph02 | `FR-05.1`, `BR-001` `BR-002` | Payload tidak memuat data pribadi |
+| `PR-03-01` | Pembuatan QR + payload + penyimpanan | M | M | Ph02 | `FR-05.1`, `BR-001` `BR-002` | Payload tidak memuat data pribadi; payload memakai `APP_BASE_URL` (`https://{domain}/a/{asset_uuid}`), yang masuk skema `shared/config` sebagai URL https berhost (`SDD-SYS-14`) |
 | `PR-03-02` | Cetak QR massal (PDF, tata letak label) | M | M | 01 | `FR-05.1 A2` | 100 label satu berkas |
 | `PR-03-03` | Endpoint pemindaian + resolusi ke aset | S | S | 01 | `FR-05.2` | QR tak dikenal → galat jelas, bukan 500 |
 | `PR-03-04` | Layanan berkas: presigned URL unggah/unduh | M | M | Ph02 | `FR-06.1`, `SDD-FS-01/02/03/13` | URL kedaluwarsa sesuai `SDD-FS-02`; pemeriksaan `object_storage` terdaftar di `/health` dan menentukan `ready` (`OBS-06`); URL path-style dengan presigned URL ditandatangani lewat `S3_PUBLIC_ENDPOINT` (`SDD-FS-13`); `S3_ENDPOINT`/`S3_BUCKET`/`S3_ACCESS_KEY`/`S3_SECRET_KEY` masuk skema `shared/config`; kode `409 FILE_NOT_SCANNED` (`SDD-09 §4.4`) diputuskan terhadap katalog tertutup Bab 17.3 sebelum endpoint unduh dibuat |

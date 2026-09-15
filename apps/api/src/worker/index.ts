@@ -12,7 +12,7 @@ import { getRedis } from "../shared/cache/index.js";
 import { ensurePartitions, verifyChain } from "../shared/audit/index.js";
 import { SystemClock } from "../shared/clock/index.js";
 import { readProcessConfig, zonaProses } from "../shared/config/index.js";
-import { getDb } from "../shared/db/index.js";
+import { assertDatabaseTimeZoneUtc, getDb } from "../shared/db/index.js";
 import {
     EventHandlerRegistry,
     OutboxDispatcher,
@@ -100,6 +100,8 @@ export async function bootstrap(
     // Konfigurasi divalidasi sebelum koneksi apa pun dibuka: proses menolak menyala
     // dengan konfigurasi tidak valid atau zona waktu bukan UTC (SDD-INF-08/09).
     readProcessConfig(env, zona);
+    // Sesi basis data dipaksa UTC oleh createDb; pemeriksaan ini membuktikannya (SDD-INF-09).
+    await assertDatabaseTimeZoneUtc(getDb());
     const connection = getRedis();
     createHealthServer(
         new HealthRegistry().register(

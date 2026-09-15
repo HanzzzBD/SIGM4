@@ -5,6 +5,7 @@ import pg from "pg";
 import { parseDatabaseEnv } from "../config/index.js";
 import type { DatabaseEnv } from "../config/index.js";
 import type { Database } from "./schema.js";
+import { OPSI_SESI_UTC } from "./timezone.js";
 
 export type DatabaseConfig = DatabaseEnv;
 
@@ -25,6 +26,8 @@ export function createDb(config: DatabaseConfig): Kysely<Database> {
             pool: new pg.Pool({
                 connectionString: config.connectionString,
                 max: config.poolSize,
+                // Setiap sesi dipaksa UTC, apa pun zona bawaan basis datanya (SDD-INF-09).
+                options: OPSI_SESI_UTC,
             }),
         }),
     });

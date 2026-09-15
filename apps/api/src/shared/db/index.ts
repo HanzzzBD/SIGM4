@@ -2,6 +2,7 @@
 export type { Database } from "./schema.js";
 export type { DatabaseConfig } from "./connection.js";
 export { closeDb, createDb, getDb, readDatabaseConfig } from "./connection.js";
+export { OPSI_SESI_UTC, assertDatabaseTimeZoneUtc } from "./timezone.js";
 export type { QueryExecutor, TransactionScope } from "./transaction.js";
 export { withTransaction } from "./transaction.js";
 export type { ScopedRepository } from "./repository.js";
