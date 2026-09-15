@@ -126,7 +126,9 @@ certbot (renewal INF-06)      worker ×1     →  object storage (S3-compatible)
                               ClamAV        
 ```
 
-Web (hasil build Vite, `SDD-FE-14`) disajikan sebagai aset statis dari CDN atau reverse proxy, bukan dari proses Node.
+Web (hasil build Vite, `SDD-FE-14`) disajikan sebagai aset statis **oleh Nginx pada origin yang sama dengan API** — web di `/`, API di `/api/v1` — bukan dari CDN berorigin lain dan bukan dari proses Node. Konsekuensinya `cors` tidak dipasang ([SDD-06 §4.2](06-api-design.md)).
+
+**Pengiriman & job migration** (keputusan pemilik produk, 15 September 2026). Image yang lulus pipeline — artefak yang sama dengan yang dipindai Trivy — diterbitkan ke **GHCR** bertag SHA commit, lalu ditarik VPS. Job migration (`SDD-INF-03`) berjalan sebagai container sekali-jalan dari **image yang sama**, sehingga api, worker, dan skema berasal dari satu tag (`SDD-INF-01`); runtime image karena itu memuat `apps/api/migrations/`, `scripts/migrate.mjs`, dan dbmate, tetapi tidak npm. Topologi staging beserta koreografinya berada di `deploy/staging/` ([SDD-17 §4.1](17-repo-layout.md)).
 
 **Replika dan arsip WAL tidak lagi menjadi container pada topologi ini.** Keduanya adalah tanggung jawab layanan PostgreSQL terkelola (`SDD-INF-11`) dan tampil sebagai konfigurasi langganan, bukan sebagai proses yang di-*compose*. Redis tetap swa-kelola di VPS: kehilangannya berarti kehilangan cache dan *rate limit* — degradasi yang `SDD-SEC-05` dan §6 sudah antisipasi — bukan kehilangan data.
 

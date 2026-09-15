@@ -108,6 +108,8 @@ requestId → logger → cors → helmet(header keamanan NFR-S-11)
 
 Urutan ini tetap dan diuji; menyisipkan sesuatu di tengahnya memerlukan pembaruan berkas ini.
 
+**`cors` tidak dipasang.** Web dan API disajikan dari **satu origin** di belakang Nginx — web statis di `/`, API di `/api/v1` ([SDD-16 §4.2](16-infrastructure-deployment.md)) — sehingga peramban tidak pernah melakukan permintaan lintas origin, dan aplikasi mobile tidak tunduk pada CORS. Slot `cors` pada rantai di atas tetap tertulis sebagai tempatnya bila topologi itu berubah; memasangnya tanpa origin lain untuk diizinkan hanya menambah permukaan konfigurasi (keputusan pemilik produk, 15 September 2026).
+
 ### 4.3 Kontrak respons
 
 Bentuk amplop sudah ditetapkan Bab 17.2 dan tidak diulang di sini. Yang ditetapkan rancangan:

@@ -20,8 +20,8 @@ Urutan phase dan graf dependensinya ada di [`ROADMAP.md`](ROADMAP.md) dan tidak 
 | 05 | 3 | 24 | M–L | Menutup dua milestone; menampung seluruh domain Bahan |
 | 06 | 1 | 10 | M–L | Satu modul, ketergantungan baca ke seluruh sistem |
 | 07 | — | 14 | M | Integrasi & UAT; banyak aktivitas non-PR |
-| 08 | — | 15 | S–M | Pengerasan; banyak aktivitas non-PR |
-| **Total** | **22** | **163** | | |
+| 08 | — | 16 | S–M | Pengerasan; banyak aktivitas non-PR |
+| **Total** | **22** | **164** | | |
 
 Skala kompleksitas PR mengikuti [`templates/PHASE-TEMPLATE.md`](templates/PHASE-TEMPLATE.md): **S** ≤ 200 baris berubah · **M** ≤ 400 · **L** > 400 dan wajib disertai alasan di deskripsi PR. Sejak 7 September 2026 §7 tiap phase memisahkannya menjadi **dua kolom** — `Kode` untuk baris kode produksi, `Uji` untuk baris uji. Kolom **Kompleksitas dominan** pada tabel di atas mengacu pada `Kode`.
 

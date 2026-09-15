@@ -107,6 +107,7 @@ Keluaran phase ini bukan kode, melainkan **keputusan bahwa sistem boleh dipakai*
 | `PR-08-13` | Pengerasan mobile + versi paksa + berkas rilis store | M | M | Ph07 | `GL-11`, `SDD-MOB-08/09/10` | Lolos tinjauan kedua store |
 | `PR-08-14` | Uji rencana rollback pada staging berdata produksi tiruan | M | M | 07 | `GL-12`, `CD-05` | Rollback dijalankan sungguhan dan terukur waktunya |
 | `PR-08-15` | Dokumen serah terima `IMP-08` | L | L | seluruhnya | `IMP-08` | Delapan dokumen lengkap dan terbaca pihak sekolah |
+| `PR-08-16` | DAST OWASP ZAP *baseline scan* terhadap staging per kandidat rilis | S | S | Ph00 | `ST-03`, `SDD-SEC-11` | Dijalankan pipeline setelah smoke test staging; temuan High/Critical menggagalkan kandidat rilis; laporan tersimpan sebagai artefak |
 
 ## 8. Task Breakdown
 
@@ -143,6 +144,7 @@ Keluaran phase ini bukan kode, melainkan **keputusan bahwa sistem boleh dipakai*
 - [ ] `GL-10`: pelatihan selesai; minimal dua Administrator aktif (`BR-070a`)
 - [ ] `GL-11`: aplikasi disetujui Google Play dan App Store
 - [ ] `GL-12`: rencana rollback teruji (`CD-05`)
+- [ ] `ST-03`: DAST berjalan pada kandidat rilis dan tanpa temuan High/Critical terbuka
 - [ ] `IMP-08`: delapan dokumen serah terima lengkap
 - [ ] TBD kelompok B tertutup dengan angka pengukuran; sisa TBD terbuka tercatat sebagai risiko yang diterima secara sadar
 

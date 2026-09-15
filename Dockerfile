@@ -35,6 +35,37 @@ COPY . .
 RUN npm run build -w apps/api && npm prune --omit=dev
 
 # ---------------------------------------------------------------------------
+# Tahap dbmate — biner migration dibangun dari sumber (keputusan 56)
+# ---------------------------------------------------------------------------
+# dbmate 2.35.1 dari npm — versi terbaru, dan cabang utama upstream pun belum
+# diperbarui — membawa lima CVE HIGH pada modul Go tidak langsung. Trivy
+# menggerbangnya tanpa pengecualian (keputusan 47), sehingga biner dibangun ulang
+# dari commit rilis yang sama dengan modul yang sudah ditambal. Flag build mengikuti
+# Makefile upstream untuk Linux: cgo untuk sqlite, ditautkan statis.
+#
+# Saat dbmate dinaikkan versinya, commit dan daftar modul di bawah WAJIB ditinjau
+# ulang; Dependabot tidak melacak keduanya.
+FROM golang:1.26.6-alpine AS dbmate
+RUN apk add --no-cache git build-base
+WORKDIR /src
+# v2.35.1 — dipatok ke commit, bukan tag yang dapat dipindahkan.
+ARG DBMATE_COMMIT=b735560813732661b34e1743cda76ec81ceb02bf
+RUN git init -q . \
+    && git fetch -q --depth 1 https://github.com/amacneil/dbmate.git "$DBMATE_COMMIT" \
+    && git checkout -q FETCH_HEAD
+# Menutup CVE-2026-56854 (x/crypto ≥ 0.55.0), CVE-2026-46600 (x/net ≥ 0.56.0),
+# CVE-2026-56852 (x/text ≥ 0.39.0), CVE-2026-84304 dan CVE-2026-84445 (grpc ≥
+# 1.83.2). x/net dan x/text dinaikkan melampaui batas tambalnya karena versi
+# minimum yang dituntut grpc 1.83.2 dan x/crypto 0.55.0: x/net 0.58.0, x/text 0.41.0.
+RUN go get golang.org/x/crypto@v0.55.0 golang.org/x/net@v0.58.0 \
+        golang.org/x/text@v0.41.0 google.golang.org/grpc@v1.83.2 \
+    && go mod tidy
+RUN CGO_ENABLED=1 go build -trimpath \
+        -tags netgo,osusergo,sqlite_omit_load_extension,sqlite_fts5,sqlite_json \
+        -ldflags '-s -extldflags "-static"' \
+        -o /out/dbmate .
+
+# ---------------------------------------------------------------------------
 # Tahap runtime — tanpa perkakas build, non-root (SDD-INF-02)
 # ---------------------------------------------------------------------------
 FROM node:22-alpine
@@ -61,6 +92,16 @@ COPY --from=build --chown=app:app /app/packages/schemas/package.json ./packages/
 COPY --from=build --chown=app:app /app/packages/schemas/dist ./packages/schemas/dist
 COPY --from=build --chown=app:app /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build --chown=app:app /app/apps/api/dist ./apps/api/dist
+
+# Perkakas job migration (SDD-INF-03, keputusan 53): container sekali-jalan dari
+# image yang SAMA — `node scripts/migrate.mjs up` dengan MIGRATION_DATABASE_URL —
+# sehingga api, worker, dan skema yang dijalankannya berasal dari satu tag
+# (SDD-INF-01). dbmate ikut lewat node_modules sebagai dependensi runtime.
+COPY --from=build --chown=app:app /app/scripts/migrate.mjs ./scripts/migrate.mjs
+COPY --from=build --chown=app:app /app/apps/api/migrations ./apps/api/migrations
+# Pembungkus npm dbmate memanggil @dbmate/linux-x64/bin/dbmate; biner bawaannya
+# diganti biner hasil tahap `dbmate` (keputusan 56). Image ini hanya untuk amd64.
+COPY --from=dbmate --chown=app:app /out/dbmate ./node_modules/@dbmate/linux-x64/bin/dbmate
 
 USER app
 

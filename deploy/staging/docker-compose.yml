@@ -1,0 +1,121 @@
+# Topologi runtime STAGING — PR-00-18 (SDD-16 §4.2, SDD-INF-10/11/13).
+#
+# Dijalankan di VPS oleh deploy.sh, bukan oleh pengembang. Berbeda dari
+# docker-compose.yml akar (dependensi pengembangan):
+#   - PostgreSQL TIDAK ada di sini: layanan terkelola ber-region Indonesia
+#     (SDD-INF-11); alamatnya datang dari berkas env.
+#   - Object storage juga terkelola (INF-02, SDD-SEC-10).
+#   - Web dan API satu origin di belakang Nginx; `cors` tidak dipasang (keputusan 51).
+#
+# RAHASIA tidak pernah berada di sini (SEC-CFG-01). Dua berkas env disiapkan
+# operator dari secret manager di VPS, di luar repositori:
+#   ${SIGM4_ENV_FILE}            — api & worker: DATABASE_URL (akun sigm4_app),
+#                                  S3_PUBLIC_ENDPOINT, LOG_LEVEL, …  (SDD-16 §4.7)
+#   ${SIGM4_MIGRATION_ENV_FILE}  — HANYA job migration: MIGRATION_DATABASE_URL,
+#                                  APP_DB_PASSWORD. API dan worker tidak pernah
+#                                  menerimanya (SDD-16 §4.7, SEC-CFG-03).
+#
+# ClamAV (av-scanner §4.2) belum ada: belum ada adapter yang memanggilnya; ia masuk
+# bersama adapter AV Phase 03 (SDD-FS-04).
+
+name: sigm4-staging
+
+x-app: &app
+    # Satu tag untuk api, worker, dan migration (SDD-INF-01, keputusan 52–53).
+    image: ${SIGM4_IMAGE:?SIGM4_IMAGE wajib diisi deploy.sh}
+    env_file:
+        - ${SIGM4_ENV_FILE:-/etc/sigm4/staging.env}
+    environment:
+        TZ: UTC # SDD-INF-09 — divalidasi lagi saat startup
+        REDIS_URL: redis://redis:6379
+    restart: unless-stopped
+    depends_on:
+        redis:
+            condition: service_healthy
+
+services:
+    # INF-06, SDD-INF-13 — TLS + HSTS, satu origin untuk web statis dan /api/v1.
+    nginx:
+        image: nginx:1.29-alpine
+        environment:
+            SIGM4_DOMAIN: ${SIGM4_DOMAIN:?SIGM4_DOMAIN wajib diisi}
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./nginx/sigm4.conf.template:/etc/nginx/templates/default.conf.template:ro
+            - letsencrypt:/etc/letsencrypt:ro
+            - certbot-webroot:/var/www/certbot:ro
+            # Hasil build web (SDD-FE-14) disalin ke volume ini oleh pipeline web;
+            # sampai web dirakit, `/` menjawab 404.
+            - web:/usr/share/sigm4/web:ro
+        restart: unless-stopped
+
+    # SDD-INF-13 — perpanjangan sertifikat sebagai komponen tersendiri. Penerbitan
+    # pertama dijalankan sekali oleh operator (`certbot certonly --webroot`).
+    certbot:
+        image: certbot/certbot:v4.2.0
+        entrypoint: ["/bin/sh", "-c", "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done"]
+        volumes:
+            - letsencrypt:/etc/letsencrypt
+            - certbot-webroot:/var/www/certbot
+        restart: unless-stopped
+
+    # SDD-INF-04 — dua instance agar penggantian bergulir tidak memutus layanan.
+    api-1:
+        <<: *app
+        healthcheck: &api-ready
+            test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/api/v1/health/ready"]
+            interval: 5s
+            timeout: 3s
+            retries: 3
+            start_period: 15s
+    api-2:
+        <<: *app
+        healthcheck: *api-ready
+
+    # SDD-SYS-08 — proses terpisah dari image yang sama; satu-satunya port HTTP-nya /health.
+    worker:
+        <<: *app
+        command: ["node", "apps/api/dist/worker/index.js"]
+        # SDD-INF-05 — waktu bagi pekerjaan berjalan untuk selesai sebelum dimatikan.
+        stop_grace_period: 60s
+        healthcheck:
+            test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/health/ready"]
+            interval: 5s
+            timeout: 3s
+            retries: 3
+            start_period: 15s
+
+    # SDD-INF-03, CD-04 — container sekali-jalan dengan akun DDL, sebelum instance
+    # baru menerima trafik. Hanya berjalan lewat `--profile migrate`.
+    migrate:
+        image: ${SIGM4_IMAGE:?SIGM4_IMAGE wajib diisi deploy.sh}
+        command: ["node", "scripts/migrate.mjs", "up"]
+        env_file:
+            - ${SIGM4_MIGRATION_ENV_FILE:-/etc/sigm4/staging-migration.env}
+        environment:
+            TZ: UTC
+        profiles: ["migrate"]
+        restart: "no"
+
+    # INF-03 — cache, rate limit, antrean, distributed lock. Swa-kelola: kehilangannya
+    # adalah degradasi, bukan kehilangan data (SDD-16 §4.2).
+    redis:
+        image: redis:7-alpine
+        environment:
+            TZ: UTC
+        volumes:
+            - redis-data:/data
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 5s
+            timeout: 3s
+            retries: 12
+        restart: unless-stopped
+
+volumes:
+    letsencrypt:
+    certbot-webroot:
+    web:
+    redis-data:

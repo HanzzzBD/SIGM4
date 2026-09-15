@@ -156,7 +156,9 @@ jobs:
         needs: [perubahan, uji-integrasi]
         if: needs.perubahan.outputs.api == 'true'
         runs-on: ubuntu-latest
-        timeout-minutes: 20
+        # Tahap `dbmate` membangun biner Go dari sumber tanpa cache (keputusan 56):
+        # ±11 menit terukur lokal.
+        timeout-minutes: 30
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
             - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -274,3 +276,86 @@ jobs:
                           *) echo "Ada job berstatus $r"; exit 1 ;;
                       esac
                   done
+
+    # ---- Deploy staging (CD-03) — PR-00-18 --------------------------------
+    # Hanya push ke `staging`, dan hanya setelah seluruh gerbang lulus. Yang
+    # diterbitkan adalah artefak job `build` yang SAMA dengan yang dipindai Trivy,
+    # bukan hasil build ulang (keputusan 52).
+    publikasi-image:
+        name: Terbitkan image · GHCR
+        needs: [perubahan, ci-lulus]
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging' && needs.perubahan.outputs.api == 'true'
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        permissions:
+            contents: read
+            packages: write
+        outputs:
+            image: ${{ steps.terbit.outputs.image }}
+        steps:
+            - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+              with:
+                  name: image
+            - id: terbit
+              env:
+                  GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  # Nama repositori GHCR wajib huruf kecil.
+                  image="ghcr.io/${GITHUB_REPOSITORY,,}:${GITHUB_SHA}"
+                  docker load --input image.tar
+                  docker tag "sigm4:${GITHUB_SHA}" "$image"
+                  echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+                  docker push "$image"
+                  echo "image=$image" >> "$GITHUB_OUTPUT"
+
+    # Koreografi deploy (SDD-INF-10) dijalankan di VPS lewat SSH; smoke test (CD-07)
+    # dijalankan dari runner terhadap origin publik — jalur yang sama dengan pengguna.
+    # Secret & variabel environment `staging`: STAGING_SSH_HOST, STAGING_SSH_USER,
+    # STAGING_SSH_KEY, STAGING_SSH_KNOWN_HOSTS · vars.STAGING_DOMAIN.
+    deploy-staging:
+        name: Deploy staging
+        needs: [publikasi-image]
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        environment:
+            name: staging
+            url: https://${{ vars.STAGING_DOMAIN }}
+        # Dua deploy tidak pernah berjalan bersamaan; yang datang belakangan menunggu.
+        concurrency:
+            group: deploy-staging
+            cancel-in-progress: false
+        permissions:
+            contents: read
+            packages: read
+        env:
+            IMAGE: ${{ needs.publikasi-image.outputs.image }}
+            TUJUAN: ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}
+            DIR_VPS: /opt/sigm4/staging
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - name: Kunci SSH & known_hosts
+              env:
+                  SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+                  KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+              run: |
+                  install -d -m 700 ~/.ssh
+                  printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+                  # known_hosts dipatok, bukan StrictHostKeyChecking=no: host palsu
+                  # tidak boleh menerima image beserta kredensial registry.
+                  printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+            - name: Salin berkas deploy
+              run: |
+                  ssh -i ~/.ssh/id_deploy "$TUJUAN" "mkdir -p $DIR_VPS"
+                  scp -i ~/.ssh/id_deploy -r deploy/staging/. "$TUJUAN:$DIR_VPS/"
+            - name: Migration + rolling deploy
+              env:
+                  GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  DOMAIN: ${{ vars.STAGING_DOMAIN }}
+              run: |
+                  # Token GITHUB_TOKEN berumur sepanjang job ini saja — cukup untuk satu tarik.
+                  echo "$GHCR_TOKEN" | ssh -i ~/.ssh/id_deploy "$TUJUAN" \
+                      "docker login ghcr.io -u '$GITHUB_ACTOR' --password-stdin"
+                  ssh -i ~/.ssh/id_deploy "$TUJUAN" \
+                      "cd $DIR_VPS && chmod +x deploy.sh smoke-test.sh && SIGM4_DOMAIN='$DOMAIN' ./deploy.sh '$IMAGE'; kode=\$?; docker logout ghcr.io >/dev/null; exit \$kode"
+            - name: Smoke test (CD-07)
+              run: bash deploy/staging/smoke-test.sh "https://${{ vars.STAGING_DOMAIN }}"

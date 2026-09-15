@@ -1,6 +1,6 @@
 # Implementation Documentation — SIGM4
 
-**Status:** rencana lengkap: 9 phase · 163 pull request · 22 modul. Kemajuan aktual per phase dan PR hanya dicatat di [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md).
+**Status:** rencana lengkap: 9 phase · 164 pull request · 22 modul. Kemajuan aktual per phase dan PR hanya dicatat di [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md).
 
 ---
 
@@ -69,7 +69,7 @@ Aturan yang paling sering tergoda dilanggar: **IMPLEMENTATION menurunkan, tidak 
 | [05](phases/phase-05.md) | Penutupan Siklus | M-09 · M-21 | 14 | `M3` & `M4` — **menutup** |
 | [06](phases/phase-06.md) | Analitik | M-16 | 10 | `M5` — **menutup** |
 | [07](phases/phase-07.md) | Integrasi Lintas Modul & UAT | — | 14 | `M6` (sebagian) |
-| [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 15 | `M6` — **menutup** |
+| [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 16 | `M6` — **menutup** |
 
 **Phase bukan milestone.** Phase adalah gelombang dependensi teknis — sekumpulan modul yang boleh dikerjakan bersamaan karena tidak saling menunggu. Milestone adalah pengelompokan bisnis PRD 29.2. Keduanya bersilangan; pemetaan lengkapnya di [`ROADMAP.md` §4](ROADMAP.md).
 

@@ -19,7 +19,11 @@ dist
 
 # Dokumentasi dan perkakasnya — tidak dijalankan runtime mana pun
 docs
-scripts
+# Kecuali pembungkus migration: job migration berjalan dari image yang sama
+# (SDD-INF-03, keputusan 53).
+scripts/*
+!scripts/migrate.mjs
+deploy
 wireframe
 *.md
 PRD.md
