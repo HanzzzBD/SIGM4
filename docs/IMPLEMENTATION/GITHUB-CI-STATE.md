@@ -87,18 +87,21 @@ Branch protection **tidak dapat diatur lewat berkas**. Daftar berikut menerjemah
 | `main`, `develop` | Do not allow bypassing (termasuk admin) | `BRANCHING §3` — "hanya bermanfaat bila tidak pernah ada pengecualian" | ✅ **aktif** |
 | `main`, `develop` | Require conversation resolution | `BRANCHING §4` — komentar terklasifikasi tidak menggantung | ✅ **aktif** |
 | `main`, `develop` | Dismiss stale approvals | `BRANCHING §3` | ✅ **aktif** |
-| `main`, `staging`, `develop` | Require review from Code Owners | `BRANCHING §3.1` — tinjauan arsitek wajib | ⏸ **ditunda** — lihat catatan di bawah |
-| `develop` | Minimal 1 approval | `BRANCHING §3` | ⏸ **ditunda** — lihat catatan di bawah |
+| `develop` | Require review from Code Owners | `BRANCHING §3.1` — tinjauan arsitek wajib | ✅ **aktif** 15 September 2026 |
+| `main`, `staging` | Require review from Code Owners | `BRANCHING §3.1` | ⏸ **ditunda** — `main`: lihat catatan di bawah; `staging` menunggu `PR-00-18` |
+| `develop` | Minimal 1 approval | `BRANCHING §3` | ✅ **aktif** 15 September 2026 |
 | ketiganya | Require status checks to pass | `CD-01`, `CD-02` | ⏳ menunggu `PR-00-17` |
 | ketiganya | Require branches to be up to date before merging | Mencegah penggabungan di atas basis usang | ⏳ menunggu `PR-00-17` — GitHub hanya menyediakannya **bersama** required status check |
 | `develop` | Allow squash merge **saja** | `BRANCHING §3` — satu PR satu commit | ❌ **tidak dapat diberkaskan maupun disetel** — lihat catatan di bawah |
 | `staging`, `main` | Allow merge commit **saja** | `BRANCHING §3` — batas antar-phase tetap terbaca | ❌ idem |
 
-**Dua baris tinjauan sengaja ditunda, bukan terlewat.** `CODEOWNERS` saat ini hanya berisi `@HanzzzBD`, dan GitHub tidak mengizinkan seseorang menyetujui pull request-nya sendiri. Menyalakan *required approvals* atau *Code Owners review* sekarang berarti **tidak ada satu pun PR yang dapat digabungkan** — termasuk `PR-00-03` yang sedang terbuka. Keduanya dinyalakan bersamaan dengan penggantian `CODEOWNERS` begitu tim arsitek terbentuk; sampai saat itu `BRANCHING §3.1` ditegakkan sebagai kebiasaan, dan keadaan itu tercatat jujur di §6 alih-alih disamarkan sebagai setelan yang menunggu.
+**Tinjauan wajib menyala di `develop` sejak 15 September 2026.** Sampai hari itu `CODEOWNERS` hanya berisi `@HanzzzBD`, dan GitHub tidak mengizinkan seseorang menyetujui pull request-nya sendiri — menyalakan *required approvals* atau *Code Owners review* akan menghentikan setiap merge. Pemilik produk kemudian menetapkan `@PM-Codexpert` (PM, akses `write`) sebagai peninjau, dan namanya dicantumkan pada **setiap** baris `CODEOWNERS`, bukan hanya `*`: baris spesifik mengalahkan `*`, sehingga satu baris berpemilik tunggal tetap mengunci PR buatan pemilik itu. Setiap PR ke `develop` kini wajib disetujui satu code owner selain penulisnya.
+
+**`main` sengaja belum.** GitHub membaca `CODEOWNERS` dari **cabang tujuan**, dan `main` masih memuat versi yang hanya berisi `@HanzzzBD` sampai isi `develop` dipromosikan. Menyalakan *Code Owners review* di `main` sekarang mengunci setiap PR `@HanzzzBD` ke `main`; setelan itu dinyalakan setelah `CODEOWNERS` dua-pemilik tiba di sana (§6).
 
 **Metode merge per-cabang tidak dapat ditegakkan GitHub.** `allow_squash_merge`, `allow_merge_commit`, dan `allow_rebase_merge` adalah setelan **tingkat repositori**, bukan tingkat cabang — sehingga "squash saja untuk `develop`" dan "merge commit saja untuk `main`/`staging`" tidak dapat berdiri bersamaan sebagai setelan. Ketiganya kini aktif di repositori, dan `BRANCHING §3` pada titik ini berlaku sebagai **disiplin peninjau**, bukan sebagai pagar. Menonaktifkan salah satunya justru akan melanggar baris yang lain.
 
-Per 6 September 2026 proteksi **dinyalakan** pada `main` dan `develop` lewat `gh api`, dan hasilnya diverifikasi kembali dari API. `staging` menunggu `PR-00-18`. Enam setelan aktif, dua ditunda karena tim, dua menunggu `PR-00-17`, dan dua tidak dapat disetel sama sekali — rinciannya pada tabel di atas.
+Per 6 September 2026 proteksi **dinyalakan** pada `main` dan `develop` lewat `gh api`, dan hasilnya diverifikasi kembali dari API. Per 15 September 2026 `develop` memperoleh dua setelan tinjauan, diverifikasi dengan cara yang sama. `staging` menunggu `PR-00-18`. `develop` kini delapan setelan aktif, `main` enam; *Code Owners review* `main` ditunda, dua setelan menunggu `PR-00-17`, dan dua tidak dapat disetel sama sekali — rinciannya pada tabel di atas.
 
 ## 5. Berkas governance yang sudah ada
 
@@ -113,6 +116,6 @@ Per 6 September 2026 proteksi **dinyalakan** pada `main` dan `develop` lewat `gh
 
 | Hal | Mengapa belum ditutup |
 |---|---|
-| Pemilik pada `CODEOWNERS` | Tim belum terbentuk; `@HanzzzBD` dipakai sementara. Satu orang yang meninjau pekerjaannya sendiri bukan tinjauan — wajib diganti tim arsitek begitu tim ada |
+| *Code Owners review* di `main` | GitHub membaca `CODEOWNERS` dari cabang tujuan, dan `main` masih memuat versi yang hanya berisi `@HanzzzBD`. Dinyalakan setelah `CODEOWNERS` dua-pemilik (`@HanzzzBD`, `@PM-Codexpert`) dipromosikan ke `main`; menyalakannya lebih awal mengunci setiap PR `@HanzzzBD` ke `main` |
 | Pemilik pada `CODEOWNERS` untuk `shared/booking/` | Letaknya kini ditetapkan `SDD-SYS-10` (*shared kernel*, `apps/api/src/shared/booking/`); barisnya ditambahkan ke `CODEOWNERS` pada `PR-02-17` sesuai rencana, bukan lebih awal |
 | Vendor observability | `SDD-OBS-09` menetapkan *backend* terkelola dan `SDD-OBS-10` menjadikan region Indonesia **kriteria gugur** yang diverifikasi sebelum kontrak; namanya ditetapkan pada seleksi `PR-00-06`, bukan lebih awal |
