@@ -38,7 +38,17 @@ RUN npm run build -w apps/api && npm prune --omit=dev
 # Tahap runtime — tanpa perkakas build, non-root (SDD-INF-02)
 # ---------------------------------------------------------------------------
 FROM node:22-alpine
-RUN addgroup -S app && adduser -S app -G app
+
+# Runtime hanya menjalankan `node`. npm, npx, corepack, dan yarn bawaan base image
+# adalah perkakas build (SDD-INF-02) yang membawa dependensinya sendiri — 11
+# temuan High/Critical Trivy pada PR-00-17 seluruhnya berasal dari sana, bukan
+# dari dependensi proyek. Paket OS diperbarui agar perbaikan Alpine yang sudah
+# terbit (mis. OpenSSL) tidak menunggu base image berikutnya (keputusan 47, CD-01).
+RUN apk upgrade --no-cache \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+              /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
+              /opt/yarn-* /usr/local/bin/yarn /usr/local/bin/yarnpkg \
+    && addgroup -S app && adduser -S app -G app
 WORKDIR /app
 
 # node_modules akar beserta symlink @sigm4/* miliknya (node_modules datar,

@@ -133,15 +133,18 @@ Web (hasil build Vite, `SDD-FE-14`) disajikan sebagai aset statis dari CDN atau 
 ### 4.3 Pipeline CI/CD
 
 ```
-push / PR
+push / PR                     .github/workflows/ci.yml — required check `CI lulus`
  ├─ lint
- ├─ unit test                 gagal < 70% cakupan inti → stop   (CD-02, NFR-M-03)
+ ├─ unit test
  ├─ integration test          termasuk uji konkurensi CC-01..07
+ │                            cakupan gabungan unit+integrasi < 70% statements/lines → stop
+ │                            (CD-02, NFR-M-03); uji ter-skip → stop
  ├─ uji otorisasi tergenerate SEC-T-01
- ├─ SAST                      ST-01  CodeQL      (SDD-SEC-11)
- ├─ SCA                       ST-02  Dependabot  — Critical/High → stop
  ├─ build image
- ├─ image scan                CD-01  Trivy
+ ├─ SAST                      ST-01  CodeQL — security-severity ≥ 7,0 → stop   (SDD-SEC-11)
+ ├─ SCA                       ST-02  dependency-review + npm audit — Critical/High → stop
+ │                                   (harian: sca-harian.yml; alert & PR: Dependabot)
+ ├─ image scan                CD-01  Trivy — HIGH/CRITICAL → stop
  └─ deploy staging  →  DAST (ST-03, OWASP ZAP)  →  smoke test (CD-07)
 
 tag rilis
