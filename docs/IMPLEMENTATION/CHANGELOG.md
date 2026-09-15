@@ -6,6 +6,24 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 
 ---
 
+## 15 September 2026 — `PR-01-01` dibuka; `PR-02-01` menjadi `PR-01-16`
+
+Tidak ada TBD maupun business rule baru. Keputusan pemilik produk 1–4 dan keputusan teknis 5–6 dicatat di [`logs/phase-01.md` §2](logs/phase-01.md); suntingan PRD tercatat di [`../PRD/CHANGELOG.md`](../PRD/CHANGELOG.md).
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `IMPLEMENTATION-STATUS.md` | Phase 01 `In Progress` dengan satu baris per PR; `PR-01-01` `In Progress`; `M1` dan `M5` `In Progress` |
+| `logs/phase-01.md` §1, §2, §9, §10 | Pembukaan `PR-01-01`, keputusan 1–6, serah terima kolom `users` yang ditunda |
+| `phases/phase-01.md` §2, §4, §5, §7 · `phases/phase-02.md` §3, §7 | **`PR-02-01` dipensiunkan, isinya menjadi `PR-01-16`** (keputusan 3); `PR-01-02` bergantung padanya; `PR-02-02` bergantung `Ph01`; foto profil `PR-02-06` menunggu `PR-03-04` |
+| `phases/phase-03.md` §7 | `PR-03-04` menambahkan `users.foto_file_id` (keputusan 4) |
+| `DELIVERY-PLAN.md` §1 · `BRANCHING-STRATEGY.md` §1 · `logs/phase-02.md` | Phase 01: 15 → **16** PR; Phase 02: 29 → **28** |
+
+Total PR tetap **164**.
+
+---
+
 ## 15 September 2026 — penyegaran dokumen setelah Phase 00 seluruhnya tergabung; `PR-02-09` menjadi `PR-01-15`
 
 Tidak ada TBD, requirement, maupun business rule baru. Empat keputusan pemilik produk (62–65) dicatat di [`logs/phase-00.md` §2](logs/phase-00.md).

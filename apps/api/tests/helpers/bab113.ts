@@ -75,4 +75,5 @@ export const NAMA_TIPE: ReadonlyMap<string, string> = new Map([
     ["Jenis Hari Libur", "holiday_type"],
     ["Hasil Aktivitas", "activity_result"],
     ["Cakupan Data Permission", "permission_scope"],
+    ["Status Pengguna", "user_status"],
 ]);

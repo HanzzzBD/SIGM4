@@ -49,7 +49,7 @@ feature/*  ──▶  develop  ──▶  staging  ──▶  main  ──▶  t
 | `main` | permanen | `staging` lewat PR · `hotfix/*` | Produksi (lewat tag, `CD-06`) |
 | `hotfix/*` | ≤ 1 hari | `main` | Produksi |
 
-**Umur cabang maksimum 3 hari** bukan preferensi gaya. Phase 03 menjalankan enam modul paralel dan Phase 02 dua puluh sembilan PR; cabang berumur seminggu pada phase seperti itu menumpuk konflik penggabungan ke pekan terakhir — persis saat tidak ada waktu tersisa untuk menyelesaikannya.
+**Umur cabang maksimum 3 hari** bukan preferensi gaya. Phase 03 menjalankan enam modul paralel dan Phase 02 dua puluh delapan PR; cabang berumur seminggu pada phase seperti itu menumpuk konflik penggabungan ke pekan terakhir — persis saat tidak ada waktu tersisa untuk menyelesaikannya.
 
 ## 2. Penamaan cabang
 

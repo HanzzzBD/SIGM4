@@ -13,8 +13,8 @@ Urutan phase dan graf dependensinya ada di [`ROADMAP.md`](ROADMAP.md) dan tidak 
 | Phase | Modul | PR | Kompleksitas dominan (`Kode`) | Catatan |
 |:---:|:---:|:---:|---|---|
 | 00 | — | 18 | M | Tidak ada modul fungsional; seluruhnya kerangka |
-| 01 | 4 | 15 | S–M | Paralelisme tertinggi — empat modul saling bebas setelah middleware otorisasi `PR-01-15` |
-| 02 | 5 | 29 | M–L | **Phase terbesar.** Menanam tiga tulang punggung sekaligus |
+| 01 | 4 | 16 | S–M | Paralelisme tertinggi — empat modul saling bebas setelah middleware otorisasi `PR-01-15` |
+| 02 | 5 | 28 | M–L | **Phase terbesar.** Menanam tiga tulang punggung sekaligus |
 | 03 | 6 | 23 | M | Enam modul bebas satu sama lain |
 | 04 | 3 | 14 | M | Sebagian besar memakai ulang abstraksi Phase 02 |
 | 05 | 3 | 25 | M–L | Menutup dua milestone; menampung seluruh domain Bahan |
@@ -25,7 +25,7 @@ Urutan phase dan graf dependensinya ada di [`ROADMAP.md`](ROADMAP.md) dan tidak 
 
 Skala kompleksitas PR mengikuti [`templates/PHASE-TEMPLATE.md`](templates/PHASE-TEMPLATE.md): **S** ≤ 200 baris berubah · **M** ≤ 400 · **L** > 400 dan wajib disertai alasan di deskripsi PR. Sejak 7 September 2026 §7 tiap phase memisahkannya menjadi **dua kolom** — `Kode` untuk baris kode produksi, `Uji` untuk baris uji. Kolom **Kompleksitas dominan** pada tabel di atas mengacu pada `Kode`.
 
-**Phase 02 memuat ±18% seluruh PR proyek.** Bila jadwal meleset, di sinilah paling mungkin terjadi — dan konsekuensinya menjalar ke seluruh phase sesudahnya karena ia berada di lintasan kritis.
+**Phase 02 memuat ±17% seluruh PR proyek.** Bila jadwal meleset, di sinilah paling mungkin terjadi — dan konsekuensinya menjalar ke seluruh phase sesudahnya karena ia berada di lintasan kritis.
 
 ## 2. Urutan pull request
 

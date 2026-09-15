@@ -40,6 +40,7 @@ Sistem menjadi dapat dipakai: pengguna login (dengan 2FA untuk role sensitif), m
 |---|---|
 | Phase 01 → M-02 | `users`, role, matriks permission — prasyarat login dan approver |
 | Phase 01 → `PR-01-15` | Middleware otorisasi — prasyarat setiap endpoint phase ini (semula `PR-02-09`, keputusan 63) |
+| Phase 01 → `PR-01-16` | Hash password Argon2id — prasyarat login (semula `PR-02-01`, keputusan 3 log phase-01) |
 | Phase 01 → M-03 | `rooms`, `areas` — lokasi aset dan sumber daya `booking_slots` |
 | Phase 01 → M-20 | Parameter sistem (masa token, ambang, kalender) |
 | Phase 00 | Outbox, worker, registri route, `AuditLogger` |
@@ -105,12 +106,12 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 
 | PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
 |---|---|:---:|:---:|---|---|---|
-| `PR-02-01` | Hash password Argon2id + kebijakan kata sandi | S | S | Ph01 | `NFR-S-01`, `SDD-SESS-01` | Parameter Argon2id sesuai `SDD-SESS-01` |
-| `PR-02-02` | Login + akses token EdDSA + rotasi refresh token | L | L | 01 | `FR-01.1`, `SDD-SESS-02/03/04`, `NFR-S-07` | Refresh dipakai ulang → seluruh rantai dicabut; `POST /auth/login` berkelas limit `login`, yang hanya menghitung percobaan gagal (`SDD-13 §4.3`); `JWT_PRIVATE_KEY`/`JWT_PUBLIC_KEY` masuk skema `shared/config` (`SDD-SYS-14`) |
+| `PR-02-01` | **Pensiun** — dipindah ke `PR-01-16` (keputusan 3, [log phase-01 §2](../logs/phase-01.md)); nomornya tidak dipakai ulang | — | — | — | — | — |
+| `PR-02-02` | Login + akses token EdDSA + rotasi refresh token | L | L | Ph01 | `FR-01.1`, `SDD-SESS-02/03/04`, `NFR-S-07` | Refresh dipakai ulang → seluruh rantai dicabut; `POST /auth/login` berkelas limit `login`, yang hanya menghitung percobaan gagal (`SDD-13 §4.3`); `JWT_PRIVATE_KEY`/`JWT_PUBLIC_KEY` masuk skema `shared/config` (`SDD-SYS-14`) |
 | `PR-02-03` | Penguncian akun + `NT-39` + audit percobaan gagal | M | M | 02 | `FR-01.1 A2`, `SDD-SESS-06/07`, `NFR-S-07`, `SEC-T-06` | 5 gagal → kunci; pesan galat tidak membocorkan keberadaan akun; sumbu akun (PostgreSQL) dan sumbu IP (Redis) login aktif bersamaan, keduanya hanya menghitung percobaan gagal |
 | `PR-02-04` | Logout + pencabutan sesi + daftar perangkat | M | M | 02 | `FR-01.2`, `SDD-SESS-06` | Token tercabut ditolak ≤ 60 detik |
 | `PR-02-05` | Lupa & reset password (token sekali pakai) | M | M | 02 | `FR-01.3`, `NT-41` | Respons seragam untuk email ada/tidak ada |
-| `PR-02-06` | Ganti password + kelola profil + pencabutan sesi lain | S | S | 04 | `FR-01.4` | Ganti password mencabut sesi lain |
+| `PR-02-06` | Ganti password + kelola profil + pencabutan sesi lain | S | S | 04 | `FR-01.4` | Ganti password mencabut sesi lain; foto profil menunggu `users.foto_file_id` dari `PR-03-04` (keputusan 4 log phase-01) |
 | `PR-02-07` | 2FA TOTP: pendaftaran, verifikasi, kode pemulihan | L | L | 02 | `FR-01.5`, `BR-070` `BR-070c`, `SDD-SESS-08/09` | Role sensitif tidak dapat melewati 2FA; `TOTP_ENCRYPTION_KEY` masuk skema `shared/config` (`SDD-SYS-14`) |
 | `PR-02-08` | Break-glass CLI + jejak audit wajib | M | M | 07 | `FR-01.6`, `BR-070b` | Setiap pemakaian menghasilkan alarm & entri log |
 | `PR-02-09` | **Pensiun** — dipindah ke `PR-01-15` (keputusan 63, [log phase-00 §2](../logs/phase-00.md)); nomornya tidak dipakai ulang | — | — | — | — | — |

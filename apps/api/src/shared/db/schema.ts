@@ -121,15 +121,47 @@ export interface ActivityLogsTable {
 }
 
 /**
- * `roles` (0009, PR-00-16). Kolom baku `SDD-05` §4.2 belum ada — ditambahkan
- * `PR-01-01` bersama `users`, karena `created_by` merujuk tabel itu.
+ * Kolom baku `SDD-05` §4.2 (0012). `updated_at` dipelihara trigger — tipenya
+ * menolak ditulis aplikasi, dan nilai yang dipaksakan lewat SQL tetap ditimpa.
+ * `created_by` hanya diisi saat baris lahir.
  */
-export interface RolesTable {
+interface KolomBaku {
+    created_at: ColumnType<Date, never, never>;
+    updated_at: ColumnType<Date, never, never>;
+    created_by: ColumnType<string | null, string | number | null, never>;
+    updated_by: ColumnType<string | null, string | number | null, string | number | null>;
+}
+
+/**
+ * `roles` (0009, PR-00-16; kolom baku 0012, PR-01-01). Tujuh role seed ber-
+ * `created_by` NULL: dibuat sistem, bukan seseorang.
+ */
+export interface RolesTable extends KolomBaku {
     id: Generated<string>;
     kode: string;
     nama: string;
     deskripsi: string | null;
     is_system: Generated<boolean>;
+}
+
+/**
+ * `users` (0012, PR-01-01). `status` dan `must_change_password` sengaja tanpa
+ * nilai bawaan — keduanya wajib dinyatakan saat akun dibuat (`SL-06`,
+ * `FR-02.1` langkah 4). Penanda 2FA, kolom penguncian, dan foto profil belum
+ * ada: masing-masing milik `SDD-04` §4.1 dan `SDD-FS-02`.
+ */
+export interface UsersTable extends KolomBaku {
+    id: Generated<string>;
+    nama: string;
+    email: string;
+    password_hash: string;
+    nip_nis: string;
+    role_id: ColumnType<string, string | number, string | number>;
+    unit_kerja: string | null;
+    telepon: string | null;
+    status: "AKTIF" | "NONAKTIF";
+    must_change_password: boolean;
+    login_terakhir_pada: Date | null;
 }
 
 /** `permissions` (0009, PR-00-16). Katalog Lampiran C; `inti` = 🔒 (`SDD-AUTH-10`). */
@@ -160,4 +192,5 @@ export interface Database {
     roles: RolesTable;
     permissions: PermissionsTable;
     role_permissions: RolePermissionsTable;
+    users: UsersTable;
 }
