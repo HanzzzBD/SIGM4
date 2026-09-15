@@ -16,9 +16,11 @@ Tidak ada TBD, requirement, maupun business rule baru. Keputusan pemilik produk 
 |---|---|
 | `GITHUB-CI-STATE.md` §2, §3 | Deploy staging dan smoke test berstatus ditulis & terbukti pada staging tiruan; DAST dipisah sebagai tahap tanpa PR pemilik |
 | `IMPLEMENTATION-STATUS.md` | `PR-00-17` `Done`; `PR-00-18` `In Progress`; Phase 00 17/18 |
-| `logs/phase-00.md` §1, §2, §3, §5, §7, §8, §10 | Pelaksanaan, keputusan 50–53, butir blocking worker ditutup, hasil staging tiruan, serah terima infrastruktur |
+| `logs/phase-00.md` §1, §2, §3, §5, §7, §8, §10 | Pelaksanaan, keputusan 50–55, butir blocking worker ditutup, hasil staging tiruan, serah terima infrastruktur |
+| `phases/phase-08.md` §7, §9 | **PR baru `PR-08-16`** — DAST OWASP ZAP `ST-03`, yang sebelumnya tidak dimiliki PR mana pun (keputusan 54) |
+| `DELIVERY-PLAN.md` · `README.md` · `IMPLEMENTATION-STATUS.md` · `README.md` akar · `CLAUDE.md` · `scripts/validate_impl.py` | Phase 08: 15 → **16** PR; total rencana **163 → 164** |
 
-Total PR tetap **163**.
+Total PR menjadi **164**.
 
 ---
 
