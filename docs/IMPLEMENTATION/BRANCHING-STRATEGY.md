@@ -10,19 +10,19 @@ Yang ada di sini hanyalah **cara kerja sehari-hari di dalam model itu**: penamaa
 
 ## 0. Keadaan saat ini — transisi tersisa
 
-**Model pada §1 belum dapat dijalankan utuh.** `develop` sudah hidup sejak 6 September 2026; `staging` belum ada dan baru dibangun bersama lingkungannya pada [`PR-00-18`](phases/phase-00.md). `apps/` sudah dibuat oleh `PR-00-01`, dan sejak `PR-00-04`/`PR-00-05` uji berkas maupun uji integrasi ikut berdiri — sehingga lint, build, dan test sudah memiliki sasaran nyata. Pipeline `CD-01` tetap belum ada; pembuatannya adalah scope `PR-00-17`.
+**Model pada §1 belum dapat dijalankan utuh.** `develop` sudah hidup sejak 6 September 2026; `staging` belum ada: artefak deploy-nya dibangun [`PR-00-18`](phases/phase-00.md), tetapi cabangnya baru dibuat pemilik repositori setelah infrastruktur staging siap (keputusan 55, [log phase-00 §10](logs/phase-00.md)). `apps/` sudah dibuat oleh `PR-00-01`, dan sejak `PR-00-04`/`PR-00-05` uji berkas maupun uji integrasi ikut berdiri — sehingga lint, build, dan test sudah memiliki sasaran nyata. Pipeline `CD-01` berdiri sejak `PR-00-17` dan menjadi required check `develop`.
 
 Selama masa transisi ini berlaku:
 
 | Hal | Ketentuan sementara |
 |---|---|
-| Cabang hidup | `main` dan `develop`; `staging` menunggu `PR-00-18` |
+| Cabang hidup | `main` dan `develop`; `staging` menunggu infrastruktur staging (keputusan 55) |
 | Jalur kerja | Cabang bernama sesuai §2 → PR → `develop` |
 | Penamaan | §2 berlaku penuh. Pekerjaan yang hanya menyentuh `docs/` memakai `chore/` — jenisnya sudah berarti "tanpa perubahan perilaku" |
 | Tinjauan | §3.1 berlaku penuh; ditegakkan [`.github/CODEOWNERS`](../../.github/CODEOWNERS) |
 | Template PR | §4 berlaku penuh; terisi otomatis lewat [`.github/pull_request_template.md`](../../.github/pull_request_template.md) |
 
-**Transisi ini berakhir saat `PR-00-18` selesai.** Sejak titik itu `staging` hidup dan seluruh jalur §1 dapat dijalankan. Penggabungan langsung ke `main` tetap tertutup sepenuhnya.
+**Transisi ini berakhir saat cabang `staging` dibuat.** `PR-00-18` sudah tergabung, tetapi cabangnya menunggu infrastruktur nyata. Sejak titik itu `staging` hidup dan seluruh jalur §1 dapat dijalankan. Penggabungan langsung ke `main` tetap tertutup sepenuhnya.
 
 Yang **tidak** dikecualikan sedikit pun: penamaan cabang (§2), syarat penggabungan ke `develop` (§3), tinjauan arsitek (§3.1), pemakaian template dan klasifikasi komentar (§4), serta DoD tingkat PR (§5). Validasi lokal dapat dicatat di deskripsi PR, tetapi tidak menjadikannya pipeline hijau `CD-01`.
 
@@ -49,7 +49,7 @@ feature/*  ──▶  develop  ──▶  staging  ──▶  main  ──▶  t
 | `main` | permanen | `staging` lewat PR · `hotfix/*` | Produksi (lewat tag, `CD-06`) |
 | `hotfix/*` | ≤ 1 hari | `main` | Produksi |
 
-**Umur cabang maksimum 3 hari** bukan preferensi gaya. Phase 03 menjalankan enam modul paralel dan Phase 02 tiga puluh PR; cabang berumur seminggu pada phase seperti itu menumpuk konflik penggabungan ke pekan terakhir — persis saat tidak ada waktu tersisa untuk menyelesaikannya.
+**Umur cabang maksimum 3 hari** bukan preferensi gaya. Phase 03 menjalankan enam modul paralel dan Phase 02 dua puluh sembilan PR; cabang berumur seminggu pada phase seperti itu menumpuk konflik penggabungan ke pekan terakhir — persis saat tidak ada waktu tersisa untuk menyelesaikannya.
 
 ## 2. Penamaan cabang
 

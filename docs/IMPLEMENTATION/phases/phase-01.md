@@ -13,7 +13,7 @@
 
 ## 1. Objective
 
-Administrator dapat masuk ke sistem yang sudah "berisi": membuat pengguna dan role, menyusun hierarki lokasi sekolah, mengatur parameter sistem, dan menelusuri seluruh jejak perubahannya. Empat modul ini **tidak bergantung pada modul mana pun** dan karena itu dapat dikerjakan sepenuhnya paralel.
+Administrator dapat masuk ke sistem yang sudah "berisi": membuat pengguna dan role, menyusun hierarki lokasi sekolah, mengatur parameter sistem, dan menelusuri seluruh jejak perubahannya. Empat modul ini **tidak bergantung pada modul mana pun** dan karena itu dapat dikerjakan paralel, setelah middleware otorisasi `PR-01-15` berdiri.
 
 ## 2. Scope
 
@@ -24,10 +24,11 @@ Administrator dapat masuk ke sistem yang sudah "berisi": membuat pengguna dan ro
 - M-18: penelusuran & ekspor activity log *(penulisannya sudah ada sejak Phase 00)*
 - M-20: parameter sistem, kalender akademik, unit kerja, siklus akun siswa
 - Master data Lampiran E: `academic_years`, `academic_terms`, `work_units`, dan penautan `holidays` → `academic_years` *(tabel `holidays` sendiri sudah dibuat `PR-00-08`, karena `BusinessCalendarService` menuntutnya sejak Phase 00)*
+- Middleware otorisasi — dipindah dari Phase 02 (`PR-02-09` → `PR-01-15`, keputusan 63, [log phase-00 §2](../logs/phase-00.md)) agar setiap endpoint phase ini lahir berpenjaga (`NFR-S-05`, `PM-02`)
 
 **Tidak termasuk**
 
-- Autentikasi (login, 2FA) → **Phase 02** — pengguna dibuat, belum bisa login
+- Autentikasi (login, 2FA) → **Phase 02** — pengguna dibuat, belum bisa login; sampai itu, setiap endpoint berpermission menjawab `401` (`SDD-03 §4.4`)
 - Aset di dalam ruangan → **Phase 02**
 - `room_fixed_schedules` (FR-07.5) → **Phase 03** bersama M-07
 
@@ -37,7 +38,7 @@ Administrator dapat masuk ke sistem yang sudah "berisi": membuat pengguna dan ro
 |---|---|
 | Phase 00 | Registri route, `AuthContext`, `AuditLogger`, seed permission, migration runner |
 
-Keempat modul **tidak saling bergantung** — dapat dikerjakan empat jalur paralel:
+Keempat modul **tidak saling bergantung** — dapat dikerjakan empat jalur paralel setelah `PR-01-01` → `PR-01-15` (skema `users`, lalu middleware otorisasi yang dituntut setiap endpoint):
 
 ```
 M-02  ┐
@@ -72,7 +73,7 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 
 | Berkas | Keputusan yang diterapkan |
 |---|---|
-| [`03-authorization.md`](../../SDD/03-authorization.md) | `SDD-AUTH-04` (cache & `role_version`), `SDD-AUTH-10` (permission inti) |
+| [`03-authorization.md`](../../SDD/03-authorization.md) | `SDD-AUTH-01` `SDD-AUTH-05` `SDD-AUTH-06` (middleware otorisasi, `PR-01-15`), `SDD-AUTH-04` (cache & `role_version`), `SDD-AUTH-10` (permission inti) |
 | [`05-database-design.md`](../../SDD/05-database-design.md) | `SDD-DB-01` … `SDD-DB-06` |
 | [`06-api-design.md`](../../SDD/06-api-design.md) | `SDD-API-05` … `SDD-API-07` (paginasi, filter, presenter) |
 | [`15-observability-logging.md`](../../SDD/15-observability-logging.md) | `SDD-OBS-01` (pemisahan activity log vs log aplikasi) |
@@ -91,19 +92,20 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 | PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
 |---|---|:---:|:---:|---|---|---|
 | `PR-01-01` | Skema `users` + kolom baku `roles` (skema RBAC dari `PR-00-16`) | M | M | Ph00 | `FR-02.1`, `SDD-DB-04`, `SDD-05 §4.7` | Migration naik-turun bersih; `users.role_id` merujuk role hasil seed |
-| `PR-01-02` | CRUD pengguna + soft delete + aturan Administrator terakhir | M | M | 01 | `FR-02.1`, `BR-067` `BR-068` `BR-070a` | Menonaktifkan Administrator terakhir ditolak |
+| `PR-01-02` | CRUD pengguna + soft delete + aturan Administrator terakhir | M | M | 01, 15 | `FR-02.1`, `BR-067` `BR-068` `BR-070a` | Menonaktifkan Administrator terakhir ditolak |
 | `PR-01-03` | Impor massal pengguna (CSV/XLSX) | M | M | 02 | `FR-02.1 A4`, `IMPT-01` … `05` | 500 baris; baris gagal tidak menggagalkan berkas |
-| `PR-01-04` | Matriks permission + `role_version` + cache 60 detik | M | M | 01 | `FR-02.2`, `PM-05`, `SDD-AUTH-04/10` | Perubahan berlaku tanpa restart; permission inti tidak dapat dicabut |
-| `PR-01-05` | Skema `buildings`/`areas`/`rooms` + CRUD | M | M | Ph00 | `FR-03.1`, `BR-013` `BR-014` | Kode unik per tingkat; hierarki tiga tingkat |
+| `PR-01-04` | Matriks permission + `role_version` + cache 60 detik | M | M | 01, 15 | `FR-02.2`, `PM-05`, `SDD-AUTH-04/10` | Perubahan berlaku tanpa restart; permission inti tidak dapat dicabut |
+| `PR-01-05` | Skema `buildings`/`areas`/`rooms` + CRUD | M | M | 15 | `FR-03.1`, `BR-013` `BR-014` | Kode unik per tingkat; hierarki tiga tingkat |
 | `PR-01-06` | Pohon lokasi + penonaktifan berjenjang | M | M | 05 | `FR-03.1 A2/A3`, `BR-015` | Lokasi bermuatan aset tidak dapat dinonaktifkan |
 | `PR-01-07` | Daftar aset per lokasi *(kerangka; data menyusul Phase 02)* | S | S | 05 | `FR-03.2` | Endpoint mengembalikan struktur benar dengan daftar kosong |
-| `PR-01-08` | Penelusuran activity log + filter + detail sebelum/sesudah | M | M | Ph00 | `FR-18.2` | Filter kombinasi ≤ 3 detik; tampilan bukan JSON mentah |
+| `PR-01-08` | Penelusuran activity log + filter + detail sebelum/sesudah | M | M | 15 | `FR-18.2` | Filter kombinasi ≤ 3 detik; tampilan bukan JSON mentah |
 | `PR-01-09` | Ekspor activity log + pencatatan aksi ekspor itu sendiri | S | S | 08 | `FR-18.2`, `AL-10` | Ekspor tercatat sebagai aktivitas tersendiri |
-| `PR-01-10` | `system_settings` + seed parameter bawaan + endpoint baca/tulis + validasi rentang | M | M | Ph00 | `FR-20.1`, `SDD-DB-10` | Nilai di luar rentang ditolak dengan penjelasan; katalog kunci & nilai bawaan ditetapkan di SDD sebelum di-seed |
+| `PR-01-10` | `system_settings` + seed parameter bawaan + endpoint baca/tulis + validasi rentang | M | M | 15 | `FR-20.1`, `SDD-DB-10` | Nilai di luar rentang ditolak dengan penjelasan; katalog kunci & nilai bawaan ditetapkan di SDD sebelum di-seed |
 | `PR-01-11` | Kalender akademik: `academic_years`, `terms`, + `academic_year_id` pada `holidays` | M | M | 10 | Lampiran E.2, `AC-YR-01` … `04` | Tepat satu tahun ajaran aktif |
 | `PR-01-12` | `work_units` + migrasi `users.unit_kerja` → `work_unit_id` | M | M | 02, 10 | Lampiran E.3, `WU-01` … `03` | Pola expand→migrate; kolom lama belum dihapus |
 | `PR-01-13` | Siklus akun siswa: kenaikan kelas massal, kelulusan | M | M | 02, 11 | Lampiran E.4, `SL-01` … `SL-06` | Siswa berkewajiban aktif tidak dapat dinonaktifkan |
 | `PR-01-14` | Gerbang persetujuan wali (`consent_guardian_at`) | S | S | 02 | `DP-02`, `SL-06`, `NT-48` | Akun siswa tanpa penanda tidak dapat diaktifkan |
+| `PR-01-15` | Middleware otorisasi + penyaringan field per permission *(dipindah dari `PR-02-09`)* | M | M | 01 | `PM-02` `PM-03`, `SDD-AUTH-01/05/06`, `SEC-T-01` | Uji otorisasi tergenerate mencakup 100% route; tanpa `AuthContext` → `401`, tanpa permission → `403 INSUFFICIENT_PERMISSION`, keduanya sebelum controller (`SDD-03 §4.4`); `/health` ringkasan dipasang dan terdaftar (keputusan 21) |
 
 ## 8. Task Breakdown
 

@@ -13,11 +13,11 @@ Urutan phase dan graf dependensinya ada di [`ROADMAP.md`](ROADMAP.md) dan tidak 
 | Phase | Modul | PR | Kompleksitas dominan (`Kode`) | Catatan |
 |:---:|:---:|:---:|---|---|
 | 00 | — | 18 | M | Tidak ada modul fungsional; seluruhnya kerangka |
-| 01 | 4 | 14 | S–M | Paralelisme tertinggi — empat modul saling bebas |
-| 02 | 5 | 30 | M–L | **Phase terbesar.** Menanam tiga tulang punggung sekaligus |
+| 01 | 4 | 15 | S–M | Paralelisme tertinggi — empat modul saling bebas setelah middleware otorisasi `PR-01-15` |
+| 02 | 5 | 29 | M–L | **Phase terbesar.** Menanam tiga tulang punggung sekaligus |
 | 03 | 6 | 23 | M | Enam modul bebas satu sama lain |
 | 04 | 3 | 14 | M | Sebagian besar memakai ulang abstraksi Phase 02 |
-| 05 | 3 | 24 | M–L | Menutup dua milestone; menampung seluruh domain Bahan |
+| 05 | 3 | 25 | M–L | Menutup dua milestone; menampung seluruh domain Bahan |
 | 06 | 1 | 10 | M–L | Satu modul, ketergantungan baca ke seluruh sistem |
 | 07 | — | 14 | M | Integrasi & UAT; banyak aktivitas non-PR |
 | 08 | — | 16 | S–M | Pengerasan; banyak aktivitas non-PR |
@@ -25,7 +25,7 @@ Urutan phase dan graf dependensinya ada di [`ROADMAP.md`](ROADMAP.md) dan tidak 
 
 Skala kompleksitas PR mengikuti [`templates/PHASE-TEMPLATE.md`](templates/PHASE-TEMPLATE.md): **S** ≤ 200 baris berubah · **M** ≤ 400 · **L** > 400 dan wajib disertai alasan di deskripsi PR. Sejak 7 September 2026 §7 tiap phase memisahkannya menjadi **dua kolom** — `Kode` untuk baris kode produksi, `Uji` untuk baris uji. Kolom **Kompleksitas dominan** pada tabel di atas mengacu pada `Kode`.
 
-**Phase 02 memuat 20% seluruh PR proyek.** Bila jadwal meleset, di sinilah paling mungkin terjadi — dan konsekuensinya menjalar ke seluruh phase sesudahnya karena ia berada di lintasan kritis.
+**Phase 02 memuat ±18% seluruh PR proyek.** Bila jadwal meleset, di sinilah paling mungkin terjadi — dan konsekuensinya menjalar ke seluruh phase sesudahnya karena ia berada di lintasan kritis.
 
 ## 2. Urutan pull request
 
@@ -39,6 +39,7 @@ Urutan penuh per-PR ada di bagian 7 tiap berkas phase. Di sini hanya **aturan ur
 | `PR-00-05` migration runner | seluruh PR skema | Skema di luar runner tidak tereplikasi ke lingkungan lain |
 | `PR-00-09` route registry + validasi permission saat *startup* | seluruh PR endpoint | Endpoint tanpa permission terdeklarasi harus gagal saat boot, bukan saat pentest |
 | `PR-00-13` `AuditLogger` | seluruh PR operasi tulis | `AL-01` mensyaratkan setiap tulis tercatat; menambahkannya belakangan berarti menyisir ulang ratusan handler |
+| `PR-01-15` middleware otorisasi | seluruh PR endpoint Phase 01 | Endpoint tanpa middleware tidak menegakkan `PM-02`; memasangnya belakangan berarti memasang ulang penjaga di setiap route (keputusan 63) |
 | `PR-01-04` matriks permission | `PR-02-xx` seluruhnya | Approval mengevaluasi role; role harus berversi lebih dulu |
 | `PR-02-16` `booking_slots` + exclusion constraint | `PR-03-08`, `PR-04-01` | Bentuk skema ketersediaan tidak boleh disisipkan setelah ada reservasi hidup |
 | `PR-02-17` `SlotService` | `PR-03-08`, `PR-04-01`, `PR-05-01` | Satu abstraksi melayani ruangan, aset, dan peminjaman |
@@ -52,7 +53,7 @@ Melanggar salah satu baris di atas bukan sekadar tidak rapi — masing-masing me
 
 ### 2.2 Urutan yang bebas
 
-Di dalam satu phase, PR milik modul berbeda boleh berjalan serentak kecuali kolom **Bergantung** pada tabel PR phase menyatakan sebaliknya. Contoh: pada Phase 01, keempat modul (M-02, M-03, M-18, M-20) boleh dikerjakan empat orang secara bersamaan sejak hari pertama.
+Di dalam satu phase, PR milik modul berbeda boleh berjalan serentak kecuali kolom **Bergantung** pada tabel PR phase menyatakan sebaliknya. Contoh: pada Phase 01, keempat modul (M-02, M-03, M-18, M-20) boleh dikerjakan empat orang secara bersamaan setelah `PR-01-01` dan `PR-01-15` tergabung.
 
 ### 2.3 Aturan PR yang berlaku menyeluruh
 

@@ -18,7 +18,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 
 | Tanggal | Yang terjadi | PR terkait |
 |---|---|---|
-| — | — | — |
+| 15 September 2026 | Rencana disunting sebelum phase dimulai: middleware otorisasi `PR-02-09` dipindah menjadi `PR-01-15` dan mendahului seluruh PR endpoint (keputusan 63). Phase 01 boleh dimulai selagi Phase 00 `In Review`, lewat `DELIVERY-PLAN §10` butir 1 (keputusan 62). Keduanya dicatat di [log phase-00 §2](phase-00.md). | — |
 
 ## 2. Keputusan yang diambil
 
@@ -76,7 +76,7 @@ Angka nyata, bukan perkiraan. Kosongkan bila belum diukur — jangan diisi tebak
 
 Diisi saat phase dinyatakan selesai. Daftar lengkapnya ada di [`phase-01.md` §9 dan §12](../phases/phase-01.md).
 
-- [ ] Seluruh 14 PR tergabung
+- [ ] Seluruh 15 PR tergabung
 - [ ] Acceptance checklist phase terpenuhi
 - [ ] Definition of Done phase terpenuhi
 - [ ] Bagian 5 log ini terisi seluruhnya

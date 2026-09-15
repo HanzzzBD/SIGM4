@@ -39,6 +39,7 @@ Sistem menjadi dapat dipakai: pengguna login (dengan 2FA untuk role sensitif), m
 | Bergantung pada | Alasan teknis |
 |---|---|
 | Phase 01 → M-02 | `users`, role, matriks permission — prasyarat login dan approver |
+| Phase 01 → `PR-01-15` | Middleware otorisasi — prasyarat setiap endpoint phase ini (semula `PR-02-09`, keputusan 63) |
 | Phase 01 → M-03 | `rooms`, `areas` — lokasi aset dan sumber daya `booking_slots` |
 | Phase 01 → M-20 | Parameter sistem (masa token, ambang, kalender) |
 | Phase 00 | Outbox, worker, registri route, `AuditLogger` |
@@ -112,7 +113,7 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | `PR-02-06` | Ganti password + kelola profil + pencabutan sesi lain | S | S | 04 | `FR-01.4` | Ganti password mencabut sesi lain |
 | `PR-02-07` | 2FA TOTP: pendaftaran, verifikasi, kode pemulihan | L | L | 02 | `FR-01.5`, `BR-070` `BR-070c`, `SDD-SESS-08/09` | Role sensitif tidak dapat melewati 2FA; `TOTP_ENCRYPTION_KEY` masuk skema `shared/config` (`SDD-SYS-14`) |
 | `PR-02-08` | Break-glass CLI + jejak audit wajib | M | M | 07 | `FR-01.6`, `BR-070b` | Setiap pemakaian menghasilkan alarm & entri log |
-| `PR-02-09` | Middleware otorisasi + penyaringan field per permission | M | M | Ph01 | `PM-02` `PM-03`, `SDD-AUTH-01/05/06` | Uji otorisasi tergenerate mencakup 100% route |
+| `PR-02-09` | **Pensiun** — dipindah ke `PR-01-15` (keputusan 63, [log phase-00 §2](../logs/phase-00.md)); nomornya tidak dipakai ulang | — | — | — | — | — |
 | `PR-02-10` | Skema `assets`, `asset_categories`, `asset_condition_history` | M | M | Ph01 | `FR-04.1`, `SDD-DB-04` | `procurement_id` ada, nullable, tanpa FK aktif ke M-14 |
 | `PR-02-11` | Pendaftaran aset + penomoran + validasi kategori | M | L | 10 | `FR-04.1`, `BR-001` … `BR-004` | Nomor aset unik di bawah beban paralel |
 | `PR-02-12` | Pencarian & penyaringan aset + paginasi | M | M | 10 | `FR-04.2`, `SDD-API-05`, `SDD-PERF-01` | 10.000 aset, p95 sesuai anggaran `SDD-PERF` |
@@ -132,8 +133,8 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | `PR-02-26` | SSE + Redis Pub/Sub fanout multi-instance | L | L | 25 | `FR-17.1`, `SDD-NTF-03/04/05` | Dua instance API → satu notifikasi, satu kali tampil |
 | `PR-02-27` | Push FCM + registrasi token + penanganan token mati | M | M | 25 | `FR-17.2`, `SDD-NTF-06/07` | Token tidak valid dibersihkan otomatis; pemeriksaan `fcm` terdaftar di `/health` tanpa memengaruhi `ready` (`OBS-06`); `FCM_CREDENTIALS` masuk skema `shared/config` (`SDD-SYS-14`) |
 | `PR-02-28` | Preferensi notifikasi | S | S | 25 | `FR-17.3`, **UXD-05** | Enam kelompok `jenis` sesuai `SDD-08 §4.5`, bukan per modul |
-| `PR-02-29` | Kerangka dashboard + kartu per role | L | L | 09 | `FR-15.1`, `BR-073` `BR-074`, `SDD-PERF-03` | Kartu di luar permission tidak dirender **dan** tidak dikirim server |
-| `PR-02-30` | Kerangka aplikasi web: routing, state, render berbasis permission | L | L | 09 | `SDD-FE-01` … `SDD-FE-06`, `SDD-FE-11/12`, **UXD-12** | TanStack Query + primitif headless & token sendiri; satu set token warna — tanpa mode gelap |
+| `PR-02-29` | Kerangka dashboard + kartu per role | L | L | Ph01 | `FR-15.1`, `BR-073` `BR-074`, `SDD-PERF-03` | Kartu di luar permission tidak dirender **dan** tidak dikirim server |
+| `PR-02-30` | Kerangka aplikasi web: routing, state, render berbasis permission | L | L | Ph01 | `SDD-FE-01` … `SDD-FE-06`, `SDD-FE-11/12`, **UXD-12** | TanStack Query + primitif headless & token sendiri; satu set token warna — tanpa mode gelap |
 
 ## 8. Task Breakdown
 
