@@ -86,10 +86,10 @@ Branch protection **tidak dapat diatur lewat berkas**. Daftar berikut menerjemah
 | `main`, `develop` | Do not allow bypassing (termasuk admin) | `BRANCHING §3` — "hanya bermanfaat bila tidak pernah ada pengecualian" | ✅ **aktif** |
 | `main`, `develop` | Require conversation resolution | `BRANCHING §4` — komentar terklasifikasi tidak menggantung | ✅ **aktif** |
 | `main`, `develop` | Dismiss stale approvals | `BRANCHING §3` | ✅ **aktif** |
-| `develop` | Require review from Code Owners | `BRANCHING §3.1` — tinjauan arsitek wajib | ✅ **aktif** 15 September 2026 |
+| `develop` | Require review from Code Owners | `BRANCHING §3.1` — tinjauan arsitek wajib | ⚠️ **nonaktif menurut API** — tercatat aktif 15 September 2026, tetapi pembacaan API pada hari yang sama setelah #37 tergabung menunjukkan `require_code_owner_reviews: false` ([log §7](logs/phase-00.md)) |
 | `main`, `staging` | Require review from Code Owners | `BRANCHING §3.1` | ⏸ **ditunda** — `main`: lihat catatan di bawah; `staging` menunggu `PR-00-18` |
-| `develop` | Minimal 1 approval | `BRANCHING §3` | ✅ **aktif** 15 September 2026 |
-| ketiganya | Require status checks to pass | `CD-01`, `CD-02` | ⏳ menunggu `PR-00-17` |
+| `develop` | Minimal 1 approval | `BRANCHING §3` | ⚠️ **nonaktif menurut API** — `required_approving_review_count: 0` (idem) |
+| ketiganya | Require status checks to pass — check **`CI lulus`** | `CD-01`, `CD-02`, `SDD-INF-12` | ⏳ `develop`: workflow terbukti hijau pada PR #38, pemasangan menunggu pemilik repositori (keputusan 49) · `main`/`staging`: menyusul |
 | ketiganya | Require branches to be up to date before merging | Mencegah penggabungan di atas basis usang | ⏳ menunggu `PR-00-17` — GitHub hanya menyediakannya **bersama** required status check |
 | `develop` | Allow squash merge **saja** | `BRANCHING §3` — satu PR satu commit | ❌ **tidak dapat diberkaskan maupun disetel** — lihat catatan di bawah |
 | `staging`, `main` | Allow merge commit **saja** | `BRANCHING §3` — batas antar-phase tetap terbaca | ❌ idem |
