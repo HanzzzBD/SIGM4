@@ -6,7 +6,7 @@ SMKN 4 Bandung · 22 modul · monorepo tiga pohon.
 | Item | Keterangan |
 |---|---|
 | **Status** | Dokumentasi lengkap · kemajuan implementasi ada di [`IMPLEMENTATION-STATUS.md`](docs/IMPLEMENTATION/IMPLEMENTATION-STATUS.md) |
-| **Rencana** | 9 phase · 165 PR — [`docs/IMPLEMENTATION/README.md`](docs/IMPLEMENTATION/README.md) |
+| **Rencana** | 9 phase · 166 PR — [`docs/IMPLEMENTATION/README.md`](docs/IMPLEMENTATION/README.md) |
 | **Platform** | Web responsif (Express + React) · Mobile native (React Native) |
 | **Skala target** | ± 5.000 unit aset · 1.000 pengguna · 100–150 concurrent |
 

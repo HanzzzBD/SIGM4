@@ -129,7 +129,7 @@ Sebelumnya impor massal disebut pada FR-02.1 A4, FR-04.1 A2, dan FR-07.5 A2 tanp
 | IMPT-01 | Validasi dilakukan baris per baris; baris gagal tidak menggagalkan seluruh berkas (FR-02.1 AC, FR-04.1 AC) |
 | IMPT-02 | Hasil impor menampilkan laporan: jumlah sukses, jumlah gagal, dan alasan galat per nomor baris |
 | IMPT-03 | Impor bersifat idempoten terhadap unggahan ulang berkas yang sama dalam 24 jam (memakai *hash* berkas) |
-| IMPT-04 | Impor > 200 baris diproses asinkron dengan notifikasi saat selesai (NT-42) |
+| IMPT-04 | Impor > 200 baris diproses asinkron dengan notifikasi saat selesai (NT-52 bagi impor pengguna; entitas lain menetapkan kode notifikasinya sendiri saat impornya dibangun) |
 | IMPT-05 | Berkas templat dapat diunduh langsung dari halaman impor beserta contoh isian |
 
 ---

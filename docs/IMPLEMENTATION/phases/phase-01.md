@@ -96,7 +96,7 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 |---|---|:---:|:---:|---|---|---|
 | `PR-01-01` | Skema `users` + kolom baku `roles` (skema RBAC dari `PR-00-16`) | M | M | Ph00 | `FR-02.1`, `SDD-DB-04`, `SDD-05 §4.7` | Migration naik-turun bersih; `users.role_id` merujuk role hasil seed |
 | `PR-01-02` | CRUD pengguna + soft delete + aturan Administrator terakhir | M | M | 01, 15, 16 | `FR-02.1`, `BR-067` `BR-068` `BR-070a` | Menonaktifkan admin ditolak bila tersisa < 2 aktif (`BR-068`+`BR-070a`, `SDD-05 §4.3`, keputusan 16 log phase-01) |
-| `PR-01-03` | Impor massal pengguna (CSV/XLSX) | M | M | 02 | `FR-02.1 A4`, `IMPT-01` … `05` | 500 baris; baris gagal tidak menggagalkan berkas |
+| `PR-01-03` | Impor massal pengguna (CSV/XLSX), sinkron ≤ 200 baris | M | M | 02 | `FR-02.1 A4`, `IMPT-01` `IMPT-02` | ≤ 200 baris; baris gagal tidak menggagalkan berkas; laporan per baris pada respons (keputusan 19 log phase-01: `IMPT-03`/`04`/`05` ditunda) |
 | `PR-01-04` | Matriks permission + `role_version` + cache 60 detik | M | M | 01, 15 | `FR-02.2`, `PM-05`, `SDD-AUTH-04/10` | Perubahan berlaku tanpa restart; permission inti tidak dapat dicabut |
 | `PR-01-05` | Skema `buildings`/`areas`/`rooms` + CRUD | M | M | 15 | `FR-03.1`, `BR-013` `BR-014` | Kode unik per tingkat; hierarki tiga tingkat |
 | `PR-01-06` | Pohon lokasi + penonaktifan berjenjang | M | M | 05 | `FR-03.1 A2/A3`, `BR-015` | Lokasi bermuatan aset tidak dapat dinonaktifkan |
@@ -110,6 +110,7 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 | `PR-01-14` | Gerbang persetujuan wali (`consent_guardian_at`) | S | S | 02 | `DP-02`, `SL-06`, `NT-48` | Akun siswa tanpa penanda tidak dapat diaktifkan |
 | `PR-01-15` | Middleware otorisasi + penyaringan field per permission *(dipindah dari `PR-02-09`)* | M | M | 01 | `PM-02` `PM-03`, `SDD-AUTH-01/05/06`, `SEC-T-01` | Uji otorisasi tergenerate mencakup 100% route; tanpa `AuthContext` → `401`, tanpa permission → `403 INSUFFICIENT_PERMISSION`, keduanya sebelum controller (`SDD-03 §4.4`); `/health` ringkasan dipasang dan terdaftar (keputusan 21) |
 | `PR-01-16` | Hash password Argon2id + kebijakan kata sandi *(dipindah dari `PR-02-01`)* | S | S | Ph00 | `NFR-S-02`, `NFR-S-03a`, `SDD-SESS-01`, `SDD-SYS-15` | Parameter Argon2id sesuai `SDD-SESS-01`, dibandingkan uji terhadap dokumennya; panjang, komposisi, dan larangan memuat identitas ditegakkan — daftar bocor dan riwayat 3 password milik `PR-02-31` |
+| `PR-01-17` | Impor massal pengguna — asinkron > 200 baris, idempotensi file-hash *(baru, keputusan 19)* | M | M | 03 | `IMPT-03`, `IMPT-04`, `NT-52` | Berkas > 200 baris diproses BullMQ, notifikasi `NT-52` saat selesai; unggah ulang berkas identik dalam 24 jam tidak memproses ulang; laporan per baris tersedia lewat endpoint pengambilan tersendiri |
 
 ## 8. Task Breakdown
 

@@ -13,7 +13,7 @@ Urutan phase dan graf dependensinya ada di [`ROADMAP.md`](ROADMAP.md) dan tidak 
 | Phase | Modul | PR | Kompleksitas dominan (`Kode`) | Catatan |
 |:---:|:---:|:---:|---|---|
 | 00 | — | 18 | M | Tidak ada modul fungsional; seluruhnya kerangka |
-| 01 | 4 | 16 | S–M | Paralelisme tertinggi — empat modul saling bebas setelah middleware otorisasi `PR-01-15` |
+| 01 | 4 | 17 | S–M | Paralelisme tertinggi — empat modul saling bebas setelah middleware otorisasi `PR-01-15`; `PR-01-17` baru — impor asinkron dipisah dari `PR-01-03` (keputusan 19, log phase-01) |
 | 02 | 5 | 29 | M–L | **Phase terbesar.** Menanam tiga tulang punggung sekaligus |
 | 03 | 6 | 23 | M | Enam modul bebas satu sama lain |
 | 04 | 3 | 14 | M | Sebagian besar memakai ulang abstraksi Phase 02 |
@@ -21,7 +21,7 @@ Urutan phase dan graf dependensinya ada di [`ROADMAP.md`](ROADMAP.md) dan tidak 
 | 06 | 1 | 10 | M–L | Satu modul, ketergantungan baca ke seluruh sistem |
 | 07 | — | 14 | M | Integrasi & UAT; banyak aktivitas non-PR |
 | 08 | — | 16 | S–M | Pengerasan; banyak aktivitas non-PR |
-| **Total** | **22** | **165** | | |
+| **Total** | **22** | **166** | | |
 
 Skala kompleksitas PR mengikuti [`templates/PHASE-TEMPLATE.md`](templates/PHASE-TEMPLATE.md): **S** ≤ 200 baris berubah · **M** ≤ 400 · **L** > 400 dan wajib disertai alasan di deskripsi PR. Sejak 7 September 2026 §7 tiap phase memisahkannya menjadi **dua kolom** — `Kode` untuk baris kode produksi, `Uji` untuk baris uji. Kolom **Kompleksitas dominan** pada tabel di atas mengacu pada `Kode`.
 
