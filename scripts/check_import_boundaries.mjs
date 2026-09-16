@@ -20,41 +20,50 @@ const kasus = [
   { nama: 'packages/schemas -> apps/* dilarang (SDD-REPO-06)', cwd: akar, tolak: true,
     file: 'packages/schemas/src/' + BERKAS, isi: "import '../../../apps/api/src/api/index.js';\n" },
   { nama: 'shared -> modules dilarang (SDD-SYS-06, SDD-00 §4.2)', cwd: apiRoot, tolak: true,
-    file: 'apps/api/src/shared/clock/' + BERKAS, isi: "import '../../modules/m01-auth/index.js';\n" },
+    file: 'apps/api/src/shared/clock/' + BERKAS, isi: "import '../../modules/__contoh_modul_a__/index.js';\n" },
   { nama: 'entrypoint -> internal modul dilarang (SDD-SYS-03)', cwd: apiRoot, tolak: true,
-    file: 'apps/api/src/api/__batas_internal__.ts', isi: "import '../modules/m01-auth/services/contoh.js';\n" },
+    file: 'apps/api/src/api/__batas_internal__.ts', isi: "import '../modules/__contoh_modul_a__/services/contoh.js';\n" },
   { nama: 'entrypoint -> modules/*/index.ts DIIZINKAN', cwd: apiRoot, tolak: false,
-    file: 'apps/api/src/api/__batas_sah__.ts', isi: "import '../modules/m01-auth/index.js';\n" },
+    file: 'apps/api/src/api/__batas_sah__.ts', isi: "import '../modules/__contoh_modul_a__/index.js';\n" },
   // Batas antar-modul (SDD-SYS-02, SDD-SYS-03) — tabel SDD-00 §4.2 baris 1.
   { nama: 'modul -> repositories modul lain dilarang (SDD-SYS-03)', cwd: apiRoot, tolak: true,
-    file: 'apps/api/src/modules/m02-users/services/__batas_repo__.ts',
-    isi: "import '../../m01-auth/repositories/contoh.js';\n" },
+    file: 'apps/api/src/modules/__contoh_modul_b__/services/__batas_repo__.ts',
+    isi: "import '../../__contoh_modul_a__/repositories/contoh.js';\n" },
   { nama: 'modul -> controllers modul lain dilarang (SDD-00 §4.2)', cwd: apiRoot, tolak: true,
-    file: 'apps/api/src/modules/m02-users/services/__batas_ctrl__.ts',
-    isi: "import '../../m01-auth/controllers/contoh.js';\n" },
+    file: 'apps/api/src/modules/__contoh_modul_b__/services/__batas_ctrl__.ts',
+    isi: "import '../../__contoh_modul_a__/controllers/contoh.js';\n" },
   { nama: 'modul -> index.ts modul lain DIIZINKAN (SDD-SYS-03)', cwd: apiRoot, tolak: false,
-    file: 'apps/api/src/modules/m02-users/services/__batas_modul_sah__.ts',
-    isi: "import '../../m01-auth/index.js';\n" },
+    file: 'apps/api/src/modules/__contoh_modul_b__/services/__batas_modul_sah__.ts',
+    isi: "import '../../__contoh_modul_a__/index.js';\n" },
   // Aturan yang menutup modul dari isinya sendiri lulus ketiga kasus di atas
   // sekaligus salah: repositories/ privat terhadap modul LAIN, bukan terhadap pemiliknya.
   { nama: 'modul -> repositories SENDIRI DIIZINKAN', cwd: apiRoot, tolak: false,
-    file: 'apps/api/src/modules/m01-auth/services/__batas_repo_sendiri__.ts',
+    file: 'apps/api/src/modules/__contoh_modul_a__/services/__batas_repo_sendiri__.ts',
     isi: "import '../repositories/contoh.js';\n" },
 ];
 
 // Modul contoh: no-restricted-paths hanya menilai impor yang dapat diselesaikan.
 // Folder modul harus sudah ada sebelum ESLint dibuat: konfigurasi apps/api membaca
 // src/modules saat dimuat untuk menyusun zona antar-modulnya.
+//
+// Nama folder contoh SENGAJA `__contoh_modul_*__` — bukan `m01-auth`/`m02-users`
+// seperti sebelumnya. Modul PRD nyata lahir satu per satu sepanjang phase 01+, dan
+// nama yang bertabrakan dengan modul asli membuat `finally` di bawah menghapus
+// seluruh isi modul yang sedang dikerjakan (ditemukan saat `PR-01-02` membangun
+// `m02-users` sungguhan — lihat log phase-01).
 const penopang = [
-  ['apps/api/src/modules/m01-auth/index.ts', 'export {};\n'],
-  ['apps/api/src/modules/m01-auth/services/contoh.ts', 'export {};\n'],
-  ['apps/api/src/modules/m01-auth/repositories/contoh.ts', 'export {};\n'],
-  ['apps/api/src/modules/m01-auth/controllers/contoh.ts', 'export {};\n'],
-  ['apps/api/src/modules/m02-users/index.ts', 'export {};\n'],
+  ['apps/api/src/modules/__contoh_modul_a__/index.ts', 'export {};\n'],
+  ['apps/api/src/modules/__contoh_modul_a__/services/contoh.ts', 'export {};\n'],
+  ['apps/api/src/modules/__contoh_modul_a__/repositories/contoh.ts', 'export {};\n'],
+  ['apps/api/src/modules/__contoh_modul_a__/controllers/contoh.ts', 'export {};\n'],
+  ['apps/api/src/modules/__contoh_modul_b__/index.ts', 'export {};\n'],
 ];
 
 /** Folder modul contoh yang dibuang seluruhnya setelah pemeriksaan selesai. */
-const modulContoh = ['apps/api/src/modules/m01-auth', 'apps/api/src/modules/m02-users'];
+const modulContoh = [
+  'apps/api/src/modules/__contoh_modul_a__',
+  'apps/api/src/modules/__contoh_modul_b__',
+];
 
 const semua = [...penopang.map(([f, i]) => [f, i]), ...kasus.map((k) => [k.file, k.isi])];
 for (const [f, isi] of semua) {

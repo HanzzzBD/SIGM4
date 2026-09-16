@@ -13,7 +13,10 @@ import type { Server } from "node:http";
 import { pathToFileURL } from "node:url";
 import express from "express";
 import type { Express } from "express";
+import type { Kysely } from "kysely";
+import { AuditLogger } from "../shared/audit/index.js";
 import { closeRedis, getRedis } from "../shared/cache/index.js";
+import type { Clock } from "../shared/clock/index.js";
 import { SystemClock } from "../shared/clock/index.js";
 import { readApiConfig, zonaProses } from "../shared/config/index.js";
 import {
@@ -21,6 +24,7 @@ import {
     closeDb,
     getDb,
 } from "../shared/db/index.js";
+import type { Database } from "../shared/db/index.js";
 import { authorize } from "../shared/auth/index.js";
 import { RedisRateLimiter, RouteRegistry } from "../shared/http/index.js";
 import type { RateLimiter } from "../shared/http/index.js";
@@ -32,6 +36,14 @@ import {
     databaseCheck,
     redisCheck,
 } from "../shared/observability/index.js";
+import {
+    createUserRoute,
+    getUserRoute,
+    listUsersRoute,
+    updateUserRoute,
+    updateUserStatusRoute,
+    usersRouter,
+} from "../modules/m02-users/index.js";
 import {
     healthLiveRoute,
     healthReadyRoute,
@@ -55,6 +67,11 @@ export const registry = new RouteRegistry().register(
     healthLiveRoute,
     healthReadyRoute,
     healthSummaryRoute,
+    listUsersRoute,
+    createUserRoute,
+    getUserRoute,
+    updateUserRoute,
+    updateUserStatusRoute,
 );
 
 /**
@@ -71,6 +88,10 @@ export interface AppDeps {
     readonly limiter: RateLimiter;
     readonly security: SecurityConfig;
     readonly logger: Logger;
+    /** AuditLogger (AL-01) dan `withTransaction` butuh Clock — SDD-SYS-07. */
+    readonly clock: Clock;
+    /** Pool Kysely bagi modul yang menulis basis data — m02-users sejak PR-01-02. */
+    readonly db: Kysely<Database>;
 }
 
 /** Merakit aplikasi tanpa membuka port — dipakai proses dan uji. */
@@ -91,6 +112,20 @@ export function createApp(deps: AppDeps): Express {
         BASE_PATH,
         healthSummaryRouter(
             deps.health,
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        usersRouter(
+            {
+                db: deps.db,
+                auditLogger: new AuditLogger({
+                    clock: deps.clock,
+                    logger: deps.logger,
+                }),
+            },
             (route) => rateLimit(route, deps.limiter, deps.logger),
             authorize,
         ),
@@ -167,6 +202,8 @@ export async function start(
         limiter: new RedisRateLimiter(getRedis(), clock),
         security: { objectStorageOrigin: config.objectStoragePublicOrigin },
         logger,
+        clock,
+        db: getDb(),
     }).listen(PORT);
     return new Penghenti(langkahHentiApi(health, server), {
         batasMs: BATAS_HENTI_API_MS,

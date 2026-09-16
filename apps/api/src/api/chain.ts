@@ -4,6 +4,7 @@
 // Tanpa keduanya Express menjawab dengan HTML bawaannya — di luar production
 // lengkap dengan pesan galat asli dan stack trace.
 
+import express from "express";
 import type { ErrorRequestHandler, RequestHandler, Response } from "express";
 import type { KodeGalat } from "../shared/errors/index.js";
 import { mapError, statusUntuk } from "../shared/errors/index.js";
@@ -24,6 +25,8 @@ import type { SecurityConfig } from "./security.js";
 const PESAN: Partial<Record<KodeGalat, string>> = {
     INVALID_REQUEST: "Permintaan tidak valid.",
     NOT_FOUND: "Sumber daya tidak ditemukan.",
+    DUPLICATE_CODE: "Data yang dimasukkan sudah digunakan.",
+    VALIDATION_ERROR: "Permintaan tidak memenuhi aturan bisnis.",
     RATE_LIMIT_EXCEEDED:
         "Terlalu banyak permintaan. Coba lagi beberapa saat lagi.",
     INTERNAL_ERROR: "Terjadi kesalahan pada server.",
@@ -88,11 +91,15 @@ export function errorHandler(logger: Logger): ErrorRequestHandler {
     };
 }
 
-/** Mata rantai sebelum route: `requestId` lalu header keamanan (SDD-06 §4.2). */
+/**
+ * Mata rantai sebelum route: `requestId`, header keamanan (SDD-06 §4.2), lalu
+ * body JSON (`express.json()`) — endpoint tulis pertama yang menuntutnya sejak
+ * PR-01-02; JSON rusak berstatus 400 lewat `galatKlien()` di bawah.
+ */
 export function awalRantai(deps: {
     readonly security: SecurityConfig;
 }): RequestHandler[] {
-    return [requestId(), ...securityHeaders(deps.security)];
+    return [requestId(), ...securityHeaders(deps.security), express.json()];
 }
 
 /**

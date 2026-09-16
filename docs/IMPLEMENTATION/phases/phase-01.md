@@ -95,7 +95,7 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 | PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
 |---|---|:---:|:---:|---|---|---|
 | `PR-01-01` | Skema `users` + kolom baku `roles` (skema RBAC dari `PR-00-16`) | M | M | Ph00 | `FR-02.1`, `SDD-DB-04`, `SDD-05 §4.7` | Migration naik-turun bersih; `users.role_id` merujuk role hasil seed |
-| `PR-01-02` | CRUD pengguna + soft delete + aturan Administrator terakhir | M | M | 01, 15, 16 | `FR-02.1`, `BR-067` `BR-068` `BR-070a` | Menonaktifkan Administrator terakhir ditolak |
+| `PR-01-02` | CRUD pengguna + soft delete + aturan Administrator terakhir | M | M | 01, 15, 16 | `FR-02.1`, `BR-067` `BR-068` `BR-070a` | Menonaktifkan admin ditolak bila tersisa < 2 aktif (`BR-068`+`BR-070a`, `SDD-05 §4.3`, keputusan 16 log phase-01) |
 | `PR-01-03` | Impor massal pengguna (CSV/XLSX) | M | M | 02 | `FR-02.1 A4`, `IMPT-01` … `05` | 500 baris; baris gagal tidak menggagalkan berkas |
 | `PR-01-04` | Matriks permission + `role_version` + cache 60 detik | M | M | 01, 15 | `FR-02.2`, `PM-05`, `SDD-AUTH-04/10` | Perubahan berlaku tanpa restart; permission inti tidak dapat dicabut |
 | `PR-01-05` | Skema `buildings`/`areas`/`rooms` + CRUD | M | M | 15 | `FR-03.1`, `BR-013` `BR-014` | Kode unik per tingkat; hierarki tiga tingkat |

@@ -7,10 +7,12 @@
 import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
+import type { Kysely } from "kysely";
 import { afterAll, describe, expect, it } from "vitest";
 import { createApp } from "../../src/api/index.js";
 import { createRedis, readRedisConfig } from "../../src/shared/cache/index.js";
 import { FixedClock } from "../../src/shared/clock/index.js";
+import type { Database } from "../../src/shared/db/index.js";
 import { RedisRateLimiter } from "../../src/shared/http/index.js";
 import {
     HealthRegistry,
@@ -18,6 +20,9 @@ import {
 } from "../../src/shared/observability/index.js";
 
 const ADA_DB = process.env["DATABASE_URL"] !== undefined;
+
+// Uji berkas ini hanya memukul route kesehatan publik — pool palsu, tidak tersambung.
+const dbPalsu = {} as unknown as Kysely<Database>;
 
 describe.skipIf(!ADA_DB)("Rate limit terhadap Redis nyata", () => {
     // Penjaga lingkungan sebagai UJI, bukan beforeAll: prasyarat yang hilang
@@ -120,6 +125,8 @@ describe.skipIf(!ADA_DB)("Rate limit terhadap Redis nyata", () => {
                 clock: new FixedClock(awal),
                 tulis: () => undefined,
             }),
+            clock: new FixedClock(awal),
+            db: dbPalsu,
         });
         const server = createServer(app);
         await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
