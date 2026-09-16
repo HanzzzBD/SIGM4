@@ -115,31 +115,31 @@ export function usersRouter(
         listUsersRoute.path,
         batasi(listUsersRoute),
         otorisasi(listUsersRoute.permission),
-        listUsersHandler(service), // codeql[js/missing-rate-limiting] -- batasi() di atas
+        listUsersHandler(service), // codeql[js/missing-rate-limiting]: batasi() di atas
     );
     router.post(
         createUserRoute.path,
         batasi(createUserRoute),
         otorisasi(createUserRoute.permission),
-        createUserHandler(service), // codeql[js/missing-rate-limiting] -- batasi() di atas
+        createUserHandler(service), // codeql[js/missing-rate-limiting]: batasi() di atas
     );
     router.get(
         getUserRoute.path,
         batasi(getUserRoute),
         otorisasi(getUserRoute.permission),
-        getUserHandler(service), // codeql[js/missing-rate-limiting] -- batasi() di atas
+        getUserHandler(service), // codeql[js/missing-rate-limiting]: batasi() di atas
     );
     router.put(
         updateUserRoute.path,
         batasi(updateUserRoute),
         otorisasi(updateUserRoute.permission),
-        updateUserHandler(service), // codeql[js/missing-rate-limiting] -- batasi() di atas
+        updateUserHandler(service), // codeql[js/missing-rate-limiting]: batasi() di atas
     );
     router.patch(
         updateUserStatusRoute.path,
         batasi(updateUserStatusRoute),
         otorisasi(updateUserStatusRoute.permission),
-        updateUserStatusHandler(service), // codeql[js/missing-rate-limiting] -- batasi() di atas
+        updateUserStatusHandler(service), // codeql[js/missing-rate-limiting]: batasi() di atas
     );
 
     return router;
