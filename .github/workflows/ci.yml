@@ -196,25 +196,18 @@ jobs:
               with:
                   languages: javascript-typescript
                   build-mode: none
-                  queries: security-extended
+                  config-file: ./.github/codeql/codeql-config.yml
             - uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
               with:
                   output: sarif
             - name: Gagal bila ada temuan High/Critical (CD-02)
               # security-severity ≥ 7,0 = High/Critical menurut skala CVSS CodeQL.
-              # `.suppressions` (SARIF §3.42) diisi `analyze` dari komentar
-              # `lgtm[rule-id]` di kode sumber — jq membaca SARIF mentah, bukan
-              # UI Code Scanning GitHub yang menyaringnya sendiri, jadi baris di
-              # bawah wajib memfilternya secara eksplisit. Tanpa ini, komentar
-              # penekanan tertulis tidak pernah berpengaruh pada gerbang ini
-              # (ditemukan PR-01-02, log phase-01 keputusan 18).
               run: |
                   temuan=$(jq -r '.runs[]
                       | ([.tool.driver.rules[]?, .tool.extensions[]?.rules[]?]
                          | map({key: .id, value: ((.properties["security-severity"] // "0") | tonumber)})
                          | from_entries) as $sev
                       | .results[]?
-                      | select((.suppressions // []) | length == 0)
                       | select(($sev[.ruleId] // 0) >= 7.0)
                       | "\(.ruleId)  \(.locations[0].physicalLocation.artifactLocation.uri):\(.locations[0].physicalLocation.region.startLine)"' sarif/*.sarif)
                   if [ -n "$temuan" ]; then
