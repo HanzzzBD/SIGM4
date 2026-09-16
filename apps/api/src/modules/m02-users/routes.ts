@@ -102,35 +102,44 @@ export function usersRouter(
     const service = new UserService(deps.db, deps.auditLogger);
     const router = express.Router();
 
+    // CodeQL js/missing-rate-limiting tidak mengenali `batasi()` (RedisRateLimiter
+    // milik kita) sebagai rate limiter — hanya beberapa paket npm baku yang
+    // dikenalinya. Setiap route DI BAWAH INI tetap dibatasi lewat `batasi(route)`,
+    // diselesaikan `rateLimit()` di composition root (`api/index.ts`) — pola yang
+    // sama persis dengan `healthRouter`/`healthSummaryRouter` (PR-01-15), yang
+    // lolos SAST karena query ini tidak menilainya "layak diperiksa" (tanpa data
+    // pengguna). `codeql[...]` di bawah menutup temuan per baris, bukan mematikan
+    // query bagi seluruh proyek — route BENAR-BENAR baru tanpa `batasi()` tetap
+    // akan ditangkap. Keputusan 18, log phase-01 §2.
     router.get(
         listUsersRoute.path,
         batasi(listUsersRoute),
         otorisasi(listUsersRoute.permission),
-        listUsersHandler(service),
+        listUsersHandler(service), // codeql[js/missing-rate-limiting] -- batasi() di atas
     );
     router.post(
         createUserRoute.path,
         batasi(createUserRoute),
         otorisasi(createUserRoute.permission),
-        createUserHandler(service),
+        createUserHandler(service), // codeql[js/missing-rate-limiting] -- batasi() di atas
     );
     router.get(
         getUserRoute.path,
         batasi(getUserRoute),
         otorisasi(getUserRoute.permission),
-        getUserHandler(service),
+        getUserHandler(service), // codeql[js/missing-rate-limiting] -- batasi() di atas
     );
     router.put(
         updateUserRoute.path,
         batasi(updateUserRoute),
         otorisasi(updateUserRoute.permission),
-        updateUserHandler(service),
+        updateUserHandler(service), // codeql[js/missing-rate-limiting] -- batasi() di atas
     );
     router.patch(
         updateUserStatusRoute.path,
         batasi(updateUserStatusRoute),
         otorisasi(updateUserStatusRoute.permission),
-        updateUserStatusHandler(service),
+        updateUserStatusHandler(service), // codeql[js/missing-rate-limiting] -- batasi() di atas
     );
 
     return router;
