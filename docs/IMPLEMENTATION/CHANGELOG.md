@@ -6,6 +6,24 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 
 ---
 
+## 16 September 2026 — skema label pull request
+
+Tidak ada TBD, requirement, maupun business rule baru. Keputusan pemilik produk 12 dicatat di [`logs/phase-01.md` §2](logs/phase-01.md).
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `BRANCHING-STRATEGY.md` §4, §4.2 (baru) | Dua label wajib (phase + jenis) dan satu opsional (`tinjauan-arsitek`); label bukan gerbang |
+| `GITHUB-CI-STATE.md` §4 | Tiga belas label berlaku 16 September 2026; sembilan label bawaan GitHub dihapus setelah diverifikasi tidak terpakai |
+| `templates/PULL-REQUEST.md` | Aturan label pada bagian pemakaian |
+| `IMPLEMENTATION-STATUS.md` | `PR-01-16` `Done` (#43, *squash*); Phase 01 2/16; total 20/165 |
+| `logs/phase-01.md` §1, §2 | `PR-01-16` tergabung; keputusan 12 |
+
+Total PR tetap **165**.
+
+---
+
 ## 16 September 2026 — `PR-01-16`: hash password Argon2id; `PR-02-31` baru
 
 Tidak ada TBD, requirement, maupun business rule baru. Keputusan pemilik produk 7–10 dan keputusan teknis 11 dicatat di [`logs/phase-01.md` §2](logs/phase-01.md).

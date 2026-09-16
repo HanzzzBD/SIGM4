@@ -97,7 +97,7 @@ Pada Phase 04 dan seterusnya, **PR yang menuntut perubahan pada `SlotService` ad
 ## 4. Alur review
 
 ```
-1. Penulis membuka PR memakai templates/PULL-REQUEST.md
+1. Penulis membuka PR memakai templates/PULL-REQUEST.md, lalu memberi label (§4.2)
 2. CI berjalan: lint → uji → SAST → SCA → build → image scan   (CD-01)
 3. Peninjau membaca deskripsi PR sebelum membaca diff
 4. Komentar diklasifikasi: [blocker] · [saran] · [tanya]
@@ -124,6 +124,22 @@ Pada Phase 04 dan seterusnya, **PR yang menuntut perubahan pada `SlotService` ad
 | 8 | Apakah ada `TODO` atau data uji yang tertinggal (DoD 29.5)? |
 
 Butir 6 adalah yang paling sering terlewat. Uji yang tetap hijau setelah logikanya dihapus tidak menguji apa pun.
+
+### 4.2 Label pull request
+
+Setiap PR memakai **dua label wajib** — satu phase dan satu jenis — ditambah satu label opsional:
+
+| Label | Isi | Diturunkan dari |
+|---|---|---|
+| `phase-00` … `phase-08` | Phase pemilik PR | ID PR (`PR-NN-NN`) |
+| `feature` · `fix` · `chore` | Jenis pekerjaan | Jenis cabang (§2) |
+| `tinjauan-arsitek` | Menyentuh tulang punggung (§3.1) | Bagian "Tinjauan arsitek" pada deskripsi PR |
+
+PR `chore/` tidak punya ID PR; ia memakai label phase yang **sedang berjalan**, supaya pekerjaan perkakas dan dokumentasi tetap tersaring bersama phase tempat ia lahir.
+
+Label **tidak menggantikan** judul maupun deskripsi PR: keduanya tetap satu-satunya tempat ID requirement tertulis. Yang label kerjakan hanya satu hal — membuat daftar PR dapat disaring per phase dan per jenis tanpa membuka satu per satu. Karena itu ia **bukan gerbang**: tidak ada workflow yang membacanya, dan PR tanpa label tidak tertahan.
+
+Label di luar tabel ini tidak dipakai, dan daftar label repositori dijaga sama persis dengan tabel ini ([`GITHUB-CI-STATE.md` §4](GITHUB-CI-STATE.md)).
 
 ## 5. Definition of Done tingkat PR
 

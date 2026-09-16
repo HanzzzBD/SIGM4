@@ -105,6 +105,8 @@ Branch protection **tidak dapat diatur lewat berkas**. Daftar berikut menerjemah
 
 Per 6 September 2026 proteksi **dinyalakan** pada `main` dan `develop` lewat `gh api`, dan hasilnya diverifikasi kembali dari API. Per 15 September 2026 `develop` memperoleh dua setelan tinjauan, lalu — bersama `PR-00-17` — required status check `CI lulus` dan *branch up to date*; pembacaan API terakhir hari itu mengonfirmasi keempatnya aktif. Setelah #40 tergabung (15 September 2026) proteksi dibaca ulang dari API: keenam setelan `main` dan kesepuluh setelan `develop` aktif sesuai tabel; cabang, environment, dan secret `staging` belum ada (keputusan 55). `develop` kini **sepuluh** setelan aktif, `main` enam; *Code Owners review* dan status check `main` ditunda, dan dua setelan tidak dapat disetel sama sekali — rinciannya pada tabel di atas.
 
+**Label PR disetel di GitHub, bukan di berkas.** Tiga belas label berlaku sejak 16 September 2026 — `phase-00` … `phase-08`, `feature`, `fix`, `chore`, dan `tinjauan-arsitek` ([`BRANCHING §4.2`](BRANCHING-STRATEGY.md)). Kesembilan label bawaan GitHub (`bug`, `documentation`, `duplicate`, `enhancement`, `good first issue`, `help wanted`, `invalid`, `question`, `wontfix`) dihapus setelah diverifikasi lewat API tidak dipakai satu pun issue maupun PR: repositori tidak memiliki issue, dan #1–#43 seluruhnya tanpa label. Tidak ada workflow yang membaca label.
+
 ## 5. Berkas governance yang sudah ada
 
 | Berkas | Isi | Aturan yang dilayani |
