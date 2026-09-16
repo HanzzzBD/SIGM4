@@ -1,7 +1,8 @@
 // Route kesehatan sigm4-api (SDD-OBS-06, SDD-15 §4.5).
 //
-// Dua probe publik dipasang sekarang; `/health` ringkasan dideklarasikan tetapi
-// belum dipasang — alasannya pada `healthSummaryHandler`.
+// Dua probe publik dan `/health` ringkasan sama-sama dipasang `api/index.ts`;
+// ringkasan di belakang `authorize('setting.view')` (PM-02, PR-01-15) karena ia
+// membeberkan status seluruh dependensi, sementara kedua probe tidak.
 
 import express from "express";
 import type { RequestHandler, Router } from "express";
@@ -102,10 +103,9 @@ export function healthRouter(
 }
 
 /**
- * Handler `/health` ringkasan. SENGAJA tidak dipasang `healthRouter` dan tidak
- * didaftarkan ke registri proses: ia membeberkan status seluruh dependensi dan
- * menuntut `setting.view`, sementara middleware yang menegakkannya lahir di
- * `PR-01-15` (`PM-02`). Memasangnya lebih dulu berarti endpoint tanpa penjaga.
+ * Handler `/health` ringkasan (`setting.view`). Dipasang `healthSummaryRouter`
+ * di belakang `authorize()` — bukan `healthRouter`, sebab keduanya beda kelas
+ * akses: probe publik lolos tanpa apa pun, ringkasan menuntut permission.
  */
 export function healthSummaryHandler(health: HealthRegistry): RequestHandler {
     return async (_req, res) => {
@@ -115,4 +115,24 @@ export function healthSummaryHandler(health: HealthRegistry): RequestHandler {
             meta: null,
         });
     };
+}
+
+/**
+ * Router `/health` ringkasan. Terpisah dari `healthRouter` karena permission
+ * `otorisasi` hanya berlaku di sini — mencampurnya ke satu router membuat satu
+ * router memegang dua aturan akses berbeda.
+ */
+export function healthSummaryRouter(
+    health: HealthRegistry,
+    batasi: (route: RouteDefinition) => RequestHandler,
+    otorisasi: (permission: string) => RequestHandler,
+): Router {
+    const router = express.Router();
+    router.get(
+        healthSummaryRoute.path,
+        batasi(healthSummaryRoute),
+        otorisasi(healthSummaryRoute.permission),
+        healthSummaryHandler(health),
+    );
+    return router;
 }

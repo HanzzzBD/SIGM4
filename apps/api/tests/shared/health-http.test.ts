@@ -7,13 +7,20 @@ import type { AddressInfo } from "node:net";
 import { createServer } from "node:http";
 import type { RequestListener, Server } from "node:http";
 import express from "express";
+import type { RequestHandler } from "express";
 import { afterEach, describe, expect, it } from "vitest";
 import {
     healthSummaryHandler,
     healthSummaryRoute,
+    healthSummaryRouter,
 } from "../../src/api/health.js";
 import { createApp, registry } from "../../src/api/index.js";
 import { buildOpenApiDocument } from "../../src/api/openapi.js";
+import {
+    authorize,
+    createAuthContext,
+    setAuthContext,
+} from "../../src/shared/auth/index.js";
 import { FixedClock } from "../../src/shared/clock/index.js";
 import {
     HealthRegistry,
@@ -123,24 +130,87 @@ describe("sigm4-api — /api/v1/health/*", () => {
         expect((await fetch(`${url}/api/v1/health/live`)).status).toBe(200);
     });
 
-    it("/health ringkasan TIDAK terpasang tanpa middleware permission (PM-02) → 404", async () => {
+    it("/health ringkasan terpasang di belakang otorisasi — tanpa AuthContext → 401 (PM-02)", async () => {
         const url = await buka(aplikasi(health(siap)));
         const res = await fetch(`${url}/api/v1/health`);
-        expect(res.status).toBe(404);
-        expect(await res.text()).not.toMatch(/database|llm/);
+        expect(res.status).toBe(401);
+        const teks = await res.text();
+        expect(teks).not.toMatch(/database|llm/);
+        expect(JSON.parse(teks)).toMatchObject({
+            success: false,
+            error: { code: "UNAUTHENTICATED" },
+        });
     });
 
-    it("registri proses: hanya dua probe publik, ringkasan tidak diiklankan", () => {
+    it("registri proses: dua probe publik dan ringkasan berpermission", () => {
         expect(registry.all().map((r) => `${r.method} ${r.path}`)).toEqual([
             "GET /health/live",
             "GET /health/ready",
+            "GET /health",
         ]);
         expect(registry.publicRoutes()).toHaveLength(2);
+        expect(registry.guarded().map((r) => r.permission)).toEqual([
+            "setting.view",
+        ]);
         const doc = buildOpenApiDocument(registry, { version: "uji" });
         expect(Object.keys(doc.paths ?? {})).toEqual([
             "/api/v1/health/live",
             "/api/v1/health/ready",
+            "/api/v1/health",
         ]);
+    });
+
+    it("healthSummaryRouter menegakkan setting.view — tanpa itu 403, dengan itu 200", async () => {
+        const tanpaIzin = createAuthContext({
+            userId: 1,
+            roleCode: "SISWA",
+            scopes: new Map(),
+        });
+        const berizin = createAuthContext({
+            userId: 2,
+            roleCode: "ADMIN",
+            scopes: new Map([["setting.view", "all"]]),
+        });
+        const batasi = (): RequestHandler => (_req, _res, next) => {
+            next();
+        };
+
+        function aplikasiRingkasan(ctx: typeof tanpaIzin) {
+            const app = express();
+            app.use((_req, res, next) => {
+                setAuthContext(res, ctx);
+                next();
+            });
+            app.use(healthSummaryRouter(health(siap), batasi, authorize));
+            app.use(
+                (
+                    galat: unknown,
+                    _req: express.Request,
+                    res: express.Response,
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    _next: express.NextFunction,
+                ) => {
+                    const status =
+                        galat instanceof Error && galat.name === "ForbiddenError"
+                            ? 403
+                            : 401;
+                    res.status(status).json({ code: (galat as Error).name });
+                },
+            );
+            return app;
+        }
+
+        const ditolak = await fetch(
+            `${await buka(aplikasiRingkasan(tanpaIzin))}/health`,
+        );
+        expect(ditolak.status).toBe(403);
+
+        const diterima = await fetch(
+            `${await buka(aplikasiRingkasan(berizin))}/health`,
+        );
+        expect(diterima.status).toBe(200);
+        const body = (await diterima.json()) as { data: { status: string } };
+        expect(body.data.status).toBe("degraded");
     });
 
     it("ringkasan menuntut setting.view dan melaporkan setiap dependensi (OBS-06)", async () => {

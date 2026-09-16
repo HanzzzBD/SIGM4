@@ -75,7 +75,7 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 
 | Berkas | Keputusan yang diterapkan |
 |---|---|
-| [`03-authorization.md`](../../SDD/03-authorization.md) | `SDD-AUTH-01` `SDD-AUTH-05` `SDD-AUTH-06` (middleware otorisasi, `PR-01-15`), `SDD-AUTH-04` (cache & `role_version`), `SDD-AUTH-10` (permission inti) |
+| [`03-authorization.md`](../../SDD/03-authorization.md) | `SDD-AUTH-01` `SDD-AUTH-06` (middleware otorisasi, `PR-01-15`), `SDD-AUTH-04` (cache & `role_version`, `PR-01-04`), `SDD-AUTH-10` (permission inti, `PR-01-04`). `SDD-AUTH-05` (`GET /me`) **bukan** phase ini — menuntut token nyata, milik Phase 02 |
 | [`04-authentication-session.md`](../../SDD/04-authentication-session.md) | `SDD-SESS-01` (Argon2id, `PR-01-16`) |
 | [`05-database-design.md`](../../SDD/05-database-design.md) | `SDD-DB-01` … `SDD-DB-06` |
 | [`06-api-design.md`](../../SDD/06-api-design.md) | `SDD-API-05` … `SDD-API-07` (paginasi, filter, presenter) |
