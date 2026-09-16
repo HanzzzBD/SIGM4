@@ -108,38 +108,38 @@ export function usersRouter(
     // diselesaikan `rateLimit()` di composition root (`api/index.ts`) — pola yang
     // sama persis dengan `healthRouter`/`healthSummaryRouter` (PR-01-15), yang
     // lolos SAST karena query ini tidak menilainya "layak diperiksa" (tanpa data
-    // pengguna). `codeql[...]` di bawah menutup temuan per baris, bukan mematikan
+    // pengguna). `lgtm[...]` di bawah menutup temuan per baris, bukan mematikan
     // query bagi seluruh proyek — route BENAR-BENAR baru tanpa `batasi()` tetap
     // akan ditangkap. Keputusan 18, log phase-01 §2.
     router.get(
         listUsersRoute.path,
         batasi(listUsersRoute),
         otorisasi(listUsersRoute.permission),
-        listUsersHandler(service), // codeql[js/missing-rate-limiting]: batasi() di atas
+        listUsersHandler(service), // lgtm[js/missing-rate-limiting] batasi() di atas
     );
     router.post(
         createUserRoute.path,
         batasi(createUserRoute),
         otorisasi(createUserRoute.permission),
-        createUserHandler(service), // codeql[js/missing-rate-limiting]: batasi() di atas
+        createUserHandler(service), // lgtm[js/missing-rate-limiting] batasi() di atas
     );
     router.get(
         getUserRoute.path,
         batasi(getUserRoute),
         otorisasi(getUserRoute.permission),
-        getUserHandler(service), // codeql[js/missing-rate-limiting]: batasi() di atas
+        getUserHandler(service), // lgtm[js/missing-rate-limiting] batasi() di atas
     );
     router.put(
         updateUserRoute.path,
         batasi(updateUserRoute),
         otorisasi(updateUserRoute.permission),
-        updateUserHandler(service), // codeql[js/missing-rate-limiting]: batasi() di atas
+        updateUserHandler(service), // lgtm[js/missing-rate-limiting] batasi() di atas
     );
     router.patch(
         updateUserStatusRoute.path,
         batasi(updateUserStatusRoute),
         otorisasi(updateUserStatusRoute.permission),
-        updateUserStatusHandler(service), // codeql[js/missing-rate-limiting]: batasi() di atas
+        updateUserStatusHandler(service), // lgtm[js/missing-rate-limiting] batasi() di atas
     );
 
     return router;

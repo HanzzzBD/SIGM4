@@ -203,7 +203,7 @@ jobs:
             - name: Gagal bila ada temuan High/Critical (CD-02)
               # security-severity ≥ 7,0 = High/Critical menurut skala CVSS CodeQL.
               # `.suppressions` (SARIF §3.42) diisi `analyze` dari komentar
-              # `codeql[rule-id]` di kode sumber — jq membaca SARIF mentah, bukan
+              # `lgtm[rule-id]` di kode sumber — jq membaca SARIF mentah, bukan
               # UI Code Scanning GitHub yang menyaringnya sendiri, jadi baris di
               # bawah wajib memfilternya secara eksplisit. Tanpa ini, komentar
               # penekanan tertulis tidak pernah berpengaruh pada gerbang ini
