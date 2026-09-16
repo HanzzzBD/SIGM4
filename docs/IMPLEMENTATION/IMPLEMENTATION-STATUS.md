@@ -114,7 +114,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-01-12` | `Not Started` | — | `work_units` + migrasi `unit_kerja` |
 | `PR-01-13` | `Not Started` | — | Siklus akun siswa |
 | `PR-01-14` | `Not Started` | — | Gerbang persetujuan wali |
-| `PR-01-15` | `In Progress` | — | Middleware otorisasi + `healthSummaryRouter`; cabang `feature/PR-01-15-middleware-otorisasi` (keputusan 13–15 [log phase-01 §2](logs/phase-01.md)) |
+| `PR-01-15` | `In Progress` | — | Middleware otorisasi + `healthSummaryRouter`; cabang `feature/PR-01-15-middleware-otorisasi` — [#45](https://github.com/HanzzzBD/SIGM4/pull/45) (keputusan 13–15 [log phase-01 §2](logs/phase-01.md)) |
 | `PR-01-16` | `Done` | [#43](https://github.com/HanzzzBD/SIGM4/pull/43) | Hash password Argon2id + kebijakan kata sandi (keputusan 7–11); sisa `NFR-S-03a` → `PR-02-31` |
 
 ### Phase 02 — Inti Sistem · `Not Started`
