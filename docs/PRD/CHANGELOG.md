@@ -201,3 +201,14 @@ Audit lanjutan atas frasa "biaya" yang tersisa menemukan hal yang tidak dapat di
 | Bab 11.3 | Kelompok baru **Cakupan Data Permission**: All, Own, Assigned, Restricted |
 
 **Tidak ada requirement yang berubah isinya.** Keempat nilai sudah didefinisikan Lampiran C.1; yang ditambahkan hanya pendaftarannya sebagai data acuan.
+
+## Revisi — Status Pengguna pada Bab 11.3 & penanda 2FA pada entitas `users` (15 September 2026)
+
+`PR-01-01` membuat tabel `users`. Dua bagian PRD tidak dapat diterapkan apa adanya dan diputuskan pemilik produk ([`logs/phase-01.md` §2](../IMPLEMENTATION/logs/phase-01.md), keputusan 1–2).
+
+| Bagian | Perubahan |
+|---|---|
+| Bab 11.3 | Kelompok baru **Status Pengguna**: Aktif, Nonaktif. ERD sudah menulis `enum status` dan `FR-02.1` memakai kedua nilai, tetapi kelompoknya tidak terdaftar, padahal `SDD-DB-02` mewajibkan native enum |
+| Entitas `users` (`data-model.md`, M-02 §8) · ERD | Atribut `2fa_enabled` (tabel entitas) dan `two_fa_enabled` (ERD) diganti **`totp_enabled_at`**, penanda yang ditetapkan `SDD-04 §4.1`: 2FA aktif berarti kolom itu terisi. `2fa_enabled` juga tidak sah sebagai nama kolom SQL |
+
+**Tidak ada requirement yang berubah isinya.** Kedua status sudah dipakai `FR-02.1` dan `BR-067`, dan kewajiban 2FA tetap milik `FR-01.5`/`BR-070`; yang berubah hanya pendaftaran data acuan dan nama atribut.

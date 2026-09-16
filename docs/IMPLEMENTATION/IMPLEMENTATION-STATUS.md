@@ -1,6 +1,6 @@
 # Status Implementasi
 
-**Diperbarui:** 15 September 2026 — `PR-00-01` … `PR-00-18` tergabung ke `develop`, termasuk format ulang Prettier ([#30](https://github.com/HanzzzBD/SIGM4/pull/30)), tindak lanjut `PR-00-14` ([#32](https://github.com/HanzzzBD/SIGM4/pull/32)), tindak lanjut audit `PR-00-15` ([#34](https://github.com/HanzzzBD/SIGM4/pull/34)), `PR-00-16` ([#37](https://github.com/HanzzzBD/SIGM4/pull/37)), `PR-00-17` ([#38](https://github.com/HanzzzBD/SIGM4/pull/38)), dan `PR-00-18` ([#39](https://github.com/HanzzzBD/SIGM4/pull/39), keputusan 50–56; rencana kini 164 PR), beserta tindak lanjut graceful shutdown `PR-00-18` ([#40](https://github.com/HanzzzBD/SIGM4/pull/40), keputusan 57–61). Diverifikasi dari GitHub: #6–#40 seluruhnya tergabung, tidak ada PR terbuka. Audit konsistensi lintas dokumen selesai: 15 temuan, 12 keputusan pemilik produk. Proteksi cabang `main` dan `develop` aktif. Penyegaran dokumen pasca Phase 00 dan keputusan 62–65: [#41](https://github.com/HanzzzBD/SIGM4/pull/41). **Gerbang keluar Phase 00 menunggu infrastruktur staging nyata** — lihat [Penghalang aktif](#penghalang-aktif).
+**Diperbarui:** 15 September 2026 — Phase 01 dimulai: `PR-01-01` dikerjakan di `feature/PR-01-01-skema-users`. `PR-00-01` … `PR-00-18` tergabung ke `develop`, termasuk format ulang Prettier ([#30](https://github.com/HanzzzBD/SIGM4/pull/30)), tindak lanjut `PR-00-14` ([#32](https://github.com/HanzzzBD/SIGM4/pull/32)), tindak lanjut audit `PR-00-15` ([#34](https://github.com/HanzzzBD/SIGM4/pull/34)), `PR-00-16` ([#37](https://github.com/HanzzzBD/SIGM4/pull/37)), `PR-00-17` ([#38](https://github.com/HanzzzBD/SIGM4/pull/38)), dan `PR-00-18` ([#39](https://github.com/HanzzzBD/SIGM4/pull/39), keputusan 50–56; rencana kini 164 PR), beserta tindak lanjut graceful shutdown `PR-00-18` ([#40](https://github.com/HanzzzBD/SIGM4/pull/40), keputusan 57–61). Diverifikasi dari GitHub: #6–#40 seluruhnya tergabung, tidak ada PR terbuka. Audit konsistensi lintas dokumen selesai: 15 temuan, 12 keputusan pemilik produk. Proteksi cabang `main` dan `develop` aktif. Penyegaran dokumen pasca Phase 00 dan keputusan 62–65: [#41](https://github.com/HanzzzBD/SIGM4/pull/41). **Gerbang keluar Phase 00 menunggu infrastruktur staging nyata** — lihat [Penghalang aktif](#penghalang-aktif).
 
 Berkas ini memiliki status **per phase dan per pull request**. Ia **tidak** memiliki status per requirement — itu milik [`../PRD/06-quality/traceability.md`](../PRD/06-quality/traceability.md). Dua tingkat berbeda, tanpa tumpang tindih:
 
@@ -32,8 +32,8 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 | Phase | Nama | Modul | PR | Status | Selesai | Catatan |
 |:---:|---|:---:|:---:|---|:---:|---|
 | [00](phases/phase-00.md) | Foundation | — | 18 | `In Review` | 18/18 | Seluruh 18 PR beserta tindak lanjutnya tergabung (#40 terakhir); gerbang keluar belum lulus — deploy staging nyata dan tiga lingkungan terpisah (`NFR-M-09`) belum terbukti. Kelengkapan `/health` tidak wajib di Phase 00 — diisi bertahap sampai `PR-03-20`. Butir blocking worker sebagai proses ditutup `PR-00-18`; deploy staging nyata menunggu infrastruktur — [log §10](logs/phase-00.md) |
-| [01](phases/phase-01.md) | Master Data Independen | 4 | 15 | `Not Started` | 0/15 | Boleh dimulai selagi Phase 00 `In Review` (keputusan 62); middleware otorisasi `PR-01-15` mendahului PR endpoint (keputusan 63) |
-| [02](phases/phase-02.md) | Inti Sistem | 5 | 29 | `Not Started` | 0/29 | Phase terbesar; di lintasan kritis. `PR-02-09` dipensiunkan → `PR-01-15` |
+| [01](phases/phase-01.md) | Master Data Independen | 4 | 16 | `In Progress` | 0/16 | Dimulai selagi Phase 00 `In Review` (keputusan 62); middleware otorisasi `PR-01-15` dan hash password `PR-01-16` mendahului PR endpoint (keputusan 63; keputusan 3 log phase-01) |
+| [02](phases/phase-02.md) | Inti Sistem | 5 | 28 | `Not Started` | 0/28 | Phase terbesar; di lintasan kritis. Dipensiunkan: `PR-02-01` → `PR-01-16`, `PR-02-09` → `PR-01-15` |
 | [03](phases/phase-03.md) | Layanan Aset & Reservasi | 6 | 23 | `Not Started` | 0/23 | Menutup `M1` |
 | [04](phases/phase-04.md) | Siklus Hidup Aset | 3 | 14 | `Not Started` | 0/14 | Menutup `M2` |
 | [05](phases/phase-05.md) | Penutupan Siklus | 3 | 25 | `Not Started` | 0/25 | Menutup `M3` & `M4` |
@@ -49,11 +49,11 @@ Definisi dan kriteria keluar milestone ada di [PRD 29.2](../PRD/01-product/deliv
 | Milestone | Terisi di phase | Status | Ditutup pada |
 |---|---|---|:---:|
 | `M0 — Fondasi Teknis` | 00 | `In Progress` | Phase 00 |
-| `M1 — Identitas & Data Induk` | 01, 02, 03 | `Not Started` | Phase 03 |
+| `M1 — Identitas & Data Induk` | 01, 02, 03 | `In Progress` | Phase 03 |
 | `M2 — Mesin Persetujuan & Pemesanan` | 02, 03, 04 | `Not Started` | Phase 04 |
 | `M3 — Siklus Operasional` | 03, 04, 05 | `Not Started` | Phase 05 |
 | `M4 — Kontrol & Siklus Hidup Aset` | 03, 04, 05 | `Not Started` | Phase 05 |
-| `M5 — Insight, Notifikasi & AI` | 01, 02, 03, 06 | `Not Started` | Phase 06 |
+| `M5 — Insight, Notifikasi & AI` | 01, 02, 03, 06 | `In Progress` | Phase 06 |
 | `M6 — Pengerasan & Kesiapan Rilis` | 07, 08 | `Not Started` | Phase 08 |
 
 ## Status gerbang rilis
@@ -96,17 +96,32 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-00-17` | `Done` | [#38](https://github.com/HanzzzBD/SIGM4/pull/38) | Pipeline CI `ci.yml` (lint → uji → integrasi+cakupan → build → CodeQL → SCA → Trivy); required check `CI lulus` aktif di `develop`; runtime image tanpa npm (keputusan 47); berkas pnpm diabaikan (keputusan 44) — [log §2](logs/phase-00.md) |
 | `PR-00-18` | `Done` | [#39](https://github.com/HanzzzBD/SIGM4/pull/39) | Deploy staging (`deploy/staging/`, job `publikasi-image` + `deploy-staging`); dibuktikan pada staging tiruan — infrastruktur nyata belum ada (keputusan 50). Tindak lanjut graceful shutdown worker + API tergabung: [#40](https://github.com/HanzzzBD/SIGM4/pull/40) (keputusan 57–61) — [log §2](logs/phase-00.md) |
 
-### Phase 01 — Master Data Independen · `Not Started`
+### Phase 01 — Master Data Independen · `In Progress`
 
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
-| `PR-01-01` … `PR-01-15` | `Not Started` | — | Rincian: [`phases/phase-01.md` §7](phases/phase-01.md) |
+| `PR-01-01` | `In Progress` | [#42](https://github.com/HanzzzBD/SIGM4/pull/42) | Skema `users` + kolom baku `roles`; cabang `feature/PR-01-01-skema-users` (keputusan 1–6 [log phase-01 §2](logs/phase-01.md)) |
+| `PR-01-02` | `Not Started` | — | CRUD pengguna + soft delete + aturan Administrator terakhir |
+| `PR-01-03` | `Not Started` | — | Impor massal pengguna |
+| `PR-01-04` | `Not Started` | — | Matriks permission + `role_version` + cache |
+| `PR-01-05` | `Not Started` | — | Skema `buildings`/`areas`/`rooms` + CRUD |
+| `PR-01-06` | `Not Started` | — | Pohon lokasi + penonaktifan berjenjang |
+| `PR-01-07` | `Not Started` | — | Daftar aset per lokasi (kerangka) |
+| `PR-01-08` | `Not Started` | — | Penelusuran activity log |
+| `PR-01-09` | `Not Started` | — | Ekspor activity log |
+| `PR-01-10` | `Not Started` | — | `system_settings` + seed parameter bawaan |
+| `PR-01-11` | `Not Started` | — | Kalender akademik |
+| `PR-01-12` | `Not Started` | — | `work_units` + migrasi `unit_kerja` |
+| `PR-01-13` | `Not Started` | — | Siklus akun siswa |
+| `PR-01-14` | `Not Started` | — | Gerbang persetujuan wali |
+| `PR-01-15` | `Not Started` | — | Middleware otorisasi (semula `PR-02-09`) |
+| `PR-01-16` | `Not Started` | — | Hash password Argon2id (semula `PR-02-01`) |
 
 ### Phase 02 — Inti Sistem · `Not Started`
 
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
-| `PR-02-01` … `PR-02-30` (tanpa `PR-02-09`, pensiun) | `Not Started` | — | Rincian: [`phases/phase-02.md` §7](phases/phase-02.md) |
+| `PR-02-01` … `PR-02-30` (tanpa `PR-02-01` dan `PR-02-09`, pensiun) | `Not Started` | — | Rincian: [`phases/phase-02.md` §7](phases/phase-02.md) |
 
 ### Phase 03 — Layanan Aset & Reservasi · `Not Started`
 

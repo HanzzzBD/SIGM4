@@ -6,7 +6,7 @@ Data induk yang relatif stabil dan menjadi acuan seluruh transaksi.
 
 | Entitas | Deskripsi | Atribut Utama | Pemilik Data |
 |---|---|---|---|
-| **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, unit_kerja, telepon, foto, status, 2fa_enabled, must_change_password, login_terakhir_pada | Administrator |
+| **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, unit_kerja, telepon, foto, status, totp_enabled_at, must_change_password, login_terakhir_pada | Administrator |
 | **roles** | Peran pengguna | id, nama, deskripsi, is_system | Administrator |
 | **permissions** | Daftar hak akses granular | id, modul, aksi, kode | Sistem |
 | **role_permissions** | Relasi role–permission | role_id, permission_id | Administrator |
@@ -111,6 +111,7 @@ Data acuan bernilai tetap yang digunakan sebagai enumerasi dan dropdown.
 | **Jenis Hari Libur** | Nasional, Sekolah, Cuti Bersama |
 | **Hasil Aktivitas** | Sukses, Gagal |
 | **Cakupan Data Permission** | All, Own, Assigned, Restricted |
+| **Status Pengguna** | Aktif, Nonaktif |
 
 ## 11.4 Kebijakan Retensi Data
 
@@ -235,7 +236,7 @@ erDiagram
         bigint role_id FK
         string unit_kerja
         enum status
-        boolean two_fa_enabled
+        datetime totp_enabled_at
         datetime login_terakhir_pada
     }
 
