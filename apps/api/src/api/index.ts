@@ -6,7 +6,8 @@
 // sebelum apa pun berjalan, dan dokumen OpenAPI diturunkan darinya. PR-00-14
 // merakit server Express minimal agar kedua probe kesehatan dapat dipanggil;
 // PR-00-15 memasang dari rantai SDD-06 §4.2: `requestId`, header keamanan, rate
-// limit, 404, dan `errorMapper`. Autentikasi dan permission menyusul di Phase 02.
+// limit, 404, dan `errorMapper`. Middleware permission (`authorize`, PM-02) ada
+// sejak PR-01-15; `authenticate` — verifikasi token — menyusul Phase 02 (`PR-02-02`).
 
 import type { Server } from "node:http";
 import { pathToFileURL } from "node:url";
@@ -20,6 +21,7 @@ import {
     closeDb,
     getDb,
 } from "../shared/db/index.js";
+import { authorize } from "../shared/auth/index.js";
 import { RedisRateLimiter, RouteRegistry } from "../shared/http/index.js";
 import type { RateLimiter } from "../shared/http/index.js";
 import { Penghenti, tutupServer } from "../shared/lifecycle/index.js";
@@ -30,7 +32,13 @@ import {
     databaseCheck,
     redisCheck,
 } from "../shared/observability/index.js";
-import { healthLiveRoute, healthReadyRoute, healthRouter } from "./health.js";
+import {
+    healthLiveRoute,
+    healthReadyRoute,
+    healthRouter,
+    healthSummaryRoute,
+    healthSummaryRouter,
+} from "./health.js";
 import { BASE_PATH } from "./openapi.js";
 import { awalRantai, ujungRantai } from "./chain.js";
 import { rateLimit } from "./security.js";
@@ -46,6 +54,7 @@ const PORT = 3000;
 export const registry = new RouteRegistry().register(
     healthLiveRoute,
     healthReadyRoute,
+    healthSummaryRoute,
 );
 
 /**
@@ -76,6 +85,14 @@ export function createApp(deps: AppDeps): Express {
         BASE_PATH,
         healthRouter(deps.health, (route) =>
             rateLimit(route, deps.limiter, deps.logger),
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        healthSummaryRouter(
+            deps.health,
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
         ),
     );
     app.use(ujungRantai(deps));
