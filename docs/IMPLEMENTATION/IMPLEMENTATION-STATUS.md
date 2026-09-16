@@ -115,7 +115,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-01-13` | `Not Started` | — | Siklus akun siswa |
 | `PR-01-14` | `Not Started` | — | Gerbang persetujuan wali |
 | `PR-01-15` | `Not Started` | — | Middleware otorisasi (semula `PR-02-09`) |
-| `PR-01-16` | `In Progress` | — | Hash password Argon2id + kebijakan kata sandi (sebagian); cabang `feature/PR-01-16-hash-password` (keputusan 7–11 [log phase-01 §2](logs/phase-01.md)) |
+| `PR-01-16` | `In Progress` | [#43](https://github.com/HanzzzBD/SIGM4/pull/43) | Hash password Argon2id + kebijakan kata sandi (sebagian); cabang `feature/PR-01-16-hash-password` (keputusan 7–11 [log phase-01 §2](logs/phase-01.md)) |
 
 ### Phase 02 — Inti Sistem · `Not Started`
 
