@@ -5,6 +5,7 @@ export type { UsersModuleDeps } from "./routes.js";
 export {
     createUserRoute,
     getUserRoute,
+    importUsersRoute,
     listUsersRoute,
     updateUserRoute,
     updateUserStatusRoute,

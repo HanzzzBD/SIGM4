@@ -7,6 +7,7 @@ import type { AuditLogger } from "../../shared/audit/index.js";
 import type { Database } from "../../shared/db/index.js";
 import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
+import type { Logger } from "../../shared/observability/index.js";
 import {
     createUserHandler,
     getUserHandler,
@@ -14,6 +15,7 @@ import {
     updateUserHandler,
     updateUserStatusHandler,
 } from "./controllers/user.controller.js";
+import { importUsersHandler } from "./controllers/user-import.controller.js";
 import {
     CreateUserBodySchema,
     CreatedUserResponseSchema,
@@ -23,7 +25,12 @@ import {
     UpdateUserStatusBodySchema,
     UserIdParamSchema,
 } from "./schemas/user.schema.js";
+import {
+    ImportUsersBodySchema,
+    ImportUsersResponseSchema,
+} from "./schemas/user-import.schema.js";
 import { UserService } from "./services/user.service.js";
+import { UserImportService } from "./services/user-import.service.js";
 
 /** Pemilik katalog endpoint M-02 (m02-users.md §7). */
 const MODUL = "m02-users";
@@ -84,9 +91,25 @@ export const updateUserStatusRoute = defineRoute({
     response: SingleUserResponseSchema,
 });
 
+/**
+ * Sinkron ≤ 200 baris saja (`IMPT-04` sendiri, keputusan 19 log phase-01) —
+ * jalur asinkron + idempotensi hash-berkas menyusul `PR-01-17`.
+ */
+export const importUsersRoute = defineRoute({
+    method: "POST",
+    path: "/users/import",
+    permission: "user.create",
+    rateLimitClass: "upload",
+    module: MODUL,
+    summary: "Impor massal pengguna (CSV/XLSX, sinkron ≤ 200 baris)",
+    body: ImportUsersBodySchema,
+    response: ImportUsersResponseSchema,
+});
+
 export interface UsersModuleDeps {
     readonly db: Kysely<Database>;
     readonly auditLogger: AuditLogger;
+    readonly logger: Logger;
 }
 
 /**
@@ -100,6 +123,12 @@ export function usersRouter(
     otorisasi: (permission: string) => RequestHandler,
 ): Router {
     const service = new UserService(deps.db, deps.auditLogger);
+    const importService = new UserImportService(
+        deps.db,
+        service,
+        deps.auditLogger,
+        deps.logger,
+    );
     const router = express.Router();
 
     // Setiap route di bawah ini DIBATASI lewat `batasi(route)`, diselesaikan
@@ -138,6 +167,12 @@ export function usersRouter(
         batasi(updateUserStatusRoute),
         otorisasi(updateUserStatusRoute.permission),
         updateUserStatusHandler(service),
+    );
+    router.post(
+        importUsersRoute.path,
+        batasi(importUsersRoute),
+        otorisasi(importUsersRoute.permission),
+        importUsersHandler(importService),
     );
 
     return router;

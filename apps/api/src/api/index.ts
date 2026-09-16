@@ -39,6 +39,7 @@ import {
 import {
     createUserRoute,
     getUserRoute,
+    importUsersRoute,
     listUsersRoute,
     updateUserRoute,
     updateUserStatusRoute,
@@ -72,6 +73,7 @@ export const registry = new RouteRegistry().register(
     getUserRoute,
     updateUserRoute,
     updateUserStatusRoute,
+    importUsersRoute,
 );
 
 /**
@@ -125,6 +127,7 @@ export function createApp(deps: AppDeps): Express {
                     clock: deps.clock,
                     logger: deps.logger,
                 }),
+                logger: deps.logger,
             },
             (route) => rateLimit(route, deps.limiter, deps.logger),
             authorize,

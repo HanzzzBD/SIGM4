@@ -73,6 +73,13 @@ function buatAuditLogger(): AuditLogger {
     return new AuditLogger({ clock: new FixedClock(new Date("2026-09-16T00:00:00Z")) });
 }
 
+function buatLogger(): Logger {
+    return new Logger({
+        clock: new FixedClock(new Date("2026-09-16T00:00:00Z")),
+        tulis: () => undefined,
+    });
+}
+
 function buatService(): UserService {
     return new UserService(getDb(), buatAuditLogger());
 }
@@ -387,7 +394,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
             const batasi = (): RequestHandler => (_req, _res, next) => next();
             app.use(
                 "/api/v1",
-                usersRouter({ db: getDb(), auditLogger: buatAuditLogger() }, batasi, authorize),
+                usersRouter({ db: getDb(), auditLogger: buatAuditLogger(), logger: buatLogger() }, batasi, authorize),
             );
             app.use(
                 ujungRantai({
@@ -582,7 +589,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
             app.use(
                 "/api/v1",
                 usersRouter(
-                    { db: getDb(), auditLogger: buatAuditLogger() },
+                    { db: getDb(), auditLogger: buatAuditLogger(), logger: buatLogger() },
                     batasi,
                     authorize,
                 ),

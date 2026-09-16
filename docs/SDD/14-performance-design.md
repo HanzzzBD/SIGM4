@@ -131,7 +131,7 @@ Kriteria lulus: p95 tiap kelas dalam anggaran §4.1, degradasi ≤ 20% dibanding
 
 | Pekerjaan | Pemicu | Umpan balik |
 |---|---|---|
-| Impor aset/pengguna > 200 baris | `IMPT-04` | Notifikasi saat selesai (`NT-42`) |
+| Impor aset/pengguna > 200 baris | `IMPT-04` | Notifikasi saat selesai (kode milik modul entitasnya — `NT-52` bagi pengguna) |
 | Ekspor laporan besar | `FR-16.1 A2` | Idem |
 | Cetak QR massal | `FR-05.1` | Idem |
 | Berita acara PDF | `FR-13.3`, `FR-21.2` | Idem |

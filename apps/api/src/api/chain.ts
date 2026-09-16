@@ -92,6 +92,16 @@ export function errorHandler(logger: Logger): ErrorRequestHandler {
 }
 
 /**
+ * Batas body JSON. Bawaan Express (100kb) cukup bagi seluruh endpoint kecuali
+ * `POST /users/import` (PR-01-03): berkas CSV/XLSX ≤ 200 baris dikirim sebagai
+ * `content_base64` di body — tidak ada endpoint unggah biner terpisah, karena
+ * alur *presigned upload* (`SDD-09`) eksplisit milik `PR-03-04` dan berkas impor
+ * bersifat transien. 8 MB memberi ruang jauh di atas 200 baris + overhead
+ * base64 (~33%) tanpa membuka permukaan DoS body yang berarti.
+ */
+const BATAS_BODY_JSON = "8mb";
+
+/**
  * Mata rantai sebelum route: `requestId`, header keamanan (SDD-06 §4.2), lalu
  * body JSON (`express.json()`) — endpoint tulis pertama yang menuntutnya sejak
  * PR-01-02; JSON rusak berstatus 400 lewat `galatKlien()` di bawah.
@@ -99,7 +109,11 @@ export function errorHandler(logger: Logger): ErrorRequestHandler {
 export function awalRantai(deps: {
     readonly security: SecurityConfig;
 }): RequestHandler[] {
-    return [requestId(), ...securityHeaders(deps.security), express.json()];
+    return [
+        requestId(),
+        ...securityHeaders(deps.security),
+        express.json({ limit: BATAS_BODY_JSON }),
+    ];
 }
 
 /**

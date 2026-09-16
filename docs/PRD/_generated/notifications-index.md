@@ -5,7 +5,7 @@
 # Indeks Notifikasi
 
 > Setiap notifikasi dimiliki modul yang menerbitkan event-nya.
-> Total: **52** baris, dikumpulkan dari 22 berkas modul.
+> Total: **53** baris, dikumpulkan dari 22 berkas modul.
 
 | Kode | Event | Penerima | Kanal | Wajib | Contoh | Pemilik |
 |---|---|---|---|:---:|---|---|
@@ -61,3 +61,4 @@
 | **NT-49** | Saldo bahan mencapai / turun di bawah stok minimum | Petugas Sarpras + Administrator | In-app + Push | ✅ | "Stok {bahan} tersisa {saldo} {satuan}, di bawah minimum {ambang}." | [M-22](../02-modules/m22-materials.md) |
 | **NT-50** | Permintaan bahan siap diambil | Pemohon | In-app + Push | ❌ | "Permintaan {nomor} siap diambil di {lokasi}." | [M-22](../02-modules/m22-materials.md) |
 | **NT-51** | Bahan diserahkan | Pemohon | In-app | ❌ | "{jumlah} {satuan} {bahan} telah diserahkan pada {tanggal}." | [M-22](../02-modules/m22-materials.md) |
+| **NT-52** | Impor massal pengguna selesai diproses (`IMPT-04`) | Administrator pengunggah | In-app | ✅ | "Impor pengguna selesai: {sukses} berhasil, {gagal} gagal dari {total} baris." | [M-02](../02-modules/m02-users.md) |
