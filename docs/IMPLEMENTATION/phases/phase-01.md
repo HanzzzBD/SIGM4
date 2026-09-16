@@ -25,7 +25,7 @@ Administrator dapat masuk ke sistem yang sudah "berisi": membuat pengguna dan ro
 - M-20: parameter sistem, kalender akademik, unit kerja, siklus akun siswa
 - Master data Lampiran E: `academic_years`, `academic_terms`, `work_units`, dan penautan `holidays` → `academic_years` *(tabel `holidays` sendiri sudah dibuat `PR-00-08`, karena `BusinessCalendarService` menuntutnya sejak Phase 00)*
 - Middleware otorisasi — dipindah dari Phase 02 (`PR-02-09` → `PR-01-15`, keputusan 63, [log phase-00 §2](../logs/phase-00.md)) agar setiap endpoint phase ini lahir berpenjaga (`NFR-S-05`, `PM-02`)
-- Hash password Argon2id — dipindah dari Phase 02 (`PR-02-01` → `PR-01-16`, keputusan 3, [log phase-01 §2](../logs/phase-01.md)) karena akun lahir berpassword sementara sejak `PR-01-02` (`FR-02.1` langkah 4)
+- Hash password Argon2id — dipindah dari Phase 02 (`PR-02-01` → `PR-01-16`, keputusan 3, [log phase-01 §2](../logs/phase-01.md)) karena akun lahir berpassword sementara sejak `PR-01-02` (`FR-02.1` langkah 4); daftar password bocor dan riwayat 3 password terakhir **tidak** termasuk — keduanya milik `PR-02-31` (keputusan 9)
 
 **Tidak termasuk**
 
@@ -69,7 +69,7 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 | [`m20-settings.md`](../../PRD/02-modules/m20-settings.md) | `FR-20.1` |
 | [`conventions.md`](../../PRD/00-foundation/conventions.md) | Lampiran E.2–E.5 · `AC-YR-01` … `04`, `WU-01` … `03`, `SL-01` … `SL-06`, `IMPT-01` … `05` |
 | [`roles-permissions.md`](../../PRD/00-foundation/roles-permissions.md) | Bab 18, `PM-05` `PM-06` |
-| [`security.md`](../../PRD/03-architecture/security.md) | `NFR-S-01` (hash password, `PR-01-16`) |
+| [`security.md`](../../PRD/03-architecture/security.md) | `NFR-S-02` (hash password), `NFR-S-03a` (kebijakan kata sandi) — `PR-01-16` |
 
 ## 5. Referensi SDD
 
@@ -109,7 +109,7 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 | `PR-01-13` | Siklus akun siswa: kenaikan kelas massal, kelulusan | M | M | 02, 11 | Lampiran E.4, `SL-01` … `SL-06` | Siswa berkewajiban aktif tidak dapat dinonaktifkan |
 | `PR-01-14` | Gerbang persetujuan wali (`consent_guardian_at`) | S | S | 02 | `DP-02`, `SL-06`, `NT-48` | Akun siswa tanpa penanda tidak dapat diaktifkan |
 | `PR-01-15` | Middleware otorisasi + penyaringan field per permission *(dipindah dari `PR-02-09`)* | M | M | 01 | `PM-02` `PM-03`, `SDD-AUTH-01/05/06`, `SEC-T-01` | Uji otorisasi tergenerate mencakup 100% route; tanpa `AuthContext` → `401`, tanpa permission → `403 INSUFFICIENT_PERMISSION`, keduanya sebelum controller (`SDD-03 §4.4`); `/health` ringkasan dipasang dan terdaftar (keputusan 21) |
-| `PR-01-16` | Hash password Argon2id + kebijakan kata sandi *(dipindah dari `PR-02-01`)* | S | S | Ph00 | `NFR-S-01`, `SDD-SESS-01` | Parameter Argon2id sesuai `SDD-SESS-01` |
+| `PR-01-16` | Hash password Argon2id + kebijakan kata sandi *(dipindah dari `PR-02-01`)* | S | S | Ph00 | `NFR-S-02`, `NFR-S-03a`, `SDD-SESS-01`, `SDD-SYS-15` | Parameter Argon2id sesuai `SDD-SESS-01`, dibandingkan uji terhadap dokumennya; panjang, komposisi, dan larangan memuat identitas ditegakkan — daftar bocor dan riwayat 3 password milik `PR-02-31` |
 
 ## 8. Task Breakdown
 

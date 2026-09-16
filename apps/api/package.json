@@ -13,6 +13,7 @@
     "test:ci": "tsc -p tsconfig.test.json && vitest run --config vitest.ci.config.ts --coverage --reporter=default --reporter=json --outputFile.json=./coverage-ci/vitest-report.json"
   },
   "dependencies": {
+    "@node-rs/argon2": "^2.2.1",
     "@sigm4/schemas": "*",
     "bullmq": "6.3.4",
     "express": "5.2.1",
