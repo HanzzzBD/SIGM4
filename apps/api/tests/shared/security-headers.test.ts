@@ -7,13 +7,18 @@
 import { createServer } from "node:http";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
+import type { Kysely } from "kysely";
 import { afterEach, describe, expect, it } from "vitest";
 import { createApp } from "../../src/api/index.js";
 import { FixedClock } from "../../src/shared/clock/index.js";
+import type { Database } from "../../src/shared/db/index.js";
 import {
     HealthRegistry,
     Logger,
 } from "../../src/shared/observability/index.js";
+
+// Uji berkas ini tidak pernah memanggil route M-02 — pool palsu, tidak tersambung.
+const dbPalsu = {} as unknown as Kysely<Database>;
 
 const terbuka: Server[] = [];
 afterEach(async () => {
@@ -39,6 +44,8 @@ async function ambil(path = "/api/v1/health/live"): Promise<Response> {
             clock: new FixedClock(new Date("2026-09-14T00:00:00Z")),
             tulis: () => undefined,
         }),
+        clock: new FixedClock(new Date("2026-09-14T00:00:00Z")),
+        db: dbPalsu,
     });
     const server = createServer(app);
     terbuka.push(server);

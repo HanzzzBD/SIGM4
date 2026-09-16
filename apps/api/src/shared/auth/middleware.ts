@@ -24,6 +24,17 @@ export function getAuthContext(res: Response): AuthContext | undefined {
 }
 
 /**
+ * `AuthContext` request ini, atau melempar `AuthError` bila belum ada. Dipakai
+ * controller yang berjalan DI BELAKANG `authorize()` — yang sudah menjaminnya
+ * ada — sebagai jaring kedua, bukan jalur normal (SDD-AUTH-02).
+ */
+export function requireAuthContext(res: Response): AuthContext {
+    const ctx = getAuthContext(res);
+    if (ctx === undefined) throw new AuthError();
+    return ctx;
+}
+
+/**
  * Menegakkan permission sebuah route (`PM-02`, `SDD-AUTH-01 §4.1`). Tanpa
  * `AuthContext` → `401 UNAUTHENTICATED`; ada tetapi tidak memegang permission →
  * `403 INSUFFICIENT_PERMISSION` — keduanya dilempar lewat `next(galat)` dan

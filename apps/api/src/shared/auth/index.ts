@@ -4,4 +4,9 @@ export type { AuthContext, AuthContextInput, Scope } from "./context.js";
 export { assertAuthContext, createAuthContext } from "./context.js";
 export type { FieldPolicy } from "./fields.js";
 export { allowedFields } from "./fields.js";
-export { authorize, getAuthContext, setAuthContext } from "./middleware.js";
+export {
+    authorize,
+    getAuthContext,
+    requireAuthContext,
+    setAuthContext,
+} from "./middleware.js";

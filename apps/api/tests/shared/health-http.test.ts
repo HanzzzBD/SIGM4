@@ -8,6 +8,7 @@ import { createServer } from "node:http";
 import type { RequestListener, Server } from "node:http";
 import express from "express";
 import type { RequestHandler } from "express";
+import type { Kysely } from "kysely";
 import { afterEach, describe, expect, it } from "vitest";
 import {
     healthSummaryHandler,
@@ -31,6 +32,10 @@ import type {
     DependencyName,
 } from "../../src/shared/observability/index.js";
 import { createHealthServer } from "../../src/worker/health-server.js";
+import type { Database } from "../../src/shared/db/index.js";
+
+// Uji berkas ini hanya memukul route kesehatan — pool palsu, tidak tersambung.
+const dbPalsu = {} as unknown as Kysely<Database>;
 
 function health(
     status: Partial<Record<DependencyName, CheckResult["status"]>>,
@@ -61,6 +66,8 @@ function aplikasi(h: HealthRegistry) {
             clock: new FixedClock(new Date("2026-09-14T00:00:00Z")),
             tulis: () => undefined,
         }),
+        clock: new FixedClock(new Date("2026-09-14T00:00:00Z")),
+        db: dbPalsu,
     });
 }
 
@@ -142,21 +149,34 @@ describe("sigm4-api — /api/v1/health/*", () => {
         });
     });
 
-    it("registri proses: dua probe publik dan ringkasan berpermission", () => {
+    it("registri proses: probe publik, ringkasan, dan CRUD pengguna (PR-01-02) berpermission", () => {
         expect(registry.all().map((r) => `${r.method} ${r.path}`)).toEqual([
             "GET /health/live",
             "GET /health/ready",
             "GET /health",
+            "GET /users",
+            "POST /users",
+            "GET /users/:id",
+            "PUT /users/:id",
+            "PATCH /users/:id/status",
         ]);
         expect(registry.publicRoutes()).toHaveLength(2);
         expect(registry.guarded().map((r) => r.permission)).toEqual([
             "setting.view",
+            "user.view",
+            "user.create",
+            "user.view",
+            "user.update",
+            "user.update",
         ]);
         const doc = buildOpenApiDocument(registry, { version: "uji" });
         expect(Object.keys(doc.paths ?? {})).toEqual([
             "/api/v1/health/live",
             "/api/v1/health/ready",
             "/api/v1/health",
+            "/api/v1/users",
+            "/api/v1/users/{id}",
+            "/api/v1/users/{id}/status",
         ]);
     });
 
