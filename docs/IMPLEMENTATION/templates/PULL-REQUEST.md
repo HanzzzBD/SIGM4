@@ -81,6 +81,8 @@ Untuk PR berkompleksitas `L`: mengapa tidak dipecah.>
 
 **Judul PR memakai ID.** Format `PR-NN-NN — judul`. Ini yang menyambungkan commit ke rencana phase ke requirement tanpa perlu membuka dokumen apa pun.
 
+**Label: dua wajib, satu opsional.** Satu label phase dan satu label jenis, ditambah `tinjauan-arsitek` bila bagian itu bertanda *Diperlukan*. Daftar lengkap dan alasannya di [`BRANCHING-STRATEGY §4.2`](../BRANCHING-STRATEGY.md).
+
 **Bagian "Requirement yang dilayani" tidak boleh kosong.** PR tanpa rujukan PRD maupun SDD berarti mengerjakan sesuatu yang tidak diminta. Bila memang tidak ada — misalnya perbaikan perkakas — tulis `chore` dan jelaskan; jangan biarkan kosong.
 
 **"Uji yang gagal bila logika ini dicabut" adalah baris terpenting.** Uji yang tetap hijau setelah logikanya dihapus tidak menguji apa pun. Baris ini memaksa penulis memeriksanya sendiri sebelum peninjau harus menemukannya.
