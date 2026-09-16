@@ -6,7 +6,7 @@ Panduan kerja AI agent di repositori **SIGM4**. Berkas ini **tidak memuat requir
 
 SIGM4 — Sistem Informasi Management Aset, sarana dan prasarana sekolah. 22 modul, monorepo tiga pohon (`apps/api`, `apps/web`, `apps/mobile`) + `packages/schemas` sesuai [`SDD-17 §4.1`](docs/SDD/17-repo-layout.md).
 
-**Status saat ini** selalu dibaca dari [`IMPLEMENTATION-STATUS.md`](docs/IMPLEMENTATION/IMPLEMENTATION-STATUS.md); jangan menyalin status phase atau PR ke berkas ini. Rencana total tetap 9 phase · 164 PR — [`docs/IMPLEMENTATION/README.md`](docs/IMPLEMENTATION/README.md).
+**Status saat ini** selalu dibaca dari [`IMPLEMENTATION-STATUS.md`](docs/IMPLEMENTATION/IMPLEMENTATION-STATUS.md); jangan menyalin status phase atau PR ke berkas ini. Rencana total tetap 9 phase · 165 PR — [`docs/IMPLEMENTATION/README.md`](docs/IMPLEMENTATION/README.md).
 
 ## Source of truth
 

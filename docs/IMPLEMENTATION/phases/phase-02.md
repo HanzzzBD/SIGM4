@@ -26,6 +26,7 @@ Sistem menjadi dapat dipakai: pengguna login (dengan 2FA untuk role sensitif), m
 - M-17: notifikasi in-app (SSE), push FCM, preferensi
 - `booking_slots` + *exclusion constraint* — infrastruktur ketersediaan (`CI-01`)
 - `assets.procurement_id` **nullable dan belum terisi** — pemutus siklus M-04 ↔ M-14
+- Kebijakan kata sandi selengkapnya (`NFR-S-03a`): daftar password bocor dan riwayat 3 password terakhir (`PR-02-31`, keputusan 9 [log phase-01 §2](../logs/phase-01.md))
 
 **Tidak termasuk**
 
@@ -136,6 +137,7 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | `PR-02-28` | Preferensi notifikasi | S | S | 25 | `FR-17.3`, **UXD-05** | Enam kelompok `jenis` sesuai `SDD-08 §4.5`, bukan per modul |
 | `PR-02-29` | Kerangka dashboard + kartu per role | L | L | Ph01 | `FR-15.1`, `BR-073` `BR-074`, `SDD-PERF-03` | Kartu di luar permission tidak dirender **dan** tidak dikirim server |
 | `PR-02-30` | Kerangka aplikasi web: routing, state, render berbasis permission | L | L | Ph01 | `SDD-FE-01` … `SDD-FE-06`, `SDD-FE-11/12`, **UXD-12** | TanStack Query + primitif headless & token sendiri; satu set token warna — tanpa mode gelap |
+| `PR-02-31` | Daftar password bocor + riwayat 3 password terakhir | M | M | 06 | `NFR-S-03a`, `FR-01.4` | Password yang cocok daftar bocor ditolak; tiga password terakhir tidak dapat dipakai ulang; sumber daftar bocor ditetapkan di PR ini |
 
 ## 8. Task Breakdown
 

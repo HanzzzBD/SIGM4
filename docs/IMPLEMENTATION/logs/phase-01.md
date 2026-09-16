@@ -18,6 +18,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 
 | Tanggal | Yang terjadi | PR terkait |
 |---|---|---|
+| 16 September 2026 | `PR-01-01` tergabung ([#42](https://github.com/HanzzzBD/SIGM4/pull/42)). `PR-01-16` dibuka di `feature/PR-01-16-hash-password`. Empat keputusan pemilik produk diambil sebelum kode ditulis (7–10): letak kode, pustaka Argon2id, cakupan `NFR-S-03a`, dan letak parameternya. Temuan saat menurunkan rujukan: baris rencana `PR-01-16` — warisan `PR-02-01` — menyebut `NFR-S-01`, yang sebenarnya soal HTTPS/TLS (§7). | [#43](https://github.com/HanzzzBD/SIGM4/pull/43) |
 | 15 September 2026 | `PR-01-01` dibuka di `feature/PR-01-01-skema-users`. Sebelum migration ditulis, empat titik ternyata tidak dapat diterapkan dari docs apa adanya dan dinaikkan ke pemilik produk (keputusan 1–4): Bab 11.3 tidak mendaftarkan status pengguna, penanda 2FA berejaan tiga, akun berpassword sementara lahir sebelum hashing Argon2id tersedia, dan foto profil menuntut `stored_files` yang belum ada. | [#42](https://github.com/HanzzzBD/SIGM4/pull/42) |
 | 15 September 2026 | Rencana disunting sebelum phase dimulai: middleware otorisasi `PR-02-09` dipindah menjadi `PR-01-15` dan mendahului seluruh PR endpoint (keputusan 63). Phase 01 boleh dimulai selagi Phase 00 `In Review`, lewat `DELIVERY-PLAN §10` butir 1 (keputusan 62). Keduanya dicatat di [log phase-00 §2](phase-00.md). | — |
 
@@ -27,6 +28,11 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 
 | # | Keputusan | Alasan | Menaikkan ke PRD/SDD? |
 |:---:|---|---|:---:|
+| 11 | `algorithm: 2` (Argon2id) ditulis sebagai angka, bukan lewat `Algorithm.Argon2id`. | Enum paket bersifat `const enum`, yang tidak dapat diakses saat `verbatimModuleSyntax` aktif. Bahwa hash benar-benar `argon2id` tidak bersandar pada konstanta ini melainkan pada uji yang memeriksa keluarannya. | Tidak. |
+| 10 | Parameter Argon2id tetap **konstanta di kode**, dijaga uji yang membandingkannya dengan angka pada `SDD-SESS-01`. | `SDD-04 §6` menyebut parameter dapat diturunkan lewat konfigurasi sebagai mitigasi beban CPU, bukan sebagai kewajiban sekarang; memindahkannya ke env hari ini menambah tiga variabel tanpa satu pun yang menyetelnya. Dipindah bila uji beban `NFR-P-09` menuntut (Phase 08). | Tidak — pelaksanaan; diputuskan pemilik produk (16 September 2026). |
+| 9 | Cakupan `NFR-S-03a` dipecah: `PR-01-16` menegakkan panjang ≥ 12, komposisi huruf besar/kecil/angka, dan larangan memuat identitas; **daftar password bocor dan riwayat 3 password terakhir menjadi `PR-02-31`** di Phase 02. Rencana total 164 → **165** PR. | Kedua aturan itu menuntut sumber daftar bocor dan tabel riwayat yang tidak ada di SDD mana pun, dan tidak ada PR yang memilikinya — memasukkannya ke sini menaikkan PR `S` menjadi `M`/`L` sekaligus menyentuh migration. `FR-01.4` sudah milik Phase 02, jadi pemiliknya berdekatan dengan `PR-02-06`. | Tidak — rencana implementasi; diputuskan pemilik produk (16 September 2026); `phase-01.md` §2/§7, `phase-02.md` §2/§7. |
+| 8 | Pustaka Argon2id **`@node-rs/argon2` 2.2.1**, ditulis sebagai `SDD-SEC-12`. | Tahap build `Dockerfile` berjalan di `node:22-alpine` tanpa `build-base` (`SDD-INF-02`), sehingga pustaka ber-`node-gyp` menuntut perkakas kompilasi ditambahkan hanya demi satu dependensi; `@node-rs/argon2` menyediakan biner napi `linux-x64-musl` siap pakai. `hash-wasm` ditolak karena lebih lambat pada parameter yang sama. | Ya — `SDD-13` (`SDD-SEC-12`); diputuskan pemilik produk (16 September 2026). |
+| 7 | Hash password dan kebijakan kata sandi bermukim di *shared kernel* **`shared/security/`**, ditulis sebagai `SDD-SYS-15` sebelum satu baris kode. | Daftar `SDD-SYS-06` tertutup dan tidak memuatnya, sementara dua modul berbeda memakainya: M-02 membuat akun berpassword sementara dan M-01 memverifikasinya. Menaruhnya di salah satu modul membuat kontrol keamanan bergantung pada modul yang kebetulan lahir lebih dulu. | Ya — `SDD-00` §2 dan §4.1; diputuskan pemilik produk (16 September 2026). |
 | 6 | Satu fungsi trigger `set_updated_at()` dipakai bersama tabel entitas domain; `must_change_password` juga **tanpa nilai bawaan**. | `SDD-05 §4.2` mewajibkan trigger pada setiap tabel entitas domain, dan satu fungsi menghindari salinan per tabel. Nilai bawaan pada kolom keamanan mengubah kelalaian pemanggil menjadi keadaan diam-diam — pola keputusan 3 log phase-00. | Tidak. |
 | 5 | Keunikan email ditegakkan indeks unik `lower(email)`, bukan `UNIQUE (email)`. | Lampiran E.5.2 menuntut email unik sistem-wide; `Budi@…` dan `budi@…` adalah kotak surat yang sama, dan `UNIQUE` polos meloloskan duplikat yang menyalahi `FR-02.1 A1`. Tanpa ekstensi `citext`, yang tidak dipasang `0001`. | Tidak — cara menegakkan aturan yang sudah ada. |
 | 4 | Foto profil **ditunda ke Phase 03**: `users.foto_file_id` → `stored_files(id)` ditambahkan (expand) bersama `PR-03-04`; bagian foto `PR-02-06` menunggu. | `SDD-FS-02` mewajibkan entitas merujuk `stored_files.id`, yang baru lahir di Phase 03; kolom tanpa FK tidak dapat diisi dengan sah sebelum itu. | Tidak — rencana implementasi; diputuskan pemilik produk (15 September 2026); `phase-02.md` §7, `phase-03.md` §7. |
@@ -68,7 +74,9 @@ Setiap TBD yang tertutup wajib juga diperbarui di [`../../SDD/TBD-REGISTER.md`](
 
 | Masalah | Dampak | Penyelesaian | Terbuka? |
 |---|---|---|:---:|
-| — | — | — | — |
+| Baris rencana `PR-01-16` (warisan `PR-02-01`) merujuk `NFR-S-01`, yang isinya HTTPS/TLS — bukan `NFR-S-02` (hash password) maupun `NFR-S-03a` (kebijakan kata sandi). Rujukan itu ikut terbawa saat PR dipindah ke Phase 01. | PR dapat selesai dan lulus tinjauan tanpa pernah menguji requirement yang sebenarnya dilayaninya; `NFR-S-03a` bahkan tidak dimiliki PR mana pun sampai keputusan 9. | **Selesai 16 September 2026**: `phase-01.md` §4 dan §7 diperbaiki ke `NFR-S-02` dan `NFR-S-03a`, dan sisa `NFR-S-03a` memperoleh pemilik (`PR-02-31`). | tidak |
+| `tests/shared/clock-lint.test.ts` merah satu kali pada run penuh (timeout 6,1 detik), lalu hijau saat berkasnya dijalankan sendiri. | Uji yang kadang merah tanpa sebab kode membuat orang mengulang run alih-alih membacanya, dan lama-lama mengabaikan pipeline. | Dibuktikan bukan cacat aturan: memanggil ESLint langsung atas berkas probe tetap menghasilkan `no-restricted-syntax`. Penyebabnya ESLint dijalankan di bawah 27 worker paralel. Dibiarkan apa adanya pada PR ini; bila berulang, yang disesuaikan adalah jumlah worker atau `testTimeout` uji itu, bukan ujinya dihapus. | **ya** |
+| Mutation-check pertama atas `MISSING_DIGIT` tidak menyentuh berkas: pola `perl` gagal karena `\d` ikut ditafsirkan shell. | Pengaman itu sempat tampak terbukti padahal ujinya tidak pernah dijalankan terhadap kode yang berubah. | Terlihat karena skrip membandingkan berkas sebelum dan sesudah mutasi lalu berteriak; mutasi diulang dengan pola lain dan memerah. Pelajaran yang sama dengan putaran mutasi `PR-01-01`: mutasi yang tidak mengubah berkas wajib gagal berisik, bukan lolos. | tidak |
 
 ## 8. Hasil pengukuran
 
@@ -98,6 +106,7 @@ Hal yang sengaja ditinggalkan terbuka, beserta di mana ia akan ditutup.
 | Yang ditinggalkan | Ditutup di | Alasan penundaan |
 |---|---|---|
 | `users.foto_file_id` → `stored_files(id)` (foto profil `FR-01.4`) | `PR-03-04` (keputusan 4) | `stored_files` belum ada (`SDD-FS-02`) |
+| Daftar password bocor + riwayat 3 password terakhir (`NFR-S-03a`) | `PR-02-31` (keputusan 9) | Menuntut sumber daftar dan tabel riwayat yang belum ditetapkan SDD mana pun |
 | `failed_login_count`, `locked_until`, `totp_secret_enc`, `totp_enabled_at` pada `users` | `PR-02-03`, `PR-02-07` (`SDD-04 §4.1`) | Kolom autentikasi milik Phase 02 |
 
 ---

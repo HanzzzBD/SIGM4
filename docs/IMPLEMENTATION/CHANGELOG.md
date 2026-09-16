@@ -6,6 +6,26 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 
 ---
 
+## 16 September 2026 — `PR-01-16`: hash password Argon2id; `PR-02-31` baru
+
+Tidak ada TBD, requirement, maupun business rule baru. Keputusan pemilik produk 7–10 dan keputusan teknis 11 dicatat di [`logs/phase-01.md` §2](logs/phase-01.md).
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `../SDD/00-system-architecture.md` §2, §4.1 | **`SDD-SYS-15`** — `shared/security/` menjadi anggota *shared kernel*; daftar tertutup `SDD-SYS-06` dan pohon §4.1 menyusul |
+| `../SDD/13-security-design.md` §2 | **`SDD-SEC-12`** — pustaka Argon2id `@node-rs/argon2` (biner napi, varian musl) |
+| `phases/phase-01.md` §2, §4, §7 | Rujukan `PR-01-16` diperbaiki dari `NFR-S-01` menjadi `NFR-S-02` dan `NFR-S-03a`; cakupan kebijakan kata sandi dibatasi |
+| `phases/phase-02.md` §2, §7 | **PR baru `PR-02-31`** — daftar password bocor + riwayat 3 password terakhir (keputusan 9) |
+| `IMPLEMENTATION-STATUS.md` | `PR-01-01` `Done` (#42); `PR-01-16` `In Progress`; Phase 01 1/16; Phase 02 29 PR |
+| `logs/phase-01.md` §1, §2, §7, §10 | Pembukaan `PR-01-16`, keputusan 7–11, dua temuan, dan serah terima `NFR-S-03a` |
+| `DELIVERY-PLAN.md` §1 · `README.md` · `../../README.md` · `../../CLAUDE.md` · `scripts/validate_impl.py` | Rencana **164 → 165** PR |
+
+Total PR menjadi **165**.
+
+---
+
 ## 15 September 2026 — `PR-01-01` dibuka; `PR-02-01` menjadi `PR-01-16`
 
 Tidak ada TBD maupun business rule baru. Keputusan pemilik produk 1–4 dan keputusan teknis 5–6 dicatat di [`logs/phase-01.md` §2](logs/phase-01.md); suntingan PRD tercatat di [`../PRD/CHANGELOG.md`](../PRD/CHANGELOG.md).
