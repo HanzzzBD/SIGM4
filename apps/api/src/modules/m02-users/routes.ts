@@ -17,6 +17,10 @@ import {
 } from "./controllers/user.controller.js";
 import { importUsersHandler } from "./controllers/user-import.controller.js";
 import {
+    listRolesHandler,
+    updateRolePermissionsHandler,
+} from "./controllers/role.controller.js";
+import {
     CreateUserBodySchema,
     CreatedUserResponseSchema,
     ListUsersResponseSchema,
@@ -29,8 +33,15 @@ import {
     ImportUsersBodySchema,
     ImportUsersResponseSchema,
 } from "./schemas/user-import.schema.js";
+import {
+    ListRolesResponseSchema,
+    RoleIdParamSchema,
+    SingleRoleResponseSchema,
+    UpdateRolePermissionsBodySchema,
+} from "./schemas/role.schema.js";
 import { UserService } from "./services/user.service.js";
 import { UserImportService } from "./services/user-import.service.js";
+import { RoleService } from "./services/role.service.js";
 
 /** Pemilik katalog endpoint M-02 (m02-users.md §7). */
 const MODUL = "m02-users";
@@ -106,6 +117,33 @@ export const importUsersRoute = defineRoute({
     response: ImportUsersResponseSchema,
 });
 
+/** FR-02.2 langkah 2: daftar role beserta jumlah pengguna dan permission aktif. */
+export const listRolesRoute = defineRoute({
+    method: "GET",
+    path: "/roles",
+    permission: "role.view",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Daftar role beserta jumlah pengguna dan permission aktif",
+    response: ListRolesResponseSchema,
+});
+
+/**
+ * FR-02.2 langkah 3-5: pengganti PENUH matriks permission sebuah role.
+ * A1 (`SDD-AUTH-10`) ditolak di `RoleService`, bukan di sini.
+ */
+export const updateRolePermissionsRoute = defineRoute({
+    method: "PUT",
+    path: "/roles/:id/permissions",
+    permission: "role.update",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Perbarui matriks permission role (role_version naik, SDD-AUTH-04)",
+    params: RoleIdParamSchema,
+    body: UpdateRolePermissionsBodySchema,
+    response: SingleRoleResponseSchema,
+});
+
 export interface UsersModuleDeps {
     readonly db: Kysely<Database>;
     readonly auditLogger: AuditLogger;
@@ -129,6 +167,7 @@ export function usersRouter(
         deps.auditLogger,
         deps.logger,
     );
+    const roleService = new RoleService(deps.db, deps.auditLogger);
     const router = express.Router();
 
     // Setiap route di bawah ini DIBATASI lewat `batasi(route)`, diselesaikan
@@ -173,6 +212,18 @@ export function usersRouter(
         batasi(importUsersRoute),
         otorisasi(importUsersRoute.permission),
         importUsersHandler(importService),
+    );
+    router.get(
+        listRolesRoute.path,
+        batasi(listRolesRoute),
+        otorisasi(listRolesRoute.permission),
+        listRolesHandler(roleService),
+    );
+    router.put(
+        updateRolePermissionsRoute.path,
+        batasi(updateRolePermissionsRoute),
+        otorisasi(updateRolePermissionsRoute.permission),
+        updateRolePermissionsHandler(roleService),
     );
 
     return router;

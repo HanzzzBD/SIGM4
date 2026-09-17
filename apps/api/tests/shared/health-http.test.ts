@@ -149,7 +149,7 @@ describe("sigm4-api — /api/v1/health/*", () => {
         });
     });
 
-    it("registri proses: probe publik, ringkasan, CRUD pengguna (PR-01-02), dan impor massal (PR-01-03) berpermission", () => {
+    it("registri proses: probe publik, ringkasan, CRUD pengguna (PR-01-02), impor massal (PR-01-03), dan matriks permission (PR-01-04) berpermission", () => {
         expect(registry.all().map((r) => `${r.method} ${r.path}`)).toEqual([
             "GET /health/live",
             "GET /health/ready",
@@ -160,6 +160,8 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "PUT /users/:id",
             "PATCH /users/:id/status",
             "POST /users/import",
+            "GET /roles",
+            "PUT /roles/:id/permissions",
         ]);
         expect(registry.publicRoutes()).toHaveLength(2);
         expect(registry.guarded().map((r) => r.permission)).toEqual([
@@ -170,6 +172,8 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "user.update",
             "user.update",
             "user.create",
+            "role.view",
+            "role.update",
         ]);
         const doc = buildOpenApiDocument(registry, { version: "uji" });
         expect(Object.keys(doc.paths ?? {})).toEqual([
@@ -180,6 +184,8 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "/api/v1/users/{id}",
             "/api/v1/users/{id}/status",
             "/api/v1/users/import",
+            "/api/v1/roles",
+            "/api/v1/roles/{id}/permissions",
         ]);
     });
 

@@ -133,8 +133,13 @@ interface KolomBaku {
 }
 
 /**
- * `roles` (0009, PR-00-16; kolom baku 0012, PR-01-01). Tujuh role seed ber-
- * `created_by` NULL: dibuat sistem, bukan seseorang.
+ * `roles` (0009, PR-00-16; kolom baku 0012, PR-01-01; `role_version` 0013,
+ * PR-01-04). Tujuh role seed ber-`created_by` NULL: dibuat sistem, bukan
+ * seseorang.
+ *
+ * `role_version` bertipe `bigint` dan kembali sebagai **string** dari driver
+ * `pg`, sama seperti `document_counters.value` — dinaikkan lewat ekspresi SQL
+ * (`role_version + 1`), bukan dibaca-lalu-ditulis dari aplikasi (SDD-AUTH-04).
  */
 export interface RolesTable extends KolomBaku {
     id: Generated<string>;
@@ -142,6 +147,7 @@ export interface RolesTable extends KolomBaku {
     nama: string;
     deskripsi: string | null;
     is_system: Generated<boolean>;
+    role_version: ColumnType<string, string | number | undefined, string | number>;
 }
 
 /**
