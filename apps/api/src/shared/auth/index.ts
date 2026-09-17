@@ -10,3 +10,5 @@ export {
     requireAuthContext,
     setAuthContext,
 } from "./middleware.js";
+export type { EffectivePermissions } from "./permission-cache.js";
+export { PermissionCache } from "./permission-cache.js";
