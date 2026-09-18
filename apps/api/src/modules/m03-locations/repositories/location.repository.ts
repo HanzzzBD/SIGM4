@@ -222,6 +222,58 @@ export class LocationRepository extends BaseRepository {
             .returning(KOLOM_ROOM)
             .executeTakeFirstOrThrow();
     }
+
+    // --- Pohon lokasi & penonaktifan berjenjang (FR-03.1 langkah 1, BR-015) ---
+
+    async listAllBuildings(ctx: AuthContext): Promise<readonly BuildingRow[]> {
+        return this.query(ctx).selectFrom("buildings").select(KOLOM_BUILDING).orderBy("nama").execute();
+    }
+
+    async listAllAreas(ctx: AuthContext): Promise<readonly AreaRow[]> {
+        return this.query(ctx).selectFrom("areas").select(KOLOM_AREA).orderBy("nama").execute();
+    }
+
+    async listAllRooms(ctx: AuthContext): Promise<readonly RoomRow[]> {
+        return this.query(ctx).selectFrom("rooms").select(KOLOM_ROOM).orderBy("nama").execute();
+    }
+
+    /**
+     * BR-015 (kerangka hierarki, lihat `location.service.ts`): apakah gedung ini
+     * masih memiliki ruangan AKTIF di bawahnya, lintas seluruh area-nya.
+     */
+    async hasActiveRoomInBuilding(ctx: AuthContext, buildingId: number): Promise<boolean> {
+        return (
+            (await this.query(ctx)
+                .selectFrom("rooms")
+                .innerJoin("areas", "areas.id", "rooms.area_id")
+                .select("rooms.id")
+                .where("areas.building_id", "=", String(buildingId))
+                .where("rooms.status", "=", "AKTIF")
+                .executeTakeFirst()) !== undefined
+        );
+    }
+
+    async updateBuildingStatus(
+        ctx: AuthContext,
+        id: number,
+        status: LocationStatus,
+    ): Promise<BuildingRow> {
+        return this.query(ctx)
+            .updateTable("buildings")
+            .set({ status, updated_by: ctx.userId })
+            .where("id", "=", String(id))
+            .returning(KOLOM_BUILDING)
+            .executeTakeFirstOrThrow();
+    }
+
+    async updateRoomStatus(ctx: AuthContext, id: number, status: LocationStatus): Promise<RoomRow> {
+        return this.query(ctx)
+            .updateTable("rooms")
+            .set({ status, updated_by: ctx.userId })
+            .where("id", "=", String(id))
+            .returning(KOLOM_ROOM)
+            .executeTakeFirstOrThrow();
+    }
 }
 
 /** Gerbang kompilasi `ScopedRepository` (SDD-AUTH-02). */

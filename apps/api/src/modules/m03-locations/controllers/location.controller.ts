@@ -7,9 +7,11 @@ import {
     CreateBuildingBodySchema,
     CreateRoomBodySchema,
     IdParamSchema,
+    UpdateLocationStatusBodySchema,
     UpdateRoomBodySchema,
 } from "../schemas/location.schema.js";
 import type { AreaRow, BuildingRow, RoomRow } from "../repositories/location.repository.js";
+import type { LocationTreeBuilding } from "../services/location.service.js";
 import type { LocationService } from "../services/location.service.js";
 
 function keBuilding(b: BuildingRow) {
@@ -50,6 +52,24 @@ function keRoom(r: RoomRow) {
         status: r.status,
         created_at: r.created_at,
         updated_at: r.updated_at,
+    };
+}
+
+function keTree(buildings: readonly LocationTreeBuilding[]) {
+    return buildings.map((b) => ({
+        ...keBuilding(b),
+        areas: b.areas.map((a) => ({
+            ...keArea(a),
+            rooms: a.rooms.map(keRoom),
+        })),
+    }));
+}
+
+export function getLocationTreeHandler(service: LocationService): RequestHandler {
+    return async (_req, res) => {
+        const ctx = requireAuthContext(res);
+        const tree = await service.getTree(ctx);
+        res.status(200).json({ success: true, data: keTree(tree), meta: null });
     };
 }
 
@@ -113,6 +133,26 @@ export function updateRoomHandler(service: LocationService): RequestHandler {
             dapatDireservasi: body.dapat_direservasi,
             bolehDireservasiSiswa: body.boleh_direservasi_siswa,
         });
+        res.status(200).json({ success: true, data: keRoom(room), meta: null });
+    };
+}
+
+export function updateBuildingStatusHandler(service: LocationService): RequestHandler {
+    return async (req, res) => {
+        const ctx = requireAuthContext(res);
+        const { id } = IdParamSchema.parse(req.params);
+        const { status } = UpdateLocationStatusBodySchema.parse(req.body);
+        const building = await service.updateBuildingStatus(ctx, id, status);
+        res.status(200).json({ success: true, data: keBuilding(building), meta: null });
+    };
+}
+
+export function updateRoomStatusHandler(service: LocationService): RequestHandler {
+    return async (req, res) => {
+        const ctx = requireAuthContext(res);
+        const { id } = IdParamSchema.parse(req.params);
+        const { status } = UpdateLocationStatusBodySchema.parse(req.body);
+        const room = await service.updateRoomStatus(ctx, id, status);
         res.status(200).json({ success: true, data: keRoom(room), meta: null });
     };
 }
