@@ -96,7 +96,7 @@ describe.skipIf(!ADA_DB)("PR-01-05 — skema lokasi + CRUD (acceptance)", () => 
         expect(rute.map((r) => `${r.method} ${r.path}`)).toEqual(
             expect.arrayContaining(["POST /buildings", "POST /areas", "POST /rooms", "PUT /rooms/:id"]),
         );
-        expect(registry.guarded().filter((r) => r.path.startsWith("/rooms") || r.path === "/buildings" || r.path === "/areas").every((r) => r.permission === "location.manage")).toBe(true);
+        expect(rute.every((r) => r.permission === "location.manage")).toBe(true);
     });
 
     it("createBuilding(): tersimpan, LOCATION_CREATED tercatat (FR-03.1 langkah 2, AL-01)", async () => {
