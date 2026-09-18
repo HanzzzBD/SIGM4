@@ -57,6 +57,7 @@ import {
     updateRoomRoute,
     updateRoomStatusRoute,
 } from "../modules/m03-locations/index.js";
+import { assetsRouter, listRoomAssetsRoute } from "../modules/m04-assets/index.js";
 import {
     healthLiveRoute,
     healthReadyRoute,
@@ -95,6 +96,7 @@ export const registry = new RouteRegistry().register(
     updateRoomRoute,
     updateBuildingStatusRoute,
     updateRoomStatusRoute,
+    listRoomAssetsRoute,
 );
 
 /**
@@ -164,6 +166,14 @@ export function createApp(deps: AppDeps): Express {
                     logger: deps.logger,
                 }),
             },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        assetsRouter(
+            { db: deps.db },
             (route) => rateLimit(route, deps.limiter, deps.logger),
             authorize,
         ),
