@@ -112,6 +112,7 @@ Data acuan bernilai tetap yang digunakan sebagai enumerasi dan dropdown.
 | **Hasil Aktivitas** | Sukses, Gagal |
 | **Cakupan Data Permission** | All, Own, Assigned, Restricted |
 | **Status Pengguna** | Aktif, Nonaktif |
+| **Status Lokasi** | Aktif, Nonaktif |
 
 ## 11.4 Kebijakan Retensi Data
 

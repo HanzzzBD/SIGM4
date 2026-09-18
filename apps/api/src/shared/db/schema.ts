@@ -187,6 +187,49 @@ export interface RolePermissionsTable {
     scope: "ALL" | "OWN" | "ASSIGNED" | "RESTRICTED";
 }
 
+/** `buildings` (0014, PR-01-05). Tingkat pertama hierarki lokasi (`FR-03.1`). */
+export interface BuildingsTable extends KolomBaku {
+    id: Generated<string>;
+    nama: string;
+    kode: string;
+    keterangan: string | null;
+    status: Generated<"AKTIF" | "NONAKTIF">;
+}
+
+/**
+ * `areas` (0014, PR-01-05). Tingkat kedua — SENGAJA tanpa `status`, lihat
+ * migration `0014` untuk alasannya.
+ */
+export interface AreasTable extends KolomBaku {
+    id: Generated<string>;
+    building_id: ColumnType<string, string | number, string | number>;
+    nama: string;
+    kode: string;
+    lantai: number | null;
+}
+
+/** `rooms` (0014, PR-01-05). Tingkat ketiga — tempat aset & bahan bermukim (`BR-082`). */
+export interface RoomsTable extends KolomBaku {
+    id: Generated<string>;
+    area_id: ColumnType<string, string | number, string | number>;
+    nama: string;
+    kode: string;
+    jenis:
+        | "KELAS"
+        | "LABORATORIUM"
+        | "AULA"
+        | "PERPUSTAKAAN"
+        | "KANTOR"
+        | "GUDANG"
+        | "LAPANGAN"
+        | "LAINNYA";
+    kapasitas: number | null;
+    penanggung_jawab_id: ColumnType<string | null, string | number | null, string | number | null>;
+    dapat_direservasi: Generated<boolean>;
+    boleh_direservasi_siswa: Generated<boolean>;
+    status: Generated<"AKTIF" | "NONAKTIF">;
+}
+
 /** Peta nama tabel -> bentuk barisnya. Diisi bersama migration pemiliknya. */
 export interface Database {
     document_counters: DocumentCountersTable;
@@ -199,4 +242,7 @@ export interface Database {
     permissions: PermissionsTable;
     role_permissions: RolePermissionsTable;
     users: UsersTable;
+    buildings: BuildingsTable;
+    areas: AreasTable;
+    rooms: RoomsTable;
 }

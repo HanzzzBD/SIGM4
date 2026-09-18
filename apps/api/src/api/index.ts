@@ -48,6 +48,13 @@ import {
     usersRouter,
 } from "../modules/m02-users/index.js";
 import {
+    createAreaRoute,
+    createBuildingRoute,
+    createRoomRoute,
+    locationsRouter,
+    updateRoomRoute,
+} from "../modules/m03-locations/index.js";
+import {
     healthLiveRoute,
     healthReadyRoute,
     healthRouter,
@@ -78,6 +85,10 @@ export const registry = new RouteRegistry().register(
     importUsersRoute,
     listRolesRoute,
     updateRolePermissionsRoute,
+    createBuildingRoute,
+    createAreaRoute,
+    createRoomRoute,
+    updateRoomRoute,
 );
 
 /**
@@ -132,6 +143,20 @@ export function createApp(deps: AppDeps): Express {
                     logger: deps.logger,
                 }),
                 logger: deps.logger,
+            },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        locationsRouter(
+            {
+                db: deps.db,
+                auditLogger: new AuditLogger({
+                    clock: deps.clock,
+                    logger: deps.logger,
+                }),
             },
             (route) => rateLimit(route, deps.limiter, deps.logger),
             authorize,

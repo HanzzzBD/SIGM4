@@ -76,4 +76,5 @@ export const NAMA_TIPE: ReadonlyMap<string, string> = new Map([
     ["Hasil Aktivitas", "activity_result"],
     ["Cakupan Data Permission", "permission_scope"],
     ["Status Pengguna", "user_status"],
+    ["Status Lokasi", "location_status"],
 ]);
