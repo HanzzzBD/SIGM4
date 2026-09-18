@@ -58,6 +58,7 @@ import {
     updateRoomStatusRoute,
 } from "../modules/m03-locations/index.js";
 import { assetsRouter, listRoomAssetsRoute } from "../modules/m04-assets/index.js";
+import { activityLogRouter, listActivityLogsRoute } from "../modules/m18-activity-log/index.js";
 import {
     healthLiveRoute,
     healthReadyRoute,
@@ -97,6 +98,7 @@ export const registry = new RouteRegistry().register(
     updateBuildingStatusRoute,
     updateRoomStatusRoute,
     listRoomAssetsRoute,
+    listActivityLogsRoute,
 );
 
 /**
@@ -174,6 +176,20 @@ export function createApp(deps: AppDeps): Express {
         BASE_PATH,
         assetsRouter(
             { db: deps.db },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        activityLogRouter(
+            {
+                db: deps.db,
+                auditLogger: new AuditLogger({
+                    clock: deps.clock,
+                    logger: deps.logger,
+                }),
+            },
             (route) => rateLimit(route, deps.limiter, deps.logger),
             authorize,
         ),
