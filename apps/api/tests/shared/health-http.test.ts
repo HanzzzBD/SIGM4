@@ -149,7 +149,7 @@ describe("sigm4-api — /api/v1/health/*", () => {
         });
     });
 
-    it("registri proses: probe publik, ringkasan, CRUD pengguna (PR-01-02), impor massal (PR-01-03), dan matriks permission (PR-01-04) berpermission", () => {
+    it("registri proses: probe publik, ringkasan, CRUD pengguna (PR-01-02), impor massal (PR-01-03), matriks permission (PR-01-04), dan skema lokasi (PR-01-05) berpermission", () => {
         expect(registry.all().map((r) => `${r.method} ${r.path}`)).toEqual([
             "GET /health/live",
             "GET /health/ready",
@@ -162,6 +162,10 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "POST /users/import",
             "GET /roles",
             "PUT /roles/:id/permissions",
+            "POST /buildings",
+            "POST /areas",
+            "POST /rooms",
+            "PUT /rooms/:id",
         ]);
         expect(registry.publicRoutes()).toHaveLength(2);
         expect(registry.guarded().map((r) => r.permission)).toEqual([
@@ -174,6 +178,10 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "user.create",
             "role.view",
             "role.update",
+            "location.manage",
+            "location.manage",
+            "location.manage",
+            "location.manage",
         ]);
         const doc = buildOpenApiDocument(registry, { version: "uji" });
         expect(Object.keys(doc.paths ?? {})).toEqual([
@@ -186,6 +194,10 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "/api/v1/users/import",
             "/api/v1/roles",
             "/api/v1/roles/{id}/permissions",
+            "/api/v1/buildings",
+            "/api/v1/areas",
+            "/api/v1/rooms",
+            "/api/v1/rooms/{id}",
         ]);
     });
 
