@@ -55,7 +55,7 @@ export const CreateRoomBodySchema = z.object({
 
 /**
  * PUT — pengganti penuh field yang boleh disunting. TANPA `status`: penonaktifan
- * berjenjang (BR-015, FR-03.1 A2/A3) adalah `PR-01-06`.
+ * berjenjang (BR-015, FR-03.1 A2/A3) lewat `PATCH .../status` (`PR-01-06`).
  */
 export const UpdateRoomBodySchema = z.object({
     area_id: z.coerce.number().int().positive(),
@@ -118,5 +118,20 @@ export const SingleAreaResponseSchema = z.object({
 export const SingleRoomResponseSchema = z.object({
     success: z.literal(true),
     data: RoomSchema,
+    meta: z.null(),
+});
+
+/** `PATCH /buildings/{id}/status` · `PATCH /rooms/{id}/status` (BR-015). */
+export const UpdateLocationStatusBodySchema = z.object({
+    status: LocationStatusSchema,
+});
+
+const AreaWithRoomsSchema = AreaSchema.extend({ rooms: z.array(RoomSchema) });
+const BuildingWithTreeSchema = BuildingSchema.extend({ areas: z.array(AreaWithRoomsSchema) });
+
+/** `GET /locations/tree` (FR-03.1 langkah 1) — tanpa penyaringan status. */
+export const LocationTreeResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.array(BuildingWithTreeSchema),
     meta: z.null(),
 });

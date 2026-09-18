@@ -11,6 +11,7 @@ import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
 import type {
     AreaRow,
     BuildingRow,
+    LocationStatus,
     RoomFields,
     RoomRow,
     RoomType,
@@ -18,6 +19,14 @@ import type {
 import { createLocationRepository } from "../repositories/location.repository.js";
 
 const MODUL = "m03-locations";
+
+export interface LocationTreeArea extends AreaRow {
+    readonly rooms: readonly RoomRow[];
+}
+
+export interface LocationTreeBuilding extends BuildingRow {
+    readonly areas: readonly LocationTreeArea[];
+}
 
 export interface CreateBuildingInput {
     readonly nama: string;
@@ -180,6 +189,110 @@ export class LocationService {
                 await this.audit.write(scope, {
                     modul: MODUL,
                     aksi: "LOCATION_UPDATED",
+                    entitas: "rooms",
+                    entitasId: id,
+                    nilaiSebelum: before,
+                    nilaiSesudah: after,
+                });
+
+                return after;
+            },
+            this.db,
+        );
+    }
+
+    /** FR-03.1 langkah 1 — pohon lokasi lengkap, tanpa penyaringan status. */
+    async getTree(ctx: AuthContext): Promise<readonly LocationTreeBuilding[]> {
+        const repo = createLocationRepository(this.db);
+        const [buildings, areas, rooms] = await Promise.all([
+            repo.listAllBuildings(ctx),
+            repo.listAllAreas(ctx),
+            repo.listAllRooms(ctx),
+        ]);
+
+        const roomsByArea = new Map<string, RoomRow[]>();
+        for (const room of rooms) {
+            const daftar = roomsByArea.get(room.area_id) ?? [];
+            daftar.push(room);
+            roomsByArea.set(room.area_id, daftar);
+        }
+
+        const areasByBuilding = new Map<string, LocationTreeArea[]>();
+        for (const area of areas) {
+            const daftar = areasByBuilding.get(area.building_id) ?? [];
+            daftar.push({ ...area, rooms: roomsByArea.get(area.id) ?? [] });
+            areasByBuilding.set(area.building_id, daftar);
+        }
+
+        return buildings.map((building) => ({
+            ...building,
+            areas: areasByBuilding.get(building.id) ?? [],
+        }));
+    }
+
+    /**
+     * `PATCH /buildings/{id}/status` — penonaktifan berjenjang, KERANGKA hierarki
+     * (BR-015): gedung tidak dapat dinonaktifkan selagi masih memiliki ruangan
+     * AKTIF di bawahnya. Pemeriksaan terhadap ASET sungguhan menyusul `PR-02-10`
+     * (Phase 02, tabel `assets` belum ada) — dicatat di log phase-01 §10.
+     */
+    async updateBuildingStatus(
+        ctx: AuthContext,
+        id: number,
+        status: LocationStatus,
+    ): Promise<BuildingRow> {
+        return withTransaction(
+            ctx,
+            async (scope) => {
+                const repo = createLocationRepository(scope.tx);
+                const before = await repo.findBuildingById(scope.ctx, id);
+                if (before === undefined) throw new NotFoundError("Gedung tidak ditemukan.");
+
+                if (status === "NONAKTIF" && before.status === "AKTIF") {
+                    if (await repo.hasActiveRoomInBuilding(scope.ctx, id)) {
+                        throw new DomainError(
+                            "VALIDATION_ERROR",
+                            "Gedung masih memiliki ruangan aktif di bawahnya.",
+                            { rule: "BR-015" },
+                        );
+                    }
+                }
+
+                const after = await repo.updateBuildingStatus(scope.ctx, id, status);
+
+                await this.audit.write(scope, {
+                    modul: MODUL,
+                    aksi: status === "NONAKTIF" ? "LOCATION_DEACTIVATED" : "LOCATION_UPDATED",
+                    entitas: "buildings",
+                    entitasId: id,
+                    nilaiSebelum: before,
+                    nilaiSesudah: after,
+                });
+
+                return after;
+            },
+            this.db,
+        );
+    }
+
+    /**
+     * `PATCH /rooms/{id}/status`. BR-015 di tingkat ruangan (memuat aset) BELUM
+     * dapat ditegakkan — `assets` baru lahir `PR-02-10`. Tanpa pemeriksaan sampai
+     * saat itu; lihat log phase-01 §10 "Yang diserahkan ke phase berikutnya".
+     */
+    async updateRoomStatus(ctx: AuthContext, id: number, status: LocationStatus): Promise<RoomRow> {
+        return withTransaction(
+            ctx,
+            async (scope) => {
+                const repo = createLocationRepository(scope.tx);
+                const before = await repo.findRoomById(scope.ctx, id);
+                if (before === undefined) throw new NotFoundError("Ruangan tidak ditemukan.");
+
+                const after = await repo.updateRoomStatus(scope.ctx, id, status);
+
+                await this.audit.write(scope, {
+                    modul: MODUL,
+                    aksi: status === "NONAKTIF" ? "LOCATION_DEACTIVATED" : "LOCATION_UPDATED",
                     entitas: "rooms",
                     entitasId: id,
                     nilaiSebelum: before,

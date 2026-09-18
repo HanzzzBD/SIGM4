@@ -7,6 +7,7 @@ import {
     CreateBuildingBodySchema,
     CreateRoomBodySchema,
     IdParamSchema,
+    UpdateLocationStatusBodySchema,
     UpdateRoomBodySchema,
 } from "../../../src/modules/m03-locations/schemas/location.schema.js";
 
@@ -96,6 +97,19 @@ describe("UpdateRoomBodySchema — PUT tanpa status", () => {
                 jenis: "KELAS",
             }),
         ).toThrow();
+    });
+});
+
+describe("UpdateLocationStatusBodySchema (PR-01-06, BR-015)", () => {
+    it("menerima AKTIF dan NONAKTIF", () => {
+        expect(UpdateLocationStatusBodySchema.parse({ status: "AKTIF" }).status).toBe("AKTIF");
+        expect(UpdateLocationStatusBodySchema.parse({ status: "NONAKTIF" }).status).toBe(
+            "NONAKTIF",
+        );
+    });
+
+    it("menolak status di luar enum location_status", () => {
+        expect(() => UpdateLocationStatusBodySchema.parse({ status: "DIHAPUS" })).toThrow();
     });
 });
 

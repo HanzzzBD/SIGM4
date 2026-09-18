@@ -51,8 +51,11 @@ import {
     createAreaRoute,
     createBuildingRoute,
     createRoomRoute,
+    getLocationTreeRoute,
     locationsRouter,
+    updateBuildingStatusRoute,
     updateRoomRoute,
+    updateRoomStatusRoute,
 } from "../modules/m03-locations/index.js";
 import {
     healthLiveRoute,
@@ -85,10 +88,13 @@ export const registry = new RouteRegistry().register(
     importUsersRoute,
     listRolesRoute,
     updateRolePermissionsRoute,
+    getLocationTreeRoute,
     createBuildingRoute,
     createAreaRoute,
     createRoomRoute,
     updateRoomRoute,
+    updateBuildingStatusRoute,
+    updateRoomStatusRoute,
 );
 
 /**

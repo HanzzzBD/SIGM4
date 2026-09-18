@@ -6,6 +6,9 @@ export {
     createAreaRoute,
     createBuildingRoute,
     createRoomRoute,
+    getLocationTreeRoute,
     locationsRouter,
+    updateBuildingStatusRoute,
     updateRoomRoute,
+    updateRoomStatusRoute,
 } from "./routes.js";
