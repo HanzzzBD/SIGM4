@@ -149,7 +149,7 @@ describe("sigm4-api — /api/v1/health/*", () => {
         });
     });
 
-    it("registri proses: probe publik, ringkasan, CRUD pengguna (PR-01-02), impor massal (PR-01-03), matriks permission (PR-01-04), skema lokasi (PR-01-05), pohon+penonaktifan (PR-01-06), daftar aset per lokasi (PR-01-07), penelusuran (PR-01-08), ekspor activity log (PR-01-09), parameter sistem (PR-01-10), dan kenaikan kelas massal (PR-01-13) berpermission", () => {
+    it("registri proses: probe publik, ringkasan, CRUD pengguna (PR-01-02), impor massal (PR-01-03), matriks permission (PR-01-04), skema lokasi (PR-01-05), pohon+penonaktifan (PR-01-06), daftar aset per lokasi (PR-01-07), penelusuran (PR-01-08), ekspor activity log (PR-01-09), parameter sistem (PR-01-10), kenaikan kelas massal (PR-01-13), dan pengambilan pekerjaan impor pengguna (PR-01-17) berpermission", () => {
         expect(registry.all().map((r) => `${r.method} ${r.path}`)).toEqual([
             "GET /health/live",
             "GET /health/ready",
@@ -160,6 +160,7 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "PUT /users/:id",
             "PATCH /users/:id/status",
             "POST /users/import",
+            "GET /users/import/:id",
             "GET /roles",
             "PUT /roles/:id/permissions",
             "GET /locations/tree",
@@ -184,6 +185,7 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "user.view",
             "user.update",
             "user.update",
+            "user.create",
             "user.create",
             "role.view",
             "role.update",
@@ -210,6 +212,7 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "/api/v1/users/{id}",
             "/api/v1/users/{id}/status",
             "/api/v1/users/import",
+            "/api/v1/users/import/{id}",
             "/api/v1/roles",
             "/api/v1/roles/{id}/permissions",
             "/api/v1/locations/tree",

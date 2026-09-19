@@ -175,6 +175,7 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 ### `PR-02-25` — Skema notifikasi + penerbitan
 - [ ] Pasang notifikasi milik M-02 yang **tertunda dari Phase 01** (keputusan 32 log phase-01): `NT-48` (penolakan mengaktifkan/membuat akun siswa tanpa `consent_guardian_at`, `DP-02`) dan `NT-40` (role/status akun berubah) — keduanya belum terbit sejak `PR-01-02`/`PR-01-14` karena modul notifikasi belum ada
 - [ ] `NT-48` **tidak dapat** terbit dari transaksi yang ditolak (rollback membuang outbox, `SDD-EVT-04`): terbitkan pada transaksi terpisah setelah penolakan, dan tambahkan event-nya ke katalog `SDD-07 §4.3`
+- [ ] `NT-52` (impor pengguna > 200 baris selesai, `IMPT-04`): pasang konsumen event `UserImportCompleted` — event-nya **sudah terbit sejak `PR-01-17`** (payload `job_id`, `oleh`; isi pesan dibaca dari `user_import_jobs`), hanya konsumennya yang belum ada (keputusan 33 log phase-01)
 
 ### `PR-02-29` — Dashboard
 - [ ] Kartu dideklarasikan bersama permission yang diwajibkannya

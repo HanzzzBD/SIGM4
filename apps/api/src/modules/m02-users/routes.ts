@@ -17,7 +17,10 @@ import {
     updateUserStatusHandler,
 } from "./controllers/user.controller.js";
 import { classPromotionHandler } from "./controllers/class-promotion.controller.js";
-import { importUsersHandler } from "./controllers/user-import.controller.js";
+import {
+    getUserImportHandler,
+    importUsersHandler,
+} from "./controllers/user-import.controller.js";
 import {
     ClassPromotionBodySchema,
     ClassPromotionResponseSchema,
@@ -37,8 +40,9 @@ import {
     UserIdParamSchema,
 } from "./schemas/user.schema.js";
 import {
+    ImportJobIdParamSchema,
+    ImportUserJobResponseSchema,
     ImportUsersBodySchema,
-    ImportUsersResponseSchema,
 } from "./schemas/user-import.schema.js";
 import {
     ListRolesResponseSchema,
@@ -110,8 +114,8 @@ export const updateUserStatusRoute = defineRoute({
 });
 
 /**
- * Sinkron ≤ 200 baris saja (`IMPT-04` sendiri, keputusan 19 log phase-01) —
- * jalur asinkron + idempotensi hash-berkas menyusul `PR-01-17`.
+ * IMPT-03/04: ≤ 200 baris diproses sinkron (200), lebih dari itu dijadwalkan ke
+ * worker (202); berkas identik dalam 24 jam mengembalikan pekerjaan sebelumnya.
  */
 export const importUsersRoute = defineRoute({
     method: "POST",
@@ -119,9 +123,21 @@ export const importUsersRoute = defineRoute({
     permission: "user.create",
     rateLimitClass: "upload",
     module: MODUL,
-    summary: "Impor massal pengguna (CSV/XLSX, sinkron ≤ 200 baris)",
+    summary: "Impor massal pengguna (CSV/XLSX; > 200 baris asinkron, idempoten 24 jam)",
     body: ImportUsersBodySchema,
-    response: ImportUsersResponseSchema,
+    response: ImportUserJobResponseSchema,
+});
+
+/** IMPT-02/04: status dan laporan per baris sebuah pekerjaan impor. */
+export const getUserImportRoute = defineRoute({
+    method: "GET",
+    path: "/users/import/:id",
+    permission: "user.create",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Status dan laporan per baris pekerjaan impor pengguna",
+    params: ImportJobIdParamSchema,
+    response: ImportUserJobResponseSchema,
 });
 
 /**
@@ -190,6 +206,7 @@ export function usersRouter(
         service,
         deps.auditLogger,
         deps.logger,
+        deps.clock,
     );
     const promotionService = new ClassPromotionService(deps.db, deps.auditLogger, deps.logger);
     const roleService = new RoleService(deps.db, deps.auditLogger);
@@ -237,6 +254,12 @@ export function usersRouter(
         batasi(importUsersRoute),
         otorisasi(importUsersRoute.permission),
         importUsersHandler(importService),
+    );
+    router.get(
+        getUserImportRoute.path,
+        batasi(getUserImportRoute),
+        otorisasi(getUserImportRoute.permission),
+        getUserImportHandler(importService),
     );
     router.post(
         classPromotionRoute.path,

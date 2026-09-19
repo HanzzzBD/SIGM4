@@ -25,6 +25,7 @@ Data induk yang relatif stabil dan menjadi acuan seluruh transaksi.
 | **work_days** | Hari kerja sekolah | hari, aktif | Administrator |
 | **work_units** | Unit kerja / kelas (Lampiran E.3) | id, nama, kode, jenis, kepala_unit_id, status | Administrator |
 | **student_enrollments** | Kelas siswa per tahun ajaran (Lampiran E.4, SL-01) | id, user_id, academic_year_id, kelas_id, lulus | Administrator |
+| **user_import_jobs** | Pekerjaan impor pengguna: jangkar idempotensi hash-berkas dan laporan per baris (IMPT-02…04) | id, file_hash, nama_berkas, status, total_baris, baris_terproses, sukses, gagal, laporan_gagal (JSON), pesan_galat, selesai_pada | Administrator |
 | **room_fixed_schedules** | Blokade jadwal tetap ruangan (FR-07.5) | id, room_id, hari, jam_mulai, jam_selesai, label_kegiatan, berlaku_mulai, berlaku_sampai, status | Petugas Sarpras |
 
 ## 11.2 Transaction Data
@@ -113,6 +114,7 @@ Data acuan bernilai tetap yang digunakan sebagai enumerasi dan dropdown.
 | **Hasil Aktivitas** | Sukses, Gagal |
 | **Cakupan Data Permission** | All, Own, Assigned, Restricted |
 | **Status Pengguna** | Aktif, Nonaktif |
+| **Status Impor Pengguna** | Menunggu, Berjalan, Selesai, Gagal |
 | **Status Lokasi** | Aktif, Nonaktif |
 | **Kelompok Parameter Sistem** | Identitas Sekolah, Kode Aset, Peminjaman, Denda, Reservasi, Maintenance, Bahan, Notifikasi, Keamanan, Chatbot AI |
 | **Tipe Parameter Sistem** | Bilangan Bulat, Desimal, Boolean, Teks |

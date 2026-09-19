@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **140** baris, dikumpulkan dari 22 berkas modul.
+> Total: **141** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -60,6 +60,7 @@
 | GET | `/rooms/availability` | `reservation.view` | Ketersediaan ruangan pada rentang waktu | [M-07](../02-modules/m07-reservation-room.md) |
 | GET | `/rooms/{id}/assets` | `asset.view` | Aset dalam satu ruangan | [M-04](../02-modules/m04-assets.md) |
 | GET | `/settings` | `setting.view` | Baca parameter sistem | [M-20](../02-modules/m20-settings.md) |
+| GET | `/users/import/{id}` | `user.create` | Status dan laporan per baris sebuah pekerjaan impor (`IMPT-02`) | [M-02](../02-modules/m02-users.md) |
 | GET | `/users/{id}` | `user.view` | Detail pengguna | [M-02](../02-modules/m02-users.md) |
 | GET | `/users` | `user.view` | Daftar pengguna (filter role, status, unit kerja) | [M-02](../02-modules/m02-users.md) |
 | GET | `/work-days` | `setting.view` | Baca hari kerja sekolah | [M-20](../02-modules/m20-settings.md) |
@@ -130,7 +131,7 @@
 | POST | `/procurements` | `procurement.create` | Buat usulan pengadaan | [M-14](../02-modules/m14-procurement.md) |
 | POST | `/reservations/{id}/cancel` | `reservation.cancel_own` · `reservation.cancel_any` | Batalkan reservasi + alasan. Pemilik reservasi cukup `cancel_own`; membatalkan reservasi pihak lain wajib `cancel_any` (`FR-07.3 A2`). Kepemilikan diperiksa di server, bukan disimpulkan dari role | [M-07](../02-modules/m07-reservation-room.md) |
 | POST | `/reservations` | `reservation.create` | Ajukan reservasi ruangan/aset | [M-07](../02-modules/m07-reservation-room.md) |
-| POST | `/users/import` | `user.create` | Impor massal CSV/XLSX | [M-02](../02-modules/m02-users.md) |
+| POST | `/users/import` | `user.create` | Impor massal CSV/XLSX: ≤ 200 baris diproses sinkron, lebih dari itu asinkron (`IMPT-04`); berkas identik dalam 24 jam mengembalikan hasil sebelumnya (`IMPT-03`) | [M-02](../02-modules/m02-users.md) |
 | POST | `/users/{id}/reset-2fa` | `user.reset_2fa` | Reset 2FA pengguna | [M-02](../02-modules/m02-users.md) |
 | POST | `/users/{id}/reset-password` | `user.reset_password` | Terbitkan password sementara | [M-02](../02-modules/m02-users.md) |
 | POST | `/users` | `user.create` | Buat pengguna baru | [M-02](../02-modules/m02-users.md) |

@@ -11,6 +11,7 @@ export { GraduationService, tanggalWib } from "./services/graduation.service.js"
 export {
     classPromotionRoute,
     createUserRoute,
+    getUserImportRoute,
     getUserRoute,
     importUsersRoute,
     listRolesRoute,
@@ -20,3 +21,14 @@ export {
     updateUserStatusRoute,
     usersRouter,
 } from "./routes.js";
+export {
+    NAMA_PEKERJAAN_IMPOR,
+    UserImportRunner,
+    idJobAntreanImpor,
+} from "./jobs/user-import.job.js";
+export type { DataPekerjaanImpor } from "./jobs/user-import.job.js";
+export {
+    EVENT_IMPOR_DIMINTA,
+    UserImportService,
+} from "./services/user-import.service.js";
+export { UserService } from "./services/user.service.js";

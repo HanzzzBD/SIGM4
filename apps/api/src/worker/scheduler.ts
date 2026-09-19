@@ -34,8 +34,10 @@ export interface JobDefinition {
     /**
      * Cron dalam **UTC** (`JOB-04`). Jam pada Bab 12.4 ditulis WIB dan wajib
      * dikonversi — pakai `wibCronToUtc` agar konversinya tidak dikerjakan tangan.
+     * Tanpa `cron`, pekerjaan tidak dijadwalkan: ia hanya dijalankan bila ada
+     * yang memasukkannya ke antrean (mis. impor pengguna, `IMPT-04`).
      */
-    readonly cron: string;
+    readonly cron?: string;
     readonly handler: (job: Job) => Promise<void>;
 }
 
@@ -106,6 +108,7 @@ export async function scheduleAll(
     registry: JobRegistry,
 ): Promise<void> {
     for (const job of registry.all()) {
+        if (job.cron === undefined) continue;
         // `upsertJobScheduler` berkunci pada `job.name`: memanggilnya dari instance
         // kedua MEMPERBARUI jadwal yang sama, bukan menambah jadwal kedua. Di sinilah
         // kunci terdistribusi `JOB-02` berada — pada identitas penjadwalnya, bukan

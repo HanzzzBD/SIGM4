@@ -5,7 +5,7 @@
 # Indeks Aksi Activity Log
 
 > Setiap aksi dimiliki modul penerbitnya. Prinsip pencatatan di `../03-architecture/activity-log.md`.
-> Total: **68** baris, dikumpulkan dari 22 berkas modul.
+> Total: **69** baris, dikumpulkan dari 22 berkas modul.
 
 | Aksi | Keterangan | Pemilik |
 |---|---|---|
@@ -70,7 +70,8 @@
 | `TWO_FA_BACKUP_CODE_USED` | Pemakaian kode cadangan, termasuk sisa kode | [M-01](../02-modules/m01-auth.md) |
 | `TWO_FA_ENABLED` / `TWO_FA_DISABLED` / `TWO_FA_RESET` | Perubahan 2FA | [M-01](../02-modules/m01-auth.md) |
 | `USER_CREATED` / `USER_UPDATED` / `USER_DEACTIVATED` / `USER_REACTIVATED` | Manajemen akun | [M-02](../02-modules/m02-users.md) |
-| `USER_IMPORTED` | Impor massal beserta ringkasan hasil | [M-02](../02-modules/m02-users.md) |
+| `USER_IMPORTED` | Impor massal beserta ringkasan hasil; pelaku = Administrator pengunggah, juga bila dijalankan worker | [M-02](../02-modules/m02-users.md) |
+| `USER_IMPORT_REQUESTED` | Berkas impor diterima dan tercatat sebagai pekerjaan impor (sinkron atau dijadwalkan asinkron, `IMPT-04`) | [M-02](../02-modules/m02-users.md) |
 | `WORKORDER_COMPLETED` / `WORKORDER_VERIFIED` / `WORKORDER_RETURNED` / `WORKORDER_CANCELLED` | Penyelesaian | [M-12](../02-modules/m12-maintenance.md) |
 | `WORKORDER_CREATED` / `WORKORDER_ASSIGNED` / `WORKORDER_STARTED` | Penugasan dan pelaksanaan | [M-12](../02-modules/m12-maintenance.md) |
 | `WORKORDER_PROGRESS_UPDATED` | Termasuk perubahan biaya | [M-12](../02-modules/m12-maintenance.md) |

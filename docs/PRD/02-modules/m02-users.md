@@ -48,7 +48,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 - **A1 — Email sudah digunakan:** Sistem menolak dengan pesan spesifik.
 - **A2 — Penonaktifan pengguna yang masih memiliki peminjaman aktif atau denda belum lunas:** Sistem menampilkan peringatan dan meminta konfirmasi; data transaksi tetap tersimpan.
 - **A3 — Penonaktifan pengguna yang menjadi approver aktif:** Sistem memblokir aksi hingga Administrator menetapkan approver pengganti pada approval rules terkait.
-- **A4 — Impor massal:** Administrator mengunggah CSV/XLSX; sistem memvalidasi baris per baris dan menampilkan laporan sukses/gagal.
+- **A4 — Impor massal:** Administrator mengunggah CSV/XLSX; sistem memvalidasi baris per baris dan menampilkan laporan sukses/gagal. Berkas > 200 baris diproses asinkron oleh worker dan Administrator diberi tahu saat selesai (`IMPT-04`, `NT-52`); status dan laporan per baris dapat diambil kapan saja lewat pekerjaan impornya. Berkas identik yang diunggah ulang dalam 24 jam tidak diproses ulang — hasil pekerjaan sebelumnya dikembalikan (`IMPT-03`).
 - **A5 — Akun siswa tanpa persetujuan wali:** Sistem menolak membuat, mengaktifkan kembali, atau mengganti role menjadi Siswa/OSIS bila penanda `consent_guardian_at` belum terekam (`DP-02`, `SL-06`). Administrator merekam persetujuan yang dikumpulkan sekolah secara luring (`consent_wali`); penanda hanya direkam sekali dan tidak dicabut.
 
 **Post Conditions** — Data pengguna tersimpan; pengguna nonaktif tidak dapat login namun riwayat transaksinya tetap utuh.
@@ -110,7 +110,8 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | GET | `/users/{id}` | `user.view` | Detail pengguna |
 | PUT | `/users/{id}` | `user.update` | Perbarui pengguna |
 | PATCH | `/users/{id}/status` | `user.update` | Aktifkan/nonaktifkan |
-| POST | `/users/import` | `user.create` | Impor massal CSV/XLSX |
+| POST | `/users/import` | `user.create` | Impor massal CSV/XLSX: ≤ 200 baris diproses sinkron, lebih dari itu asinkron (`IMPT-04`); berkas identik dalam 24 jam mengembalikan hasil sebelumnya (`IMPT-03`) |
+| GET | `/users/import/{id}` | `user.create` | Status dan laporan per baris sebuah pekerjaan impor (`IMPT-02`) |
 | POST | `/class-promotions` | `user.update` | Kenaikan kelas massal: tetapkan kelas atau tandai lulus per siswa pada satu tahun ajaran (`SL-02`) |
 | POST | `/users/{id}/reset-password` | `user.reset_password` | Terbitkan password sementara |
 | POST | `/users/{id}/reset-2fa` | `user.reset_2fa` | Reset 2FA pengguna |
@@ -128,6 +129,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 |---|---|---|---|
 | **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, work_unit_id, telepon, foto, status, totp_enabled_at, must_change_password, login_terakhir_pada, consent_guardian_at | Administrator |
 | **student_enrollments** | Kelas siswa per tahun ajaran (Lampiran E.4, `SL-01`) — bukan atribut permanen akun | id, user_id, academic_year_id, kelas_id (unit kerja berjenis Kelas), lulus | Administrator |
+| **user_import_jobs** | Pekerjaan impor pengguna — setiap impor, sinkron maupun asinkron (`IMPT-02`, `IMPT-03`, `IMPT-04`) | id, file_hash, nama_berkas, status, total_baris, baris_terproses, sukses, gagal, laporan_gagal (hanya baris gagal: nomor baris, email, alasan), pesan_galat, selesai_pada | Administrator |
 | **roles** | Peran pengguna | id, nama, deskripsi, is_system | Administrator |
 | **permissions** | Daftar hak akses granular | id, modul, aksi, kode | Sistem |
 | **role_permissions** | Relasi role–permission | role_id, permission_id | Administrator |
@@ -169,7 +171,8 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | Aksi | Keterangan |
 |---|---|
 | `USER_CREATED` / `USER_UPDATED` / `USER_DEACTIVATED` / `USER_REACTIVATED` | Manajemen akun |
-| `USER_IMPORTED` | Impor massal beserta ringkasan hasil |
+| `USER_IMPORT_REQUESTED` | Berkas impor diterima dan tercatat sebagai pekerjaan impor (sinkron atau dijadwalkan asinkron, `IMPT-04`) |
+| `USER_IMPORTED` | Impor massal beserta ringkasan hasil; pelaku = Administrator pengunggah, juga bila dijalankan worker |
 | `STUDENT_ENROLLMENT_SET` | Kelas siswa pada suatu tahun ajaran ditetapkan atau diubah (`SL-01`, `SL-02`), nilai lama/baru |
 | `STUDENT_MARKED_GRADUATED` | Siswa ditandai lulus pada suatu tahun ajaran (`SL-02`) |
 | `STUDENT_GRADUATION_DEACTIVATED` | Akun siswa lulus dinonaktifkan setelah tahun ajarannya berakhir (`SL-03`); pelaku `SYSTEM` bila dijalankan pekerjaan terjadwal |
