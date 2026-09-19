@@ -41,6 +41,7 @@ Skema khusus `booking_slots`, `idempotency_keys`, dan `document_counters` didefi
 | **SDD-DB-15** | Akses data memakai **Kysely di atas driver `pg`** — *query builder* ber-tipe yang **tidak memiliki skema**. Berkas `.sql` §4.3/§4.4 tetap satu-satunya sumber skema (`SDD-DB-08`); tipe tabel Kysely adalah cerminan yang diturunkan dari basis data, bukan pendefinisinya. Fitur PostgreSQL yang ditetapkan berkas ini — *exclusion constraint* (`CI-01`), `tstzrange`, native enum (`SDD-DB-02`), partial unique index (`SDD-DB-05`), `SELECT … FOR UPDATE` (`SDD-DB-14`), tabel terpartisi (`SDD-DB-07`) — ditulis sebagai SQL mentah lewat *template* `sql` tanpa kehilangan tipe. ORM yang memiliki skema sendiri tidak dipakai. |
 | **SDD-DB-16** | Scope data permission (Lampiran C.1) disimpan **per baris `role_permissions`** sebagai native enum `permission_scope`, bukan diturunkan dari kode saat runtime. Nilai bawaannya ditetapkan tafsir [`SDD-03 §4.8`](03-authorization.md). Lolos uji tiga syarat `SDD-AUTH-11`: ia menyimpan scope yang C.1 sudah definisikan, tanpa menambah permission maupun perilaku. |
 | **SDD-DB-17** | Parameter sistem (`FR-20.1`) disimpan sebagai baris `system_settings` yang **mendeskripsikan dirinya sendiri**: tiap baris membawa `tipe`, `nilai_bawaan`, dan — untuk angka — `nilai_min`/`nilai_maks`; validasi rentang (`FR-20.1 A1`) membaca baris itu, bukan daftar di kode. Kunci baru ditambahkan **PR konsumennya** sebagai baris seed (`SDD-DB-10`), tanpa perubahan skema maupun kode validasi. Katalog awal ([§4.7a](#47a-skema-system_settings)) hanya memuat parameter yang nilai bawaannya disebut eksplisit di `FR-20.1`; rentangnya pagar kewajaran teknis, bukan business rule. |
+| **SDD-DB-18** | Invariant "tepat satu tahun ajaran aktif" (`Lampiran E.2`, `AC-YR-01`) ditegakkan **basis data**, bukan hanya service: paling banyak satu lewat *partial unique index* (`SDD-DB-05`), paling sedikit satu — begitu ada tahun ajaran — lewat *constraint trigger* `DEFERRABLE INITIALLY DEFERRED` yang diperiksa saat `COMMIT`. Ditunda karena pergantian tahun aktif adalah dua `UPDATE` dalam satu transaksi yang sesaat tanpa tahun aktif. Tabel kosong sah (instalasi awal). Rasionya sama `SDD-DB-14`: constraint basis data tidak dapat dilewati service yang keliru. |
 
 ---
 
@@ -293,6 +294,20 @@ Parameter kelompok lain (jam operasional, tarif denda, durasi sesi, dst.) **tida
 **Perilaku baca** (`GET /settings`): terpaginasi (`SDD-PERF-04`) dan dapat disaring `filter[kelompok]` — satu kelompok satu tab P-70; `PUT` mengembalikan hanya parameter yang diminta.
 
 **Perilaku tulis** (`PUT /settings`): seluruh nilai divalidasi lebih dulu; satu saja tidak sah menolak seluruh permintaan (`VALIDATION_ERROR`, daftar per kunci beserta batas yang diizinkan — `FR-20.1 A1`) tanpa mengubah apa pun. Hanya nilai yang **berubah** ditulis; satu entri `SETTING_UPDATED` memuat nilai lama dan baru semuanya, dalam transaksi yang sama. Cache 60 detik parameter (`SDD-14`) ditunda sampai konsumen pertama membaca parameter ini; hingga itu pembacaan langsung ke basis data sehingga perubahan berlaku pada permintaan berikutnya (`FR-20.1` langkah 4).
+
+### 4.7b Skema kalender akademik
+
+`academic_years` dan `academic_terms` (`Lampiran E.2`) — entitas domain milik Administrator, jadi memakai kolom baku §4.2 (berbeda dari `holidays`/`work_days`, master data acuan). `holidays.academic_year_id` ditambahkan sebagai kolom **NULLABLE** (migration `expand`): hari libur nasional tidak intrinsik milik satu tahun ajaran.
+
+| Aturan | Ditegakkan oleh |
+|---|---|
+| Paling banyak satu tahun ajaran aktif | `UNIQUE INDEX … (is_active) WHERE is_active` |
+| Bila ada tahun ajaran, satu wajib aktif (`AC-YR-01`) | constraint trigger *deferred* — `SDD-DB-18` |
+| Tahun ajaran tidak beririsan; semester tidak beririsan dalam satu tahun ajaran | `EXCLUDE USING gist` atas `daterange(mulai, selesai, '[]')` — `btree_gist` sudah ada sejak `0001` |
+| `tanggal_mulai < tanggal_selesai`; nama unik; satu Ganjil dan satu Genap per tahun | `CHECK` / `UNIQUE` |
+| Semester berada di dalam rentang tahun ajarannya | **belum** ditegakkan basis data — milik service kalender akademik yang belum ada |
+
+`academic_term_name` (`GANJIL`, `GENAP`) adalah kelompok Bab 11.3 "Nama Semester". Tidak ada endpoint: PRD belum mendaftarkan satu pun untuk kalender akademik (`m20-settings.md` §7 hanya `/settings`), dan baris endpoint baru wajib lebih dulu masuk PRD.
 
 ### 4.8 Saldo bahan — ledger dan agregat
 
