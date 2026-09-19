@@ -79,7 +79,11 @@ export function buildOpenApiDocument(
             responses: {
                 [route.method === "POST" ? "201" : "200"]: {
                     description: "Berhasil",
-                    content: { "application/json": { schema: route.response } },
+                    content: {
+                        [route.contentType ?? "application/json"]: {
+                            schema: route.response,
+                        },
+                    },
                 },
                 ...errorResponses(route),
             },

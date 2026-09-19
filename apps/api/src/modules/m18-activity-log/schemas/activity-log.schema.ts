@@ -3,33 +3,49 @@
 
 import { z } from "zod";
 
+/** Filter berbentuk `filter[kunci]`, dipakai bersama daftar dan ekspor (FR-18.2). */
+const FilterActivityLogSchema = z.object({
+    dari: z.coerce.date().optional(),
+    sampai: z.coerce.date().optional(),
+    user_id: z.coerce.number().int().positive().optional(),
+    role: z.string().trim().min(1).max(50).optional(),
+    modul: z.string().trim().min(1).max(100).optional(),
+    aksi: z.string().trim().min(1).max(100).optional(),
+    entitas: z.string().trim().min(1).max(100).optional(),
+    entitas_id: z.coerce.number().int().positive().optional(),
+});
+
+/** `dari` wajib mendahului `sampai` bila keduanya diisi — dipakai daftar dan ekspor. */
+function tolakRentangTerbalik(
+    val: { dari?: Date | undefined; sampai?: Date | undefined },
+    ctx: z.RefinementCtx,
+): void {
+    if (val.dari !== undefined && val.sampai !== undefined && val.dari > val.sampai) {
+        ctx.addIssue({
+            code: "custom",
+            message: "Tanggal mulai harus sebelum atau sama dengan tanggal selesai.",
+            path: ["sampai"],
+        });
+    }
+}
+
 /**
- * Query daftar (Bab 17.1): `page`/`per_page` datar, filter berbentuk
- * `filter[kunci]` — controller membaca kuncinya langsung dari `req.query`
- * (parser `simple` Express 5 tidak menguraikan tanda kurung menjadi objek).
+ * Query daftar (Bab 17.1): `page`/`per_page` datar — controller membaca kunci
+ * `filter[...]` langsung dari `req.query` (parser `simple` Express 5 tidak
+ * menguraikan tanda kurung menjadi objek).
  */
-export const ListActivityLogsQuerySchema = z
-    .object({
-        page: z.coerce.number().int().positive().default(1),
-        per_page: z.coerce.number().int().positive().max(100).default(25),
-        dari: z.coerce.date().optional(),
-        sampai: z.coerce.date().optional(),
-        user_id: z.coerce.number().int().positive().optional(),
-        role: z.string().trim().min(1).max(50).optional(),
-        modul: z.string().trim().min(1).max(100).optional(),
-        aksi: z.string().trim().min(1).max(100).optional(),
-        entitas: z.string().trim().min(1).max(100).optional(),
-        entitas_id: z.coerce.number().int().positive().optional(),
-    })
-    .superRefine((val, ctx) => {
-        if (val.dari !== undefined && val.sampai !== undefined && val.dari > val.sampai) {
-            ctx.addIssue({
-                code: "custom",
-                message: "Tanggal mulai harus sebelum atau sama dengan tanggal selesai.",
-                path: ["sampai"],
-            });
-        }
-    });
+export const ListActivityLogsQuerySchema = FilterActivityLogSchema.extend({
+    page: z.coerce.number().int().positive().default(1),
+    per_page: z.coerce.number().int().positive().max(100).default(25),
+}).superRefine(tolakRentangTerbalik);
+
+/**
+ * Query ekspor (FR-18.2 langkah 5): filter SAMA seperti daftar, TANPA
+ * `page`/`per_page` — hasil filter diekspor utuh (dibatasi `BATAS_EKSPOR` di
+ * service, SDD-PERF-06).
+ */
+export const ExportActivityLogsQuerySchema =
+    FilterActivityLogSchema.superRefine(tolakRentangTerbalik);
 
 const ActivityLogSchema = z.object({
     id: z.string(),
@@ -65,3 +81,8 @@ export const ListActivityLogsResponseSchema = z.object({
     data: z.array(ActivityLogSchema),
     meta: PaginationMetaSchema,
 });
+
+/** Dokumentasi OpenAPI saja — respons sukses sungguhan adalah berkas XLSX biner. */
+export const ExportActivityLogsResponseSchema = z
+    .string()
+    .describe("Berkas XLSX (biner) hasil ekspor activity log — lihat header Content-Disposition.");

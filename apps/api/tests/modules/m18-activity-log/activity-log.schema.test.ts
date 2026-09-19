@@ -2,7 +2,10 @@
 // sebenarnya: permintaan yang tidak sah wajib ditolak SEBELUM lapisan layanan.
 
 import { describe, expect, it } from "vitest";
-import { ListActivityLogsQuerySchema } from "../../../src/modules/m18-activity-log/schemas/activity-log.schema.js";
+import {
+    ExportActivityLogsQuerySchema,
+    ListActivityLogsQuerySchema,
+} from "../../../src/modules/m18-activity-log/schemas/activity-log.schema.js";
 
 describe("ListActivityLogsQuerySchema (FR-18.2 langkah 3)", () => {
     it("berbawaan page=1, per_page=25 tanpa filter apa pun", () => {
@@ -57,5 +60,33 @@ describe("ListActivityLogsQuerySchema (FR-18.2 langkah 3)", () => {
 
     it("menolak user_id bukan angka positif", () => {
         expect(() => ListActivityLogsQuerySchema.parse({ user_id: "-1" })).toThrow();
+    });
+});
+
+describe("ExportActivityLogsQuerySchema (FR-18.2 langkah 5, PR-01-09)", () => {
+    it("TIDAK memiliki page/per_page — hasil filter diekspor utuh", () => {
+        const hasil = ExportActivityLogsQuerySchema.parse({});
+        expect(hasil).not.toHaveProperty("page");
+        expect(hasil).not.toHaveProperty("per_page");
+    });
+
+    it("menerima filter yang sama seperti daftar", () => {
+        const hasil = ExportActivityLogsQuerySchema.parse({
+            modul: "m02-users",
+            aksi: "USER_CREATED",
+            entitas: "users",
+            entitas_id: "5",
+        });
+        expect(hasil.modul).toBe("m02-users");
+        expect(hasil.entitas_id).toBe(5);
+    });
+
+    it("menolak dari > sampai, sama seperti daftar", () => {
+        expect(() =>
+            ExportActivityLogsQuerySchema.parse({
+                dari: "2026-09-30T00:00:00Z",
+                sampai: "2026-09-01T00:00:00Z",
+            }),
+        ).toThrow();
     });
 });

@@ -5,9 +5,13 @@
 // (`modul`/`entitas_id`/`user_id`), bukan lewat tabel kosong.
 
 import { randomUUID } from "node:crypto";
+import ExcelJS from "exceljs";
 import { beforeAll, describe, expect, it } from "vitest";
 import { registry } from "../../src/api/index.js";
-import { ActivityLogService } from "../../src/modules/m18-activity-log/services/activity-log.service.js";
+import {
+    ActivityLogService,
+    BATAS_EKSPOR,
+} from "../../src/modules/m18-activity-log/services/activity-log.service.js";
 import { createAuthContext } from "../../src/shared/auth/index.js";
 import type { AuthContext } from "../../src/shared/auth/index.js";
 import { AuditLogger } from "../../src/shared/audit/index.js";
@@ -240,5 +244,79 @@ describe.skipIf(!ADA_DB)("PR-01-08 — penelusuran activity log (acceptance)", (
             filter: { modul },
             halaman: 1,
         });
+    });
+});
+
+describe.skipIf(!ADA_DB)("PR-01-09 — ekspor activity log (acceptance)", () => {
+    it("katalog endpoint: GET /activity-logs/export berpermission activity_log.export", () => {
+        const route = registry.all().find((r) => r.path === "/activity-logs/export");
+        expect(route).toMatchObject({ method: "GET", permission: "activity_log.export" });
+    });
+
+    it("export(): mengembalikan XLSX berisi HANYA baris yang cocok filter (FR-18.2 langkah 5)", async () => {
+        const adminId = await seedAdmin();
+        const modul = kodeUnik("m-uji-ekspor");
+        const aksi = kodeUnik("AKSI_EKSPOR");
+        const id = await seedLog({
+            waktu: new Date("2026-09-13T00:00:00Z"),
+            modul,
+            aksi,
+        });
+        // Baris LAIN, tidak boleh ikut terekspor — membuktikan filter benar-benar
+        // diterapkan, bukan seluruh tabel.
+        await seedLog({ waktu: new Date("2026-09-13T00:00:00Z"), modul: kodeUnik("m-lain"), aksi });
+
+        const hasil = await buatService().export(buatCtx(adminId), { modul, aksi });
+        expect(hasil.jumlahBaris).toBe(1);
+
+        const workbook = new ExcelJS.Workbook();
+        // @ts-expect-error — tipe `Buffer` exceljs bertabrakan dengan `Buffer` Node asli.
+        await workbook.xlsx.load(hasil.buffer);
+        const sheet = workbook.worksheets[0];
+        expect(sheet?.getRow(1).getCell(1).value).toBe("ID");
+        expect(sheet?.rowCount).toBe(2); // header + 1 baris data
+        expect(String(sheet?.getRow(2).getCell(1).value)).toBe(id);
+    });
+
+    it("export(): aksi ekspor itu sendiri tercatat sebagai ACTIVITY_LOG_EXPORTED (AL-10, m18-activity-log.md §11)", async () => {
+        const adminId = await seedAdmin();
+        const modul = kodeUnik("m-uji-ekspor-tanda");
+        await seedLog({ waktu: new Date("2026-09-14T00:00:00Z"), modul, aksi: "AKSI" });
+
+        await buatService().export(buatCtx(adminId), { modul });
+
+        const [log] = await kueri<{ aksi: string; hasil: string; nilai_sesudah: unknown }>(`
+            SELECT aksi, hasil, nilai_sesudah FROM activity_logs
+             WHERE modul = 'm18-activity-log' AND aksi = 'ACTIVITY_LOG_EXPORTED'
+             ORDER BY id DESC LIMIT 1
+        `);
+        expect(log).toMatchObject({ aksi: "ACTIVITY_LOG_EXPORTED", hasil: "SUKSES" });
+        expect(log?.nilai_sesudah).toMatchObject({
+            filter: { modul },
+            jumlah_baris: 1,
+        });
+    });
+
+    it(`export(): menolak hasil filter di atas ${BATAS_EKSPOR} baris (FR-18.2 A1, SDD-PERF-06)`, async () => {
+        const adminId = await seedAdmin();
+        const modul = kodeUnik("m-uji-ekspor-besar");
+        await kueri(`
+            INSERT INTO activity_logs (waktu, modul, aksi, hasil, row_hash)
+            SELECT now(), '${modul}', 'AKSI', 'SUKSES', decode('00', 'hex')
+            FROM generate_series(1, ${BATAS_EKSPOR + 1})
+        `);
+
+        await expect(buatService().export(buatCtx(adminId), { modul })).rejects.toMatchObject({
+            kode: "VALIDATION_ERROR",
+            detail: { rule: "FR-18.2-A1" },
+        });
+
+        // Ditolak SEBELUM ekspor tercatat — tidak ada ACTIVITY_LOG_EXPORTED baru untuk modul ini.
+        const [log] = await kueri<{ aksi: string }>(`
+            SELECT aksi FROM activity_logs
+             WHERE modul = 'm18-activity-log' AND aksi = 'ACTIVITY_LOG_EXPORTED'
+               AND nilai_sesudah -> 'filter' ->> 'modul' = '${modul}'
+        `);
+        expect(log).toBeUndefined();
     });
 });
