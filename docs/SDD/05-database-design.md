@@ -40,6 +40,7 @@ Skema khusus `booking_slots`, `idempotency_keys`, dan `document_counters` didefi
 | **SDD-DB-12** | Berkas migration §4.5 dijalankan **dbmate** — runner SQL siap pakai, bukan runner buatan sendiri, bukan pula perkakas ber-DSL JavaScript. Dua kemampuan bersifat wajib, bukan preferensi: **opt-out transaksi per-migration** dan *advisory lock*. Keduanya wajib bagi **jalur migration**, bukan harus berasal dari runner-nya: verifikasi `PR-00-05` menunjukkan dbmate memenuhi yang pertama dan **tidak memiliki** yang kedua, sehingga advisory lock dipegang pembungkus milik kita yang memanggil dbmate (`scripts/migrate.mjs`). Pembagian ini ditetapkan setelah pembuktian, bukan sebelumnya. |
 | **SDD-DB-15** | Akses data memakai **Kysely di atas driver `pg`** — *query builder* ber-tipe yang **tidak memiliki skema**. Berkas `.sql` §4.3/§4.4 tetap satu-satunya sumber skema (`SDD-DB-08`); tipe tabel Kysely adalah cerminan yang diturunkan dari basis data, bukan pendefinisinya. Fitur PostgreSQL yang ditetapkan berkas ini — *exclusion constraint* (`CI-01`), `tstzrange`, native enum (`SDD-DB-02`), partial unique index (`SDD-DB-05`), `SELECT … FOR UPDATE` (`SDD-DB-14`), tabel terpartisi (`SDD-DB-07`) — ditulis sebagai SQL mentah lewat *template* `sql` tanpa kehilangan tipe. ORM yang memiliki skema sendiri tidak dipakai. |
 | **SDD-DB-16** | Scope data permission (Lampiran C.1) disimpan **per baris `role_permissions`** sebagai native enum `permission_scope`, bukan diturunkan dari kode saat runtime. Nilai bawaannya ditetapkan tafsir [`SDD-03 §4.8`](03-authorization.md). Lolos uji tiga syarat `SDD-AUTH-11`: ia menyimpan scope yang C.1 sudah definisikan, tanpa menambah permission maupun perilaku. |
+| **SDD-DB-17** | Parameter sistem (`FR-20.1`) disimpan sebagai baris `system_settings` yang **mendeskripsikan dirinya sendiri**: tiap baris membawa `tipe`, `nilai_bawaan`, dan — untuk angka — `nilai_min`/`nilai_maks`; validasi rentang (`FR-20.1 A1`) membaca baris itu, bukan daftar di kode. Kunci baru ditambahkan **PR konsumennya** sebagai baris seed (`SDD-DB-10`), tanpa perubahan skema maupun kode validasi. Katalog awal ([§4.7a](#47a-skema-system_settings)) hanya memuat parameter yang nilai bawaannya disebut eksplisit di `FR-20.1`; rentangnya pagar kewajaran teknis, bukan business rule. |
 
 ---
 
@@ -213,7 +214,7 @@ Aturannya: satu rilis tidak boleh memuat expand dan contract untuk kolom yang sa
 | 7 role bawaan + matriks | Bab 5 & Bab 18 | idem |
 | Aturan approval bawaan | `RE-06` — konstanta kode, bukan baris | tidak di-seed (lihat SDD-APR §4.3) |
 | `work_days` Senin–Sabtu | [Lampiran E.2](../PRD/00-foundation/conventions.md) | `ON CONFLICT (hari) DO UPDATE` |
-| Parameter sistem bawaan | `FR-20.1` — katalog kunci & nilai bawaan ditetapkan bersama tabelnya di `PR-01-10` | idem |
+| Parameter sistem bawaan | `FR-20.1` — katalog kunci & nilai bawaan: [§4.7a](#47a-skema-system_settings) (`SDD-DB-17`) | `ON CONFLICT (key) DO NOTHING` — nilai yang sudah diubah Administrator tidak ditimpa |
 
 Seed permission, role, matriks, dan `work_days` lahir di `PR-00-16`; parameter sistem menyusul `PR-01-10` karena tabel `system_settings` dan validasi rentangnya milik PR itu.
 
@@ -252,6 +253,46 @@ CREATE TABLE role_permissions (
 ```
 
 `permissions` adalah master data acuan milik sistem, dan `role_permissions` relasi — keduanya dikecualikan dari kolom baku §4.2. `roles` adalah entitas domain (`FR-02.2 A2` membuat role kustom): kolom baku §4.2 beserta trigger `updated_at`-nya ditambahkan `PR-01-01` bersama `users`, karena `created_by` merujuk `users(id)`. `role_version` (`SDD-AUTH-04`) ditambahkan `PR-01-04`.
+
+### 4.7a Skema `system_settings`
+
+```sql
+CREATE TYPE setting_type  AS ENUM ('BILANGAN_BULAT', 'DESIMAL', 'BOOLEAN', 'TEKS');   -- SDD-DB-02
+CREATE TYPE setting_group AS ENUM ('IDENTITAS_SEKOLAH', 'KODE_ASET', 'PEMINJAMAN', 'DENDA', 'RESERVASI',
+                                   'MAINTENANCE', 'BAHAN', 'NOTIFIKASI', 'KEAMANAN', 'CHATBOT_AI');
+
+CREATE TABLE system_settings (
+    key          text          PRIMARY KEY,          -- {kelompok}.{nama}, huruf kecil
+    kelompok     setting_group NOT NULL,             -- sepuluh tab P-70
+    tipe         setting_type  NOT NULL,
+    value        jsonb         NOT NULL,             -- bentuknya dijaga CHECK terhadap `tipe`
+    nilai_bawaan jsonb         NOT NULL,             -- AC FR-20.1: "menampilkan penjelasan dan nilai bawaan"
+    nilai_min    numeric,                            -- hanya INTEGER/DECIMAL; NULL = tanpa batas bawah
+    nilai_maks   numeric,
+    deskripsi    text          NOT NULL,
+    updated_at   timestamptz   NOT NULL DEFAULT now(),
+    updated_by   bigint        REFERENCES users(id)  -- NULL = nilai seed, belum pernah diubah
+);
+```
+
+Bukan entitas domain: tidak memakai `created_*`, dan tidak memakai `id` — `key` adalah pengenal yang dirujuk kode konsumen. `Kalender Akademik` (`academic_years`/`holidays`, `PR-01-11`), `Satuan Bahan` (`material_units`), dan logo sekolah (`stored_files`) adalah kelompok `FR-20.1` yang **bukan** baris kunci–nilai dan tidak masuk tabel ini.
+
+**Katalog awal** — hanya parameter yang nilai bawaannya tertulis di `FR-20.1`. Kolom rentang adalah pagar kewajaran teknis (`FR-20.1` langkah 3: "rentang nilai yang wajar"); menyesuaikannya berarti migration seed, bukan kode.
+
+| Kunci | Kelompok | Tipe | Bawaan | Rentang | Sumber |
+|---|---|---|---:|---|---|
+| `peminjaman.batas_perpanjangan` | `PEMINJAMAN` | `BILANGAN_BULAT` | 1 | 0 – 10 | `FR-20.1`, `FR-09.5` |
+| `denda.cap_persen` | `DENDA` | `DESIMAL` | 30 | 1 – 100 | `BR-028b` |
+| `reservasi.horizon_hari` | `RESERVASI` | `BILANGAN_BULAT` | 90 | 1 – 365 | `BR-023c`, `AV-05` |
+| `reservasi.ttl_tentative_jam` | `RESERVASI` | `BILANGAN_BULAT` | 48 | 1 – 168 | `BR-023b` |
+| `reservasi.kuota_tertunda_guru_staf` | `RESERVASI` | `BILANGAN_BULAT` | 5 | 1 – 50 | `BR-023a` |
+| `reservasi.kuota_tertunda_siswa_osis` | `RESERVASI` | `BILANGAN_BULAT` | 2 | 1 – 50 | `BR-023a` |
+
+Parameter kelompok lain (jam operasional, tarif denda, durasi sesi, dst.) **tidak dikarang di sini**: nilai bawaannya belum ditetapkan PRD, dan masing-masing ditambahkan PR yang mengonsumsinya (`SDD-DB-17`).
+
+**Perilaku baca** (`GET /settings`): terpaginasi (`SDD-PERF-04`) dan dapat disaring `filter[kelompok]` — satu kelompok satu tab P-70; `PUT` mengembalikan hanya parameter yang diminta.
+
+**Perilaku tulis** (`PUT /settings`): seluruh nilai divalidasi lebih dulu; satu saja tidak sah menolak seluruh permintaan (`VALIDATION_ERROR`, daftar per kunci beserta batas yang diizinkan — `FR-20.1 A1`) tanpa mengubah apa pun. Hanya nilai yang **berubah** ditulis; satu entri `SETTING_UPDATED` memuat nilai lama dan baru semuanya, dalam transaksi yang sama. Cache 60 detik parameter (`SDD-14`) ditunda sampai konsumen pertama membaca parameter ini; hingga itu pembacaan langsung ke basis data sehingga perubahan berlaku pada permintaan berikutnya (`FR-20.1` langkah 4).
 
 ### 4.8 Saldo bahan — ledger dan agregat
 

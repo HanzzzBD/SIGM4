@@ -113,6 +113,8 @@ Data acuan bernilai tetap yang digunakan sebagai enumerasi dan dropdown.
 | **Cakupan Data Permission** | All, Own, Assigned, Restricted |
 | **Status Pengguna** | Aktif, Nonaktif |
 | **Status Lokasi** | Aktif, Nonaktif |
+| **Kelompok Parameter Sistem** | Identitas Sekolah, Kode Aset, Peminjaman, Denda, Reservasi, Maintenance, Bahan, Notifikasi, Keamanan, Chatbot AI |
+| **Tipe Parameter Sistem** | Bilangan Bulat, Desimal, Boolean, Teks |
 
 ## 11.4 Kebijakan Retensi Data
 

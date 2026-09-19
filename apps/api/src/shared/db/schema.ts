@@ -230,6 +230,35 @@ export interface RoomsTable extends KolomBaku {
     status: Generated<"AKTIF" | "NONAKTIF">;
 }
 
+/**
+ * `system_settings` (0015, PR-01-10). Bukan entitas domain: tanpa `id` dan
+ * `created_*` (`SDD-05 §4.7a`). `value` jsonb ditulis sebagai string JSON
+ * (pola `activity_logs`); `nilai_min`/`nilai_maks` bertipe `numeric` dan kembali
+ * sebagai **string** dari driver `pg` — diubah ke angka di lapisan service.
+ */
+export interface SystemSettingsTable {
+    key: string;
+    kelompok:
+        | "IDENTITAS_SEKOLAH"
+        | "KODE_ASET"
+        | "PEMINJAMAN"
+        | "DENDA"
+        | "RESERVASI"
+        | "MAINTENANCE"
+        | "BAHAN"
+        | "NOTIFIKASI"
+        | "KEAMANAN"
+        | "CHATBOT_AI";
+    tipe: "BILANGAN_BULAT" | "DESIMAL" | "BOOLEAN" | "TEKS";
+    value: ColumnType<unknown, string, string>;
+    nilai_bawaan: ColumnType<unknown, string, never>;
+    nilai_min: ColumnType<string | null, string | number | null | undefined, never>;
+    nilai_maks: ColumnType<string | null, string | number | null | undefined, never>;
+    deskripsi: string;
+    updated_at: ColumnType<Date, never, never>;
+    updated_by: ColumnType<string | null, string | number | null, string | number | null>;
+}
+
 /** Peta nama tabel -> bentuk barisnya. Diisi bersama migration pemiliknya. */
 export interface Database {
     document_counters: DocumentCountersTable;
@@ -245,4 +274,5 @@ export interface Database {
     buildings: BuildingsTable;
     areas: AreasTable;
     rooms: RoomsTable;
+    system_settings: SystemSettingsTable;
 }
