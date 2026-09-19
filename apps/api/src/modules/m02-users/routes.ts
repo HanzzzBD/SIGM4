@@ -15,7 +15,13 @@ import {
     updateUserHandler,
     updateUserStatusHandler,
 } from "./controllers/user.controller.js";
+import { classPromotionHandler } from "./controllers/class-promotion.controller.js";
 import { importUsersHandler } from "./controllers/user-import.controller.js";
+import {
+    ClassPromotionBodySchema,
+    ClassPromotionResponseSchema,
+} from "./schemas/class-promotion.schema.js";
+import { ClassPromotionService } from "./services/class-promotion.service.js";
 import {
     listRolesHandler,
     updateRolePermissionsHandler,
@@ -117,6 +123,21 @@ export const importUsersRoute = defineRoute({
     response: ImportUsersResponseSchema,
 });
 
+/**
+ * SL-02: kenaikan kelas massal — `NAIK` menetapkan kelas pada satu tahun ajaran,
+ * `LULUS` menandainya lulus. Laporan per siswa; sinkron ≤ 200 siswa.
+ */
+export const classPromotionRoute = defineRoute({
+    method: "POST",
+    path: "/class-promotions",
+    permission: "user.update",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Kenaikan kelas massal: tetapkan kelas atau tandai lulus",
+    body: ClassPromotionBodySchema,
+    response: ClassPromotionResponseSchema,
+});
+
 /** FR-02.2 langkah 2: daftar role beserta jumlah pengguna dan permission aktif. */
 export const listRolesRoute = defineRoute({
     method: "GET",
@@ -167,6 +188,7 @@ export function usersRouter(
         deps.auditLogger,
         deps.logger,
     );
+    const promotionService = new ClassPromotionService(deps.db, deps.auditLogger, deps.logger);
     const roleService = new RoleService(deps.db, deps.auditLogger);
     const router = express.Router();
 
@@ -212,6 +234,12 @@ export function usersRouter(
         batasi(importUsersRoute),
         otorisasi(importUsersRoute.permission),
         importUsersHandler(importService),
+    );
+    router.post(
+        classPromotionRoute.path,
+        batasi(classPromotionRoute),
+        otorisasi(classPromotionRoute.permission),
+        classPromotionHandler(promotionService),
     );
     router.get(
         listRolesRoute.path,

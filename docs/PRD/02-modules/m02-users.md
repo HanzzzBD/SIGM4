@@ -110,6 +110,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | PUT | `/users/{id}` | `user.update` | Perbarui pengguna |
 | PATCH | `/users/{id}/status` | `user.update` | Aktifkan/nonaktifkan |
 | POST | `/users/import` | `user.create` | Impor massal CSV/XLSX |
+| POST | `/class-promotions` | `user.update` | Kenaikan kelas massal: tetapkan kelas atau tandai lulus per siswa pada satu tahun ajaran (`SL-02`) |
 | POST | `/users/{id}/reset-password` | `user.reset_password` | Terbitkan password sementara |
 | POST | `/users/{id}/reset-2fa` | `user.reset_2fa` | Reset 2FA pengguna |
 | GET | `/roles` | `role.view` | Daftar role |
@@ -125,6 +126,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
 | **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, work_unit_id, telepon, foto, status, totp_enabled_at, must_change_password, login_terakhir_pada | Administrator |
+| **student_enrollments** | Kelas siswa per tahun ajaran (Lampiran E.4, `SL-01`) — bukan atribut permanen akun | id, user_id, academic_year_id, kelas_id (unit kerja berjenis Kelas), lulus | Administrator |
 | **roles** | Peran pengguna | id, nama, deskripsi, is_system | Administrator |
 | **permissions** | Daftar hak akses granular | id, modul, aksi, kode | Sistem |
 | **role_permissions** | Relasi role–permission | role_id, permission_id | Administrator |
@@ -167,6 +169,9 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 |---|---|
 | `USER_CREATED` / `USER_UPDATED` / `USER_DEACTIVATED` / `USER_REACTIVATED` | Manajemen akun |
 | `USER_IMPORTED` | Impor massal beserta ringkasan hasil |
+| `STUDENT_ENROLLMENT_SET` | Kelas siswa pada suatu tahun ajaran ditetapkan atau diubah (`SL-01`, `SL-02`), nilai lama/baru |
+| `STUDENT_MARKED_GRADUATED` | Siswa ditandai lulus pada suatu tahun ajaran (`SL-02`) |
+| `STUDENT_GRADUATION_DEACTIVATED` | Akun siswa lulus dinonaktifkan setelah tahun ajarannya berakhir (`SL-03`); pelaku `SYSTEM` bila dijalankan pekerjaan terjadwal |
 | `ROLE_PERMISSION_UPDATED` | Perubahan matriks permission |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).

@@ -24,6 +24,7 @@ Data induk yang relatif stabil dan menjadi acuan seluruh transaksi.
 | **holidays** | Hari libur sekolah & nasional | id, tanggal, nama, jenis, academic_year_id | Administrator |
 | **work_days** | Hari kerja sekolah | hari, aktif | Administrator |
 | **work_units** | Unit kerja / kelas (Lampiran E.3) | id, nama, kode, jenis, kepala_unit_id, status | Administrator |
+| **student_enrollments** | Kelas siswa per tahun ajaran (Lampiran E.4, SL-01) | id, user_id, academic_year_id, kelas_id, lulus | Administrator |
 | **room_fixed_schedules** | Blokade jadwal tetap ruangan (FR-07.5) | id, room_id, hari, jam_mulai, jam_selesai, label_kegiatan, berlaku_mulai, berlaku_sampai, status | Petugas Sarpras |
 
 ## 11.2 Transaction Data

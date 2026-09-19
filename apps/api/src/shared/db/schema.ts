@@ -276,6 +276,18 @@ export interface WorkUnitsTable extends KolomBaku {
 }
 
 /**
+ * `student_enrollments` (0018, PR-01-13). Kelas siswa per tahun ajaran
+ * (Lampiran E.4, SL-01) — bukan kolom pada `users`.
+ */
+export interface StudentEnrollmentsTable extends KolomBaku {
+    id: Generated<string>;
+    user_id: ColumnType<string, string | number, string | number>;
+    academic_year_id: ColumnType<string, string | number, string | number>;
+    kelas_id: ColumnType<string, string | number, string | number>;
+    lulus: Generated<boolean>;
+}
+
+/**
  * `academic_years` (0016, PR-01-11). `tanggal_*` bertipe `date` dan kembali
  * sebagai string `YYYY-MM-DD` (pola `holidays.tanggal`). Tepat satu baris
  * `is_active` ditegakkan basis data — SDD-05 §4.7b.
@@ -316,4 +328,5 @@ export interface Database {
     academic_years: AcademicYearsTable;
     academic_terms: AcademicTermsTable;
     work_units: WorkUnitsTable;
+    student_enrollments: StudentEnrollmentsTable;
 }

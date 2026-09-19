@@ -39,6 +39,7 @@ import {
 import {
     createUserRoute,
     getUserRoute,
+    classPromotionRoute,
     importUsersRoute,
     listRolesRoute,
     listUsersRoute,
@@ -107,6 +108,7 @@ export const registry = new RouteRegistry().register(
     exportActivityLogsRoute,
     getSettingsRoute,
     updateSettingsRoute,
+    classPromotionRoute,
 );
 
 /**
