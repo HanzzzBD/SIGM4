@@ -78,6 +78,8 @@ export const NAMA_TIPE: ReadonlyMap<string, string> = new Map([
     ["Status Pengguna", "user_status"],
     ["Status Impor Pengguna", "user_import_status"],
     ["Platform Perangkat", "device_platform"],
+    ["Status Permintaan Reset Password", "password_reset_status"],
+    ["Metode Verifikasi Identitas", "identity_verification_method"],
     ["Status Lokasi", "location_status"],
     ["Kelompok Parameter Sistem", "setting_group"],
     ["Tipe Parameter Sistem", "setting_type"],

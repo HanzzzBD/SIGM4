@@ -34,6 +34,7 @@ Otorisasi (siapa boleh apa) berada di [SDD-03](03-authorization.md). Berkas ini 
 | **SDD-SESS-10** | *Challenge token* 2FA berumur **5 menit**, sekali pakai, dan tidak dapat dipakai sebagai access token. |
 | **SDD-SESS-11** | Pemulihan darurat (`FR-01.6`) diimplementasikan sebagai **perintah CLI pada artefak worker**, tidak pernah terdaftar sebagai route HTTP. |
 | **SDD-SESS-12** | Respons `/auth/login` **seragam**: email tak terdaftar, password salah, dan akun terkunci dijawab `401 UNAUTHENTICATED` yang identik (status, kode, pesan, tanpa `details`, tanpa `Retry-After`); `423 ACCOUNT_LOCKED` dan sisa waktu kunci tidak pernah dikirim endpoint ini. Argon2id dijalankan tepat sekali pada ketiga keadaan. Penguncian tetap berjalan dan dicatat secara internal (`LOGIN_FAILED`, `ACCOUNT_LOCKED`, event `AccountLocked`). Keputusan pemilik produk, 19 September 2026. |
+| **SDD-SESS-13** | Reset password administratif (`FR-01.3`) tidak memakai token maupun kanal email: password sementara dibangkitkan server, ditampilkan **satu kali** pada respons penerbitan, dan hanya hash-nya yang menetap. Penerbitan mencabut **seluruh** sesi pemilik akun dan menghapus penguncian loginnya; kedaluwarsa 72 jam ditegakkan **saat login** dan saat daftar dibaca, tanpa pekerjaan terjadwal. Keputusan pemilik produk, 19 September 2026. |
 
 ---
 
@@ -60,6 +61,8 @@ Otorisasi (siapa boleh apa) berada di [SDD-03](03-authorization.md). Berkas ini 
 **PostgreSQL dipilih** juga karena satu properti yang di sini gratis dan di Redis harus dibangun: `SDD-SESS-04` menuntut pemakaian ulang mencabut **seluruh** keluarga, dan §4.3 mencapainya dengan `SELECT … FOR UPDATE` diikuti `UPDATE … WHERE family_id = …` dalam satu transaksi. Padanan Redis-nya memerlukan skrip Lua, dan pencabutan massal saat akun dinonaktifkan (§4.6) kehilangan relasinya ke `users`. Biaya tulisnya — satu `UPDATE` dan satu `INSERT` per rotasi — tidak terasa pada skala 100–150 concurrent yang ditetapkan Keputusan #14.
 
 **SDD-SESS-12 — respons login seragam.** Alur awal (§4.2 versi sebelumnya) menjawab `423` dengan sisa waktu bagi akun terkunci dan `401` bagi yang lain. Itu membuat `/auth/login` menjadi *oracle*: `423` membuktikan bahwa email tertentu terdaftar, tanpa perlu password yang benar. `FR-01.1 A1` sudah menuntut pesan yang tidak membocorkan keberadaan email, dan `A2` bertabrakan dengannya. Tiga jalan dipertimbangkan: (1) mempertahankan `423` — ditolak, karena membuka enumerasi; (2) penguncian bayangan di Redis bagi email tak terdaftar agar ia pun dijawab `423` — ditolak, karena menambah penghitung per-email di luar PostgreSQL yang bertentangan dengan `SDD-SESS-06` dan hanya memindahkan masalahnya; (3) menyeragamkan seluruhnya ke `401` — dipilih. Harganya diterima dengan sadar: pengguna sah yang terkunci melihat pesan yang sama dengan salah password, dan seseorang yang mengetahui email dapat mengunci akun itu selama 15 menit (§6). Penekannya ada pada penghitung IP (`SDD-SESS-07`), jejak audit, dan `NT-39`. Argon2id tetap dijalankan pada ketiga keadaan supaya waktu respons tidak menjadi *oracle* kedua.
+
+**SDD-SESS-13 — reset administratif, bukan token.** Rencana implementasi awal menyebut "token sekali pakai", yang mengandaikan kanal email; `FR-01.3` justru menyatakan sistem tidak memakainya. Karena itu tidak ada tautan reset yang dapat dicuri dari kotak surat: kepemilikan akun dibuktikan lewat verifikasi identitas luring oleh Administrator, dan metodenya dicatat pada permintaan. Konsekuensi keamanannya dipilih sadar. *Sesi lama dicabut* karena pemegangnya mungkin bukan pemilik sah — alasan yang sama dengan pemulihan darurat (§4.5). *Kunci login dibuka* karena akun yang identitas pemiliknya baru diverifikasi tatap muka tidak boleh tetap terkunci oleh percobaan pihak lain. *Kedaluwarsa tanpa cron* karena pekerjaan terjadwal bergantung pada `SystemAuthContext` (`PR-02-32`) dan password sementara hanya berbahaya saat dipakai — yaitu saat login, tempat penegakannya berada.
 
 ---
 
@@ -120,6 +123,9 @@ POST /auth/login
                                       bila >= 5 dalam jendela -> locked_until = now+15m,
                                       ACCOUNT_LOCKED, event AccountLocked (NT-39); commit; 401
   5. jika status <> Aktif          -> 403 pesan FR-01.1 A3
+  5a. jika must_change_password DAN penerbitan reset terakhir sudah lewat 72 jam
+                                   -> LOGIN_FAILED (PASSWORD_SEMENTARA_KEDALUWARSA), permintaan ditutup
+                                      KEDALUWARSA; 401 seragam; TIDAK menambah penghitung (§4.8)
   6. jika role wajib 2FA / 2FA on  -> 200 {requires_2fa, challenge_token}   (5 menit)
   7. jika must_change_password     -> terbitkan token dengan klaim pwd_change_required
   8. terbitkan access + refresh (family_id baru), reset penghitung dan locked_until,
@@ -208,8 +214,35 @@ sigm4 admin:recover --email=<email> [--force]
 | Sumber token | Header `Authorization` didahulukan; bila tidak ada, cookie `sigm4_at`. Header berbentuk salah tidak jatuh ke cookie |
 | `authenticate` | **Lenient**: token yang ada tetapi tak sah hanya ditandai; penolakan (`401`, `TOKEN_EXPIRED` bila kedaluwarsa) milik `authorize` pada route yang menuntutnya. Route publik — `login` dan `refresh` — tetap terjangkau dengan cookie access kedaluwarsa. Permission dan status akun dibaca ulang setiap permintaan (`PM-05`): akun nonaktif kehilangan akses seketika |
 | Gerbang ganti password | Klaim `pwd=true` → `403 PASSWORD_CHANGE_REQUIRED` pada semua route di luar `/api/v1/auth/*` (`SDD-AUTH-09` gerbang 2, `FR-01.1 A4`) |
-| Sesi hidup | `authenticate` memeriksa `sid` terhadap `refresh_tokens` pada **setiap** permintaan: sesi hidup selama keluarga itu milik `sub` dan masih punya baris yang belum dicabut. Karena itu logout, logout semua perangkat, cabut satu perangkat, dan pemakaian ulang refresh token (§4.3) mematikan access token SEKETIKA — acceptance "≤ 60 detik" (`PR-02-04`) dipenuhi tanpa jendela. Dibaca dari PostgreSQL, bukan cache (§5). Alasan `revoke_reason`: `reuse_detected`, `logout`, `logout_all`, `device_revoked`, `account_deactivated`, `password_changed`, `break_glass` |
+| Sesi hidup | `authenticate` memeriksa `sid` terhadap `refresh_tokens` pada **setiap** permintaan: sesi hidup selama keluarga itu milik `sub` dan masih punya baris yang belum dicabut. Karena itu logout, logout semua perangkat, cabut satu perangkat, dan pemakaian ulang refresh token (§4.3) mematikan access token SEKETIKA — acceptance "≤ 60 detik" (`PR-02-04`) dipenuhi tanpa jendela. Dibaca dari PostgreSQL, bukan cache (§5). Alasan `revoke_reason`: `reuse_detected`, `logout`, `logout_all`, `device_revoked`, `account_deactivated`, `password_changed`, `password_reset`, `break_glass` |
 | Kunci | `JWT_PRIVATE_KEY` (PKCS#8) dan `JWT_PUBLIC_KEY` (SPKI), PEM Ed25519; `\n` literal diterima untuk berkas env satu baris. Startup gagal bila bukan PEM, bukan Ed25519, atau bukan pasangan (`SDD-INF-08`) |
+
+### 4.8 Reset password administratif (`FR-01.3`)
+
+```
+POST /auth/password/forgot  {email}                       publik; SELALU 202 {"message":"Permintaan diterima"}
+  email tak dikenal / akun nonaktif -> PASSWORD_RESET_REQUESTED (GAGAL, tanpa pelaku, tanpa email); tak ada baris
+  aktif, < 3 permintaan/24 jam      -> baris MENUNGGU + PASSWORD_RESET_REQUESTED + event PasswordResetRequested (NT-37)
+  aktif, >= 3 permintaan/24 jam     -> tidak dibuat; PASSWORD_RESET_REQUESTED (GAGAL, MELEBIHI_BATAS) + alarm log
+  (baris pengguna dikunci FOR UPDATE: permintaan serentak tidak dapat melewati batas)
+
+GET  /auth/password/requests             user.reset_password   antrean (status efektif; identitas pemohon)
+POST /auth/password/requests/{id}/issue  user.reset_password   {metode_verifikasi}
+POST /auth/password/requests/{id}/reject user.reset_password   {alasan}
+POST /users/{id}/reset-password          user.reset_password   {metode_verifikasi}  (M-02, reset langsung)
+
+issue / reset langsung (SATU transaksi; kunci: pengguna dulu, lalu permintaan):
+  1. permintaan MENUNGGU, akun AKTIF            -> selain itu 422
+  2. bangkitkan password sementara (16 karakter, lolos kebijakan NFR-S-03a); simpan HASH-nya
+  3. users: password_hash, must_change_password = true, penghitung dan locked_until dihapus
+  4. permintaan -> DITERBITKAN (metode, pelaku, kedaluwarsa = sekarang + 72 jam);
+     penerbitan lama akun itu -> KEDALUWARSA
+  5. cabut SELURUH sesi (revoke_reason = password_reset) + SessionRevoked per sesi
+  6. PASSWORD_RESET_ISSUED (metode, sesi dicabut; TANPA password) + event PasswordResetIssued (NT-38)
+  7. respons: {permintaan, password_sementara}; Cache-Control: no-store; tak dapat dibaca ulang
+```
+
+Siklus status: `MENUNGGU → DITERBITKAN → SELESAI` (pengguna mengganti password sementara — `PR-02-06`) atau `→ KEDALUWARSA` (72 jam, atau digantikan penerbitan baru); `MENUNGGU → DITOLAK`. Status yang dilihat pembaca dihitung dari `kedaluwarsa_pada` sehingga `DITERBITKAN` yang lewat 72 jam tampil `KEDALUWARSA` sebelum barisnya sempat ditutup; kolom `status` menyusul saat login menyentuhnya. Batas 72 jam hanya berlaku bagi password yang ditetapkan penerbitan reset — akun baru buatan Administrator (`FR-02.1`) tidak punya penerbitan dan tidak dibatasi. Migration `0023`.
 
 ---
 
@@ -217,6 +250,8 @@ sigm4 admin:recover --email=<email> [--force]
 
 - Klien wajib menyerialisasi permintaan refresh (§4.3). Ini menjadi persyaratan bagi [SDD-11](11-frontend-architecture.md) dan [SDD-12](12-mobile-architecture.md).
 - Kunci penandatangan Ed25519 dan kunci enkripsi TOTP adalah dua rahasia berbeda dengan siklus rotasi berbeda — keduanya wajib ada di *secret manager* (`SEC-CFG-01`).
+- Password sementara hanya ada pada respons penerbitan: Administrator yang lalai menyalinnya harus menerbitkan ulang (yang menggantikan yang lama). Antarmuka wajib menyatakan "tampil satu kali" sebelum dialog ditutup (`UX F-02`).
+- Pemohon yang ditolak tidak diberi tahu oleh sistem (tidak ada `NT-xx` untuknya; `FR-01.3 A2` menyerahkannya ke pemberitahuan luring).
 - Pengguna sah yang terkunci **tidak diberi tahu** bahwa akunnya terkunci lewat endpoint login (`SDD-SESS-12`); satu-satunya pemberitahuan adalah `NT-39`, dan belum ada jalur pembuka kunci administratif — kunci berakhir sendiri setelah 15 menit.
 - Penguncian akun tersimpan di basis data berarti serangan *credential stuffing* terhadap banyak akun menimbulkan beban tulis. Dimitigasi oleh limit per-IP di Redis yang menyaring lebih dulu (SDD-SESS-07).
 - Pemulihan break-glass mencabut seluruh sesi di sistem — seluruh pengguna harus login ulang. Ini disengaja.
@@ -243,7 +278,7 @@ sigm4 admin:recover --email=<email> [--force]
 
 `FR-01.1` `FR-01.2` `FR-01.3` `FR-01.4` `FR-01.5` `FR-01.6` · `BR-070` `BR-070a` `BR-070b` `BR-070c` ·
 `NFR-S-01` `NFR-S-02` `NFR-S-03` `NFR-S-03a` `NFR-S-03b` `NFR-S-07` `NFR-S-09` `NFR-S-10` `NFR-S-16` ·
-`NT-37` `NT-38` `NT-38a` `NT-39` · `AL-02` `AL-05` `AL-07` · `MOB-SEC-05` · `SEC-CFG-01` `SEC-CFG-02` · `MOB-SEC-01` `MOB-SEC-05`
+`FR-01.3` · `NT-37` `NT-38` `NT-38a` `NT-39` · `AL-02` `AL-05` `AL-07` · `MOB-SEC-05` · `SEC-CFG-01` `SEC-CFG-02` · `MOB-SEC-01` `MOB-SEC-05`
 
 ---
 

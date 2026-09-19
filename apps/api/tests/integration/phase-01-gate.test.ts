@@ -189,9 +189,9 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
             expect(gagal).toEqual([]);
         });
 
-        it("route publik hanya probe kesehatan dan login/refresh (PR-02-02), dan dapat dijangkau tanpa AuthContext", async () => {
+        it("route publik hanya probe kesehatan, login/refresh (PR-02-02), dan forgot password (PR-02-05), dan dapat dijangkau tanpa AuthContext", async () => {
             const publik = registry.publicRoutes().map((r) => `${r.method} ${r.path}`).sort();
-            expect(publik).toEqual(["GET /health/live", "GET /health/ready", "POST /auth/login", "POST /auth/refresh"]);
+            expect(publik).toEqual(["GET /health/live", "GET /health/ready", "POST /auth/login", "POST /auth/password/forgot", "POST /auth/refresh"]);
             expect((await panggil("tanpa", "GET", "/health/live")).status).toBe(200);
             expect((await panggil("tanpa", "GET", "/health/ready")).status).toBe(200);
         });
@@ -399,6 +399,8 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 const [roleSiswa] = await kueri<{ id: string }>("SELECT id::text FROM roles WHERE kode = 'R-07'");
                 const guru = await langkah("POST /users", "/users", { nama: "Guru Gerbang", email: emailUnik(), nip_nis: nipUnik(), role_id: Number(roleGuru?.id) }, ["USER_CREATED"]);
                 await langkah("PUT /users/:id", `/users/${idUser(guru)}`, { nama: "Guru Gerbang B", email: emailUnik(), nip_nis: nipUnik(), role_id: Number(roleGuru?.id) }, ["USER_UPDATED"]);
+                // PR-02-05: reset langsung (M-02) — sebelum akunnya dinonaktifkan di bawah, sebab akun nonaktif tak dapat direset.
+                await langkah("POST /users/:id/reset-password", `/users/${idUser(guru)}/reset-password`, { metode_verifikasi: "KARTU_IDENTITAS_TATAP_MUKA" }, ["PASSWORD_RESET_ISSUED"]);
                 await langkah("PATCH /users/:id/status", `/users/${idUser(guru)}/status`, { status: "NONAKTIF", alasan: "Uji gerbang" }, ["USER_DEACTIVATED"]);
                 await panggil(mode, "PATCH", `/users/${idUser(guru)}/status`, { status: "AKTIF" });
                 expect(await jumlah("USER_REACTIVATED")).toBeGreaterThanOrEqual(1);
@@ -450,6 +452,7 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await kueri("DELETE FROM academic_years");
                 await kueri("DELETE FROM work_units");
                 await lepasPelaku();
+                await kueri("DELETE FROM password_reset_requests"); // PR-02-05: reset langsung mencatat permintaan
                 await kueri("DELETE FROM users");
             }
         }, 120_000);

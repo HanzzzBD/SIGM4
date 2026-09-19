@@ -314,6 +314,31 @@ export interface RefreshTokensTable {
 }
 
 /**
+ * `password_reset_requests` (0023, PR-02-05). Permintaan reset password administratif (`FR-01.3`).
+ * Bukan entitas berkolom baku: kolom waktunya bermakna sendiri. Password sementara TIDAK
+ * disimpan di sini — hanya hash-nya pada `users.password_hash`.
+ */
+export interface PasswordResetRequestsTable {
+    id: Generated<string>;
+    user_id: ColumnType<string, string | number, never>;
+    status: ColumnType<
+        "MENUNGGU" | "DITERBITKAN" | "DITOLAK" | "SELESAI" | "KEDALUWARSA",
+        "MENUNGGU" | "DITERBITKAN" | undefined,
+        "MENUNGGU" | "DITERBITKAN" | "DITOLAK" | "SELESAI" | "KEDALUWARSA"
+    >;
+    metode_verifikasi: ColumnType<
+        "KARTU_IDENTITAS_TATAP_MUKA" | "KONFIRMASI_ATASAN_ATAU_WALI_KELAS" | null,
+        "KARTU_IDENTITAS_TATAP_MUKA" | "KONFIRMASI_ATASAN_ATAU_WALI_KELAS" | null | undefined,
+        "KARTU_IDENTITAS_TATAP_MUKA" | "KONFIRMASI_ATASAN_ATAU_WALI_KELAS" | null
+    >;
+    diminta_pada: ColumnType<Date, Date, never>;
+    diproses_oleh: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    diproses_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    kedaluwarsa_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    alasan_penolakan: ColumnType<string | null, string | null | undefined, string | null>;
+}
+
+/**
  * `user_import_jobs` (0020, PR-01-17). Setiap impor pengguna — jangkar idempotensi
  * hash-berkas (IMPT-03) dan sumber laporan per baris (IMPT-02). `berkas` hanya
  * terisi selama menunggu worker (DP-03).
@@ -382,4 +407,5 @@ export interface Database {
     student_enrollments: StudentEnrollmentsTable;
     user_import_jobs: UserImportJobsTable;
     refresh_tokens: RefreshTokensTable;
+    password_reset_requests: PasswordResetRequestsTable;
 }

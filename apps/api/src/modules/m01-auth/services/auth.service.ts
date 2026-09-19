@@ -41,6 +41,7 @@ const AGREGAT_PENGGUNA = "user";
 const ALASAN_EMAIL_TIDAK_DIKENAL = "EMAIL_TIDAK_DIKENAL";
 const ALASAN_KREDENSIAL_SALAH = "KREDENSIAL_SALAH";
 const ALASAN_AKUN_TERKUNCI = "AKUN_TERKUNCI";
+const ALASAN_PASSWORD_SEMENTARA_KEDALUWARSA = "PASSWORD_SEMENTARA_KEDALUWARSA";
 
 export interface UserRingkas {
     readonly id: string;
@@ -140,6 +141,11 @@ export class AuthService {
             await this.catatKredensialSalah(user, klien, sekarang);
             throw new AuthError("UNAUTHENTICATED");
         }
+        // Password sementara hasil reset yang lewat 72 jam ditolak seragam (FR-01.3 A3); bukan kegagalan
+        // kredensial, jadi tidak menambah penghitung penguncian.
+        if (user.wajib_ganti && (await this.passwordSementaraKedaluwarsa(user.id, sekarang, klien))) {
+            throw new AuthError("UNAUTHENTICATED");
+        }
         if (user.status !== "AKTIF") throw new DomainError("FORBIDDEN");
 
         const efektif = await this.permissions.load(Number(user.id));
@@ -207,6 +213,23 @@ export class AuthService {
             },
             permissions: Object.fromEntries(efektif.scopes),
         };
+    }
+
+    /**
+     * FR-01.3 A3: password sementara hasil reset berlaku 72 jam. Yang lewat ditolak seperti password
+     * salah (401 seragam) dan permintaannya ditutup (`KEDALUWARSA`) saat itu juga — kedaluwarsa
+     * ditegakkan di sini, tanpa pekerjaan terjadwal. Hanya berlaku bagi akun yang password-nya
+     * ditetapkan penerbitan reset; akun baru buatan Administrator (FR-02.1) tak punya batas ini.
+     */
+    private async passwordSementaraKedaluwarsa(userId: string, sekarang: Date, klien: KlienPermintaan): Promise<boolean> {
+        const terbit = await new AuthRepository(this.db).cariPenerbitanTerakhir(userId);
+        if (terbit === undefined || terbit.status === "SELESAI") return false;
+        if (terbit.kedaluwarsa_pada.getTime() > sekarang.getTime()) return false;
+        await this.db.transaction().setIsolationLevel("read committed").execute(async (tx) => {
+            if (terbit.status === "DITERBITKAN") await new AuthRepository(tx).kedaluwarsakanPermintaan(terbit.id);
+            await this.audit.writeAnonim(tx, entriGagal(userId, ALASAN_PASSWORD_SEMENTARA_KEDALUWARSA, klien, { permintaan_id: terbit.id }));
+        });
+        return true;
     }
 
     /** `LOGIN_FAILED` tanpa menyentuh penghitung (email tak dikenal, atau akun sedang terkunci). */

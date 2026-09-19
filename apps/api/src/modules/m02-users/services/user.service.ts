@@ -10,7 +10,7 @@ import { SystemClock } from "../../../shared/clock/index.js";
 import type { Database } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
 import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
-import { hashPassword } from "../../../shared/security/index.js";
+import { generateTemporaryPassword, hashPassword } from "../../../shared/security/index.js";
 import type {
     ListUsersFilter,
     ListUsersResult,
@@ -23,7 +23,6 @@ import {
 import { KODE_ROLE_SISWA } from "../repositories/student-enrollment.repository.js";
 import type { StudentObligationRegistry } from "./student-obligation-registry.js";
 import { studentObligations } from "./student-obligation-registry.js";
-import { generateTemporaryPassword } from "./temporary-password.js";
 
 const MODUL = "m02-users";
 

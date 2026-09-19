@@ -149,15 +149,16 @@ sequenceDiagram
 1. Pengguna menekan "Lupa Password" dan memasukkan email terdaftar.
 2. Sistem membuat permintaan reset berstatus `Menunggu` dan menotifikasi Administrator (in-app + push).
 3. Administrator membuka daftar permintaan dan **memverifikasi identitas pemohon melalui salah satu kanal terverifikasi** yang ditetapkan sekolah: tatap muka dengan menunjukkan kartu identitas pegawai/siswa, atau konfirmasi oleh atasan langsung/wali kelas. Administrator mencatat metode verifikasi yang dipakai.
-4. Administrator menekan "Terbitkan Password Sementara". Sistem menghasilkan password sementara acak dan menampilkannya **satu kali** kepada Administrator, serta menandai akun `must_change_password = true`.
+4. Administrator menekan "Terbitkan Password Sementara". Sistem menghasilkan password sementara acak dan menampilkannya **satu kali** kepada Administrator, serta menandai akun `must_change_password = true`. Sistem juga mencabut seluruh sesi aktif pemilik akun dan menghapus penguncian loginnya (identitas sudah diverifikasi luring).
 5. Administrator menyerahkan password sementara secara **langsung kepada pemohon** (tatap muka atau kanal yang telah diverifikasi pada langkah 3). Dilarang menyerahkan melalui pesan instan atau pihak ketiga.
 6. Pengguna login dengan password sementara dan wajib menggantinya sebelum dapat mengakses menu apa pun.
 
 **Alternative Flow**
-- **A1 — Email tidak terdaftar:** Sistem tetap menampilkan pesan netral "Permintaan diterima" untuk mencegah enumerasi akun dan tidak membuat permintaan.
+- **A1 — Email tidak terdaftar:** Sistem tetap menampilkan pesan netral "Permintaan diterima" untuk mencegah enumerasi akun dan tidak membuat permintaan. Berlaku sama untuk akun nonaktif dan untuk permintaan yang melebihi batas A4: jawabannya (status dan badan) tidak dapat dibedakan dari permintaan yang dibuat.
 - **A2 — Administrator menolak permintaan:** Permintaan ditandai `Ditolak` beserta alasan; pemohon dinotifikasi **setelah** ia berhasil login kembali, atau diberitahu secara luring.
-- **A3 — Password sementara tidak digunakan dalam 72 jam:** Password kedaluwarsa dan permintaan ditutup otomatis.
-- **A4 — Pemohon mengajukan reset berulang kali:** Maksimum 3 permintaan aktif per akun per 24 jam; kelebihannya ditolak dan dicatat sebagai anomali keamanan.
+- **A3 — Password sementara tidak digunakan dalam 72 jam:** Password kedaluwarsa dan permintaan ditutup otomatis. Kedaluwarsa ditegakkan saat login: password sementara yang lewat 72 jam ditolak seperti password salah dan permintaannya ditutup `Kedaluwarsa`; antrean Administrator menampilkan status yang sama.
+- **A4 — Pemohon mengajukan reset berulang kali:** Maksimum 3 permintaan per akun per 24 jam (dihitung sejak diajukan, apa pun statusnya); yang ke-4 tetap dijawab netral (A1) tetapi tidak dibuat, dan dicatat sebagai anomali keamanan (`PASSWORD_RESET_REQUESTED` dengan hasil `Gagal`).
+- **A5 — Reset langsung dari detail pengguna:** Administrator dapat menerbitkan password sementara dari halaman detail pengguna tanpa menunggu permintaan pemohon. Metode verifikasi identitas tetap wajib dan tercatat pada permintaan yang dibuat — atau pada permintaan `Menunggu` akun itu, bila ada, yang lalu diselesaikan (tidak ada permintaan ganda).
 
 **Post Conditions** — Pengguna dapat mengakses kembali akunnya dengan password baru pilihannya; metode verifikasi identitas tercatat.
 
@@ -167,6 +168,9 @@ sequenceDiagram
 - [ ] Pengguna tidak dapat mengakses menu apa pun sebelum mengganti password sementara.
 - [ ] Metode verifikasi identitas wajib dipilih sebelum penerbitan dan tersimpan pada permintaan.
 - [ ] Seluruh permintaan dan tindakan reset tercatat di activity log tanpa merekam nilai password.
+- [ ] Jawaban "Lupa Password" identik untuk email terdaftar, tak terdaftar, akun nonaktif, dan permintaan yang melebihi batas.
+- [ ] Menerbitkan password sementara mencabut seluruh sesi aktif pemilik akun dan membuka penguncian loginnya.
+- [ ] Password sementara yang tidak dipakai dalam 72 jam ditolak saat login.
 
 ### FR-01.4 Ganti Password & Kelola Profil
 
@@ -278,7 +282,10 @@ sequenceDiagram
 | POST | `/auth/logout-all` | Bearer | Keluar dari semua perangkat: mencabut seluruh sesi pengguna | 204 | 401 |
 | GET | `/auth/sessions` | Bearer | Daftar sesi (perangkat) aktif milik pengguna | 200 `[{id, platform, ip, user_agent, dibuat_pada, terakhir_diperbarui, berlaku_sampai, saat_ini}]` | 401 |
 | DELETE | `/auth/sessions/{id}` | Bearer | Mencabut satu sesi milik pengguna sendiri | 204 | 400, 401, 403 |
-| POST | `/auth/password/forgot` | Publik | Ajukan permintaan reset | 202 `{message}` | 429 |
+| POST | `/auth/password/forgot` | Publik | Ajukan permintaan reset; jawaban netral untuk email apa pun (`FR-01.3 A1`) | 202 `{message}` | 400, 429 |
+| GET | `/auth/password/requests` | `user.reset_password` | Antrean permintaan reset (filter status; memuat identitas pemohon untuk verifikasi luring) | 200 daftar terpaginasi | 401, 403 |
+| POST | `/auth/password/requests/{id}/issue` | `user.reset_password` | Terbitkan password sementara; `metode_verifikasi` wajib; password tampil **satu kali** pada respons | 200 `{permintaan, password_sementara}` | 400, 401, 403, 404, 422 |
+| POST | `/auth/password/requests/{id}/reject` | `user.reset_password` | Tolak permintaan; `alasan` wajib (`FR-01.3 A2`) | 200 `{permintaan}` | 400, 401, 403, 404, 422 |
 | POST | `/auth/password/change` | Bearer | Ganti password sendiri | 200 | 401, 422 |
 | GET | `/me` | Bearer | Profil & permission pengguna | 200 `{user, permissions}` | 401 |
 | PUT | `/me` | Bearer | Perbarui profil sendiri | 200 | 401, 422 |
@@ -292,7 +299,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **password_reset_requests** | Permintaan reset password | id, user_id, status, metode_verifikasi, diminta_pada, diproses_oleh, diproses_pada, kedaluwarsa_pada | ± 100 |
+| **password_reset_requests** | Permintaan reset password | id, user_id, status, metode_verifikasi, diminta_pada, diproses_oleh, diproses_pada, kedaluwarsa_pada, alasan_penolakan | ± 100 |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
 
@@ -328,7 +335,7 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | `REFRESH_TOKEN_REUSE_DETECTED` | Refresh token yang sudah dirotasi dipakai ulang; seluruh rantai dicabut. Termasuk IP dan perangkat |
 | `ACCOUNT_LOCKED` / `ACCOUNT_UNLOCKED` | Penguncian akibat percobaan gagal (kegagalan ke-5 dalam jendela 15 menit). Kunci yang berakhir sendiri tidak menulis entri |
 | `PASSWORD_CHANGED` | Tanpa merekam nilai password |
-| `PASSWORD_RESET_REQUESTED` / `PASSWORD_RESET_ISSUED` / `PASSWORD_RESET_REJECTED` | Alur reset administratif |
+| `PASSWORD_RESET_REQUESTED` / `PASSWORD_RESET_ISSUED` / `PASSWORD_RESET_REJECTED` | Alur reset administratif. `PASSWORD_RESET_REQUESTED` dicatat tanpa pelaku (pemohon belum login; akun sasaran pada entitas), juga untuk percobaan yang tidak menghasilkan permintaan — email tak terdaftar, akun nonaktif, melebihi batas — dengan hasil `Gagal` dan tanpa menyimpan email yang dicoba. `PASSWORD_RESET_ISSUED` memuat metode verifikasi dan jumlah sesi yang dicabut. Tidak satu pun memuat password |
 | `TWO_FA_ENABLED` / `TWO_FA_DISABLED` / `TWO_FA_RESET` | Perubahan 2FA |
 | `TWO_FA_BACKUP_CODE_USED` | Pemakaian kode cadangan, termasuk sisa kode |
 | `ADMIN_BREAK_GLASS_RECOVERY` | Pemulihan darurat Administrator via CLI (FR-01.6); pelaku `SYSTEM:CLI` |

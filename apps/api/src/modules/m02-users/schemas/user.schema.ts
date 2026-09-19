@@ -119,3 +119,24 @@ export const ListUsersResponseSchema = z.object({
     data: z.array(UserSchema),
     meta: PaginationMetaSchema,
 });
+
+/**
+ * `POST /users/{id}/reset-password`: metode verifikasi identitas WAJIB dipilih sebelum penerbitan
+ * (FR-01.3 AC). Kodenya PRD Bab 11.3 "Metode Verifikasi Identitas" — dimiliki M-01, diulang di sini
+ * karena modul tidak berbagi skema.
+ */
+export const ResetPasswordBodySchema = z.object({
+    metode_verifikasi: z.enum(["KARTU_IDENTITAS_TATAP_MUKA", "KONFIRMASI_ATASAN_ATAU_WALI_KELAS"]),
+});
+
+export const ResetPasswordResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.object({
+        user_id: z.string(),
+        permintaan_id: z.string(),
+        /** Tampil SATU kali dan tak dapat dibaca ulang, termasuk oleh Administrator penerbitnya. */
+        password_sementara: z.string(),
+        berlaku_sampai: z.string(),
+    }),
+    meta: z.null(),
+});

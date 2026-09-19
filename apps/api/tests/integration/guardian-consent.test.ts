@@ -24,6 +24,7 @@ import { FixedClock } from "../../src/shared/clock/index.js";
 import { getDb } from "../../src/shared/db/index.js";
 import { Logger } from "../../src/shared/observability/index.js";
 import { dbmate, kueri } from "../helpers/db.js";
+import { penerbitPalsu } from "../helpers/auth.js";
 
 const ADA_DB = process.env["DATABASE_URL"] !== undefined;
 const T1 = new Date("2026-09-19T03:00:00Z");
@@ -271,7 +272,7 @@ describe.skipIf(!ADA_DB)("PR-01-14 — gerbang persetujuan wali (acceptance)", (
             const batasi = (): RequestHandler => (_req, _res, next) => next();
             app.use(
                 "/api/v1",
-                usersRouter({ db: getDb(), auditLogger: audit(), logger: logger(), clock: new FixedClock(T1) }, batasi, authorize),
+                usersRouter({ db: getDb(), penerbitPassword: penerbitPalsu, auditLogger: audit(), logger: logger(), clock: new FixedClock(T1) }, batasi, authorize),
             );
             app.use(
                 ujungRantai({

@@ -16,6 +16,7 @@ export {
     importUsersRoute,
     listRolesRoute,
     listUsersRoute,
+    resetUserPasswordRoute,
     updateRolePermissionsRoute,
     updateUserRoute,
     updateUserStatusRoute,

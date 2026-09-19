@@ -151,7 +151,7 @@ describe("sigm4-api — /api/v1/health/*", () => {
         });
     });
 
-    it("registri proses: probe publik, ringkasan, CRUD pengguna (PR-01-02), impor massal (PR-01-03), matriks permission (PR-01-04), skema lokasi (PR-01-05), pohon+penonaktifan (PR-01-06), daftar aset per lokasi (PR-01-07), penelusuran (PR-01-08), ekspor activity log (PR-01-09), parameter sistem (PR-01-10), kenaikan kelas massal (PR-01-13), pengambilan pekerjaan impor pengguna (PR-01-17), serta master data Lampiran E — tahun ajaran, hari libur, hari kerja, unit kerja (PR-01-18) berpermission, serta login/refresh publik (PR-02-02) dan logout + sesi berautentikasi saja (PR-02-04)", () => {
+    it("registri proses: probe publik, ringkasan, CRUD pengguna (PR-01-02), impor massal (PR-01-03), matriks permission (PR-01-04), skema lokasi (PR-01-05), pohon+penonaktifan (PR-01-06), daftar aset per lokasi (PR-01-07), penelusuran (PR-01-08), ekspor activity log (PR-01-09), parameter sistem (PR-01-10), kenaikan kelas massal (PR-01-13), pengambilan pekerjaan impor pengguna (PR-01-17), serta master data Lampiran E — tahun ajaran, hari libur, hari kerja, unit kerja (PR-01-18) berpermission, serta login/refresh publik (PR-02-02) dan logout + sesi berautentikasi saja (PR-02-04), serta reset password administratif (PR-02-05)", () => {
         expect(registry.all().map((r) => `${r.method} ${r.path}`)).toEqual([
             "GET /health/live",
             "GET /health/ready",
@@ -162,11 +162,16 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "POST /auth/logout-all",
             "GET /auth/sessions",
             "DELETE /auth/sessions/:id",
+            "POST /auth/password/forgot",
+            "GET /auth/password/requests",
+            "POST /auth/password/requests/:id/issue",
+            "POST /auth/password/requests/:id/reject",
             "GET /users",
             "POST /users",
             "GET /users/:id",
             "PUT /users/:id",
             "PATCH /users/:id/status",
+            "POST /users/:id/reset-password",
             "POST /users/import",
             "GET /users/import/:id",
             "GET /roles",
@@ -204,6 +209,7 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "GET /health/ready",
             "POST /auth/login",
             "POST /auth/refresh",
+            "POST /auth/password/forgot",
         ]);
         // Endpoint "Bearer" (SDD-AUTH-12): tanpa permission, tanpa public — daftar pendek yang dapat ditinjau.
         expect(registry.authenticatedRoutes().map((r) => `${r.method} ${r.path}`)).toEqual([
@@ -214,11 +220,15 @@ describe("sigm4-api — /api/v1/health/*", () => {
         ]);
         expect(registry.guarded().map((r) => r.permission)).toEqual([
             "setting.view",
+            "user.reset_password",
+            "user.reset_password",
+            "user.reset_password",
             "user.view",
             "user.create",
             "user.view",
             "user.update",
             "user.update",
+            "user.reset_password",
             "user.create",
             "user.create",
             "role.view",
@@ -262,9 +272,14 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "/api/v1/auth/logout-all",
             "/api/v1/auth/sessions",
             "/api/v1/auth/sessions/{id}",
+            "/api/v1/auth/password/forgot",
+            "/api/v1/auth/password/requests",
+            "/api/v1/auth/password/requests/{id}/issue",
+            "/api/v1/auth/password/requests/{id}/reject",
             "/api/v1/users",
             "/api/v1/users/{id}",
             "/api/v1/users/{id}/status",
+            "/api/v1/users/{id}/reset-password",
             "/api/v1/users/import",
             "/api/v1/users/import/{id}",
             "/api/v1/roles",

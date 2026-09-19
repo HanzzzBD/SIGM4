@@ -22,3 +22,4 @@ export {
     bentukRefreshTokenSah,
     hashRefreshToken,
 } from "./refresh-token.js";
+export { generateTemporaryPassword } from "./temporary-password.js";
