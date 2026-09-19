@@ -58,7 +58,11 @@ import {
     updateRoomStatusRoute,
 } from "../modules/m03-locations/index.js";
 import { assetsRouter, listRoomAssetsRoute } from "../modules/m04-assets/index.js";
-import { activityLogRouter, listActivityLogsRoute } from "../modules/m18-activity-log/index.js";
+import {
+    activityLogRouter,
+    exportActivityLogsRoute,
+    listActivityLogsRoute,
+} from "../modules/m18-activity-log/index.js";
 import {
     healthLiveRoute,
     healthReadyRoute,
@@ -99,6 +103,7 @@ export const registry = new RouteRegistry().register(
     updateRoomStatusRoute,
     listRoomAssetsRoute,
     listActivityLogsRoute,
+    exportActivityLogsRoute,
 );
 
 /**

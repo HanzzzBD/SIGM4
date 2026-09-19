@@ -49,9 +49,8 @@ export interface ActivityLogRow {
     readonly request_id: string | null;
 }
 
-export interface ListActivityLogsFilter {
-    readonly page: number;
-    readonly perPage: number;
+/** Filter kombinasi, dipakai bersama daftar (paginasi) dan ekspor (utuh). */
+export interface ActivityLogFilter {
     readonly dari?: Date;
     readonly sampai?: Date;
     readonly userId?: number;
@@ -60,6 +59,11 @@ export interface ListActivityLogsFilter {
     readonly aksi?: string;
     readonly entitas?: string;
     readonly entitasId?: number;
+}
+
+export interface ListActivityLogsFilter extends ActivityLogFilter {
+    readonly page: number;
+    readonly perPage: number;
 }
 
 export interface ListActivityLogsResult {
@@ -72,37 +76,54 @@ export class ActivityLogRepository extends BaseRepository {
         super(executor);
     }
 
+    private dasar(ctx: AuthContext, filter: ActivityLogFilter) {
+        let q = this.query(ctx).selectFrom("activity_logs");
+        if (filter.dari !== undefined) q = q.where("waktu", ">=", filter.dari);
+        if (filter.sampai !== undefined) q = q.where("waktu", "<=", filter.sampai);
+        if (filter.userId !== undefined) q = q.where("user_id", "=", String(filter.userId));
+        if (filter.role !== undefined) q = q.where("role", "=", filter.role);
+        if (filter.modul !== undefined) q = q.where("modul", "=", filter.modul);
+        if (filter.aksi !== undefined) q = q.where("aksi", "=", filter.aksi);
+        if (filter.entitas !== undefined) q = q.where("entitas", "=", filter.entitas);
+        if (filter.entitasId !== undefined)
+            q = q.where("entitas_id", "=", String(filter.entitasId));
+        return q;
+    }
+
     /** FR-18.2 langkah 2-3: terurut terbaru, terpaginasi, filter dapat digabung. */
     async list(ctx: AuthContext, filter: ListActivityLogsFilter): Promise<ListActivityLogsResult> {
-        const eksekutor = this.query(ctx);
-        const dasar = () => {
-            let q = eksekutor.selectFrom("activity_logs");
-            if (filter.dari !== undefined) q = q.where("waktu", ">=", filter.dari);
-            if (filter.sampai !== undefined) q = q.where("waktu", "<=", filter.sampai);
-            if (filter.userId !== undefined) q = q.where("user_id", "=", String(filter.userId));
-            if (filter.role !== undefined) q = q.where("role", "=", filter.role);
-            if (filter.modul !== undefined) q = q.where("modul", "=", filter.modul);
-            if (filter.aksi !== undefined) q = q.where("aksi", "=", filter.aksi);
-            if (filter.entitas !== undefined) q = q.where("entitas", "=", filter.entitas);
-            if (filter.entitasId !== undefined)
-                q = q.where("entitas_id", "=", String(filter.entitasId));
-            return q;
-        };
-
         const [rows, hitung] = await Promise.all([
-            dasar()
+            this.dasar(ctx, filter)
                 .select(KOLOM_LOG)
                 .orderBy("waktu", "desc")
                 .orderBy("id", "desc")
                 .limit(filter.perPage)
                 .offset((filter.page - 1) * filter.perPage)
                 .execute(),
-            dasar()
+            this.dasar(ctx, filter)
                 .select(sql<string>`count(*)`.as("total"))
                 .executeTakeFirst(),
         ]);
 
         return { rows, total: Number(hitung?.total ?? 0) };
+    }
+
+    /**
+     * FR-18.2 langkah 5: hasil filter UTUH, tanpa paginasi, terbatas `batas`
+     * baris (`batas + 1` diminta pemanggil untuk mendeteksi kelebihan —
+     * `BATAS_EKSPOR`, SDD-PERF-06).
+     */
+    async listForExport(
+        ctx: AuthContext,
+        filter: ActivityLogFilter,
+        batas: number,
+    ): Promise<readonly ActivityLogRow[]> {
+        return this.dasar(ctx, filter)
+            .select(KOLOM_LOG)
+            .orderBy("waktu", "desc")
+            .orderBy("id", "desc")
+            .limit(batas)
+            .execute();
     }
 }
 

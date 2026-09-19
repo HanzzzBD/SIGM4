@@ -48,6 +48,8 @@ interface RouteBase {
     readonly params?: ZodType;
     readonly body?: ZodType;
     readonly response: ZodType;
+    /** Tipe media respons sukses bila BUKAN `application/json` (mis. ekspor berkas biner). */
+    readonly contentType?: string;
     /** `ID-01`: route tulis yang menuntut `Idempotency-Key`. Middleware-nya `PR-00-10`. */
     readonly idempotent?: boolean;
     readonly summary?: string;

@@ -147,4 +147,22 @@ describe("buildOpenApiDocument", () => {
     it("menghasilkan OpenAPI 3.1", () => {
         expect(dokumen(showAsset).openapi).toBe("3.1.0");
     });
+
+    it("route.contentType menggantikan application/json bawaan (PR-01-09, ekspor biner)", () => {
+        const exportXlsx = defineRoute({
+            method: "GET",
+            path: "/activity-logs/export",
+            permission: "activity_log.export",
+            rateLimitClass: "export",
+            module: "m18-activity-log",
+            response: z.string(),
+            contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+        const op = dokumen(exportXlsx).paths["/api/v1/activity-logs/export"]!["get"]!;
+        const skema = op["responses"] as Record<string, Record<string, unknown>>;
+        const konten = skema["200"]!["content"] as Record<string, unknown>;
+        expect(Object.keys(konten)).toEqual([
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ]);
+    });
 });
