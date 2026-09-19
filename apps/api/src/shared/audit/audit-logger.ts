@@ -110,6 +110,20 @@ export class AuditLogger {
         );
     }
 
+    /**
+     * Mencatat peristiwa yang pelakunya BELUM diautentikasi (`AL-02`, `AL-07`) — percobaan
+     * login gagal. `user_id`, nama, dan role dikosongkan: yang mencoba bukan pemilik akun
+     * yang ditarget, sehingga sasaran dicatat pada `entitas`/`entitasId`, bukan sebagai pelaku.
+     */
+    async writeAnonim(tx: Transaction<Database>, entry: AuditEntry): Promise<boolean> {
+        return this.simpan(tx, entry, {
+            userId: null,
+            userNama: null,
+            role: null,
+            requestId: konteksSaatIni()?.requestId ?? null,
+        });
+    }
+
     private async simpan(
         tx: Transaction<Database>,
         entry: AuditEntry,

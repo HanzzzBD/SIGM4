@@ -347,8 +347,9 @@ describe.skipIf(!ADA)("PR-02-02 — login + rotasi refresh token (PostgreSQL + R
             expect(ditutup.status).toBe(429);
             expect(ditutup.json.error?.code).toBe("RATE_LIMIT_EXCEEDED");
             expect(ditutup.headers.get("retry-after")).not.toBeNull();
-            // IP lain tidak terdampak.
-            const lain = await kirim(urlBatas, "/auth/login", { email, password: PASSWORD, platform: "ANDROID" }, { "x-forwarded-for": ipUnik() });
+            // IP lain tidak terdampak — dengan akun LAIN: lima kegagalan tadi juga mengunci akun `email` (PR-02-03).
+            const akunLain = await seed();
+            const lain = await kirim(urlBatas, "/auth/login", { email: akunLain.email, password: PASSWORD, platform: "ANDROID" }, { "x-forwarded-for": ipUnik() });
             expect(lain.status).toBe(200);
         });
     });

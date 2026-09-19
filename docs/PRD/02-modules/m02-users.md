@@ -127,7 +127,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, work_unit_id, telepon, foto, status, totp_enabled_at, must_change_password, login_terakhir_pada, consent_guardian_at | Administrator |
+| **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, work_unit_id, telepon, foto, status, totp_enabled_at, must_change_password, login_terakhir_pada, failed_login_count, failed_login_window_start, locked_until, consent_guardian_at | Administrator |
 | **student_enrollments** | Kelas siswa per tahun ajaran (Lampiran E.4, `SL-01`) — bukan atribut permanen akun | id, user_id, academic_year_id, kelas_id (unit kerja berjenis Kelas), lulus | Administrator |
 | **user_import_jobs** | Pekerjaan impor pengguna — setiap impor, sinkron maupun asinkron (`IMPT-02`, `IMPT-03`, `IMPT-04`) | id, file_hash, nama_berkas, status, total_baris, baris_terproses, sukses, gagal, laporan_gagal (hanya baris gagal: nomor baris, email, alasan), pesan_galat, selesai_pada | Administrator |
 | **roles** | Peran pengguna | id, nama, deskripsi, is_system | Administrator |

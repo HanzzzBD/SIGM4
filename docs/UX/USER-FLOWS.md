@@ -62,8 +62,7 @@ flowchart TD
 
     D --> E["Masukkan email & password"]
     E --> F{Validasi}
-    F -->|"Salah - 401"| G["Pesan generik<br/>tidak membocorkan email terdaftar"] --> E
-    F -->|"5x gagal - 423"| H["Akun terkunci<br/>tampilkan sisa waktu · FR-01.1 A2"] --> D
+    F -->|"Salah atau terkunci - 401"| G["Pesan generik yang sama<br/>tidak membocorkan email terdaftar<br/>maupun status terkunci · FR-01.1 A1/A2"] --> E
     F -->|"Nonaktif - 403"| I["Hubungi Administrator<br/>FR-01.1 A3"] --> D
     F -->|Benar| K{Role wajib 2FA?}
 
@@ -76,7 +75,7 @@ flowchart TD
     L1 -->|Ya| N
 
     M --> M1{Kode benar?}
-    M1 -->|"Salah 5x"| H
+    M1 -->|"Salah 5x - 423"| H["Akun terkunci<br/>sisa waktu boleh ditampilkan: password sudah terbukti benar · FR-01.5 A1"] --> D
     M1 -->|"Kode cadangan dipakai"| M2["Peringatan bila sisa kurang dari 3<br/>FR-01.5 AC"] --> N
     M1 -->|Ya| N
 
