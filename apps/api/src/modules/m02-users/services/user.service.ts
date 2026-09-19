@@ -5,6 +5,8 @@
 import type { Kysely } from "kysely";
 import type { AuthContext } from "../../../shared/auth/index.js";
 import type { AuditLogger } from "../../../shared/audit/index.js";
+import type { Clock } from "../../../shared/clock/index.js";
+import { SystemClock } from "../../../shared/clock/index.js";
 import type { Database } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
 import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
@@ -39,6 +41,12 @@ export interface CreateUserInput {
     readonly roleId: number;
     readonly workUnitId: number | null;
     readonly telepon: string | null;
+    /**
+     * DP-02: "persetujuan wali sudah dikumpulkan sekolah". Hanya bermakna bagi akun
+     * Siswa/OSIS. Pada `create` wajib `true` untuk siswa; pada `update` `true` merekam
+     * penanda bila belum ada, sedangkan `false`/kosong TIDAK mencabutnya.
+     */
+    readonly consentWali?: boolean;
 }
 
 export type UpdateUserInput = CreateUserInput;
@@ -76,6 +84,11 @@ async function pastikanUnitKerjaDapatDipakai(
     }
 }
 
+/** DP-02, SL-06: akun siswa tidak dapat dibuat/diaktifkan tanpa `consent_guardian_at`. */
+function tolakTanpaPersetujuanWali(pesan: string): never {
+    throw new DomainError("VALIDATION_ERROR", pesan, { rule: "DP-02", field: "consent_wali" });
+}
+
 function tolakDuplikat(field: "email" | "nip_nis"): never {
     const pesan =
         field === "email" ? "Email sudah digunakan." : "NIP/NIS sudah digunakan.";
@@ -87,6 +100,7 @@ export class UserService {
         private readonly db: Kysely<Database>,
         private readonly audit: AuditLogger,
         private readonly obligations: StudentObligationRegistry = studentObligations,
+        private readonly clock: Clock = new SystemClock(),
     ) {}
 
     async list(ctx: AuthContext, filter: ListUsersFilter): Promise<ListUsersResult> {
@@ -112,6 +126,15 @@ export class UserService {
                 if (input.workUnitId !== null)
                     await pastikanUnitKerjaDapatDipakai(repo, scope.ctx, input.workUnitId);
 
+                // DP-02: akun lahir AKTIF, jadi membuat akun siswa = mengaktifkannya.
+                const siswa =
+                    (await repo.findRoleKodeById(scope.ctx, input.roleId)) === KODE_ROLE_SISWA;
+                if (siswa && input.consentWali !== true) {
+                    tolakTanpaPersetujuanWali(
+                        "Akun siswa tidak dapat dibuat: persetujuan wali belum terekam (DP-02).",
+                    );
+                }
+
                 const passwordSementara = generateTemporaryPassword({
                     nama: input.nama,
                     email: input.email,
@@ -127,6 +150,8 @@ export class UserService {
                     workUnitId: input.workUnitId,
                     telepon: input.telepon,
                     passwordHash,
+                    // Cap waktu dari Clock (SDD-SYS-07); klien tidak pernah menentukannya.
+                    consentGuardianAt: siswa ? this.clock.now() : null,
                 });
 
                 await this.audit.write(scope, {
@@ -174,7 +199,25 @@ export class UserService {
                 )
                     await pastikanUnitKerjaDapatDipakai(repo, scope.ctx, input.workUnitId);
 
-                const after = await repo.update(scope.ctx, id, input);
+                // DP-02: penanda hanya direkam sekali dan tidak pernah dicabut; mengganti
+                // role menjadi Siswa tanpa penanda sama dengan membuat akun siswa aktif tanpanya.
+                let konsenBaru: Date | undefined;
+                if (
+                    (await repo.findRoleKodeById(scope.ctx, input.roleId)) === KODE_ROLE_SISWA &&
+                    before.consent_guardian_at === null
+                ) {
+                    if (input.consentWali === true) konsenBaru = this.clock.now();
+                    else if (String(input.roleId) !== before.role_id) {
+                        tolakTanpaPersetujuanWali(
+                            "Role tidak dapat diganti menjadi Siswa/OSIS: persetujuan wali belum terekam (DP-02).",
+                        );
+                    }
+                }
+
+                const after = await repo.update(scope.ctx, id, {
+                    ...input,
+                    consentGuardianAt: konsenBaru,
+                });
 
                 await this.audit.write(scope, {
                     modul: MODUL,
@@ -204,6 +247,16 @@ export class UserService {
                 const before = await repo.findById(scope.ctx, id);
                 if (before === undefined)
                     throw new NotFoundError("Pengguna tidak ditemukan.");
+
+                // SL-06, DP-02: mengaktifkan kembali akun siswa menuntut penanda persetujuan wali.
+                if (input.status === "AKTIF" && before.status === "NONAKTIF") {
+                    const rolKode = await repo.findRoleKode(scope.ctx, id);
+                    if (rolKode === KODE_ROLE_SISWA && before.consent_guardian_at === null) {
+                        tolakTanpaPersetujuanWali(
+                            `Akun siswa ${before.nama} tidak dapat diaktifkan: persetujuan wali belum terekam (DP-02).`,
+                        );
+                    }
+                }
 
                 if (input.status === "NONAKTIF" && before.status === "AKTIF") {
                     const rolKode = await repo.findRoleKode(scope.ctx, id);

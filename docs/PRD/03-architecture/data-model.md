@@ -6,7 +6,7 @@ Data induk yang relatif stabil dan menjadi acuan seluruh transaksi.
 
 | Entitas | Deskripsi | Atribut Utama | Pemilik Data |
 |---|---|---|---|
-| **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, work_unit_id, telepon, foto, status, totp_enabled_at, must_change_password, login_terakhir_pada | Administrator |
+| **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, work_unit_id, telepon, foto, status, totp_enabled_at, must_change_password, login_terakhir_pada, consent_guardian_at | Administrator |
 | **roles** | Peran pengguna | id, nama, deskripsi, is_system | Administrator |
 | **permissions** | Daftar hak akses granular | id, modul, aksi, kode | Sistem |
 | **role_permissions** | Relasi role–permission | role_id, permission_id | Administrator |
@@ -245,6 +245,7 @@ erDiagram
         enum status
         datetime totp_enabled_at
         datetime login_terakhir_pada
+        datetime consent_guardian_at
     }
 
     ASSETS {

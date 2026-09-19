@@ -4,6 +4,7 @@ import express from "express";
 import type { RequestHandler, Router } from "express";
 import type { Kysely } from "kysely";
 import type { AuditLogger } from "../../shared/audit/index.js";
+import type { Clock } from "../../shared/clock/index.js";
 import type { Database } from "../../shared/db/index.js";
 import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
@@ -169,6 +170,8 @@ export interface UsersModuleDeps {
     readonly db: Kysely<Database>;
     readonly auditLogger: AuditLogger;
     readonly logger: Logger;
+    /** Cap waktu penanda persetujuan wali (SDD-SYS-07). Bawaan `SystemClock`. */
+    readonly clock?: Clock;
 }
 
 /**
@@ -181,7 +184,7 @@ export function usersRouter(
     batasi: (route: RouteDefinition) => RequestHandler,
     otorisasi: (permission: string) => RequestHandler,
 ): Router {
-    const service = new UserService(deps.db, deps.auditLogger);
+    const service = new UserService(deps.db, deps.auditLogger, undefined, deps.clock);
     const importService = new UserImportService(
         deps.db,
         service,

@@ -122,7 +122,6 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 | `PR-05-23` | QR bahan per jenis + pemindaian | S | S | 16, Ph03 | `BR-090`, `FR-05.1` `FR-05.2` | QR bahan membuka halaman bahan, tidak pernah dibaca sebagai unit aset; payload memakai `APP_BASE_URL` yang sama dengan `PR-03-01` |
 | `PR-05-24` | Opname bahan: sesi domain `BAHAN` + layar mobile `MS-22`/`MS-23` | L | L | 17, Ph04 | `FR-13.4`, `BR-093` `BR-094` `BR-095`, `MOB-PERF-06` | Sesi campur domain ditolak; saldo berubah hanya setelah disetujui Pimpinan |
 | `PR-05-25` | Tool chatbot bahan: `get_material_stock` + `get_low_stock_materials` | S | S | 17, 22, Ph03 | 22.3, `BR-075` `BR-076`, `SDD-AUTH-07`, `SDD-AI-13`, `AI-SEC-03` | Kedua tool memanggil repository M-22 dengan `AuthContext` penanya; role tanpa hak atas M-22 menerima hasil kosong, bukan galat. Awalan statis terbentuk ulang dan `usage.total_cached_tokens > 0` pada permintaan kedua setelah rilis |
-
 | `PR-05-26` | Pseudonimisasi akun (`DP-04`, `DP-10`, `SL-05`) *(baru, keputusan 31 log phase-01)* | M | M | 09, Ph01 | `DP-04`, `DP-10`, `SL-05`, `SDD-SEC-08`, `DP-05a` | Identitas akun diganti penanda satu arah; baris transaksi dan activity log tetap; akun yang masih berkewajiban dikecualikan; foto berwajah dipertahankan sebagai bukti |
 
 ## 8. Task Breakdown

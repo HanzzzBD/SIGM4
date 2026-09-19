@@ -3,6 +3,8 @@
 
 import { describe, expect, it } from "vitest";
 import { ClassPromotionBodySchema } from "../../../src/modules/m02-users/schemas/class-promotion.schema.js";
+import { ImportUserRowSchema } from "../../../src/modules/m02-users/schemas/user-import.schema.js";
+import { CreateUserBodySchema } from "../../../src/modules/m02-users/schemas/user.schema.js";
 import { tanggalWib } from "../../../src/modules/m02-users/services/graduation.service.js";
 import { StudentObligationRegistry } from "../../../src/modules/m02-users/services/student-obligation-registry.js";
 import type { TransactionScope } from "../../../src/shared/db/index.js";
@@ -66,5 +68,25 @@ describe("tanggalWib (CAL-03)", () => {
         // 17:30 UTC tanggal 30 = 00:30 WIB tanggal 1 berikutnya.
         expect(tanggalWib(new Date("2021-06-30T17:30:00Z"))).toBe("2021-07-01");
         expect(tanggalWib(new Date("2021-06-30T16:59:00Z"))).toBe("2021-06-30");
+    });
+});
+
+describe("consent_wali (DP-02, SL-06)", () => {
+    const dasar = { nama: "A", email: "a@sekolah.sch.id", nip_nis: "1", role_id: 7 };
+
+    it("CreateUserBodySchema menerima consent_wali boolean dan menolak yang bukan boolean", () => {
+        expect(CreateUserBodySchema.parse({ ...dasar, consent_wali: true }).consent_wali).toBe(true);
+        expect(CreateUserBodySchema.parse(dasar).consent_wali).toBeUndefined();
+        expect(() => CreateUserBodySchema.parse({ ...dasar, consent_wali: "ya" })).toThrow();
+    });
+
+    it("impor E.5.2: 'true'/'TRUE'/' true ' → true, 'false' → false, kosong → tidak diisi, isian lain ditolak", () => {
+        const baris = { nama_lengkap: "A", email: "a@sekolah.sch.id", nip_nis: "1", kode_role: "R-07" };
+        expect(ImportUserRowSchema.parse({ ...baris, consent_wali: "true" }).consent_wali).toBe(true);
+        expect(ImportUserRowSchema.parse({ ...baris, consent_wali: "TRUE" }).consent_wali).toBe(true);
+        expect(ImportUserRowSchema.parse({ ...baris, consent_wali: " true " }).consent_wali).toBe(true);
+        expect(ImportUserRowSchema.parse({ ...baris, consent_wali: "false" }).consent_wali).toBe(false);
+        expect(ImportUserRowSchema.parse(baris).consent_wali).toBeUndefined();
+        expect(() => ImportUserRowSchema.parse({ ...baris, consent_wali: "ya" })).toThrow();
     });
 });

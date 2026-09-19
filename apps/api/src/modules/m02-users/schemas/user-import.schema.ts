@@ -39,6 +39,12 @@ export const ImportUserRowSchema = z.object({
     // dapat diisi lewat aplikasi (keputusan 28 log phase-01), sehingga
     // mewajibkannya kini menggagalkan setiap baris impor.
     kode_unit_kerja: z.string().trim().min(1).max(100).optional(),
+    // E.5.2 `consent_wali`: wajib `true` untuk Siswa/OSIS (DP-02, SL-06) — ditegakkan service,
+    // karena bergantung pada role. CSV membawa teks, XLSX dapat membawa boolean.
+    consent_wali: z
+        .preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : v), z.enum(["true", "false"]).or(z.boolean()))
+        .transform((v) => v === true || v === "true")
+        .optional(),
     telepon: z.string().trim().min(1).max(20).optional(),
 });
 

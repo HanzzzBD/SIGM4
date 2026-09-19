@@ -26,6 +26,7 @@ function keUser(u: UserRow) {
         status: u.status,
         must_change_password: u.must_change_password,
         login_terakhir_pada: u.login_terakhir_pada,
+        consent_guardian_at: u.consent_guardian_at,
         created_at: u.created_at,
         updated_at: u.updated_at,
     };
@@ -71,6 +72,7 @@ export function createUserHandler(service: UserService): RequestHandler {
             nipNis: body.nip_nis,
             roleId: body.role_id,
             workUnitId: body.work_unit_id ?? null,
+            ...(body.consent_wali === undefined ? {} : { consentWali: body.consent_wali }),
             telepon: body.telepon ?? null,
         });
         res.status(201).json({
@@ -101,6 +103,7 @@ export function updateUserHandler(service: UserService): RequestHandler {
             nipNis: body.nip_nis,
             roleId: body.role_id,
             workUnitId: body.work_unit_id ?? null,
+            ...(body.consent_wali === undefined ? {} : { consentWali: body.consent_wali }),
             telepon: body.telepon ?? null,
         });
         res.status(200).json({ success: true, data: keUser(user), meta: null });

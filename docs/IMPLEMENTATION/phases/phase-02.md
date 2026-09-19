@@ -138,7 +138,6 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | `PR-02-29` | Kerangka dashboard + kartu per role | L | L | Ph01 | `FR-15.1`, `BR-073` `BR-074`, `SDD-PERF-03` | Kartu di luar permission tidak dirender **dan** tidak dikirim server |
 | `PR-02-30` | Kerangka aplikasi web: routing, state, render berbasis permission | L | L | Ph01 | `SDD-FE-01` … `SDD-FE-06`, `SDD-FE-11/12`, **UXD-12** | TanStack Query + primitif headless & token sendiri; satu set token warna — tanpa mode gelap |
 | `PR-02-31` | Daftar password bocor + riwayat 3 password terakhir | M | M | 06 | `NFR-S-03a`, `FR-01.4` | Password yang cocok daftar bocor ditolak; tiga password terakhir tidak dapat dipakai ulang; sumber daftar bocor ditetapkan di PR ini |
-
 | `PR-02-32` | `SystemAuthContext` + memasang pekerjaan `student-graduation` *(baru, keputusan 31 log phase-01)* | M | M | 02, Ph01 | `SDD-AUTH-05`, `AL-06`, `JOB-01` … `JOB-06`, `SL-03`, `DP-10` | Pelaku `SYSTEM` hanya dapat dibentuk dari luar siklus HTTP; lulusan dinonaktifkan otomatis setelah tahun ajaran berakhir dan tercatat sebagai `SYSTEM`; menyentuh lapisan `AuthContext` — tinjauan arsitek |
 
 ## 8. Task Breakdown
@@ -172,6 +171,10 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 - [ ] 1 baris terpengaruh → menang (200); 0 baris → kalah (409 `APPROVAL_ALREADY_DECIDED`)
 - [ ] Terbitkan event hanya di jalur yang menang
 - [ ] Uji konkurensi dua approver pada langkah yang sama
+
+### `PR-02-25` — Skema notifikasi + penerbitan
+- [ ] Pasang notifikasi milik M-02 yang **tertunda dari Phase 01** (keputusan 32 log phase-01): `NT-48` (penolakan mengaktifkan/membuat akun siswa tanpa `consent_guardian_at`, `DP-02`) dan `NT-40` (role/status akun berubah) — keduanya belum terbit sejak `PR-01-02`/`PR-01-14` karena modul notifikasi belum ada
+- [ ] `NT-48` **tidak dapat** terbit dari transaksi yang ditolak (rollback membuang outbox, `SDD-EVT-04`): terbitkan pada transaksi terpisah setelah penolakan, dan tambahkan event-nya ke katalog `SDD-07 §4.3`
 
 ### `PR-02-29` — Dashboard
 - [ ] Kartu dideklarasikan bersama permission yang diwajibkannya
