@@ -52,7 +52,7 @@ Aturan yang paling sering tergoda dilanggar: **IMPLEMENTATION menurunkan, tidak 
 | [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md) | Status **per phase dan per PR**. Status per requirement ada di [`traceability.md`](../PRD/06-quality/traceability.md) |
 | [`phases/`](phases/) | Sembilan berkas phase, masing-masing 12 bagian baku |
 | [`logs/`](logs/) | Sembilan log — apa yang **benar-benar terjadi**, bukan apa yang direncanakan |
-| [`templates/`](templates/) | Bentuk baku phase, PR, risiko, penempatan, rollback |
+| [`templates/`](templates/) | Bentuk baku phase, PR, risiko, penempatan, rollback; `templates/impor/` = templat impor pengguna untuk sekolah (`IMPT-05`, `IMP-02`), dibangkitkan `scripts/gen_template_pengguna.mjs` |
 | [`runbooks/`](runbooks/) | Langkah operasional yang menjembatani PR yang belum ada — mis. [`master-data-awal.md`](runbooks/master-data-awal.md) |
 | [`CHANGELOG.md`](CHANGELOG.md) | Riwayat perubahan dokumentasi implementasi |
 

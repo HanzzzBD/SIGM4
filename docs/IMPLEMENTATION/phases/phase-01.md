@@ -144,12 +144,12 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 
 ## 9. Acceptance Checklist
 
-- [ ] Seluruh AC pada `FR-02.1`, `FR-02.2`, `FR-03.1`, `FR-03.2`, `FR-18.1`, `FR-18.2`, `FR-20.1` terverifikasi
-- [ ] Uji otorisasi tergenerate lulus untuk keempat modul (`SEC-T-01`)
-- [ ] Impor 500 pengguna dengan laporan galat per baris (`IMPT-02`)
-- [ ] Perubahan matriks permission berlaku ≤ 60 detik tanpa restart (`PM-05`)
-- [ ] Setiap operasi tulis menghasilkan entri activity log (`AL-01`)
-- [ ] Akun siswa tanpa `consent_guardian_at` tidak dapat diaktifkan (`DP-02`)
+- [ ] Seluruh AC pada `FR-02.1`, `FR-02.2`, `FR-03.1`, `FR-03.2`, `FR-18.1`, `FR-18.2`, `FR-20.1` terverifikasi — *17 dari 25 terbukti, 3 sebagian, 5 ditunda ([log §9.2](../logs/phase-01.md))*
+- [x] Uji otorisasi tergenerate lulus untuk keempat modul (`SEC-T-01`)
+- [x] Impor 500 pengguna dengan laporan galat per baris (`IMPT-02`)
+- [x] Perubahan matriks permission berlaku ≤ 60 detik tanpa restart (`PM-05`)
+- [x] Setiap operasi tulis menghasilkan entri activity log (`AL-01`)
+- [x] Akun siswa tanpa `consent_guardian_at` tidak dapat diaktifkan (`DP-02`)
 
 ## 10. Risks
 
@@ -176,10 +176,10 @@ Mulai phase ini, aturan **expand→migrate→contract** berlaku penuh: tidak ada
 
 **Tambahan khusus phase ini:**
 
-- [ ] Empat modul dapat didemokan mandiri kepada Administrator sekolah
-- [ ] Template impor pengguna (Lampiran E.5.2) tersedia untuk diunduh (`IMPT-05`) — prasyarat `IMP-02`
-- [ ] Kalender akademik terisi untuk tahun ajaran berjalan (`AC-YR-01`)
-- [ ] Log phase terisi
+- [ ] Empat modul dapat didemokan mandiri kepada Administrator sekolah — *ditunda: menuntut UI dan staging*
+- [ ] Template impor pengguna (Lampiran E.5.2) tersedia untuk diunduh (`IMPT-05`) — prasyarat `IMP-02` — *berkas tersedia di [`templates/impor/`](../templates/impor/); tombol unduh menunggu `apps/web`*
+- [ ] Kalender akademik terisi untuk tahun ajaran berjalan (`AC-YR-01`) — *endpoint siap; data dimasukkan Administrator sekolah*
+- [x] Log phase terisi
 
 ---
 
