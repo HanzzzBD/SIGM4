@@ -58,7 +58,7 @@ function buatCtx(userId: number): AuthContext {
     });
 }
 
-const HEADER = ["nama_lengkap", "email", "nip_nis", "kode_role", "telepon"] as const;
+const HEADER = ["nama_lengkap", "email", "nip_nis", "kode_role", "kode_unit_kerja", "telepon"] as const;
 
 function csvBase64(baris: readonly Record<string, string>[]): string {
     const teks = [
@@ -278,6 +278,38 @@ describe.skipIf(!ADA_DB)("PR-01-03 — impor massal pengguna (acceptance)", () =
         ).data;
         expect(data.baris[0]?.status).toBe("GAGAL");
         expect(data.baris[0]?.pesan).toMatch(/R-99/);
+    });
+
+    it("kode_unit_kerja di-resolve ke master (tanpa membedakan huruf/spasi); kode tak dikenal atau nonaktif → baris gagal (E.5.2, WU-01)", async () => {
+        const adminId = await seedAdmin();
+        await kueri("DELETE FROM work_units");
+        const [unit] = await kueri<{ id: string }>(`
+            INSERT INTO work_units (nama, kode, jenis) VALUES ('Tata Usaha', 'TU-01', 'TATA_USAHA') RETURNING id::text`);
+        await kueri(`INSERT INTO work_units (nama, kode, jenis, status) VALUES ('Lama', 'LAMA', 'KELAS', 'NONAKTIF')`);
+        const baris = (kode: string) => ({
+            nama_lengkap: "Peserta",
+            email: emailUnik(),
+            nip_nis: nipUnik(),
+            kode_role: "R-05",
+            kode_unit_kerja: kode,
+        });
+        const csv = csvBase64([baris("tu-01"), baris("TIDAK-ADA"), baris("LAMA")]);
+
+        const { body } = await impor(buatCtx(adminId), "pengguna.csv", csv);
+        const data = (
+            body as { data: { sukses: number; gagal: number; baris: { status: string; pesan: string | null }[] } }
+        ).data;
+
+        expect(data).toMatchObject({ sukses: 1, gagal: 2 });
+        expect(data.baris[1]?.pesan).toBe("Kode unit kerja tidak dikenal: TIDAK-ADA");
+        expect(data.baris[2]?.pesan).toBe("Unit kerja tidak aktif.");
+
+        const [pengguna] = await kueri<{ work_unit_id: string }>(
+            "SELECT work_unit_id::text FROM users WHERE work_unit_id IS NOT NULL",
+        );
+        expect(pengguna?.work_unit_id).toBe(unit?.id);
+        await kueri("DELETE FROM users");
+        await kueri("DELETE FROM work_units");
     });
 
     it("XLSX valid diproses sama seperti CSV (exceljs menulis lalu membaca kembali)", async () => {

@@ -46,7 +46,7 @@ describe("ImportUserRowSchema (Lampiran E.5.2)", () => {
         kode_role: "R-02",
     };
 
-    it("menerima baris minimal sah tanpa kode_unit_kerja/telepon (opsional — PR-01-12 belum ada)", () => {
+    it("menerima baris minimal sah tanpa kode_unit_kerja/telepon (opsional — master belum dapat diisi lewat aplikasi, keputusan 28)", () => {
         expect(() => ImportUserRowSchema.parse(dasar)).not.toThrow();
     });
 

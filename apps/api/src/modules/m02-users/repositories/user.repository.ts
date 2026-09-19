@@ -15,7 +15,7 @@ const KOLOM_USER = [
     "email",
     "nip_nis",
     "role_id",
-    "unit_kerja",
+    "work_unit_id",
     "telepon",
     "status",
     "must_change_password",
@@ -31,7 +31,7 @@ export interface UserRow {
     readonly email: string;
     readonly nip_nis: string;
     readonly role_id: string;
-    readonly unit_kerja: string | null;
+    readonly work_unit_id: string | null;
     readonly telepon: string | null;
     readonly status: "AKTIF" | "NONAKTIF";
     readonly must_change_password: boolean;
@@ -45,7 +45,7 @@ export interface ListUsersFilter {
     readonly perPage: number;
     readonly status?: "AKTIF" | "NONAKTIF";
     readonly roleId?: number;
-    readonly unitKerja?: string;
+    readonly workUnitId?: number;
 }
 
 export interface ListUsersResult {
@@ -58,7 +58,7 @@ export interface CreateUserData {
     readonly email: string;
     readonly nipNis: string;
     readonly roleId: number;
-    readonly unitKerja: string | null;
+    readonly workUnitId: number | null;
     readonly telepon: string | null;
     readonly passwordHash: string;
 }
@@ -68,7 +68,7 @@ export interface UpdateUserData {
     readonly email: string;
     readonly nipNis: string;
     readonly roleId: number;
-    readonly unitKerja: string | null;
+    readonly workUnitId: number | null;
     readonly telepon: string | null;
 }
 
@@ -83,6 +83,23 @@ export class UserRepository extends BaseRepository {
             .select(KOLOM_USER)
             .where("id", "=", String(id))
             .executeTakeFirst();
+    }
+
+    /**
+     * Status unit kerja, atau `undefined` bila tidak ada. Membaca `work_units`
+     * LANGSUNG (pola `roomExists`, keputusan 23): tabel itu belum dimiliki modul
+     * mana pun, dan validasinya milik pemanggil (WU-01).
+     */
+    async findWorkUnitStatus(
+        ctx: AuthContext,
+        id: number,
+    ): Promise<"AKTIF" | "NONAKTIF" | undefined> {
+        const baris = await this.query(ctx)
+            .selectFrom("work_units")
+            .select("status")
+            .where("id", "=", String(id))
+            .executeTakeFirst();
+        return baris?.status;
     }
 
     /** Kode role pemilik baris — dipakai guard admin terakhir, tidak pernah diekspos respons. */
@@ -103,8 +120,8 @@ export class UserRepository extends BaseRepository {
             if (filter.status !== undefined) q = q.where("status", "=", filter.status);
             if (filter.roleId !== undefined)
                 q = q.where("role_id", "=", String(filter.roleId));
-            if (filter.unitKerja !== undefined)
-                q = q.where("unit_kerja", "=", filter.unitKerja);
+            if (filter.workUnitId !== undefined)
+                q = q.where("work_unit_id", "=", String(filter.workUnitId));
             return q;
         };
 
@@ -177,7 +194,7 @@ export class UserRepository extends BaseRepository {
                 password_hash: data.passwordHash,
                 nip_nis: data.nipNis,
                 role_id: data.roleId,
-                unit_kerja: data.unitKerja,
+                work_unit_id: data.workUnitId,
                 telepon: data.telepon,
                 status: "AKTIF",
                 must_change_password: true,
@@ -196,7 +213,7 @@ export class UserRepository extends BaseRepository {
                 email: data.email,
                 nip_nis: data.nipNis,
                 role_id: data.roleId,
-                unit_kerja: data.unitKerja,
+                work_unit_id: data.workUnitId,
                 telepon: data.telepon,
                 updated_by: ctx.userId,
             })

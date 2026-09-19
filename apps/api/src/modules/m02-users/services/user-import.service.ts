@@ -150,9 +150,10 @@ export class UserImportService {
         }
 
         const peranId = await this.petaRole();
+        const unitId = await this.petaUnitKerja();
         const hasil: ImportRowOutcome[] = [];
         for (const b of baris) {
-            hasil.push(await this.prosesBaris(ctx, b, peranId));
+            hasil.push(await this.prosesBaris(ctx, b, peranId, unitId));
         }
 
         const sukses = hasil.filter((h) => h.status === "SUKSES").length;
@@ -170,10 +171,24 @@ export class UserImportService {
         return new Map(rows.map((r) => [r.kode, Number(r.id)]));
     }
 
+    /**
+     * `kode` -> id `work_units`, dinormalisasi seperti indeks unik `0017`
+     * (huruf kecil, spasi tepi dibuang). Status unit TIDAK disaring di sini:
+     * `UserService.create()` menolak unit nonaktif dengan pesan yang jelas.
+     */
+    private async petaUnitKerja(): Promise<ReadonlyMap<string, number>> {
+        const rows = await this.db
+            .selectFrom("work_units")
+            .select(["id", "kode"])
+            .execute();
+        return new Map(rows.map((r) => [r.kode.trim().toLowerCase(), Number(r.id)]));
+    }
+
     private async prosesBaris(
         ctx: AuthContext,
         baris: BarisMentah,
         peranId: ReadonlyMap<string, number>,
+        unitId: ReadonlyMap<string, number>,
     ): Promise<ImportRowOutcome> {
         const parsed = ImportUserRowSchema.safeParse(baris.data);
         if (!parsed.success) {
@@ -197,13 +212,28 @@ export class UserImportService {
             };
         }
 
+        // E.5.2: `kode_unit_kerja` harus ada pada master unit kerja (WU-01).
+        let workUnitId: number | null = null;
+        if (parsed.data.kode_unit_kerja !== undefined) {
+            const ditemukan = unitId.get(parsed.data.kode_unit_kerja.toLowerCase());
+            if (ditemukan === undefined) {
+                return {
+                    baris: baris.nomor,
+                    status: "GAGAL",
+                    email: parsed.data.email,
+                    pesan: `Kode unit kerja tidak dikenal: ${parsed.data.kode_unit_kerja}`,
+                };
+            }
+            workUnitId = ditemukan;
+        }
+
         try {
             const dibuat = await this.userService.create(ctx, {
                 nama: parsed.data.nama_lengkap,
                 email: parsed.data.email,
                 nipNis: parsed.data.nip_nis,
                 roleId,
-                unitKerja: parsed.data.kode_unit_kerja ?? null,
+                workUnitId,
                 telepon: parsed.data.telepon ?? null,
             });
             return {

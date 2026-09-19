@@ -33,9 +33,11 @@ export const ImportUserRowSchema = z.object({
     email: z.email().trim().toLowerCase().max(150),
     nip_nis: z.string().trim().min(1).max(30),
     kode_role: z.string().trim().min(1),
-    // `kode_unit_kerja` ditandai wajib di Lampiran E.5.2, tapi master
-    // `work_units` belum ada (`PR-01-12`) — diperlakukan opsional teks bebas,
-    // konsisten dengan `unit_kerja` nullable di `CreateUserBodySchema` (PR-01-02).
+    // `kode_unit_kerja` ditandai wajib di Lampiran E.5.2 ("harus ada pada master
+    // unit kerja"). Bila diisi, service meresolusinya ke `work_units` dan kode
+    // tak dikenal menggagalkan baris. Tetap OPSIONAL bila kosong: master belum
+    // dapat diisi lewat aplikasi (keputusan 28 log phase-01), sehingga
+    // mewajibkannya kini menggagalkan setiap baris impor.
     kode_unit_kerja: z.string().trim().min(1).max(100).optional(),
     telepon: z.string().trim().min(1).max(20).optional(),
 });

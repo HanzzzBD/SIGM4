@@ -137,6 +137,7 @@ describe.skipIf(!ADA_DB)("0012 — users + kolom baku roles", () => {
             "updated_at",
             "created_by",
             "updated_by",
+            "work_unit_id",
         ]);
     });
 

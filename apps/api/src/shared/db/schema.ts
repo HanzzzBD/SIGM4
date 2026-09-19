@@ -164,7 +164,12 @@ export interface UsersTable extends KolomBaku {
     password_hash: string;
     nip_nis: string;
     role_id: ColumnType<string, string | number, string | number>;
-    unit_kerja: string | null;
+    /**
+     * Teks bebas warisan (`PR-01-12`, expand): masih dibaca, TIDAK lagi ditulis kode
+     * — `work_unit_id` menggantikannya (WU-01). Dihapus `PR-08-11` (contract).
+     */
+    unit_kerja: ColumnType<string | null, never, never>;
+    work_unit_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
     telepon: string | null;
     status: "AKTIF" | "NONAKTIF";
     must_change_password: boolean;
@@ -260,6 +265,16 @@ export interface SystemSettingsTable {
     updated_by: ColumnType<string | null, string | number | null, string | number | null>;
 }
 
+/** `work_units` (0017, PR-01-12). Unit kerja / kelas — Lampiran E.3. */
+export interface WorkUnitsTable extends KolomBaku {
+    id: Generated<string>;
+    nama: string;
+    kode: string;
+    jenis: "MANAJEMEN" | "MATA_PELAJARAN" | "TATA_USAHA" | "EKSTRAKURIKULER" | "KELAS";
+    kepala_unit_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    status: Generated<"AKTIF" | "NONAKTIF">;
+}
+
 /**
  * `academic_years` (0016, PR-01-11). `tanggal_*` bertipe `date` dan kembali
  * sebagai string `YYYY-MM-DD` (pola `holidays.tanggal`). Tepat satu baris
@@ -300,4 +315,5 @@ export interface Database {
     system_settings: SystemSettingsTable;
     academic_years: AcademicYearsTable;
     academic_terms: AcademicTermsTable;
+    work_units: WorkUnitsTable;
 }

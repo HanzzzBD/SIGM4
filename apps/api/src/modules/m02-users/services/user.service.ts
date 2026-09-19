@@ -34,7 +34,7 @@ export interface CreateUserInput {
     readonly email: string;
     readonly nipNis: string;
     readonly roleId: number;
-    readonly unitKerja: string | null;
+    readonly workUnitId: number | null;
     readonly telepon: string | null;
 }
 
@@ -48,6 +48,29 @@ export interface UpdateStatusInput {
 export interface CreatedUser {
     readonly user: UserRow;
     readonly passwordSementara: string;
+}
+
+/**
+ * WU-01: `work_unit_id` harus menunjuk unit kerja yang ADA dan AKTIF. Unit
+ * nonaktif tetap sah bagi pengguna yang sudah memakainya (WU-02) — pemanggil
+ * hanya memeriksa saat nilainya baru atau berubah.
+ */
+async function pastikanUnitKerjaDapatDipakai(
+    repo: ReturnType<typeof createUserRepository>,
+    ctx: AuthContext,
+    workUnitId: number,
+): Promise<void> {
+    const status = await repo.findWorkUnitStatus(ctx, workUnitId);
+    if (status === undefined) {
+        throw new DomainError("VALIDATION_ERROR", "Unit kerja tidak ditemukan.", {
+            field: "work_unit_id",
+        });
+    }
+    if (status === "NONAKTIF") {
+        throw new DomainError("VALIDATION_ERROR", "Unit kerja tidak aktif.", {
+            field: "work_unit_id",
+        });
+    }
 }
 
 function tolakDuplikat(field: "email" | "nip_nis"): never {
@@ -82,6 +105,8 @@ export class UserService {
                     tolakDuplikat("email");
                 if (await repo.existsByNipNis(scope.ctx, input.nipNis))
                     tolakDuplikat("nip_nis");
+                if (input.workUnitId !== null)
+                    await pastikanUnitKerjaDapatDipakai(repo, scope.ctx, input.workUnitId);
 
                 const passwordSementara = generateTemporaryPassword({
                     nama: input.nama,
@@ -95,7 +120,7 @@ export class UserService {
                     email: input.email,
                     nipNis: input.nipNis,
                     roleId: input.roleId,
-                    unitKerja: input.unitKerja,
+                    workUnitId: input.workUnitId,
                     telepon: input.telepon,
                     passwordHash,
                 });
@@ -138,6 +163,12 @@ export class UserService {
                     (await repo.existsByNipNis(scope.ctx, input.nipNis, id))
                 )
                     tolakDuplikat("nip_nis");
+
+                if (
+                    input.workUnitId !== null &&
+                    String(input.workUnitId) !== before.work_unit_id
+                )
+                    await pastikanUnitKerjaDapatDipakai(repo, scope.ctx, input.workUnitId);
 
                 const after = await repo.update(scope.ctx, id, input);
 

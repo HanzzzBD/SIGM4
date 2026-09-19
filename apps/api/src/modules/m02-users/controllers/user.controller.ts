@@ -21,7 +21,7 @@ function keUser(u: UserRow) {
         email: u.email,
         nip_nis: u.nip_nis,
         role_id: u.role_id,
-        unit_kerja: u.unit_kerja,
+        work_unit_id: u.work_unit_id,
         telepon: u.telepon,
         status: u.status,
         must_change_password: u.must_change_password,
@@ -39,14 +39,14 @@ export function listUsersHandler(service: UserService): RequestHandler {
             per_page: req.query["per_page"],
             status: req.query["filter[status]"],
             role_id: req.query["filter[role_id]"],
-            unit_kerja: req.query["filter[unit_kerja]"],
+            work_unit_id: req.query["filter[work_unit_id]"],
         });
         const hasil = await service.list(ctx, {
             page: query.page,
             perPage: query.per_page,
             ...(query.status === undefined ? {} : { status: query.status }),
             ...(query.role_id === undefined ? {} : { roleId: query.role_id }),
-            ...(query.unit_kerja === undefined ? {} : { unitKerja: query.unit_kerja }),
+            ...(query.work_unit_id === undefined ? {} : { workUnitId: query.work_unit_id }),
         });
         res.status(200).json({
             success: true,
@@ -70,7 +70,7 @@ export function createUserHandler(service: UserService): RequestHandler {
             email: body.email,
             nipNis: body.nip_nis,
             roleId: body.role_id,
-            unitKerja: body.unit_kerja ?? null,
+            workUnitId: body.work_unit_id ?? null,
             telepon: body.telepon ?? null,
         });
         res.status(201).json({
@@ -100,7 +100,7 @@ export function updateUserHandler(service: UserService): RequestHandler {
             email: body.email,
             nipNis: body.nip_nis,
             roleId: body.role_id,
-            unitKerja: body.unit_kerja ?? null,
+            workUnitId: body.work_unit_id ?? null,
             telepon: body.telepon ?? null,
         });
         res.status(200).json({ success: true, data: keUser(user), meta: null });

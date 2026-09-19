@@ -1,6 +1,6 @@
 # Implementation Documentation — SIGM4
 
-**Status:** rencana lengkap: 9 phase · 166 pull request · 22 modul. Kemajuan aktual per phase dan PR hanya dicatat di [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md).
+**Status:** rencana lengkap: 9 phase · 167 pull request · 22 modul. Kemajuan aktual per phase dan PR hanya dicatat di [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md).
 
 ---
 
@@ -53,6 +53,7 @@ Aturan yang paling sering tergoda dilanggar: **IMPLEMENTATION menurunkan, tidak 
 | [`phases/`](phases/) | Sembilan berkas phase, masing-masing 12 bagian baku |
 | [`logs/`](logs/) | Sembilan log — apa yang **benar-benar terjadi**, bukan apa yang direncanakan |
 | [`templates/`](templates/) | Bentuk baku phase, PR, risiko, penempatan, rollback |
+| [`runbooks/`](runbooks/) | Langkah operasional yang menjembatani PR yang belum ada — mis. [`master-data-awal.md`](runbooks/master-data-awal.md) |
 | [`CHANGELOG.md`](CHANGELOG.md) | Riwayat perubahan dokumentasi implementasi |
 
 ---
