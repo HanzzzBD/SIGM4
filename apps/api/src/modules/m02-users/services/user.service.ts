@@ -18,6 +18,9 @@ import {
     KODE_ROLE_ADMINISTRATOR,
     createUserRepository,
 } from "../repositories/user.repository.js";
+import { KODE_ROLE_SISWA } from "../repositories/student-enrollment.repository.js";
+import type { StudentObligationRegistry } from "./student-obligation-registry.js";
+import { studentObligations } from "./student-obligation-registry.js";
 import { generateTemporaryPassword } from "./temporary-password.js";
 
 const MODUL = "m02-users";
@@ -83,6 +86,7 @@ export class UserService {
     constructor(
         private readonly db: Kysely<Database>,
         private readonly audit: AuditLogger,
+        private readonly obligations: StudentObligationRegistry = studentObligations,
     ) {}
 
     async list(ctx: AuthContext, filter: ListUsersFilter): Promise<ListUsersResult> {
@@ -213,6 +217,18 @@ export class UserService {
                                 "VALIDATION_ERROR",
                                 "Penonaktifan ditolak — sistem wajib memiliki minimal dua akun Administrator aktif.",
                                 { rule: "BR-068+BR-070a" },
+                            );
+                        }
+                    } else if (rolKode === KODE_ROLE_SISWA) {
+                        // SL-04: siswa berkewajiban tidak dapat dinonaktifkan; daftarnya
+                        // dikembalikan kepada Administrator. Registri kosong sampai
+                        // PR-05-09 (SDD-05 §4.7d) — kosong BUKAN jaminan tanpa kewajiban.
+                        const kewajiban = await this.obligations.cek(scope, id);
+                        if (kewajiban.length > 0) {
+                            throw new DomainError(
+                                "VALIDATION_ERROR",
+                                "Penonaktifan ditolak — siswa masih memiliki kewajiban.",
+                                { rule: "SL-04", kewajiban },
                             );
                         }
                     }

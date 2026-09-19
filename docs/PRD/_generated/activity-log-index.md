@@ -5,7 +5,7 @@
 # Indeks Aksi Activity Log
 
 > Setiap aksi dimiliki modul penerbitnya. Prinsip pencatatan di `../03-architecture/activity-log.md`.
-> Total: **65** baris, dikumpulkan dari 22 berkas modul.
+> Total: **68** baris, dikumpulkan dari 22 berkas modul.
 
 | Aksi | Keterangan | Pemilik |
 |---|---|---|
@@ -64,6 +64,9 @@
 | `RESERVATION_CREATED` / `RESERVATION_UPDATED` / `RESERVATION_CANCELLED` / `RESERVATION_EXPIRED` | Termasuk alasan pembatalan | [M-07](../02-modules/m07-reservation-room.md) |
 | `ROLE_PERMISSION_UPDATED` | Perubahan matriks permission | [M-02](../02-modules/m02-users.md) |
 | `SETTING_UPDATED` | Perubahan parameter sistem beserta nilai lama/baru | [M-20](../02-modules/m20-settings.md) |
+| `STUDENT_ENROLLMENT_SET` | Kelas siswa pada suatu tahun ajaran ditetapkan atau diubah (`SL-01`, `SL-02`), nilai lama/baru | [M-02](../02-modules/m02-users.md) |
+| `STUDENT_GRADUATION_DEACTIVATED` | Akun siswa lulus dinonaktifkan setelah tahun ajarannya berakhir (`SL-03`); pelaku `SYSTEM` bila dijalankan pekerjaan terjadwal | [M-02](../02-modules/m02-users.md) |
+| `STUDENT_MARKED_GRADUATED` | Siswa ditandai lulus pada suatu tahun ajaran (`SL-02`) | [M-02](../02-modules/m02-users.md) |
 | `TWO_FA_BACKUP_CODE_USED` | Pemakaian kode cadangan, termasuk sisa kode | [M-01](../02-modules/m01-auth.md) |
 | `TWO_FA_ENABLED` / `TWO_FA_DISABLED` / `TWO_FA_RESET` | Perubahan 2FA | [M-01](../02-modules/m01-auth.md) |
 | `USER_CREATED` / `USER_UPDATED` / `USER_DEACTIVATED` / `USER_REACTIVATED` | Manajemen akun | [M-02](../02-modules/m02-users.md) |

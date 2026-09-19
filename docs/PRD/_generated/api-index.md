@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **139** baris, dikumpulkan dari 22 berkas modul.
+> Total: **140** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -108,6 +108,7 @@
 | POST | `/chat/messages/{id}/feedback` | Bearer | Beri umpan balik jawaban | [M-19](../02-modules/m19-chatbot.md) |
 | POST | `/chat/messages` | Bearer | Kirim pesan ke chatbot | [M-19](../02-modules/m19-chatbot.md) |
 | POST | `/chat/sessions` | Bearer | Mulai sesi chatbot | [M-19](../02-modules/m19-chatbot.md) |
+| POST | `/class-promotions` | `user.update` | Kenaikan kelas massal: tetapkan kelas atau tandai lulus per siswa pada satu tahun ajaran (`SL-02`) | [M-02](../02-modules/m02-users.md) |
 | POST | `/damage-reports/{id}/verify` | `damage.verify` | Verifikasi / tolak tiket | [M-11](../02-modules/m11-damage-reports.md) |
 | POST | `/damage-reports` | `damage.create` | Buat tiket kerusakan | [M-11](../02-modules/m11-damage-reports.md) |
 | POST | `/device-tokens` | Bearer | Daftarkan token perangkat FCM | [M-17](../02-modules/m17-notifications.md) |

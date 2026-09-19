@@ -43,6 +43,7 @@ Skema khusus `booking_slots`, `idempotency_keys`, dan `document_counters` didefi
 | **SDD-DB-17** | Parameter sistem (`FR-20.1`) disimpan sebagai baris `system_settings` yang **mendeskripsikan dirinya sendiri**: tiap baris membawa `tipe`, `nilai_bawaan`, dan — untuk angka — `nilai_min`/`nilai_maks`; validasi rentang (`FR-20.1 A1`) membaca baris itu, bukan daftar di kode. Kunci baru ditambahkan **PR konsumennya** sebagai baris seed (`SDD-DB-10`), tanpa perubahan skema maupun kode validasi. Katalog awal ([§4.7a](#47a-skema-system_settings)) hanya memuat parameter yang nilai bawaannya disebut eksplisit di `FR-20.1`; rentangnya pagar kewajaran teknis, bukan business rule. |
 | **SDD-DB-18** | Invariant "tepat satu tahun ajaran aktif" (`Lampiran E.2`, `AC-YR-01`) ditegakkan **basis data**, bukan hanya service: paling banyak satu lewat *partial unique index* (`SDD-DB-05`), paling sedikit satu — begitu ada tahun ajaran — lewat *constraint trigger* `DEFERRABLE INITIALLY DEFERRED` yang diperiksa saat `COMMIT`. Ditunda karena pergantian tahun aktif adalah dua `UPDATE` dalam satu transaksi yang sesaat tanpa tahun aktif. Tabel kosong sah (instalasi awal). Rasionya sama `SDD-DB-14`: constraint basis data tidak dapat dilewati service yang keliru. |
 | **SDD-DB-19** | Migrasi data teks bebas → master (`WU-01`, pola *expand → migrate*) dijalankan **fungsi SQL idempoten** yang dapat dijalankan ulang setelah master terisi, bukan skrip sekali pakai: mencocokkan tanpa menebak (tepat satu kandidat; yang sudah tertaut tidak ditimpa), dan **mengembalikan** yang tak terpetakan sebagai laporan. Keunikan master ditegakkan pada bentuk ternormalisasi yang sama dengan pencocokannya. Kolom lama tetap ada dan berhenti ditulis sampai `contract` (`PR-08-11`). |
+| **SDD-DB-20** | Kelas siswa adalah **data per tahun ajaran** (`SL-01`): baris `student_enrollments`, bukan kolom pada `users`. Menandai lulus (`SL-02`) hanya menandai baris tahun ajaran itu; **penonaktifan akun menunggu tahun ajaran itu berakhir** (`SL-03`) dan diblokir oleh kewajiban (`SL-04`). Definisi "kewajiban" tidak ditulis di modul pengguna — modul pemiliknya mendaftarkan pemeriksa ke titik ekstensi (§4.7d), sehingga aturan tidak pernah mengasumsikan "tidak ada kewajiban". |
 
 ---
 
@@ -323,6 +324,21 @@ Parameter kelompok lain (jam operasional, tarif denda, durasi sesi, dst.) **tida
 **Pemetaan** (`SDD-DB-19`): `map_users_unit_kerja()` mencocokkan teks lama dengan `nama` **atau** `kode` unit, mengisi hanya bila tepat satu kandidat dan `work_unit_id` masih kosong, lalu mengembalikan daftar `(unit_kerja, jumlah_pengguna)` yang tak terpetakan. Dijalankan sekali oleh migration `0017`, dan dapat dipanggil ulang setelah Administrator mengisi master. Pemetaan tidak membuat unit dari teks — `jenis` tidak dapat ditebak. `procurements.unit_kerja` mengikuti pola yang sama pada phase pemiliknya.
 
 Tidak ada endpoint `work_units`: PRD belum mendaftarkan satu pun (`m20-settings.md` §7), dan baris endpoint baru wajib lebih dulu masuk PRD.
+
+### 4.7d Skema `student_enrollments` dan siklus akun siswa
+
+`student_enrollments` (`Lampiran E.4`): satu baris = "siswa X berada di kelas K pada tahun ajaran Y". Entitas domain milik Administrator (kolom baku §4.2).
+
+| Aturan | Ditegakkan oleh |
+|---|---|
+| Satu baris per siswa per tahun ajaran (`SL-01`) | `UNIQUE (user_id, academic_year_id)` |
+| `kelas_id` menunjuk unit kerja **berjenis `KELAS`, aktif** | service (`ClassPromotionService`) — lintas tabel |
+| `user_id` adalah akun **Siswa/OSIS** (`R-07`), aktif | service |
+| Kenaikan kelas: `NAIK` menetapkan `kelas_id` pada tahun ajaran itu (dan menghapus tanda lulus); `LULUS` menandai baris tahun ajaran itu, yang wajib sudah ada | service |
+
+**Penonaktifan lulusan** (`SL-03`, `DP-10`): akun berbaris `lulus = true` dinonaktifkan bila `academic_years.tanggal_selesai` tahun itu **sebelum** hari ini (hari WIB, `CAL-03`); menandai sebelum tahun berakhir tidak menonaktifkan seketika. `GraduationService.deactivateDueGraduates` idempoten (`JOB-03`); memasangnya sebagai pekerjaan `student-graduation` menunggu `SystemAuthContext` (`SDD-03`) — butir terbuka `phase-01` log §10.
+
+**Titik ekstensi `SL-04`** — `StudentObligationRegistry`: modul yang mendefinisikan kewajiban (peminjaman aktif, denda belum lunas — Phase 05, `PR-05-09`) mendaftarkan `StudentObligationChecker` dengan `daftarKewajiban(scope, userId)`. Penonaktifan akun **Siswa/OSIS** — lewat `PATCH /users/{id}/status` maupun penonaktifan lulusan — ditolak bila salah satu pemeriksa mengembalikan kewajiban, dan daftarnya dikembalikan kepada Administrator. Registri **kosong** sampai `PR-05-09`; kosongnya berarti "belum ada yang mendefinisikan kewajiban", bukan "siswa tidak berkewajiban".
 
 ### 4.8 Saldo bahan — ledger dan agregat
 

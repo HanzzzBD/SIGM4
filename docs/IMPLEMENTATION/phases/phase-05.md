@@ -123,7 +123,16 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 | `PR-05-24` | Opname bahan: sesi domain `BAHAN` + layar mobile `MS-22`/`MS-23` | L | L | 17, Ph04 | `FR-13.4`, `BR-093` `BR-094` `BR-095`, `MOB-PERF-06` | Sesi campur domain ditolak; saldo berubah hanya setelah disetujui Pimpinan |
 | `PR-05-25` | Tool chatbot bahan: `get_material_stock` + `get_low_stock_materials` | S | S | 17, 22, Ph03 | 22.3, `BR-075` `BR-076`, `SDD-AUTH-07`, `SDD-AI-13`, `AI-SEC-03` | Kedua tool memanggil repository M-22 dengan `AuthContext` penanya; role tanpa hak atas M-22 menerima hasil kosong, bukan galat. Awalan statis terbentuk ulang dan `usage.total_cached_tokens > 0` pada permintaan kedua setelah rilis |
 
+| `PR-05-26` | Pseudonimisasi akun (`DP-04`, `DP-10`, `SL-05`) *(baru, keputusan 31 log phase-01)* | M | M | 09, Ph01 | `DP-04`, `DP-10`, `SL-05`, `SDD-SEC-08`, `DP-05a` | Identitas akun diganti penanda satu arah; baris transaksi dan activity log tetap; akun yang masih berkewajiban dikecualikan; foto berwajah dipertahankan sebagai bukti |
+
 ## 8. Task Breakdown
+
+### `PR-05-26` — Pseudonimisasi akun
+- [ ] Operasi satu arah pada kolom identitas `users` (`SDD-SEC-08`, `SDD-13 §4.7`): nama, email, `nip_nis`, telepon, `work_unit_id`; baris transaksi, denda, dan `activity_logs` **tidak disentuh** (`AL-03`, `BR-008`)
+- [ ] Akun siswa nonaktif dipseudonimisasi setelah 2 tahun (`SL-05`, `DP-10`), **kecuali** masih berkewajiban — memakai `studentObligations` yang diisi `PR-05-09`
+- [ ] Hak penghapusan (`DP-04`) memakai operasi yang sama; foto berwajah **tidak** disentuh (`DP-05a`, `SDD-FS-11`)
+- [ ] Pekerjaan terjadwal berpelaku `SYSTEM` — bergantung `SystemAuthContext` (`PR-02-32`)
+- [ ] Uji: identitas tidak dapat dipulihkan; riwayat peminjaman lama tetap terbaca; akun berdenda aktif tidak dipseudonimisasi
 
 ### `PR-05-03` — Check-in
 - [ ] Bandingkan kondisi saat keluar dan saat kembali (`BR-028`)
@@ -132,7 +141,7 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 - [ ] Uji: check-out kondisi Baik, check-in kondisi Rusak Ringan → satu laporan kerusakan
 
 ### `PR-05-09` — Penutupan `SL-04`
-- [ ] Isi titik ekstensi `PR-01-13` dengan pemeriksaan nyata
+- [ ] Isi titik ekstensi `PR-01-13` dengan pemeriksaan nyata: daftarkan pemeriksa ke `studentObligations` (`m02-users/index.ts`) di proses **API dan worker** — registri hidup per proses, dan job penonaktifan lulusan berjalan di worker
 - [ ] Kewajiban aktif = peminjaman belum kembali **atau** denda belum lunas
 - [ ] Pesan penolakan menyebut kewajiban spesifik, bukan sekadar "tidak dapat dinonaktifkan"
 - [ ] Uji: siswa berdenda lunas dapat dinonaktifkan; berdenda aktif tidak
