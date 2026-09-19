@@ -178,11 +178,19 @@ describe.skipIf(!ADA_DB)("PR-01-18 — endpoint master data Lampiran E (acceptan
 
             const ganda = await panggil(ctx, "POST", "/academic-years", { ...TAHUN_B(), nama: "2026/2027" });
             expect(ganda.status).toBe(409);
-            expect(ganda.json.error).toMatchObject({ code: "DUPLICATE_CODE" });
+            expect(ganda.json.error).toEqual({
+                code: "DUPLICATE_CODE",
+                message: "Nama tahun ajaran sudah digunakan.",
+                details: [{ field: "nama", message: "Nama tahun ajaran sudah digunakan." }],
+            });
 
             const irisan = await panggil(ctx, "POST", "/academic-years", tahun("Tumpang", "2027-06-30", "2028-06-30", semester(["2027-06-30", "2027-12-31"], ["2028-01-02", "2028-06-30"])));
             expect(irisan.status).toBe(422);
-            expect(irisan.json.error?.code).toBe("VALIDATION_ERROR");
+            expect(irisan.json.error).toEqual({
+                code: "VALIDATION_ERROR",
+                message: "Rentang tanggal beririsan dengan tahun ajaran 2026/2027.",
+                details: [{ field: "tanggal_mulai", message: "Rentang tanggal beririsan dengan tahun ajaran 2026/2027." }],
+            });
 
             const luar = await panggil(ctx, "POST", "/academic-years", tahun("Luar", "2027-07-01", "2028-06-30", semester(["2027-06-01", "2027-12-31"], ["2028-01-02", "2028-06-30"])));
             expect(luar.status).toBe(422);
@@ -360,7 +368,11 @@ describe.skipIf(!ADA_DB)("PR-01-18 — endpoint master data Lampiran E (acceptan
 
             const ganda = await panggil(ctx, "POST", "/holidays", { tanggal: "2026-08-17", nama: "Lagi", jenis: "SEKOLAH" });
             expect(ganda.status).toBe(409);
-            expect(ganda.json.error).toMatchObject({ code: "DUPLICATE_CODE" });
+            expect(ganda.json.error).toEqual({
+                code: "DUPLICATE_CODE",
+                message: "Tanggal tersebut sudah terdaftar sebagai hari libur.",
+                details: [{ field: "tanggal", message: "Tanggal tersebut sudah terdaftar sebagai hari libur." }],
+            });
             const tahunGaib = await panggil(ctx, "POST", "/holidays", { tanggal: "2026-08-18", nama: "X", jenis: "SEKOLAH", academic_year_id: 999999 });
             expect(tahunGaib.status).toBe(422);
             expect((await panggil(ctx, "PUT", "/holidays/999999", { tanggal: "2026-08-19", nama: "X", jenis: "SEKOLAH" })).status).toBe(404);
@@ -416,7 +428,11 @@ describe.skipIf(!ADA_DB)("PR-01-18 — endpoint master data Lampiran E (acceptan
 
             const kosong = await panggil(ctx, "PUT", "/work-days", pekan([]));
             expect(kosong.status).toBe(422);
-            expect(kosong.json.error).toMatchObject({ code: "VALIDATION_ERROR" });
+            expect(kosong.json.error).toEqual({
+                code: "VALIDATION_ERROR",
+                message: "Minimal satu hari kerja harus aktif.",
+                details: [{ field: "hari_kerja", message: "Minimal satu hari kerja harus aktif." }],
+            });
             const [aktif] = await kueri<{ n: string }>("SELECT count(*)::text AS n FROM work_days WHERE aktif");
             expect(aktif?.n).toBe("6");
 
@@ -458,7 +474,11 @@ describe.skipIf(!ADA_DB)("PR-01-18 — endpoint master data Lampiran E (acceptan
 
             const kode = await panggil(ctx, "POST", "/work-units", unit({ nama: "Lain", kode: "  tu-01 " }));
             expect(kode.status).toBe(409);
-            expect(kode.json.error).toMatchObject({ code: "DUPLICATE_CODE" });
+            expect(kode.json.error).toEqual({
+                code: "DUPLICATE_CODE",
+                message: "Kode unit kerja sudah digunakan.",
+                details: [{ field: "kode", message: "Kode unit kerja sudah digunakan." }],
+            });
             const nama = await panggil(ctx, "POST", "/work-units", unit({ nama: "TATA USAHA", kode: "TU-99" }));
             expect(nama.status).toBe(409);
 
@@ -538,9 +558,9 @@ describe.skipIf(!ADA_DB)("PR-01-18 — endpoint master data Lampiran E (acceptan
         });
     });
 
-    // Galat HTTP hanya membawa `code` (amplop Bab 17.2 tidak memuat `detail`), sehingga aturan yang
-    // dibedakan per isian — dan pemeriksaan di service yang tanpanya constraint basis data tetap
-    // menghasilkan kode yang sama (23505 -> DUPLICATE_CODE) — dibuktikan langsung pada service.
+    // Pelengkap uji HTTP di atas: aturan per isian dibuktikan langsung pada service (DomainError.detail),
+    // termasuk pemeriksaan yang tanpanya constraint basis data tetap menghasilkan kode yang sama
+    // (23505 -> DUPLICATE_CODE) tetapi dengan pesan generik.
     describe("aturan per isian (service)", () => {
         const dgn = (kode: string, field: string) => ({ kode, detail: { field } });
         const masukanTahun = (o: { nama?: string; mulai?: string; selesai?: string; sem?: { nama: "GANJIL" | "GENAP"; tanggalMulai: string; tanggalSelesai: string }[] } = {}) => ({

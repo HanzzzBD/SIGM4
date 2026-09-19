@@ -25,8 +25,9 @@ export interface ListSettingsResult {
     readonly totalPages: number;
 }
 
+/** Butir `error.details` Bab 17.2: `field` = kunci parameter. */
 export interface SettingViolation {
-    readonly key: string;
+    readonly field: string;
     readonly message: string;
 }
 
@@ -67,11 +68,11 @@ export class SettingService {
                 for (const key of kunci) {
                     const definisi = baris.get(key);
                     if (definisi === undefined) {
-                        pelanggaran.push({ key, message: "Parameter tidak dikenal." });
+                        pelanggaran.push({ field: key, message: "Parameter tidak dikenal." });
                         continue;
                     }
                     const pesan = validasiNilai(definisi, input[key]);
-                    if (pesan !== undefined) pelanggaran.push({ key, message: pesan });
+                    if (pesan !== undefined) pelanggaran.push({ field: key, message: pesan });
                 }
                 if (pelanggaran.length > 0) {
                     throw new DomainError("VALIDATION_ERROR", "Satu atau lebih parameter tidak sah.", {

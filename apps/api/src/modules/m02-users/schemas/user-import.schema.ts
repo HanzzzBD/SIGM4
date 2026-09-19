@@ -11,6 +11,9 @@ export const BATAS_BARIS_IMPOR = 200;
 
 const NAMA_BERKAS_SAH = /\.(csv|xlsx)$/i;
 
+/** Alasan baris gagal bila `kode_unit_kerja` kosong (E.5.2). Bahasa Indonesia: ia masuk laporan per baris (IMPT-02). */
+const PESAN_KODE_UNIT_WAJIB = "Kode unit kerja wajib diisi (E.5.2).";
+
 export const ImportUsersBodySchema = z.object({
     filename: z
         .string()
@@ -31,12 +34,15 @@ export const ImportUserRowSchema = z.object({
     email: z.email().trim().toLowerCase().max(150),
     nip_nis: z.string().trim().min(1).max(30),
     kode_role: z.string().trim().min(1),
-    // `kode_unit_kerja` ditandai wajib di Lampiran E.5.2 ("harus ada pada master
-    // unit kerja"). Bila diisi, service meresolusinya ke `work_units` dan kode
-    // tak dikenal menggagalkan baris. Tetap OPSIONAL bila kosong: master belum
-    // dapat diisi lewat aplikasi (keputusan 28 log phase-01), sehingga
-    // mewajibkannya kini menggagalkan setiap baris impor.
-    kode_unit_kerja: z.string().trim().min(1).max(100).optional(),
+    // E.5.2: `kode_unit_kerja` WAJIB untuk setiap baris — kolom ✅ tanpa syarat, tidak ada
+    // pengecualian role (berbeda dari `kelas` dan `consent_wali` yang kondisional) — dan
+    // harus ada pada master unit kerja (WU-01), yang diperiksa service. Sel kosong tiba
+    // di sini sebagai `undefined` (lihat `bacaBerkas`), jadi keduanya satu pesan.
+    kode_unit_kerja: z
+        .string({ error: PESAN_KODE_UNIT_WAJIB })
+        .trim()
+        .min(1, PESAN_KODE_UNIT_WAJIB)
+        .max(100),
     // E.5.2 `consent_wali`: wajib `true` untuk Siswa/OSIS (DP-02, SL-06) — ditegakkan service,
     // karena bergantung pada role. CSV membawa teks, XLSX dapat membawa boolean.
     consent_wali: z

@@ -112,6 +112,8 @@ Sebelumnya impor massal disebut pada FR-02.1 A4, FR-04.1 A2, dan FR-07.5 A2 tanp
 | `telepon` | ❌ | Format nomor Indonesia |
 | `consent_wali` | Kondisional | Wajib `true` bila role Siswa/OSIS (DP-02, SL-06) |
 
+**Ketentuan template pengguna.** `kode_unit_kerja` wajib pada **setiap baris, tanpa pengecualian role** (termasuk Siswa/OSIS) — hanya `kelas` dan `consent_wali` yang kondisional. Kolom yang tidak ada di header menolak seluruh berkas (`400 INVALID_REQUEST`, tidak ada pekerjaan impor tercatat); sel yang kosong menggagalkan baris itu saja, dengan alasan pada laporan (`IMPT-01`, `IMPT-02`). Seluruh sel dibaca sebagai **teks**: NIP/NIS yang ber-angka nol di depan atau berjumlah digit besar tersimpan persis seperti yang ditulis, tidak dikonversi menjadi angka.
+
 **E.5.3 Impor Jadwal Tetap Ruangan** (`template_jadwal_tetap.csv`)
 
 | Kolom | Wajib | Validasi |

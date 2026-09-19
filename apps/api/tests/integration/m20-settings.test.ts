@@ -163,7 +163,7 @@ describe.skipIf(!ADA_DB)("PR-01-10 — parameter sistem (acceptance)", () => {
         ).rejects.toMatchObject({
             kode: "VALIDATION_ERROR",
             detail: {
-                errors: [{ key: "reservasi.ttl_tentative_jam", message: "Nilai harus antara 1 dan 168." }],
+                errors: [{ field: "reservasi.ttl_tentative_jam", message: "Nilai harus antara 1 dan 168." }],
             },
         });
 
@@ -193,9 +193,9 @@ describe.skipIf(!ADA_DB)("PR-01-10 — parameter sistem (acceptance)", () => {
             kode: "VALIDATION_ERROR",
             detail: {
                 errors: expect.arrayContaining([
-                    { key: "tidak.ada", message: "Parameter tidak dikenal." },
-                    { key: "reservasi.horizon_hari", message: "Nilai harus berupa angka." },
-                    { key: "peminjaman.batas_perpanjangan", message: "Nilai harus berupa bilangan bulat." },
+                    { field: "tidak.ada", message: "Parameter tidak dikenal." },
+                    { field: "reservasi.horizon_hari", message: "Nilai harus berupa angka." },
+                    { field: "peminjaman.batas_perpanjangan", message: "Nilai harus berupa bilangan bulat." },
                 ]),
             },
         });

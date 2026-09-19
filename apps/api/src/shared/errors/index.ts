@@ -7,5 +7,6 @@ export {
     ForbiddenError,
     NotFoundError,
 } from "./domain-error.js";
-export type { HasilPemetaan } from "./error-mapper.js";
+export type { ErrorDetail, HasilPemetaan } from "./error-mapper.js";
 export { mapError } from "./error-mapper.js";
+export { ErrorDetailSchema, ErrorEnvelopeSchema } from "./envelope.js";

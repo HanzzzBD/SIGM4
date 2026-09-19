@@ -66,9 +66,10 @@ const layananImpor = (waktu = T1) =>
 
 /** Baris valid + baris yang gagal validasi cepat (tanpa hashing), agar 201 baris tetap murah. */
 function csv(valid: readonly string[], gagalTambahan = 0): string {
-    const baris = ["nama_lengkap,email,nip_nis,kode_role"];
-    for (const email of valid) baris.push(`Peserta,${email},${nipUnik()},R-05`);
-    for (let i = 0; i < gagalTambahan; i += 1) baris.push(`Rusak,bukan-email-${String(i)},${nipUnik()},R-05`);
+    // E.5.2: kode_unit_kerja wajib; TU-01 di-seed `beforeEach`.
+    const baris = ["nama_lengkap,email,nip_nis,kode_role,kode_unit_kerja"];
+    for (const email of valid) baris.push(`Peserta,${email},${nipUnik()},R-05,TU-01`);
+    for (let i = 0; i < gagalTambahan; i += 1) baris.push(`Rusak,bukan-email-${String(i)},${nipUnik()},R-05,TU-01`);
     return baris.join("\n");
 }
 const b64 = (teks: string) => Buffer.from(teks, "utf8").toString("base64");
@@ -96,9 +97,13 @@ describe.skipIf(!ADA_DB)("PR-01-17 — impor pengguna asinkron + idempotensi (ac
     async function bersihkan(): Promise<void> {
         await kueri("DELETE FROM user_import_jobs");
         await kueri("DELETE FROM users");
+        await kueri("DELETE FROM work_units");
         await kueri("DELETE FROM event_outbox");
     }
-    beforeEach(bersihkan);
+    beforeEach(async () => {
+        await bersihkan();
+        await kueri("INSERT INTO work_units (nama, kode, jenis) VALUES ('Tata Usaha', 'TU-01', 'TATA_USAHA')");
+    });
     afterEach(bersihkan);
     afterAll(bersihkan);
 
@@ -242,6 +247,35 @@ describe.skipIf(!ADA_DB)("PR-01-17 — impor pengguna asinkron + idempotensi (ac
         );
         expect(log.map((l) => l.aksi)).toEqual(["USER_IMPORT_REQUESTED", "USER_IMPORTED"]);
         expect(log.every((l) => l.pelaku_id === String(admin))).toBe(true);
+    });
+
+    it("E.5.2 (asinkron): baris tanpa kode_unit_kerja gagal per baris di worker dengan alasan tertulis; baris lain tetap masuk", async () => {
+        const admin = await seedAdmin();
+        const sah = emailUnik();
+        const baris = ["nama_lengkap,email,nip_nis,kode_role,kode_unit_kerja", `Sah,${sah},${nipUnik()},R-05,TU-01`, `Tanpa Unit,${emailUnik()},${nipUnik()},R-05,`];
+        for (let i = 0; i < BATAS; i += 1) baris.push(`Rusak,bukan-email-${String(i)},${nipUnik()},R-05,TU-01`);
+        const { job } = await layananImpor().submit(buatCtx(admin), { filename: "besar.csv", contentBase64: b64(baris.join("\n")) });
+
+        await runner().run({ job_id: job.id, oleh: admin }, false);
+
+        const akhir = await layananImpor().get(buatCtx(admin), Number(job.id));
+        expect(akhir).toMatchObject({ status: "SELESAI", sukses: 1, gagal: BATAS + 1 });
+        expect(akhir.laporan_gagal[0]).toMatchObject({ baris: 3, pesan: "Kode unit kerja wajib diisi (E.5.2)." });
+        expect(await kueri(`SELECT 1 FROM users WHERE email = '${sah}'`)).toHaveLength(1);
+    });
+
+    it("E.5.2: header tanpa kolom kode_unit_kerja ditolak SEBELUM pekerjaan tercatat — sinkron maupun > 200 baris", async () => {
+        const admin = await seedAdmin();
+        const tanpa = (n: number) => b64(["nama_lengkap,email,nip_nis,kode_role", ...Array.from({ length: n }, (_, i) => `X,${emailUnik()},${nipUnik()}${String(i)},R-05`)].join("\n"));
+
+        for (const n of [2, BATAS + 1]) {
+            await expect(layananImpor().submit(buatCtx(admin), { filename: "a.csv", contentBase64: tanpa(n) })).rejects.toMatchObject({
+                kode: "INVALID_REQUEST",
+                message: "Kolom wajib hilang pada header: kode_unit_kerja",
+            });
+        }
+        const [jobs] = await kueri<{ n: string }>("SELECT count(*)::text AS n FROM user_import_jobs");
+        expect(jobs?.n).toBe("0");
     });
 
     it("JOB-06: pekerjaan yang terputus melanjutkan dari baris_terproses — pengguna tidak dibuat dua kali", async () => {

@@ -57,6 +57,17 @@
 }
 ```
 
+**Ketentuan bidang galat** — bentuk amplopnya satu, dan yang berbeda antarkondisi hanya *isi* `message` dan ada-tidaknya `details`:
+
+| Bidang | Ketentuan |
+|---|---|
+| `error.code` | Salah satu kode Bab 17.3 |
+| `error.message` | Kalimat Bahasa Indonesia untuk pengguna. Pada **galat aturan bisnis** (4xx yang dilempar service, mis. `VALIDATION_ERROR`, `DUPLICATE_CODE`, `NOT_FOUND`, `CORE_PERMISSION_LOCKED`) berupa penjelasan spesifik yang sengaja ditulis pengembang; pada galat lain berupa **pesan generik per kode**. Klien boleh menampilkannya atau memetakan `code` ke pesannya sendiri (`NFR-AC-09`) |
+| `error.details` | **Opsional.** Larik `{ field, message }`: isian yang bermasalah beserta alasannya, dengan `field` = nama isian pada body/parameter. Hanya ada pada galat aturan bisnis 4xx yang menunjuk isian tertentu; galat yang mengumpulkan beberapa isian sekaligus (mis. `PUT /settings`) memuat satu butir per isian. **Tidak pernah** ada pada 400 `INVALID_REQUEST` (galat skema), 401/403, maupun 5xx |
+| `request_id` | Selalu ada; sama dengan header `X-Request-Id` |
+
+**Yang tidak pernah dikirim ke klien** (`NFR-R-10`, `SDD-AUTH-08`, `DP-03`): *stack trace*, pesan galat sistem atau basis data, kredensial, data pribadi pada `message`/`details` (mis. nama pengguna), konteks internal yang bukan isian (ID aturan, daftar kewajiban, daftar permission), dan pesan spesifik pada 401/403 — jawaban autentikasi/otorisasi seragam agar tidak membedakan objek yang ada dari yang tidak ada. Galat 5xx selalu berpesan generik.
+
 ## 17.3 Kode Status & Kode Galat
 
 | HTTP | Kondisi | `error.code` |

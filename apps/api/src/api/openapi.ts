@@ -9,6 +9,7 @@
 // dokumen, dan *shared kernel* tidak perlu tahu caranya (`SDD-SYS-12`).
 
 import { createDocument } from "zod-openapi";
+import { ErrorEnvelopeSchema } from "../shared/errors/index.js";
 import type { RouteDefinition, RouteRegistry } from "../shared/http/index.js";
 
 /** Prefiks versi API (Bab 17.1). Path route sendiri ditulis tanpa awalan ini. */
@@ -25,26 +26,23 @@ function toOpenApiPath(path: string): string {
  * kode galat sudah dimiliki Bab 17.3, dan mengulangnya per route akan menjadi
  * salinan kedua yang menyimpang.
  */
-function errorResponses(
-    route: RouteDefinition,
-): Record<string, { description: string }> {
-    const responses: Record<string, { description: string }> = {
-        "400": {
-            description: "INVALID_REQUEST — skema masukan tidak terpenuhi",
-        },
-        "429": { description: "RATE_LIMIT_EXCEEDED" },
-        "500": { description: "INTERNAL_ERROR" },
+function errorResponses(route: RouteDefinition): Record<string, unknown> {
+    // Amplop yang SAMA dengan yang dikirim `kirimGalat` (Bab 17.2, SDD-API-14).
+    const galat = (description: string) => ({
+        description,
+        content: { "application/json": { schema: ErrorEnvelopeSchema } },
+    });
+    const responses: Record<string, unknown> = {
+        "400": galat("INVALID_REQUEST — skema masukan tidak terpenuhi"),
+        "429": galat("RATE_LIMIT_EXCEEDED"),
+        "500": galat("INTERNAL_ERROR"),
     };
     if (route.public !== true) {
-        responses["401"] = { description: "UNAUTHENTICATED / TOKEN_EXPIRED" };
-        responses["403"] = {
-            description: "FORBIDDEN / INSUFFICIENT_PERMISSION",
-        };
+        responses["401"] = galat("UNAUTHENTICATED / TOKEN_EXPIRED");
+        responses["403"] = galat("FORBIDDEN / INSUFFICIENT_PERMISSION");
     }
     if (route.idempotent === true) {
-        responses["409"] = {
-            description: "IDEMPOTENCY_KEY_REUSED / REQUEST_IN_PROGRESS",
-        };
+        responses["409"] = galat("IDEMPOTENCY_KEY_REUSED / REQUEST_IN_PROGRESS");
     }
     return responses;
 }

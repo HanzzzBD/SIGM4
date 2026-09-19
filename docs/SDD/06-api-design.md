@@ -35,6 +35,7 @@
 | **SDD-API-11** | Pustaka skema runtime yang dimaksud `SDD-API-01` adalah **Zod**. Skema Zod adalah satu-satunya definisi; tipe statis dan OpenAPI diturunkan darinya. |
 | **SDD-API-12** | `/api/docs` **tetap tidak diaktifkan di produksi** (Bab 17.1); ia tersedia di development dan staging. Sebagai gantinya `openapi.json` diterbitkan pipeline sebagai **artefak rilis bertanda versi**. Pencabutan larangan ini menuntut perubahan Bab 17.1 lebih dulu — bukan wewenang SDD. |
 | **SDD-API-13** | Pembangkit OpenAPI yang dimaksud `SDD-API-02` adalah **`zod-openapi`**, dipakai lewat **registri route yang sudah ada** (§4.1, dipindai saat *bootstrap*). Registri itu tetap satu-satunya daftar route: OpenAPI **dan** matriks uji otorisasi `SEC-T-01` sama-sama diturunkan darinya. Tidak ada registri kedua yang mendaftarkan route untuk keperluan dokumentasi. |
+| **SDD-API-14** | Amplop galat Bab 17.2 **tidak berubah bentuk**; `ErrorMapper` hanya menentukan isinya. `error.message` dan `error.details` dikirim **hanya** dari `DomainError` galat klien (4xx, bukan 401/403) yang pesannya **sengaja ditulis** (`pesanEksplisit`); `details` diturunkan dari `detail.field` dan `detail.errors[{ field, message }]`. Selebihnya — galat skema (Zod), basis data, sistem, 5xx, dan 401/403 — berpesan generik per kode tanpa `details`. Kunci `detail` lain (`rule`, `kewajiban`, `permissions`) adalah konteks log/uji, bukan kontrak klien. |
 
 ---
 
@@ -147,6 +148,16 @@ const MAP: Array<[matcher, httpStatus, code]> = [
 ```
 
 Galat 500 **tidak pernah** menyertakan pesan asli ke klien (`NFR-R-10`); pesan asli hanya masuk log terstruktur bersama `request_id`.
+
+**Pesan dan `details` ke klien** (`SDD-API-14`, Bab 17.2). Sebuah `DomainError` membawa `kode`, `pesan` opsional, dan `detail` opsional. Tiga syarat harus terpenuhi agar pesannya sampai ke klien:
+
+| Syarat | Alasan |
+|---|---|
+| `pesan` diisi pengembang (`pesanEksplisit`) | Tanpa `pesan`, `message` hanya berisi kode — bukan kalimat untuk pengguna |
+| Status 4xx | Galat 5xx tidak pernah membawa pesan (`NFR-R-10`) |
+| Kode bukan `UNAUTHENTICATED`, `TOKEN_EXPIRED`, `FORBIDDEN`, `INSUFFICIENT_PERMISSION` | Jawaban autentikasi/otorisasi seragam (`SDD-AUTH-08`) |
+
+Bila salah satu tidak terpenuhi, ujung rantai memakai pesan generik per kode dan tidak menyertakan `details`. `details` diturunkan `ErrorMapper`: `detail.field` menjadi satu butir berpesan galat itu sendiri, `detail.errors` diteruskan butir per butir. Konsekuensi bagi penulis service: **jangan menyisipkan data pribadi ke `pesan`** (mis. nama pengguna) — ia ikut ke respons dan log klien; cukup rujuk aturannya. Galat skema (Zod) sengaja tidak menghasilkan `details`: pesan bawaan Zod berbahasa Inggris, sedangkan `NFR-AC-09` mewajibkan pesan pengguna berbahasa Indonesia.
 
 Pemetaan `23P01 → RESERVATION_CONFLICT` disesuaikan menjadi `ASSET_NOT_AVAILABLE` bila `resource_type = 'asset'`, berdasarkan nama constraint yang dilanggar.
 

@@ -165,4 +165,19 @@ describe("buildOpenApiDocument", () => {
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         ]);
     });
+
+    it("setiap respons galat menerbitkan skema amplop Bab 17.2 (code, message, details opsional, request_id) — bukan sekadar deskripsi", () => {
+        const op = dokumen(showAsset).paths["/api/v1/assets/{id}"]!["get"]!;
+        const respons = op["responses"] as Record<string, Record<string, unknown>>;
+        for (const status of ["400", "401", "403", "429", "500"]) {
+            const konten = respons[status]!["content"] as Record<string, { schema: { properties: Record<string, unknown>; required: string[]; additionalProperties?: unknown } }>;
+            const skema = konten["application/json"]!.schema;
+            expect(Object.keys(skema.properties).sort(), status).toEqual(["error", "request_id", "success"]);
+            expect(skema.additionalProperties, status).toBe(false);
+            const galat = skema.properties["error"] as { properties: Record<string, unknown>; required: string[]; additionalProperties?: unknown };
+            expect(Object.keys(galat.properties).sort(), status).toEqual(["code", "details", "message"]);
+            expect(galat.required.sort(), status).toEqual(["code", "message"]);
+            expect(galat.additionalProperties, status).toBe(false);
+        }
+    });
 });

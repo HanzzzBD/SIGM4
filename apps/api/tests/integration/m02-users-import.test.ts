@@ -60,10 +60,15 @@ function buatCtx(userId: number): AuthContext {
 
 const HEADER = ["nama_lengkap", "email", "nip_nis", "kode_role", "kode_unit_kerja", "telepon"] as const;
 
+/** E.5.2: `kode_unit_kerja` wajib. Baris uji yang tidak menyebutnya memakai unit bawaan; sel kosong dinyatakan dengan `""` eksplisit. */
+const UNIT_BAWAAN = "TU-01";
+const sel = (b: Record<string, string>, k: (typeof HEADER)[number]): string =>
+    k === "kode_unit_kerja" && !(k in b) ? UNIT_BAWAAN : (b[k] ?? "");
+
 function csvBase64(baris: readonly Record<string, string>[]): string {
     const teks = [
         HEADER.join(","),
-        ...baris.map((b) => HEADER.map((k) => b[k] ?? "").join(",")),
+        ...baris.map((b) => HEADER.map((k) => sel(b, k)).join(",")),
     ].join("\n");
     return Buffer.from(teks, "utf8").toString("base64");
 }
@@ -72,7 +77,7 @@ async function xlsxBase64(baris: readonly Record<string, string>[]): Promise<str
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Pengguna");
     sheet.addRow([...HEADER]);
-    for (const b of baris) sheet.addRow(HEADER.map((k) => b[k] ?? ""));
+    for (const b of baris) sheet.addRow(HEADER.map((k) => sel(b, k)));
     const buffer = await workbook.xlsx.writeBuffer();
     return Buffer.from(buffer).toString("base64");
 }
@@ -97,8 +102,13 @@ describe.skipIf(!ADA_DB)("PR-01-03 — impor massal pengguna (acceptance)", () =
     async function bersihkan(): Promise<void> {
         await kueri("DELETE FROM user_import_jobs");
         await kueri("DELETE FROM users");
+        await kueri("DELETE FROM work_units");
     }
-    beforeEach(bersihkan);
+    beforeEach(async () => {
+        await bersihkan();
+        // E.5.2: `kode_unit_kerja` wajib dan harus ada pada master (WU-01).
+        await kueri("INSERT INTO work_units (nama, kode, jenis) VALUES ('Tata Usaha', 'TU-01', 'TATA_USAHA')");
+    });
     afterAll(bersihkan);
 
     function buatApp(ctx: AuthContext): Express {
@@ -360,6 +370,71 @@ describe.skipIf(!ADA_DB)("PR-01-03 — impor massal pengguna (acceptance)", () =
         const { status, body } = await impor(buatCtx(adminId), "pengguna.csv", csvRusak);
         expect(status).toBe(400);
         expect(body).toMatchObject({ error: { code: "INVALID_REQUEST" } });
+    });
+
+    it("E.5.2: kode_unit_kerja kosong pada sebuah baris → baris itu gagal dengan alasan tertulis; baris lain tetap masuk (IMPT-01, IMPT-02)", async () => {
+        const adminId = await seedAdmin();
+        const sah = emailUnik("sah");
+        const csv = csvBase64([
+            { nama_lengkap: "Sah", email: sah, nip_nis: nipUnik(), kode_role: "R-05" },
+            { nama_lengkap: "Tanpa Unit", email: emailUnik("kosong"), nip_nis: nipUnik(), kode_role: "R-05", kode_unit_kerja: "" },
+            { nama_lengkap: "Spasi Saja", email: emailUnik("spasi"), nip_nis: nipUnik(), kode_role: "R-05", kode_unit_kerja: "   " },
+        ]);
+
+        const { status, body } = await impor(buatCtx(adminId), "pengguna.csv", csv);
+
+        expect(status).toBe(200);
+        const data = (body as { data: { sukses: number; gagal: number; laporan_gagal: { baris: number; pesan: string }[] } }).data;
+        expect(data).toMatchObject({ sukses: 1, gagal: 2 });
+        expect(data.laporan_gagal).toEqual([
+            expect.objectContaining({ baris: 3, pesan: "Kode unit kerja wajib diisi (E.5.2)." }),
+            expect.objectContaining({ baris: 4, pesan: "Kode unit kerja wajib diisi (E.5.2)." }),
+        ]);
+        expect(await aksiUntukEmail(sah)).toMatchObject({ aksi: "USER_CREATED" });
+        const [n] = await kueri<{ n: string }>("SELECT count(*)::text AS n FROM users WHERE email LIKE 'kosong%' OR email LIKE 'spasi%'");
+        expect(n?.n).toBe("0");
+    });
+
+    it("CSV dibaca sebagai teks: NIP/NIS ber-angka nol di depan dan NIP 18 digit tersimpan persis, tidak dikonversi menjadi angka", async () => {
+        const adminId = await seedAdmin();
+        const nipPanjang = "198001012005011001";
+        const nipNol = "0012345";
+        const csv = csvBase64([
+            { nama_lengkap: "Panjang", email: emailUnik("nip1"), nip_nis: nipPanjang, kode_role: "R-05" },
+            { nama_lengkap: "Nol", email: emailUnik("nip2"), nip_nis: nipNol, kode_role: "R-05" },
+        ]);
+
+        const { body } = await impor(buatCtx(adminId), "pengguna.csv", csv);
+
+        expect((body as { data: { sukses: number } }).data.sukses).toBe(2);
+        const tersimpan = await kueri<{ nip_nis: string }>("SELECT nip_nis FROM users WHERE email LIKE 'nip%' ORDER BY nip_nis");
+        expect(tersimpan.map((u) => u.nip_nis)).toEqual([nipNol, nipPanjang]);
+    });
+
+    it("E.5.2: kode_unit_kerja tanpa pengecualian role — baris Siswa/OSIS (R-07) tanpa kode unit juga gagal, dengan kode unit dan consent_wali berhasil", async () => {
+        const adminId = await seedAdmin();
+        const kolom = ["nama_lengkap", "email", "nip_nis", "kode_role", "kode_unit_kerja", "consent_wali"];
+        const baris = (unit: string) => ["Siswa", emailUnik("siswa"), nipUnik(), "R-07", unit, "true"].join(",");
+        const csv = Buffer.from([kolom.join(","), baris(""), baris("TU-01")].join("\n"), "utf8").toString("base64");
+
+        const { body } = await impor(buatCtx(adminId), "siswa.csv", csv);
+
+        const data = (body as { data: { sukses: number; gagal: number; laporan_gagal: { pesan: string }[] } }).data;
+        expect(data).toMatchObject({ sukses: 1, gagal: 1 });
+        expect(data.laporan_gagal[0]?.pesan).toBe("Kode unit kerja wajib diisi (E.5.2).");
+    });
+
+    it("E.5.2: kolom kode_unit_kerja tidak ada di header → 400 INVALID_REQUEST, berkas ditolak utuh dan tidak ada pekerjaan tercatat", async () => {
+        const adminId = await seedAdmin();
+        const csv = Buffer.from(`nama_lengkap,email,nip_nis,kode_role\nX,${emailUnik("x")},${nipUnik()},R-05\n`, "utf8").toString("base64");
+
+        const { status, body } = await impor(buatCtx(adminId), "pengguna.csv", csv);
+
+        expect(status).toBe(400);
+        expect(body).toMatchObject({ error: { code: "INVALID_REQUEST", message: "Kolom wajib hilang pada header: kode_unit_kerja" } });
+        const [jobs] = await kueri<{ n: string }>("SELECT count(*)::text AS n FROM user_import_jobs");
+        const [pengguna] = await kueri<{ n: string }>("SELECT count(*)::text AS n FROM users WHERE email LIKE 'x%'");
+        expect([jobs?.n, pengguna?.n]).toEqual(["0", "0"]);
     });
 
     it("berkas > 200 baris → 202 MENUNGGU, dijadwalkan lewat outbox dan BELUM diproses (IMPT-04)", async () => {

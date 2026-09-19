@@ -57,7 +57,7 @@ async function seedAdmin(): Promise<number> {
     return Number(baris.id);
 }
 
-/** Unit kerja uji (Lampiran E.3) lewat SQL — master belum punya endpoint (keputusan 28). */
+/** Unit kerja uji (Lampiran E.3) lewat SQL — fixture langsung ke tabel; endpoint master ada sejak `PR-01-18`. */
 async function seedUnit(kode: string, status: "AKTIF" | "NONAKTIF" = "AKTIF"): Promise<number> {
     const [baris] = await kueri<{ id: string }>(`
         INSERT INTO work_units (nama, kode, jenis, status)
