@@ -139,7 +139,16 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | `PR-02-30` | Kerangka aplikasi web: routing, state, render berbasis permission | L | L | Ph01 | `SDD-FE-01` … `SDD-FE-06`, `SDD-FE-11/12`, **UXD-12** | TanStack Query + primitif headless & token sendiri; satu set token warna — tanpa mode gelap |
 | `PR-02-31` | Daftar password bocor + riwayat 3 password terakhir | M | M | 06 | `NFR-S-03a`, `FR-01.4` | Password yang cocok daftar bocor ditolak; tiga password terakhir tidak dapat dipakai ulang; sumber daftar bocor ditetapkan di PR ini |
 
+| `PR-02-32` | `SystemAuthContext` + memasang pekerjaan `student-graduation` *(baru, keputusan 31 log phase-01)* | M | M | 02, Ph01 | `SDD-AUTH-05`, `AL-06`, `JOB-01` … `JOB-06`, `SL-03`, `DP-10` | Pelaku `SYSTEM` hanya dapat dibentuk dari luar siklus HTTP; lulusan dinonaktifkan otomatis setelah tahun ajaran berakhir dan tercatat sebagai `SYSTEM`; menyentuh lapisan `AuthContext` — tinjauan arsitek |
+
 ## 8. Task Breakdown
+
+### `PR-02-32` — `SystemAuthContext` dan `student-graduation`
+- [ ] Bentuk `SystemAuthContext` berscope `all`, pelaku `SYSTEM` (`updated_by` NULL) — **tinjauan arsitek** (`AuthContext` adalah tulang punggung, `BRANCHING-STRATEGY §3.1`); rancang bersama `AuthContext` hasil `PR-02-02`, bukan sebelumnya
+- [ ] Uji arsitektur: `SystemAuthContext` tidak dapat diimpor dari lapisan HTTP (`SDD-03 §4`, risiko "dipakai di jalur HTTP")
+- [ ] Sesuaikan repository yang menulis `updated_by` agar menerima pelaku SYSTEM tanpa mengubah perilaku pemanggil pengguna
+- [ ] Pasang pekerjaan `student-graduation` (00:10 WIB, `wibCronToUtc`) yang memanggil `GraduationService.deactivateDueGraduates` dari `PR-01-13`; entri log pelaku `SYSTEM` + ringkasan `JOB-05`
+- [ ] Uji: lulusan yang tahun ajarannya berakhir dinonaktifkan tanpa permintaan HTTP; menjalankan ulang tidak menghasilkan apa pun (`JOB-03`)
 
 ### `PR-02-02` — Login & sesi
 - [ ] Ed25519 keypair + `kid` pada header JWT (`SDD-SESS-03`)
