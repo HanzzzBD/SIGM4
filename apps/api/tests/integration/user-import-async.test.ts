@@ -78,7 +78,7 @@ const izinAdmin = new Map([["user.create", "all" as const]]);
 function pembaca(scopes: ReadonlyMap<string, "all"> = izinAdmin) {
     return {
         load: (): Promise<EffectivePermissions> =>
-            Promise.resolve({ roleId: "1", roleCode: "ADMIN", roleVersion: "1", scopes }),
+            Promise.resolve({ roleId: "1", roleCode: "ADMIN", roleVersion: "1", userStatus: "AKTIF", scopes }),
     };
 }
 const runner = (scopes?: ReadonlyMap<string, "all">) =>

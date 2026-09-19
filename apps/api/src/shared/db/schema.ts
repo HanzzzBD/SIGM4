@@ -290,6 +290,26 @@ export interface StudentEnrollmentsTable extends KolomBaku {
 }
 
 /**
+ * `refresh_tokens` (0021, PR-02-02). Tabel infrastruktur: tanpa kolom baku entitas.
+ * Hanya SHA-256 token yang disimpan (SDD-SESS-03); `family_id` menyatukan rantai rotasi (SDD-SESS-04).
+ */
+export interface RefreshTokensTable {
+    id: Generated<string>;
+    user_id: ColumnType<string, string | number, never>;
+    family_id: string;
+    parent_id: ColumnType<string | null, string | number | null | undefined, never>;
+    token_hash: Buffer;
+    platform: "WEB" | "ANDROID" | "IOS";
+    ip: ColumnType<string | null, string | null | undefined, never>;
+    user_agent: ColumnType<string | null, string | null | undefined, never>;
+    issued_at: ColumnType<Date, Date | undefined, never>;
+    expires_at: ColumnType<Date, Date, never>;
+    rotated_at: ColumnType<Date | null, never, Date | null>;
+    revoked_at: ColumnType<Date | null, never, Date | null>;
+    revoke_reason: ColumnType<string | null, never, string | null>;
+}
+
+/**
  * `user_import_jobs` (0020, PR-01-17). Setiap impor pengguna — jangkar idempotensi
  * hash-berkas (IMPT-03) dan sumber laporan per baris (IMPT-02). `berkas` hanya
  * terisi selama menunggu worker (DP-03).
@@ -357,4 +377,5 @@ export interface Database {
     work_units: WorkUnitsTable;
     student_enrollments: StudentEnrollmentsTable;
     user_import_jobs: UserImportJobsTable;
+    refresh_tokens: RefreshTokensTable;
 }

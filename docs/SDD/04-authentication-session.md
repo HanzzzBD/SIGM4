@@ -76,8 +76,11 @@ CREATE TABLE refresh_tokens (
     id           bigserial PRIMARY KEY,
     user_id      bigint      NOT NULL REFERENCES users(id),
     family_id    uuid        NOT NULL,
+    parent_id    bigint      REFERENCES refresh_tokens(id),  -- token yang ditukar menjadi baris ini (§4.3)
     token_hash   bytea       NOT NULL UNIQUE,   -- SHA-256 (SDD-SESS-03)
-    platform     device_platform NOT NULL,      -- SDD-DB-02: WEB | ANDROID | IOS
+    platform     device_platform NOT NULL,      -- SDD-DB-02: WEB | ANDROID | IOS; diwarisi setiap rotasi
+    ip           inet,                          -- saat terbit; bahan daftar perangkat (§4.6)
+    user_agent   text,
     issued_at    timestamptz NOT NULL DEFAULT now(),
     expires_at   timestamptz NOT NULL,
     rotated_at   timestamptz,                   -- terisi saat ditukar
@@ -114,6 +117,8 @@ POST /auth/login
   7. terbitkan access + refresh (family_id baru), catat LOGIN_SUCCESS + IP + UA
 ```
 
+Body login memuat `platform` (`WEB` | `ANDROID` | `IOS`): ia menentukan masa berlaku refresh token dan jalur pengirimannya (§4.7), disimpan pada baris `refresh_tokens`, dan diwarisi setiap rotasi — tidak pernah diambil dari permintaan refresh. Akun nonaktif dijawab `403 FORBIDDEN` **setelah** password terbukti benar; sebelum itu kegagalan tetap `401` yang sama dengan email tak dikenal. Langkah 2, 3 (penghitung/penguncian), dan 5 dikerjakan `PR-02-03` dan `PR-02-07`.
+
 ### 4.3 Rotasi & deteksi pemakaian ulang
 
 ```
@@ -128,11 +133,15 @@ POST /auth/refresh
          WHERE family_id = row.family_id AND revoked_at IS NULL
         catat anomali keamanan (NFR-S-16); notifikasi Administrator
         -> 401
+  bila expires_at <= now        -> 401 (kedaluwarsa bukan pencurian: tidak mencabut)
+  bila akun tidak Aktif         -> cabut keluarga ('account_deactivated') -> 401
   selain itu:
         UPDATE row SET rotated_at = now()
-        INSERT token baru dengan family_id yang sama
-        -> 200 {access_token, refresh_token}
+        INSERT token baru: family_id sama, parent_id = row.id, platform diwarisi
+        -> 200 {tokens, expires_in}
 ```
+
+Pencabutan karena pemakaian ulang HARUS ter-commit meskipun permintaannya berakhir `401`: hasil transaksi dikembalikan sebagai nilai dan galat baru dilempar setelah commit. Entri `REFRESH_TOKEN_REUSE_DETECTED` ditulis dalam transaksi yang sama (`AL-01`); alarm ke pemantauan berupa log `error` (`OBS-05`). Notifikasi ke Administrator menunggu modul notifikasi (`PR-02-25`).
 
 Konsekuensi yang disengaja: klien yang mengirim dua permintaan refresh bersamaan (mis. dua tab) akan memicu pencabutan keluarga. Klien wajib men-*serialisasi* refresh — pada web dilakukan lewat satu *promise* bersama, pada mobile lewat *mutex* pada interceptor.
 
@@ -176,6 +185,19 @@ sigm4 admin:recover --email=<email> [--force]
 | Ganti password (`FR-01.4`) | Cabut seluruh sesi lain milik pengguna |
 | Nonaktifkan akun | Cabut seluruh sesi seketika |
 | Auto-logout web 30 menit idle | Dilakukan klien; server tetap menghormati masa berlaku token |
+
+### 4.7 Access token, jalur token, dan `authenticate`
+
+| Aspek | Ketetapan |
+|---|---|
+| Klaim access token | `iss=sigm4`, `aud=sigm4-api`, `sub` (id pengguna), `sid` (= `family_id`), `pwd` (wajib ganti password), `amr` (`SDD-SESS-09`), `iat`, `exp`, `jti`; header `alg=EdDSA`, `kid` = thumbprint RFC 7638 kunci publik |
+| Verifikasi | Algoritma dipatok `EdDSA` (bukan yang dinyatakan token); `kid` harus dikenal; tanda tangan diperiksa **sebelum** klaim dipercaya; `crit`/`jku`/`jwk`/`x5u` ditolak. `TOKEN_EXPIRED` hanya bila tanda tangan sah |
+| Jalur WEB | Access token di cookie `sigm4_at` (`Path=/api/v1`), refresh di `sigm4_rt` (`Path=/api/v1/auth`); keduanya `HttpOnly; Secure; SameSite=Strict`. Body respons **tanpa** token (`tokens: null`) |
+| Jalur ANDROID/IOS | Token di body (`tokens`), dikirim balik sebagai `Authorization: Bearer` dan `refresh_token` di body refresh |
+| Sumber token | Header `Authorization` didahulukan; bila tidak ada, cookie `sigm4_at`. Header berbentuk salah tidak jatuh ke cookie |
+| `authenticate` | **Lenient**: token yang ada tetapi tak sah hanya ditandai; penolakan (`401`, `TOKEN_EXPIRED` bila kedaluwarsa) milik `authorize` pada route yang menuntutnya. Route publik — `login` dan `refresh` — tetap terjangkau dengan cookie access kedaluwarsa. Permission dan status akun dibaca ulang setiap permintaan (`PM-05`): akun nonaktif kehilangan akses seketika |
+| Gerbang ganti password | Klaim `pwd=true` → `403 PASSWORD_CHANGE_REQUIRED` pada semua route di luar `/api/v1/auth/*` (`SDD-AUTH-09` gerbang 2, `FR-01.1 A4`) |
+| Kunci | `JWT_PRIVATE_KEY` (PKCS#8) dan `JWT_PUBLIC_KEY` (SPKI), PEM Ed25519; `\n` literal diterima untuk berkas env satu baris. Startup gagal bila bukan PEM, bukan Ed25519, atau bukan pasangan (`SDD-INF-08`) |
 
 ---
 

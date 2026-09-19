@@ -12,12 +12,22 @@ import {
     readProcessConfig,
 } from "../../src/shared/config/index.js";
 import { bootstrap } from "../../src/worker/index.js";
+import { bangkitkanPem, envJwtUji } from "../helpers/auth.js";
 
 const SAH = {
     DATABASE_URL: "postgres://sigm4:rahasia@db:5432/sigm4",
     REDIS_URL: "redis://:rahasia@redis:6379",
     TZ: "UTC",
 };
+
+// Skema API menuntut pasangan kunci JWT (SDD-SESS-02); skema proses tidak.
+const PEM = bangkitkanPem();
+const SAH_API = { ...SAH, ...envJwtUji(PEM), S3_PUBLIC_ENDPOINT: "https://storage.sekolah.example/sigm4/" };
+
+/** Salinan `env` tanpa variabel tertentu. */
+function tanpa(env: Record<string, string>, ...kunci: string[]): Record<string, string> {
+    return Object.fromEntries(Object.entries(env).filter(([k]) => !kunci.includes(k)));
+}
 
 function masalahDari(fn: () => unknown): readonly string[] {
     try {
@@ -102,26 +112,20 @@ describe("readProcessConfig", () => {
 });
 
 describe("readApiConfig — skema bertahap", () => {
-    it("variabel fitur yang belum dibangun tidak dituntut (JWT_*, GEMINI_API_KEY, FCM_CREDENTIALS, S3_ENDPOINT)", () => {
-        const config = readApiConfig(
-            {
-                ...SAH,
-                S3_PUBLIC_ENDPOINT: "https://storage.sekolah.example/sigm4/",
-            },
-            "UTC",
-        );
+    it("variabel fitur yang belum dibangun tidak dituntut (GEMINI_API_KEY, FCM_CREDENTIALS, S3_ENDPOINT)", () => {
+        const config = readApiConfig(SAH_API, "UTC");
         expect(config.objectStoragePublicOrigin).toBe(
             "https://storage.sekolah.example",
         );
     });
 
     it("S3_PUBLIC_ENDPOINT wajib, dan kosong hanya melaporkan satu masalah", () => {
-        expect(masalahDari(() => readApiConfig(SAH, "UTC"))).toEqual([
+        expect(masalahDari(() => readApiConfig(tanpa(SAH_API, "S3_PUBLIC_ENDPOINT"), "UTC"))).toEqual([
             "Variabel lingkungan S3_PUBLIC_ENDPOINT wajib diisi (SDD-INF-08).",
         ]);
         expect(
             masalahDari(() =>
-                readApiConfig({ ...SAH, S3_PUBLIC_ENDPOINT: "  " }, "UTC"),
+                readApiConfig({ ...SAH_API, S3_PUBLIC_ENDPOINT: "  " }, "UTC"),
             ),
         ).toHaveLength(1);
     });
@@ -137,12 +141,52 @@ describe("readApiConfig — skema bertahap", () => {
         "S3_PUBLIC_ENDPOINT = %s ditolak: harus URL http(s) dengan host",
         (nilai) => {
             expect(() =>
-                readApiConfig({ ...SAH, S3_PUBLIC_ENDPOINT: nilai }, "UTC"),
+                readApiConfig({ ...SAH_API, S3_PUBLIC_ENDPOINT: nilai }, "UTC"),
             ).toThrow(
                 /S3_PUBLIC_ENDPOINT harus URL absolut berskema http atau https/,
             );
         },
     );
+});
+
+describe("readApiConfig — kunci JWT (SDD-SESS-02, SDD-SYS-14)", () => {
+    it("JWT_PRIVATE_KEY dan JWT_PUBLIC_KEY wajib", () => {
+        const tanpaJwt = tanpa(SAH_API, "JWT_PRIVATE_KEY", "JWT_PUBLIC_KEY");
+        expect(masalahDari(() => readApiConfig(tanpaJwt, "UTC"))).toEqual([
+            "Variabel lingkungan JWT_PRIVATE_KEY wajib diisi (SDD-INF-08).",
+            "Variabel lingkungan JWT_PUBLIC_KEY wajib diisi (SDD-INF-08).",
+        ]);
+    });
+
+    it("kunci terurai menjadi JwtKeys yang dapat menerbitkan dan memverifikasi", () => {
+        const { jwtKeys } = readApiConfig(SAH_API, "UTC");
+        const sekarang = new Date("2026-09-19T00:00:00Z");
+        const token = jwtKeys.terbitkan({ sub: "7", sid: "s", pwd: false, amr: ["pwd"] }, sekarang);
+        expect(jwtKeys.verifikasi(token, sekarang).sub).toBe("7");
+    });
+
+    it("PEM dengan \\n literal (berkas env satu baris) diterima", () => {
+        const satuBaris = {
+            ...SAH_API,
+            JWT_PRIVATE_KEY: PEM.privat.trim().replaceAll("\n", "\\n"),
+            JWT_PUBLIC_KEY: PEM.publik.trim().replaceAll("\n", "\\n"),
+        };
+        expect(() => readApiConfig(satuBaris, "UTC")).not.toThrow();
+    });
+
+    it("bukan PEM, atau bukan pasangan, ditolak saat startup tanpa membocorkan isinya", () => {
+        const sampah = masalahDari(() =>
+            readApiConfig({ ...SAH_API, JWT_PRIVATE_KEY: "rahasia-bukan-pem" }, "UTC"),
+        );
+        expect(sampah.join("\n")).toMatch(/JWT_PRIVATE_KEY\/JWT_PUBLIC_KEY tidak sah/);
+        expect(sampah.join("\n")).not.toContain("rahasia-bukan-pem");
+
+        const lain = bangkitkanPem();
+        const bukanPasangan = masalahDari(() =>
+            readApiConfig({ ...SAH_API, JWT_PUBLIC_KEY: lain.publik }, "UTC"),
+        );
+        expect(bukanPasangan.join("\n")).toMatch(/bukan pasangan/);
+    });
 });
 
 describe("parseLogLevel", () => {

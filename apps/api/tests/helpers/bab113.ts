@@ -77,6 +77,7 @@ export const NAMA_TIPE: ReadonlyMap<string, string> = new Map([
     ["Cakupan Data Permission", "permission_scope"],
     ["Status Pengguna", "user_status"],
     ["Status Impor Pengguna", "user_import_status"],
+    ["Platform Perangkat", "device_platform"],
     ["Status Lokasi", "location_status"],
     ["Kelompok Parameter Sistem", "setting_group"],
     ["Tipe Parameter Sistem", "setting_type"],

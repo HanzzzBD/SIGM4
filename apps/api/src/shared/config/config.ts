@@ -8,6 +8,7 @@
 // Pesan galat menyebut NAMA variabel, tidak pernah nilainya (SDD-16 §4.7).
 
 import { z } from "zod";
+import { JwtKeys } from "../security/jwt.js";
 
 export const LEVEL_LOG = ["debug", "info", "warn", "error"] as const;
 export type Level = (typeof LEVEL_LOG)[number];
@@ -116,6 +117,24 @@ const bentukPenyimpananPublik = {
         .transform((v) => new URL(v).origin),
 };
 
+// Kunci penandatangan access token (SDD-SESS-02, SDD-16 §4.7). PEM: PKCS#8 privat dan SPKI
+// publik; `\n` literal diterima agar muat pada berkas env satu baris.
+const bentukJwt = {
+    JWT_PRIVATE_KEY: wajib("JWT_PRIVATE_KEY"),
+    JWT_PUBLIC_KEY: wajib("JWT_PUBLIC_KEY"),
+};
+
+/** Memeriksa PEM dan pasangannya; galatnya menyebut NAMA variabel saja, tidak pernah isinya. */
+function periksaKunciJwt(env: NodeJS.ProcessEnv): { masalah: string[]; kunci?: JwtKeys } {
+    if (kosong(env["JWT_PRIVATE_KEY"]) || kosong(env["JWT_PUBLIC_KEY"])) return { masalah: [] };
+    try {
+        return { masalah: [], kunci: JwtKeys.dariPem(env["JWT_PRIVATE_KEY"]!, env["JWT_PUBLIC_KEY"]!) };
+    } catch (galat) {
+        const alasan = galat instanceof Error ? galat.message : "tidak sah";
+        return { masalah: [pesan("JWT_PRIVATE_KEY/JWT_PUBLIC_KEY", `tidak sah: ${alasan}`)] };
+    }
+}
+
 /** Mengurai satu skema; seluruh masalah dilaporkan sekaligus, bukan satu per satu. */
 function urai<T extends z.ZodType>(
     skema: T,
@@ -199,6 +218,8 @@ export function readProcessConfig(
 
 export interface ApiConfig extends ProcessConfig {
     readonly objectStoragePublicOrigin: string;
+    /** Pasangan kunci Ed25519 penandatangan access token; sudah tervalidasi. */
+    readonly jwtKeys: JwtKeys;
 }
 
 /** Validasi startup sigm4-api: skema proses ditambah variabel yang dipakai API. */
@@ -206,6 +227,7 @@ export function readApiConfig(
     env: NodeJS.ProcessEnv = process.env,
     zona: string = zonaProses(),
 ): ApiConfig {
+    const jwt = periksaKunciJwt(env);
     const d = urai(
         z.object({
             ...bentukDatabase,
@@ -213,9 +235,10 @@ export function readApiConfig(
             ...bentukLog,
             ...bentukZona,
             ...bentukPenyimpananPublik,
+            ...bentukJwt,
         }),
         env,
-        periksaZona(zona),
+        [...periksaZona(zona), ...jwt.masalah],
     );
     return {
         database: {
@@ -225,5 +248,7 @@ export function readApiConfig(
         redis: { url: d.REDIS_URL },
         logLevel: d.LOG_LEVEL,
         objectStoragePublicOrigin: d.S3_PUBLIC_ENDPOINT,
+        // `periksaKunciJwt` tidak melaporkan masalah bila kedua variabel sah, jadi kunci ada.
+        jwtKeys: jwt.kunci!,
     };
 }

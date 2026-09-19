@@ -223,6 +223,8 @@ APP_BASE_URL, TZ=UTC
 LOG_LEVEL=info, DB_POOL_SIZE=<TBD-AVL-C>, CHAT_ENABLED=true
 ```
 
+**Kunci JWT** (`PR-02-02`). `JWT_PRIVATE_KEY` dan `JWT_PUBLIC_KEY` berformat PEM Ed25519 (PKCS#8 dan SPKI; `\n` literal diterima untuk berkas env satu baris). Membangkitkan pasangan: `openssl genpkey -algorithm ed25519 -out jwt-private.pem && openssl pkey -in jwt-private.pem -pubout -out jwt-public.pem`. Startup menolak pasangan yang tak cocok tanpa mencetak isinya. Kunci publik cukup bagi komponen yang hanya memverifikasi (`SDD-SESS-02`).
+
 **Validasi bertahap.** Daftar di atas adalah keadaan akhir. Skema `shared/config` (`SDD-SYS-14`) memuat sebuah variabel sejak PR pertama yang memakainya; sebelum itu variabel tersebut tidak dituntut. `S3_ENDPOINT` dipakai operasi sisi server, sedangkan `S3_PUBLIC_ENDPOINT` — origin yang dapat dijangkau peramban dan aplikasi mobile — dipakai presigned URL dan `img-src` (`SDD-FS-13`). `APP_BASE_URL` adalah origin halaman publik QR (`https://{domain}/a/{asset_uuid}`, `FR-05.1`) dan masuk skema bersama `PR-03-01`.
 
 **Dua akun basis data, dua variabel.** `DATABASE_URL` memuat akun **aplikasi** — `sigm4_app`, tanpa hak DDL dan tanpa `UPDATE`/`DELETE` atas `activity_logs` (`SEC-CFG-03`, `AL-03b`, `SDD-DB-11`). `MIGRATION_DATABASE_URL` memuat akun **migration** ber-DDL yang memiliki skema, dan **hanya** job migration (`SDD-INF-03`) yang membacanya; proses API dan worker tidak pernah menerimanya. Bila ia tidak diisi, jalur migration jatuh kembali ke `DATABASE_URL` — kemudahan pengembangan yang di production ditutup oleh kenyataan bahwa akun aplikasi memang tidak dapat menjalankan DDL.

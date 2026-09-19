@@ -32,6 +32,7 @@ import { closeRedis, createRedis, readRedisConfig } from "../../src/shared/cache
 import { FixedClock } from "../../src/shared/clock/index.js";
 import { getDb } from "../../src/shared/db/index.js";
 import { HealthRegistry, Logger } from "../../src/shared/observability/index.js";
+import { authPalsu } from "../helpers/auth.js";
 import { dbmate, kueri } from "../helpers/db.js";
 
 const ADA = process.env["DATABASE_URL"] !== undefined && process.env["REDIS_URL"] !== undefined;
@@ -87,6 +88,7 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
             logger,
             clock,
             db: getDb(),
+            auth: authPalsu(),
         });
         // Pengganti `authenticate` (PR-02-02): mode dipilih uji lewat `modeAktif`.
         const luar = express();
@@ -187,9 +189,9 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
             expect(gagal).toEqual([]);
         });
 
-        it("route publik hanya probe kesehatan, dan dapat dijangkau tanpa AuthContext", async () => {
+        it("route publik hanya probe kesehatan dan login/refresh (PR-02-02), dan dapat dijangkau tanpa AuthContext", async () => {
             const publik = registry.publicRoutes().map((r) => `${r.method} ${r.path}`).sort();
-            expect(publik).toEqual(["GET /health/live", "GET /health/ready"]);
+            expect(publik).toEqual(["GET /health/live", "GET /health/ready", "POST /auth/login", "POST /auth/refresh"]);
             expect((await panggil("tanpa", "GET", "/health/live")).status).toBe(200);
             expect((await panggil("tanpa", "GET", "/health/ready")).status).toBe(200);
         });
@@ -420,8 +422,10 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
 
                 // Penjaga: setiap route TULIS di registri (dan dua pembacaan berlog) tersentuh. Route tulis baru
                 // yang ditambahkan PR berikutnya tanpa langkah di atas membuat uji ini merah.
+                // Route M-01 (login/refresh, PR-02-02) publik dan tanpa AuthContext: bukti AL-01-nya ada di auth-login-refresh.test.ts.
                 const wajib = registry
                     .all()
+                    .filter((r) => r.module !== "m01-auth")
                     .filter((r) => r.method !== "GET" || r.path === "/activity-logs" || r.path === "/activity-logs/export")
                     .map((r) => `${r.method} ${r.path}`)
                     .sort();

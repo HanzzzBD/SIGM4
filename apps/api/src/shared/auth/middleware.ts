@@ -1,19 +1,29 @@
 // Middleware otorisasi — langkah "permission" pada rantai SDD-AUTH-09 (PM-02).
 //
-// `authenticate` (langkah 1: verifikasi token) BUKAN bagian PR ini — ia menyusul
-// Phase 02 bersama login (`PR-02-02`), yang menaruh `AuthContext` lewat
-// `setAuthContext` setelah token terverifikasi dan permission efektifnya
-// terbaca (langsung atau lewat cache `PR-01-04`). Middleware di sini hanya
-// menegakkan permission ATAS AuthContext yang sudah ada: ketiadaannya dijawab
-// sama seperti belum terautentikasi (401), bukan diam-diam meloloskan.
+// `authenticate` (langkah 1: verifikasi token, `authenticate.ts`, PR-02-02) menaruh
+// `AuthContext` lewat `setAuthContext`. Middleware di sini hanya menegakkan permission
+// ATAS AuthContext yang sudah ada: ketiadaannya dijawab 401, bukan diam-diam meloloskan.
 
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import { AuthError, ForbiddenError } from "../errors/index.js";
 import type { AuthContext } from "./context.js";
 
 const KUNCI = "authContext";
+const KUNCI_KEGAGALAN = "kegagalanAutentikasi";
 
-/** Menaruh `AuthContext` request saat ini. Dipanggil langkah `authenticate` (Phase 02). */
+/** Alasan token yang ADA ditolak `authenticate`; menentukan kode 401 yang dijawab `authorize`. */
+export type KegagalanAutentikasi = "UNAUTHENTICATED" | "TOKEN_EXPIRED";
+
+export function setKegagalanAutentikasi(res: Response, alasan: KegagalanAutentikasi): void {
+    res.locals[KUNCI_KEGAGALAN] = alasan;
+}
+
+/** Menandai pengguna wajib mengganti password (klaim `pwd`); dibaca `gerbangGantiPassword`. */
+export function setWajibGantiPassword(res: Response, wajib: boolean): void {
+    res.locals["wajibGantiPassword"] = wajib;
+}
+
+/** Menaruh `AuthContext` request saat ini. Dipanggil `authenticate`. */
 export function setAuthContext(res: Response, ctx: AuthContext): void {
     res.locals[KUNCI] = ctx;
 }
@@ -44,7 +54,8 @@ export function authorize(permission: string): RequestHandler {
     return (_req: Request, res: Response, next: NextFunction) => {
         const ctx = getAuthContext(res);
         if (ctx === undefined) {
-            next(new AuthError());
+            // Token kedaluwarsa dibedakan dari tidak ada/tidak sah agar klien tahu harus refresh.
+            next(new AuthError((res.locals[KUNCI_KEGAGALAN] as KegagalanAutentikasi | undefined) ?? "UNAUTHENTICATED"));
             return;
         }
         if (!ctx.can(permission)) {
