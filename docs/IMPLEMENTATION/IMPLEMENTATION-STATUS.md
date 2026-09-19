@@ -116,7 +116,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-01-14` | `Done` | [#58](https://github.com/HanzzzBD/SIGM4/pull/58) | Gerbang persetujuan wali: `users.consent_guardian_at`, akun siswa tanpa penanda tidak dapat dibuat/diaktifkan (DP-02, SL-06); `NT-48` ditunda ke M-17 — keputusan 32 [log phase-01 §2](logs/phase-01.md) |
 | `PR-01-15` | `Done` | [#45](https://github.com/HanzzzBD/SIGM4/pull/45) | Middleware otorisasi + `healthSummaryRouter` (keputusan 13–15 [log phase-01 §2](logs/phase-01.md)) |
 | `PR-01-16` | `Done` | [#43](https://github.com/HanzzzBD/SIGM4/pull/43) | Hash password Argon2id + kebijakan kata sandi (keputusan 7–11); sisa `NFR-S-03a` → `PR-02-31` |
-| `PR-01-17` | `In Progress` | — | Impor massal pengguna — asinkron > 200 baris, idempotensi file-hash *(baru, keputusan 19)*; `user_import_jobs`, `GET /users/import/{id}`, event `UserImportCompleted` — keputusan 33 [log phase-01](logs/phase-01.md) |
+| `PR-01-17` | `In Progress` | [#59](https://github.com/HanzzzBD/SIGM4/pull/59) | Impor massal pengguna — asinkron > 200 baris, idempotensi file-hash *(baru, keputusan 19)*; `user_import_jobs`, `GET /users/import/{id}`, event `UserImportCompleted` — keputusan 33 [log phase-01](logs/phase-01.md) |
 | `PR-01-18` | `Not Started` | — | Endpoint master data Lampiran E: tahun ajaran & semester, hari libur, hari kerja, unit kerja *(baru, keputusan 29)* — menutup butir terbuka `PR-01-11`/`PR-01-12` |
 
 ### Phase 02 — Inti Sistem · `Not Started`
