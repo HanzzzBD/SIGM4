@@ -10,7 +10,8 @@
 
 import { pathToFileURL } from "node:url";
 import { getRedis } from "../shared/cache/index.js";
-import { ensurePartitions, verifyChain } from "../shared/audit/index.js";
+import { AuditLogger, ensurePartitions, verifyChain } from "../shared/audit/index.js";
+import { PermissionCache } from "../shared/auth/index.js";
 import { SystemClock } from "../shared/clock/index.js";
 import { readProcessConfig, zonaProses } from "../shared/config/index.js";
 import { assertDatabaseTimeZoneUtc, getDb } from "../shared/db/index.js";
@@ -27,11 +28,21 @@ import {
 } from "../shared/observability/index.js";
 import {
     JobRegistry,
+    RETRY_OPTIONS,
     createQueue,
     createWorker,
     scheduleAll,
     wibCronToUtc,
 } from "./scheduler.js";
+import {
+    EVENT_IMPOR_DIMINTA,
+    NAMA_PEKERJAAN_IMPOR,
+    UserImportRunner,
+    UserImportService,
+    UserService,
+    idJobAntreanImpor,
+} from "../modules/m02-users/index.js";
+import type { Queue } from "bullmq";
 import { createHealthServer } from "./health-server.js";
 import { startOutboxPoller } from "./outbox-poller.js";
 import { BATAS_DRAIN_WORKER_MS, langkahHentiWorker } from "./shutdown.js";
@@ -85,7 +96,49 @@ export const registry = new JobRegistry().register(
             }
         },
     },
+    {
+        // Tanpa cron: dimasukkan ke antrean oleh handler `UserImportRequested` (IMPT-04).
+        name: NAMA_PEKERJAAN_IMPOR,
+        handler: async (job) => {
+            const clock = new SystemClock();
+            const db = getDb();
+            const logger = new Logger({ clock, modulBawaan: "user-import" });
+            const audit = new AuditLogger({ clock, logger });
+            const service = new UserImportService(
+                db,
+                new UserService(db, audit, undefined, clock),
+                audit,
+                logger,
+                clock,
+            );
+            const runner = new UserImportRunner(
+                db,
+                new PermissionCache(db, getRedis()),
+                service,
+                logger,
+            );
+            // JOB-06: percobaan terakhir menutup pekerjaan sebagai GAGAL bila masih galat.
+            const akhir = job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
+            await runner.run(job.data, akhir);
+        },
+    },
 );
+
+/**
+ * Memasang handler event yang meneruskan ke antrean. Dipanggil `bootstrap` sekali,
+ * setelah antrean ada — antrean tidak dapat dibuat pada saat modul dimuat.
+ */
+export function pasangHandlerAntrean(handlers: EventHandlerRegistry, queue: Queue): void {
+    handlers.on(EVENT_IMPOR_DIMINTA, async (event) => {
+        const payload = event.payload as { job_id: string | number; oleh: number };
+        // `jobId` tetap: event outbox at-least-once (SDD-EVT-07) tidak melipatgandakan pekerjaan.
+        await queue.add(
+            NAMA_PEKERJAAN_IMPOR,
+            { job_id: payload.job_id, oleh: payload.oleh },
+            { ...RETRY_OPTIONS, jobId: idJobAntreanImpor(payload.job_id) },
+        );
+    });
+}
 
 /**
  * Handler event asinkron. Kosong sampai konsumen pertamanya lahir — katalog
@@ -113,6 +166,7 @@ export async function bootstrap(
     );
     const healthServer = createHealthServer(health).listen(HEALTH_PORT);
     const queue = createQueue(connection);
+    pasangHandlerAntrean(eventHandlers, queue);
     await scheduleAll(queue, registry);
     const worker = createWorker(connection, registry);
     // Dispatcher outbox berjalan di proses yang sama, tetapi bukan sebagai job —

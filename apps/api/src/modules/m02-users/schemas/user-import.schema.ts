@@ -1,12 +1,12 @@
-// Skema Zod impor massal pengguna (FR-02.1 A4, IMPT-01, IMPT-02).
+// Skema Zod impor massal pengguna (FR-02.1 A4, IMPT-01 … IMPT-04).
 //
-// PR-01-03 SINKRON saja — batas ≤ 200 baris, sesuai ambang IMPT-04 sendiri
-// ("> 200 baris diproses asinkron"). Jalur asinkron + idempotensi hash-berkas
-// (IMPT-03/04) menyusul di `PR-01-17` (keputusan 19, log phase-01).
+// Ambang 200 baris memisahkan jalur sinkron (hasil pada respons) dari asinkron
+// (dijadwalkan ke worker, hasil diambil lewat `GET /users/import/{id}`). Kedua
+// jalur mengembalikan representasi pekerjaan yang SAMA (keputusan 33, log phase-01).
 
 import { z } from "zod";
 
-/** `IMPT-04`: di atas ini menuntut pemrosesan asinkron, belum tersedia PR ini. */
+/** `IMPT-04`: di atas ini diproses asinkron oleh worker. */
 export const BATAS_BARIS_IMPOR = 200;
 
 const NAMA_BERKAS_SAH = /\.(csv|xlsx)$/i;
@@ -23,10 +23,8 @@ export const ImportUsersBodySchema = z.object({
 });
 
 /**
- * Satu baris templat `template_pengguna` (Lampiran E.5.2). `kelas` dan
- * `consent_wali` SENGAJA tidak ada di sini: keduanya menuntut kolom yang belum
- * dibuat (`PR-01-13`, `PR-01-14`) — baris kolom itu, bila ada di berkas,
- * diabaikan begitu saja (maju-kompatibel dengan templat penuh nanti).
+ * Satu baris templat `template_pengguna` (Lampiran E.5.2). Kolom `kelas` belum
+ * dibaca impor (belum ada PR yang menugaskannya); bila ada di berkas, diabaikan.
  */
 export const ImportUserRowSchema = z.object({
     nama_lengkap: z.string().trim().min(1).max(150),
@@ -48,20 +46,34 @@ export const ImportUserRowSchema = z.object({
     telepon: z.string().trim().min(1).max(20).optional(),
 });
 
-const ImportRowResultSchema = z.object({
-    baris: z.number(),
-    status: z.enum(["SUKSES", "GAGAL"]),
-    email: z.string().nullable(),
-    pesan: z.string().nullable(),
+export const ImportJobIdParamSchema = z.object({
+    id: z.coerce.number().int().positive(),
 });
 
-export const ImportUsersResponseSchema = z.object({
+const ImportFailureSchema = z.object({
+    baris: z.number(),
+    email: z.string().nullable(),
+    pesan: z.string(),
+});
+
+/** Representasi pekerjaan impor (IMPT-02): hitungan + alasan galat per nomor baris. */
+export const UserImportJobSchema = z.object({
+    id: z.string(),
+    status: z.enum(["MENUNGGU", "BERJALAN", "SELESAI", "GAGAL"]),
+    nama_berkas: z.string(),
+    total: z.number(),
+    terproses: z.number(),
+    sukses: z.number(),
+    gagal: z.number(),
+    laporan_gagal: z.array(ImportFailureSchema),
+    pesan_galat: z.string().nullable(),
+    selesai_pada: z.string().nullable(),
+    dibuat_pada: z.string(),
+});
+
+/** `meta.idempotent_replay` true bila berkas identik sudah diimpor dalam 24 jam (IMPT-03). */
+export const ImportUserJobResponseSchema = z.object({
     success: z.literal(true),
-    data: z.object({
-        total: z.number(),
-        sukses: z.number(),
-        gagal: z.number(),
-        baris: z.array(ImportRowResultSchema),
-    }),
-    meta: z.null(),
+    data: UserImportJobSchema,
+    meta: z.object({ idempotent_replay: z.boolean() }).nullable(),
 });

@@ -9,7 +9,7 @@
 // 0001-0002 (PR-00-05) hanya membuat ekstensi dan tipe enum — bukan tabel —
 // sehingga peta ini memang kosong sampai 0003.
 
-import type { ColumnType, Generated } from "kysely";
+import type { ColumnType, Generated, RawBuilder } from "kysely";
 
 /**
  * `document_counters` (0003, PR-00-07). Penghitung nomor dokumen per
@@ -290,6 +290,30 @@ export interface StudentEnrollmentsTable extends KolomBaku {
 }
 
 /**
+ * `user_import_jobs` (0020, PR-01-17). Setiap impor pengguna — jangkar idempotensi
+ * hash-berkas (IMPT-03) dan sumber laporan per baris (IMPT-02). `berkas` hanya
+ * terisi selama menunggu worker (DP-03).
+ */
+export interface UserImportJobsTable extends KolomBaku {
+    id: Generated<string>;
+    file_hash: string;
+    nama_berkas: string;
+    status: "MENUNGGU" | "BERJALAN" | "SELESAI" | "GAGAL";
+    total_baris: number;
+    baris_terproses: Generated<number>;
+    sukses: Generated<number>;
+    gagal: Generated<number>;
+    laporan_gagal: ColumnType<
+        readonly { baris: number; email: string | null; pesan: string }[],
+        string | undefined,
+        string | RawBuilder<unknown>
+    >;
+    berkas: ColumnType<Buffer | null, Buffer | null | undefined, Buffer | null>;
+    pesan_galat: ColumnType<string | null, string | null | undefined, string | null>;
+    selesai_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+}
+
+/**
  * `academic_years` (0016, PR-01-11). `tanggal_*` bertipe `date` dan kembali
  * sebagai string `YYYY-MM-DD` (pola `holidays.tanggal`). Tepat satu baris
  * `is_active` ditegakkan basis data — SDD-05 §4.7b.
@@ -331,4 +355,5 @@ export interface Database {
     academic_terms: AcademicTermsTable;
     work_units: WorkUnitsTable;
     student_enrollments: StudentEnrollmentsTable;
+    user_import_jobs: UserImportJobsTable;
 }

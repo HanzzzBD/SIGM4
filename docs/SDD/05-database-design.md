@@ -45,6 +45,7 @@ Skema khusus `booking_slots`, `idempotency_keys`, dan `document_counters` didefi
 | **SDD-DB-19** | Migrasi data teks bebas → master (`WU-01`, pola *expand → migrate*) dijalankan **fungsi SQL idempoten** yang dapat dijalankan ulang setelah master terisi, bukan skrip sekali pakai: mencocokkan tanpa menebak (tepat satu kandidat; yang sudah tertaut tidak ditimpa), dan **mengembalikan** yang tak terpetakan sebagai laporan. Keunikan master ditegakkan pada bentuk ternormalisasi yang sama dengan pencocokannya. Kolom lama tetap ada dan berhenti ditulis sampai `contract` (`PR-08-11`). |
 | **SDD-DB-20** | Kelas siswa adalah **data per tahun ajaran** (`SL-01`): baris `student_enrollments`, bukan kolom pada `users`. Menandai lulus (`SL-02`) hanya menandai baris tahun ajaran itu; **penonaktifan akun menunggu tahun ajaran itu berakhir** (`SL-03`) dan diblokir oleh kewajiban (`SL-04`). Definisi "kewajiban" tidak ditulis di modul pengguna — modul pemiliknya mendaftarkan pemeriksa ke titik ekstensi (§4.7d), sehingga aturan tidak pernah mengasumsikan "tidak ada kewajiban". |
 | **SDD-DB-21** | Persetujuan wali (`DP-02`) adalah kolom `users.consent_guardian_at` (`timestamptz`, NULL = belum terekam), **diisi server dari `Clock`** — klien hanya menyatakan `consent_wali: true`. Direkam sekali, **tidak pernah dicabut atau ditimpa**, dan hanya untuk akun Siswa/OSIS (`DP-03`). Gerbangnya ditegakkan service, bukan skema (§4.7e). |
+| **SDD-DB-22** | Setiap impor pengguna — sinkron maupun asinkron — adalah satu baris `user_import_jobs`: jangkar idempotensi (`IMPT-03`, hash SHA-256 isi berkas, jendela 24 jam, pekerjaan `GAGAL` tidak di-*replay*) dan sumber laporan per baris (`IMPT-02`, hanya baris gagal). Isi berkas hanya disimpan selama `MENUNGGU`/`BERJALAN` dan dikosongkan begitu berakhir (`DP-03`). Pemrosesan asinkron dijadwalkan lewat outbox, bukan panggilan langsung ke antrean (§4.7f). |
 
 ---
 
@@ -352,6 +353,19 @@ Tidak ada endpoint `work_units`: PRD belum mendaftarkan satu pun (`m20-settings.
 | `PUT /users/{id}` | `consent_wali: true` merekam penanda bila belum ada; mengganti role menjadi Siswa tanpa penanda ditolak; menyunting siswa yang sudah ada (tanpa ganti role) tidak diblokir |
 
 Tidak ada trigger basis data: gerbangnya bergantung pada role (lintas tabel) dan bukan bagian acceptance. Pencabutan persetujuan tidak didefinisikan `DP-02`, sehingga tidak ada jalurnya. **`NT-48`** (notifikasi in-app ke Administrator) **belum terbit** — modul notifikasi `M-17` baru ada di Phase 02 (`PR-02-25`), dan penolakan me-*rollback* transaksinya sehingga event outbox di dalamnya ikut hilang (`SDD-EVT-04`); penolakan dikembalikan langsung kepada pemanggil.
+
+### 4.7f Pekerjaan impor pengguna
+
+`user_import_jobs` (`0020`, `expand`; enum `user_import_status` = `MENUNGGU`, `BERJALAN`, `SELESAI`, `GAGAL`). Entitas domain milik Administrator (kolom baku §4.2). `berkas` (bytea) memuat isi berkas hanya untuk jalur asinkron.
+
+| Pertanyaan | Jawaban |
+|---|---|
+| Idempotensi (`IMPT-03`) | `file_hash` sama, `created_at` dalam 24 jam, status bukan `GAGAL` → pekerjaan itu dikembalikan (`meta.idempotent_replay`). Pencarian dan penyisipan dilindungi `pg_advisory_xact_lock` atas hash, sehingga dua unggahan identik bersamaan menghasilkan satu pekerjaan |
+| Ambang | ≤ 200 baris: diproses dalam permintaan (`200`); di atasnya: baris pekerjaan `MENUNGGU` + event outbox `UserImportRequested` dalam **satu** transaksi (`202`, `SDD-EVT-04`). Handler outbox memasukkan pekerjaan `user-import` ke antrean `sigm4-jobs` dengan `jobId` tetap (`SDD-EVT-07`) |
+| Pelaku | Worker membangun ulang `AuthContext` **pengunggah** dari basis data saat berjalan — akun harus `AKTIF` dan masih memegang `user.create`, bila tidak pekerjaan `GAGAL`. Pekerjaan bukan dijalankan sebagai `SYSTEM` (`SystemAuthContext` baru lahir di `PR-02-32`); `USER_CREATED` dan `USER_IMPORTED` tercatat atas nama pengunggah |
+| Percobaan ulang (`JOB-06`) | `baris_terproses` diperbarui **per baris**; percobaan berikutnya melanjutkan dari sana sehingga pengguna yang sudah dibuat tidak dibuat dua kali. Pada percobaan terakhir yang masih gagal, pekerjaan ditutup `GAGAL` (`pesan_galat`) |
+| `NT-52` | Event `UserImportCompleted` terbit dalam transaksi penutupan pekerjaan (hanya jalur asinkron). **Konsumennya belum ada** — modul notifikasi `M-17` baru di Phase 02 (`PR-02-25`); sebelum itu hasil dipantau lewat `GET /users/import/{id}` |
+| Retensi | Berkas dikosongkan saat berakhir (`DP-03`). Laporan (memuat email baris gagal) belum punya masa simpan — belum ditetapkan PRD |
 
 ### 4.8 Saldo bahan — ledger dan agregat
 

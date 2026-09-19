@@ -8,7 +8,7 @@ import type { AddressInfo } from "node:net";
 import express from "express";
 import type { Express, RequestHandler } from "express";
 import ExcelJS from "exceljs";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { awalRantai, ujungRantai } from "../../src/api/chain.js";
 import { usersRouter } from "../../src/modules/m02-users/index.js";
 import {
@@ -93,9 +93,13 @@ describe.skipIf(!ADA_DB)("PR-01-03 — impor massal pengguna (acceptance)", () =
         dbmate("up");
     });
 
-    beforeEach(async () => {
+    // Pekerjaan impor merujuk users (created_by): dihapus lebih dulu.
+    async function bersihkan(): Promise<void> {
+        await kueri("DELETE FROM user_import_jobs");
         await kueri("DELETE FROM users");
-    });
+    }
+    beforeEach(bersihkan);
+    afterAll(bersihkan);
 
     function buatApp(ctx: AuthContext): Express {
         const app = express();
@@ -228,12 +232,14 @@ describe.skipIf(!ADA_DB)("PR-01-03 — impor massal pengguna (acceptance)", () =
                     total: number;
                     sukses: number;
                     gagal: number;
-                    baris: { baris: number; status: string; pesan: string | null }[];
+                    laporan_gagal: { baris: number; pesan: string }[];
                 };
             }
         ).data;
         expect(data).toMatchObject({ total: 2, sukses: 1, gagal: 1 });
-        expect(data.baris[1]).toMatchObject({ baris: 3, status: "GAGAL" });
+        // IMPT-02: hanya baris gagal yang dilaporkan, dengan nomor baris berkas.
+        expect(data.laporan_gagal).toHaveLength(1);
+        expect(data.laporan_gagal[0]).toMatchObject({ baris: 3 });
 
         const log = await aksiUntukEmail(eSah);
         expect(log).toMatchObject({ aksi: "USER_CREATED", hasil: "SUKSES" });
@@ -274,10 +280,9 @@ describe.skipIf(!ADA_DB)("PR-01-03 — impor massal pengguna (acceptance)", () =
         ]);
         const { body } = await impor(buatCtx(adminId), "pengguna.csv", csv);
         const data = (
-            body as { data: { baris: { status: string; pesan: string | null }[] } }
+            body as { data: { laporan_gagal: { pesan: string }[] } }
         ).data;
-        expect(data.baris[0]?.status).toBe("GAGAL");
-        expect(data.baris[0]?.pesan).toMatch(/R-99/);
+        expect(data.laporan_gagal[0]?.pesan).toMatch(/R-99/);
     });
 
     it("kode_unit_kerja di-resolve ke master (tanpa membedakan huruf/spasi); kode tak dikenal atau nonaktif → baris gagal (E.5.2, WU-01)", async () => {
@@ -297,17 +302,18 @@ describe.skipIf(!ADA_DB)("PR-01-03 — impor massal pengguna (acceptance)", () =
 
         const { body } = await impor(buatCtx(adminId), "pengguna.csv", csv);
         const data = (
-            body as { data: { sukses: number; gagal: number; baris: { status: string; pesan: string | null }[] } }
+            body as { data: { sukses: number; gagal: number; laporan_gagal: { pesan: string }[] } }
         ).data;
 
         expect(data).toMatchObject({ sukses: 1, gagal: 2 });
-        expect(data.baris[1]?.pesan).toBe("Kode unit kerja tidak dikenal: TIDAK-ADA");
-        expect(data.baris[2]?.pesan).toBe("Unit kerja tidak aktif.");
+        expect(data.laporan_gagal[0]?.pesan).toBe("Kode unit kerja tidak dikenal: TIDAK-ADA");
+        expect(data.laporan_gagal[1]?.pesan).toBe("Unit kerja tidak aktif.");
 
         const [pengguna] = await kueri<{ work_unit_id: string }>(
             "SELECT work_unit_id::text FROM users WHERE work_unit_id IS NOT NULL",
         );
         expect(pengguna?.work_unit_id).toBe(unit?.id);
+        await kueri("DELETE FROM user_import_jobs");
         await kueri("DELETE FROM users");
         await kueri("DELETE FROM work_units");
     });
@@ -356,7 +362,7 @@ describe.skipIf(!ADA_DB)("PR-01-03 — impor massal pengguna (acceptance)", () =
         expect(body).toMatchObject({ error: { code: "INVALID_REQUEST" } });
     });
 
-    it("berkas > 200 baris → 422 VALIDATION_ERROR, ditolak SEBELUM diproses (IMPT-04, PR-01-17)", async () => {
+    it("berkas > 200 baris → 202 MENUNGGU, dijadwalkan lewat outbox dan BELUM diproses (IMPT-04)", async () => {
         const adminId = await seedAdmin();
         const banyak = Array.from({ length: 201 }, (_, i) => ({
             nama_lengkap: `Baris ${String(i)}`,
@@ -369,13 +375,20 @@ describe.skipIf(!ADA_DB)("PR-01-03 — impor massal pengguna (acceptance)", () =
             "pengguna.csv",
             csvBase64(banyak),
         );
-        expect(status).toBe(422);
-        expect(body).toMatchObject({ error: { code: "VALIDATION_ERROR" } });
+        expect(status).toBe(202);
+        expect(body).toMatchObject({
+            data: { status: "MENUNGGU", total: 201, terproses: 0 },
+            meta: { idempotent_replay: false },
+        });
 
         const [jumlah] = await kueri<{ n: string }>(
             "SELECT count(*)::text AS n FROM users WHERE email LIKE 'banyak%'",
         );
         expect(jumlah?.n).toBe("0");
+        const [event] = await kueri<{ event_name: string }>(
+            "SELECT event_name FROM event_outbox WHERE event_name = 'UserImportRequested' ORDER BY id DESC LIMIT 1",
+        );
+        expect(event?.event_name).toBe("UserImportRequested");
     });
 
     it("tanpa AuthContext → 401 sebelum controller (PM-02)", async () => {

@@ -39,6 +39,7 @@ import {
 import {
     createUserRoute,
     getUserRoute,
+    getUserImportRoute,
     classPromotionRoute,
     importUsersRoute,
     listRolesRoute,
@@ -94,6 +95,7 @@ export const registry = new RouteRegistry().register(
     updateUserRoute,
     updateUserStatusRoute,
     importUsersRoute,
+    getUserImportRoute,
     listRolesRoute,
     updateRolePermissionsRoute,
     getLocationTreeRoute,

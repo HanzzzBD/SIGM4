@@ -74,12 +74,13 @@ describe.skipIf(!ADA_DB)("PR-01-14 — gerbang persetujuan wali (acceptance)", (
     beforeAll(() => {
         dbmate("up");
     });
-    beforeEach(async () => {
+    // Pekerjaan impor merujuk users (created_by): dihapus lebih dulu.
+    async function bersihkan(): Promise<void> {
+        await kueri("DELETE FROM user_import_jobs");
         await kueri("DELETE FROM users");
-    });
-    afterEach(async () => {
-        await kueri("DELETE FROM users");
-    });
+    }
+    beforeEach(bersihkan);
+    afterEach(bersihkan);
 
     async function dasar(kodeRole: string) {
         return {
@@ -233,14 +234,14 @@ describe.skipIf(!ADA_DB)("PR-01-14 — gerbang persetujuan wali (acceptance)", (
             `Guru Biasa,${emailUnik()},${nipUnik()},R-05,`,
         ].join("\n");
 
-        const hasil = await service.import(buatCtx(admin), {
+        const { job: hasil } = await service.submit(buatCtx(admin), {
             filename: "pengguna.csv",
             contentBase64: Buffer.from(csv, "utf8").toString("base64"),
         });
 
-        expect(hasil).toMatchObject({ total: 5, sukses: 3, gagal: 2 });
-        expect(hasil.baris.map((b) => b.status)).toEqual(["SUKSES", "SUKSES", "GAGAL", "GAGAL", "SUKSES"]);
-        expect(hasil.baris[2]?.pesan).toBe("Akun siswa tidak dapat dibuat: persetujuan wali belum terekam (DP-02).");
+        expect(hasil).toMatchObject({ status: "SELESAI", total_baris: 5, sukses: 3, gagal: 2 });
+        expect(hasil.laporan_gagal.map((b) => b.baris)).toEqual([4, 5]);
+        expect(hasil.laporan_gagal[0]?.pesan).toBe("Akun siswa tidak dapat dibuat: persetujuan wali belum terekam (DP-02).");
         const [n] = await kueri<{ n: string }>(
             `SELECT count(*)::text AS n FROM users u JOIN roles r ON r.id = u.role_id
               WHERE r.kode = 'R-07' AND u.consent_guardian_at IS NOT NULL`,
