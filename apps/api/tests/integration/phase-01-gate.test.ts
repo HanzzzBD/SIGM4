@@ -67,6 +67,9 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
     let url: string;
     let redis: Redis;
     let cache: PermissionCache;
+    // Mode AuthContext dipilih SISI UJI (bukan dari isi permintaan): permintaan HTTP tidak pernah
+    // menentukan siapa dirinya. Aman karena setiap `panggil` di berkas ini di-await berurutan.
+    let modeAktif = "tanpa";
 
     beforeAll(async () => {
         dbmate("up");
@@ -85,10 +88,10 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
             clock,
             db: getDb(),
         });
-        // Pengganti `authenticate` (PR-02-02): mode dipilih uji lewat header.
+        // Pengganti `authenticate` (PR-02-02): mode dipilih uji lewat `modeAktif`.
         const luar = express();
-        luar.use((req, res, next) => {
-            const mode = req.header("x-uji-ctx") ?? "tanpa";
+        luar.use((_req, res, next) => {
+            const mode = modeAktif;
             const selesai = () => next();
             if (mode === "tanpa") return selesai();
             if (mode === "kosong") {
@@ -124,9 +127,10 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
     });
 
     async function panggil(mode: string, metode: string, path: string, body?: unknown): Promise<Balasan> {
+        modeAktif = mode;
         const res = await fetch(`${url}/api/v1${path}`, {
             method: metode,
-            headers: { "content-type": "application/json", "x-uji-ctx": mode },
+            headers: { "content-type": "application/json" },
             ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         });
         // Ekspor berkas (XLSX) bukan JSON: hanya statusnya yang dipakai.
