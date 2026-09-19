@@ -21,7 +21,7 @@ import { REFRESH_TTL_DETIK, hashPassword } from "../../src/shared/security/index
 import { kunciUji } from "../helpers/auth.js";
 import { dbmate, kueri } from "../helpers/db.js";
 
-const ADA = process.env["DATABASE_URL"] !== undefined && process.env["REDIS_URL"] !== undefined;
+const ADA = process.env["DATABASE_URL"] !== undefined;
 const T0 = new Date("2026-09-19T03:00:00Z");
 const PASSWORD = "Sandi-Uji-Rahasia-1";
 const ROLE_ADMIN = "R-01"; // memegang setting.view (Lampiran C)
@@ -83,6 +83,15 @@ describe.skipIf(!ADA)("PR-02-02 — login + rotasi refresh token (PostgreSQL + R
         });
         return createServer(app);
     }
+
+    // Penjaga lingkungan sebagai UJI, bukan beforeAll: prasyarat yang hilang harus FAILED, bukan
+    // ter-skip diam-diam (templates/PULL-REQUEST.md).
+    it("lingkungannya lengkap — REDIS_URL ada saat DATABASE_URL ada", () => {
+        expect(
+            process.env["REDIS_URL"],
+            "REDIS_URL wajib diisi: permission efektif (SDD-AUTH-04) dan limiter login (SDD-13 §4.3) memakai Redis.",
+        ).toBeDefined();
+    });
 
     beforeAll(async () => {
         dbmate("up");
