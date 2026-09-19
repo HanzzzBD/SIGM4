@@ -42,6 +42,7 @@ Skema khusus `booking_slots`, `idempotency_keys`, dan `document_counters` didefi
 | **SDD-DB-16** | Scope data permission (Lampiran C.1) disimpan **per baris `role_permissions`** sebagai native enum `permission_scope`, bukan diturunkan dari kode saat runtime. Nilai bawaannya ditetapkan tafsir [`SDD-03 §4.8`](03-authorization.md). Lolos uji tiga syarat `SDD-AUTH-11`: ia menyimpan scope yang C.1 sudah definisikan, tanpa menambah permission maupun perilaku. |
 | **SDD-DB-17** | Parameter sistem (`FR-20.1`) disimpan sebagai baris `system_settings` yang **mendeskripsikan dirinya sendiri**: tiap baris membawa `tipe`, `nilai_bawaan`, dan — untuk angka — `nilai_min`/`nilai_maks`; validasi rentang (`FR-20.1 A1`) membaca baris itu, bukan daftar di kode. Kunci baru ditambahkan **PR konsumennya** sebagai baris seed (`SDD-DB-10`), tanpa perubahan skema maupun kode validasi. Katalog awal ([§4.7a](#47a-skema-system_settings)) hanya memuat parameter yang nilai bawaannya disebut eksplisit di `FR-20.1`; rentangnya pagar kewajaran teknis, bukan business rule. |
 | **SDD-DB-18** | Invariant "tepat satu tahun ajaran aktif" (`Lampiran E.2`, `AC-YR-01`) ditegakkan **basis data**, bukan hanya service: paling banyak satu lewat *partial unique index* (`SDD-DB-05`), paling sedikit satu — begitu ada tahun ajaran — lewat *constraint trigger* `DEFERRABLE INITIALLY DEFERRED` yang diperiksa saat `COMMIT`. Ditunda karena pergantian tahun aktif adalah dua `UPDATE` dalam satu transaksi yang sesaat tanpa tahun aktif. Tabel kosong sah (instalasi awal). Rasionya sama `SDD-DB-14`: constraint basis data tidak dapat dilewati service yang keliru. |
+| **SDD-DB-19** | Migrasi data teks bebas → master (`WU-01`, pola *expand → migrate*) dijalankan **fungsi SQL idempoten** yang dapat dijalankan ulang setelah master terisi, bukan skrip sekali pakai: mencocokkan tanpa menebak (tepat satu kandidat; yang sudah tertaut tidak ditimpa), dan **mengembalikan** yang tak terpetakan sebagai laporan. Keunikan master ditegakkan pada bentuk ternormalisasi yang sama dengan pencocokannya. Kolom lama tetap ada dan berhenti ditulis sampai `contract` (`PR-08-11`). |
 
 ---
 
@@ -308,6 +309,20 @@ Parameter kelompok lain (jam operasional, tarif denda, durasi sesi, dst.) **tida
 | Semester berada di dalam rentang tahun ajarannya | **belum** ditegakkan basis data — milik service kalender akademik yang belum ada |
 
 `academic_term_name` (`GANJIL`, `GENAP`) adalah kelompok Bab 11.3 "Nama Semester". Tidak ada endpoint: PRD belum mendaftarkan satu pun untuk kalender akademik (`m20-settings.md` §7 hanya `/settings`), dan baris endpoint baru wajib lebih dulu masuk PRD.
+
+### 4.7c Skema `work_units` dan migrasi `users.unit_kerja`
+
+`work_units` (`Lampiran E.3`) — entitas domain milik Administrator (kolom baku §4.2). `jenis` (`work_unit_type`) dan `status` (`work_unit_status`) adalah kelompok Bab 11.3 "Jenis Unit Kerja" dan "Status Unit Kerja". `users.work_unit_id` ditambahkan NULLABLE (`expand`); `users.unit_kerja` **tetap ada** dan tidak lagi ditulis kode — dihapus `PR-08-11` (`contract`).
+
+| Aturan | Ditegakkan oleh |
+|---|---|
+| `kode` dan `nama` unik tanpa memandang huruf besar-kecil dan spasi tepi | `UNIQUE INDEX` atas `lower(btrim(...))` — bentuk yang sama dengan pencocokan `map_users_unit_kerja()` dan impor `kode_unit_kerja` (`E.5.2`) |
+| Unit yang masih dirujuk pengguna tidak dapat dihapus, hanya dinonaktifkan (`WU-02`) | FK `users.work_unit_id` tanpa `ON DELETE` (RESTRICT) — lebih ketat dari "pengguna aktif" |
+| `work_unit_id` pada pengguna harus unit **ada dan aktif** | service (`UserService`), bukan skema — unit nonaktif tetap sah bagi pengguna yang sudah memakainya |
+
+**Pemetaan** (`SDD-DB-19`): `map_users_unit_kerja()` mencocokkan teks lama dengan `nama` **atau** `kode` unit, mengisi hanya bila tepat satu kandidat dan `work_unit_id` masih kosong, lalu mengembalikan daftar `(unit_kerja, jumlah_pengguna)` yang tak terpetakan. Dijalankan sekali oleh migration `0017`, dan dapat dipanggil ulang setelah Administrator mengisi master. Pemetaan tidak membuat unit dari teks — `jenis` tidak dapat ditebak. `procurements.unit_kerja` mengikuti pola yang sama pada phase pemiliknya.
+
+Tidak ada endpoint `work_units`: PRD belum mendaftarkan satu pun (`m20-settings.md` §7), dan baris endpoint baru wajib lebih dulu masuk PRD.
 
 ### 4.8 Saldo bahan — ledger dan agregat
 

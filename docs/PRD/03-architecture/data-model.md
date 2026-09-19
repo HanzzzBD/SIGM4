@@ -6,7 +6,7 @@ Data induk yang relatif stabil dan menjadi acuan seluruh transaksi.
 
 | Entitas | Deskripsi | Atribut Utama | Pemilik Data |
 |---|---|---|---|
-| **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, unit_kerja, telepon, foto, status, totp_enabled_at, must_change_password, login_terakhir_pada | Administrator |
+| **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, work_unit_id, telepon, foto, status, totp_enabled_at, must_change_password, login_terakhir_pada | Administrator |
 | **roles** | Peran pengguna | id, nama, deskripsi, is_system | Administrator |
 | **permissions** | Daftar hak akses granular | id, modul, aksi, kode | Sistem |
 | **role_permissions** | Relasi role–permission | role_id, permission_id | Administrator |
@@ -116,6 +116,8 @@ Data acuan bernilai tetap yang digunakan sebagai enumerasi dan dropdown.
 | **Kelompok Parameter Sistem** | Identitas Sekolah, Kode Aset, Peminjaman, Denda, Reservasi, Maintenance, Bahan, Notifikasi, Keamanan, Chatbot AI |
 | **Tipe Parameter Sistem** | Bilangan Bulat, Desimal, Boolean, Teks |
 | **Nama Semester** | Ganjil, Genap |
+| **Jenis Unit Kerja** | Manajemen, Mata Pelajaran, Tata Usaha, Ekstrakurikuler, Kelas |
+| **Status Unit Kerja** | Aktif, Nonaktif |
 
 ## 11.4 Kebijakan Retensi Data
 
@@ -238,7 +240,7 @@ erDiagram
         string password_hash
         string nip_nis UK
         bigint role_id FK
-        string unit_kerja
+        bigint work_unit_id FK
         enum status
         datetime totp_enabled_at
         datetime login_terakhir_pada

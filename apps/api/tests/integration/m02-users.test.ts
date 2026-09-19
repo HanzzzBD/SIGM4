@@ -57,6 +57,17 @@ async function seedAdmin(): Promise<number> {
     return Number(baris.id);
 }
 
+/** Unit kerja uji (Lampiran E.3) lewat SQL — master belum punya endpoint (keputusan 28). */
+async function seedUnit(kode: string, status: "AKTIF" | "NONAKTIF" = "AKTIF"): Promise<number> {
+    const [baris] = await kueri<{ id: string }>(`
+        INSERT INTO work_units (nama, kode, jenis, status)
+        VALUES ('Unit ${kode}', '${kode}', 'MANAJEMEN', '${status}')
+        RETURNING id::text
+    `);
+    if (baris === undefined) throw new Error("Gagal menyisipkan unit kerja uji");
+    return Number(baris.id);
+}
+
 function buatCtx(userId: number): AuthContext {
     return createAuthContext({
         userId,
@@ -106,6 +117,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
 
     beforeEach(async () => {
         await kueri("DELETE FROM users");
+        await kueri("DELETE FROM work_units");
     });
 
     it("katalog endpoint: tidak ada DELETE /users — soft delete saja (BR-067)", () => {
@@ -128,11 +140,12 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
             email,
             nipNis,
             roleId: await idRole("R-02"),
-            unitKerja: "Sarpras",
+            workUnitId: await seedUnit("SARPRAS"),
             telepon: null,
         });
 
         expect(hasil.user.status).toBe("AKTIF");
+        expect(hasil.user.work_unit_id).not.toBeNull();
         expect(hasil.user.must_change_password).toBe(true);
         expect(hasil.user.email).toBe(email);
         expect(
@@ -156,7 +169,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
             email,
             nipNis: nipUnik(),
             roleId: await idRole("R-02"),
-            unitKerja: null,
+            workUnitId: null,
             telepon: null,
         });
 
@@ -166,7 +179,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
                 email: email.toUpperCase(),
                 nipNis: nipUnik(),
                 roleId: await idRole("R-02"),
-                unitKerja: null,
+                workUnitId: null,
                 telepon: null,
             }),
         ).rejects.toMatchObject({ kode: "DUPLICATE_CODE", detail: { field: "email" } });
@@ -181,7 +194,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
             email: emailUnik(),
             nipNis,
             roleId: await idRole("R-02"),
-            unitKerja: null,
+            workUnitId: null,
             telepon: null,
         });
 
@@ -191,7 +204,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
                 email: emailUnik(),
                 nipNis,
                 roleId: await idRole("R-02"),
-                unitKerja: null,
+                workUnitId: null,
                 telepon: null,
             }),
         ).rejects.toMatchObject({ kode: "DUPLICATE_CODE", detail: { field: "nip_nis" } });
@@ -213,21 +226,22 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
             email: emailUnik(),
             nipNis: nipUnik(),
             roleId: await idRole("R-02"),
-            unitKerja: null,
+            workUnitId: null,
             telepon: null,
         });
 
+        const unitBaru = await seedUnit("UNIT-BARU");
         const sesudah = await service.update(ctx, Number(dibuat.user.id), {
             nama: "Sesudah",
             email: dibuat.user.email,
             nipNis: dibuat.user.nip_nis,
             roleId: Number(dibuat.user.role_id),
-            unitKerja: "Unit Baru",
+            workUnitId: unitBaru,
             telepon: "081200000000",
         });
 
         expect(sesudah.nama).toBe("Sesudah");
-        expect(sesudah.unit_kerja).toBe("Unit Baru");
+        expect(sesudah.work_unit_id).toBe(String(unitBaru));
 
         const log = await aksiTerakhir(dibuat.user.id);
         expect(log).toMatchObject({ aksi: "USER_UPDATED", hasil: "SUKSES" });
@@ -242,7 +256,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
             email: emailUnik(),
             nipNis: nipUnik(),
             roleId: await idRole("R-02"),
-            unitKerja: null,
+            workUnitId: null,
             telepon: null,
         });
 
@@ -252,7 +266,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
                 email: dibuat.user.email,
                 nipNis: dibuat.user.nip_nis,
                 roleId: Number(dibuat.user.role_id),
-                unitKerja: null,
+                workUnitId: null,
                 telepon: null,
             }),
         ).resolves.toMatchObject({ nama: "X Diubah" });
@@ -267,7 +281,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
             email: emailUnik(),
             nipNis: nipUnik(),
             roleId: await idRole("R-05"),
-            unitKerja: null,
+            workUnitId: null,
             telepon: null,
         });
 
@@ -293,7 +307,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
             email: emailUnik(),
             nipNis: nipUnik(),
             roleId: await idRole("R-05"),
-            unitKerja: null,
+            workUnitId: null,
             telepon: null,
         });
         await service.updateStatus(ctx, Number(dibuat.user.id), {
@@ -344,18 +358,19 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
         expect(sisa?.n).toBe("2");
     });
 
-    it("list: paginasi dan filter status/role_id/unit_kerja", async () => {
+    it("list: paginasi dan filter status/role_id/work_unit_id", async () => {
         const adminId = await seedAdmin();
         const service = buatService();
         const ctx = buatCtx(adminId);
         const roleGuru = await idRole("R-05");
+        const unitKurikulum = await seedUnit("KURIKULUM");
         for (let i = 0; i < 3; i += 1) {
             await service.create(ctx, {
                 nama: `Guru ${String(i)}`,
                 email: emailUnik("guru"),
                 nipNis: nipUnik(),
                 roleId: roleGuru,
-                unitKerja: "Kurikulum",
+                workUnitId: unitKurikulum,
                 telepon: null,
             });
         }
@@ -364,10 +379,50 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
             page: 1,
             perPage: 2,
             roleId: roleGuru,
-            unitKerja: "Kurikulum",
+            workUnitId: unitKurikulum,
         });
         expect(hasil.total).toBe(3);
         expect(hasil.rows).toHaveLength(2);
+    });
+
+    it("work_unit_id harus unit kerja yang ADA dan AKTIF; unit nonaktif tetap sah bagi yang sudah memakainya (WU-01, WU-02)", async () => {
+        const adminId = await seedAdmin();
+        const service = buatService();
+        const ctx = buatCtx(adminId);
+        const dasar = {
+            nama: "Unit Uji",
+            roleId: await idRole("R-05"),
+            telepon: null,
+        };
+
+        await expect(
+            service.create(ctx, { ...dasar, email: emailUnik(), nipNis: nipUnik(), workUnitId: 999999999 }),
+        ).rejects.toMatchObject({ kode: "VALIDATION_ERROR", detail: { field: "work_unit_id" } });
+
+        const nonaktif = await seedUnit("NONAKTIF-1", "NONAKTIF");
+        await expect(
+            service.create(ctx, { ...dasar, email: emailUnik(), nipNis: nipUnik(), workUnitId: nonaktif }),
+        ).rejects.toMatchObject({ kode: "VALIDATION_ERROR", message: "Unit kerja tidak aktif." });
+
+        // Pengguna yang sudah berada di unit lalu unit itu dinonaktifkan: menyimpan
+        // ulang tanpa mengubah unitnya tidak boleh gagal (WU-02).
+        const aktif = await seedUnit("AKTIF-1");
+        const dibuat = await service.create(ctx, { ...dasar, email: emailUnik(), nipNis: nipUnik(), workUnitId: aktif });
+        await kueri(`UPDATE work_units SET status = 'NONAKTIF' WHERE id = ${aktif}`);
+        const masukan = {
+            nama: "Nama Baru",
+            email: dibuat.user.email,
+            nipNis: dibuat.user.nip_nis,
+            roleId: Number(dibuat.user.role_id),
+            telepon: null,
+        };
+        const tetap = await service.update(ctx, Number(dibuat.user.id), { ...masukan, workUnitId: aktif });
+        expect(tetap.work_unit_id).toBe(String(aktif));
+
+        // Memindahkan ke unit nonaktif ditolak.
+        await expect(
+            service.update(ctx, Number(dibuat.user.id), { ...masukan, workUnitId: nonaktif }),
+        ).rejects.toMatchObject({ kode: "VALIDATION_ERROR" });
     });
 
     describe("lewat HTTP penuh (routing, JSON, envelope)", () => {
@@ -466,7 +521,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
                 email: emailUnik(),
                 nipNis: nipUnik(),
                 roleId: await idRole("R-05"),
-                unitKerja: null,
+                workUnitId: null,
                 telepon: null,
             });
             const url = await buka(buatApp(buatCtx(adminId)));
@@ -490,9 +545,10 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
                 email: emailUnik(),
                 nipNis: nipUnik(),
                 roleId: await idRole("R-05"),
-                unitKerja: null,
+                workUnitId: null,
                 telepon: null,
             });
+            const unitBaru = await seedUnit("UNIT-HTTP");
             const url = await buka(buatApp(buatCtx(adminId)));
             const res = await fetch(`${url}/api/v1/users/${dibuat.user.id}`, {
                 method: "PUT",
@@ -502,13 +558,31 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
                     email: dibuat.user.email,
                     nip_nis: dibuat.user.nip_nis,
                     role_id: Number(dibuat.user.role_id),
-                    unit_kerja: "Unit Baru",
+                    work_unit_id: unitBaru,
                 }),
             });
             expect(res.status).toBe(200);
             expect(await res.json()).toMatchObject({
                 success: true,
-                data: { nama: "W Diubah", unit_kerja: "Unit Baru" },
+                data: { nama: "W Diubah", work_unit_id: String(unitBaru) },
+            });
+
+            // Unit tak dikenal → 422 VALIDATION_ERROR (bukan 500 dari FK).
+            const ditolak = await fetch(`${url}/api/v1/users/${dibuat.user.id}`, {
+                method: "PUT",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({
+                    nama: "W Diubah",
+                    email: dibuat.user.email,
+                    nip_nis: dibuat.user.nip_nis,
+                    role_id: Number(dibuat.user.role_id),
+                    work_unit_id: 999999999,
+                }),
+            });
+            expect(ditolak.status).toBe(422);
+            expect(await ditolak.json()).toMatchObject({
+                success: false,
+                error: { code: "VALIDATION_ERROR" },
             });
         });
 
@@ -520,7 +594,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
                 email: emailUnik(),
                 nipNis: nipUnik(),
                 roleId: await idRole("R-05"),
-                unitKerja: null,
+                workUnitId: null,
                 telepon: null,
             });
             await service.updateStatus(buatCtx(adminId), Number(dibuat.user.id), {
@@ -548,7 +622,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
                 email: emailUnik(),
                 nipNis: nipUnik(),
                 roleId: await idRole("R-05"),
-                unitKerja: null,
+                workUnitId: null,
                 telepon: null,
             });
             const url = await buka(buatApp(buatCtx(adminId)));

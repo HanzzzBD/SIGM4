@@ -9,7 +9,8 @@ const NamaSchema = z.string().trim().min(1).max(150);
 const EmailSchema = z.email().trim().toLowerCase().max(150);
 const NipNisSchema = z.string().trim().min(1).max(30);
 const RoleIdSchema = z.coerce.number().int().positive();
-const UnitKerjaSchema = z.string().trim().min(1).max(100).nullable();
+/** WU-01: `work_unit_id` menggantikan teks bebas `unit_kerja` (Lampiran E.3). */
+const WorkUnitIdSchema = z.coerce.number().int().positive().nullable();
 const TeleponSchema = z.string().trim().min(1).max(20).nullable();
 
 export const UserIdParamSchema = z.object({
@@ -22,7 +23,7 @@ export const CreateUserBodySchema = z.object({
     email: EmailSchema,
     nip_nis: NipNisSchema,
     role_id: RoleIdSchema,
-    unit_kerja: UnitKerjaSchema.optional(),
+    work_unit_id: WorkUnitIdSchema.optional(),
     telepon: TeleponSchema.optional(),
 });
 
@@ -32,7 +33,7 @@ export const UpdateUserBodySchema = z.object({
     email: EmailSchema,
     nip_nis: NipNisSchema,
     role_id: RoleIdSchema,
-    unit_kerja: UnitKerjaSchema.optional(),
+    work_unit_id: WorkUnitIdSchema.optional(),
     telepon: TeleponSchema.optional(),
 });
 
@@ -65,7 +66,7 @@ export const ListUsersQuerySchema = z.object({
     per_page: z.coerce.number().int().positive().max(100).default(25),
     status: UserStatusSchema.optional(),
     role_id: z.coerce.number().int().positive().optional(),
-    unit_kerja: z.string().trim().min(1).optional(),
+    work_unit_id: z.coerce.number().int().positive().optional(),
 });
 
 const UserSchema = z.object({
@@ -74,7 +75,7 @@ const UserSchema = z.object({
     email: z.string(),
     nip_nis: z.string(),
     role_id: z.string(),
-    unit_kerja: z.string().nullable(),
+    work_unit_id: z.string().nullable(),
     telepon: z.string().nullable(),
     status: UserStatusSchema,
     must_change_password: z.boolean(),

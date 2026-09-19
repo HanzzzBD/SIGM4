@@ -80,4 +80,6 @@ export const NAMA_TIPE: ReadonlyMap<string, string> = new Map([
     ["Kelompok Parameter Sistem", "setting_group"],
     ["Tipe Parameter Sistem", "setting_type"],
     ["Nama Semester", "academic_term_name"],
+    ["Jenis Unit Kerja", "work_unit_type"],
+    ["Status Unit Kerja", "work_unit_status"],
 ]);
