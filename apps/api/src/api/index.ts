@@ -63,6 +63,7 @@ import {
     exportActivityLogsRoute,
     listActivityLogsRoute,
 } from "../modules/m18-activity-log/index.js";
+import { getSettingsRoute, settingsRouter, updateSettingsRoute } from "../modules/m20-settings/index.js";
 import {
     healthLiveRoute,
     healthReadyRoute,
@@ -104,6 +105,8 @@ export const registry = new RouteRegistry().register(
     listRoomAssetsRoute,
     listActivityLogsRoute,
     exportActivityLogsRoute,
+    getSettingsRoute,
+    updateSettingsRoute,
 );
 
 /**
@@ -188,6 +191,20 @@ export function createApp(deps: AppDeps): Express {
     app.use(
         BASE_PATH,
         activityLogRouter(
+            {
+                db: deps.db,
+                auditLogger: new AuditLogger({
+                    clock: deps.clock,
+                    logger: deps.logger,
+                }),
+            },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        settingsRouter(
             {
                 db: deps.db,
                 auditLogger: new AuditLogger({
