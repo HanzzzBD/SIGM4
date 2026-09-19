@@ -10,7 +10,8 @@
 # RAHASIA tidak pernah berada di sini (SEC-CFG-01). Dua berkas env disiapkan
 # operator dari secret manager di VPS, di luar repositori:
 #   ${SIGM4_ENV_FILE}            — api & worker: DATABASE_URL (akun sigm4_app),
-#                                  S3_PUBLIC_ENDPOINT, LOG_LEVEL, …  (SDD-16 §4.7)
+#                                  S3_PUBLIC_ENDPOINT, JWT_PRIVATE_KEY,
+#                                  JWT_PUBLIC_KEY, LOG_LEVEL, …  (SDD-16 §4.7)
 #   ${SIGM4_MIGRATION_ENV_FILE}  — HANYA job migration: MIGRATION_DATABASE_URL,
 #                                  APP_DB_PASSWORD. API dan worker tidak pernah
 #                                  menerimanya (SDD-16 §4.7, SEC-CFG-03).

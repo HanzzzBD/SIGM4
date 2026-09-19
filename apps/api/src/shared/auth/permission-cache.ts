@@ -29,6 +29,8 @@ export interface EffectivePermissions {
     readonly roleId: string;
     readonly roleCode: string;
     readonly roleVersion: string;
+    /** Status akun pada saat dibaca — dibaca ulang setiap panggilan, tidak pernah dari cache. */
+    readonly userStatus: "AKTIF" | "NONAKTIF";
     readonly scopes: ReadonlyMap<string, Scope>;
 }
 
@@ -60,11 +62,11 @@ export class PermissionCache {
 
     private async muatPeran(
         userId: number,
-    ): Promise<Pick<EffectivePermissions, "roleId" | "roleCode" | "roleVersion"> | undefined> {
+    ): Promise<Pick<EffectivePermissions, "roleId" | "roleCode" | "roleVersion" | "userStatus"> | undefined> {
         const baris = await this.db
             .selectFrom("users as u")
             .innerJoin("roles as r", "r.id", "u.role_id")
-            .select(["r.id as role_id", "r.kode as role_kode", "r.role_version as role_version"])
+            .select(["r.id as role_id", "r.kode as role_kode", "r.role_version as role_version", "u.status as user_status"])
             .where("u.id", "=", String(userId))
             .executeTakeFirst();
         if (baris === undefined) return undefined;
@@ -72,6 +74,7 @@ export class PermissionCache {
             roleId: baris.role_id,
             roleCode: baris.role_kode,
             roleVersion: baris.role_version,
+            userStatus: baris.user_status,
         };
     }
 

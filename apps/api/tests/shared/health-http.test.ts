@@ -31,6 +31,7 @@ import type {
     CheckResult,
     DependencyName,
 } from "../../src/shared/observability/index.js";
+import { authPalsu } from "../helpers/auth.js";
 import { createHealthServer } from "../../src/worker/health-server.js";
 import type { Database } from "../../src/shared/db/index.js";
 
@@ -68,6 +69,7 @@ function aplikasi(h: HealthRegistry) {
         }),
         clock: new FixedClock(new Date("2026-09-14T00:00:00Z")),
         db: dbPalsu,
+        auth: authPalsu(),
     });
 }
 
@@ -149,11 +151,13 @@ describe("sigm4-api — /api/v1/health/*", () => {
         });
     });
 
-    it("registri proses: probe publik, ringkasan, CRUD pengguna (PR-01-02), impor massal (PR-01-03), matriks permission (PR-01-04), skema lokasi (PR-01-05), pohon+penonaktifan (PR-01-06), daftar aset per lokasi (PR-01-07), penelusuran (PR-01-08), ekspor activity log (PR-01-09), parameter sistem (PR-01-10), kenaikan kelas massal (PR-01-13), pengambilan pekerjaan impor pengguna (PR-01-17), serta master data Lampiran E — tahun ajaran, hari libur, hari kerja, unit kerja (PR-01-18) berpermission", () => {
+    it("registri proses: probe publik, ringkasan, CRUD pengguna (PR-01-02), impor massal (PR-01-03), matriks permission (PR-01-04), skema lokasi (PR-01-05), pohon+penonaktifan (PR-01-06), daftar aset per lokasi (PR-01-07), penelusuran (PR-01-08), ekspor activity log (PR-01-09), parameter sistem (PR-01-10), kenaikan kelas massal (PR-01-13), pengambilan pekerjaan impor pengguna (PR-01-17), serta master data Lampiran E — tahun ajaran, hari libur, hari kerja, unit kerja (PR-01-18) berpermission, serta login dan refresh publik (PR-02-02)", () => {
         expect(registry.all().map((r) => `${r.method} ${r.path}`)).toEqual([
             "GET /health/live",
             "GET /health/ready",
             "GET /health",
+            "POST /auth/login",
+            "POST /auth/refresh",
             "GET /users",
             "POST /users",
             "GET /users/:id",
@@ -191,7 +195,12 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "PUT /work-units/:id",
             "PATCH /work-units/:id/status",
         ]);
-        expect(registry.publicRoutes()).toHaveLength(2);
+        expect(registry.publicRoutes().map((r) => `${r.method} ${r.path}`)).toEqual([
+            "GET /health/live",
+            "GET /health/ready",
+            "POST /auth/login",
+            "POST /auth/refresh",
+        ]);
         expect(registry.guarded().map((r) => r.permission)).toEqual([
             "setting.view",
             "user.view",
@@ -236,6 +245,8 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "/api/v1/health/live",
             "/api/v1/health/ready",
             "/api/v1/health",
+            "/api/v1/auth/login",
+            "/api/v1/auth/refresh",
             "/api/v1/users",
             "/api/v1/users/{id}",
             "/api/v1/users/{id}/status",

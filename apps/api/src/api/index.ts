@@ -7,7 +7,7 @@
 // merakit server Express minimal agar kedua probe kesehatan dapat dipanggil;
 // PR-00-15 memasang dari rantai SDD-06 §4.2: `requestId`, header keamanan, rate
 // limit, 404, dan `errorMapper`. Middleware permission (`authorize`, PM-02) ada
-// sejak PR-01-15; `authenticate` — verifikasi token — menyusul Phase 02 (`PR-02-02`).
+// sejak PR-01-15; `authenticate` — verifikasi token — sejak PR-02-02.
 
 import type { Server } from "node:http";
 import { pathToFileURL } from "node:url";
@@ -25,7 +25,14 @@ import {
     getDb,
 } from "../shared/db/index.js";
 import type { Database } from "../shared/db/index.js";
-import { authorize } from "../shared/auth/index.js";
+import {
+    PermissionCache,
+    authenticate,
+    authorize,
+    gerbangGantiPassword,
+} from "../shared/auth/index.js";
+
+import type { JwtKeys } from "../shared/security/index.js";
 import { RedisRateLimiter, RouteRegistry } from "../shared/http/index.js";
 import type { RateLimiter } from "../shared/http/index.js";
 import { Penghenti, tutupServer } from "../shared/lifecycle/index.js";
@@ -36,6 +43,7 @@ import {
     databaseCheck,
     redisCheck,
 } from "../shared/observability/index.js";
+import { authRouter, loginRoute, refreshRoute } from "../modules/m01-auth/index.js";
 import {
     createUserRoute,
     getUserRoute,
@@ -107,6 +115,8 @@ export const registry = new RouteRegistry().register(
     healthLiveRoute,
     healthReadyRoute,
     healthSummaryRoute,
+    loginRoute,
+    refreshRoute,
     listUsersRoute,
     createUserRoute,
     getUserRoute,
@@ -163,6 +173,11 @@ export interface AppDeps {
     readonly clock: Clock;
     /** Pool Kysely bagi modul yang menulis basis data — m02-users sejak PR-01-02. */
     readonly db: Kysely<Database>;
+    /** Penandatangan/pemverifikasi access token (SDD-SESS-02) dan permission efektif (PM-05). */
+    readonly auth: {
+        readonly jwtKeys: JwtKeys;
+        readonly permissions: PermissionCache;
+    };
 }
 
 /** Merakit aplikasi tanpa membuka port — dipakai proses dan uji. */
@@ -173,6 +188,32 @@ export function createApp(deps: AppDeps): Express {
     // adalah IP klien — kunci rate limit bagi permintaan tanpa pengguna.
     app.set("trust proxy", 1);
     app.use(awalRantai(deps));
+    // SDD-AUTH-09: authenticate → gerbang ganti password → (per route) permission.
+    app.use(
+        authenticate({
+            jwtKeys: deps.auth.jwtKeys,
+            permissions: deps.auth.permissions,
+            clock: deps.clock,
+        }),
+    );
+    app.use(gerbangGantiPassword(`${BASE_PATH}/auth/`));
+    app.use(
+        BASE_PATH,
+        authRouter(
+            {
+                db: deps.db,
+                jwtKeys: deps.auth.jwtKeys,
+                permissionCache: deps.auth.permissions,
+                auditLogger: new AuditLogger({
+                    clock: deps.clock,
+                    logger: deps.logger,
+                }),
+                clock: deps.clock,
+                logger: deps.logger,
+            },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+        ),
+    );
     app.use(
         BASE_PATH,
         healthRouter(deps.health, (route) =>
@@ -327,6 +368,10 @@ export async function start(
         logger,
         clock,
         db: getDb(),
+        auth: {
+            jwtKeys: config.jwtKeys,
+            permissions: new PermissionCache(getDb(), getRedis()),
+        },
     }).listen(PORT);
     return new Penghenti(langkahHentiApi(health, server), {
         batasMs: BATAS_HENTI_API_MS,

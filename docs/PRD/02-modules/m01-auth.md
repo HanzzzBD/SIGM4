@@ -267,9 +267,9 @@ sequenceDiagram
 
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
-| POST | `/auth/login` | Publik | Login email + password | 200 `{tokens, user, permissions}` atau `{requires_2fa}` | 401, 423, 429 |
+| POST | `/auth/login` | Publik | Login email + password + `platform` (`WEB`, `ANDROID`, `IOS`) | 200 `{tokens, expires_in, user, permissions}` (`tokens` null pada WEB: token hanya di cookie httpOnly) atau `{requires_2fa}` | 400, 401, 403, 423, 429 |
 | POST | `/auth/2fa/verify` | Challenge token | Verifikasi kode TOTP | 200 `{tokens, user}` | 401, 423 |
-| POST | `/auth/refresh` | Refresh token | Menukar refresh token | 200 `{access_token}` | 401 |
+| POST | `/auth/refresh` | Refresh token | Menukar refresh token (rotasi; refresh token baru ikut diterbitkan, pemakaian ulang mencabut seluruh rantai) | 200 `{tokens, expires_in}` (`tokens` null pada WEB) | 401 |
 | POST | `/auth/logout` | Bearer | Mencabut sesi | 204 | 401 |
 | POST | `/auth/password/forgot` | Publik | Ajukan permintaan reset | 202 `{message}` | 429 |
 | POST | `/auth/password/change` | Bearer | Ganti password sendiri | 200 | 401, 422 |
@@ -318,6 +318,7 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 |---|---|
 | `LOGIN_SUCCESS` / `LOGIN_FAILED` | Termasuk IP dan perangkat |
 | `LOGOUT` / `LOGOUT_ALL_DEVICES` | Pencabutan sesi |
+| `REFRESH_TOKEN_REUSE_DETECTED` | Refresh token yang sudah dirotasi dipakai ulang; seluruh rantai dicabut. Termasuk IP dan perangkat |
 | `ACCOUNT_LOCKED` / `ACCOUNT_UNLOCKED` | Penguncian akibat percobaan gagal |
 | `PASSWORD_CHANGED` | Tanpa merekam nilai password |
 | `PASSWORD_RESET_REQUESTED` / `PASSWORD_RESET_ISSUED` / `PASSWORD_RESET_REJECTED` | Alur reset administratif |

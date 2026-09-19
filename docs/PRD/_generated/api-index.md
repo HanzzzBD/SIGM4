@@ -100,11 +100,11 @@
 | POST | `/audit-sessions/{id}/submit` | `audit.manage` | Kirim untuk persetujuan | [M-13](../02-modules/m13-audit-stocktake.md) |
 | POST | `/audit-sessions` | `audit.manage` | Buat sesi opname | [M-13](../02-modules/m13-audit-stocktake.md) |
 | POST | `/auth/2fa/verify` | Challenge token | Verifikasi kode TOTP | 200 `{tokens, user}` | 401, 423 | [M-01](../02-modules/m01-auth.md) |
-| POST | `/auth/login` | Publik | Login email + password | 200 `{tokens, user, permissions}` atau `{requires_2fa}` | 401, 423, 429 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/login` | Publik | Login email + password + `platform` (`WEB`, `ANDROID`, `IOS`) | 200 `{tokens, expires_in, user, permissions}` (`tokens` null pada WEB: token hanya di cookie httpOnly) atau `{requires_2fa}` | 400, 401, 403, 423, 429 | [M-01](../02-modules/m01-auth.md) |
 | POST | `/auth/logout` | Bearer | Mencabut sesi | 204 | 401 | [M-01](../02-modules/m01-auth.md) |
 | POST | `/auth/password/change` | Bearer | Ganti password sendiri | 200 | 401, 422 | [M-01](../02-modules/m01-auth.md) |
 | POST | `/auth/password/forgot` | Publik | Ajukan permintaan reset | 202 `{message}` | 429 | [M-01](../02-modules/m01-auth.md) |
-| POST | `/auth/refresh` | Refresh token | Menukar refresh token | 200 `{access_token}` | 401 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/refresh` | Refresh token | Menukar refresh token (rotasi; refresh token baru ikut diterbitkan, pemakaian ulang mencabut seluruh rantai) | 200 `{tokens, expires_in}` (`tokens` null pada WEB) | 401 | [M-01](../02-modules/m01-auth.md) |
 | POST | `/buildings` · `/areas` · `/rooms` | `location.manage` | Buat entitas lokasi | [M-03](../02-modules/m03-locations.md) |
 | POST | `/chat/messages/{id}/feedback` | Bearer | Beri umpan balik jawaban | [M-19](../02-modules/m19-chatbot.md) |
 | POST | `/chat/messages` | Bearer | Kirim pesan ke chatbot | [M-19](../02-modules/m19-chatbot.md) |

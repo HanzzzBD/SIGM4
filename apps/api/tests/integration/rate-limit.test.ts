@@ -9,6 +9,7 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import type { Kysely } from "kysely";
 import { afterAll, describe, expect, it } from "vitest";
+import { authPalsu } from "../helpers/auth.js";
 import { createApp } from "../../src/api/index.js";
 import { createRedis, readRedisConfig } from "../../src/shared/cache/index.js";
 import { FixedClock } from "../../src/shared/clock/index.js";
@@ -127,6 +128,7 @@ describe.skipIf(!ADA_DB)("Rate limit terhadap Redis nyata", () => {
             }),
             clock: new FixedClock(awal),
             db: dbPalsu,
+            auth: authPalsu(),
         });
         const server = createServer(app);
         await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));

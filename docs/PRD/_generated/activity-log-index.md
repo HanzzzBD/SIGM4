@@ -5,7 +5,7 @@
 # Indeks Aksi Activity Log
 
 > Setiap aksi dimiliki modul penerbitnya. Prinsip pencatatan di `../03-architecture/activity-log.md`.
-> Total: **69** baris, dikumpulkan dari 22 berkas modul.
+> Total: **70** baris, dikumpulkan dari 22 berkas modul.
 
 | Aksi | Keterangan | Pemilik |
 |---|---|---|
@@ -60,6 +60,7 @@
 | `PROCUREMENT_ASSETS_GENERATED` | Pembentukan aset dari penerimaan | [M-14](../02-modules/m14-procurement.md) |
 | `PROCUREMENT_CREATED` / `SUBMITTED` / `DECIDED` | Siklus usulan | [M-14](../02-modules/m14-procurement.md) |
 | `PROCUREMENT_RECEIVED` | Penerimaan barang beserta jumlah | [M-14](../02-modules/m14-procurement.md) |
+| `REFRESH_TOKEN_REUSE_DETECTED` | Refresh token yang sudah dirotasi dipakai ulang; seluruh rantai dicabut. Termasuk IP dan perangkat | [M-01](../02-modules/m01-auth.md) |
 | `REPORT_EXPORTED` | Ekspor laporan beserta jenis dan filter | [M-16](../02-modules/m16-analytics.md) |
 | `RESERVATION_CREATED` / `RESERVATION_UPDATED` / `RESERVATION_CANCELLED` / `RESERVATION_EXPIRED` | Termasuk alasan pembatalan | [M-07](../02-modules/m07-reservation-room.md) |
 | `ROLE_PERMISSION_UPDATED` | Perubahan matriks permission | [M-02](../02-modules/m02-users.md) |

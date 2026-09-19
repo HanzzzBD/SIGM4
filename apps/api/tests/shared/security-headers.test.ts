@@ -10,6 +10,7 @@ import type { AddressInfo } from "node:net";
 import type { Kysely } from "kysely";
 import { afterEach, describe, expect, it } from "vitest";
 import { createApp } from "../../src/api/index.js";
+import { authPalsu } from "../helpers/auth.js";
 import { FixedClock } from "../../src/shared/clock/index.js";
 import type { Database } from "../../src/shared/db/index.js";
 import {
@@ -46,6 +47,7 @@ async function ambil(path = "/api/v1/health/live"): Promise<Response> {
         }),
         clock: new FixedClock(new Date("2026-09-14T00:00:00Z")),
         db: dbPalsu,
+        auth: authPalsu(),
     });
     const server = createServer(app);
     terbuka.push(server);
