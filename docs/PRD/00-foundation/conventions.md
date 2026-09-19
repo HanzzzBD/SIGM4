@@ -41,7 +41,7 @@ Diperlukan karena Bab 19 menyediakan filter "semester berjalan" dan "tahun ajara
 | `academic_years` | id, nama (mis. "2026/2027"), tanggal_mulai, tanggal_selesai, is_active | Tepat satu tahun ajaran berstatus aktif |
 | `academic_terms` | id, academic_year_id, nama (Ganjil/Genap), tanggal_mulai, tanggal_selesai | Dipakai filter dashboard & analitik |
 | `holidays` | id, tanggal, nama, jenis (Nasional/Sekolah/Cuti Bersama), academic_year_id | Dasar CAL-01 dan FR-07.5 A4 |
-| `work_days` | hari (0–6), aktif | Bawaan: Senin–Sabtu aktif |
+| `work_days` | hari (1–7, ISO-8601; 1 = Senin), aktif | Bawaan: Senin–Sabtu aktif |
 
 | Kode | Requirement |
 |---|---|

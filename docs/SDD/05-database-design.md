@@ -309,9 +309,10 @@ Parameter kelompok lain (jam operasional, tarif denda, durasi sesi, dst.) **tida
 | Bila ada tahun ajaran, satu wajib aktif (`AC-YR-01`) | constraint trigger *deferred* — `SDD-DB-18` |
 | Tahun ajaran tidak beririsan; semester tidak beririsan dalam satu tahun ajaran | `EXCLUDE USING gist` atas `daterange(mulai, selesai, '[]')` — `btree_gist` sudah ada sejak `0001` |
 | `tanggal_mulai < tanggal_selesai`; nama unik; satu Ganjil dan satu Genap per tahun | `CHECK` / `UNIQUE` |
-| Semester berada di dalam rentang tahun ajarannya | **belum** ditegakkan basis data — milik service kalender akademik yang belum ada |
+| Semester berada di dalam rentang tahun ajarannya; kedua semester (Ganjil dan Genap) wajib ada; semester tidak beririsan | service (`AcademicYearService`, `PR-01-18`) — semester tidak beririsan juga dijaga `EXCLUDE` di atas |
+| Tahun ajaran pertama otomatis aktif (`AC-YR-01`); pergantian aktif dalam **satu** transaksi (`AC-YR-02`) | service — nonaktifkan yang lama, aktifkan yang baru; seluruh perubahan tahun ajaran diserialkan `pg_advisory_xact_lock` (kalender dikelola satu-dua Administrator), jika tidak dua pembuatan bersamaan pada tabel kosong sama-sama menjadi aktif |
 
-`academic_term_name` (`GANJIL`, `GENAP`) adalah kelompok Bab 11.3 "Nama Semester". Tidak ada endpoint: PRD belum mendaftarkan satu pun untuk kalender akademik (`m20-settings.md` §7 hanya `/settings`), dan baris endpoint baru wajib lebih dulu masuk PRD.
+`academic_term_name` (`GANJIL`, `GENAP`) adalah kelompok Bab 11.3 "Nama Semester". Endpoint tahun ajaran, hari libur, dan hari kerja dimiliki `m20-settings.md` §7 (`PR-01-18`). Semester diganti **hapus lalu sisip** pada `PUT`, bukan `UPDATE` per baris: `EXCLUDE` diperiksa per baris, sehingga menukar rentang Ganjil/Genap tersandung di tengah jalan. Kolom `date` dibaca `to_char(..., 'YYYY-MM-DD')` (driver `pg` mengembalikan `Date`). `work_days.hari` mengikuti ISO-8601 (1 = Senin … 7 = Minggu); `PUT /work-days` menuntut ketujuh hari dan minimal satu aktif — tanpa itu `BusinessCalendarService` (`CAL-01`) tidak pernah menemukan hari kerja.
 
 ### 4.7c Skema `work_units` dan migrasi `users.unit_kerja`
 
@@ -322,10 +323,12 @@ Parameter kelompok lain (jam operasional, tarif denda, durasi sesi, dst.) **tida
 | `kode` dan `nama` unik tanpa memandang huruf besar-kecil dan spasi tepi | `UNIQUE INDEX` atas `lower(btrim(...))` — bentuk yang sama dengan pencocokan `map_users_unit_kerja()` dan impor `kode_unit_kerja` (`E.5.2`) |
 | Unit yang masih dirujuk pengguna tidak dapat dihapus, hanya dinonaktifkan (`WU-02`) | FK `users.work_unit_id` tanpa `ON DELETE` (RESTRICT) — lebih ketat dari "pengguna aktif" |
 | `work_unit_id` pada pengguna harus unit **ada dan aktif** | service (`UserService`), bukan skema — unit nonaktif tetap sah bagi pengguna yang sudah memakainya |
+| `jenis` sebuah unit tidak dapat diubah dari `KELAS` selama masih dipakai `student_enrollments.kelas_id` (§4.7d) | service (`WorkUnitService`, `PR-01-18`) — lintas tabel |
+| Menonaktifkan unit yang masih dipakai pengguna aktif | **diizinkan** (`WU-02` hanya melarang hapus); penggunanya tidak kehilangan unit |
 
 **Pemetaan** (`SDD-DB-19`): `map_users_unit_kerja()` mencocokkan teks lama dengan `nama` **atau** `kode` unit, mengisi hanya bila tepat satu kandidat dan `work_unit_id` masih kosong, lalu mengembalikan daftar `(unit_kerja, jumlah_pengguna)` yang tak terpetakan. Dijalankan sekali oleh migration `0017`, dan dapat dipanggil ulang setelah Administrator mengisi master. Pemetaan tidak membuat unit dari teks — `jenis` tidak dapat ditebak. `procurements.unit_kerja` mengikuti pola yang sama pada phase pemiliknya.
 
-Tidak ada endpoint `work_units`: PRD belum mendaftarkan satu pun (`m20-settings.md` §7), dan baris endpoint baru wajib lebih dulu masuk PRD.
+Endpoint `work_units` (buat, sunting, `PATCH …/status`; tanpa hapus) dimiliki `m20-settings.md` §7 (`PR-01-18`).
 
 ### 4.7d Skema `student_enrollments` dan siklus akun siswa
 

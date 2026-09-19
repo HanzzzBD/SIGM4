@@ -65,7 +65,25 @@ import {
     exportActivityLogsRoute,
     listActivityLogsRoute,
 } from "../modules/m18-activity-log/index.js";
-import { getSettingsRoute, settingsRouter, updateSettingsRoute } from "../modules/m20-settings/index.js";
+import {
+    activateAcademicYearRoute,
+    createAcademicYearRoute,
+    createHolidayRoute,
+    createWorkUnitRoute,
+    deleteHolidayRoute,
+    getSettingsRoute,
+    getWorkDaysRoute,
+    listAcademicYearsRoute,
+    listHolidaysRoute,
+    listWorkUnitsRoute,
+    settingsRouter,
+    updateAcademicYearRoute,
+    updateHolidayRoute,
+    updateSettingsRoute,
+    updateWorkDaysRoute,
+    updateWorkUnitRoute,
+    updateWorkUnitStatusRoute,
+} from "../modules/m20-settings/index.js";
 import {
     healthLiveRoute,
     healthReadyRoute,
@@ -111,6 +129,20 @@ export const registry = new RouteRegistry().register(
     getSettingsRoute,
     updateSettingsRoute,
     classPromotionRoute,
+    listAcademicYearsRoute,
+    createAcademicYearRoute,
+    updateAcademicYearRoute,
+    activateAcademicYearRoute,
+    listHolidaysRoute,
+    createHolidayRoute,
+    updateHolidayRoute,
+    deleteHolidayRoute,
+    getWorkDaysRoute,
+    updateWorkDaysRoute,
+    listWorkUnitsRoute,
+    createWorkUnitRoute,
+    updateWorkUnitRoute,
+    updateWorkUnitStatusRoute,
 );
 
 /**
