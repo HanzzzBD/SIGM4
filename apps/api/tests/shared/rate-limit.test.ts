@@ -10,6 +10,7 @@ import express from "express";
 import { afterEach, describe, expect, it } from "vitest";
 import { rateLimit } from "../../src/api/security.js";
 import { FixedClock } from "../../src/shared/clock/index.js";
+import { ErrorEnvelopeSchema } from "../../src/shared/errors/index.js";
 import { KELAS_LIMIT, kunciLimit } from "../../src/shared/http/index.js";
 import type {
     HasilLimit,
@@ -158,6 +159,9 @@ describe("middleware rateLimit", () => {
         );
         expect(res.status).toBe(429);
         expect(res.headers.get("retry-after")).toBe("42");
+        const badan: unknown = await res.clone().json();
+        // Emitter ketiga amplop galat (selain `kirimGalat` dan probe readiness): skema Bab 17.2 yang sama.
+        expect(ErrorEnvelopeSchema.safeParse(badan).success).toBe(true);
         expect(await res.json()).toEqual({
             success: false,
             error: {

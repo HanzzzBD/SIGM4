@@ -314,8 +314,9 @@ export interface UserImportJobsTable extends KolomBaku {
 }
 
 /**
- * `academic_years` (0016, PR-01-11). `tanggal_*` bertipe `date` dan kembali
- * sebagai string `YYYY-MM-DD` (pola `holidays.tanggal`). Tepat satu baris
+ * `academic_years` (0016, PR-01-11). `tanggal_*` bertipe `date`; driver `pg`
+ * mengembalikan `Date`, jadi repository membacanya lewat `to_char(..., 'YYYY-MM-DD')`
+ * (pola `BusinessCalendarService`). Tepat satu baris
  * `is_active` ditegakkan basis data — SDD-05 §4.7b.
  */
 export interface AcademicYearsTable extends KolomBaku {

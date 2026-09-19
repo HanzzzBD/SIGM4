@@ -81,7 +81,7 @@ describe("consent_wali (DP-02, SL-06)", () => {
     });
 
     it("impor E.5.2: 'true'/'TRUE'/' true ' → true, 'false' → false, kosong → tidak diisi, isian lain ditolak", () => {
-        const baris = { nama_lengkap: "A", email: "a@sekolah.sch.id", nip_nis: "1", kode_role: "R-07" };
+        const baris = { nama_lengkap: "A", email: "a@sekolah.sch.id", nip_nis: "1", kode_role: "R-07", kode_unit_kerja: "X-1" };
         expect(ImportUserRowSchema.parse({ ...baris, consent_wali: "true" }).consent_wali).toBe(true);
         expect(ImportUserRowSchema.parse({ ...baris, consent_wali: "TRUE" }).consent_wali).toBe(true);
         expect(ImportUserRowSchema.parse({ ...baris, consent_wali: " true " }).consent_wali).toBe(true);

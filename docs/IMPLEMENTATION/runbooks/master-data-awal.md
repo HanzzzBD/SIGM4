@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Berlaku sampai** | [`PR-01-18`](../phases/phase-01.md) tergabung — sesudahnya pengisian master dilakukan Administrator lewat aplikasi |
+| **Berlaku sampai** | Bagian 1 dan 2: [`PR-01-18`](../phases/phase-01.md) tergabung — sesudahnya Administrator mengisi kalender akademik dan unit kerja lewat aplikasi (`m20-settings.md` §7). Bagian 3 (pemetaan `unit_kerja` lama) tetap berlaku: tidak ada endpoint untuknya |
 | **Pelaksana** | Operator basis data, dengan data dari Administrator sekolah |
 | **Requirement** | `AC-YR-01`, `WU-01`, `WU-02` ([`conventions.md`](../../PRD/00-foundation/conventions.md) Lampiran E) |
 | **Skema** | [`SDD-05 §4.7b`](../../SDD/05-database-design.md) (kalender akademik) · [`§4.7c`](../../SDD/05-database-design.md) (`work_units`, `SDD-DB-19`) |

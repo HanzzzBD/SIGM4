@@ -13,6 +13,7 @@ import {
     pingCheck,
     readyResponse,
 } from "../../src/shared/observability/index.js";
+import { ErrorEnvelopeSchema } from "../../src/shared/errors/index.js";
 import type {
     CheckResult,
     DependencyName,
@@ -95,6 +96,7 @@ describe("HealthRegistry — kesiapan (SDD-15 §4.5)", () => {
         const r = await readyResponse(health);
         expect(r.statusCode).toBe(503);
         // Amplop galat Bab 17.2 dengan kode Bab 17.3 `SERVICE_NOT_READY`.
+        expect(ErrorEnvelopeSchema.safeParse(r.body).success).toBe(true);
         expect(r.body).toEqual({
             success: false,
             error: {

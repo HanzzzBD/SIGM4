@@ -44,10 +44,33 @@ describe("ImportUserRowSchema (Lampiran E.5.2)", () => {
         email: "budi@sekolah.sch.id",
         nip_nis: "198001012005011001",
         kode_role: "R-02",
+        kode_unit_kerja: "TU-01",
     };
+    const PESAN = "Kode unit kerja wajib diisi (E.5.2).";
 
-    it("menerima baris minimal sah tanpa kode_unit_kerja/telepon (opsional — master belum dapat diisi lewat aplikasi, keputusan 28)", () => {
+    it("menerima baris minimal sah: kode_unit_kerja wajib, telepon opsional", () => {
         expect(() => ImportUserRowSchema.parse(dasar)).not.toThrow();
+    });
+
+    it("E.5.2: kode_unit_kerja WAJIB — tidak ada, kosong, atau hanya spasi ditolak dengan alasan berbahasa Indonesia", () => {
+        // Kolom dibuang lewat Object.fromEntries: bebas dari variabel terdestruktur yang tak terpakai.
+        const tanpa = Object.fromEntries(Object.entries(dasar).filter(([k]) => k !== "kode_unit_kerja"));
+        for (const baris of [tanpa, { ...dasar, kode_unit_kerja: undefined }, { ...dasar, kode_unit_kerja: "" }, { ...dasar, kode_unit_kerja: "   " }]) {
+            const hasil = ImportUserRowSchema.safeParse(baris);
+            expect(hasil.success).toBe(false);
+            expect(hasil.error?.issues.map((i) => i.message)).toEqual([PESAN]);
+        }
+    });
+
+    it("E.5.2: kode_unit_kerja tanpa pengecualian role — Siswa/OSIS (R-07) juga wajib", () => {
+        const tanpa = Object.fromEntries(Object.entries({ ...dasar, kode_role: "R-07", consent_wali: "true" }).filter(([k]) => k !== "kode_unit_kerja"));
+        expect(ImportUserRowSchema.safeParse(tanpa).success).toBe(false);
+        expect(ImportUserRowSchema.safeParse({ ...dasar, kode_role: "R-07", consent_wali: "true" }).success).toBe(true);
+    });
+
+    it("kode_unit_kerja dipangkas spasi tepinya dan dibatasi 100 karakter", () => {
+        expect(ImportUserRowSchema.parse({ ...dasar, kode_unit_kerja: "  TU-01 " }).kode_unit_kerja).toBe("TU-01");
+        expect(ImportUserRowSchema.safeParse({ ...dasar, kode_unit_kerja: "x".repeat(101) }).success).toBe(false);
     });
 
     it("menolak email tidak sah", () => {

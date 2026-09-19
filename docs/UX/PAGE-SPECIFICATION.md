@@ -285,7 +285,7 @@ Kategori Komputer · Lab Komputer 1 · Diperoleh 2024
 | Aspek | Ketentuan | Rujukan |
 |---|---|---|
 | Label | Eksplisit di atas field, tidak pernah hanya placeholder | `NFR-AC-05` |
-| Validasi | Inline saat blur; pesan galat di bawah field, ditautkan `aria-describedby` | 31.3 · `SDD-FE` §4.6 |
+| Validasi | Inline saat blur; pesan galat di bawah field, ditautkan `aria-describedby`. Galat dari server yang menunjuk isian (`error.details[{ field, message }]`, Bab 17.2) tampil pada field itu; tanpa `details`, `error.message` (atau pesan yang dipetakan dari `code`) tampil sebagai galat formulir | 31.3 · `SDD-FE` §4.6 · `SDD-API-14` |
 | Skema | Aturan validasi klien identik dengan server karena berasal dari skema bersama | `SDD-FE-05` · `SDD-REPO-05` |
 | Pengiriman ganda | Tombol simpan dinonaktifkan selama permintaan berjalan; endpoint transaksional mengirim `Idempotency-Key` | `ID-01` · 31.3 |
 | Field wajib | Ditandai teks "wajib", bukan hanya tanda bintang berwarna | `NFR-AC-06` |

@@ -6,7 +6,11 @@
 
 import express from "express";
 import type { ErrorRequestHandler, RequestHandler, Response } from "express";
-import type { KodeGalat } from "../shared/errors/index.js";
+import type {
+    ErrorDetail,
+    HasilPemetaan,
+    KodeGalat,
+} from "../shared/errors/index.js";
 import { mapError, statusUntuk } from "../shared/errors/index.js";
 import type { RateLimiter } from "../shared/http/index.js";
 import type { Logger } from "../shared/observability/index.js";
@@ -19,8 +23,10 @@ import { rateLimit, securityHeaders } from "./security.js";
 import type { SecurityConfig } from "./security.js";
 
 /**
- * Pesan pengguna yang dikirim ujung rantai ini. Klien memetakan `code` ke
- * pesannya sendiri (NFR-AC-09); yang di sini hanya pengganti yang aman.
+ * Pesan generik per kode: pengganti yang aman bila galat tidak membawa kalimat
+ * sendiri — galat sistem, galat skema (Zod), galat basis data, galat autentikasi/
+ * otorisasi, dan galat 5xx (`NFR-R-10`). Klien tetap dapat memetakan `code` ke
+ * pesannya sendiri (NFR-AC-09).
  */
 const PESAN: Partial<Record<KodeGalat, string>> = {
     INVALID_REQUEST: "Permintaan tidak valid.",
@@ -32,13 +38,32 @@ const PESAN: Partial<Record<KodeGalat, string>> = {
     INTERNAL_ERROR: "Terjadi kesalahan pada server.",
 };
 
-/** Amplop galat Bab 17.2, dengan `request_id` yang sama dengan `X-Request-Id`. */
-export function kirimGalat(res: Response, kode: KodeGalat): void {
+/**
+ * Amplop galat Bab 17.2, dengan `request_id` yang sama dengan `X-Request-Id`.
+ *
+ * `pesan` dan `details` datang dari `mapError`, yang sudah menyaringnya: hanya
+ * kalimat yang sengaja ditulis pengembang pada `DomainError` galat klien. Tanpa
+ * keduanya, bentuknya persis seperti sebelumnya — tanpa `details`.
+ */
+export function kirimGalat(
+    res: Response,
+    kode: KodeGalat,
+    rincian: {
+        readonly pesan?: string | undefined;
+        readonly details?: readonly ErrorDetail[] | undefined;
+    } = {},
+): void {
     res.status(statusUntuk(kode)).json({
         success: false,
         error: {
             code: kode,
-            message: PESAN[kode] ?? "Permintaan tidak dapat diproses.",
+            message:
+                rincian.pesan ??
+                PESAN[kode] ??
+                "Permintaan tidak dapat diproses.",
+            ...(rincian.details === undefined
+                ? {}
+                : { details: rincian.details }),
         },
         request_id: konteksSaatIni()?.requestId ?? requestIdBaru(),
     });
@@ -79,15 +104,18 @@ export function errorHandler(logger: Logger): ErrorRequestHandler {
             next(galat);
             return;
         }
-        const hasil = galatKlien(galat)
-            ? { kode: "INVALID_REQUEST" as const, status: 400, alarm: false }
+        const hasil: HasilPemetaan = galatKlien(galat)
+            ? { kode: "INVALID_REQUEST", status: 400, alarm: false }
             : mapError(galat);
         if (hasil.status >= 500 || hasil.alarm) {
             logger.error("Permintaan gagal ditangani", galat, {
                 kode: hasil.kode,
             });
         }
-        kirimGalat(res, hasil.kode);
+        kirimGalat(res, hasil.kode, {
+            pesan: hasil.pesan,
+            details: hasil.details,
+        });
     };
 }
 

@@ -253,7 +253,7 @@ export class UserService {
                     const rolKode = await repo.findRoleKode(scope.ctx, id);
                     if (rolKode === KODE_ROLE_SISWA && before.consent_guardian_at === null) {
                         tolakTanpaPersetujuanWali(
-                            `Akun siswa ${before.nama} tidak dapat diaktifkan: persetujuan wali belum terekam (DP-02).`,
+                            "Akun siswa tidak dapat diaktifkan: persetujuan wali belum terekam (DP-02).",
                         );
                     }
                 }

@@ -42,8 +42,8 @@ export const EVENT_IMPOR_DIMINTA = "UserImportRequested";
 export const EVENT_IMPOR_SELESAI = "UserImportCompleted";
 const AGREGAT_IMPOR = "UserImportJob";
 
-/** Kolom wajib ada di header — `kode_unit_kerja`/`telepon` opsional (skema). */
-const KOLOM_WAJIB = ["nama_lengkap", "email", "nip_nis", "kode_role"] as const;
+/** Kolom wajib ada di header (E.5.2 ✅); `telepon` opsional, `kelas` belum dibaca. */
+const KOLOM_WAJIB = ["nama_lengkap", "email", "nip_nis", "kode_role", "kode_unit_kerja"] as const;
 
 export interface ImportUsersInput {
     readonly filename: string;
@@ -63,7 +63,14 @@ async function bacaBerkas(
     let worksheet: ExcelJS.Worksheet;
     try {
         if (/\.csv$/i.test(filename)) {
-            worksheet = await workbook.csv.read(Readable.from(buffer));
+            // Semua sel CSV dibaca sebagai TEKS. Pemetaan bawaan exceljs mengubah teks yang
+            // tampak seperti angka menjadi `Number` — "00123" menjadi 123, NIP 18 digit
+            // kehilangan presisi, dan sel berisi spasi saja menjadi 0 — serta `true`/tanggal
+            // menjadi boolean/`Date`. Isian impor (NIP/NIS, kode unit) adalah teks; hanya
+            // sel kosong yang tetap `null`.
+            worksheet = await workbook.csv.read(Readable.from(buffer), {
+                map: (nilai: string) => (nilai === "" ? null : nilai),
+            });
         } else {
             // exceljs mendeklarasikan ulang `Buffer` global sebagai
             // `extends ArrayBuffer` (node_modules/exceljs/index.d.ts baris 1),
@@ -118,8 +125,9 @@ async function bacaBerkas(
                 nilai === null || nilai === undefined ? "" : String(nilai).trim();
             // Sel kosong == kolom tidak diisi, apa pun bentuknya di berkas
             // (null XLSX, string kosong CSV pada kolom terakhir, dst.) — bukan
-            // "diisi string kosong". Tanpa ini, `telepon`/`kode_unit_kerja`
-            // opsional yang dikosongkan pengunggah salah ditolak `min(1)`.
+            // "diisi string kosong". Tanpa ini, `telepon` opsional yang dikosongkan
+            // pengunggah salah ditolak `min(1)`, dan sel `kode_unit_kerja` kosong
+            // tidak dikenali sebagai "tidak diisi".
             data[nama] = teks.length === 0 ? undefined : teks;
         }
         hasil.push({ nomor: r, data });
@@ -357,18 +365,14 @@ export class UserImportService {
             };
         }
 
-        // E.5.2: `kode_unit_kerja` harus ada pada master unit kerja (WU-01).
-        let workUnitId: number | null = null;
-        if (parsed.data.kode_unit_kerja !== undefined) {
-            const ditemukan = unitId.get(parsed.data.kode_unit_kerja.toLowerCase());
-            if (ditemukan === undefined) {
-                return {
-                    baris: baris.nomor,
-                    email: parsed.data.email,
-                    pesan: `Kode unit kerja tidak dikenal: ${parsed.data.kode_unit_kerja}`,
-                };
-            }
-            workUnitId = ditemukan;
+        // E.5.2: `kode_unit_kerja` wajib (skema) dan harus ada pada master unit kerja (WU-01).
+        const workUnitId = unitId.get(parsed.data.kode_unit_kerja.toLowerCase());
+        if (workUnitId === undefined) {
+            return {
+                baris: baris.nomor,
+                email: parsed.data.email,
+                pesan: `Kode unit kerja tidak dikenal: ${parsed.data.kode_unit_kerja}`,
+            };
         }
 
         try {

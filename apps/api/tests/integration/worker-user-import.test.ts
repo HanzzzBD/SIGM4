@@ -44,6 +44,7 @@ describe.skipIf(!ADA_DB || !ADA_REDIS)("PR-01-17 — impor asinkron ujung ke uju
     async function bersihkan(): Promise<void> {
         await kueri("DELETE FROM user_import_jobs");
         await kueri("DELETE FROM users");
+        await kueri("DELETE FROM work_units");
         await kueri("DELETE FROM event_outbox");
     }
 
@@ -88,6 +89,8 @@ describe.skipIf(!ADA_DB || !ADA_REDIS)("PR-01-17 — impor asinkron ujung ke uju
                     (SELECT id FROM roles WHERE kode = 'R-01'), 'AKTIF', false)
             RETURNING id::text`);
         const adminId = Number(admin?.id);
+        // E.5.2: kode_unit_kerja wajib dan harus ada pada master (WU-01).
+        await kueri("INSERT INTO work_units (nama, kode, jenis) VALUES ('Tata Usaha', 'TU-01', 'TATA_USAHA')");
         // Konteks pemanggil HTTP: hanya perlu userId (permission dibaca ulang worker dari basis data).
         const ctx = createAuthContext({ userId: adminId, roleCode: "R-01", scopes: new Map([["user.create", "all"]]) });
 
@@ -101,10 +104,10 @@ describe.skipIf(!ADA_DB || !ADA_REDIS)("PR-01-17 — impor asinkron ujung ke uju
             logger,
             jam,
         );
-        const baris = ["nama_lengkap,email,nip_nis,kode_role"];
+        const baris = ["nama_lengkap,email,nip_nis,kode_role,kode_unit_kerja"];
         const valid = [1, 2, 3].map(() => `e2e-${randomUUID().slice(0, 8)}@sekolah.sch.id`);
-        for (const e of valid) baris.push(`Peserta,${e},NIPP${randomUUID().replace(/-/g, "").slice(0, 12)},R-05`);
-        for (let i = 0; i < 200; i += 1) baris.push(`Rusak,bukan-email-${String(i)},NIPX${String(i)},R-05`);
+        for (const e of valid) baris.push(`Peserta,${e},NIPP${randomUUID().replace(/-/g, "").slice(0, 12)},R-05,TU-01`);
+        for (let i = 0; i < 200; i += 1) baris.push(`Rusak,bukan-email-${String(i)},NIPX${String(i)},R-05,TU-01`);
         const { job } = await layanan.submit(ctx, {
             filename: "besar.csv",
             contentBase64: Buffer.from(baris.join("\n"), "utf8").toString("base64"),

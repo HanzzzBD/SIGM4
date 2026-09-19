@@ -78,6 +78,7 @@ describe.skipIf(!ADA_DB)("PR-01-14 — gerbang persetujuan wali (acceptance)", (
     async function bersihkan(): Promise<void> {
         await kueri("DELETE FROM user_import_jobs");
         await kueri("DELETE FROM users");
+        await kueri("DELETE FROM work_units");
     }
     beforeEach(bersihkan);
     afterEach(bersihkan);
@@ -133,7 +134,7 @@ describe.skipIf(!ADA_DB)("PR-01-14 — gerbang persetujuan wali (acceptance)", (
 
         await expect(layanan().updateStatus(ctx, siswa, { status: "AKTIF", alasan: undefined })).rejects.toMatchObject({
             kode: "VALIDATION_ERROR",
-            message: "Akun siswa Uji Wali tidak dapat diaktifkan: persetujuan wali belum terekam (DP-02).",
+            message: "Akun siswa tidak dapat diaktifkan: persetujuan wali belum terekam (DP-02).",
             detail: { rule: "DP-02" },
         });
         expect(await konsen(siswa)).toBeNull();
@@ -224,14 +225,16 @@ describe.skipIf(!ADA_DB)("PR-01-14 — gerbang persetujuan wali (acceptance)", (
 
     it("E.5.2 impor: consent_wali wajib true untuk Siswa/OSIS — baris tanpa/false gagal per baris, baris lain tetap masuk", async () => {
         const admin = await seedPengguna("R-01");
+        // E.5.2: kode_unit_kerja wajib dan harus ada pada master (WU-01).
+        await kueri("INSERT INTO work_units (nama, kode, jenis) VALUES ('Tata Usaha', 'TU-01', 'TATA_USAHA')");
         const service = new UserImportService(getDb(), layanan(T1), audit(), logger());
         const csv = [
-            "nama_lengkap,email,nip_nis,kode_role,consent_wali",
-            `Siswa Ya,${emailUnik()},${nipUnik()},R-07,true`,
-            `Siswa Besar,${emailUnik()},${nipUnik()},R-07,TRUE`,
-            `Siswa Tanpa,${emailUnik()},${nipUnik()},R-07,`,
-            `Siswa Tidak,${emailUnik()},${nipUnik()},R-07,false`,
-            `Guru Biasa,${emailUnik()},${nipUnik()},R-05,`,
+            "nama_lengkap,email,nip_nis,kode_role,kode_unit_kerja,consent_wali",
+            `Siswa Ya,${emailUnik()},${nipUnik()},R-07,TU-01,true`,
+            `Siswa Besar,${emailUnik()},${nipUnik()},R-07,TU-01,TRUE`,
+            `Siswa Tanpa,${emailUnik()},${nipUnik()},R-07,TU-01,`,
+            `Siswa Tidak,${emailUnik()},${nipUnik()},R-07,TU-01,false`,
+            `Guru Biasa,${emailUnik()},${nipUnik()},R-05,TU-01,`,
         ].join("\n");
 
         const { job: hasil } = await service.submit(buatCtx(admin), {
