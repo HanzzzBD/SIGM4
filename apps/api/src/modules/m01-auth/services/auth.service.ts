@@ -26,11 +26,12 @@ import {
 import type { JwtKeys, PlatformPerangkat } from "../../../shared/security/index.js";
 import { AuthRepository } from "../repositories/auth.repository.js";
 import type { UserLogin } from "../repositories/auth.repository.js";
+import { jejakKlien, potongUserAgent } from "./klien.js";
+import type { KlienPermintaan } from "./klien.js";
 import { sedangTerkunci, terapkanKegagalan } from "./lockout.js";
 
 const MODUL = "m01-auth";
 const AMR_KREDENSIAL = ["pwd"] as const;
-const BATAS_USER_AGENT = 500;
 
 /** Event outbox penguncian akun (SDD-07 §4.3); konsumennya — notifikasi `NT-39` — dipasang `PR-02-25`. */
 export const EVENT_AKUN_TERKUNCI = "AccountLocked";
@@ -40,11 +41,6 @@ const AGREGAT_PENGGUNA = "user";
 const ALASAN_EMAIL_TIDAK_DIKENAL = "EMAIL_TIDAK_DIKENAL";
 const ALASAN_KREDENSIAL_SALAH = "KREDENSIAL_SALAH";
 const ALASAN_AKUN_TERKUNCI = "AKUN_TERKUNCI";
-
-export interface KlienPermintaan {
-    readonly ip: string | undefined;
-    readonly userAgent: string | undefined;
-}
 
 export interface UserRingkas {
     readonly id: string;
@@ -79,19 +75,6 @@ let hashPengganti: Promise<string> | undefined;
 function ambilHashPengganti(): Promise<string> {
     hashPengganti ??= hashPassword("sigm4-hash-pengganti-waktu-tetap");
     return hashPengganti;
-}
-
-function potongUserAgent(ua: string | undefined): string | undefined {
-    return ua === undefined ? undefined : ua.slice(0, BATAS_USER_AGENT);
-}
-
-/** IP dan perangkat pada entri log (AL-02); kunci yang tak diketahui tidak disertakan. */
-function jejakKlien(klien: KlienPermintaan): Pick<AuditEntry, "ip" | "userAgent"> {
-    const userAgent = potongUserAgent(klien.userAgent);
-    return {
-        ...(klien.ip === undefined ? {} : { ip: klien.ip }),
-        ...(userAgent === undefined ? {} : { userAgent }),
-    };
 }
 
 /**

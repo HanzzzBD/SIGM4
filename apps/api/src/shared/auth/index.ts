@@ -8,11 +8,15 @@ export { assertAuthContext, createAuthContext } from "./context.js";
 export type { FieldPolicy } from "./fields.js";
 export { allowedFields } from "./fields.js";
 export {
+    authenticated,
     authorize,
     getAuthContext,
+    getSesiId,
     requireAuthContext,
     setAuthContext,
 } from "./middleware.js";
+export type { SessionChecker } from "./session-store.js";
+export { SessionStore } from "./session-store.js";
 export type { EffectivePermissions } from "./permission-cache.js";
 export { PermissionCache } from "./permission-cache.js";
 export {

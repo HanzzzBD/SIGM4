@@ -27,6 +27,7 @@ export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 interface GuardedRoute {
     readonly permission: string;
     readonly public?: never;
+    readonly authenticated?: never;
 }
 
 /**
@@ -37,6 +38,20 @@ interface GuardedRoute {
 interface PublicRoute {
     readonly public: true;
     readonly permission?: never;
+    readonly authenticated?: never;
+}
+
+/**
+ * Route yang hanya menuntut **autentikasi** — endpoint "Bearer" pada PRD (`/me`, logout,
+ * ganti password sendiri, …): datanya milik pemanggil sendiri, sehingga tidak ada permission
+ * katalog yang relevan (`PM-01`, `SDD-AUTH-12`). Deklarasinya tetap eksplisit dan saling
+ * meniadakan dengan `permission`/`public`, sehingga route yang lupa memilih satu pun gagal
+ * dikompilasi dan gagal saat bootstrap.
+ */
+interface AuthenticatedRoute {
+    readonly authenticated: true;
+    readonly permission?: never;
+    readonly public?: never;
 }
 
 interface RouteBase {
@@ -48,6 +63,8 @@ interface RouteBase {
     readonly params?: ZodType;
     readonly body?: ZodType;
     readonly response: ZodType;
+    /** Status HTTP sukses bila BUKAN bawaan (POST → 201, lainnya → 200); `204` tanpa badan. */
+    readonly successStatus?: 200 | 201 | 202 | 204;
     /** Tipe media respons sukses bila BUKAN `application/json` (mis. ekspor berkas biner). */
     readonly contentType?: string;
     /** `ID-01`: route tulis yang menuntut `Idempotency-Key`. Middleware-nya `PR-00-10`. */
@@ -57,7 +74,7 @@ interface RouteBase {
     readonly module: string;
 }
 
-export type RouteDefinition = RouteBase & (GuardedRoute | PublicRoute);
+export type RouteDefinition = RouteBase & (GuardedRoute | PublicRoute | AuthenticatedRoute);
 
 /**
  * Mendeklarasikan satu route. Fungsi ini tidak melakukan apa pun selain

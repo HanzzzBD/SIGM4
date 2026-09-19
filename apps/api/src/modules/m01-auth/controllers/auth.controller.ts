@@ -15,7 +15,8 @@ import { AuthError } from "../../../shared/errors/index.js";
 import { REFRESH_TTL_DETIK } from "../../../shared/security/index.js";
 import type { PlatformPerangkat } from "../../../shared/security/index.js";
 import { LoginBodySchema, RefreshBodySchema } from "../schemas/auth.schema.js";
-import type { AuthService, KlienPermintaan } from "../services/auth.service.js";
+import type { AuthService } from "../services/auth.service.js";
+import type { KlienPermintaan } from "../services/klien.js";
 
 function klienDari(req: Request): KlienPermintaan {
     return { ip: req.ip, userAgent: req.get("user-agent") };

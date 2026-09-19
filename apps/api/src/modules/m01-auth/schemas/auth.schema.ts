@@ -54,3 +54,28 @@ export const RefreshResponseSchema = z.object({
     }),
     meta: z.null(),
 });
+
+// ---- Sesi (FR-01.2, PR-02-04) ---------------------------------------------------------
+
+/** `:id` = `family_id` (uuid) sesi yang dicabut. Bukan uuid → 400 sebelum menyentuh basis data. */
+export const SesiIdParamSchema = z.object({ id: z.uuid() });
+
+const SesiSchema = z.object({
+    id: z.string(),
+    platform: PlatformSchema,
+    ip: z.string().nullable(),
+    user_agent: z.string().nullable(),
+    dibuat_pada: z.string(),
+    terakhir_diperbarui: z.string(),
+    berlaku_sampai: z.string(),
+    saat_ini: z.boolean(),
+});
+
+export const ListSesiResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.array(SesiSchema),
+    meta: z.null(),
+});
+
+/** 204: tanpa badan. Skema ini hanya memenuhi kewajiban `response` pada deklarasi route. */
+export const TanpaIsiSchema = z.null();

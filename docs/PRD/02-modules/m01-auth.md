@@ -120,18 +120,20 @@ sequenceDiagram
 
 **Main Flow**
 1. Pengguna menekan menu Logout.
-2. Sistem mencabut *refresh token* pada sisi server (blacklist).
+2. Sistem mencabut sesi pada sisi server: seluruh *refresh token* keluarga sesi itu, sehingga *access token*-nya pun ditolak pada permintaan berikutnya.
 3. Sistem menghapus token pada klien dan mengarahkan ke halaman login.
 4. Sistem mencatat `LOGOUT`.
 
 **Alternative Flow**
 - **A1 — Keluar dari semua perangkat:** Seluruh refresh token milik pengguna dicabut.
+- **A3 — Cabut satu perangkat:** Pengguna melihat daftar sesi aktifnya (platform, alamat IP, perangkat, waktu login dan pembaruan terakhir; sesi yang sedang dipakai ditandai) dan mencabut salah satunya. Sesi milik orang lain tidak dapat dilihat maupun dicabut.
 - **A2 — Sesi idle 30 menit (web):** Sistem melakukan auto-logout dan menampilkan pesan sesi berakhir.
 
 **Post Conditions** — Sesi berakhir; token tidak dapat digunakan kembali.
 
 **Acceptance Criteria**
-- [ ] Token yang sudah dicabut ditolak API dengan HTTP 401.
+- [ ] Token (access maupun refresh) dari sesi yang sudah dicabut ditolak API dengan HTTP 401 pada permintaan berikutnya — paling lambat 60 detik.
+- [ ] Pengguna hanya dapat melihat dan mencabut sesinya sendiri; mencabut sesi orang lain atau yang tidak ada dijawab sama (`403`).
 - [ ] Auto-logout web berjalan setelah 30 menit tanpa aktivitas.
 - [ ] Token push notification perangkat dinonaktifkan saat logout mobile.
 
@@ -272,7 +274,10 @@ sequenceDiagram
 | POST | `/auth/login` | Publik | Login email + password + `platform` (`WEB`, `ANDROID`, `IOS`) | 200 `{tokens, expires_in, user, permissions}` (`tokens` null pada WEB: token hanya di cookie httpOnly) atau `{requires_2fa}` | 400, 401, 403, 429 |
 | POST | `/auth/2fa/verify` | Challenge token | Verifikasi kode TOTP | 200 `{tokens, user}` | 401, 423 |
 | POST | `/auth/refresh` | Refresh token | Menukar refresh token (rotasi; refresh token baru ikut diterbitkan, pemakaian ulang mencabut seluruh rantai) | 200 `{tokens, expires_in}` (`tokens` null pada WEB) | 401 |
-| POST | `/auth/logout` | Bearer | Mencabut sesi | 204 | 401 |
+| POST | `/auth/logout` | Bearer | Mencabut sesi yang membawa permintaan ini | 204 | 401 |
+| POST | `/auth/logout-all` | Bearer | Keluar dari semua perangkat: mencabut seluruh sesi pengguna | 204 | 401 |
+| GET | `/auth/sessions` | Bearer | Daftar sesi (perangkat) aktif milik pengguna | 200 `[{id, platform, ip, user_agent, dibuat_pada, terakhir_diperbarui, berlaku_sampai, saat_ini}]` | 401 |
+| DELETE | `/auth/sessions/{id}` | Bearer | Mencabut satu sesi milik pengguna sendiri | 204 | 400, 401, 403 |
 | POST | `/auth/password/forgot` | Publik | Ajukan permintaan reset | 202 `{message}` | 429 |
 | POST | `/auth/password/change` | Bearer | Ganti password sendiri | 200 | 401, 422 |
 | GET | `/me` | Bearer | Profil & permission pengguna | 200 `{user, permissions}` | 401 |
@@ -319,7 +324,7 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | Aksi | Keterangan |
 |---|---|
 | `LOGIN_SUCCESS` / `LOGIN_FAILED` | Termasuk IP dan perangkat. `LOGIN_FAILED` juga mencatat email tak terdaftar dan percobaan atas akun terkunci — pelaku kosong, akun sasaran pada entitas, email yang dicoba tidak disimpan |
-| `LOGOUT` / `LOGOUT_ALL_DEVICES` | Pencabutan sesi |
+| `LOGOUT` / `LOGOUT_ALL_DEVICES` | Pencabutan sesi. `LOGOUT` juga dicatat saat pengguna mencabut satu perangkat lain (nilai memuat `alasan: device_revoked`); `LOGOUT_ALL_DEVICES` memuat jumlah sesi yang dicabut. Termasuk IP dan perangkat pelaku |
 | `REFRESH_TOKEN_REUSE_DETECTED` | Refresh token yang sudah dirotasi dipakai ulang; seluruh rantai dicabut. Termasuk IP dan perangkat |
 | `ACCOUNT_LOCKED` / `ACCOUNT_UNLOCKED` | Penguncian akibat percobaan gagal (kegagalan ke-5 dalam jendela 15 menit). Kunci yang berakhir sendiri tidak menulis entri |
 | `PASSWORD_CHANGED` | Tanpa merekam nilai password |

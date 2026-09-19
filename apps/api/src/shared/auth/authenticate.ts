@@ -18,13 +18,15 @@ import {
 import { JwtError } from "../security/jwt.js";
 import type { JwtKeys } from "../security/jwt.js";
 import { createAuthContext } from "./context.js";
-import { setAuthContext, setKegagalanAutentikasi, setWajibGantiPassword } from "./middleware.js";
+import { setAuthContext, setKegagalanAutentikasi, setSesiId, setWajibGantiPassword } from "./middleware.js";
 import type { PermissionCache } from "./permission-cache.js";
 import { COOKIE_ACCESS, bacaCookie } from "./session-cookies.js";
+import type { SessionChecker } from "./session-store.js";
 
 export interface AuthenticateDeps {
     readonly jwtKeys: JwtKeys;
     readonly permissions: PermissionCache;
+    readonly sessions: SessionChecker;
     readonly clock: Clock;
 }
 
@@ -64,9 +66,17 @@ export function authenticate(deps: AuthenticateDeps): RequestHandler {
             return;
         }
 
+        // Sesi yang sudah dicabut (logout, logout semua perangkat, pemakaian ulang refresh token)
+        // menolak access token-nya SEKETIKA, bukan setelah `exp` (FR-01.2 AC, SDD-04 §4.6).
+        const userId = Number(klaim.sub);
+        if (!(await deps.sessions.aktif(userId, klaim.sid))) {
+            setKegagalanAutentikasi(res, "UNAUTHENTICATED");
+            next();
+            return;
+        }
+
         // Permission dan status akun dibaca ulang tiap permintaan (PM-05): akun yang
         // dinonaktifkan kehilangan aksesnya seketika, bukan setelah tokennya kedaluwarsa.
-        const userId = Number(klaim.sub);
         const efektif = await deps.permissions.load(userId);
         if (efektif?.userStatus !== "AKTIF") {
             setKegagalanAutentikasi(res, "UNAUTHENTICATED");
@@ -78,6 +88,7 @@ export function authenticate(deps: AuthenticateDeps): RequestHandler {
             res,
             createAuthContext({ userId, roleCode: efektif.roleCode, scopes: efektif.scopes }),
         );
+        setSesiId(res, klaim.sid);
         setWajibGantiPassword(res, klaim.pwd);
         // Rate limit dan log sesudah ini melihat pelakunya (SDD-OBS-03).
         const induk = konteksSaatIni() ?? { requestId: requestIdBaru(), modul: "api" };

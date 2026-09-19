@@ -32,17 +32,23 @@ function inspect(route: RouteDefinition): string[] {
     const alasan: string[] = [];
     const permission = (route as { permission?: unknown }).permission;
     const publik = (route as { public?: unknown }).public;
+    const terautentikasi = (route as { authenticated?: unknown }).authenticated;
 
-    if (permission === undefined && publik !== true) {
+    if (permission === undefined && publik !== true && terautentikasi !== true) {
         // Bunyi pesan ini disengaja: ia menyebut apa yang kurang DAN aturannya,
         // karena yang membacanya adalah orang yang baru saja menambah route.
         alasan.push(
-            "tanpa deklarasi permission dan tanpa `public: true` (PM-01, SDD-AUTH-01)",
+            "tanpa deklarasi permission, tanpa `public: true`, dan tanpa `authenticated: true` (PM-01, SDD-AUTH-01, SDD-AUTH-12)",
         );
     }
     if (permission !== undefined && publik === true) {
         alasan.push(
             "menyatakan permission sekaligus `public: true` — hanya satu yang boleh",
+        );
+    }
+    if (terautentikasi === true && (permission !== undefined || publik === true)) {
+        alasan.push(
+            "menyatakan `authenticated: true` sekaligus permission atau `public: true` — hanya satu yang boleh",
         );
     }
     if (typeof permission === "string" && permission.trim() === "") {
@@ -95,6 +101,14 @@ export class RouteRegistry {
      */
     publicRoutes(): readonly RouteDefinition[] {
         return this.all().filter((r) => r.public === true);
+    }
+
+    /**
+     * Endpoint "Bearer": hanya menuntut autentikasi, tanpa permission. Matriks `SEC-T-01`-nya
+     * hanya punya satu penolakan — tanpa `AuthContext` → 401 — karena tak ada permission untuk dilanggar.
+     */
+    authenticatedRoutes(): readonly RouteDefinition[] {
+        return this.all().filter((r) => r.authenticated === true);
     }
 
     /** Seluruh permission yang dirujuk route — dibandingkan Lampiran C oleh uji. */

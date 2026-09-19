@@ -15,7 +15,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../../src/api/index.js";
 import type { AppDeps } from "../../src/api/index.js";
 import { ensurePartitions } from "../../src/shared/audit/index.js";
-import { PermissionCache } from "../../src/shared/auth/index.js";
+import { PermissionCache, SessionStore } from "../../src/shared/auth/index.js";
 import { closeRedis, createRedis, readRedisConfig } from "../../src/shared/cache/index.js";
 import { FixedClock } from "../../src/shared/clock/index.js";
 import { getDb } from "../../src/shared/db/index.js";
@@ -74,7 +74,7 @@ describe.skipIf(!ADA)("PR-02-03 — penguncian akun + audit percobaan gagal + re
                 logger: new Logger({ clock, tulis: () => undefined }),
                 clock,
                 db: getDb(),
-                auth: { jwtKeys: kunciUji(), permissions: new PermissionCache(getDb(), redis) },
+                auth: { jwtKeys: kunciUji(), permissions: new PermissionCache(getDb(), redis), sessions: new SessionStore(getDb()) },
             }),
         );
     }

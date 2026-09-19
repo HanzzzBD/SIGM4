@@ -34,5 +34,6 @@ export function kunciUji(pem: PasanganPem = bangkitkanPem()): JwtKeys {
 /** `AppDeps.auth` untuk uji yang tidak mengautentikasi siapa pun: cache tak pernah dipanggil. */
 export function authPalsu(): AppDeps["auth"] {
     const permissions = { load: () => Promise.resolve(undefined) } as unknown as PermissionCache;
-    return { jwtKeys: kunciUji(), permissions };
+    // Tanpa basis data: setiap sesi dianggap hidup — uji yang membuktikan pencabutan memakai `SessionStore` nyata.
+    return { jwtKeys: kunciUji(), permissions, sessions: { aktif: () => Promise.resolve(true) } };
 }

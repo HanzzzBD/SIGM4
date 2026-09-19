@@ -27,10 +27,13 @@ import {
 import type { Database } from "../shared/db/index.js";
 import {
     PermissionCache,
+    SessionStore,
     authenticate,
+    authenticated,
     authorize,
     gerbangGantiPassword,
 } from "../shared/auth/index.js";
+import type { SessionChecker } from "../shared/auth/index.js";
 
 import type { JwtKeys } from "../shared/security/index.js";
 import { RedisRateLimiter, RouteRegistry } from "../shared/http/index.js";
@@ -43,7 +46,15 @@ import {
     databaseCheck,
     redisCheck,
 } from "../shared/observability/index.js";
-import { authRouter, loginRoute, refreshRoute } from "../modules/m01-auth/index.js";
+import {
+    authRouter,
+    cabutSesiRoute,
+    listSesiRoute,
+    loginRoute,
+    logoutRoute,
+    logoutSemuaRoute,
+    refreshRoute,
+} from "../modules/m01-auth/index.js";
 import {
     createUserRoute,
     getUserRoute,
@@ -117,6 +128,10 @@ export const registry = new RouteRegistry().register(
     healthSummaryRoute,
     loginRoute,
     refreshRoute,
+    logoutRoute,
+    logoutSemuaRoute,
+    listSesiRoute,
+    cabutSesiRoute,
     listUsersRoute,
     createUserRoute,
     getUserRoute,
@@ -177,6 +192,8 @@ export interface AppDeps {
     readonly auth: {
         readonly jwtKeys: JwtKeys;
         readonly permissions: PermissionCache;
+        /** Pemeriksa sesi hidup: access token dari sesi yang dicabut ditolak seketika (`PR-02-04`). */
+        readonly sessions: SessionChecker;
     };
 }
 
@@ -193,6 +210,7 @@ export function createApp(deps: AppDeps): Express {
         authenticate({
             jwtKeys: deps.auth.jwtKeys,
             permissions: deps.auth.permissions,
+            sessions: deps.auth.sessions,
             clock: deps.clock,
         }),
     );
@@ -212,6 +230,7 @@ export function createApp(deps: AppDeps): Express {
                 logger: deps.logger,
             },
             (route) => rateLimit(route, deps.limiter, deps.logger),
+            authenticated,
         ),
     );
     app.use(
@@ -371,6 +390,7 @@ export async function start(
         auth: {
             jwtKeys: config.jwtKeys,
             permissions: new PermissionCache(getDb(), getRedis()),
+            sessions: new SessionStore(getDb()),
         },
     }).listen(PORT);
     return new Penghenti(langkahHentiApi(health, server), {

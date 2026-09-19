@@ -72,16 +72,22 @@ export function buildOpenApiDocument(
             // Permission dibawa sebagai ekstensi, bukan dibuang: `SEC-T-01` menurunkan
             // matriks ujinya dari registri, dan pembaca dokumen berhak tahu hak apa
             // yang dituntut sebuah endpoint.
-            "x-permission": route.public === true ? null : route.permission,
+            "x-permission": route.permission ?? null,
+            "x-authenticated": route.authenticated === true,
             "x-rate-limit-class": route.rateLimitClass,
             responses: {
-                [route.method === "POST" ? "201" : "200"]: {
+                [String(route.successStatus ?? (route.method === "POST" ? 201 : 200))]: {
                     description: "Berhasil",
-                    content: {
-                        [route.contentType ?? "application/json"]: {
-                            schema: route.response,
-                        },
-                    },
+                    // 204 tidak punya badan (RFC 9110 §15.3.5).
+                    ...(route.successStatus === 204
+                        ? {}
+                        : {
+                              content: {
+                                  [route.contentType ?? "application/json"]: {
+                                      schema: route.response,
+                                  },
+                              },
+                          }),
                 },
                 ...errorResponses(route),
             },

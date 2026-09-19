@@ -5,10 +5,11 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **141** baris, dikumpulkan dari 22 berkas modul.
+> Total: **144** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
+| DELETE | `/auth/sessions/{id}` | Bearer | Mencabut satu sesi milik pengguna sendiri | 204 | 400, 401, 403 | [M-01](../02-modules/m01-auth.md) |
 | DELETE | `/device-tokens/{token}` | Bearer | Cabut token perangkat | [M-17](../02-modules/m17-notifications.md) |
 | DELETE | `/holidays/{id}` | `setting.manage` | Hapus hari libur | [M-20](../02-modules/m20-settings.md) |
 | GET | `/academic-years` | `setting.view` | Daftar tahun ajaran beserta semesternya (Lampiran E.2) | [M-20](../02-modules/m20-settings.md) |
@@ -30,6 +31,7 @@
 | GET | `/assets` | `asset.view` | Daftar aset (filter & pencarian) | [M-04](../02-modules/m04-assets.md) |
 | GET | `/audit-sessions/{id}/items` | `audit.execute` | Daftar aset target (filter lokasi) | [M-13](../02-modules/m13-audit-stocktake.md) |
 | GET | `/audit-sessions/{id}/report` | `audit.view` | Unduh berita acara PDF | [M-13](../02-modules/m13-audit-stocktake.md) |
+| GET | `/auth/sessions` | Bearer | Daftar sesi (perangkat) aktif milik pengguna | 200 `[{id, platform, ip, user_agent, dibuat_pada, terakhir_diperbarui, berlaku_sampai, saat_ini}]` | 401 | [M-01](../02-modules/m01-auth.md) |
 | GET | `/chat/sessions` | Bearer | Riwayat percakapan sendiri | [M-19](../02-modules/m19-chatbot.md) |
 | GET | `/damage-reports/open` | `damage.view` | Tiket terbuka untuk aset tertentu | [M-11](../02-modules/m11-damage-reports.md) |
 | GET | `/damage-reports/{id}` | `damage.view` | Detail tiket beserta foto | [M-11](../02-modules/m11-damage-reports.md) |
@@ -101,7 +103,8 @@
 | POST | `/audit-sessions` | `audit.manage` | Buat sesi opname | [M-13](../02-modules/m13-audit-stocktake.md) |
 | POST | `/auth/2fa/verify` | Challenge token | Verifikasi kode TOTP | 200 `{tokens, user}` | 401, 423 | [M-01](../02-modules/m01-auth.md) |
 | POST | `/auth/login` | Publik | Login email + password + `platform` (`WEB`, `ANDROID`, `IOS`) | 200 `{tokens, expires_in, user, permissions}` (`tokens` null pada WEB: token hanya di cookie httpOnly) atau `{requires_2fa}` | 400, 401, 403, 429 | [M-01](../02-modules/m01-auth.md) |
-| POST | `/auth/logout` | Bearer | Mencabut sesi | 204 | 401 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/logout-all` | Bearer | Keluar dari semua perangkat: mencabut seluruh sesi pengguna | 204 | 401 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/logout` | Bearer | Mencabut sesi yang membawa permintaan ini | 204 | 401 | [M-01](../02-modules/m01-auth.md) |
 | POST | `/auth/password/change` | Bearer | Ganti password sendiri | 200 | 401, 422 | [M-01](../02-modules/m01-auth.md) |
 | POST | `/auth/password/forgot` | Publik | Ajukan permintaan reset | 202 `{message}` | 429 | [M-01](../02-modules/m01-auth.md) |
 | POST | `/auth/refresh` | Refresh token | Menukar refresh token (rotasi; refresh token baru ikut diterbitkan, pemakaian ulang mencabut seluruh rantai) | 200 `{tokens, expires_in}` (`tokens` null pada WEB) | 401 | [M-01](../02-modules/m01-auth.md) |

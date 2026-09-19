@@ -47,7 +47,7 @@
 | `LOAN_UNIT_SUBSTITUTED` | Penggantian unit saat serah terima beserta alasan | [M-09](../02-modules/m09-loans.md) |
 | `LOCATION_CREATED` / `LOCATION_UPDATED` / `LOCATION_DEACTIVATED` | Perubahan struktur lokasi | [M-03](../02-modules/m03-locations.md) |
 | `LOGIN_SUCCESS` / `LOGIN_FAILED` | Termasuk IP dan perangkat. `LOGIN_FAILED` juga mencatat email tak terdaftar dan percobaan atas akun terkunci — pelaku kosong, akun sasaran pada entitas, email yang dicoba tidak disimpan | [M-01](../02-modules/m01-auth.md) |
-| `LOGOUT` / `LOGOUT_ALL_DEVICES` | Pencabutan sesi | [M-01](../02-modules/m01-auth.md) |
+| `LOGOUT` / `LOGOUT_ALL_DEVICES` | Pencabutan sesi. `LOGOUT` juga dicatat saat pengguna mencabut satu perangkat lain (nilai memuat `alasan: device_revoked`); `LOGOUT_ALL_DEVICES` memuat jumlah sesi yang dicabut. Termasuk IP dan perangkat pelaku | [M-01](../02-modules/m01-auth.md) |
 | `MAINTENANCE_SCHEDULE_CREATED` / `UPDATED` / `DEACTIVATED` / `SKIPPED` | Jadwal preventif | [M-12](../02-modules/m12-maintenance.md) |
 | `MATERIAL_ADJUSTED` | Penyesuaian saldo beserta alasan wajib | [M-22](../02-modules/m22-materials.md) |
 | `MATERIAL_CATEGORY_CREATED` / `UPDATED` / `DELETED` | Siklus kategori bahan | [M-22](../02-modules/m22-materials.md) |

@@ -23,6 +23,15 @@ export function setWajibGantiPassword(res: Response, wajib: boolean): void {
     res.locals["wajibGantiPassword"] = wajib;
 }
 
+/** Id sesi (`sid` = `family_id`) dari token yang lolos `authenticate`; dasar logout dan daftar perangkat. */
+export function setSesiId(res: Response, sid: string): void {
+    res.locals["sesiId"] = sid;
+}
+
+export function getSesiId(res: Response): string | undefined {
+    return res.locals["sesiId"] as string | undefined;
+}
+
 /** Menaruh `AuthContext` request saat ini. Dipanggil `authenticate`. */
 export function setAuthContext(res: Response, ctx: AuthContext): void {
     res.locals[KUNCI] = ctx;
@@ -60,6 +69,21 @@ export function authorize(permission: string): RequestHandler {
         }
         if (!ctx.can(permission)) {
             next(new ForbiddenError("INSUFFICIENT_PERMISSION"));
+            return;
+        }
+        next();
+    };
+}
+
+/**
+ * Menegakkan **autentikasi saja** bagi route `authenticated: true` (endpoint "Bearer", `SDD-AUTH-12`).
+ * Tanpa `AuthContext` → `401` (`TOKEN_EXPIRED` bila tokennya kedaluwarsa); tidak ada permission
+ * yang diperiksa karena datanya milik pemanggil sendiri — scope `own` ditegakkan repository.
+ */
+export function authenticated(): RequestHandler {
+    return (_req: Request, res: Response, next: NextFunction) => {
+        if (getAuthContext(res) === undefined) {
+            next(new AuthError((res.locals[KUNCI_KEGAGALAN] as KegagalanAutentikasi | undefined) ?? "UNAUTHENTICATED"));
             return;
         }
         next();
