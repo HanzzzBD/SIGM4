@@ -53,7 +53,8 @@ describe("ImportUserRowSchema (Lampiran E.5.2)", () => {
     });
 
     it("E.5.2: kode_unit_kerja WAJIB — tidak ada, kosong, atau hanya spasi ditolak dengan alasan berbahasa Indonesia", () => {
-        const { kode_unit_kerja: _dibuang, ...tanpa } = dasar;
+        // Kolom dibuang lewat Object.fromEntries: bebas dari variabel terdestruktur yang tak terpakai.
+        const tanpa = Object.fromEntries(Object.entries(dasar).filter(([k]) => k !== "kode_unit_kerja"));
         for (const baris of [tanpa, { ...dasar, kode_unit_kerja: undefined }, { ...dasar, kode_unit_kerja: "" }, { ...dasar, kode_unit_kerja: "   " }]) {
             const hasil = ImportUserRowSchema.safeParse(baris);
             expect(hasil.success).toBe(false);
@@ -62,7 +63,7 @@ describe("ImportUserRowSchema (Lampiran E.5.2)", () => {
     });
 
     it("E.5.2: kode_unit_kerja tanpa pengecualian role — Siswa/OSIS (R-07) juga wajib", () => {
-        const { kode_unit_kerja: _dibuang, ...tanpa } = { ...dasar, kode_role: "R-07", consent_wali: "true" };
+        const tanpa = Object.fromEntries(Object.entries({ ...dasar, kode_role: "R-07", consent_wali: "true" }).filter(([k]) => k !== "kode_unit_kerja"));
         expect(ImportUserRowSchema.safeParse(tanpa).success).toBe(false);
         expect(ImportUserRowSchema.safeParse({ ...dasar, kode_role: "R-07", consent_wali: "true" }).success).toBe(true);
     });
