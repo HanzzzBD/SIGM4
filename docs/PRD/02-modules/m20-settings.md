@@ -84,6 +84,20 @@ _Tidak ada aturan bisnis yang dimiliki modul ini._
 |---|---|---|---|
 | GET | `/settings` | `setting.view` | Baca parameter sistem |
 | PUT | `/settings` | `setting.manage` | Perbarui parameter sistem |
+| GET | `/academic-years` | `setting.view` | Daftar tahun ajaran beserta semesternya (Lampiran E.2) |
+| POST | `/academic-years` | `setting.manage` | Buat tahun ajaran beserta semesternya; tahun ajaran pertama otomatis aktif (`AC-YR-01`) |
+| PUT | `/academic-years/{id}` | `setting.manage` | Sunting nama, rentang tanggal, dan semester tahun ajaran |
+| PATCH | `/academic-years/{id}/activate` | `setting.manage` | Jadikan tahun ajaran aktif; tepat satu yang aktif (`AC-YR-02`) |
+| GET | `/holidays` | `setting.view` | Daftar hari libur (filter tahun ajaran) |
+| POST | `/holidays` | `setting.manage` | Tambah hari libur |
+| PUT | `/holidays/{id}` | `setting.manage` | Sunting hari libur |
+| DELETE | `/holidays/{id}` | `setting.manage` | Hapus hari libur |
+| GET | `/work-days` | `setting.view` | Baca hari kerja sekolah |
+| PUT | `/work-days` | `setting.manage` | Perbarui hari kerja sekolah |
+| GET | `/work-units` | `setting.view` | Daftar unit kerja (filter jenis, status) — Lampiran E.3 |
+| POST | `/work-units` | `setting.manage` | Buat unit kerja |
+| PUT | `/work-units/{id}` | `setting.manage` | Sunting unit kerja |
+| PATCH | `/work-units/{id}/status` | `setting.manage` | Aktifkan atau nonaktifkan unit kerja; tidak ada hapus (`WU-02`) |
 | GET | `/health/live` | publik | Liveness probe — tanpa memeriksa dependensi (`OBS-04`) |
 | GET | `/health/ready` | publik | Readiness probe — DB, Redis, storage siap |
 | GET | `/health` | `setting.view` | Ringkasan kesehatan dependensi untuk kartu Kesehatan Integrasi (`OBS-06`) |
@@ -99,6 +113,8 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 |---|---|---|---|
 | **system_settings** | Parameter global sistem | key, value, tipe, kelompok, deskripsi | Administrator |
 | **material_units** | Master satuan bahan — daftar tertutup yang dikelola Administrator (`BR-084`) | id, nama, simbol, keterangan, status | Administrator |
+| **academic_years** · **academic_terms** · **holidays** · **work_days** | Kalender akademik dan kalender kerja (Lampiran E.2); halaman `P-71` | Lihat [`data-model.md`](../03-architecture/data-model.md) §11.1 | Administrator |
+| **work_units** | Master unit kerja / kelas (Lampiran E.3); halaman `P-72` | Lihat [`data-model.md`](../03-architecture/data-model.md) §11.1 | Administrator |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
 
@@ -128,6 +144,12 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | Aksi | Keterangan |
 |---|---|
 | `SETTING_UPDATED` | Perubahan parameter sistem beserta nilai lama/baru |
+| `ACADEMIC_YEAR_CREATED` / `ACADEMIC_YEAR_UPDATED` | Pembuatan atau perubahan tahun ajaran dan semesternya, nilai lama/baru |
+| `ACADEMIC_YEAR_ACTIVATED` | Pergantian tahun ajaran aktif (`AC-YR-02`), tahun sebelumnya dan sesudahnya |
+| `HOLIDAY_CREATED` / `HOLIDAY_UPDATED` / `HOLIDAY_DELETED` | Perubahan daftar hari libur |
+| `WORK_DAYS_UPDATED` | Perubahan hari kerja sekolah, nilai lama/baru |
+| `WORK_UNIT_CREATED` / `WORK_UNIT_UPDATED` | Pembuatan atau perubahan unit kerja |
+| `WORK_UNIT_DEACTIVATED` / `WORK_UNIT_REACTIVATED` | Perubahan status unit kerja (`WU-02`) |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
 

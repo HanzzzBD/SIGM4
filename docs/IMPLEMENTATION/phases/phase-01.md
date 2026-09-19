@@ -112,7 +112,17 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 | `PR-01-16` | Hash password Argon2id + kebijakan kata sandi *(dipindah dari `PR-02-01`)* | S | S | Ph00 | `NFR-S-02`, `NFR-S-03a`, `SDD-SESS-01`, `SDD-SYS-15` | Parameter Argon2id sesuai `SDD-SESS-01`, dibandingkan uji terhadap dokumennya; panjang, komposisi, dan larangan memuat identitas ditegakkan — daftar bocor dan riwayat 3 password milik `PR-02-31` |
 | `PR-01-17` | Impor massal pengguna — asinkron > 200 baris, idempotensi file-hash *(baru, keputusan 19)* | M | M | 03 | `IMPT-03`, `IMPT-04`, `NT-52` | Berkas > 200 baris diproses BullMQ, notifikasi `NT-52` saat selesai; unggah ulang berkas identik dalam 24 jam tidak memproses ulang; laporan per baris tersedia lewat endpoint pengambilan tersendiri |
 
+| `PR-01-18` | Endpoint master data Lampiran E: tahun ajaran & semester, hari libur, hari kerja, unit kerja *(baru, keputusan 29)* | L | L | 10, 11, 12 | `FR-20.1`, `AC-YR-01` `AC-YR-02`, `WU-01` … `03`, `P-71` `P-72` | Administrator mengisi kalender akademik dan unit kerja lewat aplikasi (baris endpoint: [`m20-settings.md` §7](../../PRD/02-modules/m20-settings.md)); DoD phase "Kalender akademik terisi" dapat dipenuhi tanpa SQL |
+
 ## 8. Task Breakdown
+
+### `PR-01-18` — Endpoint master data Lampiran E
+- [ ] Layanan tahun ajaran: buat (tahun pertama otomatis aktif), sunting, `PATCH .../activate` menukar tahun aktif dalam **satu** transaksi (`SDD-DB-18`); validasi semester berada di dalam rentang tahun ajarannya (`SDD-05 §4.7b` — belum ditegakkan basis data)
+- [ ] Hari libur (CRUD) dan hari kerja (`PUT /work-days`); `academic_year_id` opsional pada hari libur
+- [ ] Unit kerja: buat, sunting, `PATCH .../status` (tidak ada hapus — `WU-02`); kode/nama unik tanpa memandang huruf
+- [ ] Setiap operasi tulis memuat aksi activity log di `m20-settings.md` §11 (`AL-01`)
+- [ ] Aktivasi tahun ajaran **tidak** menjalankan kenaikan kelas — pemicu `AC-YR-02` disambungkan `PR-01-13`
+- [ ] **Skala:** ±14 endpoint pada empat entitas; jelaskan di deskripsi PR mengapa tidak dipecah (kalender | unit kerja) bila tetap `L`
 
 ### `PR-01-04` — Matriks permission
 - [ ] Endpoint `PUT /roles/{id}/permissions`

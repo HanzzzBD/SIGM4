@@ -5,10 +5,12 @@
 # Indeks Aksi Activity Log
 
 > Setiap aksi dimiliki modul penerbitnya. Prinsip pencatatan di `../03-architecture/activity-log.md`.
-> Total: **59** baris, dikumpulkan dari 22 berkas modul.
+> Total: **65** baris, dikumpulkan dari 22 berkas modul.
 
 | Aksi | Keterangan | Pemilik |
 |---|---|---|
+| `ACADEMIC_YEAR_ACTIVATED` | Pergantian tahun ajaran aktif (`AC-YR-02`), tahun sebelumnya dan sesudahnya | [M-20](../02-modules/m20-settings.md) |
+| `ACADEMIC_YEAR_CREATED` / `ACADEMIC_YEAR_UPDATED` | Pembuatan atau perubahan tahun ajaran dan semesternya, nilai lama/baru | [M-20](../02-modules/m20-settings.md) |
 | `ACCOUNT_LOCKED` / `ACCOUNT_UNLOCKED` | Penguncian akibat percobaan gagal | [M-01](../02-modules/m01-auth.md) |
 | `ACTIVITY_LOG_VIEWED` / `ACTIVITY_LOG_EXPORTED` | Akses terhadap log itu sendiri | [M-18](../02-modules/m18-activity-log.md) |
 | `ADMIN_BREAK_GLASS_RECOVERY` | Pemulihan darurat Administrator via CLI (FR-01.6); pelaku `SYSTEM:CLI` | [M-01](../02-modules/m01-auth.md) |
@@ -37,6 +39,7 @@
 | `DAMAGE_REPORTED` / `DAMAGE_VERIFIED` / `DAMAGE_REJECTED` / `DAMAGE_CLOSED` | Siklus tiket | [M-11](../02-modules/m11-damage-reports.md) |
 | `DOCUMENT_UPLOADED` / `DOCUMENT_DOWNLOADED` / `DOCUMENT_DELETED` | Termasuk pencatatan siapa mengunduh | [M-06](../02-modules/m06-documents.md) |
 | `FINE_ISSUED` / `FINE_PAID` / `FINE_WAIVED` | Termasuk alasan pembebasan | [M-09](../02-modules/m09-loans.md) |
+| `HOLIDAY_CREATED` / `HOLIDAY_UPDATED` / `HOLIDAY_DELETED` | Perubahan daftar hari libur | [M-20](../02-modules/m20-settings.md) |
 | `LOAN_CHECKIN` | Pengembalian beserta kondisi akhir | [M-09](../02-modules/m09-loans.md) |
 | `LOAN_CHECKOUT` | Serah terima beserta unit dan kondisi awal | [M-09](../02-modules/m09-loans.md) |
 | `LOAN_EXTENDED` | Perpanjangan yang disetujui | [M-09](../02-modules/m09-loans.md) |
@@ -68,3 +71,6 @@
 | `WORKORDER_COMPLETED` / `WORKORDER_VERIFIED` / `WORKORDER_RETURNED` / `WORKORDER_CANCELLED` | Penyelesaian | [M-12](../02-modules/m12-maintenance.md) |
 | `WORKORDER_CREATED` / `WORKORDER_ASSIGNED` / `WORKORDER_STARTED` | Penugasan dan pelaksanaan | [M-12](../02-modules/m12-maintenance.md) |
 | `WORKORDER_PROGRESS_UPDATED` | Termasuk perubahan biaya | [M-12](../02-modules/m12-maintenance.md) |
+| `WORK_DAYS_UPDATED` | Perubahan hari kerja sekolah, nilai lama/baru | [M-20](../02-modules/m20-settings.md) |
+| `WORK_UNIT_CREATED` / `WORK_UNIT_UPDATED` | Pembuatan atau perubahan unit kerja | [M-20](../02-modules/m20-settings.md) |
+| `WORK_UNIT_DEACTIVATED` / `WORK_UNIT_REACTIVATED` | Perubahan status unit kerja (`WU-02`) | [M-20](../02-modules/m20-settings.md) |

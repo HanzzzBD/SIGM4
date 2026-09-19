@@ -5,11 +5,13 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **124** baris, dikumpulkan dari 22 berkas modul.
+> Total: **139** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
 | DELETE | `/device-tokens/{token}` | Bearer | Cabut token perangkat | [M-17](../02-modules/m17-notifications.md) |
+| DELETE | `/holidays/{id}` | `setting.manage` | Hapus hari libur | [M-20](../02-modules/m20-settings.md) |
+| GET | `/academic-years` | `setting.view` | Daftar tahun ajaran beserta semesternya (Lampiran E.2) | [M-20](../02-modules/m20-settings.md) |
 | GET | `/activity-logs/export` | `activity_log.export` | Ekspor log | [M-18](../02-modules/m18-activity-log.md) |
 | GET | `/activity-logs` | `activity_log.view` | Telusuri activity log | [M-18](../02-modules/m18-activity-log.md) |
 | GET | `/analytics/{jenis}` | `report.view` | Data laporan analitik | [M-16](../02-modules/m16-analytics.md) |
@@ -37,6 +39,7 @@
 | GET | `/health/live` | publik | Liveness probe — tanpa memeriksa dependensi (`OBS-04`) | [M-20](../02-modules/m20-settings.md) |
 | GET | `/health/ready` | publik | Readiness probe — DB, Redis, storage siap | [M-20](../02-modules/m20-settings.md) |
 | GET | `/health` | `setting.view` | Ringkasan kesehatan dependensi untuk kartu Kesehatan Integrasi (`OBS-06`) | [M-20](../02-modules/m20-settings.md) |
+| GET | `/holidays` | `setting.view` | Daftar hari libur (filter tahun ajaran) | [M-20](../02-modules/m20-settings.md) |
 | GET | `/loans/by-asset/{uuid}` | `loan.manage` | Peminjaman aktif atas suatu unit | [M-09](../02-modules/m09-loans.md) |
 | GET | `/loans/ready-checkout` | `loan.manage` | Reservasi siap diserahkan hari ini | [M-09](../02-modules/m09-loans.md) |
 | GET | `/loans` | `loan.view` | Daftar peminjaman (tab aktif/terlambat/selesai) | [M-09](../02-modules/m09-loans.md) |
@@ -59,8 +62,12 @@
 | GET | `/settings` | `setting.view` | Baca parameter sistem | [M-20](../02-modules/m20-settings.md) |
 | GET | `/users/{id}` | `user.view` | Detail pengguna | [M-02](../02-modules/m02-users.md) |
 | GET | `/users` | `user.view` | Daftar pengguna (filter role, status, unit kerja) | [M-02](../02-modules/m02-users.md) |
+| GET | `/work-days` | `setting.view` | Baca hari kerja sekolah | [M-20](../02-modules/m20-settings.md) |
 | GET | `/work-orders/mine` | `workorder.execute` | Work order yang ditugaskan kepada saya | [M-12](../02-modules/m12-maintenance.md) |
+| GET | `/work-units` | `setting.view` | Daftar unit kerja (filter jenis, status) — Lampiran E.3 | [M-20](../02-modules/m20-settings.md) |
+| PATCH | `/academic-years/{id}/activate` | `setting.manage` | Jadikan tahun ajaran aktif; tepat satu yang aktif (`AC-YR-02`) | [M-20](../02-modules/m20-settings.md) |
 | PATCH | `/assets/{id}/condition` | `asset.update` | Ubah kondisi + alasan | [M-04](../02-modules/m04-assets.md) |
+| PATCH | `/buildings/{id}/status` · `/rooms/{id}/status` | `location.manage` | Aktifkan/nonaktifkan berjenjang (`BR-015`) | [M-03](../02-modules/m03-locations.md) |
 | PATCH | `/fines/{id}/pay` | `fine.manage` | Tandai lunas | [M-09](../02-modules/m09-loans.md) |
 | PATCH | `/fines/{id}/waive-compensation` | `fine.waive_compensation` | Bebaskan ganti rugi penuh/sebagian + alasan | [M-09](../02-modules/m09-loans.md) |
 | PATCH | `/fines/{id}/waive` | `fine.waive` | Bebaskan denda keterlambatan + alasan | [M-09](../02-modules/m09-loans.md) |
@@ -70,6 +77,8 @@
 | PATCH | `/users/{id}/status` | `user.update` | Aktifkan/nonaktifkan | [M-02](../02-modules/m02-users.md) |
 | PATCH | `/work-orders/{id}/progress` | `workorder.execute` | Perbarui progres, biaya, foto | [M-12](../02-modules/m12-maintenance.md) |
 | PATCH | `/work-orders/{id}/start` | `workorder.execute` | Mulai kerjakan | [M-12](../02-modules/m12-maintenance.md) |
+| PATCH | `/work-units/{id}/status` | `setting.manage` | Aktifkan atau nonaktifkan unit kerja; tidak ada hapus (`WU-02`) | [M-20](../02-modules/m20-settings.md) |
+| POST | `/academic-years` | `setting.manage` | Buat tahun ajaran beserta semesternya; tahun ajaran pertama otomatis aktif (`AC-YR-01`) | [M-20](../02-modules/m20-settings.md) |
 | POST | `/analytics/{jenis}/export` | `report.export` | Ekspor (asinkron bila berat) | [M-16](../02-modules/m16-analytics.md) |
 | POST | `/approval-rules/preview` | `approval_rule.manage` | Pratinjau aturan yang akan berlaku | [M-10](../02-modules/m10-approval.md) |
 | POST | `/approval-rules` | `approval_rule.manage` | Buat aturan + langkah | [M-10](../02-modules/m10-approval.md) |
@@ -104,6 +113,7 @@
 | POST | `/device-tokens` | Bearer | Daftarkan token perangkat FCM | [M-17](../02-modules/m17-notifications.md) |
 | POST | `/files/confirm` | Bearer | Daftarkan berkas terunggah & antrekan pemindaian AV | [M-06](../02-modules/m06-documents.md) |
 | POST | `/files/presign` | Bearer | Minta URL unggah bertanda tangan ke object storage | [M-06](../02-modules/m06-documents.md) |
+| POST | `/holidays` | `setting.manage` | Tambah hari libur | [M-20](../02-modules/m20-settings.md) |
 | POST | `/loans/checkout` | `loan.manage` | Proses serah terima | [M-09](../02-modules/m09-loans.md) |
 | POST | `/loans/{id}/checkin` | `loan.manage` | Proses pengembalian | [M-09](../02-modules/m09-loans.md) |
 | POST | `/loans/{id}/extend` | `loan.extend` | Ajukan perpanjangan | [M-09](../02-modules/m09-loans.md) |
@@ -126,10 +136,15 @@
 | POST | `/work-orders/{id}/complete` | `workorder.execute` | Ajukan penyelesaian | [M-12](../02-modules/m12-maintenance.md) |
 | POST | `/work-orders/{id}/verify` | `workorder.verify` | Verifikasi & tutup | [M-12](../02-modules/m12-maintenance.md) |
 | POST | `/work-orders` | `workorder.create` | Buat work order | [M-12](../02-modules/m12-maintenance.md) |
+| POST | `/work-units` | `setting.manage` | Buat unit kerja | [M-20](../02-modules/m20-settings.md) |
+| PUT | `/academic-years/{id}` | `setting.manage` | Sunting nama, rentang tanggal, dan semester tahun ajaran | [M-20](../02-modules/m20-settings.md) |
 | PUT | `/assets/{id}` | `asset.update` | Perbarui aset | [M-04](../02-modules/m04-assets.md) |
+| PUT | `/holidays/{id}` | `setting.manage` | Sunting hari libur | [M-20](../02-modules/m20-settings.md) |
 | PUT | `/me` | Bearer | Perbarui profil sendiri | 200 | 401, 422 | [M-01](../02-modules/m01-auth.md) |
 | PUT | `/notifications/preferences` | Bearer | Atur preferensi notifikasi | [M-17](../02-modules/m17-notifications.md) |
 | PUT | `/roles/{id}/permissions` | `role.update` | Perbarui matriks permission | [M-02](../02-modules/m02-users.md) |
 | PUT | `/rooms/{id}` | `location.manage` | Perbarui ruangan | [M-03](../02-modules/m03-locations.md) |
 | PUT | `/settings` | `setting.manage` | Perbarui parameter sistem | [M-20](../02-modules/m20-settings.md) |
 | PUT | `/users/{id}` | `user.update` | Perbarui pengguna | [M-02](../02-modules/m02-users.md) |
+| PUT | `/work-days` | `setting.manage` | Perbarui hari kerja sekolah | [M-20](../02-modules/m20-settings.md) |
+| PUT | `/work-units/{id}` | `setting.manage` | Sunting unit kerja | [M-20](../02-modules/m20-settings.md) |
