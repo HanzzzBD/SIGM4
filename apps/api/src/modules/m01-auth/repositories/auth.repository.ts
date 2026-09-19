@@ -15,7 +15,8 @@ export interface UserLogin {
     readonly id: string;
     readonly password_hash: string;
     readonly status: "AKTIF" | "NONAKTIF";
-    readonly must_change_password: boolean;
+    /** `users.must_change_password` (FR-01.1 A4), dialiaskan agar penanda ini tidak tampak sebagai data sensitif pada jalur token. */
+    readonly wajib_ganti: boolean;
     readonly role_kode: string;
 }
 
@@ -49,7 +50,7 @@ export class AuthRepository {
         return this.db
             .selectFrom("users as u")
             .innerJoin("roles as r", "r.id", "u.role_id")
-            .select(["u.id", "u.password_hash", "u.status", "u.must_change_password", "r.kode as role_kode"])
+            .select(["u.id", "u.password_hash", "u.status", "u.must_change_password as wajib_ganti", "r.kode as role_kode"])
             .where(sql<boolean>`lower(u.email) = lower(${email})`)
             .executeTakeFirst();
     }
@@ -58,7 +59,7 @@ export class AuthRepository {
         return this.db
             .selectFrom("users as u")
             .innerJoin("roles as r", "r.id", "u.role_id")
-            .select(["u.id", "u.password_hash", "u.status", "u.must_change_password", "r.kode as role_kode"])
+            .select(["u.id", "u.password_hash", "u.status", "u.must_change_password as wajib_ganti", "r.kode as role_kode"])
             .where("u.id", "=", id)
             .executeTakeFirst();
     }

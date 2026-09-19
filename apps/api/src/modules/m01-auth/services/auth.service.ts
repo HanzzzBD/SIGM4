@@ -25,7 +25,7 @@ import type { JwtKeys, PlatformPerangkat } from "../../../shared/security/index.
 import { AuthRepository } from "../repositories/auth.repository.js";
 
 const MODUL = "m01-auth";
-const AMR_PASSWORD = ["pwd"] as const;
+const AMR_KREDENSIAL = ["pwd"] as const;
 const BATAS_USER_AGENT = 500;
 
 export interface KlienPermintaan {
@@ -148,7 +148,7 @@ export class AuthService {
 
         return {
             accessToken: this.jwt.terbitkan(
-                { sub: user.id, sid: familyId, pwd: user.must_change_password, amr: AMR_PASSWORD },
+                { sub: user.id, sid: familyId, pwd: user.wajib_ganti, amr: AMR_KREDENSIAL },
                 sekarang,
             ),
             refreshToken: refresh.token,
@@ -159,7 +159,7 @@ export class AuthService {
                 nama: profil.nama,
                 email: profil.email,
                 role_kode: efektif.roleCode,
-                must_change_password: user.must_change_password,
+                must_change_password: user.wajib_ganti,
             },
             permissions: Object.fromEntries(efektif.scopes),
         };
@@ -229,7 +229,7 @@ export class AuthService {
                 userId: baris.user_id,
                 familyId: baris.family_id,
                 platform: baris.platform,
-                mustChangePassword: user.must_change_password,
+                wajibGanti: user.wajib_ganti,
             } as const;
         });
 
@@ -245,7 +245,7 @@ export class AuthService {
 
         return {
             accessToken: this.jwt.terbitkan(
-                { sub: hasil.userId, sid: hasil.familyId, pwd: hasil.mustChangePassword, amr: AMR_PASSWORD },
+                { sub: hasil.userId, sid: hasil.familyId, pwd: hasil.wajibGanti, amr: AMR_KREDENSIAL },
                 sekarang,
             ),
             refreshToken: baru.token,
