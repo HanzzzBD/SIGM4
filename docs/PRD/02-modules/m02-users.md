@@ -49,6 +49,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 - **A2 — Penonaktifan pengguna yang masih memiliki peminjaman aktif atau denda belum lunas:** Sistem menampilkan peringatan dan meminta konfirmasi; data transaksi tetap tersimpan.
 - **A3 — Penonaktifan pengguna yang menjadi approver aktif:** Sistem memblokir aksi hingga Administrator menetapkan approver pengganti pada approval rules terkait.
 - **A4 — Impor massal:** Administrator mengunggah CSV/XLSX; sistem memvalidasi baris per baris dan menampilkan laporan sukses/gagal.
+- **A5 — Akun siswa tanpa persetujuan wali:** Sistem menolak membuat, mengaktifkan kembali, atau mengganti role menjadi Siswa/OSIS bila penanda `consent_guardian_at` belum terekam (`DP-02`, `SL-06`). Administrator merekam persetujuan yang dikumpulkan sekolah secara luring (`consent_wali`); penanda hanya direkam sekali dan tidak dicabut.
 
 **Post Conditions** — Data pengguna tersimpan; pengguna nonaktif tidak dapat login namun riwayat transaksinya tetap utuh.
 
@@ -125,7 +126,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, work_unit_id, telepon, foto, status, totp_enabled_at, must_change_password, login_terakhir_pada | Administrator |
+| **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, work_unit_id, telepon, foto, status, totp_enabled_at, must_change_password, login_terakhir_pada, consent_guardian_at | Administrator |
 | **student_enrollments** | Kelas siswa per tahun ajaran (Lampiran E.4, `SL-01`) — bukan atribut permanen akun | id, user_id, academic_year_id, kelas_id (unit kerja berjenis Kelas), lulus | Administrator |
 | **roles** | Peran pengguna | id, nama, deskripsi, is_system | Administrator |
 | **permissions** | Daftar hak akses granular | id, modul, aksi, kode | Sistem |

@@ -174,6 +174,8 @@ export interface UsersTable extends KolomBaku {
     status: "AKTIF" | "NONAKTIF";
     must_change_password: boolean;
     login_terakhir_pada: Date | null;
+    /** DP-02, SL-06 (0019, PR-01-14): NULL = persetujuan wali belum terekam. Hanya akun Siswa/OSIS. */
+    consent_guardian_at: ColumnType<Date | null, Date | null | undefined, Date | null | undefined>;
 }
 
 /** `permissions` (0009, PR-00-16). Katalog Lampiran C; `inti` = 🔒 (`SDD-AUTH-10`). */

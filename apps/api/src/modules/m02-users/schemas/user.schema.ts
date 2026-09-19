@@ -24,6 +24,8 @@ export const CreateUserBodySchema = z.object({
     nip_nis: NipNisSchema,
     role_id: RoleIdSchema,
     work_unit_id: WorkUnitIdSchema.optional(),
+    /** DP-02: persetujuan wali sudah dikumpulkan sekolah — mengisi `consent_guardian_at` (cap waktu server, satu arah). */
+    consent_wali: z.boolean().optional(),
     telepon: TeleponSchema.optional(),
 });
 
@@ -34,6 +36,8 @@ export const UpdateUserBodySchema = z.object({
     nip_nis: NipNisSchema,
     role_id: RoleIdSchema,
     work_unit_id: WorkUnitIdSchema.optional(),
+    /** DP-02: persetujuan wali sudah dikumpulkan sekolah — mengisi `consent_guardian_at` (cap waktu server, satu arah). */
+    consent_wali: z.boolean().optional(),
     telepon: TeleponSchema.optional(),
 });
 
@@ -80,6 +84,8 @@ const UserSchema = z.object({
     status: UserStatusSchema,
     must_change_password: z.boolean(),
     login_terakhir_pada: z.string().nullable(),
+    /** DP-02: kapan persetujuan wali terekam; null bila belum. */
+    consent_guardian_at: z.string().nullable(),
     created_at: z.string(),
     updated_at: z.string(),
 });

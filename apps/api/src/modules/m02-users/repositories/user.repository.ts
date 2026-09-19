@@ -20,6 +20,7 @@ const KOLOM_USER = [
     "status",
     "must_change_password",
     "login_terakhir_pada",
+    "consent_guardian_at",
     "created_at",
     "updated_at",
 ] as const;
@@ -36,6 +37,7 @@ export interface UserRow {
     readonly status: "AKTIF" | "NONAKTIF";
     readonly must_change_password: boolean;
     readonly login_terakhir_pada: Date | null;
+    readonly consent_guardian_at: Date | null;
     readonly created_at: Date;
     readonly updated_at: Date;
 }
@@ -61,6 +63,8 @@ export interface CreateUserData {
     readonly workUnitId: number | null;
     readonly telepon: string | null;
     readonly passwordHash: string;
+    /** DP-02: cap waktu (Clock) bila persetujuan wali direkam saat akun siswa dibuat. */
+    readonly consentGuardianAt: Date | null;
 }
 
 export interface UpdateUserData {
@@ -70,6 +74,8 @@ export interface UpdateUserData {
     readonly roleId: number;
     readonly workUnitId: number | null;
     readonly telepon: string | null;
+    /** Hanya bila persetujuan direkam SEKARANG; `undefined` = kolom tidak disentuh (tidak pernah dicabut). */
+    readonly consentGuardianAt?: Date | undefined;
 }
 
 export class UserRepository extends BaseRepository {
@@ -109,6 +115,16 @@ export class UserRepository extends BaseRepository {
             .innerJoin("roles as r", "r.id", "u.role_id")
             .select("r.kode as kode")
             .where("u.id", "=", String(id))
+            .executeTakeFirst();
+        return baris?.kode;
+    }
+
+    /** Kode sebuah role menurut `role_id` — dipakai gerbang persetujuan wali (DP-02). */
+    async findRoleKodeById(ctx: AuthContext, roleId: number): Promise<string | undefined> {
+        const baris = await this.query(ctx)
+            .selectFrom("roles")
+            .select("kode")
+            .where("id", "=", String(roleId))
             .executeTakeFirst();
         return baris?.kode;
     }
@@ -196,6 +212,7 @@ export class UserRepository extends BaseRepository {
                 role_id: data.roleId,
                 work_unit_id: data.workUnitId,
                 telepon: data.telepon,
+                consent_guardian_at: data.consentGuardianAt,
                 status: "AKTIF",
                 must_change_password: true,
                 created_by: ctx.userId,
@@ -215,6 +232,7 @@ export class UserRepository extends BaseRepository {
                 role_id: data.roleId,
                 work_unit_id: data.workUnitId,
                 telepon: data.telepon,
+                consent_guardian_at: data.consentGuardianAt,
                 updated_by: ctx.userId,
             })
             .where("id", "=", String(id))

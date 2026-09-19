@@ -163,6 +163,7 @@ export function createApp(deps: AppDeps): Express {
                     logger: deps.logger,
                 }),
                 logger: deps.logger,
+                clock: deps.clock,
             },
             (route) => rateLimit(route, deps.limiter, deps.logger),
             authorize,

@@ -234,6 +234,7 @@ export class UserImportService {
                 nipNis: parsed.data.nip_nis,
                 roleId,
                 workUnitId,
+                consentWali: parsed.data.consent_wali === true,
                 telepon: parsed.data.telepon ?? null,
             });
             return {

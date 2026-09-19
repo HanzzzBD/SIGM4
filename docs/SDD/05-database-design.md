@@ -44,6 +44,7 @@ Skema khusus `booking_slots`, `idempotency_keys`, dan `document_counters` didefi
 | **SDD-DB-18** | Invariant "tepat satu tahun ajaran aktif" (`Lampiran E.2`, `AC-YR-01`) ditegakkan **basis data**, bukan hanya service: paling banyak satu lewat *partial unique index* (`SDD-DB-05`), paling sedikit satu — begitu ada tahun ajaran — lewat *constraint trigger* `DEFERRABLE INITIALLY DEFERRED` yang diperiksa saat `COMMIT`. Ditunda karena pergantian tahun aktif adalah dua `UPDATE` dalam satu transaksi yang sesaat tanpa tahun aktif. Tabel kosong sah (instalasi awal). Rasionya sama `SDD-DB-14`: constraint basis data tidak dapat dilewati service yang keliru. |
 | **SDD-DB-19** | Migrasi data teks bebas → master (`WU-01`, pola *expand → migrate*) dijalankan **fungsi SQL idempoten** yang dapat dijalankan ulang setelah master terisi, bukan skrip sekali pakai: mencocokkan tanpa menebak (tepat satu kandidat; yang sudah tertaut tidak ditimpa), dan **mengembalikan** yang tak terpetakan sebagai laporan. Keunikan master ditegakkan pada bentuk ternormalisasi yang sama dengan pencocokannya. Kolom lama tetap ada dan berhenti ditulis sampai `contract` (`PR-08-11`). |
 | **SDD-DB-20** | Kelas siswa adalah **data per tahun ajaran** (`SL-01`): baris `student_enrollments`, bukan kolom pada `users`. Menandai lulus (`SL-02`) hanya menandai baris tahun ajaran itu; **penonaktifan akun menunggu tahun ajaran itu berakhir** (`SL-03`) dan diblokir oleh kewajiban (`SL-04`). Definisi "kewajiban" tidak ditulis di modul pengguna — modul pemiliknya mendaftarkan pemeriksa ke titik ekstensi (§4.7d), sehingga aturan tidak pernah mengasumsikan "tidak ada kewajiban". |
+| **SDD-DB-21** | Persetujuan wali (`DP-02`) adalah kolom `users.consent_guardian_at` (`timestamptz`, NULL = belum terekam), **diisi server dari `Clock`** — klien hanya menyatakan `consent_wali: true`. Direkam sekali, **tidak pernah dicabut atau ditimpa**, dan hanya untuk akun Siswa/OSIS (`DP-03`). Gerbangnya ditegakkan service, bukan skema (§4.7e). |
 
 ---
 
@@ -339,6 +340,18 @@ Tidak ada endpoint `work_units`: PRD belum mendaftarkan satu pun (`m20-settings.
 **Penonaktifan lulusan** (`SL-03`, `DP-10`): akun berbaris `lulus = true` dinonaktifkan bila `academic_years.tanggal_selesai` tahun itu **sebelum** hari ini (hari WIB, `CAL-03`); menandai sebelum tahun berakhir tidak menonaktifkan seketika. `GraduationService.deactivateDueGraduates` idempoten (`JOB-03`); memasangnya sebagai pekerjaan `student-graduation` menunggu `SystemAuthContext` (`SDD-03`) — butir terbuka `phase-01` log §10.
 
 **Titik ekstensi `SL-04`** — `StudentObligationRegistry`: modul yang mendefinisikan kewajiban (peminjaman aktif, denda belum lunas — Phase 05, `PR-05-09`) mendaftarkan `StudentObligationChecker` dengan `daftarKewajiban(scope, userId)`. Penonaktifan akun **Siswa/OSIS** — lewat `PATCH /users/{id}/status` maupun penonaktifan lulusan — ditolak bila salah satu pemeriksa mengembalikan kewajiban, dan daftarnya dikembalikan kepada Administrator. Registri **kosong** sampai `PR-05-09`; kosongnya berarti "belum ada yang mendefinisikan kewajiban", bukan "siswa tidak berkewajiban".
+
+### 4.7e Penanda persetujuan wali
+
+`users.consent_guardian_at` (`0019`, `expand`): kolom NULLABLE tanpa nilai bawaan dan tanpa pengisian ulang. `UserService` menegakkan `DP-02` / `SL-06` di tiga titik, seluruhnya untuk akun **Siswa/OSIS (`R-07`)**:
+
+| Titik | Aturan |
+|---|---|
+| `POST /users` dan impor (`consent_wali`, `E.5.2`) | Akun lahir `AKTIF`, jadi membuat siswa = mengaktifkannya: tanpa `consent_wali: true` ditolak `VALIDATION_ERROR` (`rule: DP-02`), baris tidak terbentuk |
+| `PATCH /users/{id}/status` → `AKTIF` | Ditolak bila penanda masih NULL |
+| `PUT /users/{id}` | `consent_wali: true` merekam penanda bila belum ada; mengganti role menjadi Siswa tanpa penanda ditolak; menyunting siswa yang sudah ada (tanpa ganti role) tidak diblokir |
+
+Tidak ada trigger basis data: gerbangnya bergantung pada role (lintas tabel) dan bukan bagian acceptance. Pencabutan persetujuan tidak didefinisikan `DP-02`, sehingga tidak ada jalurnya. **`NT-48`** (notifikasi in-app ke Administrator) **belum terbit** — modul notifikasi `M-17` baru ada di Phase 02 (`PR-02-25`), dan penolakan me-*rollback* transaksinya sehingga event outbox di dalamnya ikut hilang (`SDD-EVT-04`); penolakan dikembalikan langsung kepada pemanggil.
 
 ### 4.8 Saldo bahan — ledger dan agregat
 

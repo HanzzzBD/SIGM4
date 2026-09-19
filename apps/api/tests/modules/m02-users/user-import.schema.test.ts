@@ -60,13 +60,13 @@ describe("ImportUserRowSchema (Lampiran E.5.2)", () => {
         expect(() => ImportUserRowSchema.parse({ ...dasar, nip_nis: "" })).toThrow();
     });
 
-    it("mengabaikan kolom kelas/consent_wali bila ikut terkirim (belum ada kolomnya — PR-01-13/14)", () => {
+    it("kolom kelas masih diabaikan (impor kelas belum dibangun); consent_wali kini dibaca (PR-01-14, DP-02)", () => {
         const hasil = ImportUserRowSchema.parse({
             ...dasar,
             kelas: "X-IPA-1",
             consent_wali: "true",
         }) as Record<string, unknown>;
         expect(hasil["kelas"]).toBeUndefined();
-        expect(hasil["consent_wali"]).toBeUndefined();
+        expect(hasil["consent_wali"]).toBe(true);
     });
 });
