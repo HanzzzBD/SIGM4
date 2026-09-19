@@ -99,6 +99,38 @@ describe("buildOpenApiDocument", () => {
         expect(op["x-permission"]).toBeNull();
     });
 
+    it("route `authenticated` mengiklankan 401 tetapi tanpa x-permission, dan menandai x-authenticated (SDD-AUTH-12)", () => {
+        const me = defineRoute({
+            method: "GET",
+            path: "/me",
+            authenticated: true,
+            rateLimitClass: "default",
+            module: "m01-auth",
+            response: AssetSchema,
+        });
+        const op = dokumen(me).paths["/api/v1/me"]!["get"]!;
+        expect(op["x-permission"]).toBeNull();
+        expect(op["x-authenticated"]).toBe(true);
+        expect(Object.keys(op["responses"] as object)).toContain("401");
+        expect(dokumen(showAsset).paths["/api/v1/assets/{id}"]!["get"]!["x-authenticated"]).toBe(false);
+    });
+
+    it("successStatus menggantikan status bawaan; 204 tidak punya badan (RFC 9110 §15.3.5)", () => {
+        const keluar = defineRoute({
+            method: "POST",
+            path: "/auth/logout",
+            authenticated: true,
+            rateLimitClass: "default",
+            module: "m01-auth",
+            successStatus: 204,
+            response: z.null(),
+        });
+        const respons = dokumen(keluar).paths["/api/v1/auth/logout"]!["post"]!["responses"] as Record<string, Record<string, unknown>>;
+        expect(Object.keys(respons)).toContain("204");
+        expect(Object.keys(respons)).not.toContain("201");
+        expect(respons["204"]).not.toHaveProperty("content");
+    });
+
     it("route idempoten mengiklankan 409 (ID-01)", () => {
         const op =
             dokumen(createReservation).paths["/api/v1/reservations"]!["post"]!;

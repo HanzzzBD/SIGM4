@@ -42,6 +42,7 @@ Kegagalan memisahkan keduanya adalah penyebab paling umum kebocoran lintas hak a
 | **SDD-AUTH-09** | Gerbang sesi dijalankan berurutan sebagai middleware: `authenticate` → `mustChangePassword` → `twoFactorVerified` → `permission` → `scope`. Urutan ini tetap dan diuji. |
 | **SDD-AUTH-10** | Permission inti bertanda 🔒 (Lampiran C) ditolak pencabutannya oleh **validator domain**, bukan hanya oleh UI (`FR-02.2 A1`). |
 | **SDD-AUTH-11** | **Uji tiga syarat bagi mekanisme teknis.** Sebuah mekanisme boleh ditetapkan pada tingkat SDD tanpa dianggap requirement baru **hanya bila ketiganya terpenuhi**: (1) tidak mengubah perilaku yang dapat diamati pengguna mana pun; (2) tidak menambah atau mengubah business rule, permission, endpoint publik, maupun aksi activity log; (3) semata menjadi **cara** memenuhi requirement yang sudah ada. Gagal pada satu syarat berarti wajib dinaikkan ke PRD lebih dulu. `role_version` (`SDD-AUTH-04`) lolos ketiganya. Menutup `TBD-AUTH-C` (keputusan pemilik produk, 25 Agustus 2026). |
+| **SDD-AUTH-12** | Endpoint yang hanya menuntut **autentikasi** ("Bearer" pada PRD: `/me`, logout, daftar perangkat, ganti password sendiri) dideklarasikan `authenticated: true` — varian ketiga `RouteDefinition`, saling meniadakan dengan `permission` dan `public`. Registri, OpenAPI (`x-authenticated`), dan matriks `SEC-T-01` mengenalnya; route yang tidak menyatakan salah satu dari ketiganya tetap gagal saat bootstrap. Scope `own` ditegakkan repository (`SDD-AUTH-02`), bukan permission. Keputusan pemilik produk, 19 September 2026. |
 
 ---
 
@@ -71,6 +72,8 @@ Ketiga syarat itu dipilih karena masing-masing menjaga satu batas yang berbeda. 
 
 Uji ini dijalankan **sebelum** mekanisme ditulis, dan hasilnya disebut pada deskripsi PR yang memperkenalkannya. Uji yang dijalankan sesudah kode ada akan selalu lulus.
 
+**SDD-AUTH-12 — golongan ketiga, bukan permission palsu.** `PM-01` menuntut tepat satu permission per endpoint, tetapi PRD menandai belasan endpoint sebagai "Bearer" (`/me`, logout, notifikasi, unggah berkas). Dua jalan lain ditolak. *Permission katalog yang diberikan ke ketujuh role* (mis. `session.manage_own`) memenuhi bunyi `PM-01` tetapi menambah baris pada Lampiran C, matriks role, dan seed untuk sesuatu yang bukan hak akses bisnis — dan matriks yang berisi "semua role memegangnya" berhenti menjadi informasi. *Memakai `public: true` lalu memeriksa sesi di controller* meniadakan `SDD-AUTH-01`: kelalaian memeriksa menjadikan endpoint terbuka tanpa ada yang tahu. Varian `authenticated: true` menjaga kedua sifat itu — deklarasi wajib dan eksplisit, gagal saat bootstrap bila hilang — tanpa memalsukan katalog permission.
+
 ---
 
 ## 4. Rancangan
@@ -95,6 +98,8 @@ for (const route of router.stack) {
 ```
 
 Endpoint publik (`/auth/login`, `/auth/password/forgot`, `/public/assets/:uuid`, `/health/live`, `/health/ready`) menandai dirinya `public: true` secara eksplisit — sehingga daftar endpoint tanpa autentikasi dapat di-*review* sebagai satu daftar pendek. Kedua *probe* kesehatan ada di daftar ini karena `OBS-04` menuntut pemantauan *uptime* dari luar, dan pemantau luar tidak memegang token; keduanya hanya menjawab hidup/siap. `/health` **tidak** publik — ia membeberkan status DB, Redis, storage, AV, FCM, dan LLM, sehingga menuntut `setting.view` (`SDD-AUTH-08`).
+
+**Endpoint "Bearer"** (`SDD-AUTH-12`) — mis. `POST /auth/logout`, `GET /auth/sessions`, kelak `/me` — menandai dirinya `authenticated: true`. Ia bukan celah `PM-01`: golongannya eksplisit dan dapat ditinjau sebagai daftar pendek (`registry.authenticatedRoutes()`), dan tidak ada permission yang dapat "dilupakan" karena tidak ada yang relevan — data yang disentuhnya milik pemanggil sendiri dan disaring pada `user_id = ctx.userId` oleh repository (`SDD-AUTH-02`). Matriks `SEC-T-01`-nya punya satu penolakan: tanpa autentikasi (`401`, `TOKEN_EXPIRED` bila tokennya kedaluwarsa), dijalankan pada aplikasi terakit sebelum controller.
 
 ### 4.2 `AuthContext`
 

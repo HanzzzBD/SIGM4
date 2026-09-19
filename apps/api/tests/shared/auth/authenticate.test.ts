@@ -9,11 +9,13 @@ import { errorHandler } from "../../../src/api/chain.js";
 import {
     PermissionCache,
     authenticate,
+    authenticated,
     authorize,
     gerbangGantiPassword,
     getAuthContext,
+    getSesiId,
 } from "../../../src/shared/auth/index.js";
-import type { EffectivePermissions, Scope } from "../../../src/shared/auth/index.js";
+import type { EffectivePermissions, Scope, SessionChecker } from "../../../src/shared/auth/index.js";
 import { FixedClock } from "../../../src/shared/clock/index.js";
 import { Logger, konteksSaatIni } from "../../../src/shared/observability/index.js";
 import { ACCESS_TOKEN_TTL_DETIK } from "../../../src/shared/security/index.js";
@@ -46,16 +48,22 @@ const cachePalsu = {
     },
 } as unknown as PermissionCache;
 
+/** Sesi yang sudah dicabut (`sid`); pemeriksa sesi nyata diuji terhadap PostgreSQL di `auth-session.test.ts`. */
+const sesiMati = new Set<string>();
+const sesiPalsu: SessionChecker = { aktif: (_userId, sid) => Promise.resolve(!sesiMati.has(sid)) };
+const authDeps = { jwtKeys: kunci, permissions: cachePalsu, sessions: sesiPalsu, clock };
+
 const terbuka: Server[] = [];
 afterEach(async () => {
     await Promise.all(terbuka.splice(0).map((s) => new Promise((r) => s.close(r))));
     akun.clear();
+    sesiMati.clear();
     panggilanCache = 0;
 });
 
 async function mulai(): Promise<string> {
     const app = express();
-    app.use(authenticate({ jwtKeys: kunci, permissions: cachePalsu, clock }));
+    app.use(authenticate(authDeps));
     app.use(gerbangGantiPassword("/api/v1/auth/"));
     app.get("/api/v1/terkunci", authorize("setting.view"), (_req, res) => {
         res.json({
@@ -66,6 +74,9 @@ async function mulai(): Promise<string> {
     });
     app.get("/api/v1/manage", authorize("setting.manage"), (_req, res) => {
         res.json({ ok: true });
+    });
+    app.get("/api/v1/saya", authenticated(), (_req, res) => {
+        res.json({ sid: getSesiId(res), userId: getAuthContext(res)?.userId });
     });
     app.get("/api/v1/publik", (_req, res) => {
         res.json({ ada: getAuthContext(res) !== undefined });
@@ -209,7 +220,7 @@ describe("gerbangGantiPassword (SDD-AUTH-09 langkah 2, FR-01.1 A4)", () => {
     it("awalan dicocokkan utuh: /api/v1/authorize bukan bagian dari /api/v1/auth/", async () => {
         akun.set(7, {});
         const app = express();
-        app.use(authenticate({ jwtKeys: kunci, permissions: cachePalsu, clock }));
+        app.use(authenticate(authDeps));
         app.use(gerbangGantiPassword("/api/v1/auth/"));
         app.get("/api/v1/authorize", (_req, res) => {
             res.json({ ok: true });
@@ -231,5 +242,70 @@ describe("gerbangGantiPassword (SDD-AUTH-09 langkah 2, FR-01.1 A4)", () => {
     it("tanpa AuthContext gerbang tidak menolak — itu urusan authorize (401)", async () => {
         const url = await mulai();
         expect((await ambil(url, "/api/v1/terkunci")).json.error?.code).toBe("UNAUTHENTICATED");
+    });
+});
+
+describe("sesi yang dicabut (FR-01.2 AC, SDD-04 §4.6)", () => {
+    it("access token dari sesi yang sudah dicabut ditolak 401 — meski tanda tangan dan masa berlakunya sah", async () => {
+        akun.set(7, {});
+        const url = await mulai();
+        const t = token();
+        expect((await ambil(url, "/api/v1/terkunci", bearer(t))).status).toBe(200);
+        sesiMati.add("sesi-1");
+        const r = await ambil(url, "/api/v1/terkunci", bearer(t));
+        expect(r.status).toBe(401);
+        expect(r.json.error?.code).toBe("UNAUTHENTICATED");
+    });
+
+    it("pemeriksaan dilakukan pada SETIAP permintaan (tanpa cache): pencabutan berlaku pada permintaan berikutnya", async () => {
+        akun.set(7, {});
+        const url = await mulai();
+        const t = token();
+        for (const hidup of [true, true, false, false]) {
+            if (!hidup) sesiMati.add("sesi-1");
+            expect((await ambil(url, "/api/v1/terkunci", bearer(t))).status).toBe(hidup ? 200 : 401);
+        }
+    });
+
+    it("hanya sesi yang dicabut yang mati: sesi lain milik pengguna yang sama tetap berjalan", async () => {
+        akun.set(7, {});
+        const url = await mulai();
+        const lain = kunci.terbitkan({ sub: "7", sid: "sesi-2", pwd: false, amr: ["pwd"] }, T0);
+        sesiMati.add("sesi-1");
+        expect((await ambil(url, "/api/v1/terkunci", bearer(token()))).status).toBe(401);
+        expect((await ambil(url, "/api/v1/terkunci", bearer(lain))).status).toBe(200);
+    });
+
+    it("sesi dicabut + route publik: tetap terjangkau tanpa AuthContext (authenticate lenient)", async () => {
+        akun.set(7, {});
+        const url = await mulai();
+        sesiMati.add("sesi-1");
+        expect((await ambil(url, "/api/v1/publik", bearer(token()))).json).toEqual({ ada: false });
+    });
+});
+
+describe("authenticated() — route \"Bearer\" tanpa permission (SDD-AUTH-12)", () => {
+    it("tanpa token → 401 UNAUTHENTICATED; token kedaluwarsa → 401 TOKEN_EXPIRED; sesi dicabut → 401", async () => {
+        akun.set(7, { scopes: new Map() });
+        const url = await mulai();
+        expect((await ambil(url, "/api/v1/saya")).json.error?.code).toBe("UNAUTHENTICATED");
+        const lama = token("7", false, new Date(T0.getTime() - (ACCESS_TOKEN_TTL_DETIK + 1) * 1000));
+        expect((await ambil(url, "/api/v1/saya", bearer(lama))).json.error?.code).toBe("TOKEN_EXPIRED");
+        sesiMati.add("sesi-1");
+        expect((await ambil(url, "/api/v1/saya", bearer(token()))).status).toBe(401);
+    });
+
+    it("pengguna tanpa satu pun permission tetap lolos (tak ada permission untuk dilanggar) dan controller melihat id sesinya", async () => {
+        akun.set(7, { scopes: new Map() });
+        const url = await mulai();
+        const r = await ambil(url, "/api/v1/saya", bearer(token()));
+        expect(r.status).toBe(200);
+        expect(r.json).toEqual({ sid: "sesi-1", userId: 7 });
+    });
+
+    it("akun nonaktif tetap 401 — autentikasi mencakup status akun", async () => {
+        akun.set(7, { status: "NONAKTIF" });
+        const url = await mulai();
+        expect((await ambil(url, "/api/v1/saya", bearer(token()))).status).toBe(401);
     });
 });

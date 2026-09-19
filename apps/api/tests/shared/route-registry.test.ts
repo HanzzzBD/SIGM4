@@ -63,6 +63,37 @@ defineRoute({
     response: OkSchema,
 });
 
+const routeBearer = defineRoute({
+    method: "GET",
+    path: "/me",
+    authenticated: true,
+    rateLimitClass: "default",
+    module: "m01-auth",
+    response: OkSchema,
+});
+
+// @ts-expect-error — `authenticated` dan `permission` saling meniadakan (SDD-AUTH-12)
+defineRoute({
+    method: "GET",
+    path: "/me",
+    authenticated: true,
+    permission: "asset.view",
+    rateLimitClass: "default",
+    module: "m01-auth",
+    response: OkSchema,
+});
+
+defineRoute({
+    method: "GET",
+    path: "/me",
+    authenticated: true,
+    // @ts-expect-error — `authenticated` dan `public` saling meniadakan (SDD-AUTH-12)
+    public: true,
+    rateLimitClass: "default",
+    module: "m01-auth",
+    response: OkSchema,
+});
+
 // @ts-expect-error — tanpa `response` (SDD-API-01)
 defineRoute({
     method: "GET",
@@ -124,6 +155,33 @@ describe("RouteRegistry — pendaftaran", () => {
 
     it("routeKey menggabungkan method dan path", () => {
         expect(routeKey(routeSah)).toBe("GET /assets/:id");
+    });
+});
+
+describe("route `authenticated: true` — endpoint \"Bearer\" (SDD-AUTH-12)", () => {
+    it("lolos bootstrap tanpa permission maupun public, dan terdaftar pada daftar pendeknya sendiri", () => {
+        const r = new RouteRegistry().register(routeSah, routePublik, routeBearer);
+        expect(() => r.validateOrThrow()).not.toThrow();
+        expect(r.authenticatedRoutes().map(routeKey)).toEqual(["GET /me"]);
+        // Tidak bocor ke daftar lain: bukan route ber-permission, bukan publik.
+        expect(r.guarded().map(routeKey)).toEqual(["GET /assets/:id"]);
+        expect(r.publicRoutes().map(routeKey)).toEqual(["POST /auth/login"]);
+        expect(r.permissions()).toEqual(new Set(["asset.view"]));
+    });
+
+    it("MENOLAK `authenticated` bersama permission atau public yang menembus tipe", () => {
+        expect(() =>
+            new RouteRegistry().register(routeCacat({ authenticated: true, permission: "asset.view" })).validateOrThrow(),
+        ).toThrow(/hanya satu yang boleh/);
+        expect(() =>
+            new RouteRegistry().register(routeCacat({ authenticated: true, public: true })).validateOrThrow(),
+        ).toThrow(/hanya satu yang boleh/);
+    });
+
+    it("`authenticated: false` (atau nilai lain selain true) tidak dihitung sebagai deklarasi", () => {
+        expect(() => new RouteRegistry().register(routeCacat({ authenticated: false })).validateOrThrow()).toThrow(
+            /tanpa deklarasi permission/,
+        );
     });
 });
 

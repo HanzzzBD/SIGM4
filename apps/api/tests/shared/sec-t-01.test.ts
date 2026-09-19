@@ -7,15 +7,22 @@
 // di bawah tanpa satu baris pun disentuh di sini; itulah maksud "mencakup 100%
 // route" pada acceptance-nya — cakupannya tidak dapat diam-diam menyusut.
 
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import type { NextFunction, Request, Response } from "express";
-import { describe, expect, it, vi } from "vitest";
-import { registry } from "../../src/api/index.js";
+import type { Kysely } from "kysely";
+import { afterAll, describe, expect, it, vi } from "vitest";
+import { createApp, registry } from "../../src/api/index.js";
 import {
     authorize,
     createAuthContext,
     setAuthContext,
 } from "../../src/shared/auth/index.js";
+import { FixedClock } from "../../src/shared/clock/index.js";
+import type { Database } from "../../src/shared/db/index.js";
 import { AuthError, ForbiddenError } from "../../src/shared/errors/index.js";
+import { HealthRegistry, Logger } from "../../src/shared/observability/index.js";
+import { authPalsu } from "../helpers/auth.js";
 
 function res(): Response {
     return { locals: {} } as unknown as Response;
@@ -75,6 +82,50 @@ describe("SEC-T-01 — otorisasi tergenerate", () => {
             const next = vi.fn();
             authorize(permission)({} as Request, r, next as unknown as NextFunction);
             expect(next).toHaveBeenCalledWith();
+        },
+    );
+});
+
+// Endpoint \"Bearer\" (`authenticated: true`, SDD-AUTH-12) tidak punya permission untuk dilanggar, jadi
+// matriksnya hanya satu penolakan — TANPA autentikasi → 401 — tetapi dijalankan pada aplikasi TERAKIT
+// (rantai penuh: authenticate → gerbang → rate limit → authenticated()), sebelum controller/basis data.
+describe("SEC-T-01 — route \"Bearer\" (authenticated) pada aplikasi terakit", () => {
+    const bearer = registry.authenticatedRoutes();
+    const jam = new FixedClock(new Date("2026-09-19T03:00:00Z"));
+    const app = createApp({
+        health: new HealthRegistry(),
+        limiter: { hit: () => Promise.resolve({ lolos: true, batas: 100, sisa: 99, resetDetik: 60 }) },
+        security: { objectStorageOrigin: "http://minio:9000" },
+        logger: new Logger({ clock: jam, tulis: () => undefined }),
+        clock: jam,
+        // Basis data palsu: bila sebuah route mencapai controller-nya, uji ini gagal keras — itulah intinya.
+        db: {} as unknown as Kysely<Database>,
+        auth: authPalsu(),
+    });
+    const server = createServer(app);
+    const siap = new Promise<string>((r) =>
+        server.listen(0, "127.0.0.1", () => {
+            r(`http://127.0.0.1:${String((server.address() as AddressInfo).port)}/api/v1`);
+        }),
+    );
+    afterAll(async () => {
+        await new Promise((r) => server.close(r));
+    });
+
+    it("registri memuat route Bearer — uji ini benar-benar menguji sesuatu", () => {
+        expect(bearer.length).toBeGreaterThanOrEqual(4);
+    });
+
+    it.each(bearer.map((r) => [`${r.method} ${r.path}`, r.method, r.path] as const))(
+        "%s — tanpa token, token rusak, dan Authorization salah bentuk → 401 UNAUTHENTICATED sebelum controller",
+        async (_n, method, path) => {
+            const url = (await siap) + path.replace(/:[A-Za-z_]+/g, "00000000-0000-4000-8000-000000000000");
+            for (const headers of [{}, { authorization: "Bearer bukan.jwt.sah" }, { authorization: "Basic abc" }, { cookie: "sigm4_at=bukan.jwt.sah" }]) {
+                const res = await fetch(url, { method, headers });
+                const badan = (await res.json()) as { error?: { code: string } };
+                expect(res.status, JSON.stringify(headers)).toBe(401);
+                expect(badan.error?.code).toBe("UNAUTHENTICATED");
+            }
         },
     );
 });

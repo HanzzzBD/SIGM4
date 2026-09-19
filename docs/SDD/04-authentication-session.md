@@ -189,8 +189,10 @@ sigm4 admin:recover --email=<email> [--force]
 
 | Aksi | Efek |
 |---|---|
-| `POST /auth/logout` | Cabut refresh token yang dipakai; hapus device token FCM (`MOB-SEC-05`) |
-| Logout semua perangkat | Cabut seluruh baris `refresh_tokens` milik pengguna |
+| `POST /auth/logout` | Cabut seluruh keluarga refresh token sesi ini (`sid` pada access token); `revoke_reason = logout`; cookie web dibuang. Access token sesi itu ikut mati (§4.7). Event `SessionRevoked` — konsumennya (`PR-02-25`) menonaktifkan device token FCM (`MOB-SEC-05`) |
+| `POST /auth/logout-all` | Cabut seluruh baris `refresh_tokens` milik pengguna (`logout_all`); `LOGOUT_ALL_DEVICES`; satu event `SessionRevoked` per sesi |
+| `GET /auth/sessions` | Sesi aktif milik pengguna: token yang sedang berlaku (belum dirotasi, dicabut, atau kedaluwarsa), satu per keluarga; `saat_ini` menandai sesi pemanggil |
+| `DELETE /auth/sessions/{id}` | Cabut satu keluarga milik pengguna sendiri (`device_revoked`; `logout` bila itu sesi ini). Sesi orang lain dan sesi yang tidak ada dijawab sama, `403` (`SDD-AUTH-08`); yang sudah tercabut: `204` idempoten, tanpa entri baru |
 | Ganti password (`FR-01.4`) | Cabut seluruh sesi lain milik pengguna |
 | Nonaktifkan akun | Cabut seluruh sesi seketika |
 | Auto-logout web 30 menit idle | Dilakukan klien; server tetap menghormati masa berlaku token |
@@ -206,6 +208,7 @@ sigm4 admin:recover --email=<email> [--force]
 | Sumber token | Header `Authorization` didahulukan; bila tidak ada, cookie `sigm4_at`. Header berbentuk salah tidak jatuh ke cookie |
 | `authenticate` | **Lenient**: token yang ada tetapi tak sah hanya ditandai; penolakan (`401`, `TOKEN_EXPIRED` bila kedaluwarsa) milik `authorize` pada route yang menuntutnya. Route publik — `login` dan `refresh` — tetap terjangkau dengan cookie access kedaluwarsa. Permission dan status akun dibaca ulang setiap permintaan (`PM-05`): akun nonaktif kehilangan akses seketika |
 | Gerbang ganti password | Klaim `pwd=true` → `403 PASSWORD_CHANGE_REQUIRED` pada semua route di luar `/api/v1/auth/*` (`SDD-AUTH-09` gerbang 2, `FR-01.1 A4`) |
+| Sesi hidup | `authenticate` memeriksa `sid` terhadap `refresh_tokens` pada **setiap** permintaan: sesi hidup selama keluarga itu milik `sub` dan masih punya baris yang belum dicabut. Karena itu logout, logout semua perangkat, cabut satu perangkat, dan pemakaian ulang refresh token (§4.3) mematikan access token SEKETIKA — acceptance "≤ 60 detik" (`PR-02-04`) dipenuhi tanpa jendela. Dibaca dari PostgreSQL, bukan cache (§5). Alasan `revoke_reason`: `reuse_detected`, `logout`, `logout_all`, `device_revoked`, `account_deactivated`, `password_changed`, `break_glass` |
 | Kunci | `JWT_PRIVATE_KEY` (PKCS#8) dan `JWT_PUBLIC_KEY` (SPKI), PEM Ed25519; `\n` literal diterima untuk berkas env satu baris. Startup gagal bila bukan PEM, bukan Ed25519, atau bukan pasangan (`SDD-INF-08`) |
 
 ---
@@ -218,6 +221,7 @@ sigm4 admin:recover --email=<email> [--force]
 - Penguncian akun tersimpan di basis data berarti serangan *credential stuffing* terhadap banyak akun menimbulkan beban tulis. Dimitigasi oleh limit per-IP di Redis yang menyaring lebih dulu (SDD-SESS-07).
 - Pemulihan break-glass mencabut seluruh sesi di sistem — seluruh pengguna harus login ulang. Ini disengaja.
 - Karena daftar refresh token hidup di PostgreSQL (`SDD-SESS-03`, `SDD-SESS-04`, §4.1), `refresh_tokens` tumbuh monoton dan memerlukan pembersihan berkala atas baris yang `expires_at`-nya telah lewat; indeks penunjangnya sudah ada (§4.1). Angka retensinya tidak ditetapkan di sini — lihat **TBD-SESS-B**.
+- `authenticate` menambah **satu kueri berindeks** (`refresh_tokens_family_idx`) pada setiap permintaan terautentikasi, di samping pembacaan status akun dan peran (`PM-05`). Dipilih daripada cache 60 detik karena pencabutan harus berlaku pada permintaan berikutnya dan tidak boleh bergantung pada Redis; bila kelak terbukti mahal pada `NFR-P-09`, cache berumur pendek dengan pembatalan eksplisit saat pencabutan adalah jalan keluarnya.
 - Ketersediaan Redis tidak lagi menjadi prasyarat kebenaran pencabutan sesi. Redis tetap prasyarat `/health/ready` ([SDD-15 §4.5](15-observability-logging.md)) karena rate limit dan antrean, tetapi gangguan Redis tidak dapat membatalkan pencabutan yang sudah tercatat.
 
 ---
@@ -239,7 +243,7 @@ sigm4 admin:recover --email=<email> [--force]
 
 `FR-01.1` `FR-01.2` `FR-01.3` `FR-01.4` `FR-01.5` `FR-01.6` · `BR-070` `BR-070a` `BR-070b` `BR-070c` ·
 `NFR-S-01` `NFR-S-02` `NFR-S-03` `NFR-S-03a` `NFR-S-03b` `NFR-S-07` `NFR-S-09` `NFR-S-10` `NFR-S-16` ·
-`NT-37` `NT-38` `NT-38a` `NT-39` · `AL-02` `AL-05` `AL-07` · `SEC-CFG-01` `SEC-CFG-02` · `MOB-SEC-01` `MOB-SEC-05`
+`NT-37` `NT-38` `NT-38a` `NT-39` · `AL-02` `AL-05` `AL-07` · `MOB-SEC-05` · `SEC-CFG-01` `SEC-CFG-02` · `MOB-SEC-01` `MOB-SEC-05`
 
 ---
 
