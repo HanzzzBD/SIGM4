@@ -139,6 +139,10 @@ describe.skipIf(!ADA_DB)("0012 — users + kolom baku roles", () => {
             "updated_by",
             "work_unit_id",
             "consent_guardian_at",
+            // 0022 (PR-02-03): penghitung kegagalan login dan penguncian akun (SDD-SESS-06).
+            "failed_login_count",
+            "failed_login_window_start",
+            "locked_until",
         ]);
     });
 

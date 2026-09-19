@@ -11,7 +11,7 @@
 |---|---|---|
 | `ACADEMIC_YEAR_ACTIVATED` | Pergantian tahun ajaran aktif (`AC-YR-02`), tahun sebelumnya dan sesudahnya | [M-20](../02-modules/m20-settings.md) |
 | `ACADEMIC_YEAR_CREATED` / `ACADEMIC_YEAR_UPDATED` | Pembuatan atau perubahan tahun ajaran dan semesternya, nilai lama/baru | [M-20](../02-modules/m20-settings.md) |
-| `ACCOUNT_LOCKED` / `ACCOUNT_UNLOCKED` | Penguncian akibat percobaan gagal | [M-01](../02-modules/m01-auth.md) |
+| `ACCOUNT_LOCKED` / `ACCOUNT_UNLOCKED` | Penguncian akibat percobaan gagal (kegagalan ke-5 dalam jendela 15 menit). Kunci yang berakhir sendiri tidak menulis entri | [M-01](../02-modules/m01-auth.md) |
 | `ACTIVITY_LOG_VIEWED` / `ACTIVITY_LOG_EXPORTED` | Akses terhadap log itu sendiri | [M-18](../02-modules/m18-activity-log.md) |
 | `ADMIN_BREAK_GLASS_RECOVERY` | Pemulihan darurat Administrator via CLI (FR-01.6); pelaku `SYSTEM:CLI` | [M-01](../02-modules/m01-auth.md) |
 | `APPROVAL_DECIDED` | Keputusan beserta approver, catatan, dan level | [M-10](../02-modules/m10-approval.md) |
@@ -46,7 +46,7 @@
 | `LOAN_MARKED_LOST` | Penetapan aset hilang | [M-09](../02-modules/m09-loans.md) |
 | `LOAN_UNIT_SUBSTITUTED` | Penggantian unit saat serah terima beserta alasan | [M-09](../02-modules/m09-loans.md) |
 | `LOCATION_CREATED` / `LOCATION_UPDATED` / `LOCATION_DEACTIVATED` | Perubahan struktur lokasi | [M-03](../02-modules/m03-locations.md) |
-| `LOGIN_SUCCESS` / `LOGIN_FAILED` | Termasuk IP dan perangkat | [M-01](../02-modules/m01-auth.md) |
+| `LOGIN_SUCCESS` / `LOGIN_FAILED` | Termasuk IP dan perangkat. `LOGIN_FAILED` juga mencatat email tak terdaftar dan percobaan atas akun terkunci — pelaku kosong, akun sasaran pada entitas, email yang dicoba tidak disimpan | [M-01](../02-modules/m01-auth.md) |
 | `LOGOUT` / `LOGOUT_ALL_DEVICES` | Pencabutan sesi | [M-01](../02-modules/m01-auth.md) |
 | `MAINTENANCE_SCHEDULE_CREATED` / `UPDATED` / `DEACTIVATED` / `SKIPPED` | Jadwal preventif | [M-12](../02-modules/m12-maintenance.md) |
 | `MATERIAL_ADJUSTED` | Penyesuaian saldo beserta alasan wajib | [M-22](../02-modules/m22-materials.md) |

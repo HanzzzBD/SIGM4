@@ -154,8 +154,8 @@ export interface RolesTable extends KolomBaku {
 /**
  * `users` (0012, PR-01-01). `status` dan `must_change_password` sengaja tanpa
  * nilai bawaan — keduanya wajib dinyatakan saat akun dibuat (`SL-06`,
- * `FR-02.1` langkah 4). Penanda 2FA, kolom penguncian, dan foto profil belum
- * ada: masing-masing milik `SDD-04` §4.1 dan `SDD-FS-02`.
+ * `FR-02.1` langkah 4). Penanda 2FA dan foto profil belum ada: masing-masing
+ * milik `SDD-04` §4.1 dan `SDD-FS-02`.
  */
 export interface UsersTable extends KolomBaku {
     id: Generated<string>;
@@ -174,6 +174,10 @@ export interface UsersTable extends KolomBaku {
     status: "AKTIF" | "NONAKTIF";
     must_change_password: boolean;
     login_terakhir_pada: Date | null;
+    /** Penghitung kegagalan login dan penguncian akun (0022, PR-02-03; `SDD-SESS-06`). */
+    failed_login_count: ColumnType<number, number | undefined, number>;
+    failed_login_window_start: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    locked_until: ColumnType<Date | null, Date | null | undefined, Date | null>;
     /** DP-02, SL-06 (0019, PR-01-14): NULL = persetujuan wali belum terekam. Hanya akun Siswa/OSIS. */
     consent_guardian_at: ColumnType<Date | null, Date | null | undefined, Date | null | undefined>;
 }

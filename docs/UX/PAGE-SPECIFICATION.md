@@ -372,7 +372,7 @@ Ditetapkan `ui-foundation.md §31.5`. Tabel berikut menjabarkannya menjadi keten
 | Batas percakapan harian tercapai | MS-21 | `FR-19.1 A5` — tampilkan waktu ketersediaan berikutnya |
 | Versi aplikasi tidak didukung | MS-04 | `426 UPGRADE_REQUIRED` (`MOB-VER-03`) |
 | Izin kamera ditolak | MS-07 · P-25 | `MOB-MED-06` · `FR-05.2 A4` — panduan mengaktifkan + input kode manual |
-| Akun terkunci | P-01 · MS-01 | `423 ACCOUNT_LOCKED` — menampilkan sisa waktu penguncian (`FR-01.1 A2`) |
+| Kredensial ditolak (termasuk akun terkunci) | P-01 · MS-01 | `401 UNAUTHENTICATED` — SATU pesan generik; status terkunci dan sisa waktu **tidak** ditampilkan agar tidak membocorkan email terdaftar (`FR-01.1 A1`/`A2`, `SDD-SESS-12`) |
 | Batas laju terlampaui | seluruh halaman | `429 RATE_LIMIT_EXCEEDED` — menampilkan waktu tunggu dari header `X-RateLimit-*` (`NFR-S-07`) |
 
 ## 7.4 Pola pencarian, filter, dan pengurutan

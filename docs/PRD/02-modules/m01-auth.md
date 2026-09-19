@@ -47,7 +47,8 @@ sequenceDiagram
         AUTH->>LOG: Catat LOGIN_FAILED
         API-->>C: 401 "Email atau password salah"
     else Akun terkunci
-        API-->>C: 423 "Akun terkunci, coba dalam N menit"
+        AUTH->>LOG: Catat LOGIN_FAILED (tidak menambah penghitung)
+        API-->>C: 401 "Email atau password salah" (identik dengan kredensial salah)
     else Kredensial benar & 2FA aktif
         AUTH-->>API: Terbitkan challenge 2FA
         API-->>C: 200 {requires_2fa: true, challenge_token}
@@ -91,8 +92,8 @@ sequenceDiagram
 8. Sistem mencatat aktivitas `LOGIN_SUCCESS` pada activity log.
 
 **Alternative Flow**
-- **A1 — Kredensial salah:** Sistem menampilkan pesan generik "Email atau password salah", menambah penghitung percobaan gagal, dan mencatat `LOGIN_FAILED`.
-- **A2 — Percobaan gagal ≥ 5 kali dalam 15 menit:** Akun dikunci sementara 15 menit; sistem menampilkan sisa waktu penguncian.
+- **A1 — Kredensial salah:** Sistem menampilkan pesan generik "Email atau password salah", menambah penghitung percobaan gagal, dan mencatat `LOGIN_FAILED`. Berlaku sama untuk email yang tidak terdaftar (tanpa penghitung akun; `LOGIN_FAILED` tetap dicatat tanpa menyimpan email yang dicoba).
+- **A2 — Percobaan gagal ≥ 5 kali dalam 15 menit:** Akun dikunci sementara 15 menit (jendela 15 menit dihitung dari kegagalan pertama). Selama terkunci, login — termasuk dengan password yang benar — dijawab **persis sama** dengan kredensial salah (`401`, pesan generik A1): sistem TIDAK menampilkan status terkunci maupun sisa waktu, supaya endpoint login tidak dapat dipakai untuk menebak email yang terdaftar. Percobaan selama terkunci dicatat `LOGIN_FAILED` tetapi tidak dihitung dan tidak memperpanjang penguncian. Pemilik akun dan Administrator diberi tahu lewat `NT-39`; kunci terbuka otomatis setelah 15 menit.
 - **A3 — Akun nonaktif:** Sistem menampilkan "Akun Anda dinonaktifkan. Hubungi Administrator."
 - **A4 — Login pertama kali / password hasil reset Admin:** Sistem memaksa penggantian password sebelum menu lain dapat diakses.
 - **A5 — Token kedaluwarsa saat sesi berjalan:** Klien menukar *refresh token*; bila gagal, pengguna diarahkan ke halaman login.
@@ -104,7 +105,8 @@ sequenceDiagram
 **Acceptance Criteria**
 - [ ] Login berhasil dengan kredensial valid pada web dan mobile.
 - [ ] Pesan kesalahan tidak membocorkan apakah email terdaftar.
-- [ ] Akun terkunci otomatis setelah 5 kegagalan dalam 15 menit dan terbuka otomatis setelahnya.
+- [ ] Respons login untuk email tak terdaftar, password salah, dan akun terkunci **identik** (status, kode, dan pesan); `423` dan sisa waktu kunci tidak pernah dikirim `/auth/login`.
+- [ ] Akun terkunci otomatis setelah 5 kegagalan dalam 15 menit dan terbuka otomatis setelahnya; percobaan selama terkunci tidak memperpanjangnya.
 - [ ] Pengguna dengan password hasil reset wajib mengganti password sebelum melanjutkan.
 - [ ] Setiap login sukses maupun gagal tercatat di activity log beserta alamat IP dan perangkat.
 
@@ -267,7 +269,7 @@ sequenceDiagram
 
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
-| POST | `/auth/login` | Publik | Login email + password + `platform` (`WEB`, `ANDROID`, `IOS`) | 200 `{tokens, expires_in, user, permissions}` (`tokens` null pada WEB: token hanya di cookie httpOnly) atau `{requires_2fa}` | 400, 401, 403, 423, 429 |
+| POST | `/auth/login` | Publik | Login email + password + `platform` (`WEB`, `ANDROID`, `IOS`) | 200 `{tokens, expires_in, user, permissions}` (`tokens` null pada WEB: token hanya di cookie httpOnly) atau `{requires_2fa}` | 400, 401, 403, 429 |
 | POST | `/auth/2fa/verify` | Challenge token | Verifikasi kode TOTP | 200 `{tokens, user}` | 401, 423 |
 | POST | `/auth/refresh` | Refresh token | Menukar refresh token (rotasi; refresh token baru ikut diterbitkan, pemakaian ulang mencabut seluruh rantai) | 200 `{tokens, expires_in}` (`tokens` null pada WEB) | 401 |
 | POST | `/auth/logout` | Bearer | Mencabut sesi | 204 | 401 |
@@ -316,10 +318,10 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 
 | Aksi | Keterangan |
 |---|---|
-| `LOGIN_SUCCESS` / `LOGIN_FAILED` | Termasuk IP dan perangkat |
+| `LOGIN_SUCCESS` / `LOGIN_FAILED` | Termasuk IP dan perangkat. `LOGIN_FAILED` juga mencatat email tak terdaftar dan percobaan atas akun terkunci — pelaku kosong, akun sasaran pada entitas, email yang dicoba tidak disimpan |
 | `LOGOUT` / `LOGOUT_ALL_DEVICES` | Pencabutan sesi |
 | `REFRESH_TOKEN_REUSE_DETECTED` | Refresh token yang sudah dirotasi dipakai ulang; seluruh rantai dicabut. Termasuk IP dan perangkat |
-| `ACCOUNT_LOCKED` / `ACCOUNT_UNLOCKED` | Penguncian akibat percobaan gagal |
+| `ACCOUNT_LOCKED` / `ACCOUNT_UNLOCKED` | Penguncian akibat percobaan gagal (kegagalan ke-5 dalam jendela 15 menit). Kunci yang berakhir sendiri tidak menulis entri |
 | `PASSWORD_CHANGED` | Tanpa merekam nilai password |
 | `PASSWORD_RESET_REQUESTED` / `PASSWORD_RESET_ISSUED` / `PASSWORD_RESET_REJECTED` | Alur reset administratif |
 | `TWO_FA_ENABLED` / `TWO_FA_DISABLED` / `TWO_FA_RESET` | Perubahan 2FA |

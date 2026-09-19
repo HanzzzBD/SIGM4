@@ -33,6 +33,7 @@ Otorisasi (siapa boleh apa) berada di [SDD-03](03-authorization.md). Berkas ini 
 | **SDD-SESS-09** | Verifikasi 2FA menghasilkan **klaim terpisah** pada sesi (`amr: ["pwd","otp"]`), sehingga gerbang `twoFactorVerified` (SDD-AUTH-09) memeriksa klaim, bukan tabel. |
 | **SDD-SESS-10** | *Challenge token* 2FA berumur **5 menit**, sekali pakai, dan tidak dapat dipakai sebagai access token. |
 | **SDD-SESS-11** | Pemulihan darurat (`FR-01.6`) diimplementasikan sebagai **perintah CLI pada artefak worker**, tidak pernah terdaftar sebagai route HTTP. |
+| **SDD-SESS-12** | Respons `/auth/login` **seragam**: email tak terdaftar, password salah, dan akun terkunci dijawab `401 UNAUTHENTICATED` yang identik (status, kode, pesan, tanpa `details`, tanpa `Retry-After`); `423 ACCOUNT_LOCKED` dan sisa waktu kunci tidak pernah dikirim endpoint ini. Argon2id dijalankan tepat sekali pada ketiga keadaan. Penguncian tetap berjalan dan dicatat secara internal (`LOGIN_FAILED`, `ACCOUNT_LOCKED`, event `AccountLocked`). Keputusan pemilik produk, 19 September 2026. |
 
 ---
 
@@ -58,6 +59,8 @@ Otorisasi (siapa boleh apa) berada di [SDD-03](03-authorization.md). Berkas ini 
 
 **PostgreSQL dipilih** juga karena satu properti yang di sini gratis dan di Redis harus dibangun: `SDD-SESS-04` menuntut pemakaian ulang mencabut **seluruh** keluarga, dan §4.3 mencapainya dengan `SELECT … FOR UPDATE` diikuti `UPDATE … WHERE family_id = …` dalam satu transaksi. Padanan Redis-nya memerlukan skrip Lua, dan pencabutan massal saat akun dinonaktifkan (§4.6) kehilangan relasinya ke `users`. Biaya tulisnya — satu `UPDATE` dan satu `INSERT` per rotasi — tidak terasa pada skala 100–150 concurrent yang ditetapkan Keputusan #14.
 
+**SDD-SESS-12 — respons login seragam.** Alur awal (§4.2 versi sebelumnya) menjawab `423` dengan sisa waktu bagi akun terkunci dan `401` bagi yang lain. Itu membuat `/auth/login` menjadi *oracle*: `423` membuktikan bahwa email tertentu terdaftar, tanpa perlu password yang benar. `FR-01.1 A1` sudah menuntut pesan yang tidak membocorkan keberadaan email, dan `A2` bertabrakan dengannya. Tiga jalan dipertimbangkan: (1) mempertahankan `423` — ditolak, karena membuka enumerasi; (2) penguncian bayangan di Redis bagi email tak terdaftar agar ia pun dijawab `423` — ditolak, karena menambah penghitung per-email di luar PostgreSQL yang bertentangan dengan `SDD-SESS-06` dan hanya memindahkan masalahnya; (3) menyeragamkan seluruhnya ke `401` — dipilih. Harganya diterima dengan sadar: pengguna sah yang terkunci melihat pesan yang sama dengan salah password, dan seseorang yang mengetahui email dapat mengunci akun itu selama 15 menit (§6). Penekannya ada pada penghitung IP (`SDD-SESS-07`), jejak audit, dan `NT-39`. Argon2id tetap dijalankan pada ketiga keadaan supaya waktu respons tidak menjadi *oracle* kedua.
+
 ---
 
 ## 4. Rancangan
@@ -68,6 +71,7 @@ Otorisasi (siapa boleh apa) berada di [SDD-03](03-authorization.md). Berkas ini 
 -- Penambahan pada users (kolom lain sudah didefinisikan PRD)
 ALTER TABLE users
   ADD COLUMN failed_login_count int NOT NULL DEFAULT 0,
+  ADD COLUMN failed_login_window_start timestamptz,  -- awal jendela tetap 15 menit (§4.2); migration 0022
   ADD COLUMN locked_until       timestamptz,
   ADD COLUMN totp_secret_enc    bytea,        -- terenkripsi (SDD-SESS-08)
   ADD COLUMN totp_enabled_at    timestamptz;
@@ -105,19 +109,24 @@ Masa berlaku mengikuti `FR-01.1`: access 60 menit; refresh 30 hari (mobile) / 12
 
 ```
 POST /auth/login
-  1. cari user by email            -> selalu jalankan hash dummy bila tidak ada
-                                      (mencegah pembedaan waktu / enumerasi)
-  2. jika locked_until > now       -> 423 ACCOUNT_LOCKED + sisa waktu
-  3. verifikasi Argon2id           -> gagal: failed_login_count++, LOGIN_FAILED
-                                      bila >= 5 dalam 15 menit -> locked_until = now+15m
-                                      terbitkan NT-39
-  4. jika status <> Aktif          -> 403 pesan FR-01.1 A3
-  5. jika role wajib 2FA / 2FA on  -> 200 {requires_2fa, challenge_token}   (5 menit)
-  6. jika must_change_password     -> terbitkan token dengan klaim pwd_change_required
-  7. terbitkan access + refresh (family_id baru), catat LOGIN_SUCCESS + IP + UA
+  1. cari user by email            -> Argon2id SELALU dijalankan tepat sekali (hash dummy bila
+                                      tidak ada) — mencegah pembedaan waktu / enumerasi
+  2. email tak terdaftar           -> LOGIN_FAILED (tanpa sasaran, email tidak disimpan); 401
+  3. jika locked_until > now       -> LOGIN_FAILED (AKUN_TERKUNCI), TIDAK dihitung; 401
+                                      (identik dengan langkah 2 dan 4, SDD-SESS-12)
+  4. password salah                -> SATU transaksi, baris users dikunci (FOR UPDATE):
+                                      jendela tetap 15 menit dari kegagalan pertama;
+                                      failed_login_count++ ; LOGIN_FAILED
+                                      bila >= 5 dalam jendela -> locked_until = now+15m,
+                                      ACCOUNT_LOCKED, event AccountLocked (NT-39); commit; 401
+  5. jika status <> Aktif          -> 403 pesan FR-01.1 A3
+  6. jika role wajib 2FA / 2FA on  -> 200 {requires_2fa, challenge_token}   (5 menit)
+  7. jika must_change_password     -> terbitkan token dengan klaim pwd_change_required
+  8. terbitkan access + refresh (family_id baru), reset penghitung dan locked_until,
+     catat LOGIN_SUCCESS + IP + UA
 ```
 
-Body login memuat `platform` (`WEB` | `ANDROID` | `IOS`): ia menentukan masa berlaku refresh token dan jalur pengirimannya (§4.7), disimpan pada baris `refresh_tokens`, dan diwarisi setiap rotasi — tidak pernah diambil dari permintaan refresh. Akun nonaktif dijawab `403 FORBIDDEN` **setelah** password terbukti benar; sebelum itu kegagalan tetap `401` yang sama dengan email tak dikenal. Langkah 2, 3 (penghitung/penguncian), dan 5 dikerjakan `PR-02-03` dan `PR-02-07`.
+Body login memuat `platform` (`WEB` | `ANDROID` | `IOS`): ia menentukan masa berlaku refresh token dan jalur pengirimannya (§4.7), disimpan pada baris `refresh_tokens`, dan diwarisi setiap rotasi — tidak pernah diambil dari permintaan refresh. Akun nonaktif dijawab `403 FORBIDDEN` **setelah** password terbukti benar; sebelum itu kegagalan tetap `401` yang sama dengan email tak dikenal. Langkah 2–4 (penghitung, penguncian, audit kegagalan) dikerjakan `PR-02-03`; langkah 6 `PR-02-07`. Waktu semuanya dari `Clock` yang di-inject (`SDD-SYS-07`). Percobaan selama terkunci tidak dihitung — kalau dihitung, siapa pun dapat memperpanjang penguncian akun orang lain tanpa batas. Login yang berhasil memeriksa ulang penguncian di bawah kunci baris, sehingga login tidak melewati penguncian yang baru terjadi akibat kegagalan serentak.
 
 ### 4.3 Rotasi & deteksi pemakaian ulang
 
@@ -205,6 +214,7 @@ sigm4 admin:recover --email=<email> [--force]
 
 - Klien wajib menyerialisasi permintaan refresh (§4.3). Ini menjadi persyaratan bagi [SDD-11](11-frontend-architecture.md) dan [SDD-12](12-mobile-architecture.md).
 - Kunci penandatangan Ed25519 dan kunci enkripsi TOTP adalah dua rahasia berbeda dengan siklus rotasi berbeda — keduanya wajib ada di *secret manager* (`SEC-CFG-01`).
+- Pengguna sah yang terkunci **tidak diberi tahu** bahwa akunnya terkunci lewat endpoint login (`SDD-SESS-12`); satu-satunya pemberitahuan adalah `NT-39`, dan belum ada jalur pembuka kunci administratif — kunci berakhir sendiri setelah 15 menit.
 - Penguncian akun tersimpan di basis data berarti serangan *credential stuffing* terhadap banyak akun menimbulkan beban tulis. Dimitigasi oleh limit per-IP di Redis yang menyaring lebih dulu (SDD-SESS-07).
 - Pemulihan break-glass mencabut seluruh sesi di sistem — seluruh pengguna harus login ulang. Ini disengaja.
 - Karena daftar refresh token hidup di PostgreSQL (`SDD-SESS-03`, `SDD-SESS-04`, §4.1), `refresh_tokens` tumbuh monoton dan memerlukan pembersihan berkala atas baris yang `expires_at`-nya telah lewat; indeks penunjangnya sudah ada (§4.1). Angka retensinya tidak ditetapkan di sini — lihat **TBD-SESS-B**.
@@ -219,6 +229,7 @@ sigm4 admin:recover --email=<email> [--force]
 | Refresh paralel memicu pencabutan keluarga | Pengguna ter-logout tanpa sebab jelas | Serialisasi di klien; pesan galat spesifik; jendela toleransi tidak ditambahkan karena akan melemahkan deteksi |
 | Jam perangkat menyimpang jauh | TOTP selalu gagal | Toleransi ±1 langkah; pesan galat menyarankan sinkronisasi jam |
 | Kunci enkripsi TOTP hilang | Seluruh 2FA harus didaftarkan ulang | Kunci dicadangkan terpisah dari basis data; prosedur pendaftaran ulang massal terdokumentasi |
+| Penguncian dipakai sebagai DoS terhadap akun tertentu (penyerang yang tahu email mengirim 5 password salah) | Pengguna sah tak dapat login 15 menit tanpa tahu sebabnya | Sumbu IP menghambat penyerang tunggal; `LOGIN_FAILED`/`ACCOUNT_LOCKED` beserta IP tercatat; `NT-39`. Bila menjadi masalah nyata, jalur pembuka kunci administratif menjadi PR tersendiri |
 | Argon2id membebani CPU saat lonjakan login | Latensi login naik | Parameter dapat diturunkan lewat konfigurasi; diukur pada uji beban `NFR-P-09` |
 | Cookie `SameSite=Strict` memutus alur dari tautan eksternal | Deep link email/chat tidak membawa sesi | Tidak ada kanal email (`NO-08`); deep link mobile memakai token dari Keychain, bukan cookie |
 
@@ -228,7 +239,7 @@ sigm4 admin:recover --email=<email> [--force]
 
 `FR-01.1` `FR-01.2` `FR-01.3` `FR-01.4` `FR-01.5` `FR-01.6` · `BR-070` `BR-070a` `BR-070b` `BR-070c` ·
 `NFR-S-01` `NFR-S-02` `NFR-S-03` `NFR-S-03a` `NFR-S-03b` `NFR-S-07` `NFR-S-09` `NFR-S-10` `NFR-S-16` ·
-`NT-37` `NT-38` `NT-38a` `NT-39` · `AL-02` `AL-05` · `SEC-CFG-01` `SEC-CFG-02` · `MOB-SEC-01` `MOB-SEC-05`
+`NT-37` `NT-38` `NT-38a` `NT-39` · `AL-02` `AL-05` `AL-07` · `SEC-CFG-01` `SEC-CFG-02` · `MOB-SEC-01` `MOB-SEC-05`
 
 ---
 
