@@ -36,14 +36,15 @@ export interface WorkDaysTable {
 }
 
 /**
- * `holidays` (0004, PR-00-08). `academic_year_id` sengaja belum ada — ia
- * ditambahkan `PR-01-11` bersama `academic_years` sebagai migration `expand`.
+ * `holidays` (0004, PR-00-08; `academic_year_id` 0016, PR-01-11). Kolom itu
+ * NULLABLE: hari libur nasional tidak intrinsik milik satu tahun ajaran.
  */
 export interface HolidaysTable {
     id: Generated<string>;
     tanggal: ColumnType<string, string, string>;
     nama: string;
     jenis: "NASIONAL" | "SEKOLAH" | "CUTI_BERSAMA";
+    academic_year_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
 }
 
 /**
@@ -259,6 +260,28 @@ export interface SystemSettingsTable {
     updated_by: ColumnType<string | null, string | number | null, string | number | null>;
 }
 
+/**
+ * `academic_years` (0016, PR-01-11). `tanggal_*` bertipe `date` dan kembali
+ * sebagai string `YYYY-MM-DD` (pola `holidays.tanggal`). Tepat satu baris
+ * `is_active` ditegakkan basis data — SDD-05 §4.7b.
+ */
+export interface AcademicYearsTable extends KolomBaku {
+    id: Generated<string>;
+    nama: string;
+    tanggal_mulai: ColumnType<string, string, string>;
+    tanggal_selesai: ColumnType<string, string, string>;
+    is_active: Generated<boolean>;
+}
+
+/** `academic_terms` (0016, PR-01-11). Ganjil/Genap per tahun ajaran (Lampiran E.2). */
+export interface AcademicTermsTable extends KolomBaku {
+    id: Generated<string>;
+    academic_year_id: ColumnType<string, string | number, string | number>;
+    nama: "GANJIL" | "GENAP";
+    tanggal_mulai: ColumnType<string, string, string>;
+    tanggal_selesai: ColumnType<string, string, string>;
+}
+
 /** Peta nama tabel -> bentuk barisnya. Diisi bersama migration pemiliknya. */
 export interface Database {
     document_counters: DocumentCountersTable;
@@ -275,4 +298,6 @@ export interface Database {
     areas: AreasTable;
     rooms: RoomsTable;
     system_settings: SystemSettingsTable;
+    academic_years: AcademicYearsTable;
+    academic_terms: AcademicTermsTable;
 }

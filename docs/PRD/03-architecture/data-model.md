@@ -115,6 +115,7 @@ Data acuan bernilai tetap yang digunakan sebagai enumerasi dan dropdown.
 | **Status Lokasi** | Aktif, Nonaktif |
 | **Kelompok Parameter Sistem** | Identitas Sekolah, Kode Aset, Peminjaman, Denda, Reservasi, Maintenance, Bahan, Notifikasi, Keamanan, Chatbot AI |
 | **Tipe Parameter Sistem** | Bilangan Bulat, Desimal, Boolean, Teks |
+| **Nama Semester** | Ganjil, Genap |
 
 ## 11.4 Kebijakan Retensi Data
 
