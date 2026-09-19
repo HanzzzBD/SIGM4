@@ -46,14 +46,20 @@ import {
     databaseCheck,
     redisCheck,
 } from "../shared/observability/index.js";
+import type { AuthModuleDeps } from "../modules/m01-auth/index.js";
 import {
     authRouter,
+    buatPenerbitPasswordSementara,
     cabutSesiRoute,
+    forgotPasswordRoute,
+    listPermintaanResetRoute,
     listSesiRoute,
     loginRoute,
     logoutRoute,
     logoutSemuaRoute,
     refreshRoute,
+    terbitkanResetRoute,
+    tolakResetRoute,
 } from "../modules/m01-auth/index.js";
 import {
     createUserRoute,
@@ -63,6 +69,7 @@ import {
     importUsersRoute,
     listRolesRoute,
     listUsersRoute,
+    resetUserPasswordRoute,
     updateRolePermissionsRoute,
     updateUserRoute,
     updateUserStatusRoute,
@@ -132,11 +139,16 @@ export const registry = new RouteRegistry().register(
     logoutSemuaRoute,
     listSesiRoute,
     cabutSesiRoute,
+    forgotPasswordRoute,
+    listPermintaanResetRoute,
+    terbitkanResetRoute,
+    tolakResetRoute,
     listUsersRoute,
     createUserRoute,
     getUserRoute,
     updateUserRoute,
     updateUserStatusRoute,
+    resetUserPasswordRoute,
     importUsersRoute,
     getUserImportRoute,
     listRolesRoute,
@@ -215,22 +227,26 @@ export function createApp(deps: AppDeps): Express {
         }),
     );
     app.use(gerbangGantiPassword(`${BASE_PATH}/auth/`));
+    // M-01 dipakai dua tempat: routernya sendiri dan pintu reset password langsung milik M-02
+    // (`POST /users/{id}/reset-password`) — satu deps, tanpa m02 mengimpor internal m01.
+    const authDeps: AuthModuleDeps = {
+        db: deps.db,
+        jwtKeys: deps.auth.jwtKeys,
+        permissionCache: deps.auth.permissions,
+        auditLogger: new AuditLogger({
+            clock: deps.clock,
+            logger: deps.logger,
+        }),
+        clock: deps.clock,
+        logger: deps.logger,
+    };
     app.use(
         BASE_PATH,
         authRouter(
-            {
-                db: deps.db,
-                jwtKeys: deps.auth.jwtKeys,
-                permissionCache: deps.auth.permissions,
-                auditLogger: new AuditLogger({
-                    clock: deps.clock,
-                    logger: deps.logger,
-                }),
-                clock: deps.clock,
-                logger: deps.logger,
-            },
+            authDeps,
             (route) => rateLimit(route, deps.limiter, deps.logger),
             authenticated,
+            authorize,
         ),
     );
     app.use(
@@ -258,6 +274,7 @@ export function createApp(deps: AppDeps): Express {
                 }),
                 logger: deps.logger,
                 clock: deps.clock,
+                penerbitPassword: buatPenerbitPasswordSementara(authDeps),
             },
             (route) => rateLimit(route, deps.limiter, deps.logger),
             authorize,

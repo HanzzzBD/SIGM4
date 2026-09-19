@@ -2,10 +2,10 @@
 // (PR-01-16) dengan konstruksi, bukan lolos secara kebetulan.
 
 import { describe, expect, it } from "vitest";
-import { generateTemporaryPassword } from "../../../src/modules/m02-users/services/temporary-password.js";
 import {
     PASSWORD_MIN_LENGTH,
     checkPasswordPolicy,
+    generateTemporaryPassword,
 } from "../../../src/shared/security/index.js";
 
 const IDENTITAS = { nama: "Budi Santoso", email: "budi@sekolah.sch.id", nipNis: "198001012005011001" };

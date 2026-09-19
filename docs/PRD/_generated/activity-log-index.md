@@ -56,7 +56,7 @@
 | `MATERIAL_RECEIVED` | Penerimaan bahan beserta jumlah & lokasi | [M-22](../02-modules/m22-materials.md) |
 | `MATERIAL_REQUEST_SUBMITTED` / `APPROVED` / `REJECTED` / `CANCELLED` | Siklus permintaan bahan | [M-22](../02-modules/m22-materials.md) |
 | `PASSWORD_CHANGED` | Tanpa merekam nilai password | [M-01](../02-modules/m01-auth.md) |
-| `PASSWORD_RESET_REQUESTED` / `PASSWORD_RESET_ISSUED` / `PASSWORD_RESET_REJECTED` | Alur reset administratif | [M-01](../02-modules/m01-auth.md) |
+| `PASSWORD_RESET_REQUESTED` / `PASSWORD_RESET_ISSUED` / `PASSWORD_RESET_REJECTED` | Alur reset administratif. `PASSWORD_RESET_REQUESTED` dicatat tanpa pelaku (pemohon belum login; akun sasaran pada entitas), juga untuk percobaan yang tidak menghasilkan permintaan — email tak terdaftar, akun nonaktif, melebihi batas — dengan hasil `Gagal` dan tanpa menyimpan email yang dicoba. `PASSWORD_RESET_ISSUED` memuat metode verifikasi dan jumlah sesi yang dicabut. Tidak satu pun memuat password | [M-01](../02-modules/m01-auth.md) |
 | `PROCUREMENT_ASSETS_GENERATED` | Pembentukan aset dari penerimaan | [M-14](../02-modules/m14-procurement.md) |
 | `PROCUREMENT_CREATED` / `SUBMITTED` / `DECIDED` | Siklus usulan | [M-14](../02-modules/m14-procurement.md) |
 | `PROCUREMENT_RECEIVED` | Penerimaan barang beserta jumlah | [M-14](../02-modules/m14-procurement.md) |

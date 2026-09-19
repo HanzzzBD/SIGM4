@@ -24,6 +24,7 @@ import { getDb } from "../../src/shared/db/index.js";
 import { checkPasswordPolicy } from "../../src/shared/security/index.js";
 import { Logger } from "../../src/shared/observability/index.js";
 import { dbmate, kueri } from "../helpers/db.js";
+import { penerbitPalsu } from "../helpers/auth.js";
 
 const ADA_DB = process.env["DATABASE_URL"] !== undefined;
 
@@ -449,7 +450,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
             const batasi = (): RequestHandler => (_req, _res, next) => next();
             app.use(
                 "/api/v1",
-                usersRouter({ db: getDb(), auditLogger: buatAuditLogger(), logger: buatLogger() }, batasi, authorize),
+                usersRouter({ db: getDb(), penerbitPassword: penerbitPalsu, auditLogger: buatAuditLogger(), logger: buatLogger() }, batasi, authorize),
             );
             app.use(
                 ujungRantai({
@@ -663,7 +664,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
             app.use(
                 "/api/v1",
                 usersRouter(
-                    { db: getDb(), auditLogger: buatAuditLogger(), logger: buatLogger() },
+                    { db: getDb(), penerbitPassword: penerbitPalsu, auditLogger: buatAuditLogger(), logger: buatLogger() },
                     batasi,
                     authorize,
                 ),

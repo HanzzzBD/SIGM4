@@ -29,6 +29,13 @@ export interface StatusGagalRow {
     readonly locked_until: Date | null;
 }
 
+/** Permintaan reset password yang sudah diterbitkan (FR-01.3): dasar kedaluwarsa 72 jam saat login. */
+export interface PermintaanTerbitRow {
+    readonly id: string;
+    readonly status: "DITERBITKAN" | "SELESAI" | "KEDALUWARSA";
+    readonly kedaluwarsa_pada: Date;
+}
+
 export interface RefreshRow {
     readonly id: string;
     readonly user_id: string;
@@ -145,6 +152,67 @@ export class AuthRepository {
             .updateTable("users")
             .set({ failed_login_count: status.hitungan, failed_login_window_start: status.awalJendela, locked_until: status.terkunciSampai })
             .where("id", "=", userId)
+            .execute();
+    }
+
+    // ---- Reset password (FR-01.3, PR-02-05): pra-autentikasi, sama seperti login ------------------
+
+    /** Mengunci baris pengguna: permintaan serentak atas satu akun diserialkan (batas 3/24 jam, A4). */
+    async kunciUser(userId: string): Promise<boolean> {
+        const baris = await this.db.selectFrom("users").select("id").where("id", "=", userId).forUpdate().executeTakeFirst();
+        return baris !== undefined;
+    }
+
+    /** Permintaan reset akun ini sejak `sejak`, apa pun statusnya (FR-01.3 A4). */
+    async hitungPermintaanReset(userId: string, sejak: Date): Promise<number> {
+        const baris = await this.db
+            .selectFrom("password_reset_requests")
+            .select((eb) => eb.fn.countAll<string>().as("n"))
+            .where("user_id", "=", userId)
+            .where("diminta_pada", ">=", sejak)
+            .executeTakeFirstOrThrow();
+        return Number(baris.n);
+    }
+
+    async sisipPermintaanReset(userId: string, waktu: Date): Promise<string> {
+        const baris = await this.db
+            .insertInto("password_reset_requests")
+            .values({ user_id: userId, diminta_pada: waktu })
+            .returning("id")
+            .executeTakeFirstOrThrow();
+        return baris.id;
+    }
+
+    /**
+     * Penerbitan password sementara TERAKHIR akun ini (yang menetapkan password saat ini bila
+     * `must_change_password`). Akun tanpa penerbitan — mis. akun baru buatan Administrator — tidak
+     * punya batas 72 jam (FR-02.1).
+     */
+    async cariPenerbitanTerakhir(userId: string): Promise<PermintaanTerbitRow | undefined> {
+        const baris = await this.db
+            .selectFrom("password_reset_requests")
+            .select(["id", "status", "kedaluwarsa_pada"])
+            .where("user_id", "=", userId)
+            .where("status", "in", ["DITERBITKAN", "SELESAI", "KEDALUWARSA"])
+            .orderBy("diproses_pada", "desc")
+            .orderBy("id", "desc")
+            .limit(1)
+            .executeTakeFirst();
+        if (baris === undefined || baris.kedaluwarsa_pada === null) return undefined;
+        return {
+            id: baris.id,
+            status: baris.status as PermintaanTerbitRow["status"],
+            kedaluwarsa_pada: baris.kedaluwarsa_pada,
+        };
+    }
+
+    /** Menutup penerbitan yang lewat 72 jam (FR-01.3 A3); hanya bila masih `DITERBITKAN`. */
+    async kedaluwarsakanPermintaan(id: string): Promise<void> {
+        await this.db
+            .updateTable("password_reset_requests")
+            .set({ status: "KEDALUWARSA" })
+            .where("id", "=", id)
+            .where("status", "=", "DITERBITKAN")
             .execute();
     }
 }

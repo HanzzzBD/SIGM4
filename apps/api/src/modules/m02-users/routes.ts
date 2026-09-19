@@ -4,6 +4,7 @@ import express from "express";
 import type { RequestHandler, Router } from "express";
 import type { Kysely } from "kysely";
 import type { AuditLogger } from "../../shared/audit/index.js";
+import type { AuthContext } from "../../shared/auth/index.js";
 import type { Clock } from "../../shared/clock/index.js";
 import type { Database } from "../../shared/db/index.js";
 import { defineRoute } from "../../shared/http/index.js";
@@ -17,6 +18,7 @@ import {
     updateUserStatusHandler,
 } from "./controllers/user.controller.js";
 import { classPromotionHandler } from "./controllers/class-promotion.controller.js";
+import { resetPasswordHandler } from "./controllers/reset-password.controller.js";
 import {
     getUserImportHandler,
     importUsersHandler,
@@ -34,6 +36,8 @@ import {
     CreateUserBodySchema,
     CreatedUserResponseSchema,
     ListUsersResponseSchema,
+    ResetPasswordBodySchema,
+    ResetPasswordResponseSchema,
     SingleUserResponseSchema,
     UpdateUserBodySchema,
     UpdateUserStatusBodySchema,
@@ -114,6 +118,37 @@ export const updateUserStatusRoute = defineRoute({
 });
 
 /**
+ * FR-01.3 langkah 3–4 dari detail pengguna (P-63): terbitkan password sementara TANPA menunggu permintaan
+ * pemohon; metode verifikasi identitas wajib dan tercatat pada permintaan. Logikanya milik M-01
+ * (`PenerbitPasswordSementara`, disuntikkan). Permintaan `MENUNGGU` akun itu, bila ada, yang diselesaikan.
+ */
+export const resetUserPasswordRoute = defineRoute({
+    method: "POST",
+    path: "/users/:id/reset-password",
+    permission: "user.reset_password",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Terbitkan password sementara (tampil satu kali); metode verifikasi identitas wajib",
+    successStatus: 200,
+    params: UserIdParamSchema,
+    body: ResetPasswordBodySchema,
+    response: ResetPasswordResponseSchema,
+});
+
+/**
+ * Pintu M-01 yang dipakai reset langsung. Bentuknya didefinisikan di sini (pemakai) dan dipenuhi
+ * secara struktural oleh `buatPenerbitPasswordSementara` (m01-auth) — modul ini tidak mengimpor m01.
+ */
+export interface PenerbitPasswordSementara {
+    terbitkanLangsung(
+        ctx: AuthContext,
+        userId: string,
+        metode: "KARTU_IDENTITAS_TATAP_MUKA" | "KONFIRMASI_ATASAN_ATAU_WALI_KELAS",
+        klien: { readonly ip: string | undefined; readonly userAgent: string | undefined },
+    ): Promise<{ permintaanId: string; berlakuSampai: Date; passwordSementara: string }>;
+}
+
+/**
  * IMPT-03/04: ≤ 200 baris diproses sinkron (200), lebih dari itu dijadwalkan ke
  * worker (202); berkas identik dalam 24 jam mengembalikan pekerjaan sebelumnya.
  */
@@ -188,6 +223,8 @@ export interface UsersModuleDeps {
     readonly logger: Logger;
     /** Cap waktu penanda persetujuan wali (SDD-SYS-07). Bawaan `SystemClock`. */
     readonly clock?: Clock;
+    /** Reset password langsung (`POST /users/{id}/reset-password`); dipenuhi M-01 lewat composition root. */
+    readonly penerbitPassword: PenerbitPasswordSementara;
 }
 
 /**
@@ -248,6 +285,12 @@ export function usersRouter(
         batasi(updateUserStatusRoute),
         otorisasi(updateUserStatusRoute.permission),
         updateUserStatusHandler(service),
+    );
+    router.post(
+        resetUserPasswordRoute.path,
+        batasi(resetUserPasswordRoute),
+        otorisasi(resetUserPasswordRoute.permission),
+        resetPasswordHandler(deps.penerbitPassword),
     );
     router.post(
         importUsersRoute.path,

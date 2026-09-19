@@ -13,17 +13,13 @@ import { withTransaction } from "../../../shared/db/index.js";
 import type { Database, TransactionScope } from "../../../shared/db/index.js";
 import { ForbiddenError } from "../../../shared/errors/index.js";
 import { publishAll } from "../../../shared/events/index.js";
-import type { DomainEvent } from "../../../shared/events/index.js";
 import { createSessionRepository } from "../repositories/session.repository.js";
-import type { SesiDicabut, SesiRow } from "../repositories/session.repository.js";
+import type { SesiRow } from "../repositories/session.repository.js";
 import { jejakKlien } from "./klien.js";
 import type { KlienPermintaan } from "./klien.js";
+import { eventSesiDicabut } from "./sesi-event.js";
 
 const MODUL = "m01-auth";
-
-/** Event outbox pencabutan sesi (SDD-07 §4.3); konsumennya — nonaktifkan token FCM (`MOB-SEC-05`) — dipasang `PR-02-25`. */
-export const EVENT_SESI_DICABUT = "SessionRevoked";
-const AGREGAT_PENGGUNA = "user";
 
 /** Nilai `refresh_tokens.revoke_reason` (SDD-04 §4.6). */
 const ALASAN_LOGOUT = "logout";
@@ -33,15 +29,6 @@ const ALASAN_PERANGKAT = "device_revoked";
 export interface SesiTampil extends SesiRow {
     /** Sesi yang membawa permintaan ini — UI menandainya dan tidak menawarkan "cabut" biasa. */
     readonly saat_ini: boolean;
-}
-
-function eventDicabut(ctx: AuthContext, sesi: SesiDicabut, alasan: string): DomainEvent {
-    return {
-        name: EVENT_SESI_DICABUT,
-        aggregateType: AGREGAT_PENGGUNA,
-        aggregateId: ctx.userId,
-        payload: { user_id: String(ctx.userId), family_id: sesi.familyId, platform: sesi.platform, alasan },
-    };
 }
 
 export class SessionService {
@@ -102,7 +89,7 @@ export class SessionService {
                     ...jejakKlien(klien),
                 });
                 // SDD-EVT-04: terbit di dalam transaksi; satu event per sesi agar konsumen FCM tetap sederhana.
-                await publishAll(scope, dicabut.map((s) => eventDicabut(ctx, s, ALASAN_LOGOUT_SEMUA)));
+                await publishAll(scope, dicabut.map((s) => eventSesiDicabut(ctx.userId, s, ALASAN_LOGOUT_SEMUA)));
                 return dicabut.length;
             },
             this.db,
@@ -122,6 +109,6 @@ export class SessionService {
             nilaiSesudah: { family_id: dicabut.familyId, platform: dicabut.platform, alasan },
             ...jejakKlien(klien),
         });
-        await publishAll(scope, [eventDicabut(ctx, dicabut, alasan)]);
+        await publishAll(scope, [eventSesiDicabut(ctx.userId, dicabut, alasan)]);
     }
 }

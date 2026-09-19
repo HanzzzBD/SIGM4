@@ -298,7 +298,8 @@ describe.skipIf(!ADA)("PR-02-03 — penguncian akun + audit percobaan gagal + re
             const semua = [...(await gagal(email, 8)), await login(email, PASSWORD)];
             for (const r of semua) {
                 expect(r.status).toBe(401);
-                expect(r.teks).not.toMatch(/ACCOUNT_LOCKED|terkunci|menit|423/i);
+                // `request_id` acak (heksadesimal) dapat kebetulan memuat "423": yang diperiksa badan tanpa itu.
+                expect(tanpaRequestId(r)).not.toMatch(/ACCOUNT_LOCKED|terkunci|menit|423/i);
             }
         });
 

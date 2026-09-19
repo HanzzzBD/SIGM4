@@ -157,6 +157,8 @@ Konsekuensinya, event yang gagal **menahan** event sesudahnya pada agregat yang 
 | `UserImportRequested` | M-02 | Memasukkan pekerjaan `user-import` ke antrean (`IMPT-04`) |
 | `UserImportCompleted` | M-02 (job) | Notifikasi `NT-52` |
 | `AccountLocked` | M-01 | Notifikasi `NT-39` (pemilik akun + Administrator); payload `user_id`, `terkunci_sampai`; agregat `user` |
+| `PasswordResetRequested` | M-01 | Notifikasi `NT-37` (Administrator, in-app + push); payload `permintaan_id`, `user_id`; agregat `user` |
+| `PasswordResetIssued` | M-01 | Notifikasi `NT-38` (Administrator penerbit, in-app); payload `permintaan_id`, `user_id`, `oleh`, `kedaluwarsa_pada` — **tidak pernah** memuat password sementara (`FR-01.3 AC`); agregat `user` |
 | `SessionRevoked` | M-01 | Menonaktifkan device token FCM sesi itu (`MOB-SEC-05`); payload `user_id`, `family_id`, `platform`, `alasan`; agregat `user` |
 
 Kolom "konsumen asinkron" sengaja didominasi notifikasi — karena efek yang bukan notifikasi umumnya sinkron (SDD-EVT-02).

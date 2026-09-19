@@ -1,12 +1,13 @@
-// Password sementara akun baru (FR-02.1 langkah 4). Hanya dipakai M-02 — bukan
-// shared kernel: satu-satunya pemanggilnya adalah pembuatan akun di modul ini.
+// Password sementara (FR-02.1 langkah 4 akun baru, FR-01.3 langkah 4 reset administratif).
+// Dipakai dua modul — M-02 (pembuatan akun) dan M-01 (reset password) — sehingga tinggal di
+// shared/security, bukan di salah satunya (SDD-SYS-03: modul tidak mengimpor internal modul lain).
 //
-// Ditampilkan satu kali pada respons `POST /users`, tidak pernah disimpan apa
-// adanya maupun masuk activity log (AL-05) — hanya hash-nya yang menetap.
+// Ditampilkan satu kali pada respons, tidak pernah disimpan apa adanya maupun masuk
+// activity log (AL-05) — hanya hash-nya yang menetap.
 
 import { randomInt } from "node:crypto";
-import type { UserIdentity } from "../../../shared/security/index.js";
-import { checkPasswordPolicy } from "../../../shared/security/index.js";
+import { checkPasswordPolicy } from "./password.js";
+import type { UserIdentity } from "./password.js";
 
 // Tanpa 0/O/1/I/l — ambigu dibaca dari kertas kredensial yang diserahkan manual
 // (FR-02.1 langkah 5).

@@ -3,6 +3,7 @@
 
 import { generateKeyPairSync } from "node:crypto";
 import type { AppDeps } from "../../src/api/index.js";
+import type { UsersModuleDeps } from "../../src/modules/m02-users/index.js";
 import type { PermissionCache } from "../../src/shared/auth/index.js";
 import { JwtKeys } from "../../src/shared/security/index.js";
 
@@ -37,3 +38,8 @@ export function authPalsu(): AppDeps["auth"] {
     // Tanpa basis data: setiap sesi dianggap hidup — uji yang membuktikan pencabutan memakai `SessionStore` nyata.
     return { jwtKeys: kunciUji(), permissions, sessions: { aktif: () => Promise.resolve(true) } };
 }
+
+/** Pintu reset password langsung yang tak dipakai: uji yang membangun `usersRouter` sendiri tidak menyentuhnya. */
+export const penerbitPalsu: UsersModuleDeps["penerbitPassword"] = {
+    terbitkanLangsung: () => Promise.reject(new Error("penerbitPalsu: tidak boleh dipanggil")),
+};

@@ -31,6 +31,7 @@ import { createUserImportRepository } from "../../src/modules/m02-users/reposito
 import { getDb } from "../../src/shared/db/index.js";
 import { Logger } from "../../src/shared/observability/index.js";
 import { dbmate, kueri } from "../helpers/db.js";
+import { penerbitPalsu } from "../helpers/auth.js";
 
 const ADA_DB = process.env["DATABASE_URL"] !== undefined;
 const T1 = new Date("2026-09-19T03:00:00Z");
@@ -399,7 +400,7 @@ describe.skipIf(!ADA_DB)("PR-01-17 — impor pengguna asinkron + idempotensi (ac
                 next();
             });
             const batasi = (): RequestHandler => (_req, _res, next) => next();
-            app.use("/api/v1", usersRouter({ db: getDb(), auditLogger: audit(), logger: logger(), clock: new FixedClock(T1) }, batasi, authorize));
+            app.use("/api/v1", usersRouter({ db: getDb(), penerbitPassword: penerbitPalsu, auditLogger: audit(), logger: logger(), clock: new FixedClock(T1) }, batasi, authorize));
             app.use(
                 ujungRantai({
                     limiter: { hit: () => Promise.resolve({ lolos: true, batas: 100, sisa: 99, resetDetik: 60 }) },

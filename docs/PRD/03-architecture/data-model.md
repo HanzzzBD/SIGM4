@@ -71,7 +71,7 @@ Data yang tumbuh seiring operasional harian.
 | **activity_logs** | Jejak audit seluruh aktivitas | id, user_id, role, ip, user_agent, modul, aksi, entitas, entitas_id, nilai_sebelum (JSON), nilai_sesudah (JSON), hasil, waktu | ± 150.000 |
 | **chat_sessions** | Sesi percakapan chatbot | id, user_id, judul, dimulai_pada, terakhir_aktif | ± 5.000 |
 | **chat_messages** | Pesan dalam percakapan | id, session_id, peran (user/assistant), isi, tools_dipanggil (JSON), token_input, token_output, umpan_balik, waktu | ± 25.000 |
-| **password_reset_requests** | Permintaan reset password | id, user_id, status, metode_verifikasi, diminta_pada, diproses_oleh, diproses_pada, kedaluwarsa_pada | ± 100 |
+| **password_reset_requests** | Permintaan reset password | id, user_id, status, metode_verifikasi, diminta_pada, diproses_oleh, diproses_pada, kedaluwarsa_pada, alasan_penolakan | ± 100 |
 | **asset_photos** | Foto aset (menggantikan field tunggal `assets.foto`) | id, asset_id, path, urutan, is_primary, diunggah_oleh | ± 6.000 |
 | **stored_files** | Registri berkas terpusat & status pemindaian AV | id, object_key, mime, ukuran, checksum, scan_status (`PENDING`/`CLEAN`/`INFECTED`/`FAILED`), scanned_at, owner_type, owner_id | ± 12.000 |
 
@@ -116,6 +116,8 @@ Data acuan bernilai tetap yang digunakan sebagai enumerasi dan dropdown.
 | **Status Pengguna** | Aktif, Nonaktif |
 | **Status Impor Pengguna** | Menunggu, Berjalan, Selesai, Gagal |
 | **Platform Perangkat** | Web, Android, iOS |
+| **Status Permintaan Reset Password** | Menunggu, Diterbitkan, Ditolak, Selesai, Kedaluwarsa |
+| **Metode Verifikasi Identitas** | Kartu Identitas Tatap Muka, Konfirmasi Atasan atau Wali Kelas |
 | **Status Lokasi** | Aktif, Nonaktif |
 | **Kelompok Parameter Sistem** | Identitas Sekolah, Kode Aset, Peminjaman, Denda, Reservasi, Maintenance, Bahan, Notifikasi, Keamanan, Chatbot AI |
 | **Tipe Parameter Sistem** | Bilangan Bulat, Desimal, Boolean, Teks |
