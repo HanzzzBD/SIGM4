@@ -20,6 +20,11 @@ import {
     tolakHandler,
 } from "./controllers/password-reset.controller.js";
 import {
+    gantiPasswordHandler,
+    lihatProfilHandler,
+    perbaruiProfilHandler,
+} from "./controllers/profile.controller.js";
+import {
     cabutSesiHandler,
     listSesiHandler,
     logoutHandler,
@@ -44,8 +49,16 @@ import {
     TerbitkanResponseSchema,
     TolakBodySchema,
 } from "./schemas/password-reset.schema.js";
+import {
+    MeResponseSchema,
+    PasswordChangeBodySchema,
+    PasswordChangeResponseSchema,
+    UpdateProfilBodySchema,
+    UpdateProfilResponseSchema,
+} from "./schemas/profile.schema.js";
 import { AuthService } from "./services/auth.service.js";
 import { PasswordResetService } from "./services/password-reset.service.js";
+import { ProfileService } from "./services/profile.service.js";
 import { SessionService } from "./services/session.service.js";
 
 /** Pemilik katalog endpoint M-01 (m01-auth.md §7). */
@@ -182,6 +195,45 @@ export const tolakResetRoute = defineRoute({
     response: SinglePermintaanResponseSchema,
 });
 
+/**
+ * FR-01.4. `/me` bukan `/auth/*`: gerbang ganti password (`SDD-AUTH-09`) memblokirnya sampai
+ * password diganti — konsisten dengan "seluruh menu lain diblokir" (`FR-01.1 A4`).
+ */
+export const lihatProfilRoute = defineRoute({
+    method: "GET",
+    path: "/me",
+    authenticated: true,
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Profil & permission pengguna yang sedang login",
+    response: MeResponseSchema,
+});
+
+/** Email dan role tidak diterima di sini (`BR-069`); foto menunggu `PR-03-04` (keputusan 4). */
+export const perbaruiProfilRoute = defineRoute({
+    method: "PUT",
+    path: "/me",
+    authenticated: true,
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Perbarui nama/telepon profil sendiri",
+    body: UpdateProfilBodySchema,
+    response: UpdateProfilResponseSchema,
+});
+
+/** FR-01.4 langkah 2-4: mencabut sesi lain; `successStatus` eksplisit karena PRD menetapkan `200`. */
+export const gantiPasswordRoute = defineRoute({
+    method: "POST",
+    path: "/auth/password/change",
+    authenticated: true,
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Ganti password sendiri; mencabut seluruh sesi lain",
+    successStatus: 200,
+    body: PasswordChangeBodySchema,
+    response: PasswordChangeResponseSchema,
+});
+
 export interface AuthModuleDeps {
     readonly db: Kysely<Database>;
     readonly jwtKeys: JwtKeys;
@@ -207,6 +259,7 @@ export function authRouter(
     );
     const sesi = new SessionService(deps.db, deps.auditLogger, deps.clock);
     const reset = new PasswordResetService(deps.db, deps.auditLogger, deps.clock, deps.logger);
+    const profil = new ProfileService(deps.db, deps.jwtKeys, deps.permissionCache, deps.auditLogger, deps.clock);
     const router = express.Router();
     router.post(loginRoute.path, batasi(loginRoute), loginHandler(service));
     router.post(refreshRoute.path, batasi(refreshRoute), refreshHandler(service));
@@ -218,6 +271,9 @@ export function authRouter(
     router.get(listPermintaanResetRoute.path, batasi(listPermintaanResetRoute), otorisasi(listPermintaanResetRoute.permission), listPermintaanHandler(reset));
     router.post(terbitkanResetRoute.path, batasi(terbitkanResetRoute), otorisasi(terbitkanResetRoute.permission), terbitkanHandler(reset));
     router.post(tolakResetRoute.path, batasi(tolakResetRoute), otorisasi(tolakResetRoute.permission), tolakHandler(reset));
+    router.get(lihatProfilRoute.path, batasi(lihatProfilRoute), terautentikasi(), lihatProfilHandler(profil));
+    router.put(perbaruiProfilRoute.path, batasi(perbaruiProfilRoute), terautentikasi(), perbaruiProfilHandler(profil));
+    router.post(gantiPasswordRoute.path, batasi(gantiPasswordRoute), terautentikasi(), gantiPasswordHandler(profil));
     return router;
 }
 
