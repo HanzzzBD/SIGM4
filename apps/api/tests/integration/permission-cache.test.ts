@@ -1,5 +1,5 @@
 // Acceptance PR-01-04 (sisi cache): "cache permission berkunci
-// perm:{user_id}:{role_version}, TTL 60 detik" + "perubahan matriks berlaku
+// perm:{user_id}:{role_id}:{role_version}, TTL 60 detik" + "perubahan matriks berlaku
 // pada permintaan berikutnya tanpa restart" (SDD-AUTH-04, PM-05) — terhadap
 // PostgreSQL + Redis NYATA. TTL dan pembatalan lewat kenaikan `role_version`
 // adalah perilaku Redis sungguhan; menirunya berarti menguji tiruan.
@@ -127,7 +127,7 @@ describe.skipIf(!ADA_DB)("PermissionCache — SDD-AUTH-04, PM-05 (acceptance)", 
         `);
     }
 
-    it("permission efektif dimuat dari basis data dan ditaruh di kunci perm:{user_id}:{role_version}", async () => {
+    it("permission efektif dimuat dari basis data dan ditaruh di kunci perm:{user_id}:{role_id}:{role_version}", async () => {
         const r = await siap();
         const userId = await seedUser("R-02");
         const roleId = await idRole("R-02");
@@ -138,7 +138,34 @@ describe.skipIf(!ADA_DB)("PermissionCache — SDD-AUTH-04, PM-05 (acceptance)", 
         expect(hasil?.scopes.get("asset.view")).toBe("all");
 
         const versi = await versiRole(roleId);
-        expect(await r.exists(`sigm4:perm:${String(userId)}:${versi}`)).toBe(1);
+        expect(await r.exists(`sigm4:perm:${String(userId)}:${String(roleId)}:${versi}`)).toBe(1);
+    });
+
+    // Regresi `SDD-AUTH-04`/`SDD-03 §4.5` baris `batal: … atau saat role pengguna berubah`.
+    // Tanpa `role_id` di dalam kunci, uji ini MEMERAH: `role_version` dimiliki per-role dan
+    // ketujuh role seed sama-sama bernilai 1, sehingga kunci sebelum dan sesudah perpindahan
+    // role identik dan entri role LAMA terbaca lagi — pengguna yang diturunkan haknya masih
+    // memegang permission Administrator sampai TTL 60 detik habis.
+    it("role pengguna berubah -> panggilan BERIKUTNYA memakai matriks role BARU, bukan entri cache role lama", async () => {
+        const r = await siap();
+        const userId = await seedUser("R-01");
+        const cache = new PermissionCache(getDb(), r);
+
+        const sebagaiAdmin = await cache.load(userId);
+        expect(sebagaiAdmin?.roleCode).toBe("R-01");
+        expect(sebagaiAdmin?.scopes.has("user.reset_password")).toBe(true);
+        expect(sebagaiAdmin?.scopes.has("setting.view")).toBe(true);
+
+        // Persis yang dilakukan `PUT /users/{id}` (FR-02.1): role pengguna berpindah,
+        // tanpa menyentuh `role_version` role mana pun.
+        await kueri(
+            `UPDATE users SET role_id = (SELECT id FROM roles WHERE kode = 'R-05') WHERE id = ${String(userId)}`,
+        );
+
+        const sebagaiGuru = await cache.load(userId);
+        expect(sebagaiGuru?.roleCode).toBe("R-05");
+        expect(sebagaiGuru?.scopes.has("user.reset_password")).toBe(false);
+        expect(sebagaiGuru?.scopes.has("setting.view")).toBe(false);
     });
 
     it("TTL kunci cache 60 detik (PM-05)", async () => {
@@ -149,7 +176,7 @@ describe.skipIf(!ADA_DB)("PermissionCache — SDD-AUTH-04, PM-05 (acceptance)", 
         await cache.load(userId);
 
         const versi = await versiRole(roleId);
-        const ttl = await r.ttl(`sigm4:perm:${String(userId)}:${versi}`);
+        const ttl = await r.ttl(`sigm4:perm:${String(userId)}:${String(roleId)}:${versi}`);
         expect(ttl).toBeGreaterThan(0);
         expect(ttl).toBeLessThanOrEqual(60);
     });
