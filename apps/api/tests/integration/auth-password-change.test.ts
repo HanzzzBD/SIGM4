@@ -100,7 +100,10 @@ describe.skipIf(!ADA)("PR-02-06 — ganti password + kelola profil sendiri (Post
         await new Promise((r) => server.close(r));
         if (idPengguna.length > 0) {
             const daftar = idPengguna.join(",");
-            await kueri(`DELETE FROM event_outbox WHERE aggregate_id IN (${daftar})`);
+            // `aggregate_id` telanjang (bigint) dipakai bersama SELURUH jenis agregat (SDD-07 §4.3);
+            // tanpa `event_name`, baris kebetulan bernomor sama milik agregat lain (role, building, …)
+            // ikut terhapus. Pola yang sama dengan `auth-session.test.ts`/`auth-password-reset.test.ts`.
+            await kueri(`DELETE FROM event_outbox WHERE event_name IN ('SessionRevoked', 'PasswordChangedAfterReset') AND aggregate_id IN (${daftar})`);
             await kueri(`DELETE FROM password_reset_requests WHERE user_id IN (${daftar}) OR diproses_oleh IN (${daftar})`);
             await kueri(`DELETE FROM refresh_tokens WHERE user_id IN (${daftar})`);
             await kueri(`DELETE FROM activity_logs WHERE modul = 'm01-auth' AND (entitas_id IN (${daftar}) OR user_id IN (${daftar}))`);
