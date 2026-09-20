@@ -235,11 +235,13 @@ describe.skipIf(!ADA)("PR-02-06 — ganti password + kelola profil sendiri (Post
             );
             expect(baris).toEqual({ nama: "Nama Baru", email, role_kode: "R-05" });
 
+            // `telepon` adalah PII tertutup (DP-03, SDD-15 §4.2): AuditLogger me-redact-nya
+            // sebelum menulis, sama seperti setiap aksi lain yang menyertakannya.
             const [log] = await kueri<{ sebelum: string; sesudah: string }>(`
                 SELECT nilai_sebelum::text AS sebelum, nilai_sesudah::text AS sesudah
                 FROM activity_logs WHERE modul = 'm01-auth' AND aksi = 'PROFILE_UPDATED' AND entitas_id = ${String(id)}`);
-            expect(JSON.parse(log?.sebelum ?? "{}")).toEqual({ nama: NAMA, telepon: "081111111111" });
-            expect(JSON.parse(log?.sesudah ?? "{}")).toEqual({ nama: "Nama Baru", telepon: "082222222222" });
+            expect(JSON.parse(log?.sebelum ?? "{}")).toEqual({ nama: NAMA, telepon: "[REDACTED]" });
+            expect(JSON.parse(log?.sesudah ?? "{}")).toEqual({ nama: "Nama Baru", telepon: "[REDACTED]" });
         });
 
         it("tanpa satu pun field yang berubah → 400 INVALID_REQUEST", async () => {
@@ -314,9 +316,8 @@ describe.skipIf(!ADA)("PR-02-06 — ganti password + kelola profil sendiri (Post
             // Sesi ini sendiri tetap hidup dengan token access LAMA sekalipun (family tidak dicabut).
             expect((await kirim("GET", "/auth/sessions", auth(ini))).status).toBe(200);
 
-            expect((await login(email, PASSWORD)).balasan.status).toBe(401);
-            expect((await login(email, BARU)).balasan.status).toBe(200);
-
+            // Diperiksa SEBELUM login apa pun berikutnya: setiap login sukses membentuk keluarga
+            // baru dan akan menggeser hitungan baris di bawah ini.
             const baris = await barisKeluarga(id);
             expect(baris).toHaveLength(2);
             const punyaIni = baris.find((b) => b.revoked_at === null);
@@ -336,6 +337,9 @@ describe.skipIf(!ADA)("PR-02-06 — ganti password + kelola profil sendiri (Post
             );
             expect(events).toHaveLength(1);
             expect(events[0]?.payload).toMatchObject({ alasan: "password_changed", family_id: punyaLain?.family_id });
+
+            expect((await login(email, PASSWORD)).balasan.status).toBe(401);
+            expect((await login(email, BARU)).balasan.status).toBe(200);
         });
 
         it("access token BARU membawa klaim pwd=false: gerbang ganti password terbuka seketika tanpa /auth/refresh (UX-FLOWS P-05)", async () => {
