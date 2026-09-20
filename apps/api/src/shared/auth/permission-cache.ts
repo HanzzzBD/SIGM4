@@ -7,7 +7,8 @@
 // role itu — join yang lebih mahal terhadap `role_permissions`. Karena kunci
 // cache memuat `role_version`, menaikkannya (PUT /roles/{id}/permissions)
 // membuat kunci lama tidak pernah terbaca lagi tanpa penghapusan eksplisit
-// (SDD-03 §4.5).
+// (SDD-03 §4.5), dan karena ia juga memuat `role_id`, BERPINDAH role membuat
+// kunci lama tidak terbaca lagi juga — lihat `kunciCache`.
 
 import type { Redis } from "ioredis";
 import type { Kysely } from "kysely";
@@ -34,8 +35,17 @@ export interface EffectivePermissions {
     readonly scopes: ReadonlyMap<string, Scope>;
 }
 
-function kunciCache(userId: number, roleVersion: string): string {
-    return `${PREFIX_KUNCI}:${String(userId)}:${roleVersion}`;
+/**
+ * Kunci cache memuat **role** di samping pengguna dan versinya. `role_version`
+ * dimiliki per-role, bukan global — ketujuh role seed sama-sama berangkat dari
+ * `1` — sehingga `{userId}:{roleVersion}` TIDAK membedakan "pengguna 13 sebagai
+ * Administrator" dari "pengguna 13 sebagai Guru". Tanpa `roleId` di sini, role
+ * pengguna yang berubah (`PUT /users/{id}`, `FR-02.1`) menghasilkan kunci yang
+ * sama persis dan entri lama tetap terbaca sampai TTL habis: pengguna yang
+ * DITURUNKAN haknya masih memegang permission role lamanya hingga 60 detik.
+ */
+function kunciCache(userId: number, roleId: string, roleVersion: string): string {
+    return `${PREFIX_KUNCI}:${String(userId)}:${roleId}:${roleVersion}`;
 }
 
 export class PermissionCache {
@@ -49,7 +59,7 @@ export class PermissionCache {
         const peran = await this.muatPeran(userId);
         if (peran === undefined) return undefined;
 
-        const kunci = kunciCache(userId, peran.roleVersion);
+        const kunci = kunciCache(userId, peran.roleId, peran.roleVersion);
         const tersimpan = await this.redis.get(kunci);
         if (tersimpan !== null) {
             return { ...peran, scopes: new Map(JSON.parse(tersimpan) as [string, Scope][]) };

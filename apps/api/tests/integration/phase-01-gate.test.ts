@@ -230,7 +230,7 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 console.log(`[PM-05] permintaan pertama setelah pencabutan ditolak dalam ${jeda.toFixed(1)} ms`);
 
                 const versi = (await kueri<{ v: string }>(`SELECT role_version::text AS v FROM roles WHERE id = ${roleId}`))[0]?.v;
-                const ttl = await redis.ttl(`sigm4:perm:${String(petugas)}:${String(versi)}`);
+                const ttl = await redis.ttl(`sigm4:perm:${String(petugas)}:${String(roleId)}:${String(versi)}`);
                 expect(ttl).toBeGreaterThan(0);
                 expect(ttl).toBeLessThanOrEqual(60);
 

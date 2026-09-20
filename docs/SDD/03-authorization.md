@@ -34,7 +34,7 @@ Kegagalan memisahkan keduanya adalah penyebab paling umum kebocoran lintas hak a
 | **SDD-AUTH-01** | Permission dideklarasikan **per route** sebagai metadata, bukan diperiksa di dalam controller. Route tanpa deklarasi **gagal saat startup**, bukan diam-diam terbuka. |
 | **SDD-AUTH-02** | Scope ditegakkan di **repository**, melalui parameter `AuthContext` yang **wajib** ada pada setiap metode kueri. Tidak ada nilai bawaan. |
 | **SDD-AUTH-03** | Scope **tidak** memakai PostgreSQL Row-Level Security. Ditegakkan di lapisan aplikasi. Alasan pada §3. |
-| **SDD-AUTH-04** | Permission efektif pengguna di-*cache* di Redis dengan TTL **60 detik** (`PM-05`), berkunci `perm:{user_id}:{role_version}`. Perubahan matriks menaikkan `role_version` sehingga cache batal seketika. |
+| **SDD-AUTH-04** | Permission efektif pengguna di-*cache* di Redis dengan TTL **60 detik** (`PM-05`), berkunci `perm:{user_id}:{role_id}:{role_version}`. Perubahan matriks menaikkan `role_version` dan perpindahan role mengubah `role_id`, sehingga cache batal seketika pada keduanya (§4.5). |
 | **SDD-AUTH-05** | `GET /me` adalah **satu-satunya** sumber bagi klien untuk merender menu dan kartu dashboard (`PM-04`). Klien tidak pernah menyimpulkan hak akses dari role. |
 | **SDD-AUTH-06** | Penyaringan **field** (mis. `nilai_perolehan`) dilakukan oleh *serializer* ber-*allow-list* per permission, bukan dengan menghapus properti setelah kueri. |
 | **SDD-AUTH-07** | Tool chatbot **tidak** punya jalur data sendiri. Ia memanggil repository yang sama dengan `AuthContext` pengguna penanya (`BR-076`). |
@@ -187,12 +187,22 @@ Gerbang 2 dan 3 mendahului pemeriksaan permission agar pengguna berstatus `must_
 ### 4.5 Cache permission
 
 ```
-kunci  : perm:{user_id}:{role_version}
+kunci  : perm:{user_id}:{role_id}:{role_version}
 isi    : { permissions: string[], scopes: Record<string, Scope> }
 TTL    : 60 detik                                   (PM-05)
 batal  : role_version dinaikkan saat PUT /roles/{id}/permissions
          atau saat role/status pengguna berubah
 ```
+
+`role_id` ada di dalam kunci justru untuk memenuhi baris `batal` di atas. `role_version`
+dimiliki **per-role**, bukan global: ketujuh role seed sama-sama berangkat dari `1`, sehingga
+`perm:{user_id}:{role_version}` tidak membedakan "pengguna 13 sebagai Administrator" dari
+"pengguna 13 sebagai Guru". Mengubah **role pengguna** (`PUT /users/{id}`, `FR-02.1`) tidak
+menaikkan `role_version` mana pun — tanpa `role_id` di kunci, entri role LAMA tetap terbaca
+sampai TTL habis, dan pengguna yang diturunkan haknya masih memegang permission lamanya
+hingga 60 detik. Dengan `role_id` di kunci, perpindahan role membuat kunci lama tidak
+pernah terbaca lagi, tanpa penghapusan eksplisit. Status pengguna tidak ikut di-cache sama
+sekali: `users.status` dibaca ulang setiap panggilan (`PM-05`).
 
 Karena kunci memuat `role_version`, perubahan matriks membuat kunci lama tidak pernah terbaca lagi — tidak perlu penghapusan kunci per pengguna.
 
