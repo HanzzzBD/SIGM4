@@ -35,6 +35,9 @@ Otorisasi (siapa boleh apa) berada di [SDD-03](03-authorization.md). Berkas ini 
 | **SDD-SESS-11** | Pemulihan darurat (`FR-01.6`) diimplementasikan sebagai **perintah CLI pada artefak worker**, tidak pernah terdaftar sebagai route HTTP. |
 | **SDD-SESS-12** | Respons `/auth/login` **seragam**: email tak terdaftar, password salah, dan akun terkunci dijawab `401 UNAUTHENTICATED` yang identik (status, kode, pesan, tanpa `details`, tanpa `Retry-After`); `423 ACCOUNT_LOCKED` dan sisa waktu kunci tidak pernah dikirim endpoint ini. Argon2id dijalankan tepat sekali pada ketiga keadaan. Penguncian tetap berjalan dan dicatat secara internal (`LOGIN_FAILED`, `ACCOUNT_LOCKED`, event `AccountLocked`). Keputusan pemilik produk, 19 September 2026. |
 | **SDD-SESS-13** | Reset password administratif (`FR-01.3`) tidak memakai token maupun kanal email: password sementara dibangkitkan server, ditampilkan **satu kali** pada respons penerbitan, dan hanya hash-nya yang menetap. Penerbitan mencabut **seluruh** sesi pemilik akun dan menghapus penguncian loginnya; kedaluwarsa 72 jam ditegakkan **saat login** dan saat daftar dibaca, tanpa pekerjaan terjadwal. Keputusan pemilik produk, 19 September 2026. |
+| **SDD-SESS-14** | *Challenge token* 2FA adalah nilai **buram** 32 byte acak yang tersimpan di Redis (hanya SHA-256-nya), bukan JWT; kedaluwarsanya ditegakkan menurut `Clock`. Kode yang salah **tidak** menghabiskannya — kegagalan dibatasi penguncian akun yang sama dengan password (`SDD-SESS-06`); hanya kode yang benar yang menghabiskannya. Jawaban kegagalannya tetap `401` seragam (`SDD-AUTH-08`); hanya penguncian yang dijawab `423`. |
+| **SDD-SESS-15** | Gerbang `twoFactorVerified` (`SDD-AUTH-09` gerbang 3) menjawab **`403 TWO_FACTOR_REQUIRED`**, bukan `401`: sesinya sah, faktor keduanya belum terbukti. Bawaannya tertutup — ditegakkan di `authenticated()` dan `authorize()` — dan hanya route yang menyatakan `twoFactorExempt` (pendaftaran 2FA dan logout) yang melewatinya. |
+| **SDD-SESS-16** | Dua kolom yang tidak ada pada rancangan awal §4.1 ditambahkan (`PR-02-07`, migration `0024`): `users.totp_last_step` — langkah TOTP terakhir yang diterima; tanpa itu satu kode berlaku berkali-kali di jendela ±1 langkah (RFC 6238 §5.2) — dan `refresh_tokens.otp_verified` — klaim `amr` harus bertahan ketika access token diterbitkan ulang lewat `/auth/refresh`, sedangkan refresh token tidak memuat klaim; kolom ini membawanya dan diwarisi setiap rotasi seperti `platform`. |
 
 ---
 
@@ -77,7 +80,8 @@ ALTER TABLE users
   ADD COLUMN failed_login_window_start timestamptz,  -- awal jendela tetap 15 menit (§4.2); migration 0022
   ADD COLUMN locked_until       timestamptz,
   ADD COLUMN totp_secret_enc    bytea,        -- terenkripsi (SDD-SESS-08)
-  ADD COLUMN totp_enabled_at    timestamptz;
+  ADD COLUMN totp_enabled_at    timestamptz,  -- NULL dengan secret terisi = pendaftaran belum dikonfirmasi
+  ADD COLUMN totp_last_step     integer;      -- langkah TOTP terakhir yang diterima (SDD-SESS-16); migration 0024
 
 CREATE TABLE refresh_tokens (
     id           bigserial PRIMARY KEY,
@@ -92,7 +96,8 @@ CREATE TABLE refresh_tokens (
     expires_at   timestamptz NOT NULL,
     rotated_at   timestamptz,                   -- terisi saat ditukar
     revoked_at   timestamptz,
-    revoke_reason text
+    revoke_reason text,
+    otp_verified  boolean     NOT NULL DEFAULT false   -- amr memuat otp (SDD-SESS-09/16); diwarisi tiap rotasi
 );
 CREATE INDEX ON refresh_tokens (user_id) WHERE revoked_at IS NULL;
 CREATE INDEX ON refresh_tokens (family_id);
@@ -102,8 +107,10 @@ CREATE TABLE totp_backup_codes (
     id         bigserial PRIMARY KEY,
     user_id    bigint NOT NULL REFERENCES users(id),
     code_hash  text   NOT NULL,                 -- Argon2id (BR-070c)
+    created_at timestamptz NOT NULL DEFAULT now(),
     used_at    timestamptz
 );
+CREATE INDEX ON totp_backup_codes (user_id) WHERE used_at IS NULL;
 ```
 
 Masa berlaku mengikuti `FR-01.1`: access 60 menit; refresh 30 hari (mobile) / 12 jam (web).
@@ -126,7 +133,12 @@ POST /auth/login
   5a. jika must_change_password DAN penerbitan reset terakhir sudah lewat 72 jam
                                    -> LOGIN_FAILED (PASSWORD_SEMENTARA_KEDALUWARSA), permintaan ditutup
                                       KEDALUWARSA; 401 seragam; TIDAK menambah penghitung (§4.8)
-  6. jika role wajib 2FA / 2FA on  -> 200 {requires_2fa, challenge_token}   (5 menit)
+  6. jika 2FA aktif (totp_enabled_at) -> 200 {requires_2fa, challenge_token, expires_in}  (5 menit);
+                                      sesi BELUM terbit; penghitung kegagalan TIDAK di-reset (baru saat kode
+                                      terbukti, §4.4) — kalau di-reset, penyerang yang tahu password menebak
+                                      6 digit tanpa pernah terkunci
+     role wajib 2FA belum terdaftar   -> lanjut ke langkah 7-8: sesi terbit ber-amr ["pwd"] dan digerbang
+                                      403 TWO_FACTOR_REQUIRED sampai pendaftaran (SDD-SESS-15, §4.4)
   7. jika must_change_password     -> terbitkan token dengan klaim pwd_change_required
   8. terbitkan access + refresh (family_id baru), reset penghitung dan locked_until,
      catat LOGIN_SUCCESS + IP + UA
@@ -156,6 +168,8 @@ POST /auth/refresh
         -> 200 {tokens, expires_in}
 ```
 
+Klaim `amr` access token baru diturunkan dari `otp_verified` baris yang ditukar dan diwarisi baris baru (`SDD-SESS-16`); refresh tidak pernah dapat menaikkan sesi dari `["pwd"]` ke `["pwd","otp"]`.
+
 Pencabutan karena pemakaian ulang HARUS ter-commit meskipun permintaannya berakhir `401`: hasil transaksi dikembalikan sebagai nilai dan galat baru dilempar setelah commit. Entri `REFRESH_TOKEN_REUSE_DETECTED` ditulis dalam transaksi yang sama (`AL-01`); alarm ke pemantauan berupa log `error` (`OBS-05`). Notifikasi ke Administrator menunggu modul notifikasi (`PR-02-25`).
 
 Konsekuensi yang disengaja: klien yang mengirim dua permintaan refresh bersamaan (mis. dua tab) akan memicu pencabutan keluarga. Klien wajib men-*serialisasi* refresh — pada web dilakukan lewat satu *promise* bersama, pada mobile lewat *mutex* pada interceptor.
@@ -163,17 +177,31 @@ Konsekuensi yang disengaja: klien yang mengirim dua permintaan refresh bersamaan
 ### 4.4 2FA
 
 ```
-Aktivasi (FR-01.5):
-  server bangkitkan secret -> simpan terenkripsi -> tampilkan QR + 10 kode cadangan
-  pengguna kirim 6 digit   -> verifikasi (window ±1 langkah = ±30 detik)
-  aktif -> totp_enabled_at = now(); TWO_FA_ENABLED
+Aktivasi (FR-01.5) — pengguna terautentikasi, 2FA belum aktif; sesi ber-amr ["pwd"] cukup:
+  POST /auth/2fa/enroll          bangkitkan secret (20 byte) -> simpan TERENKRIPSI (AES-256-GCM, kunci
+                                 TOTP_ENCRYPTION_KEY, AAD = "totp:{user_id}") dengan totp_enabled_at NULL
+                                 -> 10 kode cadangan (hash Argon2id; kode asli tampil SEKALI)
+                                 -> respons {secret, otpauth_uri, kode_cadangan}; TWO_FA_ENROLLMENT_STARTED
+                                 diulang selagi belum dikonfirmasi = mengganti secret DAN seluruh kode
+  POST /auth/2fa/enroll/confirm  pengguna kirim 6 digit -> verifikasi (window ±1 langkah = ±30 detik)
+                                 aktif -> totp_enabled_at = now(), totp_last_step = langkah kode; TWO_FA_ENABLED
+                                 sesi ini: refresh_tokens.otp_verified = true; access token BARU ber-amr
+                                 ["pwd","otp"] pada sesi (sid) yang sama, pwd dibawa dari keadaan akun
+  POST /auth/2fa/backup-codes/regenerate   hanya sesi ber-amr otp; mengganti SELURUH kode;
+                                 TWO_FA_BACKUP_CODES_REGENERATED
 
-Verifikasi login:
-  challenge_token (5 menit, sekali pakai) ditukar dengan kode TOTP
-  kode cadangan diterima sebagai alternatif -> tandai used_at (sekali pakai)
-  sisa kode <= 2 -> sertakan peringatan pada respons (FR-01.5 AC)
-  5 kegagalan -> kunci 15 menit (sama dengan alur password)
+Verifikasi login (POST /auth/2fa/verify {challenge_token, kode}):
+  challenge_token (5 menit, sekali pakai, SDD-SESS-14) ditukar dengan kode
+  kode 6 digit -> TOTP: langkahnya harus LEBIH BARU dari users.totp_last_step (satu kode berlaku sekali)
+  selain itu   -> kode cadangan (Argon2id) diterima sebagai alternatif -> tandai used_at (sekali pakai)
+  sisa kode <= 2 -> respons memuat kode_cadangan_menipis = true (FR-01.5 AC)
+  5 kegagalan -> kunci 15 menit (penghitung dan jendela yang SAMA dengan password, §4.2); kegagalan yang
+                 menyebabkan penguncian dijawab 423 ACCOUNT_LOCKED beserta sisa menit dan menghabiskan challenge
+  sukses      -> SATU transaksi: baris refresh (otp_verified = true), penghitung di-reset, LOGIN_SUCCESS
+                 (metode_2fa), [TWO_FA_BACKUP_CODE_USED + sisa]; sesudah commit challenge dihabiskan
 ```
+
+Gerbang (`SDD-SESS-15`): role wajib 2FA (R-01 dan R-03, `BR-070`) dengan `amr` tanpa `otp` ditolak `403 TWO_FACTOR_REQUIRED` pada setiap route terlindung kecuali `POST /auth/2fa/enroll`, `POST /auth/2fa/enroll/confirm`, dan `POST /auth/logout`. Role lain tidak terpengaruh, dengan atau tanpa 2FA.
 
 Toleransi jam ±30 detik dipilih agar perbedaan jam perangkat yang wajar tidak menggagalkan login, tanpa memperlebar jendela serangan secara berarti.
 
@@ -214,8 +242,9 @@ sigm4 admin:recover --email=<email> [--force]
 | Sumber token | Header `Authorization` didahulukan; bila tidak ada, cookie `sigm4_at`. Header berbentuk salah tidak jatuh ke cookie |
 | `authenticate` | **Lenient**: token yang ada tetapi tak sah hanya ditandai; penolakan (`401`, `TOKEN_EXPIRED` bila kedaluwarsa) milik `authorize` pada route yang menuntutnya. Route publik — `login` dan `refresh` — tetap terjangkau dengan cookie access kedaluwarsa. Permission dan status akun dibaca ulang setiap permintaan (`PM-05`): akun nonaktif kehilangan akses seketika |
 | Gerbang ganti password | Klaim `pwd=true` → `403 PASSWORD_CHANGE_REQUIRED` pada semua route di luar `/api/v1/auth/*` (`SDD-AUTH-09` gerbang 2, `FR-01.1 A4`) |
+| Gerbang 2FA | Role wajib 2FA dengan `amr` tanpa `otp` → `403 TWO_FACTOR_REQUIRED` pada route terlindung; pengecualian hanya route yang menyatakan `twoFactorExempt` (pendaftaran 2FA, logout). Berlaku di `authenticated()`/`authorize()`, sehingga route publik — login, refresh, verifikasi 2FA — tak pernah tersentuh (`SDD-AUTH-09` gerbang 3, `SDD-SESS-15`) |
 | Sesi hidup | `authenticate` memeriksa `sid` terhadap `refresh_tokens` pada **setiap** permintaan: sesi hidup selama keluarga itu milik `sub` dan masih punya baris yang belum dicabut. Karena itu logout, logout semua perangkat, cabut satu perangkat, dan pemakaian ulang refresh token (§4.3) mematikan access token SEKETIKA — acceptance "≤ 60 detik" (`PR-02-04`) dipenuhi tanpa jendela. Dibaca dari PostgreSQL, bukan cache (§5). Alasan `revoke_reason`: `reuse_detected`, `logout`, `logout_all`, `device_revoked`, `account_deactivated`, `password_changed`, `password_reset`, `break_glass` |
-| Kunci | `JWT_PRIVATE_KEY` (PKCS#8) dan `JWT_PUBLIC_KEY` (SPKI), PEM Ed25519; `\n` literal diterima untuk berkas env satu baris. Startup gagal bila bukan PEM, bukan Ed25519, atau bukan pasangan (`SDD-INF-08`) |
+| Kunci | `JWT_PRIVATE_KEY` (PKCS#8) dan `JWT_PUBLIC_KEY` (SPKI), PEM Ed25519; `\n` literal diterima untuk berkas env satu baris. Startup gagal bila bukan PEM, bukan Ed25519, atau bukan pasangan (`SDD-INF-08`). Kunci enkripsi secret TOTP `TOTP_ENCRYPTION_KEY` terpisah dari keduanya: base64 dari tepat 32 byte (`openssl rand -base64 32`); startup gagal bila bukan base64 yang sah atau bukan 32 byte, tanpa mencetak nilainya |
 
 ### 4.8 Reset password administratif (`FR-01.3`)
 

@@ -28,7 +28,6 @@ import type { KlienPermintaan } from "./klien.js";
 import { eventSesiDicabut } from "./sesi-event.js";
 
 const MODUL = "m01-auth";
-const AMR_KREDENSIAL = ["pwd"] as const;
 
 /** `refresh_tokens.revoke_reason` (SDD-04 §4.6, FR-01.4 langkah 4). */
 const ALASAN_GANTI_PASSWORD = "password_changed";
@@ -178,10 +177,12 @@ export class ProfileService {
      * Access token baru bagi sesi yang SAMA (`sid` tetap) berklaim `pwd=false` — membuka gerbang
      * ganti password (`SDD-AUTH-09`) seketika tanpa menunggu `/auth/refresh` (UX-FLOWS `P-05`).
      * Hanya bergantung pada identitas pemanggil dan sesinya; nilai password tidak pernah masuk ke sini.
+     * `amr` dibawa apa adanya dari token sesi ini (`SDD-SESS-09`): mengganti password tidak boleh
+     * menurunkan sesi yang sudah ber-2FA menjadi `["pwd"]`, dan tidak boleh menaikkan yang belum.
      */
-    terbitkanAksesBaru(ctx: AuthContext, sesiSaatIni: string): string {
+    terbitkanAksesBaru(ctx: AuthContext, sesiSaatIni: string, amr: readonly string[]): string {
         return this.jwt.terbitkan(
-            { sub: String(ctx.userId), sid: sesiSaatIni, pwd: false, amr: AMR_KREDENSIAL },
+            { sub: String(ctx.userId), sid: sesiSaatIni, pwd: false, amr },
             this.clock.now(),
         );
     }

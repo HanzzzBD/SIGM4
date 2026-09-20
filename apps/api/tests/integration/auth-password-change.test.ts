@@ -23,7 +23,7 @@ import { FixedClock } from "../../src/shared/clock/index.js";
 import { getDb } from "../../src/shared/db/index.js";
 import { HealthRegistry, Logger } from "../../src/shared/observability/index.js";
 import { hashPassword } from "../../src/shared/security/index.js";
-import { kunciUji } from "../helpers/auth.js";
+import { duaFaktorUji, kunciUji, loginDuaFaktor } from "../helpers/auth.js";
 import { dbmate, kueri } from "../helpers/db.js";
 
 const ADA = process.env["DATABASE_URL"] !== undefined;
@@ -89,6 +89,7 @@ describe.skipIf(!ADA)("PR-02-06 — ganti password + kelola profil sendiri (Post
                     jwtKeys: kunciUji(),
                     permissions: new PermissionCache(getDb(), redis),
                     sessions: new SessionStore(getDb()),
+                    twoFactor: duaFaktorUji(redis),
                 },
             }),
         );
@@ -106,6 +107,7 @@ describe.skipIf(!ADA)("PR-02-06 — ganti password + kelola profil sendiri (Post
             await kueri(`DELETE FROM event_outbox WHERE event_name IN ('SessionRevoked', 'PasswordChangedAfterReset') AND aggregate_id IN (${daftar})`);
             await kueri(`DELETE FROM password_reset_requests WHERE user_id IN (${daftar}) OR diproses_oleh IN (${daftar})`);
             await kueri(`DELETE FROM refresh_tokens WHERE user_id IN (${daftar})`);
+            await kueri(`DELETE FROM totp_backup_codes WHERE user_id IN (${daftar})`);
             await kueri(`DELETE FROM activity_logs WHERE modul = 'm01-auth' AND (entitas_id IN (${daftar}) OR user_id IN (${daftar}))`);
             await kueri(`DELETE FROM users WHERE id IN (${daftar})`);
         }
@@ -189,10 +191,11 @@ describe.skipIf(!ADA)("PR-02-06 — ganti password + kelola profil sendiri (Post
         expect(r.status).toBe(200);
         return (r.json.data as { password_sementara: string }).password_sementara;
     };
+    // Administrator wajib 2FA (BR-070): sesinya harus lolos faktor kedua lewat alur sungguhan agar menjangkau `user.reset_password`.
     async function siapkanAdmin(): Promise<Record<string, string>> {
         const a = await seed({ role: "R-01" });
-        const { sesi } = await login(a.email);
-        return auth(sesi);
+        const { accessToken } = await loginDuaFaktor({ url, db: getDb(), userId: a.id, email: a.email, password: PASSWORD, sekarang: clock.now() });
+        return bearer(accessToken);
     }
 
     // ---------------------------------------------------------------------------------------

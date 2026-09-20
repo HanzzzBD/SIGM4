@@ -3,6 +3,7 @@
 // Zona waktu proses selalu disuntikkan: mesin pengembang tidak berjalan dalam
 // UTC, dan uji ini tidak boleh bergantung pada zona mesin yang menjalankannya.
 
+import { randomBytes } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { start } from "../../src/api/index.js";
 import {
@@ -20,9 +21,15 @@ const SAH = {
     TZ: "UTC",
 };
 
-// Skema API menuntut pasangan kunci JWT (SDD-SESS-02); skema proses tidak.
+// Skema API menuntut pasangan kunci JWT (SDD-SESS-02) dan kunci enkripsi TOTP (SDD-SESS-08); skema proses tidak.
 const PEM = bangkitkanPem();
-const SAH_API = { ...SAH, ...envJwtUji(PEM), S3_PUBLIC_ENDPOINT: "https://storage.sekolah.example/sigm4/" };
+const KUNCI_TOTP = randomBytes(32).toString("base64");
+const SAH_API = {
+    ...SAH,
+    ...envJwtUji(PEM),
+    TOTP_ENCRYPTION_KEY: KUNCI_TOTP,
+    S3_PUBLIC_ENDPOINT: "https://storage.sekolah.example/sigm4/",
+};
 
 /** Salinan `env` tanpa variabel tertentu. */
 function tanpa(env: Record<string, string>, ...kunci: string[]): Record<string, string> {
@@ -186,6 +193,33 @@ describe("readApiConfig — kunci JWT (SDD-SESS-02, SDD-SYS-14)", () => {
             readApiConfig({ ...SAH_API, JWT_PUBLIC_KEY: lain.publik }, "UTC"),
         );
         expect(bukanPasangan.join("\n")).toMatch(/bukan pasangan/);
+    });
+});
+
+describe("readApiConfig — kunci enkripsi TOTP (SDD-SESS-08, SDD-SYS-14)", () => {
+    it("TOTP_ENCRYPTION_KEY wajib", () => {
+        expect(masalahDari(() => readApiConfig(tanpa(SAH_API, "TOTP_ENCRYPTION_KEY"), "UTC"))).toEqual([
+            "Variabel lingkungan TOTP_ENCRYPTION_KEY wajib diisi (SDD-INF-08).",
+        ]);
+    });
+
+    it("kunci base64 32 byte terurai menjadi kotak yang dapat mengenkripsi dan mendekripsi", () => {
+        const { totpKey } = readApiConfig(SAH_API, "UTC");
+        const kotak = totpKey.enkripsi(Buffer.from("rahasia-totp"), "totp:7");
+        expect(totpKey.dekripsi(kotak, "totp:7").toString()).toBe("rahasia-totp");
+    });
+
+    it("bukan base64 atau bukan 32 byte ditolak saat startup tanpa membocorkan nilainya", () => {
+        const bukanBase64 = masalahDari(() => readApiConfig({ ...SAH_API, TOTP_ENCRYPTION_KEY: "rahasia bukan base64!" }, "UTC"));
+        const teksBukanBase64 = bukanBase64.join("\n");
+        expect(teksBukanBase64).toMatch(/TOTP_ENCRYPTION_KEY tidak sah/);
+        expect(teksBukanBase64).not.toContain("rahasia bukan base64");
+
+        const pendek = randomBytes(16).toString("base64");
+        const salahPanjang = masalahDari(() => readApiConfig({ ...SAH_API, TOTP_ENCRYPTION_KEY: pendek }, "UTC"));
+        const teksSalahPanjang = salahPanjang.join("\n");
+        expect(teksSalahPanjang).toMatch(/TOTP_ENCRYPTION_KEY tidak sah: harus tepat 32 byte/);
+        expect(teksSalahPanjang).not.toContain(pendek);
     });
 });
 

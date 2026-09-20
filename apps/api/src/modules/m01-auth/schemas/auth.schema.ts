@@ -34,14 +34,43 @@ const UserSchema = z.object({
     must_change_password: z.boolean(),
 });
 
-/** `tokens` null pada WEB: token-nya hanya di cookie httpOnly, tidak pernah di body. */
+const SesiDataSchema = z.object({
+    tokens: TokensSchema.nullable(),
+    expires_in: z.number(),
+    user: UserSchema,
+    permissions: z.record(z.string(), z.string()),
+});
+
+/** Akun ber-2FA: sesi BELUM terbit, hanya challenge 5 menit (FR-01.5 langkah 5, SDD-SESS-10). */
+const TantanganDataSchema = z.object({
+    requires_2fa: z.literal(true),
+    challenge_token: z.string(),
+    /** Umur challenge dalam detik, bukan umur access token. */
+    expires_in: z.number(),
+});
+
+/**
+ * `tokens` null pada WEB: token-nya hanya di cookie httpOnly, tidak pernah di body. Akun ber-2FA
+ * menerima `requires_2fa` sebagai gantinya (PRD m01-auth §7).
+ */
 export const LoginResponseSchema = z.object({
     success: z.literal(true),
-    data: z.object({
-        tokens: TokensSchema.nullable(),
-        expires_in: z.number(),
-        user: UserSchema,
-        permissions: z.record(z.string(), z.string()),
+    data: z.union([SesiDataSchema, TantanganDataSchema]),
+    meta: z.null(),
+});
+
+/** `POST /auth/2fa/verify` (FR-01.5): challenge dari login + TOTP 6 digit ATAU kode cadangan. */
+export const VerifyDuaFaktorBodySchema = z.object({
+    challenge_token: z.string().min(1).max(200),
+    kode: z.string().trim().min(1).max(32),
+});
+
+/** Sesi seperti login, ditambah sisa kode cadangan (peringatan FR-01.5 AC bila ≤ 2). */
+export const VerifyDuaFaktorResponseSchema = z.object({
+    success: z.literal(true),
+    data: SesiDataSchema.extend({
+        sisa_kode_cadangan: z.number(),
+        kode_cadangan_menipis: z.boolean(),
     }),
     meta: z.null(),
 });

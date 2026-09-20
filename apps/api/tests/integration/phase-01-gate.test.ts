@@ -27,7 +27,7 @@ import { StudentObligationRegistry } from "../../src/modules/m02-users/services/
 import { UserImportService } from "../../src/modules/m02-users/services/user-import.service.js";
 import { UserService } from "../../src/modules/m02-users/services/user.service.js";
 import { AuditLogger, ensurePartitions } from "../../src/shared/audit/index.js";
-import { PermissionCache, createAuthContext, setAuthContext } from "../../src/shared/auth/index.js";
+import { AMR_OTP, PermissionCache, createAuthContext, setAmr, setAuthContext } from "../../src/shared/auth/index.js";
 import { closeRedis, createRedis, readRedisConfig } from "../../src/shared/cache/index.js";
 import { FixedClock } from "../../src/shared/clock/index.js";
 import { getDb } from "../../src/shared/db/index.js";
@@ -111,6 +111,9 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 .then((efektif) => {
                     if (efektif !== undefined) {
                         setAuthContext(res, createAuthContext({ userId, roleCode: efektif.roleCode, scopes: efektif.scopes }));
+                        // Pengganti `authenticate` juga meniru klaim `amr`-nya: sesi uji ini sesi ber-2FA (BR-070); 2FA sendiri
+                        // dibuktikan `auth-two-factor.test.ts`, bukan gerbang Phase 01.
+                        setAmr(res, ["pwd", AMR_OTP]);
                     }
                     selesai();
                 })
@@ -191,7 +194,7 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
 
         it("route publik hanya probe kesehatan, login/refresh (PR-02-02), dan forgot password (PR-02-05), dan dapat dijangkau tanpa AuthContext", async () => {
             const publik = registry.publicRoutes().map((r) => `${r.method} ${r.path}`).sort();
-            expect(publik).toEqual(["GET /health/live", "GET /health/ready", "POST /auth/login", "POST /auth/password/forgot", "POST /auth/refresh"]);
+            expect(publik).toEqual(["GET /health/live", "GET /health/ready", "POST /auth/2fa/verify", "POST /auth/login", "POST /auth/password/forgot", "POST /auth/refresh"]);
             expect((await panggil("tanpa", "GET", "/health/live")).status).toBe(200);
             expect((await panggil("tanpa", "GET", "/health/ready")).status).toBe(200);
         });

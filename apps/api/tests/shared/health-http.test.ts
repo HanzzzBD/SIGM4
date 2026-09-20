@@ -151,12 +151,16 @@ describe("sigm4-api — /api/v1/health/*", () => {
         });
     });
 
-    it("registri proses: probe publik, ringkasan, CRUD pengguna (PR-01-02), impor massal (PR-01-03), matriks permission (PR-01-04), skema lokasi (PR-01-05), pohon+penonaktifan (PR-01-06), daftar aset per lokasi (PR-01-07), penelusuran (PR-01-08), ekspor activity log (PR-01-09), parameter sistem (PR-01-10), kenaikan kelas massal (PR-01-13), pengambilan pekerjaan impor pengguna (PR-01-17), serta master data Lampiran E — tahun ajaran, hari libur, hari kerja, unit kerja (PR-01-18) berpermission, serta login/refresh publik (PR-02-02), logout + sesi berautentikasi saja (PR-02-04), reset password administratif (PR-02-05), serta ganti password + profil sendiri (PR-02-06)", () => {
+    it("registri proses: probe publik, ringkasan, CRUD pengguna (PR-01-02), impor massal (PR-01-03), matriks permission (PR-01-04), skema lokasi (PR-01-05), pohon+penonaktifan (PR-01-06), daftar aset per lokasi (PR-01-07), penelusuran (PR-01-08), ekspor activity log (PR-01-09), parameter sistem (PR-01-10), kenaikan kelas massal (PR-01-13), pengambilan pekerjaan impor pengguna (PR-01-17), serta master data Lampiran E — tahun ajaran, hari libur, hari kerja, unit kerja (PR-01-18) berpermission, serta login/refresh publik (PR-02-02), logout + sesi berautentikasi saja (PR-02-04), reset password administratif (PR-02-05), serta ganti password + profil sendiri (PR-02-06), serta 2FA TOTP (PR-02-07)", () => {
         expect(registry.all().map((r) => `${r.method} ${r.path}`)).toEqual([
             "GET /health/live",
             "GET /health/ready",
             "GET /health",
             "POST /auth/login",
+            "POST /auth/2fa/verify",
+            "POST /auth/2fa/enroll",
+            "POST /auth/2fa/enroll/confirm",
+            "POST /auth/2fa/backup-codes/regenerate",
             "POST /auth/refresh",
             "POST /auth/logout",
             "POST /auth/logout-all",
@@ -211,11 +215,15 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "GET /health/live",
             "GET /health/ready",
             "POST /auth/login",
+            "POST /auth/2fa/verify",
             "POST /auth/refresh",
             "POST /auth/password/forgot",
         ]);
         // Endpoint "Bearer" (SDD-AUTH-12): tanpa permission, tanpa public — daftar pendek yang dapat ditinjau.
         expect(registry.authenticatedRoutes().map((r) => `${r.method} ${r.path}`)).toEqual([
+            "POST /auth/2fa/enroll",
+            "POST /auth/2fa/enroll/confirm",
+            "POST /auth/2fa/backup-codes/regenerate",
             "POST /auth/logout",
             "POST /auth/logout-all",
             "GET /auth/sessions",
@@ -224,6 +232,14 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "PUT /me",
             "POST /auth/password/change",
         ]);
+        // BR-070: pengecualian gerbang 2FA adalah lubang yang disengaja — daftarnya dikunci di sini. Menambah
+        // satu route ke daftar ini memerahkan uji ini dan memaksa peninjau menimbang ulang.
+        expect(
+            registry
+                .authenticatedRoutes()
+                .filter((r) => r.twoFactorExempt === true)
+                .map((r) => `${r.method} ${r.path}`),
+        ).toEqual(["POST /auth/2fa/enroll", "POST /auth/2fa/enroll/confirm", "POST /auth/logout"]);
         expect(registry.guarded().map((r) => r.permission)).toEqual([
             "setting.view",
             "user.reset_password",
@@ -273,6 +289,10 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "/api/v1/health/ready",
             "/api/v1/health",
             "/api/v1/auth/login",
+            "/api/v1/auth/2fa/verify",
+            "/api/v1/auth/2fa/enroll",
+            "/api/v1/auth/2fa/enroll/confirm",
+            "/api/v1/auth/2fa/backup-codes/regenerate",
             "/api/v1/auth/refresh",
             "/api/v1/auth/logout",
             "/api/v1/auth/logout-all",

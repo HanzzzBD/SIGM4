@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **147** baris, dikumpulkan dari 22 berkas modul.
+> Total: **150** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -102,8 +102,11 @@
 | POST | `/audit-sessions/{id}/scan` | `audit.execute` | Catat hasil pemindaian | [M-13](../02-modules/m13-audit-stocktake.md) |
 | POST | `/audit-sessions/{id}/submit` | `audit.manage` | Kirim untuk persetujuan | [M-13](../02-modules/m13-audit-stocktake.md) |
 | POST | `/audit-sessions` | `audit.manage` | Buat sesi opname | [M-13](../02-modules/m13-audit-stocktake.md) |
-| POST | `/auth/2fa/verify` | Challenge token | Verifikasi kode TOTP | 200 `{tokens, user}` | 401, 423 | [M-01](../02-modules/m01-auth.md) |
-| POST | `/auth/login` | Publik | Login email + password + `platform` (`WEB`, `ANDROID`, `IOS`) | 200 `{tokens, expires_in, user, permissions}` (`tokens` null pada WEB: token hanya di cookie httpOnly) atau `{requires_2fa}` | 400, 401, 403, 429 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/2fa/backup-codes/regenerate` | Bearer (2FA terverifikasi) | Membuat ulang seluruh kode cadangan; yang lama, terpakai atau tidak, tak berlaku lagi | 200 `{kode_cadangan}` | 401, 403, 422 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/2fa/enroll/confirm` | Bearer | Konfirmasi pendaftaran dengan kode 6 digit; 2FA berlaku dan sesi ini naik ke `amr` `["pwd","otp"]`. Terjangkau oleh sesi yang belum lolos 2FA | 200 `{access_token}` (null pada WEB) | 400, 401, 422 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/2fa/enroll` | Bearer | Mulai pendaftaran 2FA: secret TOTP, URI `otpauth://`, dan 10 kode cadangan — tampil **satu kali**. Terjangkau oleh sesi yang belum lolos 2FA | 200 `{secret, otpauth_uri, kode_cadangan}` | 401, 422 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/2fa/verify` | Challenge token | Verifikasi faktor kedua — kode TOTP 6 digit atau kode cadangan — dengan challenge token dari login; menerbitkan sesi | 200 `{tokens, expires_in, user, permissions, sisa_kode_cadangan, kode_cadangan_menipis}` (`tokens` null pada WEB) | 400, 401, 423 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/login` | Publik | Login email + password + `platform` (`WEB`, `ANDROID`, `IOS`) | 200 `{tokens, expires_in, user, permissions}` (`tokens` null pada WEB: token hanya di cookie httpOnly) atau `{requires_2fa, challenge_token, expires_in}` (akun ber-2FA: sesi belum terbit) | 400, 401, 403, 429 | [M-01](../02-modules/m01-auth.md) |
 | POST | `/auth/logout-all` | Bearer | Keluar dari semua perangkat: mencabut seluruh sesi pengguna | 204 | 401 | [M-01](../02-modules/m01-auth.md) |
 | POST | `/auth/logout` | Bearer | Mencabut sesi yang membawa permintaan ini | 204 | 401 | [M-01](../02-modules/m01-auth.md) |
 | POST | `/auth/password/change` | Bearer | Ganti password sendiri | 200 | 401, 422 | [M-01](../02-modules/m01-auth.md) |

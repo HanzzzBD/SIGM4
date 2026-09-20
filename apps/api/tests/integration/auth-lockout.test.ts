@@ -22,7 +22,7 @@ import { getDb } from "../../src/shared/db/index.js";
 import { RedisRateLimiter } from "../../src/shared/http/index.js";
 import { HealthRegistry, Logger } from "../../src/shared/observability/index.js";
 import { hashPassword } from "../../src/shared/security/index.js";
-import { kunciUji } from "../helpers/auth.js";
+import { duaFaktorUji, kunciUji } from "../helpers/auth.js";
 import { dbmate, kueri } from "../helpers/db.js";
 
 const ADA = process.env["DATABASE_URL"] !== undefined;
@@ -74,7 +74,7 @@ describe.skipIf(!ADA)("PR-02-03 — penguncian akun + audit percobaan gagal + re
                 logger: new Logger({ clock, tulis: () => undefined }),
                 clock,
                 db: getDb(),
-                auth: { jwtKeys: kunciUji(), permissions: new PermissionCache(getDb(), redis), sessions: new SessionStore(getDb()) },
+                auth: { jwtKeys: kunciUji(), permissions: new PermissionCache(getDb(), redis), sessions: new SessionStore(getDb()), twoFactor: duaFaktorUji(redis) },
             }),
         );
     }

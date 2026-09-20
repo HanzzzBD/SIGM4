@@ -20,6 +20,8 @@ export interface UserLogin {
     readonly role_kode: string;
     /** Penguncian akun (0022, `SDD-SESS-06`): terkunci bila masih di depan `sekarang`. */
     readonly locked_until: Date | null;
+    /** 2FA aktif (0024, `FR-01.5`): login berhenti di tantangan, sesi baru terbit setelah faktor kedua terbukti. */
+    readonly totp_enabled_at: Date | null;
 }
 
 /** Keadaan penghitung kegagalan sebuah akun, dibaca dengan kunci baris. */
@@ -27,6 +29,25 @@ export interface StatusGagalRow {
     readonly failed_login_count: number;
     readonly failed_login_window_start: Date | null;
     readonly locked_until: Date | null;
+}
+
+/** Akun yang sedang memverifikasi faktor kedua (`FR-01.5`), dibaca dengan kunci baris. */
+export interface UserDuaFaktorRow extends StatusGagalRow {
+    readonly id: string;
+    readonly nama: string;
+    readonly email: string;
+    readonly status: "AKTIF" | "NONAKTIF";
+    readonly wajib_ganti: boolean;
+    readonly role_kode: string;
+    readonly totp_secret_enc: Buffer | null;
+    readonly totp_enabled_at: Date | null;
+    readonly totp_last_step: number | null;
+}
+
+/** Kode cadangan yang belum terpakai: hash-nya dicocokkan satu per satu (Argon2id, `BR-070c`). */
+export interface KodeCadanganRow {
+    readonly id: string;
+    readonly code_hash: string;
 }
 
 /** Permintaan reset password yang sudah diterbitkan (FR-01.3): dasar kedaluwarsa 72 jam saat login. */
@@ -44,6 +65,8 @@ export interface RefreshRow {
     readonly expires_at: Date;
     readonly rotated_at: Date | null;
     readonly revoked_at: Date | null;
+    /** `amr` sesi ini memuat `otp` (0024, `SDD-SESS-09`); diwarisi setiap rotasi. */
+    readonly otp_verified: boolean;
 }
 
 export interface RefreshBaru {
@@ -56,6 +79,7 @@ export interface RefreshBaru {
     readonly userAgent: string | null;
     readonly issuedAt: Date;
     readonly expiresAt: Date;
+    readonly otpVerified: boolean;
 }
 
 export class AuthRepository {
@@ -66,7 +90,15 @@ export class AuthRepository {
         return this.db
             .selectFrom("users as u")
             .innerJoin("roles as r", "r.id", "u.role_id")
-            .select(["u.id", "u.password_hash", "u.status", "u.must_change_password as wajib_ganti", "r.kode as role_kode", "u.locked_until"])
+            .select([
+                "u.id",
+                "u.password_hash",
+                "u.status",
+                "u.must_change_password as wajib_ganti",
+                "r.kode as role_kode",
+                "u.locked_until",
+                "u.totp_enabled_at",
+            ])
             .where(sql<boolean>`lower(u.email) = lower(${email})`)
             .executeTakeFirst();
     }
@@ -75,7 +107,15 @@ export class AuthRepository {
         return this.db
             .selectFrom("users as u")
             .innerJoin("roles as r", "r.id", "u.role_id")
-            .select(["u.id", "u.password_hash", "u.status", "u.must_change_password as wajib_ganti", "r.kode as role_kode", "u.locked_until"])
+            .select([
+                "u.id",
+                "u.password_hash",
+                "u.status",
+                "u.must_change_password as wajib_ganti",
+                "r.kode as role_kode",
+                "u.locked_until",
+                "u.totp_enabled_at",
+            ])
             .where("u.id", "=", id)
             .executeTakeFirst();
     }
@@ -93,6 +133,7 @@ export class AuthRepository {
                 user_agent: data.userAgent,
                 issued_at: data.issuedAt,
                 expires_at: data.expiresAt,
+                otp_verified: data.otpVerified,
             })
             .returning("id")
             .executeTakeFirstOrThrow();
@@ -103,7 +144,7 @@ export class AuthRepository {
     async cariRefreshUntukUbah(tokenHash: Buffer): Promise<RefreshRow | undefined> {
         return this.db
             .selectFrom("refresh_tokens")
-            .select(["id", "user_id", "family_id", "platform", "expires_at", "rotated_at", "revoked_at"])
+            .select(["id", "user_id", "family_id", "platform", "expires_at", "rotated_at", "revoked_at", "otp_verified"])
             .where("token_hash", "=", tokenHash)
             .forUpdate()
             .executeTakeFirst();
@@ -153,6 +194,71 @@ export class AuthRepository {
             .set({ failed_login_count: status.hitungan, failed_login_window_start: status.awalJendela, locked_until: status.terkunciSampai })
             .where("id", "=", userId)
             .execute();
+    }
+
+    // ---- 2FA (FR-01.5, PR-02-07): verifikasi faktor kedua terjadi SEBELUM ada sesi, jadi tanpa `AuthContext` ----
+
+    /**
+     * Mengunci baris pengguna dan membaca semua yang dibutuhkan verifikasi faktor kedua. Verifikasi
+     * serentak atas satu akun diserialkan di sini: satu kode tidak dapat diterima dua kali.
+     */
+    async kunciUserDuaFaktor(userId: string): Promise<UserDuaFaktorRow | undefined> {
+        return this.db
+            .selectFrom("users as u")
+            .innerJoin("roles as r", "r.id", "u.role_id")
+            .select([
+                "u.id",
+                "u.nama",
+                "u.email",
+                "u.status",
+                "u.must_change_password as wajib_ganti",
+                "r.kode as role_kode",
+                "u.failed_login_count",
+                "u.failed_login_window_start",
+                "u.locked_until",
+                "u.totp_secret_enc",
+                "u.totp_enabled_at",
+                "u.totp_last_step",
+            ])
+            .where("u.id", "=", userId)
+            .forUpdate()
+            .executeTakeFirst();
+    }
+
+    /** Menyimpan langkah TOTP yang baru diterima: kode itu tidak berlaku lagi (RFC 6238 §5.2). */
+    async simpanLangkahTotp(userId: string, langkah: number): Promise<void> {
+        await this.db.updateTable("users").set({ totp_last_step: langkah }).where("id", "=", userId).execute();
+    }
+
+    async daftarKodeCadanganAktif(userId: string): Promise<KodeCadanganRow[]> {
+        return this.db
+            .selectFrom("totp_backup_codes")
+            .select(["id", "code_hash"])
+            .where("user_id", "=", userId)
+            .where("used_at", "is", null)
+            .orderBy("id")
+            .execute();
+    }
+
+    /** Menandai satu kode terpakai; `false` bila kode itu sudah terpakai lebih dulu (sekali pakai, FR-01.5 AC). */
+    async pakaiKodeCadangan(id: string, waktu: Date): Promise<boolean> {
+        const hasil = await this.db
+            .updateTable("totp_backup_codes")
+            .set({ used_at: waktu })
+            .where("id", "=", id)
+            .where("used_at", "is", null)
+            .executeTakeFirst();
+        return Number(hasil.numUpdatedRows) === 1;
+    }
+
+    async hitungKodeCadanganAktif(userId: string): Promise<number> {
+        const baris = await this.db
+            .selectFrom("totp_backup_codes")
+            .select((eb) => eb.fn.countAll<string>().as("n"))
+            .where("user_id", "=", userId)
+            .where("used_at", "is", null)
+            .executeTakeFirstOrThrow();
+        return Number(baris.n);
     }
 
     // ---- Reset password (FR-01.3, PR-02-05): pra-autentikasi, sama seperti login ------------------

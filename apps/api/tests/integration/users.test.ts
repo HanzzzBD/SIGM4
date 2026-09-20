@@ -116,7 +116,7 @@ describe.skipIf(!ADA_DB)("0012 — users + kolom baku roles", () => {
         });
     });
 
-    it("kolomnya persis milik PR ini — tanpa deleted_at, penanda 2FA, maupun foto", async () => {
+    it("kolomnya persis milik PR ini — tanpa deleted_at maupun foto", async () => {
         const kolom = await kueri<{ column_name: string }>(`
             SELECT column_name FROM information_schema.columns
              WHERE table_schema = 'public' AND table_name = 'users'
@@ -143,6 +143,10 @@ describe.skipIf(!ADA_DB)("0012 — users + kolom baku roles", () => {
             "failed_login_count",
             "failed_login_window_start",
             "locked_until",
+            // 0024 (PR-02-07): 2FA TOTP — secret terenkripsi, penanda aktif, langkah terakhir (SDD-SESS-08/16).
+            "totp_secret_enc",
+            "totp_enabled_at",
+            "totp_last_step",
         ]);
     });
 
