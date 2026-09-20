@@ -113,7 +113,7 @@ describe.skipIf(!ADA)("PR-02-07 — 2FA TOTP (PostgreSQL + Redis nyata)", () => 
         await new Promise((r) => server.close(r));
         if (idPengguna.length > 0) {
             const daftar = idPengguna.join(",");
-            await kueri(`DELETE FROM event_outbox WHERE event_name IN ('AccountLocked', 'SessionRevoked') AND aggregate_id IN (${daftar})`);
+            await kueri(`DELETE FROM event_outbox WHERE event_name IN ('AccountLocked', 'SessionRevoked', 'TwoFactorEnabled') AND aggregate_id IN (${daftar})`);
             await kueri(`DELETE FROM refresh_tokens WHERE user_id IN (${daftar})`);
             await kueri(`DELETE FROM totp_backup_codes WHERE user_id IN (${daftar})`);
             await kueri(`DELETE FROM activity_logs WHERE modul = 'm01-auth' AND (entitas_id IN (${daftar}) OR user_id IN (${daftar}))`);
@@ -597,6 +597,46 @@ describe.skipIf(!ADA)("PR-02-07 — 2FA TOTP (PostgreSQL + Redis nyata)", () => 
             const ok = await kirim("POST", "/auth/2fa/enroll/confirm", bearer(sesi.access), { kode });
             expect(ok.status).toBe(200);
             expect(klaim(ok.json.data?.["access_token"] as string)).toMatchObject({ pwd: true, amr: ["pwd", "otp"] });
+        });
+
+        it("BR-070e: konfirmasi yang berhasil mencabut SELURUH sesi lain (sesi ini tetap hidup); kode salah tidak mencabut apa pun", async () => {
+            const a = await seed("R-05");
+            const ini = await masukBiasa(a.email, "ANDROID");
+            const lain1 = await masukBiasa(a.email, "IOS");
+            const lain2 = await masukBiasa(a.email, "WEB");
+            const data = (await kirim("POST", "/auth/2fa/enroll", bearer(ini.sesi.access))).json.data as { secret: string };
+            const secret = base32Decode(data.secret);
+
+            // kode SALAH: tidak ada yang keluar
+            expect((await kirim("POST", "/auth/2fa/enroll/confirm", bearer(ini.sesi.access), { kode: kodeSalah(secret) })).status).toBe(422);
+            expect((await kirim("GET", "/locations/tree", bearer(lain1.sesi.access))).status).toBe(200);
+            expect((await keluarga(a.id)).every((k) => k.revoked_at === null)).toBe(true);
+
+            const ok = await kirim("POST", "/auth/2fa/enroll/confirm", bearer(ini.sesi.access), { kode: kodeTotp(secret, langkahTotp(clock.now())) });
+            expect(ok.status).toBe(200);
+            const baru = ok.json.data?.["access_token"] as string;
+
+            // sesi ini hidup; kedua sesi lain mati seketika (access DAN refresh)
+            expect((await kirim("GET", "/locations/tree", bearer(baru))).status).toBe(200);
+            expect((await kirim("GET", "/locations/tree", bearer(lain1.sesi.access))).status).toBe(401);
+            expect((await kirim("GET", "/locations/tree", { cookie: `sigm4_at=${lain2.sesi.access}` })).status).toBe(401);
+            expect((await kirim("POST", "/auth/refresh", {}, { refresh_token: lain1.sesi.refresh })).status).toBe(401);
+            expect((await kirim("POST", "/auth/refresh", {}, { refresh_token: ini.sesi.refresh })).status).toBe(200);
+
+            const alasan = await baris<{ family_id: string; revoke_reason: string | null; revoked_at: string | null }>(
+                `SELECT DISTINCT family_id::text, revoke_reason, revoked_at::text FROM refresh_tokens WHERE user_id = ${String(a.id)} AND revoked_at IS NOT NULL`,
+            );
+            expect(alasan.map((r) => r.revoke_reason)).toEqual(["two_fa_enabled", "two_fa_enabled"]);
+            expect(alasan.map((r) => r.family_id).sort()).toEqual([klaim(lain1.sesi.access).sid, klaim(lain2.sesi.access).sid].sort());
+
+            // audit, dan event outbox dalam transaksi yang sama (SessionRevoked per sesi + TwoFactorEnabled)
+            const [log] = await baris<{ n: string }>(`SELECT nilai_sesudah->>'sesi_dicabut' AS n FROM activity_logs WHERE modul = 'm01-auth' AND aksi = 'TWO_FA_ENABLED' AND entitas_id = ${String(a.id)}`);
+            expect(log?.n).toBe("2");
+            const events = await baris<{ event_name: string; alasan: string | null; sesi: string | null }>(
+                `SELECT event_name, payload->>'alasan' AS alasan, payload->>'sesi_dicabut' AS sesi FROM event_outbox WHERE aggregate_id = ${String(a.id)} AND event_name IN ('SessionRevoked', 'TwoFactorEnabled') ORDER BY id`,
+            );
+            expect(events.filter((e) => e.event_name === "SessionRevoked").map((e) => e.alasan)).toEqual(["two_fa_enabled", "two_fa_enabled"]);
+            expect(events.filter((e) => e.event_name === "TwoFactorEnabled").map((e) => e.sesi)).toEqual(["2"]);
         });
 
         it("keadaan yang salah: konfirmasi tanpa enroll → 422; enroll atau konfirmasi saat 2FA sudah aktif → 422; kode bukan 6 digit → 400", async () => {

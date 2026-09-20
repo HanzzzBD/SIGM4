@@ -13,6 +13,8 @@ import type { Clock } from "../../../shared/clock/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
 import type { Database } from "../../../shared/db/index.js";
 import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
+import { publishAll } from "../../../shared/events/index.js";
+import type { DomainEvent } from "../../../shared/events/index.js";
 import {
     bangkitkanKodeCadangan,
     bangkitkanSecretTotp,
@@ -23,10 +25,12 @@ import {
     urlOtpauth,
 } from "../../../shared/security/index.js";
 import type { JwtKeys, KotakRahasia } from "../../../shared/security/index.js";
+import { createSessionRepository } from "../repositories/session.repository.js";
 import { createTwoFactorRepository } from "../repositories/two-factor.repository.js";
 import { amrSesi } from "./amr.js";
 import { jejakKlien } from "./klien.js";
 import type { KlienPermintaan } from "./klien.js";
+import { eventSesiDicabut } from "./sesi-event.js";
 
 const MODUL = "m01-auth";
 
@@ -34,6 +38,12 @@ const MODUL = "m01-auth";
 const PENERBIT_OTPAUTH = "SIGM4";
 
 const PESAN_KODE_SALAH = "Kode verifikasi salah atau sudah tidak berlaku.";
+
+/** `refresh_tokens.revoke_reason` saat pendaftaran 2FA berhasil (`BR-070e`). */
+const ALASAN_DUA_FAKTOR_AKTIF = "two_fa_enabled";
+
+/** Event outbox (SDD-07 §4.3): konsumennya — notifikasi `NT-39a` ke Administrator — dipasang `PR-02-25`. */
+export const EVENT_DUA_FAKTOR_AKTIF = "TwoFactorEnabled";
 
 /** Rahasia terenkripsi diikat pada pemiliknya (AAD): baris yang ditukar ke akun lain gagal didekripsi. */
 export function aadSecretTotp(userId: number | string): string {
@@ -106,7 +116,9 @@ export class TwoFactorService {
     /**
      * `POST /auth/2fa/enroll/confirm` (FR-01.5 langkah 3-4): 6 digit dari authenticator memvalidasi
      * secret, lalu 2FA berlaku dan sesi INI ditandai terverifikasi (`refresh_tokens.otp_verified`),
-     * sehingga refresh berikutnya menerbitkan `amr` yang memuat `otp`. Token baru diterbitkan
+     * sehingga refresh berikutnya menerbitkan `amr` yang memuat `otp`. Seluruh sesi LAIN pemilik akun
+     * dicabut dan `TwoFactorEnabled` terbit (`BR-070e`, `NT-39a`): pemilik yang mendadak keluar dari
+     * sesinya adalah sinyal pertama bahwa 2FA-nya didaftarkan pihak lain. Token baru diterbitkan
      * terpisah lewat `terbitkanAksesBaru` — tidak ada jalur dari `kode` ke token (pola `PR-02-06`).
      */
     async konfirmasiPendaftaran(
@@ -133,13 +145,29 @@ export class TwoFactorService {
 
                 await repo.aktifkan(ctx, sekarang, langkah);
                 await repo.tandaiSesiTerverifikasi(ctx, sesiSaatIni);
+                // BR-070e: sesi lain keluar dalam transaksi yang sama dengan pengaktifannya.
+                const sesiDicabut = await createSessionRepository(scope.tx).cabutSemuaKecuali(
+                    ctx,
+                    sesiSaatIni,
+                    sekarang,
+                    ALASAN_DUA_FAKTOR_AKTIF,
+                );
                 await this.audit.write(scope, {
                     modul: MODUL,
                     aksi: "TWO_FA_ENABLED",
                     entitas: "users",
                     entitasId: ctx.userId,
+                    nilaiSesudah: { sesi_dicabut: sesiDicabut.length },
                     ...jejakKlien(klien),
                 });
+                const events: DomainEvent[] = sesiDicabut.map((s) => eventSesiDicabut(ctx.userId, s, ALASAN_DUA_FAKTOR_AKTIF));
+                events.push({
+                    name: EVENT_DUA_FAKTOR_AKTIF,
+                    aggregateType: "user",
+                    aggregateId: ctx.userId,
+                    payload: { user_id: String(ctx.userId), sesi_dicabut: sesiDicabut.length },
+                });
+                await publishAll(scope, events);
                 return { wajibGantiPassword: baris.wajib_ganti };
             },
             this.db,
