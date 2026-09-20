@@ -106,6 +106,24 @@ export class SessionRepository extends BaseRepository {
         for (const b of baris) perKeluarga.set(b.family_id, { familyId: b.family_id, platform: b.platform });
         return [...perKeluarga.values()];
     }
+
+    /**
+     * Mencabut seluruh sesi pemanggil KECUALI satu keluarga (ganti password sendiri,
+     * FR-01.4 langkah 4, UX P-77 "perangkat ini tetap masuk").
+     */
+    async cabutSemuaKecuali(ctx: AuthContext, kecuali: string, waktu: Date, alasan: string): Promise<readonly SesiDicabut[]> {
+        const baris = await this.query(ctx)
+            .updateTable("refresh_tokens")
+            .set({ revoked_at: waktu, revoke_reason: alasan })
+            .where("user_id", "=", String(ctx.userId))
+            .where("revoked_at", "is", null)
+            .where("family_id", "<>", kecuali)
+            .returning(["family_id", "platform"])
+            .execute();
+        const perKeluarga = new Map<string, SesiDicabut>();
+        for (const b of baris) perKeluarga.set(b.family_id, { familyId: b.family_id, platform: b.platform });
+        return [...perKeluarga.values()];
+    }
 }
 
 /** Pintu masuk repository: `defineRepository` menolak metode yang tidak menerima `AuthContext` (SDD-AUTH-02). */

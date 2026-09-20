@@ -151,7 +151,7 @@ describe("sigm4-api — /api/v1/health/*", () => {
         });
     });
 
-    it("registri proses: probe publik, ringkasan, CRUD pengguna (PR-01-02), impor massal (PR-01-03), matriks permission (PR-01-04), skema lokasi (PR-01-05), pohon+penonaktifan (PR-01-06), daftar aset per lokasi (PR-01-07), penelusuran (PR-01-08), ekspor activity log (PR-01-09), parameter sistem (PR-01-10), kenaikan kelas massal (PR-01-13), pengambilan pekerjaan impor pengguna (PR-01-17), serta master data Lampiran E — tahun ajaran, hari libur, hari kerja, unit kerja (PR-01-18) berpermission, serta login/refresh publik (PR-02-02) dan logout + sesi berautentikasi saja (PR-02-04), serta reset password administratif (PR-02-05)", () => {
+    it("registri proses: probe publik, ringkasan, CRUD pengguna (PR-01-02), impor massal (PR-01-03), matriks permission (PR-01-04), skema lokasi (PR-01-05), pohon+penonaktifan (PR-01-06), daftar aset per lokasi (PR-01-07), penelusuran (PR-01-08), ekspor activity log (PR-01-09), parameter sistem (PR-01-10), kenaikan kelas massal (PR-01-13), pengambilan pekerjaan impor pengguna (PR-01-17), serta master data Lampiran E — tahun ajaran, hari libur, hari kerja, unit kerja (PR-01-18) berpermission, serta login/refresh publik (PR-02-02), logout + sesi berautentikasi saja (PR-02-04), reset password administratif (PR-02-05), serta ganti password + profil sendiri (PR-02-06)", () => {
         expect(registry.all().map((r) => `${r.method} ${r.path}`)).toEqual([
             "GET /health/live",
             "GET /health/ready",
@@ -166,6 +166,9 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "GET /auth/password/requests",
             "POST /auth/password/requests/:id/issue",
             "POST /auth/password/requests/:id/reject",
+            "GET /me",
+            "PUT /me",
+            "POST /auth/password/change",
             "GET /users",
             "POST /users",
             "GET /users/:id",
@@ -217,6 +220,9 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "POST /auth/logout-all",
             "GET /auth/sessions",
             "DELETE /auth/sessions/:id",
+            "GET /me",
+            "PUT /me",
+            "POST /auth/password/change",
         ]);
         expect(registry.guarded().map((r) => r.permission)).toEqual([
             "setting.view",
@@ -276,6 +282,8 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "/api/v1/auth/password/requests",
             "/api/v1/auth/password/requests/{id}/issue",
             "/api/v1/auth/password/requests/{id}/reject",
+            "/api/v1/me",
+            "/api/v1/auth/password/change",
             "/api/v1/users",
             "/api/v1/users/{id}",
             "/api/v1/users/{id}/status",

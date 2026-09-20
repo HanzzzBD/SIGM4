@@ -334,8 +334,9 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | `LOGOUT` / `LOGOUT_ALL_DEVICES` | Pencabutan sesi. `LOGOUT` juga dicatat saat pengguna mencabut satu perangkat lain (nilai memuat `alasan: device_revoked`); `LOGOUT_ALL_DEVICES` memuat jumlah sesi yang dicabut. Termasuk IP dan perangkat pelaku |
 | `REFRESH_TOKEN_REUSE_DETECTED` | Refresh token yang sudah dirotasi dipakai ulang; seluruh rantai dicabut. Termasuk IP dan perangkat |
 | `ACCOUNT_LOCKED` / `ACCOUNT_UNLOCKED` | Penguncian akibat percobaan gagal (kegagalan ke-5 dalam jendela 15 menit). Kunci yang berakhir sendiri tidak menulis entri |
-| `PASSWORD_CHANGED` | Tanpa merekam nilai password |
+| `PASSWORD_CHANGED` | Ganti password sendiri (`FR-01.4`); memuat jumlah sesi lain yang dicabut, tanpa merekam nilai password |
 | `PASSWORD_RESET_REQUESTED` / `PASSWORD_RESET_ISSUED` / `PASSWORD_RESET_REJECTED` | Alur reset administratif. `PASSWORD_RESET_REQUESTED` dicatat tanpa pelaku (pemohon belum login; akun sasaran pada entitas), juga untuk percobaan yang tidak menghasilkan permintaan — email tak terdaftar, akun nonaktif, melebihi batas — dengan hasil `Gagal` dan tanpa menyimpan email yang dicoba. `PASSWORD_RESET_ISSUED` memuat metode verifikasi dan jumlah sesi yang dicabut. Tidak satu pun memuat password |
+| `PROFILE_UPDATED` | Perubahan nama/telepon profil sendiri (`FR-01.4` langkah 5, `PUT /me`); foto menunggu `PR-03-04` |
 | `TWO_FA_ENABLED` / `TWO_FA_DISABLED` / `TWO_FA_RESET` | Perubahan 2FA |
 | `TWO_FA_BACKUP_CODE_USED` | Pemakaian kode cadangan, termasuk sisa kode |
 | `ADMIN_BREAK_GLASS_RECOVERY` | Pemulihan darurat Administrator via CLI (FR-01.6); pelaku `SYSTEM:CLI` |
