@@ -66,10 +66,8 @@ export class ProfileService {
 
     /** `GET /me`. */
     async lihat(ctx: AuthContext): Promise<ProfilTampil> {
-        const [user, efektif] = await Promise.all([
-            createProfileRepository(this.db).ambil(ctx),
-            this.permissions.load(ctx.userId),
-        ]);
+        const user = await createProfileRepository(this.db).ambil(ctx);
+        const efektif = await this.permissions.load(ctx.userId);
         if (user === undefined || efektif === undefined) throw new NotFoundError();
         return { user, permissions: Object.fromEntries(efektif.scopes) };
     }
