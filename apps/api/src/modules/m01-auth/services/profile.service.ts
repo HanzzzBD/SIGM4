@@ -42,11 +42,6 @@ export interface ProfilTampil {
     readonly permissions: Readonly<Record<string, string>>;
 }
 
-export interface HasilGantiPassword {
-    /** Klaim `pwd=false`, sesi yang sama (`sid`) — menutup gerbang ganti password seketika (UX P-05). */
-    readonly accessToken: string;
-}
-
 const PESAN_PELANGGARAN: Readonly<Record<PasswordViolation, string>> = {
     TOO_SHORT: "Password baru minimal 12 karakter.",
     MISSING_UPPERCASE: "Password baru harus mengandung huruf besar.",
@@ -103,13 +98,17 @@ export class ProfileService {
      * baru diperiksa terhadap kebijakan (`NFR-S-03a`, tanpa daftar bocor/riwayat — `PR-02-31`),
      * lalu seluruh sesi LAIN dicabut. Bila password ini menyelesaikan penerbitan reset yang masih
      * `DITERBITKAN`, permintaannya ditandai `SELESAI` dan `NT-38a` terbit dalam transaksi yang sama.
+     *
+     * TIDAK mengembalikan token: penerbitannya milik `terbitkanAksesBaru`, yang tidak pernah
+     * menyentuh nilai password. Memisahkannya menjaga agar nilai password tak punya jalur
+     * apa pun menuju respons — termasuk jalur semu lewat nilai balik (`SEC-T`, pola `PR-02-02`).
      */
     async gantiPassword(
         ctx: AuthContext,
         sesiSaatIni: string,
         input: { readonly passwordLama: string; readonly passwordBaru: string },
         klien: KlienPermintaan,
-    ): Promise<HasilGantiPassword> {
+    ): Promise<void> {
         const sekarang = this.clock.now();
 
         await withTransaction(
@@ -173,12 +172,17 @@ export class ProfileService {
             },
             this.db,
         );
+    }
 
-        return {
-            accessToken: this.jwt.terbitkan(
-                { sub: String(ctx.userId), sid: sesiSaatIni, pwd: false, amr: AMR_KREDENSIAL },
-                sekarang,
-            ),
-        };
+    /**
+     * Access token baru bagi sesi yang SAMA (`sid` tetap) berklaim `pwd=false` — membuka gerbang
+     * ganti password (`SDD-AUTH-09`) seketika tanpa menunggu `/auth/refresh` (UX-FLOWS `P-05`).
+     * Hanya bergantung pada identitas pemanggil dan sesinya; nilai password tidak pernah masuk ke sini.
+     */
+    terbitkanAksesBaru(ctx: AuthContext, sesiSaatIni: string): string {
+        return this.jwt.terbitkan(
+            { sub: String(ctx.userId), sid: sesiSaatIni, pwd: false, amr: AMR_KREDENSIAL },
+            this.clock.now(),
+        );
     }
 }

@@ -82,16 +82,21 @@ export function gantiPasswordHandler(service: ProfileService): RequestHandler {
     return async (req, res) => {
         const body = PasswordChangeBodySchema.parse(req.body);
         const lewatCookie = viaCookie(req);
-        const hasil = await service.gantiPassword(
-            requireAuthContext(res),
-            sesiSaatIni(res),
+        const ctx = requireAuthContext(res);
+        const sesi = sesiSaatIni(res);
+        await service.gantiPassword(
+            ctx,
+            sesi,
             { passwordLama: body.password_lama, passwordBaru: body.password_baru },
             klienDari(req),
         );
+        // Diterbitkan TERPISAH dari penggantian: token hanya turunan `ctx` dan `sesi`, tidak
+        // pernah turunan nilai password — jadi tidak ada jalur dari body permintaan ke cookie.
+        const tokenBaru = service.terbitkanAksesBaru(ctx, sesi);
         res.setHeader("Cache-Control", "no-store");
-        let accessToken: string | null = hasil.accessToken;
+        let accessToken: string | null = tokenBaru;
         if (lewatCookie) {
-            res.append("Set-Cookie", susunCookie(COOKIE_ACCESS, hasil.accessToken, PATH_ACCESS, ACCESS_TOKEN_TTL_DETIK));
+            res.append("Set-Cookie", susunCookie(COOKIE_ACCESS, tokenBaru, PATH_ACCESS, ACCESS_TOKEN_TTL_DETIK));
             accessToken = null;
         }
         res.status(200).json({ success: true, data: { access_token: accessToken }, meta: null });
