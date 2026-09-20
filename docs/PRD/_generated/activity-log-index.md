@@ -5,7 +5,7 @@
 # Indeks Aksi Activity Log
 
 > Setiap aksi dimiliki modul penerbitnya. Prinsip pencatatan di `../03-architecture/activity-log.md`.
-> Total: **73** baris, dikumpulkan dari 22 berkas modul.
+> Total: **75** baris, dikumpulkan dari 22 berkas modul.
 
 | Aksi | Keterangan | Pemilik |
 |---|---|---|
@@ -69,9 +69,11 @@
 | `STUDENT_ENROLLMENT_SET` | Kelas siswa pada suatu tahun ajaran ditetapkan atau diubah (`SL-01`, `SL-02`), nilai lama/baru | [M-02](../02-modules/m02-users.md) |
 | `STUDENT_GRADUATION_DEACTIVATED` | Akun siswa lulus dinonaktifkan setelah tahun ajarannya berakhir (`SL-03`); pelaku `SYSTEM` bila dijalankan pekerjaan terjadwal | [M-02](../02-modules/m02-users.md) |
 | `STUDENT_MARKED_GRADUATED` | Siswa ditandai lulus pada suatu tahun ajaran (`SL-02`) | [M-02](../02-modules/m02-users.md) |
+| `TWO_FA_ACTIVATION_CODE_ISSUED` | Kode aktivasi 2FA diterbitkan (`BR-070d`): akun sasaran pada entitas, penerbit sebagai pelaku (`SYSTEM:CLI` bila lewat CLI), metode verifikasi. Nilai kode tidak pernah dicatat | [M-01](../02-modules/m01-auth.md) |
+| `TWO_FA_ACTIVATION_CODE_REJECTED` | Kode aktivasi salah, kedaluwarsa, atau hangus saat pendaftaran; memuat sisa percobaan. Nilai yang dimasukkan tidak dicatat | [M-01](../02-modules/m01-auth.md) |
 | `TWO_FA_BACKUP_CODES_REGENERATED` | Seluruh kode cadangan diganti (`FR-01.5` AC); nilainya tidak dicatat | [M-01](../02-modules/m01-auth.md) |
 | `TWO_FA_BACKUP_CODE_USED` | Pemakaian kode cadangan, termasuk sisa kode | [M-01](../02-modules/m01-auth.md) |
-| `TWO_FA_ENABLED` / `TWO_FA_DISABLED` / `TWO_FA_RESET` | Perubahan 2FA | [M-01](../02-modules/m01-auth.md) |
+| `TWO_FA_ENABLED` / `TWO_FA_DISABLED` / `TWO_FA_RESET` | Perubahan 2FA. `TWO_FA_ENABLED` memuat jumlah sesi lain yang dicabut (`BR-070e`) | [M-01](../02-modules/m01-auth.md) |
 | `TWO_FA_ENROLLMENT_STARTED` | Pendaftaran 2FA dimulai (secret dan kode cadangan dibangkitkan). Secret dan kode tidak pernah dicatat | [M-01](../02-modules/m01-auth.md) |
 | `USER_CREATED` / `USER_UPDATED` / `USER_DEACTIVATED` / `USER_REACTIVATED` | Manajemen akun | [M-02](../02-modules/m02-users.md) |
 | `USER_IMPORTED` | Impor massal beserta ringkasan hasil; pelaku = Administrator pengunggah, juga bila dijalankan worker | [M-02](../02-modules/m02-users.md) |

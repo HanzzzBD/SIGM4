@@ -87,7 +87,7 @@ Total: **69** requirement.
 
 ## B. Business Rules
 
-Total: **119** aturan. Setiap aturan wajib memiliki minimal satu test case
+Total: **121** aturan. Setiap aturan wajib memiliki minimal satu test case
 (lihat [`test-strategy.md`](test-strategy.md)).
 
 | ID | Module | File | Status | Notes |
@@ -186,6 +186,8 @@ Total: **119** aturan. Setiap aturan wajib memiliki minimal satu test case
 | `BR-070a` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | Not Started |  |
 | `BR-070b` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | Not Started |  |
 | `BR-070c` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | Done | PR-02-07 (belum digabung): hash Argon2id, tampil sekali; diuji |
+| `BR-070d` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | Not Started |  |
+| `BR-070e` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | Not Started |  |
 | `BR-071` | M-18 Activity Log | `02-modules/m18-activity-log.md` | Not Started |  |
 | `BR-072` | M-18 Activity Log | `02-modules/m18-activity-log.md` | Not Started |  |
 | `BR-073` | M-02 Manajemen User & Role | `02-modules/m02-users.md` | Not Started |  |
@@ -216,7 +218,7 @@ Total: **119** aturan. Setiap aturan wajib memiliki minimal satu test case
 
 | Module | FR | BR |
 |---|---:|---:|
-| M-01 Autentikasi & Manajemen Akun | 6 | 4 |
+| M-01 Autentikasi & Manajemen Akun | 6 | 6 |
 | M-02 Manajemen User & Role | 2 | 6 |
 | M-03 Manajemen Lokasi | 2 | 4 |
 | M-04 Inventaris Aset | 5 | 14 |
@@ -257,4 +259,4 @@ pelaksana; perlu keputusan pemilik produk sebelum modul terkait dianggap selesai
 
 ---
 
-Ringkasan: **69 FR** · **119 BR** · **8 open issue** · seluruhnya berstatus awal `Not Started`.
+Ringkasan: **69 FR** · **121 BR** · **8 open issue** · seluruhnya berstatus awal `Not Started`.

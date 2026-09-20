@@ -114,7 +114,8 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | GET | `/users/import/{id}` | `user.create` | Status dan laporan per baris sebuah pekerjaan impor (`IMPT-02`) |
 | POST | `/class-promotions` | `user.update` | Kenaikan kelas massal: tetapkan kelas atau tandai lulus per siswa pada satu tahun ajaran (`SL-02`) |
 | POST | `/users/{id}/reset-password` | `user.reset_password` | Terbitkan password sementara langsung dari detail pengguna (`FR-01.3 A5`); `metode_verifikasi` wajib; password tampil satu kali; sesi dicabut dan kunci login dibuka. Logikanya milik M-01 |
-| POST | `/users/{id}/reset-2fa` | `user.reset_2fa` | Reset 2FA pengguna |
+| POST | `/users/{id}/reset-2fa` | `user.reset_2fa` | Reset 2FA pengguna (`FR-01.5 A3`): menonaktifkan 2FA, menghapus kode cadangan, mencabut seluruh sesi; `metode_verifikasi` wajib; untuk role wajib 2FA menerbitkan kode aktivasi baru, tampil satu kali (`BR-070d`) |
+| POST | `/users/{id}/2fa-activation-code` | `user.reset_2fa` | Terbitkan kode aktivasi 2FA bagi akun role wajib yang belum ber-2FA (`FR-01.5 A7`, `BR-070d`); `metode_verifikasi` wajib; kode tampil satu kali; tidak untuk akun sendiri |
 | GET | `/roles` | `role.view` | Daftar role |
 | PUT | `/roles/{id}/permissions` | `role.update` | Perbarui matriks permission |
 

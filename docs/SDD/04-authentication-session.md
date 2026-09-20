@@ -11,7 +11,7 @@
 | Alur autentikasi | `FR-01.1` … `FR-01.6` |
 | Token & password | `NFR-S-02`, `NFR-S-03`, `NFR-S-03a`, `NFR-S-03b`, `NFR-S-07`, `NFR-S-09` |
 | 2FA & pemulihan | `BR-070`, `BR-070a`, `BR-070b`, `BR-070c` |
-| Notifikasi terkait | `NT-37`, `NT-38`, `NT-38a`, `NT-39` |
+| Notifikasi terkait | `NT-37`, `NT-38`, `NT-38a`, `NT-39`, `NT-39a` |
 | Jejak audit | `AL-02`, aksi `LOGIN_*`, `TWO_FA_*`, `ADMIN_BREAK_GLASS_RECOVERY` |
 
 Otorisasi (siapa boleh apa) berada di [SDD-03](03-authorization.md). Berkas ini hanya membahas **pembuktian identitas** dan **pengelolaan sesi**.
@@ -38,6 +38,7 @@ Otorisasi (siapa boleh apa) berada di [SDD-03](03-authorization.md). Berkas ini 
 | **SDD-SESS-14** | *Challenge token* 2FA adalah nilai **buram** 32 byte acak yang tersimpan di Redis (hanya SHA-256-nya), bukan JWT; kedaluwarsanya ditegakkan menurut `Clock`. Kode yang salah **tidak** menghabiskannya — kegagalan dibatasi penguncian akun yang sama dengan password (`SDD-SESS-06`); hanya kode yang benar yang menghabiskannya. Jawaban kegagalannya tetap `401` seragam (`SDD-AUTH-08`); hanya penguncian yang dijawab `423`. |
 | **SDD-SESS-15** | Gerbang `twoFactorVerified` (`SDD-AUTH-09` gerbang 3) menjawab **`403 TWO_FACTOR_REQUIRED`**, bukan `401`: sesinya sah, faktor keduanya belum terbukti. Bawaannya tertutup — ditegakkan di `authenticated()` dan `authorize()` — dan hanya route yang menyatakan `twoFactorExempt` (pendaftaran 2FA dan logout) yang melewatinya. |
 | **SDD-SESS-16** | Dua kolom yang tidak ada pada rancangan awal §4.1 ditambahkan (`PR-02-07`, migration `0024`; **`otp_verified` menunggu tinjauan arsitek**, opsi dan rekomendasi di logs/phase-02.md §7): `users.totp_last_step` — langkah TOTP terakhir yang diterima; tanpa itu satu kode berlaku berkali-kali di jendela ±1 langkah (RFC 6238 §5.2) — dan `refresh_tokens.otp_verified` — klaim `amr` harus bertahan ketika access token diterbitkan ulang lewat `/auth/refresh`, sedangkan refresh token tidak memuat klaim; kolom ini membawanya dan diwarisi setiap rotasi seperti `platform`. |
+| **SDD-SESS-17** | **Kode aktivasi 2FA** (`BR-070d`, `BR-070e`): nilai acak 10 karakter (alfabet kode cadangan), disimpan sebagai hash Argon2id pada `totp_activation_codes` (`user_id`, `code_hash`, `issued_by`, `expires_at`, `failed_attempts`, `consumed_at`), satu baris aktif per akun (penerbitan baru menggantikan), berlaku 72 jam, hangus setelah 5 kesalahan — **tanpa** mengunci akun, karena penyerang yang tahu password akan memakai penguncian sebagai DoS. Diperiksa pada `enroll` (`422` seragam untuk salah/kedaluwarsa/hangus) dan dihabiskan pada `enroll/confirm` yang berhasil, yang sekaligus mencabut seluruh sesi lain (`revoke_reason = two_fa_enabled`, event `SessionRevoked` per sesi) dan menerbitkan event `TwoFactorEnabled` (`NT-39a`). Penerbit: `POST /users/{id}/2fa-activation-code` (M-02, `user.reset_2fa`) atau CLI pada artefak worker (`SDD-SESS-11`). *Rancangan; belum diimplementasikan, PR pelaksana belum ditugaskan.* |
 
 ---
 
@@ -201,6 +202,8 @@ Verifikasi login (POST /auth/2fa/verify {challenge_token, kode}):
                  (metode_2fa), [TWO_FA_BACKUP_CODE_USED + sisa]; sesudah commit challenge dihabiskan
 ```
 
+Pengikatan pendaftaran pada pemilik akun (`BR-070d`, `BR-070e`, `SDD-SESS-17`) adalah rancangan yang belum diimplementasikan: sampai PR pelaksananya tergabung, `enroll` hanya menuntut sesi terautentikasi dan `enroll/confirm` tidak mencabut sesi lain.
+
 Gerbang (`SDD-SESS-15`): role wajib 2FA (R-01 dan R-03, `BR-070`) dengan `amr` tanpa `otp` ditolak `403 TWO_FACTOR_REQUIRED` pada setiap route terlindung kecuali `POST /auth/2fa/enroll`, `POST /auth/2fa/enroll/confirm`, dan `POST /auth/logout`. Role lain tidak terpengaruh, dengan atau tanpa 2FA.
 
 Toleransi jam ±30 detik dipilih agar perbedaan jam perangkat yang wajar tidak menggagalkan login, tanpa memperlebar jendela serangan secara berarti.
@@ -305,9 +308,9 @@ Siklus status: `MENUNGGU → DITERBITKAN → SELESAI` (pengguna mengganti passwo
 
 ## 7. Requirement Terkait
 
-`FR-01.1` `FR-01.2` `FR-01.3` `FR-01.4` `FR-01.5` `FR-01.6` · `BR-070` `BR-070a` `BR-070b` `BR-070c` ·
+`FR-01.1` `FR-01.2` `FR-01.3` `FR-01.4` `FR-01.5` `FR-01.6` · `BR-070` `BR-070a` `BR-070b` `BR-070c` `BR-070d` `BR-070e` ·
 `NFR-S-01` `NFR-S-02` `NFR-S-03` `NFR-S-03a` `NFR-S-03b` `NFR-S-07` `NFR-S-09` `NFR-S-10` `NFR-S-16` ·
-`FR-01.3` · `NT-37` `NT-38` `NT-38a` `NT-39` · `AL-02` `AL-05` `AL-07` · `MOB-SEC-05` · `SEC-CFG-01` `SEC-CFG-02` · `MOB-SEC-01` `MOB-SEC-05`
+`FR-01.3` · `NT-37` `NT-38` `NT-38a` `NT-39` `NT-39a` · `AL-02` `AL-05` `AL-07` · `MOB-SEC-05` · `SEC-CFG-01` `SEC-CFG-02` · `MOB-SEC-01` `MOB-SEC-05`
 
 ---
 

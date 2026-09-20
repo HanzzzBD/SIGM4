@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **150** baris, dikumpulkan dari 22 berkas modul.
+> Total: **151** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -103,8 +103,8 @@
 | POST | `/audit-sessions/{id}/submit` | `audit.manage` | Kirim untuk persetujuan | [M-13](../02-modules/m13-audit-stocktake.md) |
 | POST | `/audit-sessions` | `audit.manage` | Buat sesi opname | [M-13](../02-modules/m13-audit-stocktake.md) |
 | POST | `/auth/2fa/backup-codes/regenerate` | Bearer (2FA terverifikasi) | Membuat ulang seluruh kode cadangan; yang lama, terpakai atau tidak, tak berlaku lagi | 200 `{kode_cadangan}` | 401, 403, 422 | [M-01](../02-modules/m01-auth.md) |
-| POST | `/auth/2fa/enroll/confirm` | Bearer | Konfirmasi pendaftaran dengan kode 6 digit; 2FA berlaku dan sesi ini naik ke `amr` `["pwd","otp"]`. Terjangkau oleh sesi yang belum lolos 2FA | 200 `{access_token}` (null pada WEB) | 400, 401, 422 | [M-01](../02-modules/m01-auth.md) |
-| POST | `/auth/2fa/enroll` | Bearer | Mulai pendaftaran 2FA: secret TOTP, URI `otpauth://`, dan 10 kode cadangan — tampil **satu kali**. Terjangkau oleh sesi yang belum lolos 2FA | 200 `{secret, otpauth_uri, kode_cadangan}` | 401, 422 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/2fa/enroll/confirm` | Bearer | Konfirmasi pendaftaran dengan kode 6 digit; 2FA berlaku dan sesi ini naik ke `amr` `["pwd","otp"]`. Terjangkau oleh sesi yang belum lolos 2FA. Mencabut seluruh sesi lain pemilik akun (`BR-070e`) | 200 `{access_token}` (null pada WEB) | 400, 401, 422 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/2fa/enroll` | Bearer | Mulai pendaftaran 2FA: secret TOTP, URI `otpauth://`, dan 10 kode cadangan — tampil **satu kali**. Terjangkau oleh sesi yang belum lolos 2FA. Role wajib 2FA: body memuat `kode_aktivasi` (`BR-070d`) | 200 `{secret, otpauth_uri, kode_cadangan}` | 401, 422 | [M-01](../02-modules/m01-auth.md) |
 | POST | `/auth/2fa/verify` | Challenge token | Verifikasi faktor kedua — kode TOTP 6 digit atau kode cadangan — dengan challenge token dari login; menerbitkan sesi | 200 `{tokens, expires_in, user, permissions, sisa_kode_cadangan, kode_cadangan_menipis}` (`tokens` null pada WEB) | 400, 401, 423 | [M-01](../02-modules/m01-auth.md) |
 | POST | `/auth/login` | Publik | Login email + password + `platform` (`WEB`, `ANDROID`, `IOS`) | 200 `{tokens, expires_in, user, permissions}` (`tokens` null pada WEB: token hanya di cookie httpOnly) atau `{requires_2fa, challenge_token, expires_in}` (akun ber-2FA: sesi belum terbit) | 400, 401, 403, 429 | [M-01](../02-modules/m01-auth.md) |
 | POST | `/auth/logout-all` | Bearer | Keluar dari semua perangkat: mencabut seluruh sesi pengguna | 204 | 401 | [M-01](../02-modules/m01-auth.md) |
@@ -141,7 +141,8 @@
 | POST | `/reservations/{id}/cancel` | `reservation.cancel_own` · `reservation.cancel_any` | Batalkan reservasi + alasan. Pemilik reservasi cukup `cancel_own`; membatalkan reservasi pihak lain wajib `cancel_any` (`FR-07.3 A2`). Kepemilikan diperiksa di server, bukan disimpulkan dari role | [M-07](../02-modules/m07-reservation-room.md) |
 | POST | `/reservations` | `reservation.create` | Ajukan reservasi ruangan/aset | [M-07](../02-modules/m07-reservation-room.md) |
 | POST | `/users/import` | `user.create` | Impor massal CSV/XLSX: ≤ 200 baris diproses sinkron, lebih dari itu asinkron (`IMPT-04`); berkas identik dalam 24 jam mengembalikan hasil sebelumnya (`IMPT-03`) | [M-02](../02-modules/m02-users.md) |
-| POST | `/users/{id}/reset-2fa` | `user.reset_2fa` | Reset 2FA pengguna | [M-02](../02-modules/m02-users.md) |
+| POST | `/users/{id}/2fa-activation-code` | `user.reset_2fa` | Terbitkan kode aktivasi 2FA bagi akun role wajib yang belum ber-2FA (`FR-01.5 A7`, `BR-070d`); `metode_verifikasi` wajib; kode tampil satu kali; tidak untuk akun sendiri | [M-02](../02-modules/m02-users.md) |
+| POST | `/users/{id}/reset-2fa` | `user.reset_2fa` | Reset 2FA pengguna (`FR-01.5 A3`): menonaktifkan 2FA, menghapus kode cadangan, mencabut seluruh sesi; `metode_verifikasi` wajib; untuk role wajib 2FA menerbitkan kode aktivasi baru, tampil satu kali (`BR-070d`) | [M-02](../02-modules/m02-users.md) |
 | POST | `/users/{id}/reset-password` | `user.reset_password` | Terbitkan password sementara langsung dari detail pengguna (`FR-01.3 A5`); `metode_verifikasi` wajib; password tampil satu kali; sesi dicabut dan kunci login dibuka. Logikanya milik M-01 | [M-02](../02-modules/m02-users.md) |
 | POST | `/users` | `user.create` | Buat pengguna baru | [M-02](../02-modules/m02-users.md) |
 | POST | `/work-orders/{id}/complete` | `workorder.execute` | Ajukan penyelesaian | [M-12](../02-modules/m12-maintenance.md) |
