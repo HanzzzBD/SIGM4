@@ -151,14 +151,14 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 - [ ] Uji: lulusan yang tahun ajarannya berakhir dinonaktifkan tanpa permintaan HTTP; menjalankan ulang tidak menghasilkan apa pun (`JOB-03`)
 
 ### `PR-02-33` — Kode aktivasi 2FA dan reset 2FA (M-02)
-- [ ] Migration `expand` (`totp_activation_codes`: `user_id`, `code_hash` Argon2id, `issued_by`, `expires_at`, `failed_attempts`, `consumed_at`; satu baris aktif per akun) — `SDD-SESS-17`; `down` teruji
-- [ ] Logika di M-01 (`ActivationCodeService`), dipanggil M-02 lewat injeksi di composition root (pola `PenerbitPasswordSementara`, keputusan 26 log phase-02) — modul tak mengimpor internal modul lain (`SDD-SYS-03`)
-- [ ] `POST /users/{id}/2fa-activation-code` (`user.reset_2fa`): `metode_verifikasi` wajib; target role wajib 2FA (R-01/R-03) yang belum ber-2FA; **bukan akun sendiri**; kode menggantikan yang lama, tampil satu kali, `Cache-Control: no-store`; `TWO_FA_ACTIVATION_CODE_ISSUED` tanpa nilai kode
-- [ ] `POST /users/{id}/reset-2fa` (`user.reset_2fa`): nonaktifkan 2FA (secret, `totp_enabled_at`, `totp_last_step`), hapus kode cadangan, cabut seluruh sesi target (`revoke_reason = two_fa_reset`, `SessionRevoked` per sesi), role wajib → terbitkan kode aktivasi baru; `metode_verifikasi` wajib; `TWO_FA_RESET`
-- [ ] `POST /auth/2fa/enroll`: role wajib 2FA menuntut `kode_aktivasi`; salah/kedaluwarsa/hangus dijawab seragam (`422`); 5 salah menghanguskan kode **tanpa** mengunci akun; `TWO_FA_ACTIVATION_CODE_REJECTED`; `enroll/confirm` yang berhasil menghabiskan kode
-- [ ] Uji penolakan: tanpa `user.reset_2fa` → `403`; role opsional tetap mendaftar dengan password saja (`BR-070d` hanya role wajib); penerbit untuk akun sendiri → ditolak; kode tidak muncul di log, respons ulang, maupun kolom; uji-mutasi pada pemeriksaan kode dan pencabutan sesi
-- [ ] Sesuaikan uji `auth-two-factor.test.ts` (`enroll` R-01/R-03 kini butuh kode) dan helper `loginDuaFaktor`; OpenAPI diperbarui
-- [ ] Catat di log phase-02: menonaktifkan 2FA sendiri bagi role opsional (`TWO_FA_DISABLED`) **bukan** bagian PR ini dan masih tanpa PR pemilik
+- [x] Migration `expand` (`totp_activation_codes`: `user_id`, `code_hash` Argon2id, `issued_by`, `expires_at`, `failed_attempts`, `consumed_at`; satu baris aktif per akun) — `SDD-SESS-17`; `down` teruji
+- [x] Logika di M-01 (`ActivationCodeService`), dipanggil M-02 lewat injeksi di composition root (pola `PenerbitPasswordSementara`, keputusan 26 log phase-02) — modul tak mengimpor internal modul lain (`SDD-SYS-03`)
+- [x] `POST /users/{id}/2fa-activation-code` (`user.reset_2fa`): `metode_verifikasi` wajib; target role wajib 2FA (R-01/R-03) yang belum ber-2FA; **bukan akun sendiri**; kode menggantikan yang lama, tampil satu kali, `Cache-Control: no-store`; `TWO_FA_ACTIVATION_CODE_ISSUED` tanpa nilai kode
+- [x] `POST /users/{id}/reset-2fa` (`user.reset_2fa`): nonaktifkan 2FA (secret, `totp_enabled_at`, `totp_last_step`), hapus kode cadangan, cabut seluruh sesi target (`revoke_reason = two_fa_reset`, `SessionRevoked` per sesi), role wajib → terbitkan kode aktivasi baru; `metode_verifikasi` wajib; `TWO_FA_RESET`
+- [x] `POST /auth/2fa/enroll`: role wajib 2FA menuntut `kode_aktivasi`; salah/kedaluwarsa/hangus dijawab seragam (`422`); 5 salah menghanguskan kode **tanpa** mengunci akun; `TWO_FA_ACTIVATION_CODE_REJECTED`; `enroll/confirm` yang berhasil menghabiskan kode
+- [x] Uji penolakan: tanpa `user.reset_2fa` → `403`; role opsional tetap mendaftar dengan password saja (`BR-070d` hanya role wajib); penerbit untuk akun sendiri → ditolak; kode tidak muncul di log, respons ulang, maupun kolom; uji-mutasi pada pemeriksaan kode dan pencabutan sesi
+- [x] Sesuaikan uji `auth-two-factor.test.ts` (`enroll` R-01/R-03 kini butuh kode) dan helper `loginDuaFaktor`; OpenAPI diperbarui
+- [x] Catat di log phase-02: menonaktifkan 2FA sendiri bagi role opsional (`TWO_FA_DISABLED`) **bukan** bagian PR ini dan masih tanpa PR pemilik
 
 ### `PR-02-02` — Login & sesi
 - [ ] Ed25519 keypair + `kid` pada header JWT (`SDD-SESS-03`)

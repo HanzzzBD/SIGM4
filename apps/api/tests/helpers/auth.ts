@@ -14,10 +14,12 @@ import {
     JwtKeys,
     KotakRahasia,
     bangkitkanKodeCadangan,
+    bangkitkanKodeTunggal,
     bangkitkanSecretTotp,
     hashPassword,
     kodeTotp,
     langkahTotp,
+    tampilkanKodeCadangan,
 } from "../../src/shared/security/index.js";
 
 export interface PasanganPem {
@@ -116,12 +118,45 @@ export async function daftarkanTotpUji(db: Kysely<Database>, userId: number | st
     return { secret, kodeCadangan };
 }
 
+/**
+ * Menerbitkan kode aktivasi 2FA (BR-070d) lewat basis data, seperti Administrator/CLI tanpa melalui endpoint
+ * penerbit: prasyarat bagi uji yang mendaftarkan 2FA akun role wajib. Mengembalikan kode dalam bentuk tampil.
+ */
+export async function terbitkanKodeAktivasiUji(
+    db: Kysely<Database>,
+    userId: number | string,
+    sekarang: Date,
+    opsi: { readonly berlakuMs?: number; readonly gagal?: number } = {},
+): Promise<string> {
+    const normal = bangkitkanKodeTunggal();
+    await db.deleteFrom("totp_activation_codes").where("user_id", "=", String(userId)).where("consumed_at", "is", null).execute();
+    await db
+        .insertInto("totp_activation_codes")
+        .values({
+            user_id: String(userId),
+            code_hash: await hashPassword(normal),
+            issued_by: null,
+            metode_verifikasi: null,
+            issued_at: sekarang,
+            expires_at: new Date(sekarang.getTime() + (opsi.berlakuMs ?? 72 * 3600_000)),
+            failed_attempts: opsi.gagal ?? 0,
+        })
+        .execute();
+    return tampilkanKodeCadangan(normal);
+}
+
 /** Kode TOTP yang berlaku pada `sekarang` (langkah ke-`geser` dari langkah saat ini). */
 export function kodeTotpUji(secret: Buffer, sekarang: Date, geser = 0): string {
     return kodeTotp(secret, langkahTotp(sekarang) + geser);
 }
 
 /** Pintu reset password langsung yang tak dipakai: uji yang membangun `usersRouter` sendiri tidak menyentuhnya. */
+/** Pengelola 2FA pengguna lain yang tak dipakai: uji yang membangun `usersRouter` sendiri tidak menyentuhnya. */
+export const pengelolaPalsu: UsersModuleDeps["pengelolaDuaFaktor"] = {
+    terbitkanKodeAktivasi: () => Promise.reject(new Error("pengelolaPalsu: tidak boleh dipanggil")),
+    reset: () => Promise.reject(new Error("pengelolaPalsu: tidak boleh dipanggil")),
+};
+
 export const penerbitPalsu: UsersModuleDeps["penerbitPassword"] = {
     terbitkanLangsung: () => Promise.reject(new Error("penerbitPalsu: tidak boleh dipanggil")),
 };

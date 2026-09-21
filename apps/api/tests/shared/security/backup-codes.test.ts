@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
     JUMLAH_KODE_CADANGAN,
     bangkitkanKodeCadangan,
+    bangkitkanKodeTunggal,
     normalisasiKodeCadangan,
     tampilkanKodeCadangan,
 } from "../../../src/shared/security/index.js";
@@ -20,6 +21,15 @@ describe("bangkitkanKodeCadangan", () => {
     it("dua pembangkitan tidak menghasilkan kode yang sama", () => {
         const a = new Set(bangkitkanKodeCadangan());
         expect(bangkitkanKodeCadangan().some((k) => a.has(k))).toBe(false);
+    });
+});
+
+describe("bangkitkanKodeTunggal — kode aktivasi 2FA (BR-070d)", () => {
+    it("satu kode 10 karakter dengan alfabet yang sama dengan kode cadangan; tampil/normalisasinya bolak-balik", () => {
+        const kode = bangkitkanKodeTunggal();
+        expect(kode).toMatch(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{10}$/);
+        expect(normalisasiKodeCadangan(tampilkanKodeCadangan(kode))).toBe(kode);
+        expect(bangkitkanKodeTunggal()).not.toBe(kode);
     });
 });
 

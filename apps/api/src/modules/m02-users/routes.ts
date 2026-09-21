@@ -18,6 +18,7 @@ import {
     updateUserStatusHandler,
 } from "./controllers/user.controller.js";
 import { classPromotionHandler } from "./controllers/class-promotion.controller.js";
+import { resetDuaFaktorHandler, terbitkanKodeAktivasiHandler } from "./controllers/dua-faktor.controller.js";
 import { resetPasswordHandler } from "./controllers/reset-password.controller.js";
 import {
     getUserImportHandler,
@@ -35,7 +36,10 @@ import {
 import {
     CreateUserBodySchema,
     CreatedUserResponseSchema,
+    KelolaDuaFaktorBodySchema,
+    KodeAktivasiResponseSchema,
     ListUsersResponseSchema,
+    ResetDuaFaktorResponseSchema,
     ResetPasswordBodySchema,
     ResetPasswordResponseSchema,
     SingleUserResponseSchema,
@@ -149,6 +153,60 @@ export interface PenerbitPasswordSementara {
 }
 
 /**
+ * FR-01.5 A3 dari detail pengguna (P-63): reset 2FA pengguna lain. `metode_verifikasi` wajib; 2FA dilepas, kode
+ * cadangan dihapus, SELURUH sesi sasaran dicabut, dan bagi role wajib 2FA terbit kode aktivasi baru (tampil satu
+ * kali, BR-070d). Bukan akun sendiri; yang direset harus sedang ber-2FA. Logikanya milik M-01 (disuntikkan).
+ */
+export const resetUserDuaFaktorRoute = defineRoute({
+    method: "POST",
+    path: "/users/:id/reset-2fa",
+    permission: "user.reset_2fa",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Reset 2FA pengguna: cabut seluruh sesi; role wajib menerima kode aktivasi baru (tampil satu kali)",
+    successStatus: 200,
+    params: UserIdParamSchema,
+    body: KelolaDuaFaktorBodySchema,
+    response: ResetDuaFaktorResponseSchema,
+});
+
+/**
+ * FR-01.5 A7 (BR-070d): menerbitkan kode aktivasi 2FA bagi akun AKTIF role wajib yang belum ber-2FA. Permission yang
+ * sama dengan reset 2FA (`user.reset_2fa`, tanpa permission baru). Bukan akun sendiri; menggantikan kode sebelumnya.
+ */
+export const terbitkanKodeAktivasiRoute = defineRoute({
+    method: "POST",
+    path: "/users/:id/2fa-activation-code",
+    permission: "user.reset_2fa",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Terbitkan kode aktivasi 2FA bagi akun role wajib yang belum ber-2FA (tampil satu kali)",
+    successStatus: 200,
+    params: UserIdParamSchema,
+    body: KelolaDuaFaktorBodySchema,
+    response: KodeAktivasiResponseSchema,
+});
+
+/**
+ * Pintu M-01 untuk mengelola 2FA pengguna lain. Bentuknya didefinisikan di sini (pemakai) dan dipenuhi secara
+ * struktural oleh `buatPengelolaDuaFaktor` (m01-auth) — modul ini tidak mengimpor m01.
+ */
+export interface PengelolaDuaFaktor {
+    terbitkanKodeAktivasi(
+        ctx: AuthContext,
+        userId: string,
+        metode: "KARTU_IDENTITAS_TATAP_MUKA" | "KONFIRMASI_ATASAN_ATAU_WALI_KELAS",
+        klien: { readonly ip: string | undefined; readonly userAgent: string | undefined },
+    ): Promise<{ kode: string; berlakuSampai: Date }>;
+    reset(
+        ctx: AuthContext,
+        userId: string,
+        metode: "KARTU_IDENTITAS_TATAP_MUKA" | "KONFIRMASI_ATASAN_ATAU_WALI_KELAS",
+        klien: { readonly ip: string | undefined; readonly userAgent: string | undefined },
+    ): Promise<{ sesiDicabut: number; kodeAktivasi: { kode: string; berlakuSampai: Date } | null }>;
+}
+
+/**
  * IMPT-03/04: ≤ 200 baris diproses sinkron (200), lebih dari itu dijadwalkan ke
  * worker (202); berkas identik dalam 24 jam mengembalikan pekerjaan sebelumnya.
  */
@@ -225,6 +283,8 @@ export interface UsersModuleDeps {
     readonly clock?: Clock;
     /** Reset password langsung (`POST /users/{id}/reset-password`); dipenuhi M-01 lewat composition root. */
     readonly penerbitPassword: PenerbitPasswordSementara;
+    /** Reset 2FA dan kode aktivasi 2FA (`PR-02-33`); dipenuhi M-01 lewat composition root. */
+    readonly pengelolaDuaFaktor: PengelolaDuaFaktor;
 }
 
 /**
@@ -291,6 +351,18 @@ export function usersRouter(
         batasi(resetUserPasswordRoute),
         otorisasi(resetUserPasswordRoute.permission),
         resetPasswordHandler(deps.penerbitPassword),
+    );
+    router.post(
+        resetUserDuaFaktorRoute.path,
+        batasi(resetUserDuaFaktorRoute),
+        otorisasi(resetUserDuaFaktorRoute.permission),
+        resetDuaFaktorHandler(deps.pengelolaDuaFaktor),
+    );
+    router.post(
+        terbitkanKodeAktivasiRoute.path,
+        batasi(terbitkanKodeAktivasiRoute),
+        otorisasi(terbitkanKodeAktivasiRoute.permission),
+        terbitkanKodeAktivasiHandler(deps.pengelolaDuaFaktor),
     );
     router.post(
         importUsersRoute.path,

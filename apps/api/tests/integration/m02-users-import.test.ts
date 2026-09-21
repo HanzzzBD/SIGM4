@@ -22,7 +22,7 @@ import { FixedClock } from "../../src/shared/clock/index.js";
 import { getDb } from "../../src/shared/db/index.js";
 import { Logger } from "../../src/shared/observability/index.js";
 import { dbmate, kueri } from "../helpers/db.js";
-import { penerbitPalsu } from "../helpers/auth.js";
+import { penerbitPalsu, pengelolaPalsu } from "../helpers/auth.js";
 
 const ADA_DB = process.env["DATABASE_URL"] !== undefined;
 
@@ -125,7 +125,7 @@ describe.skipIf(!ADA_DB)("PR-01-03 — impor massal pengguna (acceptance)", () =
             usersRouter(
                 {
                     db: getDb(),
-                    penerbitPassword: penerbitPalsu,
+                    penerbitPassword: penerbitPalsu, pengelolaDuaFaktor: pengelolaPalsu,
                     auditLogger: new AuditLogger({
                         clock: new FixedClock(new Date("2026-09-16T00:00:00Z")),
                     }),
@@ -477,7 +477,7 @@ describe.skipIf(!ADA_DB)("PR-01-03 — impor massal pengguna (acceptance)", () =
             usersRouter(
                 {
                     db: getDb(),
-                    penerbitPassword: penerbitPalsu,
+                    penerbitPassword: penerbitPalsu, pengelolaDuaFaktor: pengelolaPalsu,
                     auditLogger: new AuditLogger({
                         clock: new FixedClock(new Date("2026-09-16T00:00:00Z")),
                     }),

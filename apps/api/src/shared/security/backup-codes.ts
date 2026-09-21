@@ -18,6 +18,14 @@ function bangkitkanSatu(): string {
     return kode;
 }
 
+/**
+ * SATU kode acak dalam bentuk normal, bentuk yang sama dengan kode cadangan. Dipakai kode aktivasi 2FA
+ * (`BR-070d`): panjang dan alfabetnya sama, jadi `tampilkanKodeCadangan` dan `normalisasiKodeCadangan` berlaku pula.
+ */
+export function bangkitkanKodeTunggal(): string {
+    return bangkitkanSatu();
+}
+
 /** Bentuk tampilan `XXXXX-XXXXX`. */
 export function tampilkanKodeCadangan(kode: string): string {
     return `${kode.slice(0, PANJANG / 2)}-${kode.slice(PANJANG / 2)}`;

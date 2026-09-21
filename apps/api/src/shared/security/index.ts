@@ -27,6 +27,7 @@ export {
     AMBANG_KODE_CADANGAN_MENIPIS,
     JUMLAH_KODE_CADANGAN,
     bangkitkanKodeCadangan,
+    bangkitkanKodeTunggal,
     normalisasiKodeCadangan,
     tampilkanKodeCadangan,
 } from "./backup-codes.js";

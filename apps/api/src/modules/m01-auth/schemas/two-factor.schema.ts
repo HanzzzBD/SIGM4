@@ -3,6 +3,14 @@
 
 import { z } from "zod";
 
+/**
+ * `POST /auth/2fa/enroll`. `kode_aktivasi` wajib bagi role wajib 2FA (`BR-070d`) dan diabaikan bagi role lain. Sengaja
+ * TIDAK divalidasi bentuknya di sini: kode yang bentuknya salah dijawab sama dengan kode yang salah (`FR-01.5 A5`).
+ */
+export const EnrollBodySchema = z.object({
+    kode_aktivasi: z.string().max(64).optional(),
+});
+
 /** Yang ditampilkan SATU kali (BR-070c): secret untuk pendaftaran manual, URI untuk QR, 10 kode cadangan. */
 export const EnrollResponseSchema = z.object({
     success: z.literal(true),

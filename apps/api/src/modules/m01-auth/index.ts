@@ -1,11 +1,12 @@
 // Permukaan publik m01-auth (SDD-SYS-03). Hanya berkas ini yang boleh diimpor modul
 // lain / entrypoint `api/` — `repositories/`, `controllers/`, dan `services/` privat.
-export type { AuthModuleDeps, PenerbitPasswordSementara } from "./routes.js";
+export type { AuthModuleDeps, PenerbitPasswordSementara, PengelolaDuaFaktor } from "./routes.js";
 export type { PenyimpanTantangan } from "./services/tantangan-dua-faktor.js";
 export { PenyimpanTantanganRedis } from "./services/tantangan-dua-faktor.js";
 export {
     authRouter,
     buatPenerbitPasswordSementara,
+    buatPengelolaDuaFaktor,
     cabutSesiRoute,
     enrollDuaFaktorRoute,
     forgotPasswordRoute,

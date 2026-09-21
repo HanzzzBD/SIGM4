@@ -329,6 +329,24 @@ export interface RefreshTokensTable {
  * `totp_backup_codes` (0024, PR-02-07). Kode cadangan 2FA: hanya hash Argon2id yang disimpan
  * (`BR-070c`); `used_at` mengunci pemakaian satu kali (FR-01.5 AC).
  */
+/**
+ * `totp_activation_codes` (0025, PR-02-33). Kode aktivasi 2FA (`BR-070d`): hanya hash Argon2id; satu baris aktif
+ * per akun; `verified_at` = dicocokkan pada `enroll`, `consumed_at` = dihabiskan `enroll/confirm`.
+ */
+export interface TotpActivationCodesTable {
+    id: Generated<string>;
+    user_id: ColumnType<string, string | number, never>;
+    code_hash: ColumnType<string, string, never>;
+    /** NULL bila diterbitkan CLI (`SYSTEM:CLI`, `PR-02-08`). */
+    issued_by: ColumnType<string | null, string | number | null | undefined, never>;
+    metode_verifikasi: ColumnType<"KARTU_IDENTITAS_TATAP_MUKA" | "KONFIRMASI_ATASAN_ATAU_WALI_KELAS" | null, string | null | undefined, never>;
+    issued_at: ColumnType<Date, Date, never>;
+    expires_at: ColumnType<Date, Date, never>;
+    failed_attempts: ColumnType<number, number | undefined, number>;
+    verified_at: ColumnType<Date | null, never, Date | null>;
+    consumed_at: ColumnType<Date | null, never, Date | null>;
+}
+
 export interface TotpBackupCodesTable {
     id: Generated<string>;
     user_id: ColumnType<string, string | number, never>;
@@ -433,4 +451,5 @@ export interface Database {
     refresh_tokens: RefreshTokensTable;
     password_reset_requests: PasswordResetRequestsTable;
     totp_backup_codes: TotpBackupCodesTable;
+    totp_activation_codes: TotpActivationCodesTable;
 }

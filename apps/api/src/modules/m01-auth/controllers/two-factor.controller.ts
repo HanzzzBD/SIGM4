@@ -13,7 +13,7 @@ import {
 } from "../../../shared/auth/index.js";
 import { AuthError } from "../../../shared/errors/index.js";
 import { ACCESS_TOKEN_TTL_DETIK } from "../../../shared/security/index.js";
-import { EnrollConfirmBodySchema } from "../schemas/two-factor.schema.js";
+import { EnrollBodySchema, EnrollConfirmBodySchema } from "../schemas/two-factor.schema.js";
 import type { KlienPermintaan } from "../services/klien.js";
 import type { TwoFactorService } from "../services/two-factor.service.js";
 
@@ -35,7 +35,8 @@ function viaCookie(req: Request): boolean {
 /** Respons memuat rahasia yang hanya tampil sekali (BR-070c): tidak boleh di-cache. */
 export function enrollHandler(service: TwoFactorService): RequestHandler {
     return async (req, res) => {
-        const hasil = await service.mulaiPendaftaran(requireAuthContext(res), klienDari(req));
+        const body = EnrollBodySchema.parse(req.body ?? {});
+        const hasil = await service.mulaiPendaftaran(requireAuthContext(res), body.kode_aktivasi, klienDari(req));
         res.setHeader("Cache-Control", "no-store");
         res.status(200).json({
             success: true,

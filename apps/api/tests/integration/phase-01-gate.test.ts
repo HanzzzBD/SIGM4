@@ -32,7 +32,7 @@ import { closeRedis, createRedis, readRedisConfig } from "../../src/shared/cache
 import { FixedClock } from "../../src/shared/clock/index.js";
 import { getDb } from "../../src/shared/db/index.js";
 import { HealthRegistry, Logger } from "../../src/shared/observability/index.js";
-import { authPalsu } from "../helpers/auth.js";
+import { authPalsu, daftarkanTotpUji } from "../helpers/auth.js";
 import { dbmate, kueri } from "../helpers/db.js";
 
 const ADA = process.env["DATABASE_URL"] !== undefined && process.env["REDIS_URL"] !== undefined;
@@ -404,6 +404,12 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await langkah("PUT /users/:id", `/users/${idUser(guru)}`, { nama: "Guru Gerbang B", email: emailUnik(), nip_nis: nipUnik(), role_id: Number(roleGuru?.id) }, ["USER_UPDATED"]);
                 // PR-02-05: reset langsung (M-02) — sebelum akunnya dinonaktifkan di bawah, sebab akun nonaktif tak dapat direset.
                 await langkah("POST /users/:id/reset-password", `/users/${idUser(guru)}/reset-password`, { metode_verifikasi: "KARTU_IDENTITAS_TATAP_MUKA" }, ["PASSWORD_RESET_ISSUED"]);
+                // PR-02-33: kode aktivasi 2FA (role wajib yang belum ber-2FA) lalu reset 2FA (setelah 2FA aktif) — M-02.
+                const [roleWajib2fa] = await kueri<{ id: string }>("SELECT id::text FROM roles WHERE kode = 'R-03'");
+                const pimpinan = await langkah("POST /users", "/users", { nama: "Pimpinan Gerbang", email: emailUnik(), nip_nis: nipUnik(), role_id: Number(roleWajib2fa?.id) }, ["USER_CREATED"]);
+                await langkah("POST /users/:id/2fa-activation-code", `/users/${idUser(pimpinan)}/2fa-activation-code`, { metode_verifikasi: "KARTU_IDENTITAS_TATAP_MUKA" }, ["TWO_FA_ACTIVATION_CODE_ISSUED"]);
+                await daftarkanTotpUji(getDb(), idUser(pimpinan), new Date());
+                await langkah("POST /users/:id/reset-2fa", `/users/${idUser(pimpinan)}/reset-2fa`, { metode_verifikasi: "KARTU_IDENTITAS_TATAP_MUKA" }, ["TWO_FA_RESET"]);
                 await langkah("PATCH /users/:id/status", `/users/${idUser(guru)}/status`, { status: "NONAKTIF", alasan: "Uji gerbang" }, ["USER_DEACTIVATED"]);
                 await panggil(mode, "PATCH", `/users/${idUser(guru)}/status`, { status: "AKTIF" });
                 expect(await jumlah("USER_REACTIVATED")).toBeGreaterThanOrEqual(1);
@@ -456,6 +462,8 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await kueri("DELETE FROM work_units");
                 await lepasPelaku();
                 await kueri("DELETE FROM password_reset_requests"); // PR-02-05: reset langsung mencatat permintaan
+                await kueri("DELETE FROM totp_activation_codes"); // PR-02-33: kode aktivasi menunjuk users
+                await kueri("DELETE FROM totp_backup_codes");
                 await kueri("DELETE FROM users");
             }
         }, 120_000);
