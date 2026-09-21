@@ -114,7 +114,7 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | `PR-02-05` | Lupa & reset password administratif (password sementara sekali tampil) | M | M | 02 | `FR-01.3`, `NT-37`, `NT-38` | Respons seragam untuk email ada/tidak ada; metode verifikasi wajib; password sementara tak pernah tersimpan/tercatat; kedaluwarsa 72 jam *(rencana semula: "token sekali pakai" dan `NT-41` — keliru, koreksi keputusan 21 [log phase-02](../logs/phase-02.md))* |
 | `PR-02-06` | Ganti password + kelola profil + pencabutan sesi lain | S | S | 04 | `FR-01.4` | Ganti password mencabut sesi lain; foto profil menunggu `users.foto_file_id` dari `PR-03-04` (keputusan 4 log phase-01) |
 | `PR-02-07` | 2FA TOTP: pendaftaran, verifikasi, kode pemulihan | L | L | 02 | `FR-01.5`, `BR-070` `BR-070c`, `SDD-SESS-08/09` | Role sensitif tidak dapat melewati 2FA; `TOTP_ENCRYPTION_KEY` masuk skema `shared/config` (`SDD-SYS-14`) |
-| `PR-02-08` | Break-glass CLI + jejak audit wajib | M | M | 07 | `FR-01.6`, `BR-070b` | Setiap pemakaian menghasilkan alarm & entri log |
+| `PR-02-08` | Break-glass CLI + CLI penerbit kode aktivasi 2FA + jejak audit wajib | M | M | 07, 33 | `FR-01.6`, `BR-070b`, `FR-01.5 A6`, `BR-070d`, `SDD-SESS-11/17` | Setiap pemakaian menghasilkan alarm & entri log; `admin:activation-code` hanya menerbitkan kode bagi akun role wajib yang belum ber-2FA, tercatat `TWO_FA_ACTIVATION_CODE_ISSUED` pelaku `SYSTEM:CLI`; `TOTP_ENCRYPTION_KEY` masuk skema worker |
 | `PR-02-09` | **Pensiun** — dipindah ke `PR-01-15` (keputusan 63, [log phase-00 §2](../logs/phase-00.md)); nomornya tidak dipakai ulang | — | — | — | — | — |
 | `PR-02-10` | Skema `assets`, `asset_categories`, `asset_condition_history` | M | M | Ph01 | `FR-04.1`, `SDD-DB-04` | `procurement_id` ada, nullable, tanpa FK aktif ke M-14 |
 | `PR-02-11` | Pendaftaran aset + penomoran + validasi kategori | M | L | 10 | `FR-04.1`, `BR-001` … `BR-004` | Nomor aset unik di bawah beban paralel |
@@ -139,6 +139,7 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | `PR-02-30` | Kerangka aplikasi web: routing, state, render berbasis permission | L | L | Ph01 | `SDD-FE-01` … `SDD-FE-06`, `SDD-FE-11/12`, **UXD-12** | TanStack Query + primitif headless & token sendiri; satu set token warna — tanpa mode gelap |
 | `PR-02-31` | Daftar password bocor + riwayat 3 password terakhir | M | M | 06 | `NFR-S-03a`, `FR-01.4` | Password yang cocok daftar bocor ditolak; tiga password terakhir tidak dapat dipakai ulang; sumber daftar bocor ditetapkan di PR ini |
 | `PR-02-32` | `SystemAuthContext` + memasang pekerjaan `student-graduation` *(baru, keputusan 31 log phase-01)* | M | M | 02, Ph01 | `SDD-AUTH-05`, `AL-06`, `JOB-01` … `JOB-06`, `SL-03`, `DP-10` | Pelaku `SYSTEM` hanya dapat dibentuk dari luar siklus HTTP; lulusan dinonaktifkan otomatis setelah tahun ajaran berakhir dan tercatat sebagai `SYSTEM`; menyentuh lapisan `AuthContext` — tinjauan arsitek |
+| `PR-02-33` | Kode aktivasi 2FA + reset 2FA oleh Administrator di M-02 *(baru, keputusan 46–48 log phase-02)* | L | L | 05, 07, Ph01 | `FR-01.5 A3`, `A5`, `A7`, `BR-070d`, `SDD-SESS-17`, `SDD-AUTH-05` | Akun role wajib 2FA tidak dapat menyelesaikan `enroll` tanpa kode aktivasi; kode sekali pakai, hash, 72 jam, hangus setelah 5 salah tanpa mengunci akun; reset 2FA mencabut seluruh sesi target dan menghapus kode cadangan — **tinjauan arsitek** (migration + lapisan permission) |
 
 ## 8. Task Breakdown
 
@@ -148,6 +149,16 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 - [ ] Sesuaikan repository yang menulis `updated_by` agar menerima pelaku SYSTEM tanpa mengubah perilaku pemanggil pengguna
 - [ ] Pasang pekerjaan `student-graduation` (00:10 WIB, `wibCronToUtc`) yang memanggil `GraduationService.deactivateDueGraduates` dari `PR-01-13`; entri log pelaku `SYSTEM` + ringkasan `JOB-05`
 - [ ] Uji: lulusan yang tahun ajarannya berakhir dinonaktifkan tanpa permintaan HTTP; menjalankan ulang tidak menghasilkan apa pun (`JOB-03`)
+
+### `PR-02-33` — Kode aktivasi 2FA dan reset 2FA (M-02)
+- [ ] Migration `expand` (`totp_activation_codes`: `user_id`, `code_hash` Argon2id, `issued_by`, `expires_at`, `failed_attempts`, `consumed_at`; satu baris aktif per akun) — `SDD-SESS-17`; `down` teruji
+- [ ] Logika di M-01 (`ActivationCodeService`), dipanggil M-02 lewat injeksi di composition root (pola `PenerbitPasswordSementara`, keputusan 26 log phase-02) — modul tak mengimpor internal modul lain (`SDD-SYS-03`)
+- [ ] `POST /users/{id}/2fa-activation-code` (`user.reset_2fa`): `metode_verifikasi` wajib; target role wajib 2FA (R-01/R-03) yang belum ber-2FA; **bukan akun sendiri**; kode menggantikan yang lama, tampil satu kali, `Cache-Control: no-store`; `TWO_FA_ACTIVATION_CODE_ISSUED` tanpa nilai kode
+- [ ] `POST /users/{id}/reset-2fa` (`user.reset_2fa`): nonaktifkan 2FA (secret, `totp_enabled_at`, `totp_last_step`), hapus kode cadangan, cabut seluruh sesi target (`revoke_reason = two_fa_reset`, `SessionRevoked` per sesi), role wajib → terbitkan kode aktivasi baru; `metode_verifikasi` wajib; `TWO_FA_RESET`
+- [ ] `POST /auth/2fa/enroll`: role wajib 2FA menuntut `kode_aktivasi`; salah/kedaluwarsa/hangus dijawab seragam (`422`); 5 salah menghanguskan kode **tanpa** mengunci akun; `TWO_FA_ACTIVATION_CODE_REJECTED`; `enroll/confirm` yang berhasil menghabiskan kode
+- [ ] Uji penolakan: tanpa `user.reset_2fa` → `403`; role opsional tetap mendaftar dengan password saja (`BR-070d` hanya role wajib); penerbit untuk akun sendiri → ditolak; kode tidak muncul di log, respons ulang, maupun kolom; uji-mutasi pada pemeriksaan kode dan pencabutan sesi
+- [ ] Sesuaikan uji `auth-two-factor.test.ts` (`enroll` R-01/R-03 kini butuh kode) dan helper `loginDuaFaktor`; OpenAPI diperbarui
+- [ ] Catat di log phase-02: menonaktifkan 2FA sendiri bagi role opsional (`TWO_FA_DISABLED`) **bukan** bagian PR ini dan masih tanpa PR pemilik
 
 ### `PR-02-02` — Login & sesi
 - [ ] Ed25519 keypair + `kid` pada header JWT (`SDD-SESS-03`)
