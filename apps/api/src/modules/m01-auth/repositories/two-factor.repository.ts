@@ -59,9 +59,26 @@ export class TwoFactorRepository extends BaseRepository {
             .execute();
     }
 
-    /** Sesi pemanggil kini membawa faktor kedua; refresh berikutnya menerbitkan `amr` yang memuat `otp`. */
+    /**
+     * Sesi pemanggil kini membawa faktor kedua; refresh berikutnya menerbitkan `amr` yang memuat `otp`.
+     *
+     * DUA statement, bukan satu: `refresh` yang berjalan serentak menahan kunci baris token daun dan
+     * menyisipkan token baru yang mewarisi `otp_verified = false`. Satu `UPDATE` yang menunggu kunci itu
+     * memperbarui baris lama tetapi TIDAK melihat token baru (dibuat setelah snapshot statement-nya), sehingga
+     * sesi kehilangan `otp` pada refresh berikutnya (terbukti pada PostgreSQL 15). Statement pertama menunggu
+     * kunci keluarga; statement kedua mendapat snapshot baru yang sudah memuat token hasil rotasi.
+     */
     async tandaiSesiTerverifikasi(ctx: AuthContext, familyId: string): Promise<void> {
-        await this.query(ctx)
+        const q = this.query(ctx);
+        await q
+            .selectFrom("refresh_tokens")
+            .select("id")
+            .where("family_id", "=", familyId)
+            .where("user_id", "=", String(ctx.userId))
+            .where("revoked_at", "is", null)
+            .forUpdate()
+            .execute();
+        await q
             .updateTable("refresh_tokens")
             .set({ otp_verified: true })
             .where("family_id", "=", familyId)
