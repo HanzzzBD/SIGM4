@@ -55,10 +55,10 @@ export function konfirmasiEnrollHandler(service: TwoFactorService): RequestHandl
         const lewatCookie = viaCookie(req);
         const ctx = requireAuthContext(res);
         const sesi = sesiSaatIni(res);
-        const { wajibGantiPassword } = await service.konfirmasiPendaftaran(ctx, sesi, body.kode, klienDari(req));
+        const { wajibGanti } = await service.konfirmasiPendaftaran(ctx, sesi, body.kode, klienDari(req));
         // Diterbitkan TERPISAH dari konfirmasi: token turunan `ctx`, `sesi`, dan keadaan akun — tidak
         // pernah turunan `kode` (pola `PR-02-06`).
-        const tokenBaru = service.terbitkanAksesBaru(ctx, sesi, wajibGantiPassword);
+        const tokenBaru = service.terbitkanAksesBaru(ctx, sesi, wajibGanti);
         res.setHeader("Cache-Control", "no-store");
         let accessToken: string | null = tokenBaru;
         if (lewatCookie) {

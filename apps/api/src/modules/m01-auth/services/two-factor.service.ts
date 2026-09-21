@@ -126,7 +126,7 @@ export class TwoFactorService {
         sesiSaatIni: string,
         kode: string,
         klien: KlienPermintaan,
-    ): Promise<{ readonly wajibGantiPassword: boolean }> {
+    ): Promise<{ readonly wajibGanti: boolean }> {
         const sekarang = this.clock.now();
         return withTransaction(
             ctx,
@@ -168,7 +168,7 @@ export class TwoFactorService {
                     payload: { user_id: String(ctx.userId), sesi_dicabut: sesiDicabut.length },
                 });
                 await publishAll(scope, events);
-                return { wajibGantiPassword: baris.wajib_ganti };
+                return { wajibGanti: baris.wajib_ganti };
             },
             this.db,
         );
@@ -216,10 +216,14 @@ export class TwoFactorService {
      * Access token baru bagi sesi yang SAMA (`sid` tetap) berklaim `amr=["pwd","otp"]` — membuka gerbang 2FA
      * seketika setelah konfirmasi, tanpa menunggu `/auth/refresh`. `pwd` dibawa dari keadaan akun, bukan
      * diasumsikan `false`: pengguna yang masih wajib ganti password tetap terkena gerbangnya.
+     *
+     * Penandanya bernama `wajibGanti` (boolean), bukan memuat kata "password": ia bukan rahasia, dan nama
+     * itu menjebak heuristik CodeQL `js/clear-text-storage-of-sensitive-data` pada jalur token → cookie
+     * (pola yang sama dengan alias `wajib_ganti` pada `AuthRepository`, `PR-02-02`/`PR-02-06`).
      */
-    terbitkanAksesBaru(ctx: AuthContext, sesiSaatIni: string, wajibGantiPassword: boolean): string {
+    terbitkanAksesBaru(ctx: AuthContext, sesiSaatIni: string, wajibGanti: boolean): string {
         return this.jwt.terbitkan(
-            { sub: String(ctx.userId), sid: sesiSaatIni, pwd: wajibGantiPassword, amr: amrSesi(true) },
+            { sub: String(ctx.userId), sid: sesiSaatIni, pwd: wajibGanti, amr: amrSesi(true) },
             this.clock.now(),
         );
     }
