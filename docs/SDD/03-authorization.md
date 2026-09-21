@@ -176,13 +176,15 @@ Perlu diperhatikan: `material.view` menjaga **saldo dan kartu stok**, sedangkan 
 ```
 1. authenticate          -> 401 UNAUTHENTICATED / TOKEN_EXPIRED
 2. mustChangePassword    -> 403, hanya /auth/password/change & /me yang lolos   (FR-01.3)
-3. twoFactorVerified     -> 401, bila role wajib 2FA & sesi belum terverifikasi (BR-070)
+3. twoFactorVerified     -> 403 TWO_FACTOR_REQUIRED, bila role wajib 2FA & amr tanpa otp    (BR-070)
 4. permission            -> 403 INSUFFICIENT_PERMISSION                          (PM-02)
 5. rateLimit(kelas)      -> 429                                                  (NFR-S-07)
 6. controller -> service -> repository(ctx)   -> scope                           (PM-03)
 ```
 
 Gerbang 2 dan 3 mendahului pemeriksaan permission agar pengguna berstatus `must_change_password` tidak dapat menyentuh endpoint apa pun meski permission-nya mencukupi (`FR-01.1 A4`).
+
+Gerbang 3 memeriksa klaim `amr` (`SDD-SESS-09`), dijawab `403` — bukan `401`: sesinya sah, hanya faktor keduanya belum terbukti, dan `401` akan memicu klien menukar refresh token dan berputar (`SDD-SESS-15`). Ia ditegakkan di `authenticated()` dan `authorize()`, bukan middleware global berdaftar-putih, supaya bawaannya tertutup; hanya route yang menyatakan `twoFactorExempt` — pendaftaran 2FA dan logout — yang melewatinya, dan daftarnya dikunci uji.
 
 ### 4.5 Cache permission
 

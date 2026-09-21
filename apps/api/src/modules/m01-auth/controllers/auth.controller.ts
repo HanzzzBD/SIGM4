@@ -14,7 +14,7 @@ import {
 import { AuthError } from "../../../shared/errors/index.js";
 import { REFRESH_TTL_DETIK } from "../../../shared/security/index.js";
 import type { PlatformPerangkat } from "../../../shared/security/index.js";
-import { LoginBodySchema, RefreshBodySchema } from "../schemas/auth.schema.js";
+import { LoginBodySchema, RefreshBodySchema, VerifyDuaFaktorBodySchema } from "../schemas/auth.schema.js";
 import type { AuthService } from "../services/auth.service.js";
 import type { KlienPermintaan } from "../services/klien.js";
 
@@ -52,11 +52,45 @@ function salurkanToken(
 export function loginHandler(service: AuthService): RequestHandler {
     return async (req, res) => {
         const body = LoginBodySchema.parse(req.body);
-        const sesi = await service.login(body, klienDari(req));
+        const hasil = await service.login(body, klienDari(req));
+        if (hasil.jenis === "TANTANGAN") {
+            // Sesi belum terbit: tidak ada token, tidak ada cookie — hanya challenge (FR-01.5 langkah 5).
+            res.setHeader("Cache-Control", "no-store");
+            res.status(200).json({
+                success: true,
+                data: { requires_2fa: true, challenge_token: hasil.tantanganToken, expires_in: hasil.expiresInDetik },
+                meta: null,
+            });
+            return;
+        }
+        const tokens = salurkanToken(res, hasil);
+        res.status(200).json({
+            success: true,
+            data: { tokens, expires_in: hasil.expiresInDetik, user: hasil.user, permissions: hasil.permissions },
+            meta: null,
+        });
+    };
+}
+
+/** `POST /auth/2fa/verify` (FR-01.5): langkah kedua login; jalur token per platform sama dengan login. */
+export function verifikasiDuaFaktorHandler(service: AuthService): RequestHandler {
+    return async (req, res) => {
+        const body = VerifyDuaFaktorBodySchema.parse(req.body);
+        const sesi = await service.verifikasiDuaFaktor(
+            { tantanganToken: body.challenge_token, kode: body.kode },
+            klienDari(req),
+        );
         const tokens = salurkanToken(res, sesi);
         res.status(200).json({
             success: true,
-            data: { tokens, expires_in: sesi.expiresInDetik, user: sesi.user, permissions: sesi.permissions },
+            data: {
+                tokens,
+                expires_in: sesi.expiresInDetik,
+                user: sesi.user,
+                permissions: sesi.permissions,
+                sisa_kode_cadangan: sesi.sisaKodeCadangan,
+                kode_cadangan_menipis: sesi.kodeCadanganMenipis,
+            },
             meta: null,
         });
     };

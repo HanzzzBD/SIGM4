@@ -7,6 +7,7 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import { AuthError, ForbiddenError } from "../errors/index.js";
 import type { AuthContext } from "./context.js";
+import { periksaDuaFaktor } from "./two-factor.js";
 
 const KUNCI = "authContext";
 const KUNCI_KEGAGALAN = "kegagalanAutentikasi";
@@ -21,6 +22,15 @@ export function setKegagalanAutentikasi(res: Response, alasan: KegagalanAutentik
 /** Menandai pengguna wajib mengganti password (klaim `pwd`); dibaca `gerbangGantiPassword`. */
 export function setWajibGantiPassword(res: Response, wajib: boolean): void {
     res.locals["wajibGantiPassword"] = wajib;
+}
+
+/** Klaim `amr` token yang lolos `authenticate` (`SDD-SESS-09`); dibaca gerbang 2FA dan penerbitan ulang token. */
+export function setAmr(res: Response, amr: readonly string[]): void {
+    res.locals["amr"] = amr;
+}
+
+export function getAmr(res: Response): readonly string[] | undefined {
+    return res.locals["amr"] as readonly string[] | undefined;
 }
 
 /** Id sesi (`sid` = `family_id`) dari token yang lolos `authenticate`; dasar logout dan daftar perangkat. */
@@ -58,6 +68,8 @@ export function requireAuthContext(res: Response): AuthContext {
  * `AuthContext` → `401 UNAUTHENTICATED`; ada tetapi tidak memegang permission →
  * `403 INSUFFICIENT_PERMISSION` — keduanya dilempar lewat `next(galat)` dan
  * ditangkap `errorMapper` (`SDD-06 §4.4`), sebelum controller pernah terpanggil.
+ * Role wajib 2FA yang sesinya belum terverifikasi ditolak `403 TWO_FACTOR_REQUIRED` SEBELUM
+ * permission diperiksa (`SDD-AUTH-09` gerbang 3 mendahului gerbang 4, `BR-070`).
  */
 export function authorize(permission: string): RequestHandler {
     return (_req: Request, res: Response, next: NextFunction) => {
@@ -65,6 +77,11 @@ export function authorize(permission: string): RequestHandler {
         if (ctx === undefined) {
             // Token kedaluwarsa dibedakan dari tidak ada/tidak sah agar klien tahu harus refresh.
             next(new AuthError((res.locals[KUNCI_KEGAGALAN] as KegagalanAutentikasi | undefined) ?? "UNAUTHENTICATED"));
+            return;
+        }
+        const belumDuaFaktor = periksaDuaFaktor(ctx, getAmr(res));
+        if (belumDuaFaktor !== undefined) {
+            next(belumDuaFaktor);
             return;
         }
         if (!ctx.can(permission)) {
@@ -79,11 +96,24 @@ export function authorize(permission: string): RequestHandler {
  * Menegakkan **autentikasi saja** bagi route `authenticated: true` (endpoint "Bearer", `SDD-AUTH-12`).
  * Tanpa `AuthContext` → `401` (`TOKEN_EXPIRED` bila tokennya kedaluwarsa); tidak ada permission
  * yang diperiksa karena datanya milik pemanggil sendiri — scope `own` ditegakkan repository.
+ *
+ * Gerbang 2FA (`BR-070`) berlaku juga di sini. Hanya route yang MENYATAKAN `tanpaDuaFaktor`
+ * — pendaftaran 2FA dan logout, jalan keluar sesi yang belum terverifikasi — yang melewatinya.
  */
-export function authenticated(): RequestHandler {
+export interface OpsiAutentikasi {
+    readonly tanpaDuaFaktor?: boolean;
+}
+
+export function authenticated(opsi: OpsiAutentikasi = {}): RequestHandler {
     return (_req: Request, res: Response, next: NextFunction) => {
-        if (getAuthContext(res) === undefined) {
+        const ctx = getAuthContext(res);
+        if (ctx === undefined) {
             next(new AuthError((res.locals[KUNCI_KEGAGALAN] as KegagalanAutentikasi | undefined) ?? "UNAUTHENTICATED"));
+            return;
+        }
+        const belumDuaFaktor = opsi.tanpaDuaFaktor === true ? undefined : periksaDuaFaktor(ctx, getAmr(res));
+        if (belumDuaFaktor !== undefined) {
+            next(belumDuaFaktor);
             return;
         }
         next();

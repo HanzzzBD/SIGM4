@@ -28,6 +28,7 @@ interface GuardedRoute {
     readonly permission: string;
     readonly public?: never;
     readonly authenticated?: never;
+    readonly twoFactorExempt?: never;
 }
 
 /**
@@ -39,6 +40,7 @@ interface PublicRoute {
     readonly public: true;
     readonly permission?: never;
     readonly authenticated?: never;
+    readonly twoFactorExempt?: never;
 }
 
 /**
@@ -47,9 +49,15 @@ interface PublicRoute {
  * katalog yang relevan (`PM-01`, `SDD-AUTH-12`). Deklarasinya tetap eksplisit dan saling
  * meniadakan dengan `permission`/`public`, sehingga route yang lupa memilih satu pun gagal
  * dikompilasi dan gagal saat bootstrap.
+ *
+ * `twoFactorExempt: true` membebaskan route dari gerbang 2FA (`BR-070`, `SDD-AUTH-09` gerbang 3):
+ * hanya untuk jalan keluar sesi yang BELUM terverifikasi — pendaftaran 2FA dan logout. Tanpa itu,
+ * role wajib 2FA yang baru membuktikan password ditolak `403 TWO_FACTOR_REQUIRED` di route ini.
+ * Daftarnya dikunci uji, karena setiap pengecualian adalah lubang yang disengaja.
  */
 interface AuthenticatedRoute {
     readonly authenticated: true;
+    readonly twoFactorExempt?: true;
     readonly permission?: never;
     readonly public?: never;
 }

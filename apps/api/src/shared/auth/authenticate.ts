@@ -18,7 +18,7 @@ import {
 import { JwtError } from "../security/jwt.js";
 import type { JwtKeys } from "../security/jwt.js";
 import { createAuthContext } from "./context.js";
-import { setAuthContext, setKegagalanAutentikasi, setSesiId, setWajibGantiPassword } from "./middleware.js";
+import { setAmr, setAuthContext, setKegagalanAutentikasi, setSesiId, setWajibGantiPassword } from "./middleware.js";
 import type { PermissionCache } from "./permission-cache.js";
 import { COOKIE_ACCESS, bacaCookie } from "./session-cookies.js";
 import type { SessionChecker } from "./session-store.js";
@@ -90,6 +90,8 @@ export function authenticate(deps: AuthenticateDeps): RequestHandler {
         );
         setSesiId(res, klaim.sid);
         setWajibGantiPassword(res, klaim.pwd);
+        // SDD-SESS-09: gerbang 2FA membaca KLAIM, bukan tabel.
+        setAmr(res, klaim.amr);
         // Rate limit dan log sesudah ini melihat pelakunya (SDD-OBS-03).
         const induk = konteksSaatIni() ?? { requestId: requestIdBaru(), modul: "api" };
         denganKonteks({ ...induk, userId, role: efektif.roleCode }, () => {

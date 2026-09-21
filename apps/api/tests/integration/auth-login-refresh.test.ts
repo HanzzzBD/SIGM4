@@ -18,13 +18,13 @@ import { getDb } from "../../src/shared/db/index.js";
 import { RedisRateLimiter } from "../../src/shared/http/index.js";
 import { HealthRegistry, Logger } from "../../src/shared/observability/index.js";
 import { REFRESH_TTL_DETIK, hashPassword } from "../../src/shared/security/index.js";
-import { kunciUji } from "../helpers/auth.js";
+import { duaFaktorUji, kunciUji } from "../helpers/auth.js";
 import { dbmate, kueri } from "../helpers/db.js";
 
 const ADA = process.env["DATABASE_URL"] !== undefined;
 const T0 = new Date("2026-09-19T03:00:00Z");
 const PASSWORD = "Sandi-Uji-Rahasia-1";
-const ROLE_ADMIN = "R-01"; // memegang setting.view (Lampiran C)
+const ROLE_UJI = "R-05"; // Guru: BUKAN role wajib 2FA (BR-070, sehingga login berbentuk sesi biasa) dan memegang location.view (Lampiran C)
 
 interface Balasan {
     readonly status: number;
@@ -79,7 +79,7 @@ describe.skipIf(!ADA)("PR-02-02 — login + rotasi refresh token (PostgreSQL + R
             logger: new Logger({ clock, tulis: () => undefined }),
             clock,
             db: getDb(),
-            auth: { jwtKeys: kunciUji(), permissions: new PermissionCache(getDb(), redis), sessions: new SessionStore(getDb()) },
+            auth: { jwtKeys: kunciUji(), permissions: new PermissionCache(getDb(), redis), sessions: new SessionStore(getDb()), twoFactor: duaFaktorUji(redis) },
         });
         return createServer(app);
     }
@@ -128,7 +128,7 @@ describe.skipIf(!ADA)("PR-02-02 — login + rotasi refresh token (PostgreSQL + R
         const [baris] = await kueri<{ id: string }>(`
             INSERT INTO users (nama, email, password_hash, nip_nis, role_id, status, must_change_password)
             VALUES ('Uji Login', '${email}', '${hashSandi}', 'NIPLOGIN${randomUUID().replace(/-/g, "").slice(0, 12)}',
-                    (SELECT id FROM roles WHERE kode = '${ROLE_ADMIN}'), '${opsi.status ?? "AKTIF"}', ${String(opsi.wajibGanti ?? false)})
+                    (SELECT id FROM roles WHERE kode = '${ROLE_UJI}'), '${opsi.status ?? "AKTIF"}', ${String(opsi.wajibGanti ?? false)})
             RETURNING id::text`);
         if (baris === undefined) throw new Error("Gagal menyisipkan pengguna uji");
         const id = Number(baris.id);
@@ -184,8 +184,8 @@ describe.skipIf(!ADA)("PR-02-02 — login + rotasi refresh token (PostgreSQL + R
             expect(r.json.data?.tokens?.access_token.split(".")).toHaveLength(3);
             expect(r.json.data?.tokens?.refresh_token).toMatch(/^[A-Za-z0-9_-]{43}$/);
             expect(r.json.data?.expires_in).toBe(3600);
-            expect(r.json.data?.user).toMatchObject({ id: String(id), email, role_kode: ROLE_ADMIN, must_change_password: false });
-            expect(r.json.data?.permissions?.["setting.view"]).toBe("all");
+            expect(r.json.data?.user).toMatchObject({ id: String(id), email, role_kode: ROLE_UJI, must_change_password: false });
+            expect(r.json.data?.permissions?.["location.view"]).toBe("all");
         });
 
         it("refresh_tokens: hanya SHA-256 yang tersimpan; keluarga baru; masa berlaku 30 hari; IP klien; login_terakhir_pada terisi", async () => {
@@ -215,9 +215,9 @@ describe.skipIf(!ADA)("PR-02-02 — login + rotasi refresh token (PostgreSQL + R
         it("access token dari login dipakai pada endpoint terkunci (Bearer) dan AuthContext datang dari permission efektif", async () => {
             const { email } = await seed();
             const r = await login(email);
-            const ok = await kirim(url, "/settings", undefined, { authorization: `Bearer ${r.json.data?.tokens?.access_token ?? ""}` }, "GET");
+            const ok = await kirim(url, "/locations/tree", undefined, { authorization: `Bearer ${r.json.data?.tokens?.access_token ?? ""}` }, "GET");
             expect(ok.status).toBe(200);
-            const tanpa = await kirim(url, "/settings", undefined, {}, "GET");
+            const tanpa = await kirim(url, "/locations/tree", undefined, {}, "GET");
             expect(tanpa.status).toBe(401);
         });
 
@@ -255,7 +255,7 @@ describe.skipIf(!ADA)("PR-02-02 — login + rotasi refresh token (PostgreSQL + R
         it("cookie akses dipakai pada endpoint terkunci", async () => {
             const { email } = await seed();
             const r = await login(email, "WEB");
-            const ok = await kirim(url, "/settings", undefined, { cookie: `sigm4_at=${nilaiCookie(r.cookies, "sigm4_at") ?? ""}` }, "GET");
+            const ok = await kirim(url, "/locations/tree", undefined, { cookie: `sigm4_at=${nilaiCookie(r.cookies, "sigm4_at") ?? ""}` }, "GET");
             expect(ok.status).toBe(200);
         });
 
@@ -316,13 +316,13 @@ describe.skipIf(!ADA)("PR-02-02 — login + rotasi refresh token (PostgreSQL + R
             const r = await login(email);
             expect(r.status).toBe(200);
             expect(r.json.data?.user?.must_change_password).toBe(true);
-            const gerbang = await kirim(url, "/settings", undefined, { authorization: `Bearer ${r.json.data?.tokens?.access_token ?? ""}` }, "GET");
+            const gerbang = await kirim(url, "/locations/tree", undefined, { authorization: `Bearer ${r.json.data?.tokens?.access_token ?? ""}` }, "GET");
             expect(gerbang.status).toBe(403);
             expect(gerbang.json.error?.code).toBe("PASSWORD_CHANGE_REQUIRED");
             // Refresh tetap berjalan dan mempertahankan tandanya.
             const baru = await refresh(r.json.data?.tokens?.refresh_token);
             expect(baru.status).toBe(200);
-            const masih = await kirim(url, "/settings", undefined, { authorization: `Bearer ${baru.json.data?.tokens?.access_token ?? ""}` }, "GET");
+            const masih = await kirim(url, "/locations/tree", undefined, { authorization: `Bearer ${baru.json.data?.tokens?.access_token ?? ""}` }, "GET");
             expect(masih.json.error?.code).toBe("PASSWORD_CHANGE_REQUIRED");
         });
     });
@@ -373,7 +373,7 @@ describe.skipIf(!ADA)("PR-02-02 — login + rotasi refresh token (PostgreSQL + R
             expect(lama?.revoked_at).toBeNull();
             expect(anak).toMatchObject({ parent_id: lama?.id, family_id: lama?.family_id, platform: "ANDROID", rotated_at: null, revoked_at: null });
             // Access token baru berlaku.
-            const ok = await kirim(url, "/settings", undefined, { authorization: `Bearer ${baru?.access_token ?? ""}` }, "GET");
+            const ok = await kirim(url, "/locations/tree", undefined, { authorization: `Bearer ${baru?.access_token ?? ""}` }, "GET");
             expect(ok.status).toBe(200);
         });
 
@@ -418,7 +418,7 @@ describe.skipIf(!ADA)("PR-02-02 — login + rotasi refresh token (PostgreSQL + R
             const { email } = await seed();
             const awal = await login(email, "ANDROID");
             clock.advance(2 * 3600 * 1000);
-            const kedaluwarsa = await kirim(url, "/settings", undefined, { authorization: `Bearer ${awal.json.data?.tokens?.access_token ?? ""}` }, "GET");
+            const kedaluwarsa = await kirim(url, "/locations/tree", undefined, { authorization: `Bearer ${awal.json.data?.tokens?.access_token ?? ""}` }, "GET");
             expect(kedaluwarsa.status).toBe(401);
             expect(kedaluwarsa.json.error?.code).toBe("TOKEN_EXPIRED");
             const r = await refresh(awal.json.data?.tokens?.refresh_token, { authorization: `Bearer ${awal.json.data?.tokens?.access_token ?? ""}` });
@@ -545,9 +545,9 @@ describe.skipIf(!ADA)("PR-02-02 — login + rotasi refresh token (PostgreSQL + R
             const { id, email } = await seed();
             const awal = await login(email);
             const bearer = { authorization: `Bearer ${awal.json.data?.tokens?.access_token ?? ""}` };
-            expect((await kirim(url, "/settings", undefined, bearer, "GET")).status).toBe(200);
+            expect((await kirim(url, "/locations/tree", undefined, bearer, "GET")).status).toBe(200);
             await kueri(`UPDATE users SET status = 'NONAKTIF' WHERE id = ${String(id)}`);
-            const r = await kirim(url, "/settings", undefined, bearer, "GET");
+            const r = await kirim(url, "/locations/tree", undefined, bearer, "GET");
             expect(r.status).toBe(401);
             expect(r.json.error?.code).toBe("UNAUTHENTICATED");
         });

@@ -9,6 +9,7 @@
 
 import { z } from "zod";
 import { JwtKeys } from "../security/jwt.js";
+import { KotakRahasia } from "../security/secret-box.js";
 
 export const LEVEL_LOG = ["debug", "info", "warn", "error"] as const;
 export type Level = (typeof LEVEL_LOG)[number];
@@ -124,6 +125,23 @@ const bentukJwt = {
     JWT_PUBLIC_KEY: wajib("JWT_PUBLIC_KEY"),
 };
 
+// Kunci enkripsi secret TOTP (SDD-SESS-08, SDD-16 §4.7; PR-02-07): base64 tepat 32 byte, TERPISAH
+// dari kunci JWT. Diperiksa bentuknya di sini agar salah pasang gagal saat startup, bukan saat
+// pengguna pertama mendaftar 2FA.
+const bentukTotp = {
+    TOTP_ENCRYPTION_KEY: wajib("TOTP_ENCRYPTION_KEY"),
+};
+
+function periksaKunciTotp(env: NodeJS.ProcessEnv): { masalah: string[]; kotak?: KotakRahasia } {
+    if (kosong(env["TOTP_ENCRYPTION_KEY"])) return { masalah: [] };
+    try {
+        return { masalah: [], kotak: KotakRahasia.dariBase64(env["TOTP_ENCRYPTION_KEY"]!) };
+    } catch (galat) {
+        const alasan = galat instanceof Error ? galat.message : "tidak sah";
+        return { masalah: [pesan("TOTP_ENCRYPTION_KEY", `tidak sah: ${alasan}`)] };
+    }
+}
+
 /** Memeriksa PEM dan pasangannya; galatnya menyebut NAMA variabel saja, tidak pernah isinya. */
 function periksaKunciJwt(env: NodeJS.ProcessEnv): { masalah: string[]; kunci?: JwtKeys } {
     if (kosong(env["JWT_PRIVATE_KEY"]) || kosong(env["JWT_PUBLIC_KEY"])) return { masalah: [] };
@@ -220,6 +238,8 @@ export interface ApiConfig extends ProcessConfig {
     readonly objectStoragePublicOrigin: string;
     /** Pasangan kunci Ed25519 penandatangan access token; sudah tervalidasi. */
     readonly jwtKeys: JwtKeys;
+    /** Kotak enkripsi secret TOTP (`TOTP_ENCRYPTION_KEY`); sudah tervalidasi. */
+    readonly totpKey: KotakRahasia;
 }
 
 /** Validasi startup sigm4-api: skema proses ditambah variabel yang dipakai API. */
@@ -228,6 +248,7 @@ export function readApiConfig(
     zona: string = zonaProses(),
 ): ApiConfig {
     const jwt = periksaKunciJwt(env);
+    const totp = periksaKunciTotp(env);
     const d = urai(
         z.object({
             ...bentukDatabase,
@@ -236,9 +257,10 @@ export function readApiConfig(
             ...bentukZona,
             ...bentukPenyimpananPublik,
             ...bentukJwt,
+            ...bentukTotp,
         }),
         env,
-        [...periksaZona(zona), ...jwt.masalah],
+        [...periksaZona(zona), ...jwt.masalah, ...totp.masalah],
     );
     return {
         database: {
@@ -250,5 +272,7 @@ export function readApiConfig(
         objectStoragePublicOrigin: d.S3_PUBLIC_ENDPOINT,
         // `periksaKunciJwt` tidak melaporkan masalah bila kedua variabel sah, jadi kunci ada.
         jwtKeys: jwt.kunci!,
+        // Sama: `periksaKunciTotp` hanya diam bila variabelnya sah.
+        totpKey: totp.kotak!,
     };
 }

@@ -1,6 +1,6 @@
 # Implementation Documentation — SIGM4
 
-**Status:** rencana lengkap: 9 phase · 169 pull request · 22 modul. Kemajuan aktual per phase dan PR hanya dicatat di [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md).
+**Status:** rencana lengkap: 9 phase · 170 pull request · 22 modul. Kemajuan aktual per phase dan PR hanya dicatat di [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md).
 
 ---
 
@@ -64,7 +64,7 @@ Aturan yang paling sering tergoda dilanggar: **IMPLEMENTATION menurunkan, tidak 
 |:---:|---|:---:|:---:|---|
 | [00](phases/phase-00.md) | Foundation | — | 18 | `M0` — **menutup** |
 | [01](phases/phase-01.md) | Master Data Independen | M-02 · M-03 · M-18 · M-20 | 14 | `M1` · `M5` (sebagian) |
-| [02](phases/phase-02.md) | Inti Sistem | M-01 · M-04 · M-10 · M-15 · M-17 | 30 | `M1` · `M2` · `M5` (sebagian) |
+| [02](phases/phase-02.md) | Inti Sistem | M-01 · M-04 · M-10 · M-15 · M-17 | 31 | `M1` · `M2` · `M5` (sebagian) |
 | [03](phases/phase-03.md) | Layanan Aset & Reservasi Ruangan | M-05 · M-06 · M-07 · M-11 · M-14 · M-19 | 23 | `M1` — **menutup** |
 | [04](phases/phase-04.md) | Siklus Hidup Aset | M-08 · M-12 · M-13 | 14 | `M2` — **menutup** |
 | [05](phases/phase-05.md) | Penutupan Siklus | M-09 · M-21 | 14 | `M3` & `M4` — **menutup** |

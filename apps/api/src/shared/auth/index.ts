@@ -7,14 +7,18 @@ export type { AuthContext, AuthContextInput, Scope } from "./context.js";
 export { assertAuthContext, createAuthContext } from "./context.js";
 export type { FieldPolicy } from "./fields.js";
 export { allowedFields } from "./fields.js";
+export type { OpsiAutentikasi } from "./middleware.js";
 export {
     authenticated,
     authorize,
+    getAmr,
     getAuthContext,
     getSesiId,
     requireAuthContext,
+    setAmr,
     setAuthContext,
 } from "./middleware.js";
+export { AMR_OTP, ROLE_WAJIB_DUA_FAKTOR, periksaDuaFaktor, wajibDuaFaktor } from "./two-factor.js";
 export type { SessionChecker } from "./session-store.js";
 export { SessionStore } from "./session-store.js";
 export type { EffectivePermissions } from "./permission-cache.js";

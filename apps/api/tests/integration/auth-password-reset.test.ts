@@ -21,7 +21,7 @@ import { FixedClock } from "../../src/shared/clock/index.js";
 import { getDb } from "../../src/shared/db/index.js";
 import { HealthRegistry, Logger } from "../../src/shared/observability/index.js";
 import { checkPasswordPolicy, hashPassword, verifyPassword } from "../../src/shared/security/index.js";
-import { kunciUji } from "../helpers/auth.js";
+import { duaFaktorUji, kunciUji, loginDuaFaktor } from "../helpers/auth.js";
 import { dbmate, kueri } from "../helpers/db.js";
 
 const ADA = process.env["DATABASE_URL"] !== undefined;
@@ -104,6 +104,7 @@ describe.skipIf(!ADA)("PR-02-05 — reset password administratif (PostgreSQL + R
                     jwtKeys: kunciUji(),
                     permissions: new PermissionCache(getDb(), redis),
                     sessions: new SessionStore(getDb()),
+                    twoFactor: duaFaktorUji(redis),
                 },
             }),
         );
@@ -120,6 +121,7 @@ describe.skipIf(!ADA)("PR-02-05 — reset password administratif (PostgreSQL + R
             );
             await kueri(`DELETE FROM password_reset_requests WHERE user_id IN (${daftar}) OR diproses_oleh IN (${daftar})`);
             await kueri(`DELETE FROM refresh_tokens WHERE user_id IN (${daftar})`);
+            await kueri(`DELETE FROM totp_backup_codes WHERE user_id IN (${daftar})`);
             await kueri(`DELETE FROM activity_logs WHERE modul = 'm01-auth' AND (entitas_id IN (${daftar}) OR user_id IN (${daftar}))`);
         }
         if (ipDipakai.length > 0) {
@@ -172,9 +174,14 @@ describe.skipIf(!ADA)("PR-02-05 — reset password administratif (PostgreSQL + R
         return bearerDari(r);
     }
     /** Administrator yang sudah login; token 60 menit, jadi uji yang memajukan jam memanggil ulang. */
-    async function siapkanAdmin(): Promise<{ id: number; auth: Record<string, string> }> {
+    // Administrator wajib 2FA (BR-070): sesinya harus lolos faktor kedua lewat alur sungguhan agar menjangkau `user.reset_password`.
+    async function masukAdmin(id: number, email: string): Promise<Record<string, string>> {
+        const { accessToken } = await loginDuaFaktor({ url, db: getDb(), userId: id, email, password: PASSWORD, sekarang: clock.now() });
+        return { authorization: `Bearer ${accessToken}` };
+    }
+    async function siapkanAdmin(): Promise<{ id: number; email: string; auth: Record<string, string> }> {
         const a = await seed({ role: "R-01" });
-        return { id: a.id, auth: await masuk(a.email) };
+        return { id: a.id, email: a.email, auth: await masukAdmin(a.id, a.email) };
     }
 
     const forgot = (email: string): Promise<Balasan> => kirim("POST", "/auth/password/forgot", {}, { email });
@@ -389,7 +396,7 @@ describe.skipIf(!ADA)("PR-02-05 — reset password administratif (PostgreSQL + R
             await terbitkan(admin.auth, id);
             clock.advance(72 * JAM + 1000);
             try {
-                const auth = await masuk((await kueri<{ email: string }>(`SELECT email FROM users WHERE id = ${String(admin.id)}`))[0]?.email ?? "");
+                const auth = await masukAdmin(admin.id, admin.email);
                 const tampil = (await antre(auth, "?per_page=100")).json.data as Permintaan[];
                 expect(tampil.find((r) => r.id === id)?.status).toBe("KEDALUWARSA");
                 expect(((await antre(auth, "?per_page=100&filter[status]=DITERBITKAN")).json.data as Permintaan[]).some((r) => r.id === id)).toBe(false);
@@ -681,7 +688,7 @@ describe.skipIf(!ADA)("PR-02-05 — reset password administratif (PostgreSQL + R
             try {
                 expect((await login(u.email, sementara)).status).toBe(401);
                 expect((await login(u.email, sementara)).status).toBe(401);
-                const auth = await masuk((await kueri<{ email: string }>(`SELECT email FROM users WHERE id = ${String(admin.id)}`))[0]?.email ?? "");
+                const auth = await masukAdmin(admin.id, admin.email);
                 const baru = passwordDari(await terbitkan(auth, await idPermintaanBaru(u.email, u.id)));
                 expect((await login(u.email, baru)).status).toBe(200);
             } finally {

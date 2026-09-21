@@ -66,7 +66,7 @@ flowchart TD
     F -->|"Nonaktif - 403"| I["Hubungi Administrator<br/>FR-01.1 A3"] --> D
     F -->|Benar| K{Role wajib 2FA?}
 
-    K -->|"Ya, belum terdaftar"| L["P-03 Aktivasi 2FA<br/>QR secret + 10 kode cadangan"]
+    K -->|"Ya, belum terdaftar"| L["P-03 Aktivasi 2FA<br/>kode aktivasi (role wajib) · QR secret + 10 kode cadangan"]
     K -->|"Ya, sudah aktif"| M["P-02 Verifikasi 2FA"]
     K -->|Tidak| N
 
@@ -136,10 +136,12 @@ flowchart TD
 
 | Skenario | Jalur UX | Rujukan |
 |---|---|---|
-| Aktivasi pertama | P-01 → P-03: QR secret + 10 kode cadangan, wajib dikonfirmasi dengan 6 digit sebelum dilanjutkan | `FR-01.5` |
+| Aktivasi pertama | P-01 → P-03: role wajib 2FA memasukkan **kode aktivasi** dari Administrator lebih dulu; lalu QR secret + 10 kode cadangan, wajib dikonfirmasi dengan 6 digit sebelum dilanjutkan. Berhasil → sesi lain pemilik akun keluar | `FR-01.5` · `BR-070d` · `BR-070e` |
 | Kode cadangan menipis | Peringatan pada respons login **dan** spanduk pada P-77 saat tersisa 2 atau kurang, dengan tombol buat ulang | `FR-01.5 AC` |
 | Perangkat authenticator hilang | Pengguna memakai kode cadangan; bila habis, mengajukan reset 2FA kepada Administrator (P-63 drawer) | `FR-01.5 A2`, `A3` |
-| Reset 2FA oleh Admin | Pengguna wajib mendaftar ulang saat login berikutnya — diarahkan otomatis ke P-03 | `FR-01.5 A3` |
+| Reset 2FA oleh Admin | Pengguna wajib mendaftar ulang saat login berikutnya — diarahkan otomatis ke P-03; untuk role wajib, Administrator menyerahkan kode aktivasi baru yang tampil satu kali di drawer | `FR-01.5 A3` |
+| Kode aktivasi belum ada, salah, atau hangus | Pesan seragam "Kode aktivasi tidak berlaku. Minta kode baru kepada Administrator." — tidak membedakan sebabnya | `FR-01.5 A5` |
+| Administrator menerbitkan kode aktivasi | P-63 → drawer "Terbitkan Kode Aktivasi 2FA": metode verifikasi wajib, kode tampil satu kali dan dinyatakan sebelum drawer ditutup | `FR-01.5 A7` |
 | Seluruh Administrator kehilangan akses | **Tidak ada jalur antarmuka.** Pemulihan hanya lewat CLI di server dengan otorisasi tertulis Kepala Sekolah | `FR-01.6` · `BR-070b` · `SDD-SESS-11` |
 
 > `FR-01.6` sengaja tidak memiliki halaman. Mencantumkannya di sini justru penting: perancang tidak boleh membuat layar "Pemulihan Darurat" karena keberadaannya akan melanggar `BR-070b`.

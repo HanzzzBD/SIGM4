@@ -208,17 +208,20 @@ sequenceDiagram
 | **Preconditions** | Pengguna memiliki aplikasi authenticator TOTP |
 
 **Main Flow**
-1. Saat login pertama, pengguna role sensitif diarahkan ke halaman aktivasi 2FA.
+1. Saat login pertama, pengguna role sensitif diarahkan ke halaman aktivasi 2FA. Pengguna role **wajib 2FA** memasukkan lebih dulu **kode aktivasi 2FA** yang diserahkan langsung oleh Administrator (`BR-070d`); role lain tidak memerlukannya.
 2. Sistem menampilkan QR Code *secret* TOTP dan 10 kode cadangan sekali pakai.
 3. Pengguna memindai dengan aplikasi authenticator dan memasukkan 6 digit kode verifikasi.
-4. Sistem memvalidasi dan mengaktifkan 2FA.
+4. Sistem memvalidasi dan mengaktifkan 2FA, lalu **mencabut seluruh sesi lain** pemilik akun dan memberi tahu Administrator (`BR-070e`, `NT-39a`).
 5. Pada login berikutnya, setelah password valid, sistem meminta kode TOTP.
 
 **Alternative Flow**
 - **A1 — Kode TOTP salah:** Ditolak; setelah 5 kegagalan akun dikunci 15 menit.
 - **A2 — Perangkat authenticator hilang:** Pengguna memakai kode cadangan; bila habis, Administrator melakukan reset 2FA.
-- **A3 — Administrator me-reset 2FA pengguna:** Pengguna wajib mendaftar ulang saat login berikutnya.
+- **A3 — Administrator me-reset 2FA pengguna** (`POST /users/{id}/reset-2fa`): 2FA dinonaktifkan, kode cadangan dihapus, seluruh sesi pengguna dicabut, dan Administrator mencatat metode verifikasi identitas luring seperti pada FR-01.3 langkah 3. Untuk role wajib 2FA sistem sekaligus menerbitkan **kode aktivasi baru** yang tampil satu kali kepada Administrator (`BR-070d`). Pengguna wajib mendaftar ulang saat login berikutnya.
 - **A4 — Administrator sendiri kehilangan perangkat 2FA dan kode cadangan:** Berlaku prosedur *break-glass* (FR-01.6). Tanpa prosedur ini sistem dapat terkunci permanen.
+- **A5 — Kode aktivasi salah, kedaluwarsa, atau sudah hangus:** Pendaftaran ditolak dengan jawaban yang **sama** untuk ketiganya. Pengguna meminta kode baru kepada Administrator.
+- **A6 — Instalasi awal, atau tidak ada Administrator ber-2FA yang dapat menerbitkan kode:** Operator server menjalankan perintah CLI `sigm4 admin:activation-code --email=<email>`, hanya dari server (akses shell), tidak pernah melalui antarmuka web maupun API; pelaku tercatat `SYSTEM:CLI`. Dipakai untuk dua akun Administrator pertama (`BR-070a`, RS-19).
+- **A7 — Administrator menerbitkan kode aktivasi bagi akun role wajib yang belum ber-2FA** (`POST /users/{id}/2fa-activation-code`): identitas pemilik akun diverifikasi luring seperti FR-01.3 langkah 3 dan `metode_verifikasi` wajib dicatat; kode tampil satu kali dan menggantikan kode sebelumnya yang belum terpakai. Administrator tidak dapat menerbitkan kode bagi akunnya sendiri.
 
 **Post Conditions** — Sesi terbentuk hanya setelah dua faktor terverifikasi.
 
@@ -228,6 +231,12 @@ sequenceDiagram
 - [ ] Kode cadangan disimpan dalam bentuk hash, bukan teks terbaca, dan hanya ditampilkan satu kali saat pembuatan.
 - [ ] Reset 2FA oleh Administrator tercatat di activity log.
 - [ ] Sistem memperingatkan pengguna bila kode cadangan tersisa ≤ 2 dan menawarkan pembuatan ulang.
+- [ ] Akun role wajib 2FA tidak dapat menyelesaikan pendaftaran 2FA hanya dengan password (`BR-070d`).
+- [ ] Kode aktivasi sekali pakai, hanya tampil satu kali, disimpan sebagai hash, kedaluwarsa 72 jam, dan hangus setelah 5 kesalahan tanpa mengunci akun.
+- [ ] Pendaftaran 2FA yang berhasil mencabut seluruh sesi lain pemilik akun dan menghasilkan `NT-39a` kepada Administrator (`BR-070e`).
+- [ ] Penerbitan dan penolakan kode aktivasi tercatat di activity log tanpa merekam nilai kodenya.
+
+**Catatan.** Role opsional mendaftar 2FA dengan password saja, sehingga penyerang yang mengetahui password dapat lebih dulu mengaktifkan 2FA dan mengunci pemilik akun. Risiko ini diterima: `BR-070e` mengeluarkan pemilik dari sesinya seketika dan memberi tahu Administrator, dan pemulihannya lewat A3. Secara operasional, Administrator menyerahkan password sementara dan kode aktivasi pada satu pertemuan, dan pengguna mendaftarkan 2FA saat itu juga.
 
 ### FR-01.6 Prosedur Break-Glass Administrator
 
@@ -240,9 +249,9 @@ sequenceDiagram
 **Main Flow**
 1. Kepala Sekolah menerbitkan otorisasi tertulis pemulihan darurat (formulir baku, ditandatangani, disimpan sebagai arsip sekolah).
 2. Operator infrastruktur menjalankan **perintah CLI pemulihan** yang disediakan sistem (`sigm4 admin:recover --email=<email>`), dijalankan langsung di server dan hanya dapat dijalankan oleh pemilik akses server.
-3. Perintah tersebut: menonaktifkan 2FA pada akun yang ditunjuk, menerbitkan password sementara, memaksa `must_change_password = true`, dan **mencabut seluruh sesi aktif di sistem**.
+3. Perintah tersebut: menonaktifkan 2FA pada akun yang ditunjuk, menerbitkan password sementara **dan kode aktivasi 2FA** (`BR-070d`), memaksa `must_change_password = true`, dan **mencabut seluruh sesi aktif di sistem**.
 4. Sistem mencatat aksi `ADMIN_BREAK_GLASS_RECOVERY` dengan pelaku `SYSTEM:CLI` beserta email target dan waktu.
-5. Administrator masuk kembali, mengganti password, mendaftarkan ulang 2FA, dan **wajib** memverifikasi bahwa terdapat minimal dua akun Administrator aktif (RS-19).
+5. Administrator masuk kembali, mengganti password, mendaftarkan ulang 2FA (dengan kode aktivasi dari langkah 3), dan **wajib** memverifikasi bahwa terdapat minimal dua akun Administrator aktif (RS-19).
 6. Sistem mengirim notifikasi kepada seluruh Pimpinan Sekolah bahwa pemulihan darurat telah dijalankan.
 
 **Alternative Flow**
@@ -268,6 +277,8 @@ sequenceDiagram
 | BR-070a | Sistem wajib memiliki **minimal dua** akun Administrator aktif; instalasi awal tidak dianggap selesai sebelum syarat ini terpenuhi (RS-19). |
 | BR-070b | Kehilangan total akses Administrator dipulihkan melalui prosedur *break-glass* berbasis CLI di sisi server dengan otorisasi tertulis Kepala Sekolah (FR-01.6). Prosedur ini tidak pernah tersedia melalui antarmuka web atau API. |
 | BR-070c | Kode cadangan 2FA disimpan dalam bentuk hash dan hanya ditampilkan satu kali pada saat pembuatan. |
+| BR-070d | Pendaftaran 2FA pertama akun role wajib 2FA — juga pendaftaran ulang setelah reset 2FA atau *break-glass* — hanya dapat diselesaikan dengan **kode aktivasi 2FA** sekali pakai; password saja tidak cukup. Kode diterbitkan oleh Administrator lain (setelah memverifikasi identitas pemilik akun luring) atau oleh CLI server, tampil satu kali, disimpan sebagai hash, berlaku 72 jam, dan hangus setelah 5 kesalahan. Kode diserahkan langsung kepada pemilik akun, bukan lewat pesan instan atau pihak ketiga (FR-01.5). |
+| BR-070e | Pendaftaran 2FA yang berhasil pada akun mana pun mencabut seluruh sesi lain pemilik akun itu dan menghasilkan notifikasi kepada Administrator (`NT-39a`) (FR-01.5). |
 
 ## 7. API Endpoints
 
@@ -275,8 +286,11 @@ sequenceDiagram
 
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
-| POST | `/auth/login` | Publik | Login email + password + `platform` (`WEB`, `ANDROID`, `IOS`) | 200 `{tokens, expires_in, user, permissions}` (`tokens` null pada WEB: token hanya di cookie httpOnly) atau `{requires_2fa}` | 400, 401, 403, 429 |
-| POST | `/auth/2fa/verify` | Challenge token | Verifikasi kode TOTP | 200 `{tokens, user}` | 401, 423 |
+| POST | `/auth/login` | Publik | Login email + password + `platform` (`WEB`, `ANDROID`, `IOS`) | 200 `{tokens, expires_in, user, permissions}` (`tokens` null pada WEB: token hanya di cookie httpOnly) atau `{requires_2fa, challenge_token, expires_in}` (akun ber-2FA: sesi belum terbit) | 400, 401, 403, 429 |
+| POST | `/auth/2fa/verify` | Challenge token | Verifikasi faktor kedua — kode TOTP 6 digit atau kode cadangan — dengan challenge token dari login; menerbitkan sesi | 200 `{tokens, expires_in, user, permissions, sisa_kode_cadangan, kode_cadangan_menipis}` (`tokens` null pada WEB) | 400, 401, 423 |
+| POST | `/auth/2fa/enroll` | Bearer | Mulai pendaftaran 2FA: secret TOTP, URI `otpauth://`, dan 10 kode cadangan — tampil **satu kali**. Terjangkau oleh sesi yang belum lolos 2FA. Role wajib 2FA: body memuat `kode_aktivasi` (`BR-070d`) | 200 `{secret, otpauth_uri, kode_cadangan}` | 401, 422 |
+| POST | `/auth/2fa/enroll/confirm` | Bearer | Konfirmasi pendaftaran dengan kode 6 digit; 2FA berlaku dan sesi ini naik ke `amr` `["pwd","otp"]`. Terjangkau oleh sesi yang belum lolos 2FA. Mencabut seluruh sesi lain pemilik akun (`BR-070e`) | 200 `{access_token}` (null pada WEB) | 400, 401, 422 |
+| POST | `/auth/2fa/backup-codes/regenerate` | Bearer (2FA terverifikasi) | Membuat ulang seluruh kode cadangan; yang lama, terpakai atau tidak, tak berlaku lagi | 200 `{kode_cadangan}` | 401, 403, 422 |
 | POST | `/auth/refresh` | Refresh token | Menukar refresh token (rotasi; refresh token baru ikut diterbitkan, pemakaian ulang mencabut seluruh rantai) | 200 `{tokens, expires_in}` (`tokens` null pada WEB) | 401 |
 | POST | `/auth/logout` | Bearer | Mencabut sesi yang membawa permintaan ini | 204 | 401 |
 | POST | `/auth/logout-all` | Bearer | Keluar dari semua perangkat: mencabut seluruh sesi pengguna | 204 | 401 |
@@ -289,6 +303,8 @@ sequenceDiagram
 | POST | `/auth/password/change` | Bearer | Ganti password sendiri | 200 | 401, 422 |
 | GET | `/me` | Bearer | Profil & permission pengguna | 200 `{user, permissions}` | 401 |
 | PUT | `/me` | Bearer | Perbarui profil sendiri | 200 | 401, 422 |
+
+**Gerbang 2FA (`BR-070`).** Role Administrator dan Pimpinan Sekolah yang sesinya baru membuktikan password ditolak `403 TWO_FACTOR_REQUIRED` pada seluruh endpoint terlindung, termasuk yang permission-nya mereka pegang. Yang terjangkau hanya `POST /auth/2fa/enroll`, `POST /auth/2fa/enroll/confirm`, dan `POST /auth/logout`. Role lain tidak terpengaruh, dengan atau tanpa 2FA.
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
@@ -313,6 +329,7 @@ Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-archit
 | **NT-38** | Password sementara diterbitkan | **Administrator penerbit** | In-app | ✅ | "Password sementara untuk {pengguna} diterbitkan {waktu}. Serahkan langsung kepada yang bersangkutan." — *Direvisi pada audit: sebelumnya ditujukan kepada pengguna terkait, padahal yang bersangkutan sedang tidak dapat login sehingga notifikasi in-app tidak akan pernah terbaca.* |
 | **NT-38a** | Password berhasil diganti setelah reset | Pengguna terkait | In-app + Push | ✅ | "Password Anda berhasil diperbarui pada {waktu}. Bila ini bukan Anda, segera hubungi Administrator." |
 | **NT-39** | Akun terkunci karena percobaan login gagal | Pengguna + Administrator | In-app | ✅ | "Akun terkunci sementara akibat 5 percobaan login gagal." |
+| **NT-39a** | 2FA diaktifkan pada sebuah akun | Administrator | In-app | ✅ | "{pengguna} mengaktifkan 2FA pada {waktu} dari {perangkat}. Bila pengguna tidak mengenalinya, reset 2FA dari detail pengguna." |
 
 Ketentuan umum kanal, latensi, dan preferensi: [`m17-notifications.md`](m17-notifications.md).
 
@@ -330,14 +347,18 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 
 | Aksi | Keterangan |
 |---|---|
-| `LOGIN_SUCCESS` / `LOGIN_FAILED` | Termasuk IP dan perangkat. `LOGIN_FAILED` juga mencatat email tak terdaftar dan percobaan atas akun terkunci — pelaku kosong, akun sasaran pada entitas, email yang dicoba tidak disimpan |
+| `LOGIN_SUCCESS` / `LOGIN_FAILED` | Termasuk IP dan perangkat. `LOGIN_FAILED` juga mencatat email tak terdaftar dan percobaan atas akun terkunci — pelaku kosong, akun sasaran pada entitas, email yang dicoba tidak disimpan. Kode 2FA yang salah pada `/auth/2fa/verify` juga dicatat di sini, dengan alasan `KODE_2FA_SALAH` |
 | `LOGOUT` / `LOGOUT_ALL_DEVICES` | Pencabutan sesi. `LOGOUT` juga dicatat saat pengguna mencabut satu perangkat lain (nilai memuat `alasan: device_revoked`); `LOGOUT_ALL_DEVICES` memuat jumlah sesi yang dicabut. Termasuk IP dan perangkat pelaku |
 | `REFRESH_TOKEN_REUSE_DETECTED` | Refresh token yang sudah dirotasi dipakai ulang; seluruh rantai dicabut. Termasuk IP dan perangkat |
 | `ACCOUNT_LOCKED` / `ACCOUNT_UNLOCKED` | Penguncian akibat percobaan gagal (kegagalan ke-5 dalam jendela 15 menit). Kunci yang berakhir sendiri tidak menulis entri |
 | `PASSWORD_CHANGED` | Ganti password sendiri (`FR-01.4`); memuat jumlah sesi lain yang dicabut, tanpa merekam nilai password |
 | `PASSWORD_RESET_REQUESTED` / `PASSWORD_RESET_ISSUED` / `PASSWORD_RESET_REJECTED` | Alur reset administratif. `PASSWORD_RESET_REQUESTED` dicatat tanpa pelaku (pemohon belum login; akun sasaran pada entitas), juga untuk percobaan yang tidak menghasilkan permintaan — email tak terdaftar, akun nonaktif, melebihi batas — dengan hasil `Gagal` dan tanpa menyimpan email yang dicoba. `PASSWORD_RESET_ISSUED` memuat metode verifikasi dan jumlah sesi yang dicabut. Tidak satu pun memuat password |
 | `PROFILE_UPDATED` | Perubahan nama/telepon profil sendiri (`FR-01.4` langkah 5, `PUT /me`); foto menunggu `PR-03-04` |
-| `TWO_FA_ENABLED` / `TWO_FA_DISABLED` / `TWO_FA_RESET` | Perubahan 2FA |
+| `TWO_FA_ENABLED` / `TWO_FA_DISABLED` / `TWO_FA_RESET` | Perubahan 2FA. `TWO_FA_ENABLED` memuat jumlah sesi lain yang dicabut (`BR-070e`) |
+| `TWO_FA_ENROLLMENT_STARTED` | Pendaftaran 2FA dimulai (secret dan kode cadangan dibangkitkan). Secret dan kode tidak pernah dicatat |
+| `TWO_FA_BACKUP_CODES_REGENERATED` | Seluruh kode cadangan diganti (`FR-01.5` AC); nilainya tidak dicatat |
+| `TWO_FA_ACTIVATION_CODE_ISSUED` | Kode aktivasi 2FA diterbitkan (`BR-070d`): akun sasaran pada entitas, penerbit sebagai pelaku (`SYSTEM:CLI` bila lewat CLI), metode verifikasi. Nilai kode tidak pernah dicatat |
+| `TWO_FA_ACTIVATION_CODE_REJECTED` | Kode aktivasi salah, kedaluwarsa, atau hangus saat pendaftaran; memuat sisa percobaan. Nilai yang dimasukkan tidak dicatat |
 | `TWO_FA_BACKUP_CODE_USED` | Pemakaian kode cadangan, termasuk sisa kode |
 | `ADMIN_BREAK_GLASS_RECOVERY` | Pemulihan darurat Administrator via CLI (FR-01.6); pelaku `SYSTEM:CLI` |
 

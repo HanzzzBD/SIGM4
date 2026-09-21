@@ -5,14 +5,14 @@ import express from "express";
 import type { RequestHandler, Router } from "express";
 import type { Kysely } from "kysely";
 import type { AuditLogger } from "../../shared/audit/index.js";
-import type { AuthContext, PermissionCache } from "../../shared/auth/index.js";
+import type { AuthContext, OpsiAutentikasi, PermissionCache } from "../../shared/auth/index.js";
 import type { Clock } from "../../shared/clock/index.js";
 import type { Database } from "../../shared/db/index.js";
 import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
 import type { Logger } from "../../shared/observability/index.js";
-import type { JwtKeys } from "../../shared/security/index.js";
-import { loginHandler, refreshHandler } from "./controllers/auth.controller.js";
+import type { JwtKeys, KotakRahasia } from "../../shared/security/index.js";
+import { loginHandler, refreshHandler, verifikasiDuaFaktorHandler } from "./controllers/auth.controller.js";
 import {
     forgotHandler,
     listPermintaanHandler,
@@ -24,6 +24,11 @@ import {
     lihatProfilHandler,
     perbaruiProfilHandler,
 } from "./controllers/profile.controller.js";
+import {
+    buatUlangKodeCadanganHandler,
+    enrollHandler,
+    konfirmasiEnrollHandler,
+} from "./controllers/two-factor.controller.js";
 import {
     cabutSesiHandler,
     listSesiHandler,
@@ -38,6 +43,8 @@ import {
     RefreshResponseSchema,
     SesiIdParamSchema,
     TanpaIsiSchema,
+    VerifyDuaFaktorBodySchema,
+    VerifyDuaFaktorResponseSchema,
 } from "./schemas/auth.schema.js";
 import {
     ForgotBodySchema,
@@ -56,10 +63,18 @@ import {
     UpdateProfilBodySchema,
     UpdateProfilResponseSchema,
 } from "./schemas/profile.schema.js";
+import {
+    EnrollConfirmBodySchema,
+    EnrollConfirmResponseSchema,
+    EnrollResponseSchema,
+    KodeCadanganResponseSchema,
+} from "./schemas/two-factor.schema.js";
 import { AuthService } from "./services/auth.service.js";
 import { PasswordResetService } from "./services/password-reset.service.js";
 import { ProfileService } from "./services/profile.service.js";
 import { SessionService } from "./services/session.service.js";
+import type { PenyimpanTantangan } from "./services/tantangan-dua-faktor.js";
+import { TwoFactorService } from "./services/two-factor.service.js";
 
 /** Pemilik katalog endpoint M-01 (m01-auth.md §7). */
 const MODUL = "m01-auth";
@@ -92,6 +107,64 @@ export const refreshRoute = defineRoute({
 });
 
 /**
+ * FR-01.5 langkah 5. Publik: yang dibawanya challenge token, bukan sesi. Kelas `login`: kegagalan
+ * kode dihitung pada sumbu IP (`SDD-13 §4.3`) sekaligus pada sumbu akun (penguncian `SDD-SESS-06`).
+ */
+export const verifyDuaFaktorRoute = defineRoute({
+    method: "POST",
+    path: "/auth/2fa/verify",
+    public: true,
+    rateLimitClass: "login",
+    module: MODUL,
+    summary: "Verifikasi faktor kedua (TOTP atau kode cadangan) dengan challenge token; menerbitkan sesi",
+    successStatus: 200,
+    body: VerifyDuaFaktorBodySchema,
+    response: VerifyDuaFaktorResponseSchema,
+});
+
+/**
+ * FR-01.5 langkah 1-2. `twoFactorExempt`: role wajib 2FA yang belum terdaftar justru harus dapat
+ * menjangkau pendaftaran dengan sesi yang baru membuktikan password (`BR-070`).
+ */
+export const enrollDuaFaktorRoute = defineRoute({
+    method: "POST",
+    path: "/auth/2fa/enroll",
+    authenticated: true,
+    twoFactorExempt: true,
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Mulai pendaftaran 2FA: secret TOTP + 10 kode cadangan (tampil sekali)",
+    successStatus: 200,
+    response: EnrollResponseSchema,
+});
+
+/** FR-01.5 langkah 3-4: 6 digit dari authenticator mengaktifkan 2FA dan menaikkan sesi ini ke `amr` `otp`. */
+export const konfirmasiDuaFaktorRoute = defineRoute({
+    method: "POST",
+    path: "/auth/2fa/enroll/confirm",
+    authenticated: true,
+    twoFactorExempt: true,
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Konfirmasi pendaftaran 2FA dengan kode 6 digit; menerbitkan access token baru bagi sesi ini",
+    successStatus: 200,
+    body: EnrollConfirmBodySchema,
+    response: EnrollConfirmResponseSchema,
+});
+
+/** FR-01.5 AC / UX P-77: hanya sesi yang sudah membuktikan faktor kedua. */
+export const kodeCadanganBaruRoute = defineRoute({
+    method: "POST",
+    path: "/auth/2fa/backup-codes/regenerate",
+    authenticated: true,
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Membuat ulang seluruh kode cadangan 2FA (yang lama tak berlaku lagi)",
+    successStatus: 200,
+    response: KodeCadanganResponseSchema,
+});
+
+/**
  * FR-01.2. Keempat route berikut `authenticated: true` (endpoint "Bearer", `SDD-AUTH-12`): datanya
  * milik pemanggil sendiri, jadi tidak ada permission katalog — scope `own` ditegakkan repository.
  */
@@ -99,6 +172,8 @@ export const logoutRoute = defineRoute({
     method: "POST",
     path: "/auth/logout",
     authenticated: true,
+    // BR-070: jalan keluar sesi yang belum lolos 2FA.
+    twoFactorExempt: true,
     rateLimitClass: "default",
     module: MODUL,
     summary: "Logout: mencabut sesi yang membawa permintaan ini",
@@ -241,12 +316,21 @@ export interface AuthModuleDeps {
     readonly auditLogger: AuditLogger;
     readonly clock: Clock;
     readonly logger: Logger;
+    /** Kunci enkripsi secret TOTP (`TOTP_ENCRYPTION_KEY`, `SDD-SESS-08`). */
+    readonly kotakTotp: KotakRahasia;
+    /** Penyimpan challenge 2FA (`SDD-SESS-10`): Redis pada produksi. */
+    readonly penyimpanTantangan: PenyimpanTantangan;
+}
+
+/** Opsi `authenticated()` dari deklarasi route: pengecualian 2FA hidup di SATU tempat, deklarasinya. */
+function opsiDuaFaktor(route: { readonly twoFactorExempt?: true }): OpsiAutentikasi {
+    return { tanpaDuaFaktor: route.twoFactorExempt === true };
 }
 
 export function authRouter(
     deps: AuthModuleDeps,
     batasi: (route: RouteDefinition) => RequestHandler,
-    terautentikasi: () => RequestHandler,
+    terautentikasi: (opsi?: OpsiAutentikasi) => RequestHandler,
     otorisasi: (permission: string) => RequestHandler,
 ): Router {
     const service = new AuthService(
@@ -256,14 +340,31 @@ export function authRouter(
         deps.auditLogger,
         deps.clock,
         deps.logger,
+        deps.kotakTotp,
+        deps.penyimpanTantangan,
     );
+    const duaFaktor = new TwoFactorService(deps.db, deps.jwtKeys, deps.auditLogger, deps.clock, deps.kotakTotp);
     const sesi = new SessionService(deps.db, deps.auditLogger, deps.clock);
     const reset = new PasswordResetService(deps.db, deps.auditLogger, deps.clock, deps.logger);
     const profil = new ProfileService(deps.db, deps.jwtKeys, deps.permissionCache, deps.auditLogger, deps.clock);
     const router = express.Router();
     router.post(loginRoute.path, batasi(loginRoute), loginHandler(service));
     router.post(refreshRoute.path, batasi(refreshRoute), refreshHandler(service));
-    router.post(logoutRoute.path, batasi(logoutRoute), terautentikasi(), logoutHandler(sesi));
+    router.post(verifyDuaFaktorRoute.path, batasi(verifyDuaFaktorRoute), verifikasiDuaFaktorHandler(service));
+    router.post(
+        enrollDuaFaktorRoute.path,
+        batasi(enrollDuaFaktorRoute),
+        terautentikasi(opsiDuaFaktor(enrollDuaFaktorRoute)),
+        enrollHandler(duaFaktor),
+    );
+    router.post(
+        konfirmasiDuaFaktorRoute.path,
+        batasi(konfirmasiDuaFaktorRoute),
+        terautentikasi(opsiDuaFaktor(konfirmasiDuaFaktorRoute)),
+        konfirmasiEnrollHandler(duaFaktor),
+    );
+    router.post(kodeCadanganBaruRoute.path, batasi(kodeCadanganBaruRoute), terautentikasi(), buatUlangKodeCadanganHandler(duaFaktor));
+    router.post(logoutRoute.path, batasi(logoutRoute), terautentikasi(opsiDuaFaktor(logoutRoute)), logoutHandler(sesi));
     router.post(logoutSemuaRoute.path, batasi(logoutSemuaRoute), terautentikasi(), logoutSemuaHandler(sesi));
     router.get(listSesiRoute.path, batasi(listSesiRoute), terautentikasi(), listSesiHandler(sesi));
     router.delete(cabutSesiRoute.path, batasi(cabutSesiRoute), terautentikasi(), cabutSesiHandler(sesi));

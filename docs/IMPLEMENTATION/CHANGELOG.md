@@ -6,6 +6,22 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 
 ---
 
+## 21 September 2026 — `PR-02-33` baru; `PR-02-08` diperluas
+
+Tidak ada TBD baru. Requirement baru (`BR-070d`, `BR-070e`, `NT-39a`) sudah diputuskan pemilik produk dan ditulis ke PRD/SDD/UX (keputusan 46–47 di [`logs/phase-02.md` §2](logs/phase-02.md)); entri ini hanya mencatat penetapan PR pelaksananya (keputusan 48).
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `phases/phase-02.md` §7, §8 | **PR baru `PR-02-33`** — kode aktivasi 2FA (`BR-070d`) + reset 2FA oleh Administrator di M-02; `PR-02-08` menambah CLI penerbit kode aktivasi dan bergantung pada `PR-02-33` |
+| `DELIVERY-PLAN.md` §1, `README.md`, `IMPLEMENTATION-STATUS.md`, `CLAUDE.md`, `scripts/validate_impl.py` | Total rencana 169 → **170**; Phase 02 30 → **31** |
+| `logs/phase-02.md` §2, §3, §9, §10 | Keputusan 48; hitungan gerbang keluar (sebelumnya tertulis 29, seharusnya 31) diperbaiki |
+
+Total PR kini **170**.
+
+---
+
 ## 16 September 2026 — skema label pull request
 
 Tidak ada TBD, requirement, maupun business rule baru. Keputusan pemilik produk 12 dicatat di [`logs/phase-01.md` §2](logs/phase-01.md).

@@ -5,7 +5,7 @@
 # Indeks Business Rules
 
 > Setiap aturan dimiliki satu modul. Sunting di berkas modulnya, bukan di sini.
-> Total: **119** baris, dikumpulkan dari 22 berkas modul.
+> Total: **121** baris, dikumpulkan dari 22 berkas modul.
 
 | Kode | Business Rule | Pemilik |
 |---|---|---|
@@ -103,6 +103,8 @@
 | BR-070a | Sistem wajib memiliki **minimal dua** akun Administrator aktif; instalasi awal tidak dianggap selesai sebelum syarat ini terpenuhi (RS-19). | [M-01](../02-modules/m01-auth.md) |
 | BR-070b | Kehilangan total akses Administrator dipulihkan melalui prosedur *break-glass* berbasis CLI di sisi server dengan otorisasi tertulis Kepala Sekolah (FR-01.6). Prosedur ini tidak pernah tersedia melalui antarmuka web atau API. | [M-01](../02-modules/m01-auth.md) |
 | BR-070c | Kode cadangan 2FA disimpan dalam bentuk hash dan hanya ditampilkan satu kali pada saat pembuatan. | [M-01](../02-modules/m01-auth.md) |
+| BR-070d | Pendaftaran 2FA pertama akun role wajib 2FA — juga pendaftaran ulang setelah reset 2FA atau *break-glass* — hanya dapat diselesaikan dengan **kode aktivasi 2FA** sekali pakai; password saja tidak cukup. Kode diterbitkan oleh Administrator lain (setelah memverifikasi identitas pemilik akun luring) atau oleh CLI server, tampil satu kali, disimpan sebagai hash, berlaku 72 jam, dan hangus setelah 5 kesalahan. Kode diserahkan langsung kepada pemilik akun, bukan lewat pesan instan atau pihak ketiga (FR-01.5). | [M-01](../02-modules/m01-auth.md) |
+| BR-070e | Pendaftaran 2FA yang berhasil pada akun mana pun mencabut seluruh sesi lain pemilik akun itu dan menghasilkan notifikasi kepada Administrator (`NT-39a`) (FR-01.5). | [M-01](../02-modules/m01-auth.md) |
 | BR-071 | Seluruh operasi tulis wajib tercatat pada activity log. | [M-18](../02-modules/m18-activity-log.md) |
 | BR-072 | Activity log bersifat *append-only* dan tidak dapat disunting maupun dihapus oleh role mana pun melalui aplikasi. | [M-18](../02-modules/m18-activity-log.md) |
 | BR-073 | Role Siswa/OSIS tidak boleh mengakses data finansial aset, biaya pemeliharaan, data pengadaan, dokumen aset, maupun data pribadi pengguna lain. | [M-02](../02-modules/m02-users.md) |

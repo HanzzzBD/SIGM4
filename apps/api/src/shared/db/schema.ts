@@ -154,8 +154,7 @@ export interface RolesTable extends KolomBaku {
 /**
  * `users` (0012, PR-01-01). `status` dan `must_change_password` sengaja tanpa
  * nilai bawaan — keduanya wajib dinyatakan saat akun dibuat (`SL-06`,
- * `FR-02.1` langkah 4). Penanda 2FA dan foto profil belum ada: masing-masing
- * milik `SDD-04` §4.1 dan `SDD-FS-02`.
+ * `FR-02.1` langkah 4). Foto profil belum ada: milik `SDD-FS-02`.
  */
 export interface UsersTable extends KolomBaku {
     id: Generated<string>;
@@ -178,6 +177,14 @@ export interface UsersTable extends KolomBaku {
     failed_login_count: ColumnType<number, number | undefined, number>;
     failed_login_window_start: ColumnType<Date | null, Date | null | undefined, Date | null>;
     locked_until: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    /**
+     * 2FA TOTP (0024, PR-02-07; `SDD-SESS-08`). `totp_secret_enc` = ciphertext AES-256-GCM; terisi
+     * dengan `totp_enabled_at` NULL berarti pendaftaran belum dikonfirmasi 6 digit. `totp_last_step`
+     * = langkah TOTP terakhir yang diterima (anti pemakaian ulang kode, RFC 6238 §5.2).
+     */
+    totp_secret_enc: ColumnType<Buffer | null, Buffer | null | undefined, Buffer | null>;
+    totp_enabled_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    totp_last_step: ColumnType<number | null, number | null | undefined, number | null>;
     /** DP-02, SL-06 (0019, PR-01-14): NULL = persetujuan wali belum terekam. Hanya akun Siswa/OSIS. */
     consent_guardian_at: ColumnType<Date | null, Date | null | undefined, Date | null | undefined>;
 }
@@ -311,6 +318,23 @@ export interface RefreshTokensTable {
     rotated_at: ColumnType<Date | null, never, Date | null>;
     revoked_at: ColumnType<Date | null, never, Date | null>;
     revoke_reason: ColumnType<string | null, never, string | null>;
+    /**
+     * `amr` sesi ini memuat `otp` (0024, PR-02-07; `SDD-SESS-09`). Diwarisi setiap rotasi, tidak
+     * pernah dari permintaan; hanya konfirmasi pendaftaran 2FA yang menaikkannya pada sesi berjalan.
+     */
+    otp_verified: ColumnType<boolean, boolean | undefined, boolean>;
+}
+
+/**
+ * `totp_backup_codes` (0024, PR-02-07). Kode cadangan 2FA: hanya hash Argon2id yang disimpan
+ * (`BR-070c`); `used_at` mengunci pemakaian satu kali (FR-01.5 AC).
+ */
+export interface TotpBackupCodesTable {
+    id: Generated<string>;
+    user_id: ColumnType<string, string | number, never>;
+    code_hash: ColumnType<string, string, never>;
+    created_at: ColumnType<Date, Date | undefined, never>;
+    used_at: ColumnType<Date | null, never, Date | null>;
 }
 
 /**
@@ -408,4 +432,5 @@ export interface Database {
     user_import_jobs: UserImportJobsTable;
     refresh_tokens: RefreshTokensTable;
     password_reset_requests: PasswordResetRequestsTable;
+    totp_backup_codes: TotpBackupCodesTable;
 }

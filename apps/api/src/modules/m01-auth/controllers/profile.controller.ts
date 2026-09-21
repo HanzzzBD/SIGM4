@@ -6,6 +6,7 @@ import {
     COOKIE_ACCESS,
     PATH_ACCESS,
     bacaCookie,
+    getAmr,
     getSesiId,
     requireAuthContext,
     susunCookie,
@@ -92,7 +93,7 @@ export function gantiPasswordHandler(service: ProfileService): RequestHandler {
         );
         // Diterbitkan TERPISAH dari penggantian: token hanya turunan `ctx` dan `sesi`, tidak
         // pernah turunan nilai password — jadi tidak ada jalur dari body permintaan ke cookie.
-        const tokenBaru = service.terbitkanAksesBaru(ctx, sesi);
+        const tokenBaru = service.terbitkanAksesBaru(ctx, sesi, getAmr(res) ?? []);
         res.setHeader("Cache-Control", "no-store");
         let accessToken: string | null = tokenBaru;
         if (lewatCookie) {

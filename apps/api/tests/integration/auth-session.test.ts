@@ -22,14 +22,14 @@ import { FixedClock } from "../../src/shared/clock/index.js";
 import { getDb } from "../../src/shared/db/index.js";
 import { HealthRegistry, Logger } from "../../src/shared/observability/index.js";
 import { REFRESH_TTL_DETIK, hashPassword } from "../../src/shared/security/index.js";
-import { kunciUji } from "../helpers/auth.js";
+import { duaFaktorUji, kunciUji } from "../helpers/auth.js";
 import { dbmate, kueri } from "../helpers/db.js";
 
 const ADA = process.env["DATABASE_URL"] !== undefined;
 const T0 = new Date("2026-09-19T03:00:00Z");
 const MENIT = 60_000;
 const PASSWORD = "Sandi-Uji-Rahasia-1";
-const ROLE_ADMIN = "R-01"; // memegang setting.view (Lampiran C)
+const ROLE_UJI = "R-05"; // Guru: BUKAN role wajib 2FA (BR-070, sehingga login berbentuk sesi biasa) dan memegang location.view (Lampiran C)
 
 type Platform = "WEB" | "ANDROID" | "IOS";
 
@@ -103,6 +103,7 @@ describe.skipIf(!ADA)("PR-02-04 — logout, sesi, dan pencabutan (PostgreSQL + R
                     jwtKeys: jwt,
                     permissions: new PermissionCache(getDb(), redis),
                     sessions: new SessionStore(getDb()),
+                    twoFactor: duaFaktorUji(redis),
                 },
             }),
         );
@@ -128,7 +129,7 @@ describe.skipIf(!ADA)("PR-02-04 — logout, sesi, dan pencabutan (PostgreSQL + R
         const [baris] = await kueri<{ id: string }>(`
             INSERT INTO users (nama, email, password_hash, nip_nis, role_id, status, must_change_password)
             VALUES ('Uji Sesi', '${email}', '${hashSandi}', 'NIPSESI${randomUUID().replace(/-/g, "").slice(0, 12)}',
-                    (SELECT id FROM roles WHERE kode = '${ROLE_ADMIN}'), 'AKTIF', ${String(opsi.wajibGanti ?? false)})
+                    (SELECT id FROM roles WHERE kode = '${ROLE_UJI}'), 'AKTIF', ${String(opsi.wajibGanti ?? false)})
             RETURNING id::text`);
         if (baris === undefined) throw new Error("Gagal menyisipkan pengguna uji");
         const id = Number(baris.id);
@@ -178,7 +179,8 @@ describe.skipIf(!ADA)("PR-02-04 — logout, sesi, dan pencabutan (PostgreSQL + R
         const t = (r.json.data as { tokens: { access_token: string; refresh_token: string } }).tokens;
         return { ...s, access: t.access_token, refresh: t.refresh_token };
     };
-    const settings = (s: Sesi): Promise<Balasan> => kirim("GET", "/settings", auth(s));
+    /** Endpoint terkunci ber-permission `location.view` (dipegang R-05): membuktikan sesi hidup atau mati. */
+    const terkunci = (s: Sesi): Promise<Balasan> => kirim("GET", "/locations/tree", auth(s));
     const daftar = async (s: Sesi): Promise<SesiTampil[]> => {
         const r = await kirim("GET", "/auth/sessions", auth(s));
         expect(r.status, "GET /auth/sessions").toBe(200);
@@ -205,7 +207,7 @@ describe.skipIf(!ADA)("PR-02-04 — logout, sesi, dan pencabutan (PostgreSQL + R
         it("204 tanpa badan; access token DAN refresh token sesi itu langsung ditolak 401 — tanpa menunggu exp", async () => {
             const { email } = await seed();
             const s = await login(email);
-            expect((await settings(s)).status).toBe(200);
+            expect((await terkunci(s)).status).toBe(200);
 
             const r = await kirim("POST", "/auth/logout", auth(s));
             expect(r.status).toBe(204);
@@ -213,7 +215,7 @@ describe.skipIf(!ADA)("PR-02-04 — logout, sesi, dan pencabutan (PostgreSQL + R
             expect(r.headers.get("cache-control")).toBe("no-store");
 
             // Permintaan BERIKUTNYA — jauh sebelum exp (60 menit) — sudah ditolak.
-            const sesudah = await settings(s);
+            const sesudah = await terkunci(s);
             expect(sesudah.status).toBe(401);
             expect(sesudah.json.error?.code).toBe("UNAUTHENTICATED");
             expect((await kirim("GET", "/auth/sessions", auth(s))).status).toBe(401);
@@ -242,7 +244,7 @@ describe.skipIf(!ADA)("PR-02-04 — logout, sesi, dan pencabutan (PostgreSQL + R
         it("web: cookie sesi dibuang (Max-Age=0, atribut sama) dan token cookie ditolak sesudahnya", async () => {
             const { email } = await seed();
             const s = await login(email, "WEB");
-            expect((await settings(s)).status).toBe(200);
+            expect((await terkunci(s)).status).toBe(200);
             const r = await kirim("POST", "/auth/logout", auth(s));
             expect(r.status).toBe(204);
             expect(r.cookies).toEqual(
@@ -251,7 +253,7 @@ describe.skipIf(!ADA)("PR-02-04 — logout, sesi, dan pencabutan (PostgreSQL + R
                     "sigm4_rt=; Max-Age=0; Path=/api/v1/auth; HttpOnly; Secure; SameSite=Strict",
                 ]),
             );
-            expect((await settings(s)).status).toBe(401);
+            expect((await terkunci(s)).status).toBe(401);
             expect((await refresh(s)).status).toBe(401);
         });
 
@@ -260,8 +262,8 @@ describe.skipIf(!ADA)("PR-02-04 — logout, sesi, dan pencabutan (PostgreSQL + R
             const a = await login(email, "ANDROID");
             const b = await login(email, "IOS");
             await kirim("POST", "/auth/logout", auth(a));
-            expect((await settings(a)).status).toBe(401);
-            expect((await settings(b)).status).toBe(200);
+            expect((await terkunci(a)).status).toBe(401);
+            expect((await terkunci(b)).status).toBe(200);
             expect((await refresh(b)).status).toBe(200);
         });
 
@@ -296,7 +298,7 @@ describe.skipIf(!ADA)("PR-02-04 — logout, sesi, dan pencabutan (PostgreSQL + R
         it("pengguna wajib-ganti-password tetap dapat logout (alur /auth/* lolos gerbang), tetapi route lain 403 PASSWORD_CHANGE_REQUIRED", async () => {
             const { email } = await seed({ wajibGanti: true });
             const s = await login(email);
-            expect((await settings(s)).json.error?.code).toBe("PASSWORD_CHANGE_REQUIRED");
+            expect((await terkunci(s)).json.error?.code).toBe("PASSWORD_CHANGE_REQUIRED");
             expect((await kirim("POST", "/auth/logout", auth(s))).status).toBe(204);
         });
 
@@ -305,8 +307,8 @@ describe.skipIf(!ADA)("PR-02-04 — logout, sesi, dan pencabutan (PostgreSQL + R
             const lama = await login(email);
             await kirim("POST", "/auth/logout", auth(lama));
             const baru = await login(email);
-            expect((await settings(baru)).status).toBe(200);
-            expect((await settings(lama)).status).toBe(401);
+            expect((await terkunci(baru)).status).toBe(200);
+            expect((await terkunci(lama)).status).toBe(401);
         });
     });
 
@@ -323,13 +325,13 @@ describe.skipIf(!ADA)("PR-02-04 — logout, sesi, dan pencabutan (PostgreSQL + R
             expect(r.teks).toBe("");
 
             for (const sesi of s) {
-                expect((await settings(sesi)).status, `access ${sesi.platform}`).toBe(401);
+                expect((await terkunci(sesi)).status, `access ${sesi.platform}`).toBe(401);
                 expect((await refresh(sesi)).status, `refresh ${sesi.platform}`).toBe(401);
             }
             const baris = await barisKeluarga(id);
             expect(baris).toHaveLength(3);
             expect(baris.every((b) => b.revoked_at !== null && b.revoke_reason === "logout_all")).toBe(true);
-            expect((await settings(orangLain)).status).toBe(200);
+            expect((await terkunci(orangLain)).status).toBe(200);
             expect((await barisKeluarga(lain.id))[0]?.revoked_at).toBeNull();
         });
 
@@ -430,9 +432,9 @@ describe.skipIf(!ADA)("PR-02-04 — logout, sesi, dan pencabutan (PostgreSQL + R
             expect(r.teks).toBe("");
             expect(r.cookies).toEqual([]); // yang dicabut bukan sesi ini: cookie tidak disentuh
 
-            expect((await settings(b)).status).toBe(401);
+            expect((await terkunci(b)).status).toBe(401);
             expect((await refresh(b)).status).toBe(401);
-            expect((await settings(a)).status).toBe(200);
+            expect((await terkunci(a)).status).toBe(200);
             expect((await daftar(a)).map((x) => x.platform)).toEqual(["ANDROID"]);
 
             const [log] = await kueri<{ family: string; alasan: string; platform: string }>(`
@@ -451,7 +453,7 @@ describe.skipIf(!ADA)("PR-02-04 — logout, sesi, dan pencabutan (PostgreSQL + R
             const r = await kirim("DELETE", `/auth/sessions/${sendiri?.id ?? ""}`, auth(s));
             expect(r.status).toBe(204);
             expect(r.cookies.some((c) => c.startsWith("sigm4_at=;") && c.includes("Max-Age=0"))).toBe(true);
-            expect((await settings(s)).status).toBe(401);
+            expect((await terkunci(s)).status).toBe(401);
         });
 
         it("sesi MILIK ORANG LAIN dan sesi yang TIDAK ADA dijawab sama persis (403 FORBIDDEN, SDD-AUTH-08); korban tak terganggu", async () => {
@@ -468,7 +470,7 @@ describe.skipIf(!ADA)("PR-02-04 — logout, sesi, dan pencabutan (PostgreSQL + R
             expect(milikLain.json.error?.code).toBe("FORBIDDEN");
             expect(tanpaRequestId(milikLain)).toBe(tanpaRequestId(tidakAda));
 
-            expect((await settings(k)).status).toBe(200);
+            expect((await terkunci(k)).status).toBe(200);
             expect(await jumlahAudit(korban.id, "LOGOUT")).toBe(0);
             expect(await jumlahAudit(pemanggil.id, "LOGOUT")).toBe(0);
             expect(await eventDicabut(korban.id)).toHaveLength(0);
@@ -505,15 +507,15 @@ describe.skipIf(!ADA)("PR-02-04 — logout, sesi, dan pencabutan (PostgreSQL + R
             const sesiA = await login(a.email);
             const idA = (await daftar(sesiA))[0]?.id ?? "";
             const silang = jwt.terbitkan({ sub: String(b.id), sid: idA, pwd: false, amr: ["pwd"] }, T0);
-            const r = await kirim("GET", "/settings", { authorization: `Bearer ${silang}` });
+            const r = await kirim("GET", "/locations/tree", { authorization: `Bearer ${silang}` });
             expect(r.status).toBe(401);
-            expect((await settings(sesiA)).status).toBe(200);
+            expect((await terkunci(sesiA)).status).toBe(200);
         });
 
         it("SessionStore: `sid` yang bukan uuid tidak pernah menyentuh basis data (ditolak, bukan galat 500)", async () => {
             const a = await seed();
             const palsu = jwt.terbitkan({ sub: String(a.id), sid: "bukan-uuid", pwd: false, amr: ["pwd"] }, T0);
-            expect((await kirim("GET", "/settings", { authorization: `Bearer ${palsu}` })).status).toBe(401);
+            expect((await kirim("GET", "/locations/tree", { authorization: `Bearer ${palsu}` })).status).toBe(401);
         });
 
         it("SessionRepository: pencabutan oleh AuthContext pengguna lain tidak berdampak apa pun, satu keluarga maupun semua", async () => {
@@ -528,7 +530,7 @@ describe.skipIf(!ADA)("PR-02-04 — logout, sesi, dan pencabutan (PostgreSQL + R
             expect(await repo.cabutSemua(ctxB, T0, "uji")).toEqual([]);
             expect(await repo.adaMilik(ctxB, idA)).toBe(false);
             expect(await repo.daftarAktif(ctxB, T0)).toEqual([]);
-            expect((await settings(sesiA)).status).toBe(200);
+            expect((await terkunci(sesiA)).status).toBe(200);
         });
     });
 
@@ -564,10 +566,10 @@ describe.skipIf(!ADA)("PR-02-04 — logout, sesi, dan pencabutan (PostgreSQL + R
             const { email } = await seed();
             const s = await login(email);
             const baru = setelahRotasi(s, await refresh(s));
-            expect((await settings(baru)).status).toBe(200);
+            expect((await terkunci(baru)).status).toBe(200);
 
             expect((await refresh(s)).status).toBe(401); // pemakaian ulang token lama
-            expect((await settings(baru)).status).toBe(401);
+            expect((await terkunci(baru)).status).toBe(401);
             expect((await refresh(baru)).status).toBe(401);
         });
     });

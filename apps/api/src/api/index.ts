@@ -35,7 +35,7 @@ import {
 } from "../shared/auth/index.js";
 import type { SessionChecker } from "../shared/auth/index.js";
 
-import type { JwtKeys } from "../shared/security/index.js";
+import type { JwtKeys, KotakRahasia } from "../shared/security/index.js";
 import { RedisRateLimiter, RouteRegistry } from "../shared/http/index.js";
 import type { RateLimiter } from "../shared/http/index.js";
 import { Penghenti, tutupServer } from "../shared/lifecycle/index.js";
@@ -46,13 +46,17 @@ import {
     databaseCheck,
     redisCheck,
 } from "../shared/observability/index.js";
-import type { AuthModuleDeps } from "../modules/m01-auth/index.js";
+import type { AuthModuleDeps, PenyimpanTantangan } from "../modules/m01-auth/index.js";
 import {
+    PenyimpanTantanganRedis,
     authRouter,
     buatPenerbitPasswordSementara,
     cabutSesiRoute,
+    enrollDuaFaktorRoute,
     forgotPasswordRoute,
     gantiPasswordRoute,
+    kodeCadanganBaruRoute,
+    konfirmasiDuaFaktorRoute,
     lihatProfilRoute,
     listPermintaanResetRoute,
     listSesiRoute,
@@ -63,6 +67,7 @@ import {
     refreshRoute,
     terbitkanResetRoute,
     tolakResetRoute,
+    verifyDuaFaktorRoute,
 } from "../modules/m01-auth/index.js";
 import {
     createUserRoute,
@@ -137,6 +142,10 @@ export const registry = new RouteRegistry().register(
     healthReadyRoute,
     healthSummaryRoute,
     loginRoute,
+    verifyDuaFaktorRoute,
+    enrollDuaFaktorRoute,
+    konfirmasiDuaFaktorRoute,
+    kodeCadanganBaruRoute,
     refreshRoute,
     logoutRoute,
     logoutSemuaRoute,
@@ -212,6 +221,11 @@ export interface AppDeps {
         readonly permissions: PermissionCache;
         /** Pemeriksa sesi hidup: access token dari sesi yang dicabut ditolak seketika (`PR-02-04`). */
         readonly sessions: SessionChecker;
+        /** 2FA TOTP (`PR-02-07`): kunci enkripsi secret (`SDD-SESS-08`) dan penyimpan challenge (`SDD-SESS-10`). */
+        readonly twoFactor: {
+            readonly kotak: KotakRahasia;
+            readonly tantangan: PenyimpanTantangan;
+        };
     };
 }
 
@@ -245,6 +259,8 @@ export function createApp(deps: AppDeps): Express {
         }),
         clock: deps.clock,
         logger: deps.logger,
+        kotakTotp: deps.auth.twoFactor.kotak,
+        penyimpanTantangan: deps.auth.twoFactor.tantangan,
     };
     app.use(
         BASE_PATH,
@@ -414,6 +430,7 @@ export async function start(
             jwtKeys: config.jwtKeys,
             permissions: new PermissionCache(getDb(), getRedis()),
             sessions: new SessionStore(getDb()),
+            twoFactor: { kotak: config.totpKey, tantangan: new PenyimpanTantanganRedis(getRedis()) },
         },
     }).listen(PORT);
     return new Penghenti(langkahHentiApi(health, server), {
