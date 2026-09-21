@@ -2,16 +2,17 @@
 // SDD-SESS-08/09, PR-02-07). Verifikasi faktor kedua saat login ada di `AuthService`: ia berjalan
 // sebelum ada sesi dan berbagi penerbitan sesi serta penguncian dengan login.
 //
-// TIDAK ada di sini (belum ada PR pemiliknya; logs/phase-02.md §10): menonaktifkan 2FA sendiri bagi
-// role opsional, dan reset 2FA pengguna lain oleh Administrator (`FR-01.5 A3`, `POST /users/{id}/reset-2fa`).
+// Reset 2FA pengguna lain dan penerbitan kode aktivasi oleh Administrator ada di `PengelolaDuaFaktorService`
+// (PR-02-33). TIDAK ada di mana pun (belum ada PR pemiliknya; logs/phase-02.md §10): menonaktifkan 2FA sendiri
+// bagi role opsional.
 
 import type { Kysely } from "kysely";
 import type { AuditLogger } from "../../../shared/audit/index.js";
-import { AMR_OTP } from "../../../shared/auth/index.js";
+import { AMR_OTP, wajibDuaFaktor } from "../../../shared/auth/index.js";
 import type { AuthContext } from "../../../shared/auth/index.js";
 import type { Clock } from "../../../shared/clock/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
-import type { Database } from "../../../shared/db/index.js";
+import type { Database, TransactionScope } from "../../../shared/db/index.js";
 import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
 import { publishAll } from "../../../shared/events/index.js";
 import type { DomainEvent } from "../../../shared/events/index.js";
@@ -21,15 +22,19 @@ import {
     base32Encode,
     cocokkanTotp,
     hashPassword,
+    normalisasiKodeCadangan,
     tampilkanKodeCadangan,
     urlOtpauth,
+    verifyPassword,
 } from "../../../shared/security/index.js";
 import type { JwtKeys, KotakRahasia } from "../../../shared/security/index.js";
+import { createActivationCodeRepository } from "../repositories/activation-code.repository.js";
 import { createSessionRepository } from "../repositories/session.repository.js";
 import { createTwoFactorRepository } from "../repositories/two-factor.repository.js";
 import { amrSesi } from "./amr.js";
 import { jejakKlien } from "./klien.js";
 import type { KlienPermintaan } from "./klien.js";
+import { BATAS_GAGAL_KODE_AKTIVASI, PESAN_KODE_AKTIVASI_TIDAK_BERLAKU } from "./kode-aktivasi.js";
 import { eventSesiDicabut } from "./sesi-event.js";
 
 const MODUL = "m01-auth";
@@ -74,14 +79,19 @@ export class TwoFactorService {
      * `POST /auth/2fa/enroll` (FR-01.5 langkah 1-2). Membangkitkan secret dan 10 kode cadangan; secret
      * tersimpan terenkripsi tetapi 2FA BELUM berlaku sampai `konfirmasiPendaftaran`. Diulang selagi belum
      * dikonfirmasi = mengganti secret dan kode cadangan (pengguna yang gagal memindai QR dapat mengulang).
+     *
+     * Akun role WAJIB 2FA harus menyertakan kode aktivasi yang diterbitkan Administrator (`BR-070d`): password
+     * saja tidak cukup, sehingga pemegang password tak dapat mendaftarkan authenticator miliknya lebih dulu.
+     * Kegagalan mencocokkan kode dicatat dan dihitung DALAM transaksi yang di-commit sebelum galat dijawab.
      */
-    async mulaiPendaftaran(ctx: AuthContext, klien: KlienPermintaan): Promise<PendaftaranDuaFaktor> {
+    async mulaiPendaftaran(ctx: AuthContext, kodeAktivasi: string | undefined, klien: KlienPermintaan): Promise<PendaftaranDuaFaktor> {
         const secret = bangkitkanSecretTotp();
         const kode = bangkitkanKodeCadangan();
         // Argon2id (BR-070c) dihitung SEBELUM transaksi: sepuluh hash tidak menahan kunci baris.
         const hashKode = await Promise.all(kode.map((k) => hashPassword(k)));
 
-        const email = await withTransaction(
+        const sekarang = this.clock.now();
+        const hasil = await withTransaction(
             ctx,
             async (scope) => {
                 const repo = createTwoFactorRepository(scope.tx);
@@ -89,6 +99,9 @@ export class TwoFactorService {
                 if (baris === undefined) throw new NotFoundError();
                 if (baris.totp_enabled_at !== null) {
                     throw galatValidasi("2fa", "2FA sudah aktif pada akun ini.");
+                }
+                if (wajibDuaFaktor(ctx.roleCode) && (await this.kodeAktivasiDitolak(scope, ctx, kodeAktivasi, sekarang, klien))) {
+                    return { ditolak: true } as const;
                 }
                 await repo.simpanSecretTertunda(ctx, this.kotak.enkripsi(secret, aadSecretTotp(ctx.userId)));
                 await repo.gantiKodeCadangan(ctx, hashKode);
@@ -101,14 +114,15 @@ export class TwoFactorService {
                     nilaiSesudah: { jumlah_kode_cadangan: kode.length },
                     ...jejakKlien(klien),
                 });
-                return baris.email;
+                return { ditolak: false, email: baris.email } as const;
             },
             this.db,
         );
+        if (hasil.ditolak) throw galatValidasi("kode_aktivasi", PESAN_KODE_AKTIVASI_TIDAK_BERLAKU);
 
         return {
             secret: base32Encode(secret),
-            otpauthUri: urlOtpauth(secret, email, PENERBIT_OTPAUTH),
+            otpauthUri: urlOtpauth(secret, hasil.email, PENERBIT_OTPAUTH),
             kodeCadangan: kode.map((k) => tampilkanKodeCadangan(k)),
         };
     }
@@ -138,12 +152,28 @@ export class TwoFactorService {
                 if (baris.totp_secret_enc === null) {
                     throw galatValidasi("kode", "Pendaftaran 2FA belum dimulai.");
                 }
+                // BR-070d: role wajib hanya boleh menyelesaikan pendaftaran yang kodenya sudah dicocokkan pada `enroll`.
+                // Tanpa ini, secret tertunda yang lahir tanpa kode (mis. sebelum aturan berlaku) dapat dikonfirmasi.
+                let kodeAktivasiId: string | undefined;
+                if (wajibDuaFaktor(ctx.roleCode)) {
+                    const aktif = await createActivationCodeRepository(scope.tx).kunciAktif(ctx, String(ctx.userId));
+                    if (
+                        aktif === undefined ||
+                        aktif.verified_at === null ||
+                        aktif.expires_at.getTime() <= sekarang.getTime() ||
+                        aktif.failed_attempts >= BATAS_GAGAL_KODE_AKTIVASI
+                    ) {
+                        throw galatValidasi("kode_aktivasi", PESAN_KODE_AKTIVASI_TIDAK_BERLAKU);
+                    }
+                    kodeAktivasiId = aktif.id;
+                }
                 const secret = this.kotak.dekripsi(baris.totp_secret_enc, aadSecretTotp(ctx.userId));
                 // Belum ada langkah terakhir yang perlu dilampaui: secret ini baru.
                 const langkah = cocokkanTotp(secret, kode, sekarang, null);
                 if (langkah === undefined) throw galatValidasi("kode", PESAN_KODE_SALAH);
 
                 await repo.aktifkan(ctx, sekarang, langkah);
+                if (kodeAktivasiId !== undefined) await createActivationCodeRepository(scope.tx).habiskan(ctx, kodeAktivasiId, sekarang);
                 await repo.tandaiSesiTerverifikasi(ctx, sesiSaatIni);
                 // BR-070e: sesi lain keluar dalam transaksi yang sama dengan pengaktifannya.
                 const sesiDicabut = await createSessionRepository(scope.tx).cabutSemuaKecuali(
@@ -157,7 +187,10 @@ export class TwoFactorService {
                     aksi: "TWO_FA_ENABLED",
                     entitas: "users",
                     entitasId: ctx.userId,
-                    nilaiSesudah: { sesi_dicabut: sesiDicabut.length },
+                    nilaiSesudah: {
+                        sesi_dicabut: sesiDicabut.length,
+                        ...(kodeAktivasiId === undefined ? {} : { kode_aktivasi_dipakai: true }),
+                    },
                     ...jejakKlien(klien),
                 });
                 const events: DomainEvent[] = sesiDicabut.map((s) => eventSesiDicabut(ctx.userId, s, ALASAN_DUA_FAKTOR_AKTIF));
@@ -226,5 +259,49 @@ export class TwoFactorService {
             { sub: String(ctx.userId), sid: sesiSaatIni, pwd: wajibGanti, amr: amrSesi(true) },
             this.clock.now(),
         );
+    }
+
+    /**
+     * Mencocokkan kode aktivasi akun sendiri pada `enroll` (`BR-070d`). Mengembalikan `true` bila DITOLAK — pemanggil
+     * mengakhiri transaksi dengan commit (bukan melempar) supaya penghitung kesalahan dan jejak penolakan menetap.
+     * Kode yang tidak ada, salah, kedaluwarsa, atau hangus dijawab sama; sebabnya hanya ada di activity log.
+     *
+     * Hanya tebakan sungguhan yang dihitung: kode yang tak dikirim atau bentuknya mustahil cocok tidak menambah
+     * penghitung. Lima kesalahan menghanguskan kode, TANPA mengunci akun (SDD-SESS-17).
+     */
+    private async kodeAktivasiDitolak(
+        scope: TransactionScope,
+        ctx: AuthContext,
+        masukan: string | undefined,
+        sekarang: Date,
+        klien: KlienPermintaan,
+    ): Promise<boolean> {
+        const repo = createActivationCodeRepository(scope.tx);
+        const tolak = async (alasan: string, sisaPercobaan?: number): Promise<true> => {
+            await this.audit.write(scope, {
+                modul: MODUL,
+                aksi: "TWO_FA_ACTIVATION_CODE_REJECTED",
+                hasil: "GAGAL",
+                entitas: "users",
+                entitasId: ctx.userId,
+                nilaiSesudah: { alasan, ...(sisaPercobaan === undefined ? {} : { sisa_percobaan: sisaPercobaan }) },
+                ...jejakKlien(klien),
+            });
+            return true;
+        };
+
+        const aktif = await repo.kunciAktif(ctx, String(ctx.userId));
+        if (aktif === undefined) return tolak("TIDAK_ADA");
+        if (aktif.expires_at.getTime() <= sekarang.getTime()) return tolak("KEDALUWARSA");
+        if (aktif.failed_attempts >= BATAS_GAGAL_KODE_AKTIVASI) return tolak("HANGUS");
+
+        const normal = masukan === undefined ? undefined : normalisasiKodeCadangan(masukan);
+        if (normal === undefined) return tolak(masukan === undefined ? "TIDAK_DIKIRIM" : "BENTUK_SALAH");
+        if (!(await verifyPassword(aktif.code_hash, normal))) {
+            const jumlah = await repo.tambahGagal(ctx, aktif.id);
+            return tolak("SALAH", Math.max(0, BATAS_GAGAL_KODE_AKTIVASI - jumlah));
+        }
+        await repo.tandaiTerverifikasi(ctx, aktif.id, sekarang);
+        return false;
     }
 }

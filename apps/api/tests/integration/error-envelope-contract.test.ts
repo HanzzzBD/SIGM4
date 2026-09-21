@@ -25,7 +25,7 @@ import { FixedClock } from "../../src/shared/clock/index.js";
 import { getDb } from "../../src/shared/db/index.js";
 import { Logger } from "../../src/shared/observability/index.js";
 import { dbmate, kueri } from "../helpers/db.js";
-import { penerbitPalsu } from "../helpers/auth.js";
+import { penerbitPalsu, pengelolaPalsu } from "../helpers/auth.js";
 
 const ADA_DB = process.env["DATABASE_URL"] !== undefined;
 const T1 = new Date("2026-09-19T03:00:00Z");
@@ -94,7 +94,7 @@ describe.skipIf(!ADA_DB)("Kontrak amplop galat lintas modul (Bab 17.2) — Postg
         });
         const batasi = (): RequestHandler => (_req, _res, next) => next();
         const deps = { db: getDb(), auditLogger: audit() };
-        app.use("/api/v1", usersRouter({ ...deps, penerbitPassword: penerbitPalsu, logger: logger(), clock: new FixedClock(T1) }, batasi, authorize));
+        app.use("/api/v1", usersRouter({ ...deps, penerbitPassword: penerbitPalsu, pengelolaDuaFaktor: pengelolaPalsu, logger: logger(), clock: new FixedClock(T1) }, batasi, authorize));
         app.use("/api/v1", locationsRouter(deps, batasi, authorize));
         app.use("/api/v1", settingsRouter(deps, batasi, authorize));
         app.use(

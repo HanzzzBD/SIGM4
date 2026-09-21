@@ -64,6 +64,7 @@ import {
     UpdateProfilResponseSchema,
 } from "./schemas/profile.schema.js";
 import {
+    EnrollBodySchema,
     EnrollConfirmBodySchema,
     EnrollConfirmResponseSchema,
     EnrollResponseSchema,
@@ -71,6 +72,7 @@ import {
 } from "./schemas/two-factor.schema.js";
 import { AuthService } from "./services/auth.service.js";
 import { PasswordResetService } from "./services/password-reset.service.js";
+import { PengelolaDuaFaktorService } from "./services/pengelola-dua-faktor.service.js";
 import { ProfileService } from "./services/profile.service.js";
 import { SessionService } from "./services/session.service.js";
 import type { PenyimpanTantangan } from "./services/tantangan-dua-faktor.js";
@@ -133,8 +135,9 @@ export const enrollDuaFaktorRoute = defineRoute({
     twoFactorExempt: true,
     rateLimitClass: "default",
     module: MODUL,
-    summary: "Mulai pendaftaran 2FA: secret TOTP + 10 kode cadangan (tampil sekali)",
+    summary: "Mulai pendaftaran 2FA: secret TOTP + 10 kode cadangan (tampil sekali); role wajib 2FA menyertakan kode aktivasi (BR-070d)",
     successStatus: 200,
+    body: EnrollBodySchema,
     response: EnrollResponseSchema,
 });
 
@@ -404,4 +407,32 @@ export interface PenerbitPasswordSementara {
         metode: "KARTU_IDENTITAS_TATAP_MUKA" | "KONFIRMASI_ATASAN_ATAU_WALI_KELAS",
         klien: { readonly ip: string | undefined; readonly userAgent: string | undefined },
     ): Promise<{ permintaanId: string; berlakuSampai: Date; passwordSementara: string }>;
+}
+
+/**
+ * Pintu bagi M-02 untuk mengelola 2FA pengguna lain (`POST /users/{id}/reset-2fa` dan
+ * `POST /users/{id}/2fa-activation-code`, PR-02-33) TANPA mengimpor internal m01-auth (SDD-SYS-03). Bentuknya
+ * didefinisikan pemakai (`m02-users`) dan dipenuhi secara struktural di sini.
+ */
+export function buatPengelolaDuaFaktor(deps: AuthModuleDeps): PengelolaDuaFaktor {
+    const layanan = new PengelolaDuaFaktorService(deps.db, deps.auditLogger, deps.clock);
+    return {
+        terbitkanKodeAktivasi: (ctx, userId, metode, klien) => layanan.terbitkanKodeAktivasi(ctx, userId, metode, klien),
+        reset: (ctx, userId, metode, klien) => layanan.reset(ctx, userId, metode, klien),
+    };
+}
+
+export interface PengelolaDuaFaktor {
+    terbitkanKodeAktivasi(
+        ctx: AuthContext,
+        userId: string,
+        metode: "KARTU_IDENTITAS_TATAP_MUKA" | "KONFIRMASI_ATASAN_ATAU_WALI_KELAS",
+        klien: { readonly ip: string | undefined; readonly userAgent: string | undefined },
+    ): Promise<{ kode: string; berlakuSampai: Date }>;
+    reset(
+        ctx: AuthContext,
+        userId: string,
+        metode: "KARTU_IDENTITAS_TATAP_MUKA" | "KONFIRMASI_ATASAN_ATAU_WALI_KELAS",
+        klien: { readonly ip: string | undefined; readonly userAgent: string | undefined },
+    ): Promise<{ sesiDicabut: number; kodeAktivasi: { kode: string; berlakuSampai: Date } | null }>;
 }

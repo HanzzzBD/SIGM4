@@ -19,7 +19,7 @@ Total: **69** requirement.
 | `FR-01.2` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | Not Started |  |
 | `FR-01.3` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | Not Started |  |
 | `FR-01.4` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | Not Started |  |
-| `FR-01.5` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | In Progress | PR-02-07 (#68): alur utama 1–5, A1, A2 dan AC kode cadangan/peringatan ≤ 2. TERBUKA: A3 (reset 2FA oleh Administrator), A5–A7 dan kode aktivasi (BR-070d) — PR-02-33; menonaktifkan 2FA sendiri — belum ada PR (logs/phase-02.md §7, §10) |
+| `FR-01.5` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | In Progress | PR-02-07 (#68): alur utama 1–5, A1, A2 dan AC kode cadangan/peringatan ≤ 2. PR-02-33: A3 (reset 2FA), A5, A7 (kode aktivasi). TERBUKA: A6 (CLI penerbit kode aktivasi — PR-02-08) dan menonaktifkan 2FA sendiri — belum ada PR (logs/phase-02.md §10) |
 | `FR-01.6` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | Not Started |  |
 | `FR-02.1` | M-02 Manajemen User & Role | `02-modules/m02-users.md` | Not Started |  |
 | `FR-02.2` | M-02 Manajemen User & Role | `02-modules/m02-users.md` | Not Started |  |
@@ -182,11 +182,11 @@ Total: **121** aturan. Setiap aturan wajib memiliki minimal satu test case
 | `BR-067` | M-02 Manajemen User & Role | `02-modules/m02-users.md` | Not Started |  |
 | `BR-068` | M-02 Manajemen User & Role | `02-modules/m02-users.md` | Not Started |  |
 | `BR-069` | M-02 Manajemen User & Role | `02-modules/m02-users.md` | Not Started |  |
-| `BR-070` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | In Progress | PR-02-07 (#68): gerbang 403 TWO_FACTOR_REQUIRED untuk R-01/R-03. TERBUKA: BR-070d (kode aktivasi) — risiko pendaftaran pertama oleh pemegang password (logs/phase-02.md §7) |
+| `BR-070` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | In Progress | PR-02-07 (#68): gerbang 403 TWO_FACTOR_REQUIRED untuk R-01/R-03. PR-02-33: pendaftaran pertama role wajib terikat kode aktivasi (BR-070d), menutup risiko pemegang password. TERBUKA: jalur CLI untuk instalasi awal (PR-02-08) |
 | `BR-070a` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | Not Started |  |
 | `BR-070b` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | Not Started |  |
 | `BR-070c` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | Done | PR-02-07 (#68): hash Argon2id, tampil sekali; diuji |
-| `BR-070d` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | Not Started |  |
+| `BR-070d` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | In Progress | PR-02-33: enroll/confirm role wajib menuntut kode aktivasi; endpoint penerbit + reset 2FA; diuji. TERBUKA: CLI penerbit kode aktivasi (PR-02-08) |
 | `BR-070e` | M-01 Autentikasi & Manajemen Akun | `02-modules/m01-auth.md` | In Progress | PR-02-07 (#68): sesi lain dicabut + event TwoFactorEnabled, diuji. TERBUKA: notifikasi NT-39a ke Administrator (PR-02-25) |
 | `BR-071` | M-18 Activity Log | `02-modules/m18-activity-log.md` | Not Started |  |
 | `BR-072` | M-18 Activity Log | `02-modules/m18-activity-log.md` | Not Started |  |

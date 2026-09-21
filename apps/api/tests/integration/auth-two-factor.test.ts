@@ -22,7 +22,7 @@ import { FixedClock } from "../../src/shared/clock/index.js";
 import { getDb } from "../../src/shared/db/index.js";
 import { HealthRegistry, Logger } from "../../src/shared/observability/index.js";
 import { base32Decode, hashPassword, langkahTotp, kodeTotp } from "../../src/shared/security/index.js";
-import { KOTAK_TOTP_UJI, daftarkanTotpUji, duaFaktorUji, kodeTotpUji, kunciUji } from "../helpers/auth.js";
+import { KOTAK_TOTP_UJI, daftarkanTotpUji, duaFaktorUji, kodeTotpUji, kunciUji, terbitkanKodeAktivasiUji } from "../helpers/auth.js";
 import type { TotpUji } from "../helpers/auth.js";
 import { dbmate, kueri } from "../helpers/db.js";
 
@@ -116,6 +116,7 @@ describe.skipIf(!ADA)("PR-02-07 — 2FA TOTP (PostgreSQL + Redis nyata)", () => 
             await kueri(`DELETE FROM event_outbox WHERE event_name IN ('AccountLocked', 'SessionRevoked', 'TwoFactorEnabled') AND aggregate_id IN (${daftar})`);
             await kueri(`DELETE FROM refresh_tokens WHERE user_id IN (${daftar})`);
             await kueri(`DELETE FROM totp_backup_codes WHERE user_id IN (${daftar})`);
+            await kueri(`DELETE FROM totp_activation_codes WHERE user_id IN (${daftar})`);
             await kueri(`DELETE FROM activity_logs WHERE modul = 'm01-auth' AND (entitas_id IN (${daftar}) OR user_id IN (${daftar}))`);
             await kueri(`DELETE FROM users WHERE id IN (${daftar})`);
         }
@@ -709,7 +710,9 @@ describe.skipIf(!ADA)("PR-02-07 — 2FA TOTP (PostgreSQL + Redis nyata)", () => 
             const a = await seed("R-01");
             const { sesi } = await masukBiasa(a.email);
             const h = bearer(sesi.access);
-            const data = (await kirim("POST", "/auth/2fa/enroll", h)).json.data as { secret: string };
+            // BR-070d: role wajib mendaftar dengan kode aktivasi dari Administrator/CLI.
+            const kodeAktivasi = await terbitkanKodeAktivasiUji(getDb(), a.id, clock.now());
+            const data = (await kirim("POST", "/auth/2fa/enroll", h, { kode_aktivasi: kodeAktivasi })).json.data as { secret: string };
             const kode = kodeTotp(base32Decode(data.secret), langkahTotp(clock.now()));
             const ok = await kirim("POST", "/auth/2fa/enroll/confirm", h, { kode });
             expect(ok.status).toBe(200);
@@ -755,7 +758,8 @@ describe.skipIf(!ADA)("PR-02-07 — 2FA TOTP (PostgreSQL + Redis nyata)", () => 
         it("refresh sesudah konfirmasi pendaftaran menerbitkan amr otp (baris refresh saat ini ditandai terverifikasi)", async () => {
             const a = await seed("R-01");
             const { sesi } = await masukBiasa(a.email);
-            const data = (await kirim("POST", "/auth/2fa/enroll", bearer(sesi.access))).json.data as { secret: string };
+            const kodeAktivasi = await terbitkanKodeAktivasiUji(getDb(), a.id, clock.now());
+            const data = (await kirim("POST", "/auth/2fa/enroll", bearer(sesi.access), { kode_aktivasi: kodeAktivasi })).json.data as { secret: string };
             const kode = kodeTotp(base32Decode(data.secret), langkahTotp(clock.now()));
             expect((await kirim("POST", "/auth/2fa/enroll/confirm", bearer(sesi.access), { kode })).status).toBe(200);
             const r = await kirim("POST", "/auth/refresh", {}, { refresh_token: sesi.refresh });

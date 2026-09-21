@@ -129,6 +129,34 @@ export const ResetPasswordBodySchema = z.object({
     metode_verifikasi: z.enum(["KARTU_IDENTITAS_TATAP_MUKA", "KONFIRMASI_ATASAN_ATAU_WALI_KELAS"]),
 });
 
+/** `POST /users/{id}/reset-2fa` dan `/2fa-activation-code`: metode verifikasi identitas luring wajib (FR-01.5 A3/A7, seperti FR-01.3). */
+export const KelolaDuaFaktorBodySchema = z.object({
+    metode_verifikasi: z.enum(["KARTU_IDENTITAS_TATAP_MUKA", "KONFIRMASI_ATASAN_ATAU_WALI_KELAS"]),
+});
+
+export const KodeAktivasiResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.object({
+        user_id: z.string(),
+        /** Tampil SATU kali dan tak dapat dibaca ulang, termasuk oleh Administrator penerbitnya. */
+        kode_aktivasi: z.string(),
+        berlaku_sampai: z.string(),
+    }),
+    meta: z.null(),
+});
+
+export const ResetDuaFaktorResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.object({
+        user_id: z.string(),
+        sesi_dicabut: z.number(),
+        /** Role wajib 2FA: kode aktivasi baru, tampil SATU kali; role lain: null. */
+        kode_aktivasi: z.string().nullable(),
+        berlaku_sampai: z.string().nullable(),
+    }),
+    meta: z.null(),
+});
+
 export const ResetPasswordResponseSchema = z.object({
     success: z.literal(true),
     data: z.object({
