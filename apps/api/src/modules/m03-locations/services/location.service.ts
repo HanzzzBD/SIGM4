@@ -231,10 +231,11 @@ export class LocationService {
     }
 
     /**
-     * `PATCH /buildings/{id}/status` — penonaktifan berjenjang, KERANGKA hierarki
-     * (BR-015): gedung tidak dapat dinonaktifkan selagi masih memiliki ruangan
-     * AKTIF di bawahnya. Pemeriksaan terhadap ASET sungguhan menyusul `PR-02-10`
-     * (Phase 02, tabel `assets` belum ada) — dicatat di log phase-01 §10.
+     * `PATCH /buildings/{id}/status` — penonaktifan berjenjang (BR-015): gedung
+     * tidak dapat dinonaktifkan selagi masih memiliki ruangan AKTIF di bawahnya
+     * (proxy struktural). Ini tetap cukup untuk ASET: `updateRoomStatus` menolak
+     * menonaktifkan ruangan yang masih memuat aset, sehingga gedung tidak pernah
+     * bisa mencapai "semua ruangan nonaktif" selagi salah satunya masih beraset.
      */
     async updateBuildingStatus(
         ctx: AuthContext,
@@ -276,9 +277,12 @@ export class LocationService {
     }
 
     /**
-     * `PATCH /rooms/{id}/status`. BR-015 di tingkat ruangan (memuat aset) BELUM
-     * dapat ditegakkan — `assets` baru lahir `PR-02-10`. Tanpa pemeriksaan sampai
-     * saat itu; lihat log phase-01 §10 "Yang diserahkan ke phase berikutnya".
+     * `PATCH /rooms/{id}/status`. BR-015 di tingkat ruangan: ruangan tidak dapat
+     * dinonaktifkan selagi masih memuat aset yang belum dihapuskan — "seluruh
+     * asetnya dipindahkan" (`m03-locations.md` BR-015) berarti `room_id` aset
+     * itu diubah ke ruangan lain (`PR-02-14`) atau asetnya dihapuskan (`M-21`)
+     * lebih dulu. `FR-03.1 A2` (reservasi mendatang) TETAP belum ditegakkan —
+     * `booking_slots` belum ada (Phase 02 lanjutan, lihat log phase-01 §10).
      */
     async updateRoomStatus(ctx: AuthContext, id: number, status: LocationStatus): Promise<RoomRow> {
         return withTransaction(
@@ -287,6 +291,16 @@ export class LocationService {
                 const repo = createLocationRepository(scope.tx);
                 const before = await repo.findRoomById(scope.ctx, id);
                 if (before === undefined) throw new NotFoundError("Ruangan tidak ditemukan.");
+
+                if (status === "NONAKTIF" && before.status === "AKTIF") {
+                    if (await repo.hasAssetsInRoom(scope.ctx, id)) {
+                        throw new DomainError(
+                            "VALIDATION_ERROR",
+                            "Ruangan masih memuat aset yang belum dipindahkan.",
+                            { rule: "BR-015" },
+                        );
+                    }
+                }
 
                 const after = await repo.updateRoomStatus(scope.ctx, id, status);
 

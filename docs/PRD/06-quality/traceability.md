@@ -108,7 +108,7 @@ Total: **121** aturan. Setiap aturan wajib memiliki minimal satu test case
 | `BR-012` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
 | `BR-013` | M-03 Manajemen Lokasi | `02-modules/m03-locations.md` | Not Started |  |
 | `BR-014` | M-03 Manajemen Lokasi | `02-modules/m03-locations.md` | Not Started |  |
-| `BR-015` | M-03 Manajemen Lokasi | `02-modules/m03-locations.md` | Not Started |  |
+| `BR-015` | M-03 Manajemen Lokasi | `02-modules/m03-locations.md` | Done | `PR-01-06` (gedung, kerangka struktural) + tindak lanjut `PR-02-10` (ruangan, `assets.room_id`+`dihapuskan`), diuji |
 | `BR-016` | M-03 Manajemen Lokasi | `02-modules/m03-locations.md` | Not Started |  |
 | `BR-017` | M-07 Reservasi Ruangan | `02-modules/m07-reservation-room.md` | Not Started |  |
 | `BR-018` | M-07 Reservasi Ruangan | `02-modules/m07-reservation-room.md` | Not Started |  |
