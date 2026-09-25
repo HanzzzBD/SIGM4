@@ -81,12 +81,38 @@ describe.skipIf(!ADA_DB)("PR-01-10 — parameter sistem (acceptance)", () => {
     it("seed sama persis dengan katalog SDD-05 §4.7a — bukan salinan yang ditulis di uji ini", async () => {
         const sdd = readFileSync(new URL("docs/SDD/05-database-design.md", AKAR), "utf8");
         const bagian = sdd.slice(sdd.indexOf("### 4.7a"), sdd.indexOf("### 4.8"));
-        const katalog = [...bagian.matchAll(/^\| `([a-z_]+\.[a-z0-9_]+)` \| `(\w+)` \| `(\w+)` \| (\d+) \| (\d+) – (\d+) \|/gm)].map(
-            (m) => ({ key: m[1], kelompok: m[2], tipe: m[3], bawaan: Number(m[4]), min: Number(m[5]), maks: Number(m[6]) }),
+        // Bawaan/rentang ditangkap MENTAH: BILANGAN_BULAT/DESIMAL berupa angka
+        // dengan rentang "min – maks"; TEKS berupa string berkutip tanpa rentang
+        // (`—`, hanya bermakna bagi angka — system_settings_rentang_angka, 0015).
+        const katalog = [...bagian.matchAll(/^\| `([a-z_]+\.[a-z0-9_]+)` \| `(\w+)` \| `(\w+)` \| ([^|]+) \| ([^|]+) \|/gm)].map(
+            (m) => {
+                const tipe = m[3]!;
+                const bawaanMentah = m[4]!.trim();
+                const rentangMentah = m[5]!.trim();
+                if (tipe === "TEKS") {
+                    return {
+                        key: m[1],
+                        kelompok: m[2],
+                        tipe,
+                        bawaan: JSON.parse(bawaanMentah.replace(/^`|`$/g, "")) as string,
+                        min: null,
+                        maks: null,
+                    };
+                }
+                const rentang = /(\d+) – (\d+)/.exec(rentangMentah);
+                return {
+                    key: m[1],
+                    kelompok: m[2],
+                    tipe,
+                    bawaan: Number(bawaanMentah),
+                    min: Number(rentang?.[1]),
+                    maks: Number(rentang?.[2]),
+                };
+            },
         );
         expect(katalog.length).toBeGreaterThan(0);
 
-        const rows = await kueri<{ key: string; kelompok: string; tipe: string; nilai_bawaan: number; nilai_min: string; nilai_maks: string }>(
+        const rows = await kueri<{ key: string; kelompok: string; tipe: string; nilai_bawaan: unknown; nilai_min: string | null; nilai_maks: string | null }>(
             "SELECT key, kelompok::text, tipe::text, nilai_bawaan, nilai_min::text, nilai_maks::text FROM system_settings ORDER BY key",
         );
         expect(
@@ -95,8 +121,8 @@ describe.skipIf(!ADA_DB)("PR-01-10 — parameter sistem (acceptance)", () => {
                 kelompok: r.kelompok,
                 tipe: r.tipe,
                 bawaan: r.nilai_bawaan,
-                min: Number(r.nilai_min),
-                maks: Number(r.nilai_maks),
+                min: r.nilai_min === null ? null : Number(r.nilai_min),
+                maks: r.nilai_maks === null ? null : Number(r.nilai_maks),
             })),
         ).toEqual([...katalog].sort((a, b) => (a.key! < b.key! ? -1 : 1)));
     });

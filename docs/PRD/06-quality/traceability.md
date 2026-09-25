@@ -25,7 +25,7 @@ Total: **69** requirement.
 | `FR-02.2` | M-02 Manajemen User & Role | `02-modules/m02-users.md` | Not Started |  |
 | `FR-03.1` | M-03 Manajemen Lokasi | `02-modules/m03-locations.md` | Not Started |  |
 | `FR-03.2` | M-03 Manajemen Lokasi | `02-modules/m03-locations.md` | Not Started |  |
-| `FR-04.1` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | In Progress | PR-02-10 (belum digabung): skema `assets`/`asset_categories`/`asset_condition_history`. TERBUKA: pendaftaran + penomoran + impor massal (PR-02-11) |
+| `FR-04.1` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | In Progress | PR-02-10 (#81): skema. PR-02-11 (belum digabung): `POST /assets`, N unit sekaligus + penomoran otomatis, diuji termasuk konkurensi. TERBUKA: A2 impor massal (belum ada PR), A4 pembuatan kategori inline (menunggu PR-02-15, belum ada endpoint kategori) |
 | `FR-04.2` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
 | `FR-04.3` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
 | `FR-04.4` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
@@ -92,17 +92,17 @@ Total: **121** aturan. Setiap aturan wajib memiliki minimal satu test case
 
 | ID | Module | File | Status | Notes |
 |---|---|---|:---:|---|
-| `BR-001` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
-| `BR-002` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
-| `BR-003` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
-| `BR-004` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
+| `BR-001` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Done | PR-02-11: `jumlah_unit` unit terpisah, tiap unit `kode_barang`+`uuid` sendiri, diuji |
+| `BR-002` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Done | PR-02-10 (unique index) + PR-02-11 (penomoran otomatis via `asset_code_counters`), diuji termasuk beban paralel |
+| `BR-003` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Done | PR-02-10 (partial unique index) + PR-02-11 (ditolak sebelum INSERT, DUPLICATE_CODE), diuji |
+| `BR-004` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Done | Enum `asset_condition` (0002) + kolom NOT NULL (PR-02-10); diterima sebagai input tervalidasi PR-02-11 |
 | `BR-005` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
 | `BR-005a` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
 | `BR-005b` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
 | `BR-006` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
 | `BR-007` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
 | `BR-008` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
-| `BR-009` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
+| `BR-009` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Done | PR-02-11: `room_id` wajib ada dan berstatus AKTIF, diuji |
 | `BR-010` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
 | `BR-011` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
 | `BR-012` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
