@@ -28,10 +28,16 @@ Berkas ini menetapkan bentuk sistem secara keseluruhan. Seluruh SDD lain beroper
 | **SDD-SYS-03** | Komunikasi antar-modul hanya melalui **service interface** yang diekspor modul pemilik. Repository bersifat privat terhadap modulnya. |
 | **SDD-SYS-04** | 22 modul PRD dipetakan satu-ke-satu ke folder `src/modules/`. Tidak ada modul kode yang tidak punya padanan di PRD. |
 | **SDD-SYS-05** | Efek samping lintas modul (notifikasi, activity log, pembatalan slot) dijalankan lewat **domain event**, bukan panggilan langsung berantai. Rinciannya di [SDD-07](07-event-flow.md). |
-| **SDD-SYS-06** | Terdapat *shared kernel* berisi: `AuthContext`, `BusinessCalendarService`, `Clock`, `DocumentNumberService`, `ErrorMapper`, `EventBus`, `AuditLogger`. Modul boleh bergantung padanya; ia tidak boleh bergantung pada modul. |
+| **SDD-SYS-06** | Terdapat *shared kernel* berisi: `AuthContext`, `BusinessCalendarService`, `Clock`, `DocumentNumberService`, `ErrorMapper`, `EventBus`, `AuditLogger`, `SlotService` (`SDD-SYS-10`), `Logger` dan `RequestContext` (`SDD-SYS-11`), `RouteRegistry` (`SDD-SYS-12`), `RedisConnection` (`SDD-SYS-13`), `Config` (`SDD-SYS-14`), `PasswordHasher` beserta kebijakan kata sandi (`SDD-SYS-15`). Modul boleh bergantung padanya; ia tidak boleh bergantung pada modul. Daftar ini **tertutup** — penambahan menuntut suntingan berkas ini. |
+| **SDD-SYS-11** | `Logger` dan `RequestContext` bermukim di *shared kernel* `shared/observability/`, bukan di `api/`. Alasannya memaksa: `SDD-SYS-02` melarang `shared/*` dan `modules/*` mengimpor entrypoint, sehingga logger yang tinggal di `api/` membuat seluruh kernel dan seluruh modul tidak dapat mencatat log. Folder itu sekaligus menjadi rumah bagi metrik (`SDD-OBS-05`) dan tracing (`SDD-OBS-08`) saat Phase 08 membangunnya — satu entri pada daftar tertutup, bukan tiga. |
+| **SDD-SYS-12** | `defineRoute` dan `RouteRegistry` bermukim di *shared kernel* `shared/http/`, bukan di `api/`. Letaknya dipaksa aturan impor: `SDD-06 §4.6` menempatkan deklarasi route di `modules/*/routes.ts`, dan §4.2 hanya mengizinkan `modules/*` mengimpor `shared/*`. Folder itu sekaligus menjadi rumah rantai middleware §4.2 yang `PR-00-10` dan `PR-00-15` perluas. **Generator OpenAPI tidak ikut** — ia tinggal di `api/`, sebab hanya *entrypoint* yang menerbitkan dokumen dan *shared kernel* tidak perlu tahu caranya. |
+| **SDD-SYS-13** | Koneksi Redis bermukim di *shared kernel* `shared/cache/`, sejajar dengan `shared/db/` bagi PostgreSQL. Redis bukan milik worker: `SDD-AVL-10` memakainya untuk antrean, `NFR-S-07` untuk rate limit (`PR-00-15`), dan `SDD-AUTH-04` untuk cache permission ber-TTL 60 detik. Menaruhnya di `worker/` akan membuat `api/` tidak dapat menyentuhnya — §4.2 melarang entrypoint mengimpor entrypoint lain — sehingga lahir koneksi kedua. Klien yang dipakai adalah **`ioredis`**, mengikuti BullMQ (`SDD-AVL-10`) yang menuntutnya. |
+| **SDD-SYS-14** | Konfigurasi proses bermukim di *shared kernel* `shared/config/`: **satu skema Zod** yang divalidasi saat *startup* api dan worker (`SDD-INF-08`), termasuk zona waktu proses UTC (`SDD-INF-09`), dan menjadi satu-satunya tempat aturan tiap variabel — pembaca koneksi `shared/db`, `shared/cache`, dan logger memakai parsernya. Skemanya **bertahap**: variabel `SDD-16 §4.7` masuk bersama PR pertama yang memakainya, sehingga lingkungan tidak dipaksa mengisi rahasia fitur yang belum ada (keputusan pemilik produk, 15 September 2026). |
+| **SDD-SYS-15** | Hash password dan pemeriksaan kebijakan kata sandi bermukim di *shared kernel* `shared/security/`. Keduanya dipakai dua modul yang berbeda — M-02 membuat akun berpassword sementara (`FR-02.1`), M-01 memverifikasi dan mengganti password (`FR-01.1`, `FR-01.4`) — sehingga menaruhnya di salah satu modul memaksa modul lain mengimpornya; `SDD-00 §4.2` hanya mengizinkan itu lewat `index.ts` dan membuat kontrol keamanan bergantung pada modul yang kebetulan lebih dulu lahir. Parameter Argon2id `SDD-SESS-01` tinggal di sini sebagai konstanta. |
 | **SDD-SYS-07** | Waktu **selalu** diambil dari `Clock` yang di-*inject*, tidak pernah dari `new Date()` langsung. Ini prasyarat `TD-04` (test hook waktu). |
 | **SDD-SYS-08** | Worker berbagi basis kode dengan API namun memiliki *entrypoint* terpisah dan **tidak** membuka port HTTP kecuali `/health`. |
 | **SDD-SYS-09** | Chatbot AI berjalan sebagai modul di dalam monolith (`AI Orchestrator`), bukan layanan terpisah — tetapi seluruh panggilannya ke penyedia LLM melewati satu adapter agar `NFR-A-05` (graceful degradation) dapat ditegakkan di satu titik. |
+| **SDD-SYS-10** | `SlotService` beserta skema `booking_slots` berada di ***shared kernel***, pada `shared/booking/` — bukan di dalam modul mana pun. Ia dipakai enam modul ([SDD-01 §Modul terdampak](01-availability-concurrency.md): M-04, M-07, M-08, M-09, M-12, M-21) dengan semantik identik, dan tidak mengimpor satu modul pun. Semantik konkurensinya (`CI-01` … `CI-03`, `SDD-AVL-04/05`) adalah **satu-satunya** penulis `booking_slots`; modul memesan dan melepas slot lewat antarmukanya, tidak pernah menyentuh tabelnya langsung. |
 
 ---
 
@@ -67,7 +73,14 @@ src/
 │   ├── numbering/              #   DocumentNumberService (SEQ-01..04)
 │   ├── errors/                 #   ErrorMapper -> kode galat Bab 17.3
 │   ├── audit/                  #   AuditLogger (AL-01)
-│   └── db/                     #   koneksi, transaksi, tipe repository
+│   ├── observability/          #   Logger, RequestContext (SDD-SYS-11, SDD-OBS-02/03/04)
+│   ├── http/                   #   defineRoute, RouteRegistry (SDD-SYS-12, SDD-API-03)
+│   ├── cache/                  #   koneksi Redis (SDD-SYS-13, INF-03)
+│   ├── config/                 #   skema konfigurasi & validasi startup (SDD-SYS-14, SDD-INF-08/09)
+│   ├── security/               #   hash password + kebijakan kata sandi (SDD-SYS-15, SDD-SESS-01)
+│   ├── lifecycle/              #   penghentian proses yang rapi — SIGTERM, drain, tenggat (SDD-INF-04/05)
+│   ├── booking/                #   SlotService + booking_slots (SDD-SYS-10)
+│   └── db/                     #   koneksi, transaksi, tipe repository (SDD-DB-15)
 │
 ├── modules/
 │   ├── m01-auth/               # tiap modul: routes / controllers / services

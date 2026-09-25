@@ -316,7 +316,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 | **material_categories** | Kategori bahan — terpisah dari kategori aset | id, nama, kode, keterangan, status | ± 15 |
 | **materials** | Master jenis bahan | id, uuid (dasar QR per jenis), nama, material_category_id, satuan_id, stok_minimum, room_id_default, keterangan, status | ± 300 |
 | **material_balances** | Saldo per bahan per lokasi penyimpanan | id, material_id, room_id, saldo | ± 900 |
-| **material_transactions** | Seluruh peristiwa yang mengubah saldo | id, material_id, room_id, jenis (PENERIMAAN/PENGELUARAN/PENYESUAIAN/OPNAME), jumlah, saldo_sesudah, referensi_tipe, referensi_id, alasan, dibuat_oleh, dibuat_pada | ± 20.000 |
+| **material_transactions** | Seluruh peristiwa yang mengubah saldo | id, material_id, room_id, jenis (PENERIMAAN/PENGELUARAN/PENYESUAIAN/OPNAME), jumlah, saldo_sesudah, referensi_jenis, referensi_id, alasan, created_by, created_at | ± 20.000 |
 | **material_requests** | Permintaan bahan | id, nomor, pemohon_id, keperluan, status, approval_instance_id (nullable — `BR-086`), diserahkan_oleh, diserahkan_pada | ± 1.500 |
 | **material_request_items** | Baris permintaan | id, material_request_id, material_id, jumlah_diminta, jumlah_disetujui, jumlah_diserahkan | ± 3.000 |
 

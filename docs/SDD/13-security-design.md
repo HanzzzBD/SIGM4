@@ -26,13 +26,15 @@ Otorisasi berada di [SDD-03](03-authorization.md); autentikasi di [SDD-04](04-au
 | **SDD-SEC-01** | Enkripsi *at-rest* memakai **enkripsi tingkat volume/penyimpanan**, bukan enkripsi kolom aplikasi — kecuali dua field yang dikecualikan di bawah. |
 | **SDD-SEC-02** | Dua field dienkripsi di **tingkat aplikasi** dengan kunci terpisah: `users.totp_secret_enc` dan `vault` kredensial pihak ketiga. Alasan pada §3. |
 | **SDD-SEC-03** | Header keamanan disetel oleh **middleware aplikasi**, bukan hanya reverse proxy — agar berlaku sama di semua lingkungan. |
-| **SDD-SEC-04** | CSP disusun **tanpa `unsafe-inline`**; skrip dan gaya memakai *nonce* per permintaan. |
+| **SDD-SEC-04** | CSP disusun **tanpa `unsafe-inline`**. Respons dinamis API memakai *nonce* per permintaan; halaman web — aset statis (`SDD-FE-14`) — memakai `'self'` ditambah **hash sha256** yang dihitung saat *build* bagi setiap skrip atau gaya inline (keputusan pemilik produk, 15 September 2026). |
 | **SDD-SEC-05** | Rate limit diimplementasikan sebagai **sliding window di Redis**, dengan kelas berbeda per kelompok endpoint (`NFR-S-07`). |
 | **SDD-SEC-06** | Pemindaian dependensi, SAST, dan pemindaian image adalah **gerbang pipeline**, bukan laporan pasca-rilis (`CD-02`). |
 | **SDD-SEC-07** | Matriks uji otorisasi (`SEC-T-01`) **digenerate** dari registri route, bukan ditulis tangan. |
 | **SDD-SEC-08** | Pseudonimisasi (`DP-04`) diimplementasikan sebagai operasi **satu arah** pada kolom identitas, mempertahankan baris transaksi dan jejak audit. |
 | **SDD-SEC-09** | Akses produksi oleh pengembang berjalan lewat prosedur *break-glass* tercatat (`DP-11`), bukan kredensial tetap. |
 | **SDD-SEC-10** | **Lingkup kepatuhan formal adalah UU PDP No. 27/2022 saja** — tidak ada standar dinas pendidikan atau yayasan tambahan. Menyertainya satu batasan mengikat: **seluruh data sistem, termasuk log aplikasi, wajib berada pada wilayah Indonesia**. Batasan ini berlaku bagi setiap layanan pihak ketiga yang menerima data, dan menjadi kriteria seleksi — bukan pemeriksaan pasca-pemilihan. Menutup `TBD-SEC-B` (keputusan pemilik produk, 25 Agustus 2026; Keputusan #29). |
+| **SDD-SEC-11** | Perkakas tahap keamanan pipeline ([SDD-16 §4.3](16-infrastructure-deployment.md)): **CodeQL** untuk SAST (`ST-01`), **Dependabot** untuk SCA (`ST-02`), **Trivy** untuk pemindaian image (`CD-01`), dan **OWASP ZAP** *baseline scan* terhadap staging untuk DAST (`ST-03`). Ambang penghenti pipeline tetap milik `ST-02` — Critical/High menggagalkan, bukan memperingatkan. Karena Dependabot hanya menerbitkan alert dan PR, **penghentinya** adalah `actions/dependency-review-action` atas dependensi yang diubah sebuah PR dan `npm audit --audit-level=high` atas seluruh pohon pada setiap run serta harian — keduanya membaca GitHub Advisory Database yang sama dengan Dependabot. CodeQL pun hanya melaporkan; pipeline gagal bila SARIF-nya memuat temuan ber-`security-severity` ≥ 7,0 (keputusan pemilik produk, 15 September 2026). |
+| **SDD-SEC-12** | Argon2id dijalankan pustaka **`@node-rs/argon2`** (biner napi siap pakai, termasuk varian `linux-x64-musl`). Tahap build image tidak memasang perkakas kompilasi (`SDD-INF-02`), sehingga pustaka ber-`node-gyp` menuntut `build-base` ditambahkan hanya demi satu dependensi. Parameter `SDD-SESS-01` diterapkan di `shared/security/` (`SDD-SYS-15`). |
 
 ---
 
@@ -51,7 +53,7 @@ Password **tidak** masuk daftar ini karena sudah di-hash Argon2id (`SDD-SESS-01`
 
 **SDD-SEC-03 — header di aplikasi.** Menyetel header keamanan hanya di Nginx berarti lingkungan pengembangan dan staging berjalan tanpanya, dan celah baru ditemukan saat pentest menjelang rilis. Middleware aplikasi membuat perilaku sama di mana pun, dan proxy tetap boleh menambah HSTS di lapisannya.
 
-**SDD-SEC-04 — CSP tanpa `unsafe-inline`.** `NFR-S-11` mewajibkan CSP. CSP dengan `unsafe-inline` praktis tidak menahan XSS — ia hanya memberi rasa aman. Nonce per permintaan menuntut sedikit kerja pada *build* frontend, dan itu harga yang wajar.
+**SDD-SEC-04 — CSP tanpa `unsafe-inline`.** `NFR-S-11` mewajibkan CSP. CSP dengan `unsafe-inline` praktis tidak menahan XSS — ia hanya memberi rasa aman. Nonce hanya dapat dibawa respons yang dirakit per permintaan, yaitu respons API. Web disajikan sebagai berkas statis (`SDD-16 §4.2`), sehingga bukti keaslian inline-nya dihitung sekali saat *build* sebagai hash — tetap tanpa `unsafe-inline`, dan tetap dapat di-*cache* CDN.
 
 **SDD-SEC-07 — matriks uji digenerate.** `SEC-T-01` menuntut pengujian setiap endpoint × 7 role × (data sendiri / data orang lain). Ditulis tangan, itu ratusan kasus yang akan tertinggal saat endpoint baru ditambah. Karena setiap route sudah mendeklarasikan permission-nya (`SDD-AUTH-01`), matriksnya dapat dihasilkan — dan endpoint baru otomatis ikut teruji.
 
@@ -81,7 +83,7 @@ Strict-Transport-Security : max-age=31536000; includeSubDomains; preload
 Content-Security-Policy   : default-src 'self';
                             script-src 'self' 'nonce-{random}';
                             style-src  'self' 'nonce-{random}';
-                            img-src    'self' data: {object-storage-host};
+                            img-src    'self' data: {origin S3_PUBLIC_ENDPOINT};
                             connect-src 'self' {api-host};
                             frame-ancestors 'none'; base-uri 'self'
 X-Content-Type-Options    : nosniff
@@ -104,6 +106,10 @@ X-Robots-Tag              : noindex, nofollow      # halaman publik QR saja
 | `qr-print` | 5/jam | user | Redis |
 | `chat` | 10/menit | user | Redis |
 | `upload` | 60/jam | user | Redis |
+
+Kelas `login` hanya menghitung **percobaan gagal** pada kedua sumbunya — login yang berhasil tidak mengurangi jatah, sehingga satu jaringan sekolah di balik satu IP publik tidak saling mengunci (keputusan pemilik produk, 15 September 2026).
+
+Kelas berkunci `user` memakai IP klien bila permintaan belum terautentikasi — probe publik dan seluruh trafik sebelum autentikasi ada (keputusan pemilik produk, 14 September 2026).
 
 Header `X-RateLimit-*` selalu disertakan. Redis tidak tersedia → *fail open* untuk kelas non-keamanan, *fail closed* untuk `login` (yang penghitung akunnya di PostgreSQL dan tetap berjalan).
 
@@ -175,6 +181,12 @@ WHERE id = :id;
 
 Operasi ini tercatat di activity log dan hanya dapat dijalankan Administrator dengan alasan wajib.
 
+**SDD-SEC-11 — perkakas yang tinggal di tempat pull request dinilai.** `ST-01`…`ST-03` menetapkan tahapnya sejak awal tanpa satu nama pun, sehingga `PR-00-17` tidak dapat menulis pipeline-nya. Kriteria pemilihannya bukan kedalaman analisis melainkan tempat temuannya muncul: temuan keamanan yang berada di sistem lain dari tempat merge diputuskan adalah temuan yang dibaca belakangan, dan `ST-02` justru menuntutnya menghentikan pipeline.
+
+Karena `SDD-INF-12` sudah mengunci GitHub Actions, CodeQL dan Dependabot berada persis di sana — tanpa langganan, tanpa token pihak ketiga, dan tanpa data dependensi meninggalkan penyedia yang sudah dipakai. Itu sekaligus menjawab `SDD-SEC-10`: perkakas yang mengirim kode atau daftar dependensi ke vendor ketiga akan menambah pihak yang tunduk pada batasan residensi, dan **Snyk ditolak** justru pada titik itu, bukan pada kemampuannya. **Semgrep** ditolak lebih tipis — aturan kustomnya menarik, tetapi penegakan aturan repo ini sendiri sudah menjadi milik lint (`SDD-SYS-02`, `SDD-REPO-08`) dan dibuktikan uji negatif; memindahkannya menjadi temuan keamanan hanya memindahkan tempat gagalnya.
+
+Trivy dan OWASP ZAP dipilih karena keduanya berjalan sebagai langkah biasa di dalam workflow: Trivy memindai image yang baru dibangun sebelum ia dipromosikan, ZAP memindai staging setelah ia berdiri (`CD-07` menyusul). Keduanya sumber terbuka dan tidak menambah pihak penerima data.
+
 **SDD-SEC-10 — cakupan kepatuhan sempit, residensi ketat.** Dua bagian keputusan ini menarik ke arah berlawanan dan sebaiknya dibaca bersama.
 
 Cakupan **tidak** diperluas: tidak ada standar formal di luar UU PDP, sehingga lingkup audit Phase 08 tetap `DP-01` … `DP-11` dan tidak bertambah satu kontrol pun. Yang dipersempit justru tempat data boleh berada. Alasannya adalah sifat subjek datanya — sistem ini menyimpan PII anak di bawah umur lewat role Siswa/OSIS (`FR-01.1`), dan `SDD-OBS-09` mengirim log aplikasi berisi PII itu ke layanan terkelola sejak logger dipasang (`PR-00-06`).
@@ -187,7 +199,7 @@ Residensi karena itu bukan pembatasan tambahan atas arsitektur yang sudah jadi, 
 
 ## 5. Konsekuensi
 
-- CSP tanpa `unsafe-inline` mengharuskan *build* frontend menyuntikkan nonce; pustaka pihak ketiga yang menulis gaya inline harus dihindari atau dibungkus.
+- CSP tanpa `unsafe-inline` mengharuskan *build* web menghitung hash setiap skrip/gaya inline dan menuliskannya ke kebijakan CSP yang disajikan bersama aset statis; pustaka pihak ketiga yang menyisipkan tag `<style>` saat runtime harus dihindari atau dibungkus.
 - Enkripsi aplikasi pada secret TOTP menjadikan kunci itu artefak paling kritis di sistem: kehilangannya memaksa pendaftaran ulang 2FA seluruh role sensitif.
 - Matriks uji tergenerate berarti jumlah kasus uji tumbuh otomatis; waktu CI perlu dipantau seiring bertambahnya endpoint.
 - Pentest sebagai gerbang rilis (`GL-04`) memerlukan penjadwalan pihak ketiga pada M6 — ini dependensi eksternal pada jadwal, bukan tugas tim.

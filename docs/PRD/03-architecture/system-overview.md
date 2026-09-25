@@ -100,10 +100,12 @@ stateDiagram-v2
     Disetujui --> Kedaluwarsa: Tidak diambil dalam 1x24 jam
     Disetujui --> Berlangsung: Waktu pelaksanaan tiba
     Berlangsung --> Selesai: Pelaksanaan berakhir
+    Berlangsung --> TidakDigunakan: Petugas menandai tidak digunakan (FR-07.4 A1)
     Ditolak --> [*]
     Dibatalkan --> [*]
     Kedaluwarsa --> [*]
     Selesai --> [*]
+    TidakDigunakan --> [*]
 ```
 
 ## 12.4 Alur Kerja Harian Sistem (Scheduled Jobs)

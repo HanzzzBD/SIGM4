@@ -23,3 +23,10 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+coverage-integration/
+coverage-ci/
+
+# Artefak pnpm lokal — repositori memakai npm workspaces polos, satu
+# package-lock.json (SDD-REPO-03). Lockfile kedua akan menyimpang diam-diam.
+pnpm-lock.yaml
+pnpm-workspace.yaml

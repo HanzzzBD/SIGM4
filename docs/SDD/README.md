@@ -112,11 +112,11 @@ Berlaku bagi seluruh berkas SDD dan tidak boleh dibantah tanpa persetujuan pemil
 
 ## Titik yang belum ditetapkan
 
-Terkumpul di [`TBD-REGISTER.md`](TBD-REGISTER.md) — **13 terbuka**, diklasifikasi menjadi empat kelompok menurut siapa yang memutuskan dan kapan. Tidak boleh ditebak oleh penyusun SDD.
+Terkumpul di [`TBD-REGISTER.md`](TBD-REGISTER.md) — **13 terbuka · 42 tertutup**, diklasifikasi menjadi empat kelompok menurut siapa yang memutuskan dan kapan. Tidak boleh ditebak oleh penyusun SDD.
 
 | Kelompok | Jumlah | Kapan |
 |---|---|---|
-| A — Kebijakan produk | 1 | `TBD-AI-D` — sebelum `GL-07` |
+| A — Kebijakan produk | 0 | Seluruhnya tertutup — `TBD-AI-D` ditutup 2 September 2026 (`SDD-AI-16`) |
 | B — Parameter operasional | 13 | Setelah staging & uji beban |
 | C — Pilihan teknis | 0 | Seluruhnya tertutup |
 | D — Konten prompt | 0 | Seluruhnya tertutup 25 Agustus 2026 |

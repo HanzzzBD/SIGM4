@@ -11,7 +11,7 @@ Banyak requirement PRD berbentuk "ketika X terjadi, maka Y juga terjadi" — dan
 | Pemicu | Efek lintas modul | ID |
 |---|---|---|
 | Pengembalian aset rusak | Tiket kerusakan terbit otomatis | `BR-032` |
-| Aset masuk perbaikan | Reservasi mendatang dibatalkan + pemohon dinotifikasi | `BR-048`, `NT-27` |
+| Aset masuk perbaikan | Reservasi mendatang dibatalkan + pemohon dinotifikasi | `BR-048` , `NT-27` |
 | Work order ditutup | Tiket kerusakan asalnya ikut tertutup | `BR-050` |
 | Penerimaan pengadaan | Aset terbentuk + dokumen tertaut | `BR-064`, `BR-065` |
 | Opname disetujui | Penyesuaian lokasi/kondisi/status aset diterapkan | `BR-057` |
@@ -117,10 +117,17 @@ service:
     untuk tiap event: jalankan seluruh handler terdaftar
       sukses  -> processed_at = now()
       gagal   -> attempts++, last_error, backoff eksponensial
-      attempts >= 5 -> pindah ke dead-letter + alarm (OBS-05)
+      attempts >= 5 -> berhenti dicoba; baris menjadi dead letter + alarm (OBS-05)
 ```
 
-Dispatcher memakai `SELECT ... FOR UPDATE SKIP LOCKED` sehingga aman meski suatu saat worker diskalakan.
+**Dead letter adalah keadaan baris, bukan tempat lain.** Tidak ada tabel kedua dan tidak ada kolom penanda: sebuah event ber-*dead letter* bila `attempts >= 5 AND processed_at IS NULL`. Skema §4.1 sudah memuat seluruh yang dibutuhkan kartu 19.2 — `event_name` (jenis), `occurred_at` (waktu), `last_error` (galat terakhir) — dan metrik `outbox_dead_letter_count` (`SDD-15` §4.3) adalah `COUNT(*)` atas predikat yang sama. Dua akibatnya mengikat implementasi:
+
+- Kueri pemungutan dispatcher **wajib** membawa `AND attempts < 5`, sebab tanpa itu baris dead letter dipungut ulang selamanya.
+- Indeks `event_outbox_pending` (§4.1) berpredikat `processed_at IS NULL` saja, sehingga ia ikut memuat baris dead letter. Itu disengaja — jumlahnya kecil dan retensinya menjadi urusan `TBD-EVT-A`, bukan alasan menambah kolom.
+
+Dispatcher memakai `SELECT ... FOR UPDATE SKIP LOCKED` sehingga aman meski suatu saat worker diskalakan. **Yang dikunci adalah agregatnya, bukan barisnya** — kunci diambil atas event pending tertua sebuah `(aggregate_type, aggregate_id)`, lalu seluruh event pending agregat itu diproses berurutan `id` di dalam kunci yang sama. Mengunci per baris akan melanggar `SDD-EVT-09` justru pada keadaan yang `SKIP LOCKED` ini siapkan: dispatcher kedua melewati baris yang sedang terkunci dan memungut event **berikutnya dari agregat yang sama**, sehingga urutannya terbalik.
+
+Konsekuensinya, event yang gagal **menahan** event sesudahnya pada agregat yang sama sampai ia berhasil atau menjadi dead letter. Itu memang yang `SDD-EVT-09` minta: notifikasi `NT-14` yang mendahului `NT-15` pada satu peminjaman lebih baik tertunda daripada terbalik.
 
 ### 4.3 Katalog event
 
@@ -147,6 +154,13 @@ Dispatcher memakai `SELECT ... FOR UPDATE SKIP LOCKED` sehingga aman meski suatu
 | `MaterialRequestReady` | M-22 | Notifikasi `NT-50` |
 | `FileUploaded` | M-06 | Pemindaian AV, pembuatan thumbnail |
 | `ExportRequested` | M-16 | Pembuatan berkas, notifikasi `NT-42` |
+| `UserImportRequested` | M-02 | Memasukkan pekerjaan `user-import` ke antrean (`IMPT-04`) |
+| `UserImportCompleted` | M-02 (job) | Notifikasi `NT-52` |
+| `AccountLocked` | M-01 | Notifikasi `NT-39` (pemilik akun + Administrator); payload `user_id`, `terkunci_sampai`; agregat `user` |
+| `TwoFactorEnabled` | M-01 | Notifikasi `NT-39a` (Administrator); payload `user_id`, `sesi_dicabut`; agregat `user`. Terbit dalam transaksi `enroll/confirm` (`BR-070e`, `SDD-SESS-17`) |
+| `PasswordResetRequested` | M-01 | Notifikasi `NT-37` (Administrator, in-app + push); payload `permintaan_id`, `user_id`; agregat `user` |
+| `PasswordResetIssued` | M-01 | Notifikasi `NT-38` (Administrator penerbit, in-app); payload `permintaan_id`, `user_id`, `oleh`, `kedaluwarsa_pada` — **tidak pernah** memuat password sementara (`FR-01.3 AC`); agregat `user` |
+| `SessionRevoked` | M-01 | Menonaktifkan device token FCM sesi itu (`MOB-SEC-05`); payload `user_id`, `family_id`, `platform`, `alasan`; agregat `user` |
 
 Kolom "konsumen asinkron" sengaja didominasi notifikasi — karena efek yang bukan notifikasi umumnya sinkron (SDD-EVT-02).
 

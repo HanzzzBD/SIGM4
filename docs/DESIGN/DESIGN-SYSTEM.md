@@ -375,12 +375,12 @@ Nilai lengkap: [`FOUNDATIONS.md`](FOUNDATIONS.md).
 
 ## 6.2 Untuk Frontend Developer
 
-`SDD-FE-12` menetapkan pustaka komponen **dibangun sendiri** di atas primitif headless (Radix UI / React Aria) + Tailwind + lapisan token milik sendiri, dan komponen **disalin ke dalam repositori**. Design System ini adalah spesifikasi lapisan token dan komponen tersebut.
+`SDD-FE-12` menetapkan pustaka komponen **dibangun sendiri** di atas primitif headless + Tailwind + lapisan token milik sendiri, dan komponen **disalin ke dalam repositori**. `SDD-FE-13` menetapkan primitif mana: **Radix UI sebagai bawaan**, **React Aria hanya untuk pemilih tanggal/kalender dan number field**. Design System ini adalah spesifikasi lapisan token dan komponen tersebut.
 
 | Lapisan | Tempat | Isi |
 |---|---|---|
 | Token | `apps/web/src/shared/ui/tokens/` | Nilai dari `FOUNDATIONS.md` sebagai CSS custom property + konstanta TypeScript |
-| Primitif | Radix UI / React Aria | Perilaku papan ketik & ARIA (`NFR-AC-03`, `NFR-AC-05`) |
+| Primitif | Radix UI (bawaan) · React Aria (tanggal/kalender, number field) — `SDD-FE-13` | Perilaku papan ketik & ARIA (`NFR-AC-03`, `NFR-AC-05`) |
 | Komponen | `apps/web/src/shared/ui/` | Spesifikasi dari `COMPONENTS.md` |
 | Pola | `apps/web/src/shared/` + per modul | Spesifikasi dari `PATTERNS.md` |
 
@@ -468,7 +468,7 @@ Keputusan yang tidak dapat diturunkan dari PRD/SDD/UX, dan karena itu ditanyakan
 | [`PRD/04-frontend/ui-foundation.md`](../PRD/04-frontend/ui-foundation.md) | Prinsip `UX-01`…`UX-06`, ketentuan token `DS-01`/`DS-02`, komponen inti, lima keadaan — **berlaku di atas Design System** |
 | [`PRD/03-architecture/nfr.md`](../PRD/03-architecture/nfr.md) | `NFR-AC-01`…`NFR-AC-09` aksesibilitas · `NFR-C-01`…`NFR-C-04` kompatibilitas |
 | [`docs/UX/`](../UX/) | Perilaku, halaman, alur, keadaan — Design System menyediakan tampilannya |
-| [`SDD/11-frontend-architecture.md`](../SDD/11-frontend-architecture.md) | `SDD-FE-12` pustaka komponen sendiri · `SDD-FE-08` peta enum · validasi kontras CI |
+| [`SDD/11-frontend-architecture.md`](../SDD/11-frontend-architecture.md) | `SDD-FE-12` pustaka komponen sendiri · `SDD-FE-13` pembagian primitif headless · `SDD-FE-08` peta enum · validasi kontras CI |
 | [`SDD/12-mobile-architecture.md`](../SDD/12-mobile-architecture.md) | Batas perangkat, gerbang startup, antrean unggah |
 | `logosidebar.svg` · `iconwebsite.svg` | Sumber identitas visual — §2 |
 

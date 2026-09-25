@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Milestone PRD** | `M0 — Fondasi Teknis` — [delivery-plan.md](../../PRD/01-product/delivery-plan.md) |
-| **Status** | `Not Started` |
+| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
 | **Modul PRD** | — (infrastruktur; belum ada modul fungsional) |
 | **Bergantung pada** | — |
 | **Memblokir** | Seluruh phase berikutnya |
@@ -13,7 +13,7 @@
 
 ## 1. Objective
 
-Setelah phase ini, sebuah perubahan kode dapat berjalan dari *commit* hingga *staging* tanpa campur tangan manual: pipeline hijau, migration terjalankan, `/health` melaporkan seluruh dependensi, dan katalog permission ter-*seed*. Belum ada fitur yang dapat dipakai pengguna — yang selesai adalah **jalur pengirimannya**.
+Setelah phase ini, sebuah perubahan kode dapat berjalan dari *commit* hingga *staging* tanpa campur tangan manual: pipeline hijau, migration terjalankan, registri `/health` berdiri dengan *liveness* dan *readiness* terpisah, dan katalog permission ter-*seed*. Belum ada fitur yang dapat dipakai pengguna — yang selesai adalah **jalur pengirimannya**.
 
 ## 2. Scope
 
@@ -27,7 +27,8 @@ Setelah phase ini, sebuah perubahan kode dapat berjalan dari *commit* hingga *st
 - Registri route + validasi permission saat *startup*
 - Worker skeleton: antrean, *distributed lock*, tabel outbox dan dispatcher-nya
 - Health endpoint, log terstruktur, korelasi `request_id`
-- Seed: 78 permission, 7 role bawaan, `work_days`, parameter sistem
+- Skema inti RBAC (`roles`, `permissions`, `role_permissions` ber-scope) + seed: 79 permission, 7 role bawaan, matriks bawaan, `work_days` — tabel `users` menyusul `PR-01-01`, seed parameter sistem menyusul `PR-01-10`
+- Tabel kalender kerja `work_days` dan `holidays` — **tanpa** `academic_year_id`, yang menyusul di `PR-01-11` bersama `academic_years` (migration `expand`)
 
 **Tidak termasuk**
 
@@ -43,8 +44,8 @@ Tidak ada. Ini titik masuk proyek.
 
 | Berkas | ID yang dilayani |
 |---|---|
-| [`roles-permissions.md`](../../PRD/00-foundation/roles-permissions.md) | Lampiran C — 78 kode permission, `PM-01` … `PM-06` |
-| [`conventions.md`](../../PRD/00-foundation/conventions.md) | `CAL-01` … `CAL-03`, `work_days` |
+| [`roles-permissions.md`](../../PRD/00-foundation/roles-permissions.md) | Lampiran C — 79 kode permission, `PM-01` … `PM-06` |
+| [`conventions.md`](../../PRD/00-foundation/conventions.md) | `CAL-01` … `CAL-03`, `work_days`, `holidays` (Lampiran E.2) |
 | [`nfr.md`](../../PRD/03-architecture/nfr.md) | `NFR-M-01` `NFR-M-02` `NFR-M-04` `NFR-M-06` `NFR-M-09` |
 | [`deployment-ops.md`](../../PRD/03-architecture/deployment-ops.md) | `INF-01` … `INF-07`, `CD-01` … `CD-07`, `OBS-01` … `OBS-07` |
 | [`api-conventions.md`](../../PRD/03-architecture/api-conventions.md) | Bab 17.1–17.3 |
@@ -55,7 +56,7 @@ Tidak ada. Ini titik masuk proyek.
 | Berkas | Keputusan yang diterapkan |
 |---|---|
 | [`00-system-architecture.md`](../../SDD/00-system-architecture.md) | `SDD-SYS-01` … `SDD-SYS-09` |
-| [`05-database-design.md`](../../SDD/05-database-design.md) | `SDD-DB-01` … `SDD-DB-03`, `SDD-DB-08`, `SDD-DB-10`, `SDD-DB-11` |
+| [`05-database-design.md`](../../SDD/05-database-design.md) | `SDD-DB-01` … `SDD-DB-03`, `SDD-DB-08`, `SDD-DB-10` … `SDD-DB-12`, `SDD-DB-15` |
 | [`06-api-design.md`](../../SDD/06-api-design.md) | `SDD-API-01` … `SDD-API-04` |
 | [`07-event-flow.md`](../../SDD/07-event-flow.md) | `SDD-EVT-01`, `SDD-EVT-03`, `SDD-EVT-04` (infrastruktur outbox) |
 | [`15-observability-logging.md`](../../SDD/15-observability-logging.md) | `SDD-OBS-02` … `SDD-OBS-04`, `SDD-OBS-06` |
@@ -75,26 +76,26 @@ Tidak ada. Ini titik masuk proyek.
 
 ## 7. Pull Request Plan
 
-| PR | Judul | Kompleksitas | Bergantung | FR/SDD | Acceptance |
-|---|---|:---:|---|---|---|
-| `PR-00-01` | Kerangka repo, TypeScript, lint, struktur folder | M | — | `SDD-SYS-01/02`, `SDD-REPO-01` … `SDD-REPO-03`, `SDD-REPO-07/08` | `npm run lint` & `build` hijau; impor lintas lapisan ditolak; impor lintas pohon `apps/*` ditolak |
-| `PR-00-02` | Aturan lint impor antar-modul | S | 01 | `SDD-SYS-02` | Impor `modules/*/repositories/*` dari modul lain gagal CI |
-| `PR-00-03` | Dockerfile multi-stage + compose pengembangan | M | 01 | `SDD-INF-01/02` | `docker compose up` menyalakan seluruh dependensi |
-| `PR-00-04` | Koneksi DB, helper transaksi, base repository ber-`AuthContext` | M | 01 | `SDD-AUTH-02`, `SDD-SYS-06` | Metode repository tanpa `ctx` gagal kompilasi |
-| `PR-00-05` | Migration runner + `0001` ekstensi + `0002` enum | M | 04 | `SDD-DB-02/08` | `btree_gist` aktif; seluruh enum Bab 11.3 terbentuk |
-| `PR-00-06` | Shared kernel: `Clock`, `ErrorMapper`, `request_id`, logger terstruktur | M | 04 | `SDD-SYS-06/07`, `SDD-OBS-02/03/04` | `new Date()` di luar `shared/clock` ditolak lint; log ter-*redact* |
-| `PR-00-07` | `DocumentNumberService` + tabel `document_counters` | S | 05 | `SEQ-01` … `SEQ-04`, `SDD-AVL-09` | 1.000 permintaan paralel menghasilkan 1.000 nomor unik |
-| `PR-00-08` | `BusinessCalendarService` + `work_days`/`holidays` | M | 05 | `CAL-01` … `CAL-03`, `SDD-APR-06` | Hitung jam kerja melewati akhir pekan & hari libur benar |
-| `PR-00-09` | Registri route + validasi permission saat startup + OpenAPI | M | 06 | `PM-01`, `SDD-API-02/03`, `SDD-AUTH-01` | Route tanpa deklarasi permission menggagalkan *bootstrap* |
-| `PR-00-10` | `idempotency_keys` + middleware idempotensi | M | 05, 09 | `ID-01` … `ID-05`, `SDD-AVL-08` | Kunci sama + body sama → respons tersimpan; body beda → 409 |
-| `PR-00-11` | Worker skeleton: antrean, *distributed lock*, penjadwal | M | 06 | `JOB-01` `JOB-02` `JOB-04`, `SDD-AVL-10` | Dua instance worker → job dieksekusi tepat sekali |
-| `PR-00-12` | Tabel `event_outbox` + dispatcher | M | 11 | `SDD-EVT-03/04/09` | Event terbit hanya setelah commit; urut per agregat |
-| `PR-00-13` | `AuditLogger` + `activity_logs` terpartisi + rantai hash | L | 05, 06 | `AL-01` `AL-03a` `AL-03b`, `NFR-S-03d`, `SDD-DB-07/09` | Partisi bulan berjalan ada; rantai terverifikasi; akun app tanpa UPDATE/DELETE |
-| `PR-00-14` | Health endpoint (live/ready/ringkasan) | S | 06 | `NFR-A-07`, `OBS-06`, `AI-CTL-10`, `SDD-OBS-06` | `llm`/`fcm` mati tidak membuat `ready` gagal |
-| `PR-00-15` | Header keamanan + rate limit berjenjang | M | 09 | `NFR-S-07` `NFR-S-11`, `SDD-SEC-03/05` | CSP tanpa `unsafe-inline`; kelas limit terpisah aktif |
-| `PR-00-16` | Seed: 78 permission, 7 role, matriks, `work_days`, parameter | M | 05 | Lampiran C, `SDD-DB-10` | Uji membandingkan hasil seed dengan Lampiran C baris per baris |
-| `PR-00-17` | Pipeline CI: lint → uji → SAST → SCA → build → image scan | L | 01, 03 | `CD-01` `CD-02`, `ST-01` `ST-02` | Cakupan < 70% atau kerentanan High → pipeline merah |
-| `PR-00-18` | Deploy staging + job migration + smoke test | M | 17 | `CD-03` `CD-04` `CD-07`, `SDD-INF-03/04` | Merge ke `staging` men-deploy lingkungan staging otomatis (`CD-03`) |
+| PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
+|---|---|:---:|:---:|---|---|---|
+| `PR-00-01` | Kerangka repo, TypeScript, lint, struktur folder | M | M | — | `SDD-SYS-01/02`, `SDD-REPO-01` … `SDD-REPO-03`, `SDD-REPO-07/08` | `npm run lint` & `build` hijau; impor lintas lapisan ditolak; impor lintas pohon `apps/*` ditolak |
+| `PR-00-02` | Aturan lint impor antar-modul | S | S | 01 | `SDD-SYS-02` | Impor `modules/*/repositories/*` dari modul lain gagal CI |
+| `PR-00-03` | Dockerfile multi-stage + compose pengembangan | M | S | 01 | `SDD-INF-01/02` | `docker compose up` menyalakan seluruh dependensi |
+| `PR-00-04` | Koneksi DB, helper transaksi, base repository ber-`AuthContext` | M | M | 01 | `SDD-AUTH-02`, `SDD-SYS-06`, `SDD-DB-15` | Metode repository tanpa `ctx` gagal kompilasi |
+| `PR-00-05` | Migration runner + `0001` ekstensi + `0002` enum | M | L | 04 | `SDD-DB-02/08/12` | `btree_gist` aktif; seluruh enum Bab 11.3 terbentuk |
+| `PR-00-06` | Shared kernel: `Clock`, `ErrorMapper`, `request_id`, logger terstruktur | M | M | 04 | `SDD-SYS-06/07`, `SDD-OBS-02/03/04` | `new Date()` di luar `shared/clock` ditolak lint; log ter-*redact* |
+| `PR-00-07` | `DocumentNumberService` + tabel `document_counters` | S | M | 05 | `SEQ-01` … `SEQ-04`, `SDD-AVL-09` | 1.000 permintaan paralel menghasilkan 1.000 nomor unik |
+| `PR-00-08` | `BusinessCalendarService` + `work_days`/`holidays` | M | M | 05 | `CAL-01` … `CAL-03`, `SDD-APR-06` | Hitung jam kerja melewati akhir pekan & hari libur benar |
+| `PR-00-09` | Registri route + validasi permission saat startup + OpenAPI | M | M | 06 | `PM-01`, `SDD-API-02/03/13`, `SDD-AUTH-01` | Route tanpa deklarasi permission menggagalkan *bootstrap* |
+| `PR-00-10` | `idempotency_keys` + middleware idempotensi | M | M | 05, 09 | `ID-01` … `ID-05`, `SDD-AVL-08` | Kunci sama + body sama → respons tersimpan; body beda → 409 |
+| `PR-00-11` | Worker skeleton: antrean, *distributed lock*, penjadwal | M | L | 06 | `JOB-01` `JOB-02` `JOB-04`, `SDD-AVL-10` | Dua instance worker → job dieksekusi tepat sekali |
+| `PR-00-12` | Tabel `event_outbox` + dispatcher | M | M | 11 | `SDD-EVT-03/04/09` | Event terbit hanya setelah commit; urut per agregat |
+| `PR-00-13` | `AuditLogger` + `activity_logs` terpartisi + rantai hash | L | L | 05, 06 | `AL-01` `AL-03a` `AL-03b`, `NFR-S-03d`, `SDD-DB-07/09` | Partisi bulan berjalan ada; rantai terverifikasi; akun app tanpa UPDATE/DELETE |
+| `PR-00-14` | Health endpoint (live/ready/ringkasan) | S | S | 06 | `NFR-A-07`, `OBS-06`, `AI-CTL-10`, `SDD-OBS-06` | `llm`/`fcm` mati tidak membuat `ready` gagal |
+| `PR-00-15` | Header keamanan + rate limit berjenjang | M | M | 09 | `NFR-S-07` `NFR-S-11` `NFR-R-10`, `SDD-SEC-03/05`, `SDD-OBS-03`, `SDD-API-04` | CSP tanpa `unsafe-inline`; kelas limit terpisah aktif; 404/500 berformat Bab 17.2 dengan `X-Request-Id`, tanpa membocorkan pesan galat asli |
+| `PR-00-16` | Skema RBAC + seed: 79 permission, 7 role, matriks ber-scope, `work_days` | L | L | 05 | Lampiran C, `SDD-DB-10`, `SDD-DB-16`, `SDD-03 §4.8` | Uji membandingkan hasil seed dengan Lampiran C baris per baris, termasuk scope |
+| `PR-00-17` | Pipeline CI: lint → uji → SAST → SCA → build → image scan | L | M | 01, 03 | `CD-01` `CD-02`, `ST-01` `ST-02`, `SDD-INF-12`, `SDD-REPO-11`, `SDD-SEC-11`, `AL-03b` | Cakupan < 70% atau kerentanan High → pipeline merah; `APP_DATABASE_URL`+`APP_DB_PASSWORD` tersedia sehingga acceptance `AL-03b` benar-benar berjalan |
+| `PR-00-18` | Deploy staging + job migration + smoke test | M | S | 17 | `CD-03` `CD-04` `CD-07`, `SDD-INF-03/04/13`, `SDD-SYS-08` | Merge ke `staging` men-deploy lingkungan staging otomatis (`CD-03`); worker berjalan sebagai proses dan `/health/ready`-nya tervalidasi di runtime — **blocking** sejak `PR-00-14`; topologi origin web/API diputuskan bersama konfigurasi Nginx, lalu `cors` (`SDD-06 §4.2`) dipasang atau dinyatakan tidak diperlukan |
 
 ## 8. Task Breakdown
 
@@ -118,16 +119,19 @@ Tidak ada. Ini titik masuk proyek.
 - [ ] Cabut `UPDATE`/`DELETE` dari akun aplikasi (`AL-03b`)
 - [ ] Kegagalan tulis log → alarm, **tidak** rollback transaksi (`AL-08`)
 
-### `PR-00-16` — Seed permission
-- [ ] Migration seed 78 kode dari Lampiran C, idempoten (`ON CONFLICT DO UPDATE`)
-- [ ] Seed 7 role + matriks Bab 18
+### `PR-00-16` — Skema RBAC + seed permission
+- [ ] Migration `expand` `roles`, `permissions`, `role_permissions` + enum `permission_scope` (`SDD-05 §4.7`, `SDD-DB-16`)
+- [ ] Migration seed 79 kode dari Lampiran C, idempoten (`ON CONFLICT DO UPDATE`)
+- [ ] Seed 7 role + matriks bawaan ber-scope: Lampiran C, ditafsirkan `SDD-03 §4.8` bila pemiliknya bukan daftar role
 - [ ] Tandai permission inti 🔒 agar tidak dapat dicabut (`FR-02.2 A1`)
-- [ ] Uji pembanding: hasil seed = Lampiran C, tanpa selisih
+- [ ] Seed `work_days` Senin–Sabtu aktif (Lampiran E.2)
+- [ ] Uji pembanding: hasil seed = Lampiran C + tafsir, tanpa selisih
 
 ## 9. Acceptance Checklist
 
 - [ ] Pipeline hijau dari commit hingga deploy staging tanpa langkah manual
-- [ ] `/health` melaporkan status DB, Redis, object storage, AV, FCM, LLM (`OBS-06`)
+- [ ] `/health` memisahkan *liveness* dan *readiness* serta melaporkan DB dan Redis; keenam dependensi `OBS-06` dilengkapi bertahap sampai `PR-03-20` — diperiksa di [`phase-03.md` §9](phase-03.md)
+- [ ] Worker berjalan sebagai proses dan `/health/ready`-nya tervalidasi di runtime (`SDD-SYS-08`) — **blocking**, `PR-00-18`
 - [ ] Route tanpa deklarasi permission menggagalkan *bootstrap* (`PM-01`)
 - [ ] Seed permission identik dengan Lampiran C
 - [ ] Dua instance worker tidak menjalankan job yang sama dua kali (`JOB-02`)
@@ -160,7 +164,7 @@ Ini satu-satunya phase yang boleh di-*reset* total. Setelah Phase 01, aturan exp
 
 **Tambahan khusus phase ini:**
 
-- [ ] Kriteria keluar `M0` PRD terpenuhi: pipeline hijau · deploy staging otomatis · `/health` melaporkan seluruh dependensi
+- [ ] Kriteria keluar `M0` PRD terpenuhi: pipeline hijau · deploy staging otomatis · `/health` memisahkan *liveness* dan *readiness* dan melaporkan dependensi yang integrasinya sudah dibangun
 - [ ] Seluruh 18 PR ter-*merge* ke `develop`
 - [ ] `scripts/audit_docs.py` masih LULUS (dokumentasi tidak rusak oleh perubahan kode)
 - [ ] Log phase ([`logs/phase-00.md`](../logs/phase-00.md)) terisi keputusan implementasi dan blocker yang muncul

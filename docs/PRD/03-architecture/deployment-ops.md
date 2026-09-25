@@ -108,7 +108,7 @@ Dilarang keras menyalin data produksi ke staging tanpa anonimisasi (lihat DP-08)
 | OBS-01 | Metrik wajib diekspos: *rate*, *error*, *duration* per endpoint; kedalaman antrean; durasi pekerjaan terjadwal; pool koneksi DB; *hit ratio* cache |
 | OBS-02 | Log aplikasi terstruktur JSON dengan `request_id`, `user_id`, `modul` (NFR-M-06), dikirim ke agregator terpusat, retensi ≥ 30 hari |
 | OBS-03 | *Distributed tracing* pada alur transaksional kritis (reservasi, check-out, check-in, approval, chat) |
-| OBS-04 | *Uptime monitoring* eksternal atas `/health` setiap 60 detik |
+| OBS-04 | *Uptime monitoring* eksternal atas `/health/live` setiap 60 detik — probe inilah yang publik; `/health` menuntut `setting.view` karena membeberkan status dependensi |
 | OBS-05 | **Alert wajib**: 5xx > 1% selama 5 menit · p95 API > 1 detik selama 10 menit · pekerjaan terjadwal gagal · kedalaman antrean > 1.000 · disk > 80% · cadangan gagal · sertifikat TLS < 14 hari · kegagalan tulis activity log (AL-08) · konsumsi kuota atau batas laju Gemini API melewati ambang |
 | OBS-06 | Endpoint `/health` membedakan *liveness* dan *readiness*, serta melaporkan status dependensi (DB, Redis, storage, FCM, LLM) untuk kartu "Kesehatan Integrasi" pada Dashboard Administrator (19.2) |
 | OBS-07 | Ditetapkan penerima alarm (*on-call*) beserta jalur eskalasinya sebelum go-live |

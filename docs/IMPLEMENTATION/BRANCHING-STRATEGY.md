@@ -8,23 +8,23 @@ Yang ada di sini hanyalah **cara kerja sehari-hari di dalam model itu**: penamaa
 
 ---
 
-## 0. Keadaan saat ini — pengecualian transisi
+## 0. Keadaan saat ini — transisi tersisa
 
-**Model pada §1 belum dapat dijalankan utuh.** `develop` dan `staging` belum ada, dan keduanya baru berdiri bersama lingkungannya pada [`PR-00-18`](phases/phase-00.md). Selama itu belum terjadi, `apps/` juga belum ada — tidak ada kode untuk di-*lint*, diuji, maupun dipindai, sehingga gerbang `CD-01` tidak punya sasaran.
+**Model pada §1 belum dapat dijalankan utuh.** `develop` sudah hidup sejak 6 September 2026; `staging` belum ada: artefak deploy-nya dibangun [`PR-00-18`](phases/phase-00.md), tetapi cabangnya baru dibuat pemilik repositori setelah infrastruktur staging siap (keputusan 55, [log phase-00 §10](logs/phase-00.md)). `apps/` sudah dibuat oleh `PR-00-01`, dan sejak `PR-00-04`/`PR-00-05` uji berkas maupun uji integrasi ikut berdiri — sehingga lint, build, dan test sudah memiliki sasaran nyata. Pipeline `CD-01` berdiri sejak `PR-00-17` dan menjadi required check `develop`.
 
 Selama masa transisi ini berlaku:
 
 | Hal | Ketentuan sementara |
 |---|---|
-| Cabang hidup | Hanya `main` |
-| Jalur kerja | Cabang bernama sesuai §2 → PR → `main` |
+| Cabang hidup | `main` dan `develop`; `staging` menunggu infrastruktur staging (keputusan 55) |
+| Jalur kerja | Cabang bernama sesuai §2 → PR → `develop` |
 | Penamaan | §2 berlaku penuh. Pekerjaan yang hanya menyentuh `docs/` memakai `chore/` — jenisnya sudah berarti "tanpa perubahan perilaku" |
 | Tinjauan | §3.1 berlaku penuh; ditegakkan [`.github/CODEOWNERS`](../../.github/CODEOWNERS) |
 | Template PR | §4 berlaku penuh; terisi otomatis lewat [`.github/pull_request_template.md`](../../.github/pull_request_template.md) |
 
-**Pengecualian ini berakhir saat `PR-00-18` selesai.** Sejak titik itu §1 sampai §3 berlaku tanpa pengurangan, dan penggabungan langsung ke `main` tertutup sepenuhnya.
+**Transisi ini berakhir saat cabang `staging` dibuat.** `PR-00-18` sudah tergabung, tetapi cabangnya menunggu infrastruktur nyata. Sejak titik itu `staging` hidup dan seluruh jalur §1 dapat dijalankan. Penggabungan langsung ke `main` tetap tertutup sepenuhnya.
 
-Yang **tidak** dikecualikan sedikit pun: penamaan cabang (§2), tinjauan arsitek (§3.1), pemakaian template dan klasifikasi komentar (§4), serta DoD tingkat PR (§5). Ketiadaan `develop` tidak melonggarkan satu pun dari itu.
+Yang **tidak** dikecualikan sedikit pun: penamaan cabang (§2), syarat penggabungan ke `develop` (§3), tinjauan arsitek (§3.1), pemakaian template dan klasifikasi komentar (§4), serta DoD tingkat PR (§5). Validasi lokal dapat dicatat di deskripsi PR, tetapi tidak menjadikannya pipeline hijau `CD-01`.
 
 Keadaan aktual terhadap seluruh aturan — termasuk penyimpangan yang tercatat dan setelan branch protection yang belum dinyalakan — ada di [`GITHUB-CI-STATE.md`](GITHUB-CI-STATE.md).
 
@@ -49,7 +49,7 @@ feature/*  ──▶  develop  ──▶  staging  ──▶  main  ──▶  t
 | `main` | permanen | `staging` lewat PR · `hotfix/*` | Produksi (lewat tag, `CD-06`) |
 | `hotfix/*` | ≤ 1 hari | `main` | Produksi |
 
-**Umur cabang maksimum 3 hari** bukan preferensi gaya. Phase 03 menjalankan enam modul paralel dan Phase 02 tiga puluh PR; cabang berumur seminggu pada phase seperti itu menumpuk konflik penggabungan ke pekan terakhir — persis saat tidak ada waktu tersisa untuk menyelesaikannya.
+**Umur cabang maksimum 3 hari** bukan preferensi gaya. Phase 03 menjalankan enam modul paralel dan Phase 02 dua puluh delapan PR; cabang berumur seminggu pada phase seperti itu menumpuk konflik penggabungan ke pekan terakhir — persis saat tidak ada waktu tersisa untuk menyelesaikannya.
 
 ## 2. Penamaan cabang
 
@@ -86,7 +86,7 @@ Sebagian PR menyentuh tulang punggung yang dipakai bersama banyak modul. Perubah
 
 | Yang tersentuh | Alasan |
 |---|---|
-| `SlotService` / skema `booking_slots` | Melayani M-07, M-08, M-09 — tiga modul, satu semantik |
+| `SlotService` / skema `booking_slots` — `shared/booking/` (`SDD-SYS-10`) | Melayani **enam** modul (M-04, M-07, M-08, M-09, M-12, M-21) dengan satu semantik; berada di *shared kernel*, bukan di dalam modul |
 | Evaluator DSL / mesin approval | Melayani enam modul berpersetujuan |
 | Lapisan permission / `AuthContext` | Setiap kebocoran di sini adalah kebocoran menyeluruh |
 | Migration apa pun | `expand → migrate → contract` (`CD-04`, `SDD-DB-08`) |
@@ -97,7 +97,7 @@ Pada Phase 04 dan seterusnya, **PR yang menuntut perubahan pada `SlotService` ad
 ## 4. Alur review
 
 ```
-1. Penulis membuka PR memakai templates/PULL-REQUEST.md
+1. Penulis membuka PR memakai templates/PULL-REQUEST.md, lalu memberi label (§4.2)
 2. CI berjalan: lint → uji → SAST → SCA → build → image scan   (CD-01)
 3. Peninjau membaca deskripsi PR sebelum membaca diff
 4. Komentar diklasifikasi: [blocker] · [saran] · [tanya]
@@ -124,6 +124,22 @@ Pada Phase 04 dan seterusnya, **PR yang menuntut perubahan pada `SlotService` ad
 | 8 | Apakah ada `TODO` atau data uji yang tertinggal (DoD 29.5)? |
 
 Butir 6 adalah yang paling sering terlewat. Uji yang tetap hijau setelah logikanya dihapus tidak menguji apa pun.
+
+### 4.2 Label pull request
+
+Setiap PR memakai **dua label wajib** — satu phase dan satu jenis — ditambah satu label opsional:
+
+| Label | Isi | Diturunkan dari |
+|---|---|---|
+| `phase-00` … `phase-08` | Phase pemilik PR | ID PR (`PR-NN-NN`) |
+| `feature` · `fix` · `chore` | Jenis pekerjaan | Jenis cabang (§2) |
+| `tinjauan-arsitek` | Menyentuh tulang punggung (§3.1) | Bagian "Tinjauan arsitek" pada deskripsi PR |
+
+PR `chore/` tidak punya ID PR; ia memakai label phase yang **sedang berjalan**, supaya pekerjaan perkakas dan dokumentasi tetap tersaring bersama phase tempat ia lahir.
+
+Label **tidak menggantikan** judul maupun deskripsi PR: keduanya tetap satu-satunya tempat ID requirement tertulis. Yang label kerjakan hanya satu hal — membuat daftar PR dapat disaring per phase dan per jenis tanpa membuka satu per satu. Karena itu ia **bukan gerbang**: tidak ada workflow yang membacanya, dan PR tanpa label tidak tertahan.
+
+Label di luar tabel ini tidak dipakai, dan daftar label repositori dijaga sama persis dengan tabel ini ([`GITHUB-CI-STATE.md` §4](GITHUB-CI-STATE.md)).
 
 ## 5. Definition of Done tingkat PR
 
