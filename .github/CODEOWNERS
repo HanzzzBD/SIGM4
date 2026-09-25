@@ -4,19 +4,18 @@
 # Berkas ini TIDAK menetapkan kebijakan baru. Ia hanya menerjemahkan lima area
 # bertinjauan-arsitek yang sudah ditetapkan §3.1 menjadi aturan yang GitHub tegakkan.
 #
-# Prasyarat agar berlaku: branch protection mengaktifkan "Require review from Code
-# Owners". Tanpa itu berkas ini hanya menyarankan peninjau, tidak mewajibkannya.
-# Lihat docs/IMPLEMENTATION/GITHUB-CI-STATE.md §4.
+# Prasyarat agar berlaku: branch protection pada develop/staging/main mengaktifkan
+# "Require review from Code Owners". Tanpa itu berkas ini hanya menyarankan peninjau,
+# tidak mewajibkannya. Lihat docs/IMPLEMENTATION/GITHUB-CI-STATE.md §4.
 #
-# CATATAN PEMILIK: setiap baris memuat dua pemilik — @HanzzzBD (pemilik repositori)
-# dan @PM-Codexpert (PM). GitHub melarang penulis menyetujui PR-nya sendiri, jadi
-# baris yang hanya berisi satu orang akan mengunci PR buatan orang itu. Baris baru
-# wajib memuat keduanya.
+# CATATAN PEMILIK: @HanzzzBD adalah pemilik repositori dan dipakai sebagai peninjau
+# sementara karena tim belum terbentuk. Ganti dengan tim arsitek begitu tim ada —
+# satu orang yang meninjau pekerjaannya sendiri bukan tinjauan (BRANCHING §3.1).
 
 # ---------------------------------------------------------------------------
 # Bawaan — seluruh repositori
 # ---------------------------------------------------------------------------
-*                                   @HanzzzBD @PM-Codexpert
+*                                   @HanzzzBD
 
 # ---------------------------------------------------------------------------
 # Lima area bertinjauan arsitek wajib (BRANCHING §3.1)
@@ -26,22 +25,22 @@
 # ---------------------------------------------------------------------------
 
 # Migration apa pun — expand → migrate → contract (CD-04, SDD-DB-08)
-/apps/api/migrations/               @HanzzzBD @PM-Codexpert
+/apps/api/migrations/               @HanzzzBD
 
 # Lapisan permission & AuthContext — kebocoran di sini bersifat menyeluruh
 # (SDD-AUTH-05, PM-01, PM-02, NFR-S-05)
-/apps/api/src/shared/auth/          @HanzzzBD @PM-Codexpert
+/apps/api/src/shared/auth/          @HanzzzBD
 
 # AuditLogger & rantai hash activity log (AL-01, NFR-S-03d)
-/apps/api/src/shared/audit/         @HanzzzBD @PM-Codexpert
+/apps/api/src/shared/audit/         @HanzzzBD
 
 # Evaluator DSL / mesin approval — melayani enam modul berpersetujuan
 # (SDD-APR-*, Lampiran D)
-/apps/api/src/modules/m10-approval/ @HanzzzBD @PM-Codexpert
+/apps/api/src/modules/m10-approval/ @HanzzzBD
 
 # booking_slots & ketersediaan — melayani M-07, M-08, M-09 dengan satu semantik
 # (SDD-AVL-01 … SDD-AVL-14)
-/apps/api/src/modules/m07-reservation-room/ @HanzzzBD @PM-Codexpert
+/apps/api/src/modules/m07-reservation-room/ @HanzzzBD
 
 # CATATAN: `SlotService` disebut BRANCHING §3.1 dan PR-02-17, tetapi letak kodenya
 # TIDAK ditetapkan SDD mana pun. Path-nya ditambahkan di sini pada PR-02-17, saat
@@ -51,7 +50,7 @@
 # ---------------------------------------------------------------------------
 # Tata kelola & kontrak lintas pohon
 # ---------------------------------------------------------------------------
-/.github/                           @HanzzzBD @PM-Codexpert
-/docs/PRD/                          @HanzzzBD @PM-Codexpert
-/docs/SDD/                          @HanzzzBD @PM-Codexpert
-/packages/schemas/                  @HanzzzBD @PM-Codexpert
+/.github/                           @HanzzzBD
+/docs/PRD/                          @HanzzzBD
+/docs/SDD/                          @HanzzzBD
+/packages/schemas/                  @HanzzzBD

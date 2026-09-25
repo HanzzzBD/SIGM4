@@ -100,7 +100,6 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | GET | `/locations/tree` | `location.view` | Pohon lokasi lengkap |
 | POST | `/buildings` · `/areas` · `/rooms` | `location.manage` | Buat entitas lokasi |
 | PUT | `/rooms/{id}` | `location.manage` | Perbarui ruangan |
-| PATCH | `/buildings/{id}/status` · `/rooms/{id}/status` | `location.manage` | Aktifkan/nonaktifkan berjenjang (`BR-015`) |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).

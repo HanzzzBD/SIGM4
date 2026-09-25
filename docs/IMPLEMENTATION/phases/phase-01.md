@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Milestone PRD** | `M1` (M-02, M-03, M-20) · `M5` (M-18) — lihat §3.1 |
-| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
+| **Status** | `Not Started` |
 | **Modul PRD** | M-02 User & Role · M-03 Lokasi · M-18 Activity Log · M-20 Konfigurasi Sistem |
 | **Bergantung pada** | Phase 00 |
 | **Memblokir** | Phase 02 |
@@ -13,7 +13,7 @@
 
 ## 1. Objective
 
-Administrator dapat masuk ke sistem yang sudah "berisi": membuat pengguna dan role, menyusun hierarki lokasi sekolah, mengatur parameter sistem, dan menelusuri seluruh jejak perubahannya. Empat modul ini **tidak bergantung pada modul mana pun** dan karena itu dapat dikerjakan paralel, setelah middleware otorisasi `PR-01-15` berdiri.
+Administrator dapat masuk ke sistem yang sudah "berisi": membuat pengguna dan role, menyusun hierarki lokasi sekolah, mengatur parameter sistem, dan menelusuri seluruh jejak perubahannya. Empat modul ini **tidak bergantung pada modul mana pun** dan karena itu dapat dikerjakan sepenuhnya paralel.
 
 ## 2. Scope
 
@@ -23,13 +23,11 @@ Administrator dapat masuk ke sistem yang sudah "berisi": membuat pengguna dan ro
 - M-03: hierarki Gedung → Area → Ruangan, pencarian aset per lokasi *(tanpa data aset — kembali di Phase 02)*
 - M-18: penelusuran & ekspor activity log *(penulisannya sudah ada sejak Phase 00)*
 - M-20: parameter sistem, kalender akademik, unit kerja, siklus akun siswa
-- Master data Lampiran E: `academic_years`, `academic_terms`, `work_units`, dan penautan `holidays` → `academic_years` *(tabel `holidays` sendiri sudah dibuat `PR-00-08`, karena `BusinessCalendarService` menuntutnya sejak Phase 00)*
-- Middleware otorisasi — dipindah dari Phase 02 (`PR-02-09` → `PR-01-15`, keputusan 63, [log phase-00 §2](../logs/phase-00.md)) agar setiap endpoint phase ini lahir berpenjaga (`NFR-S-05`, `PM-02`)
-- Hash password Argon2id — dipindah dari Phase 02 (`PR-02-01` → `PR-01-16`, keputusan 3, [log phase-01 §2](../logs/phase-01.md)) karena akun lahir berpassword sementara sejak `PR-01-02` (`FR-02.1` langkah 4); daftar password bocor dan riwayat 3 password terakhir **tidak** termasuk — keduanya milik `PR-02-31` (keputusan 9)
+- Master data Lampiran E: `academic_years`, `academic_terms`, `holidays`, `work_units`
 
 **Tidak termasuk**
 
-- Autentikasi (login, 2FA) → **Phase 02** — pengguna dibuat, belum bisa login; sampai itu, setiap endpoint berpermission menjawab `401` (`SDD-03 §4.4`)
+- Autentikasi (login, 2FA) → **Phase 02** — pengguna dibuat, belum bisa login
 - Aset di dalam ruangan → **Phase 02**
 - `room_fixed_schedules` (FR-07.5) → **Phase 03** bersama M-07
 
@@ -39,7 +37,7 @@ Administrator dapat masuk ke sistem yang sudah "berisi": membuat pengguna dan ro
 |---|---|
 | Phase 00 | Registri route, `AuthContext`, `AuditLogger`, seed permission, migration runner |
 
-Keempat modul **tidak saling bergantung** — dapat dikerjakan empat jalur paralel setelah `PR-01-01` → `PR-01-15` (skema `users`, lalu middleware otorisasi yang dituntut setiap endpoint):
+Keempat modul **tidak saling bergantung** — dapat dikerjakan empat jalur paralel:
 
 ```
 M-02  ┐
@@ -69,14 +67,12 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 | [`m20-settings.md`](../../PRD/02-modules/m20-settings.md) | `FR-20.1` |
 | [`conventions.md`](../../PRD/00-foundation/conventions.md) | Lampiran E.2–E.5 · `AC-YR-01` … `04`, `WU-01` … `03`, `SL-01` … `SL-06`, `IMPT-01` … `05` |
 | [`roles-permissions.md`](../../PRD/00-foundation/roles-permissions.md) | Bab 18, `PM-05` `PM-06` |
-| [`security.md`](../../PRD/03-architecture/security.md) | `NFR-S-02` (hash password), `NFR-S-03a` (kebijakan kata sandi) — `PR-01-16` |
 
 ## 5. Referensi SDD
 
 | Berkas | Keputusan yang diterapkan |
 |---|---|
-| [`03-authorization.md`](../../SDD/03-authorization.md) | `SDD-AUTH-01` `SDD-AUTH-06` (middleware otorisasi, `PR-01-15`), `SDD-AUTH-04` (cache & `role_version`, `PR-01-04`), `SDD-AUTH-10` (permission inti, `PR-01-04`). `SDD-AUTH-05` (`GET /me`) **bukan** phase ini — menuntut token nyata, milik Phase 02 |
-| [`04-authentication-session.md`](../../SDD/04-authentication-session.md) | `SDD-SESS-01` (Argon2id, `PR-01-16`) |
+| [`03-authorization.md`](../../SDD/03-authorization.md) | `SDD-AUTH-04` (cache & `role_version`), `SDD-AUTH-10` (permission inti) |
 | [`05-database-design.md`](../../SDD/05-database-design.md) | `SDD-DB-01` … `SDD-DB-06` |
 | [`06-api-design.md`](../../SDD/06-api-design.md) | `SDD-API-05` … `SDD-API-07` (paginasi, filter, presenter) |
 | [`15-observability-logging.md`](../../SDD/15-observability-logging.md) | `SDD-OBS-01` (pemisahan activity log vs log aplikasi) |
@@ -92,36 +88,24 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 
 ## 7. Pull Request Plan
 
-| PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
-|---|---|:---:|:---:|---|---|---|
-| `PR-01-01` | Skema `users` + kolom baku `roles` (skema RBAC dari `PR-00-16`) | M | M | Ph00 | `FR-02.1`, `SDD-DB-04`, `SDD-05 §4.7` | Migration naik-turun bersih; `users.role_id` merujuk role hasil seed |
-| `PR-01-02` | CRUD pengguna + soft delete + aturan Administrator terakhir | M | M | 01, 15, 16 | `FR-02.1`, `BR-067` `BR-068` `BR-070a` | Menonaktifkan admin ditolak bila tersisa < 2 aktif (`BR-068`+`BR-070a`, `SDD-05 §4.3`, keputusan 16 log phase-01) |
-| `PR-01-03` | Impor massal pengguna (CSV/XLSX), sinkron ≤ 200 baris | M | M | 02 | `FR-02.1 A4`, `IMPT-01` `IMPT-02` | ≤ 200 baris; baris gagal tidak menggagalkan berkas; laporan per baris pada respons (keputusan 19 log phase-01: `IMPT-03`/`04`/`05` ditunda) |
-| `PR-01-04` | Matriks permission + `role_version` + cache 60 detik | M | M | 01, 15 | `FR-02.2`, `PM-05`, `SDD-AUTH-04/10` | Perubahan berlaku tanpa restart; permission inti tidak dapat dicabut |
-| `PR-01-05` | Skema `buildings`/`areas`/`rooms` + CRUD | M | M | 15 | `FR-03.1`, `BR-013` `BR-014` | Kode unik per tingkat; hierarki tiga tingkat |
-| `PR-01-06` | Pohon lokasi + penonaktifan berjenjang | M | M | 05 | `FR-03.1 A2/A3`, `BR-015` | Lokasi bermuatan aset tidak dapat dinonaktifkan |
-| `PR-01-07` | Daftar aset per lokasi *(kerangka; data menyusul Phase 02)* | S | S | 05 | `FR-03.2` | Endpoint mengembalikan struktur benar dengan daftar kosong |
-| `PR-01-08` | Penelusuran activity log + filter + detail sebelum/sesudah | M | M | 15 | `FR-18.2` | Filter kombinasi ≤ 3 detik; tampilan bukan JSON mentah |
-| `PR-01-09` | Ekspor activity log + pencatatan aksi ekspor itu sendiri | S | S | 08 | `FR-18.2`, `AL-10` | Ekspor tercatat sebagai aktivitas tersendiri |
-| `PR-01-10` | `system_settings` + seed parameter bawaan + endpoint baca/tulis + validasi rentang | M | M | 15 | `FR-20.1`, `SDD-DB-10` | Nilai di luar rentang ditolak dengan penjelasan; katalog kunci & nilai bawaan ditetapkan di SDD sebelum di-seed |
-| `PR-01-11` | Kalender akademik: `academic_years`, `terms`, + `academic_year_id` pada `holidays` | M | M | 10 | Lampiran E.2, `AC-YR-01` … `04` | Tepat satu tahun ajaran aktif |
-| `PR-01-12` | `work_units` + migrasi `users.unit_kerja` → `work_unit_id` | M | M | 02, 10 | Lampiran E.3, `WU-01` … `03` | Pola expand→migrate; kolom lama belum dihapus |
-| `PR-01-13` | Siklus akun siswa: kenaikan kelas massal, kelulusan | M | M | 02, 11 | Lampiran E.4, `SL-01` … `SL-06` | Siswa berkewajiban aktif tidak dapat dinonaktifkan |
-| `PR-01-14` | Gerbang persetujuan wali (`consent_guardian_at`) | S | S | 02 | `DP-02`, `SL-06`, `NT-48` | Akun siswa tanpa penanda tidak dapat diaktifkan |
-| `PR-01-15` | Middleware otorisasi + penyaringan field per permission *(dipindah dari `PR-02-09`)* | M | M | 01 | `PM-02` `PM-03`, `SDD-AUTH-01/05/06`, `SEC-T-01` | Uji otorisasi tergenerate mencakup 100% route; tanpa `AuthContext` → `401`, tanpa permission → `403 INSUFFICIENT_PERMISSION`, keduanya sebelum controller (`SDD-03 §4.4`); `/health` ringkasan dipasang dan terdaftar (keputusan 21) |
-| `PR-01-16` | Hash password Argon2id + kebijakan kata sandi *(dipindah dari `PR-02-01`)* | S | S | Ph00 | `NFR-S-02`, `NFR-S-03a`, `SDD-SESS-01`, `SDD-SYS-15` | Parameter Argon2id sesuai `SDD-SESS-01`, dibandingkan uji terhadap dokumennya; panjang, komposisi, dan larangan memuat identitas ditegakkan — daftar bocor dan riwayat 3 password milik `PR-02-31` |
-| `PR-01-17` | Impor massal pengguna — asinkron > 200 baris, idempotensi file-hash *(baru, keputusan 19)* | M | M | 03 | `IMPT-03`, `IMPT-04`, `NT-52` | Berkas > 200 baris diproses BullMQ, notifikasi `NT-52` saat selesai; unggah ulang berkas identik dalam 24 jam tidak memproses ulang; laporan per baris tersedia lewat endpoint pengambilan tersendiri |
-| `PR-01-18` | Endpoint master data Lampiran E: tahun ajaran & semester, hari libur, hari kerja, unit kerja *(baru, keputusan 29)* | L | L | 10, 11, 12 | `FR-20.1`, `AC-YR-01` `AC-YR-02`, `WU-01` … `03`, `P-71` `P-72` | Administrator mengisi kalender akademik dan unit kerja lewat aplikasi (baris endpoint: [`m20-settings.md` §7](../../PRD/02-modules/m20-settings.md)); DoD phase "Kalender akademik terisi" dapat dipenuhi tanpa SQL |
+| PR | Judul | Kompleksitas | Bergantung | FR/SDD | Acceptance |
+|---|---|:---:|---|---|---|
+| `PR-01-01` | Skema `users`, `roles`, `permissions`, `role_permissions` | M | Ph00 | `FR-02.1`, `SDD-DB-04` | Migration naik-turun bersih |
+| `PR-01-02` | CRUD pengguna + soft delete + aturan Administrator terakhir | M | 01 | `FR-02.1`, `BR-067` `BR-068` `BR-070a` | Menonaktifkan Administrator terakhir ditolak |
+| `PR-01-03` | Impor massal pengguna (CSV/XLSX) | M | 02 | `FR-02.1 A4`, `IMPT-01` … `05` | 500 baris; baris gagal tidak menggagalkan berkas |
+| `PR-01-04` | Matriks permission + `role_version` + cache 60 detik | M | 01 | `FR-02.2`, `PM-05`, `SDD-AUTH-04/10` | Perubahan berlaku tanpa restart; permission inti tidak dapat dicabut |
+| `PR-01-05` | Skema `buildings`/`areas`/`rooms` + CRUD | M | Ph00 | `FR-03.1`, `BR-013` `BR-014` | Kode unik per tingkat; hierarki tiga tingkat |
+| `PR-01-06` | Pohon lokasi + penonaktifan berjenjang | M | 05 | `FR-03.1 A2/A3`, `BR-015` | Lokasi bermuatan aset tidak dapat dinonaktifkan |
+| `PR-01-07` | Daftar aset per lokasi *(kerangka; data menyusul Phase 02)* | S | 05 | `FR-03.2` | Endpoint mengembalikan struktur benar dengan daftar kosong |
+| `PR-01-08` | Penelusuran activity log + filter + detail sebelum/sesudah | M | Ph00 | `FR-18.2` | Filter kombinasi ≤ 3 detik; tampilan bukan JSON mentah |
+| `PR-01-09` | Ekspor activity log + pencatatan aksi ekspor itu sendiri | S | 08 | `FR-18.2`, `AL-10` | Ekspor tercatat sebagai aktivitas tersendiri |
+| `PR-01-10` | `system_settings` + endpoint baca/tulis + validasi rentang | M | Ph00 | `FR-20.1` | Nilai di luar rentang ditolak dengan penjelasan |
+| `PR-01-11` | Kalender akademik: `academic_years`, `terms`, `holidays` | M | 10 | Lampiran E.2, `AC-YR-01` … `04` | Tepat satu tahun ajaran aktif |
+| `PR-01-12` | `work_units` + migrasi `users.unit_kerja` → `work_unit_id` | M | 02, 10 | Lampiran E.3, `WU-01` … `03` | Pola expand→migrate; kolom lama belum dihapus |
+| `PR-01-13` | Siklus akun siswa: kenaikan kelas massal, kelulusan | M | 02, 11 | Lampiran E.4, `SL-01` … `SL-06` | Siswa berkewajiban aktif tidak dapat dinonaktifkan |
+| `PR-01-14` | Gerbang persetujuan wali (`consent_guardian_at`) | S | 02 | `DP-02`, `SL-06`, `NT-48` | Akun siswa tanpa penanda tidak dapat diaktifkan |
 
 ## 8. Task Breakdown
-
-### `PR-01-18` — Endpoint master data Lampiran E
-- [ ] Layanan tahun ajaran: buat (tahun pertama otomatis aktif), sunting, `PATCH .../activate` menukar tahun aktif dalam **satu** transaksi (`SDD-DB-18`); validasi semester berada di dalam rentang tahun ajarannya (`SDD-05 §4.7b` — belum ditegakkan basis data)
-- [ ] Hari libur (CRUD) dan hari kerja (`PUT /work-days`); `academic_year_id` opsional pada hari libur
-- [ ] Unit kerja: buat, sunting, `PATCH .../status` (tidak ada hapus — `WU-02`); kode/nama unik tanpa memandang huruf
-- [ ] Setiap operasi tulis memuat aksi activity log di `m20-settings.md` §11 (`AL-01`)
-- [ ] Aktivasi tahun ajaran **tidak** menjalankan kenaikan kelas — pemicu `AC-YR-02` disambungkan `PR-01-13`
-- [ ] **Skala:** ±14 endpoint pada empat entitas; jelaskan di deskripsi PR mengapa tidak dipecah (kalender | unit kerja) bila tetap `L`
 
 ### `PR-01-04` — Matriks permission
 - [ ] Endpoint `PUT /roles/{id}/permissions`
@@ -144,12 +128,12 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 
 ## 9. Acceptance Checklist
 
-- [ ] Seluruh AC pada `FR-02.1`, `FR-02.2`, `FR-03.1`, `FR-03.2`, `FR-18.1`, `FR-18.2`, `FR-20.1` terverifikasi — *17 dari 25 terbukti, 3 sebagian, 5 ditunda ([log §9.2](../logs/phase-01.md))*
-- [x] Uji otorisasi tergenerate lulus untuk keempat modul (`SEC-T-01`)
-- [x] Impor 500 pengguna dengan laporan galat per baris (`IMPT-02`)
-- [x] Perubahan matriks permission berlaku ≤ 60 detik tanpa restart (`PM-05`)
-- [x] Setiap operasi tulis menghasilkan entri activity log (`AL-01`)
-- [x] Akun siswa tanpa `consent_guardian_at` tidak dapat diaktifkan (`DP-02`)
+- [ ] Seluruh AC pada `FR-02.1`, `FR-02.2`, `FR-03.1`, `FR-03.2`, `FR-18.1`, `FR-18.2`, `FR-20.1` terverifikasi
+- [ ] Uji otorisasi tergenerate lulus untuk keempat modul (`SEC-T-01`)
+- [ ] Impor 500 pengguna dengan laporan galat per baris (`IMPT-02`)
+- [ ] Perubahan matriks permission berlaku ≤ 60 detik tanpa restart (`PM-05`)
+- [ ] Setiap operasi tulis menghasilkan entri activity log (`AL-01`)
+- [ ] Akun siswa tanpa `consent_guardian_at` tidak dapat diaktifkan (`DP-02`)
 
 ## 10. Risks
 
@@ -176,10 +160,10 @@ Mulai phase ini, aturan **expand→migrate→contract** berlaku penuh: tidak ada
 
 **Tambahan khusus phase ini:**
 
-- [ ] Empat modul dapat didemokan mandiri kepada Administrator sekolah — *ditunda: menuntut UI dan staging*
-- [ ] Template impor pengguna (Lampiran E.5.2) tersedia untuk diunduh (`IMPT-05`) — prasyarat `IMP-02` — *berkas tersedia di [`templates/impor/`](../templates/impor/); tombol unduh menunggu `apps/web`*
-- [ ] Kalender akademik terisi untuk tahun ajaran berjalan (`AC-YR-01`) — *endpoint siap; data dimasukkan Administrator sekolah*
-- [x] Log phase terisi
+- [ ] Empat modul dapat didemokan mandiri kepada Administrator sekolah
+- [ ] Template impor pengguna (Lampiran E.5.2) tersedia untuk diunduh (`IMPT-05`) — prasyarat `IMP-02`
+- [ ] Kalender akademik terisi untuk tahun ajaran berjalan (`AC-YR-01`)
+- [ ] Log phase terisi
 
 ---
 

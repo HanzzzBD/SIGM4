@@ -57,37 +57,25 @@
 }
 ```
 
-**Ketentuan bidang galat** — bentuk amplopnya satu, dan yang berbeda antarkondisi hanya *isi* `message` dan ada-tidaknya `details`:
-
-| Bidang | Ketentuan |
-|---|---|
-| `error.code` | Salah satu kode Bab 17.3 |
-| `error.message` | Kalimat Bahasa Indonesia untuk pengguna. Pada **galat aturan bisnis** (4xx yang dilempar service, mis. `VALIDATION_ERROR`, `DUPLICATE_CODE`, `NOT_FOUND`, `CORE_PERMISSION_LOCKED`) berupa penjelasan spesifik yang sengaja ditulis pengembang; pada galat lain berupa **pesan generik per kode**. Klien boleh menampilkannya atau memetakan `code` ke pesannya sendiri (`NFR-AC-09`) |
-| `error.details` | **Opsional.** Larik `{ field, message }`: isian yang bermasalah beserta alasannya, dengan `field` = nama isian pada body/parameter. Hanya ada pada galat aturan bisnis 4xx yang menunjuk isian tertentu; galat yang mengumpulkan beberapa isian sekaligus (mis. `PUT /settings`) memuat satu butir per isian. **Tidak pernah** ada pada 400 `INVALID_REQUEST` (galat skema), 401/403, maupun 5xx |
-| `request_id` | Selalu ada; sama dengan header `X-Request-Id` |
-
-**Yang tidak pernah dikirim ke klien** (`NFR-R-10`, `SDD-AUTH-08`, `DP-03`): *stack trace*, pesan galat sistem atau basis data, kredensial, data pribadi pada `message`/`details` (mis. nama pengguna), konteks internal yang bukan isian (ID aturan, daftar kewajiban, daftar permission), dan pesan spesifik pada 401/403 — jawaban autentikasi/otorisasi seragam agar tidak membedakan objek yang ada dari yang tidak ada. Galat 5xx selalu berpesan generik.
-
 ## 17.3 Kode Status & Kode Galat
 
-| HTTP | Kondisi | `error.code` |
+| HTTP | Kondisi | Contoh `error.code` |
 |---|---|---|
 | 200 | Berhasil (baca/ubah) | — |
 | 201 | Berhasil dibuat | — |
 | 204 | Berhasil tanpa konten | — |
 | 400 | Permintaan tidak valid | `INVALID_REQUEST` |
 | 401 | Belum terautentikasi / token kedaluwarsa | `UNAUTHENTICATED`, `TOKEN_EXPIRED` |
-| 403 | Tidak memiliki hak akses | `FORBIDDEN`, `INSUFFICIENT_PERMISSION`, `CORE_PERMISSION_LOCKED`, `PASSWORD_CHANGE_REQUIRED`, `TWO_FACTOR_REQUIRED` |
+| 403 | Tidak memiliki hak akses | `FORBIDDEN`, `INSUFFICIENT_PERMISSION` |
 | 404 | Sumber daya tidak ditemukan | `NOT_FOUND` |
 | 409 | Konflik status data | `RESERVATION_CONFLICT`, `ASSET_NOT_AVAILABLE`, `DUPLICATE_CODE`, `APPROVAL_ALREADY_DECIDED`, `IDEMPOTENCY_KEY_REUSED`, `REQUEST_IN_PROGRESS` |
-| 422 | Validasi bisnis gagal | `VALIDATION_ERROR`, `BORROWER_BLOCKED`, `DURATION_EXCEEDED`, `INSUFFICIENT_BALANCE`, `EXCEEDS_APPROVED_QTY` |
+| 422 | Validasi bisnis gagal | `VALIDATION_ERROR`, `BORROWER_BLOCKED`, `DURATION_EXCEEDED` |
 | 422 | Validasi aturan approval gagal | `INVALID_RULE_DEFINITION` |
-| 423 | Akun terkunci — TIDAK pernah dikirim `/auth/login` (respons login seragam, `SDD-SESS-12`); hanya untuk langkah sesudah password terbukti benar, mis. `/auth/2fa/verify` | `ACCOUNT_LOCKED` |
+| 423 | Akun terkunci | `ACCOUNT_LOCKED` |
 | 426 | Versi aplikasi mobile tidak lagi didukung | `UPGRADE_REQUIRED` |
 | 429 | Melebihi rate limit | `RATE_LIMIT_EXCEEDED` |
 | 500 | Kesalahan internal | `INTERNAL_ERROR` |
 | 503 | Layanan eksternal tidak tersedia | `LLM_UNAVAILABLE`, `STORAGE_UNAVAILABLE` |
-| 503 | Instance belum siap menerima trafik (probe *readiness*) | `SERVICE_NOT_READY` |
 
 ## 17.4 Daftar Endpoint Utama
 

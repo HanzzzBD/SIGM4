@@ -73,13 +73,8 @@ Harga yang dibayar: kehilangan foreign key pada `resource_id`. Dimitigasi oleh S
 ```sql
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
--- Nilai booking_status memakai kode huruf besar (SDD-DB-02); nama keadaan pada
--- §4.3 dan pada prosa dokumen lain adalah label, bukan nilai kolom. booking_resource
--- dan booking_origin sengaja TIDAK ikut: glossary PRD memakukan resource_type='asset'
--- sebagai kontrak teknis yang tidak berubah.
-
 CREATE TYPE booking_resource AS ENUM ('room', 'asset');
-CREATE TYPE booking_status   AS ENUM ('TENTATIVE', 'CONFIRMED', 'ACTIVE', 'RELEASED');
+CREATE TYPE booking_status   AS ENUM ('Tentative', 'Confirmed', 'Active', 'Released');
 CREATE TYPE booking_origin   AS ENUM ('reservation', 'loan', 'maintenance',
                                       'fixed_schedule', 'manual_block');
 
@@ -99,11 +94,11 @@ CREATE TABLE booking_slots (
     created_at      timestamptz NOT NULL DEFAULT now(),
 
     CONSTRAINT slot_range_required
-        CHECK (parent_slot_id IS NOT NULL OR slot_range IS NOT NULL OR status = 'RELEASED'),
+        CHECK (parent_slot_id IS NOT NULL OR slot_range IS NOT NULL OR status = 'Released'),
     CONSTRAINT slot_range_bounds
         CHECK (slot_range IS NULL OR (lower_inc(slot_range) AND NOT upper_inc(slot_range))),
     CONSTRAINT tentative_needs_ttl
-        CHECK (status <> 'TENTATIVE' OR expires_at IS NOT NULL)
+        CHECK (status <> 'Tentative' OR expires_at IS NOT NULL)
 );
 
 -- CI-01: penegak nol double-booking
@@ -113,15 +108,15 @@ ALTER TABLE booking_slots
         resource_type WITH =,
         resource_id   WITH =,
         slot_range    WITH &&
-    ) WHERE (status IN ('TENTATIVE','CONFIRMED','ACTIVE') AND slot_range IS NOT NULL);
+    ) WHERE (status IN ('Tentative','Confirmed','Active') AND slot_range IS NOT NULL);
 
 -- AV-01
 CREATE INDEX booking_slots_lookup
     ON booking_slots USING gist (resource_type, resource_id, slot_range)
-    WHERE status IN ('TENTATIVE','CONFIRMED','ACTIVE');
+    WHERE status IN ('Tentative','Confirmed','Active');
 
 CREATE INDEX booking_slots_expiry
-    ON booking_slots (expires_at) WHERE status = 'TENTATIVE';
+    ON booking_slots (expires_at) WHERE status = 'Tentative';
 
 -- AV-02
 CREATE INDEX assets_availability
@@ -172,14 +167,14 @@ allocateUnits(categoryId, qty, range, userCtx, preferredIds?):
           AND NOT EXISTS (                          -- AV-01 memakai indeks GiST
                 SELECT 1 FROM booking_slots s
                  WHERE s.resource_type = 'asset' AND s.resource_id = a.id
-                   AND s.status IN ('TENTATIVE','CONFIRMED','ACTIVE')
+                   AND s.status IN ('Tentative','Confirmed','Active')
                    AND s.slot_range && :range)
         ORDER BY a.id                               -- CI-02: urutan lock
         LIMIT :qty
         FOR UPDATE OF a SKIP LOCKED                 -- SDD-AVL-05
 
   5. IF count(candidates) < qty -> ROLLBACK, 409 ASSET_NOT_AVAILABLE
-  6. INSERT booking_slots (status='TENTATIVE', expires_at=ttl()) untuk tiap kandidat
+  6. INSERT booking_slots (status='Tentative', expires_at=ttl()) untuk tiap kandidat
        -> exclusion constraint adalah pemutus akhir (CI-01)
   7. INSERT reservation + reservation_items
   8. buildApprovalInstance()                        -- lihat SDD-02
@@ -218,18 +213,16 @@ Alur (`ID-01` … `ID-05`):
 
 ```
 BEGIN
-  IF NOT pg_try_advisory_xact_lock(hashtext(key))
-                           -> 409 REQUEST_IN_PROGRESS        (ID-05)
+  pg_advisory_xact_lock(hashtext(key))              -- serialisasi per kunci
   row := SELECT * FROM idempotency_keys WHERE key = :key
-  IF row IS NULL           -> INSERT ; jalankan bisnis ;
+  IF row IS NULL           -> INSERT (status_code NULL) ; jalankan bisnis ;
                               UPDATE hasil ; COMMIT ; 201
+  IF row.status_code NULL  -> 409 REQUEST_IN_PROGRESS        (ID-05)
   IF row.request_hash <> h -> 409 IDEMPOTENCY_KEY_REUSED     (ID-04)
   ELSE                     -> kembalikan response tersimpan  (ID-03)
 ```
 
 Advisory lock bersifat transaksional, jadi lepas otomatis saat commit/rollback — tidak ada kunci menggantung bila proses mati.
-
-**Kuncinya `try`, bukan menunggu — dan itu yang membuat `ID-05` ada.** Versi pertama alur ini memakai `pg_advisory_xact_lock` yang memblokir, lalu memeriksa `status_code NULL` untuk mendeteksi permintaan yang sedang berjalan. Pemeriksaan itu **tidak dapat menyala**: `SDD-AVL-08` menempatkan kunci dan efeknya pada satu transaksi, sehingga baris ber-`status_code NULL` tidak pernah terlihat sesi lain — permintaan kedua menunggu sampai yang pertama commit, lalu melihat baris yang sudah selesai. `ID-05` karena itu tidak akan pernah tercapai, dan permintaan kedua menahan satu koneksi pool selama bisnis berjalan. Dengan `pg_try_advisory_xact_lock`, kegagalan mengambil kunci **itu sendiri** adalah bukti ada permintaan berkunci sama yang sedang berjalan — dijawab seketika, tanpa menahan koneksi. Kolom `status_code` tetap ada karena `ID-02` mewajibkannya disimpan, bukan sebagai penanda *in-flight*. Dikoreksi 7 September 2026 (keputusan pemilik produk, `PR-00-10`).
 
 ### 4.5 Penomoran dokumen
 
@@ -254,12 +247,9 @@ Format dirakit aplikasi sesuai `SEQ-01`, divalidasi terhadap regex `SEQ-04` pada
 | Job | Jadwal (UTC, lihat `JOB-04`) | Idempoten karena |
 |---|---|---|
 | `slot-activation` | tiap 5 menit | `UPDATE … WHERE status <> target` |
-| `tentative-slot-expiry` | tiap 15 menit | `WHERE status='TENTATIVE' AND expires_at < now()` |
+| `tentative-slot-expiry` | tiap 15 menit | `WHERE status='Tentative' AND expires_at < now()` |
 | `loan-overdue` | 17:05 (= 00:05 WIB) | denda diperiksa unik per `(loan_item_id, tanggal)` |
 | `reservation-expiry` | 16:00 (= 23:00 WIB) | transisi hanya dari `Confirmed` |
-| `approval-sla-check` | tiap 30 menit | pengingat `NT-06` dibatasi 1×/hari per objek; eskalasi hanya dari langkah yang masih aktif |
-| `activity-log-partition` | 17:20 (= 00:20 WIB) | `CREATE TABLE IF NOT EXISTS` atas partisi bulan berjalan + 3 bulan ke depan (`SDD-05 §4.4`) |
-| `activity-log-verify` | 17:40 (= 00:40 WIB) | hanya membaca; rantai diverifikasi, tidak pernah diperbaiki (`NFR-S-03d`, `AL-03a`) |
 
 Setiap job menulis entri `activity_log` berpelaku `SYSTEM` (`JOB-05`, `AL-06`).
 

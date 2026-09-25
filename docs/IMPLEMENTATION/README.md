@@ -1,6 +1,6 @@
 # Implementation Documentation — SIGM4
 
-**Status:** rencana lengkap: 9 phase · 170 pull request · 22 modul. Kemajuan aktual per phase dan PR hanya dicatat di [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md).
+**Status:** rencana lengkap, pengerjaan belum dimulai. 9 phase · 163 pull request · 22 modul.
 
 ---
 
@@ -52,8 +52,7 @@ Aturan yang paling sering tergoda dilanggar: **IMPLEMENTATION menurunkan, tidak 
 | [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md) | Status **per phase dan per PR**. Status per requirement ada di [`traceability.md`](../PRD/06-quality/traceability.md) |
 | [`phases/`](phases/) | Sembilan berkas phase, masing-masing 12 bagian baku |
 | [`logs/`](logs/) | Sembilan log — apa yang **benar-benar terjadi**, bukan apa yang direncanakan |
-| [`templates/`](templates/) | Bentuk baku phase, PR, risiko, penempatan, rollback; `templates/impor/` = templat impor pengguna untuk sekolah (`IMPT-05`, `IMP-02`), dibangkitkan `scripts/gen_template_pengguna.mjs` |
-| [`runbooks/`](runbooks/) | Langkah operasional yang menjembatani PR yang belum ada — mis. [`master-data-awal.md`](runbooks/master-data-awal.md) |
+| [`templates/`](templates/) | Bentuk baku phase, PR, risiko, penempatan, rollback |
 | [`CHANGELOG.md`](CHANGELOG.md) | Riwayat perubahan dokumentasi implementasi |
 
 ---
@@ -64,13 +63,13 @@ Aturan yang paling sering tergoda dilanggar: **IMPLEMENTATION menurunkan, tidak 
 |:---:|---|:---:|:---:|---|
 | [00](phases/phase-00.md) | Foundation | — | 18 | `M0` — **menutup** |
 | [01](phases/phase-01.md) | Master Data Independen | M-02 · M-03 · M-18 · M-20 | 14 | `M1` · `M5` (sebagian) |
-| [02](phases/phase-02.md) | Inti Sistem | M-01 · M-04 · M-10 · M-15 · M-17 | 31 | `M1` · `M2` · `M5` (sebagian) |
+| [02](phases/phase-02.md) | Inti Sistem | M-01 · M-04 · M-10 · M-15 · M-17 | 30 | `M1` · `M2` · `M5` (sebagian) |
 | [03](phases/phase-03.md) | Layanan Aset & Reservasi Ruangan | M-05 · M-06 · M-07 · M-11 · M-14 · M-19 | 23 | `M1` — **menutup** |
 | [04](phases/phase-04.md) | Siklus Hidup Aset | M-08 · M-12 · M-13 | 14 | `M2` — **menutup** |
 | [05](phases/phase-05.md) | Penutupan Siklus | M-09 · M-21 | 14 | `M3` & `M4` — **menutup** |
 | [06](phases/phase-06.md) | Analitik | M-16 | 10 | `M5` — **menutup** |
 | [07](phases/phase-07.md) | Integrasi Lintas Modul & UAT | — | 14 | `M6` (sebagian) |
-| [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 16 | `M6` — **menutup** |
+| [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 15 | `M6` — **menutup** |
 
 **Phase bukan milestone.** Phase adalah gelombang dependensi teknis — sekumpulan modul yang boleh dikerjakan bersamaan karena tidak saling menunggu. Milestone adalah pengelompokan bisnis PRD 29.2. Keduanya bersilangan; pemetaan lengkapnya di [`ROADMAP.md` §4](ROADMAP.md).
 
@@ -99,7 +98,7 @@ Akibat praktisnya: sebuah milestone dinyatakan tercapai pada phase yang **menutu
 ## Tiga hal yang paling mudah keliru
 
 **1. ~~TBD kelompok A memblokir phase berkode.~~ Tidak lagi berlaku sejak 25 Agustus 2026.**
-Kelompok A dan D dikosongkan 25 Agustus 2026, dan kelompok A dikosongkan ulang 2 September 2026 setelah `TBD-AI-D` dibuka dan ditutup pada hari yang sama; tidak ada phase yang terhalang keputusan yang belum diambil. Daftar dan jadwalnya di [`ROADMAP.md` §8](ROADMAP.md); pertanyaannya di [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md). **13 terbuka, 42 tertutup** — empat belas di antaranya dibuka dan ditutup 6 September 2026 dalam tiga sapuan audit keputusan stack sebelum `PR-00-04`. Seluruh sisa yang terbuka adalah kelompok B, parameter operasional yang dikalibrasi Phase 07–08 setelah data staging tersedia. Migrasi penyedia LLM 2 September 2026 sempat membuka `TBD-AI-D`, dan persetujuan sekolah menutupnya pada hari yang sama. Risiko yang dulu tertinggi pada rencana ini kini berupa pengukuran yang belum dijalankan, bukan keputusan yang belum diambil.
+Kelompok A dan D dikosongkan 25 Agustus 2026, dan kelompok A dikosongkan ulang 2 September 2026 setelah `TBD-AI-D` dibuka dan ditutup pada hari yang sama; tidak ada phase yang terhalang keputusan yang belum diambil. Daftar dan jadwalnya di [`ROADMAP.md` §8](ROADMAP.md); pertanyaannya di [`../SDD/TBD-REGISTER.md`](../SDD/TBD-REGISTER.md). **13 terbuka, 28 tertutup** — seluruh sisanya kelompok B, parameter operasional yang dikalibrasi Phase 07–08 setelah data staging tersedia. Migrasi penyedia LLM 2 September 2026 sempat membuka `TBD-AI-D`, dan persetujuan sekolah menutupnya pada hari yang sama. Risiko yang dulu tertinggi pada rencana ini kini berupa pengukuran yang belum dijalankan, bukan keputusan yang belum diambil.
 
 **2. Baseline `IMP-04` hanya dapat diukur sebelum sistem dipakai.**
 Durasi opname manual, waktu persetujuan disposisi kertas, tingkat pengembalian tepat waktu versi manual. Setelah go-live, `SC-03`, `SC-06`, `SC-07`, dan `SC-08` tidak dapat dibuktikan **selamanya** — bukan tertunda, tidak dapat. Ia masuk gerbang keluar Phase 07 sebagai butir yang menghalangi.

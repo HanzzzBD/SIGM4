@@ -43,7 +43,7 @@ Total: **87 halaman web** · **23 layar mobile**.
 |---|---|---|---|---|---|---|
 | P-01 | Login | `/login` | Membuktikan identitas (`FR-01.1`) | Publik | Buka aplikasi · sesi berakhir · logout · deep link belum login | Dashboard · Verifikasi 2FA · Ganti Password Wajib · Lupa Password · Pemberitahuan Privasi |
 | P-02 | Verifikasi 2FA | `/login/2fa` | Faktor kedua TOTP atau kode cadangan (`FR-01.5`) | Challenge token, 5 menit (`SDD-SESS-10`) | Login berhasil pada akun ber-2FA | Dashboard · Ganti Password Wajib · kembali ke Login bila challenge kedaluwarsa |
-| P-03 | Aktivasi 2FA | `/login/2fa/aktivasi` | Mendaftarkan TOTP + menerbitkan 10 kode cadangan (`FR-01.5`); role wajib 2FA memasukkan kode aktivasi dari Administrator lebih dulu (`BR-070d`) | Sesi terautentikasi, 2FA belum aktif | Login pertama role wajib 2FA (`BR-070`) | Dashboard (setelah 6 digit terverifikasi) |
+| P-03 | Aktivasi 2FA | `/login/2fa/aktivasi` | Mendaftarkan TOTP + menerbitkan 10 kode cadangan (`FR-01.5`) | Sesi terautentikasi, 2FA belum aktif | Login pertama role wajib 2FA (`BR-070`) | Dashboard (setelah 6 digit terverifikasi) |
 | P-04 | Lupa Password | `/lupa-password` | Mengajukan permintaan reset ke Administrator (`FR-01.3`) | Publik | Tautan pada Login | Login — selalu dengan pesan netral (`FR-01.3 A1`) |
 | P-05 | Ganti Password Wajib | `/ganti-password` | Mengganti password sementara sebelum menu apa pun dapat diakses (`FR-01.1 A4`) | Sesi ber-`must_change_password` | Login dengan password hasil reset · pemulihan break-glass | Dashboard. **Tidak ada exit lain** — gerbang `mustChangePassword` (`SDD-AUTH-09`) memblokir seluruh route lain |
 | P-06 | Halaman Publik Aset | `/a/{uuid}` | Menampilkan identitas dasar aset hasil scan kamera bawaan (`FR-05.2 A3`) | Publik, rate limit 20/menit per IP | Scan QR dengan aplikasi kamera bawaan | Login untuk aksi lanjutan · tutup halaman. **Tidak pernah** menampilkan nilai, biaya, dokumen, foto berwajah, atau identitas peminjam (`DP-05`) |
@@ -168,7 +168,7 @@ Total: **87 halaman web** · **23 layar mobile**.
 | P-60 | Pengguna | `/pengguna` | Daftar akun dengan filter role, status, unit kerja (`FR-02.1`) | `user.view` | Sidebar · kartu "Total Pengguna Aktif" (19.2) | Detail Pengguna · Tambah · Impor · Kenaikan Kelas Massal |
 | P-61 | Tambah Pengguna | `/pengguna/baru` | Membuat akun + password sementara (`FR-02.1`) | `user.create` | Tombol pada Pengguna | Detail Pengguna dengan password sementara tampil **satu kali** · batal ke Pengguna |
 | P-62 | Impor Pengguna | `/pengguna/impor` | Impor massal CSV/XLSX dengan laporan per baris (`FR-02.1 A4`, `E.5.2`) | `user.create` | Tombol pada Pengguna | Laporan hasil ke Pengguna · unduh templat |
-| P-63 | Detail Pengguna | `/pengguna/{id}` | Profil, role, unit kerja, status, riwayat login | `user.view` | Daftar Pengguna · pencarian global | Ubah · Aktifkan/Nonaktifkan (drawer beralasan) · Reset Password 🔒 · Reset 2FA 🔒 · Terbitkan Kode Aktivasi 2FA 🔒 · Riwayat Perubahan |
+| P-63 | Detail Pengguna | `/pengguna/{id}` | Profil, role, unit kerja, status, riwayat login | `user.view` | Daftar Pengguna · pencarian global | Ubah · Aktifkan/Nonaktifkan (drawer beralasan) · Reset Password 🔒 · Reset 2FA 🔒 · Riwayat Perubahan |
 | P-64 | Kenaikan Kelas Massal | `/pengguna/kenaikan-kelas` | Menetapkan kelas baru atau menandai lulus pada pergantian tahun ajaran (`SL-02`) | `user.update` | Tombol pada Pengguna · pemicu setelah `AC-YR-02` | Laporan hasil ke Pengguna. Siswa dengan peminjaman aktif atau kewajiban belum lunas ditampilkan sebagai daftar terblokir (`SL-04`) |
 | P-65 | Role & Permission | `/role` | Daftar role + jumlah pengguna & permission aktif (`FR-02.2`) | `role.view` | Sidebar | Matriks Permission · Salin Role sebagai templat (`FR-02.2 A2`) |
 | P-66 | Matriks Permission | `/role/{id}` | Matriks domain × aksi untuk satu role (`FR-02.2`) | `role.view` / `role.update` | Daftar Role | Simpan ke Daftar Role · penolakan eksplisit saat mencabut permission inti 🔒 (`FR-02.2 A1`) |
@@ -285,7 +285,7 @@ Kategori Komputer · Lab Komputer 1 · Diperoleh 2024
 | Aspek | Ketentuan | Rujukan |
 |---|---|---|
 | Label | Eksplisit di atas field, tidak pernah hanya placeholder | `NFR-AC-05` |
-| Validasi | Inline saat blur; pesan galat di bawah field, ditautkan `aria-describedby`. Galat dari server yang menunjuk isian (`error.details[{ field, message }]`, Bab 17.2) tampil pada field itu; tanpa `details`, `error.message` (atau pesan yang dipetakan dari `code`) tampil sebagai galat formulir | 31.3 · `SDD-FE` §4.6 · `SDD-API-14` |
+| Validasi | Inline saat blur; pesan galat di bawah field, ditautkan `aria-describedby` | 31.3 · `SDD-FE` §4.6 |
 | Skema | Aturan validasi klien identik dengan server karena berasal dari skema bersama | `SDD-FE-05` · `SDD-REPO-05` |
 | Pengiriman ganda | Tombol simpan dinonaktifkan selama permintaan berjalan; endpoint transaksional mengirim `Idempotency-Key` | `ID-01` · 31.3 |
 | Field wajib | Ditandai teks "wajib", bukan hanya tanda bintang berwarna | `NFR-AC-06` |
@@ -323,7 +323,6 @@ Hanya dua halaman: Kalender Ruangan (P-27) dan Katalog Aset (P-28). Spesifikasi 
 | Pulihkan aset terhapus | P-57 | ✅ | `BR-065g` |
 | Nonaktifkan pengguna | P-63 | ✅ | `FR-02.1` langkah 7 |
 | Reset 2FA pengguna lain | P-63 | ✅ | `FR-01.5 A3` |
-| Terbitkan kode aktivasi 2FA | P-63 | ✅ | `FR-01.5 A7` |
 | Tolak permintaan reset password | P-67 | ✅ | `FR-01.3 A2` |
 | Nonaktifkan approval rule | P-69 | ✅ | `FR-10.1 A4` |
 | Nonaktifkan lokasi / kategori / unit kerja | P-21 · P-22 · P-72 | ✅ | `BR-015` · `FR-04.5 A2` · `WU-02` |
@@ -373,7 +372,7 @@ Ditetapkan `ui-foundation.md §31.5`. Tabel berikut menjabarkannya menjadi keten
 | Batas percakapan harian tercapai | MS-21 | `FR-19.1 A5` — tampilkan waktu ketersediaan berikutnya |
 | Versi aplikasi tidak didukung | MS-04 | `426 UPGRADE_REQUIRED` (`MOB-VER-03`) |
 | Izin kamera ditolak | MS-07 · P-25 | `MOB-MED-06` · `FR-05.2 A4` — panduan mengaktifkan + input kode manual |
-| Kredensial ditolak (termasuk akun terkunci) | P-01 · MS-01 | `401 UNAUTHENTICATED` — SATU pesan generik; status terkunci dan sisa waktu **tidak** ditampilkan agar tidak membocorkan email terdaftar (`FR-01.1 A1`/`A2`, `SDD-SESS-12`) |
+| Akun terkunci | P-01 · MS-01 | `423 ACCOUNT_LOCKED` — menampilkan sisa waktu penguncian (`FR-01.1 A2`) |
 | Batas laju terlampaui | seluruh halaman | `429 RATE_LIMIT_EXCEEDED` — menampilkan waktu tunggu dari header `X-RateLimit-*` (`NFR-S-07`) |
 
 ## 7.4 Pola pencarian, filter, dan pengurutan
@@ -413,7 +412,7 @@ Drawer dipakai untuk aksi singkat berformulir pendek di atas halaman detail (**U
 | Penutupan | Esc, tombol tutup, dan klik latar — kecuali bila ada perubahan belum tersimpan, yang meminta konfirmasi |
 | Pada layar < 768 px | Drawer berubah menjadi *bottom sheet* setinggi konten |
 
-**Daftar drawer:** Verifikasi Tiket · Tolak Tiket · Ubah Kondisi Aset · Tandai Lunas · Bebaskan Denda Keterlambatan · Bebaskan Ganti Rugi · Batalkan Reservasi · Delegasikan Approver · Aktifkan/Nonaktifkan Pengguna · Reset Password · Reset 2FA · Terbitkan Kode Aktivasi 2FA · Tolak Permintaan Reset · Lewati Pemeliharaan · Tandai WO Tertunda · Batalkan Sesi Opname · Substitusi Unit · Cabut Perangkat.
+**Daftar drawer:** Verifikasi Tiket · Tolak Tiket · Ubah Kondisi Aset · Tandai Lunas · Bebaskan Denda Keterlambatan · Bebaskan Ganti Rugi · Batalkan Reservasi · Delegasikan Approver · Aktifkan/Nonaktifkan Pengguna · Reset Password · Reset 2FA · Tolak Permintaan Reset · Lewati Pemeliharaan · Tandai WO Tertunda · Batalkan Sesi Opname · Substitusi Unit · Cabut Perangkat.
 
 ## 7.6 Spesifikasi halaman kunci
 
@@ -552,7 +551,7 @@ Enam kelompok (**UXD-05**), dua kanal per kelompok.
 | **Denda & Kewajiban** | `NT-15`…`NT-18` | Sebagian (`NT-15`, `NT-18`) |
 | **Kerusakan & Perawatan** | `NT-19`…`NT-26`, `NT-28`, `NT-29` | Sebagian (`NT-19`, `NT-20`, `NT-22`, `NT-23`, `NT-25`) |
 | **Opname & Pengadaan** | `NT-30`…`NT-36`, `NT-43`…`NT-45` | Sebagian (`NT-31`, `NT-33`, `NT-34`, `NT-35`, `NT-43`, `NT-44`) |
-| **Akun & Sistem** | `NT-37`…`NT-42`, `NT-48` | Sebagian (`NT-37`, `NT-38`, `NT-38a`, `NT-39`, `NT-39a`, `NT-40`, `NT-48`) |
+| **Akun & Sistem** | `NT-37`…`NT-42`, `NT-48` | Sebagian (`NT-37`, `NT-38`, `NT-38a`, `NT-39`, `NT-40`, `NT-48`) |
 
 | Aspek | Ketentuan | Rujukan |
 |---|---|---|
