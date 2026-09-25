@@ -25,7 +25,7 @@ Total: **69** requirement.
 | `FR-02.2` | M-02 Manajemen User & Role | `02-modules/m02-users.md` | Not Started |  |
 | `FR-03.1` | M-03 Manajemen Lokasi | `02-modules/m03-locations.md` | Not Started |  |
 | `FR-03.2` | M-03 Manajemen Lokasi | `02-modules/m03-locations.md` | Not Started |  |
-| `FR-04.1` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
+| `FR-04.1` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | In Progress | PR-02-10 (belum digabung): skema `assets`/`asset_categories`/`asset_condition_history`. TERBUKA: pendaftaran + penomoran + impor massal (PR-02-11) |
 | `FR-04.2` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
 | `FR-04.3` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
 | `FR-04.4` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
