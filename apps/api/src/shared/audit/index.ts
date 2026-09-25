@@ -1,6 +1,6 @@
 // Permukaan publik shared/audit (SDD-SYS-06): AuditLogger dan verifikasi rantai.
 export type { AuditEntry, OpsiAuditLogger } from "./audit-logger.js";
-export { AuditLogger, PELAKU_SISTEM } from "./audit-logger.js";
+export { AuditLogger, PELAKU_CLI, PELAKU_SISTEM } from "./audit-logger.js";
 export type { BarisKanonik, FieldKanonik } from "./canonical.js";
 export {
     URUTAN_FIELD,

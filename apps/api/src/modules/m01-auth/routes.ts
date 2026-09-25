@@ -71,6 +71,8 @@ import {
     KodeCadanganResponseSchema,
 } from "./schemas/two-factor.schema.js";
 import { AuthService } from "./services/auth.service.js";
+import { BreakGlassService } from "./services/break-glass.service.js";
+import type { HasilKodeAktivasiCli, HasilPemulihan } from "./services/break-glass.service.js";
 import { PasswordResetService } from "./services/password-reset.service.js";
 import { PengelolaDuaFaktorService } from "./services/pengelola-dua-faktor.service.js";
 import { ProfileService } from "./services/profile.service.js";
@@ -435,4 +437,32 @@ export interface PengelolaDuaFaktor {
         metode: "KARTU_IDENTITAS_TATAP_MUKA" | "KONFIRMASI_ATASAN_ATAU_WALI_KELAS",
         klien: { readonly ip: string | undefined; readonly userAgent: string | undefined },
     ): Promise<{ sesiDicabut: number; kodeAktivasi: { kode: string; berlakuSampai: Date } | null }>;
+}
+
+/** Deps CLI (`worker/cli.ts`, PR-02-08) sengaja SEMPIT, bukan `AuthModuleDeps`: proses terpisah
+ * dari sigm4-api, tanpa kunci JWT, `PermissionCache`, kotak TOTP, maupun penyimpan challenge
+ * Redis — hanya yang benar-benar dipakai perintah break-glass (`SDD-SESS-11`). */
+export interface BreakGlassCliDeps {
+    readonly db: Kysely<Database>;
+    readonly auditLogger: AuditLogger;
+    readonly clock: Clock;
+    readonly logger: Logger;
+}
+
+/**
+ * Pintu bagi CLI break-glass (`FR-01.6`) dan kode aktivasi darurat (`FR-01.5 A6`, `PR-02-08`)
+ * TANPA mengimpor internal m01-auth (SDD-SYS-03). Tidak pernah dipanggil dari jalur HTTP —
+ * `worker/cli.ts` adalah SATU-SATUNYA pemanggil (`SDD-SESS-11`).
+ */
+export function buatBreakGlassCli(deps: BreakGlassCliDeps): BreakGlassCli {
+    const layanan = new BreakGlassService(deps.db, deps.auditLogger, deps.clock, deps.logger);
+    return {
+        pulihkan: (email, paksa) => layanan.pulihkan(email, paksa),
+        terbitkanKodeAktivasi: (email) => layanan.terbitkanKodeAktivasi(email),
+    };
+}
+
+export interface BreakGlassCli {
+    pulihkan(email: string, paksa: boolean): Promise<HasilPemulihan>;
+    terbitkanKodeAktivasi(email: string): Promise<HasilKodeAktivasiCli>;
 }

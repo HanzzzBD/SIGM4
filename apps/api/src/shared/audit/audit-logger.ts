@@ -28,6 +28,13 @@ const KUNCI_RANTAI = 4_815_162_343;
 /** Pelaku pekerjaan terjadwal (`AL-06`). */
 export const PELAKU_SISTEM = "SYSTEM";
 
+/**
+ * Pelaku perintah CLI berakses shell server (`FR-01.6`, `FR-01.5 A6`, `SDD-SESS-11`).
+ * Dibedakan dari `PELAKU_SISTEM`: satu berjalan otomatis tanpa kehadiran manusia (pekerjaan
+ * terjadwal, `AL-06`), satu menuntut operator dengan akses shell menjalankannya secara sengaja.
+ */
+export const PELAKU_CLI = "SYSTEM:CLI";
+
 export interface AuditEntry {
     readonly modul: string;
     readonly aksi: string;
@@ -108,6 +115,19 @@ export class AuditLogger {
                 requestId: null,
             },
         );
+    }
+
+    /**
+     * Mencatat aksi perintah CLI berakses shell server (`FR-01.6`, `FR-01.5 A6`): pelaku
+     * `SYSTEM:CLI`, `user_id` kosong — operatornya bukan baris `users` mana pun.
+     */
+    async writeCli(tx: Transaction<Database>, entry: AuditEntry): Promise<boolean> {
+        return this.simpan(tx, entry, {
+            userId: null,
+            userNama: PELAKU_CLI,
+            role: PELAKU_CLI,
+            requestId: null,
+        });
     }
 
     /**
