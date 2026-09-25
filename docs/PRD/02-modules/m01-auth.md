@@ -252,7 +252,7 @@ sequenceDiagram
 3. Perintah tersebut: menonaktifkan 2FA pada akun yang ditunjuk, menerbitkan password sementara **dan kode aktivasi 2FA** (`BR-070d`), memaksa `must_change_password = true`, dan **mencabut seluruh sesi aktif di sistem**.
 4. Sistem mencatat aksi `ADMIN_BREAK_GLASS_RECOVERY` dengan pelaku `SYSTEM:CLI` beserta email target dan waktu.
 5. Administrator masuk kembali, mengganti password, mendaftarkan ulang 2FA (dengan kode aktivasi dari langkah 3), dan **wajib** memverifikasi bahwa terdapat minimal dua akun Administrator aktif (RS-19).
-6. Sistem mengirim notifikasi kepada seluruh Pimpinan Sekolah bahwa pemulihan darurat telah dijalankan.
+6. Sistem mengirim notifikasi kepada seluruh Pimpinan Sekolah bahwa pemulihan darurat telah dijalankan (`NT-53`).
 
 **Alternative Flow**
 - **A1 — Terdapat Administrator lain yang masih dapat login:** Prosedur break-glass **tidak boleh** digunakan; pemulihan dilakukan melalui reset 2FA biasa (FR-01.5 A3).
@@ -263,7 +263,7 @@ sequenceDiagram
 **Acceptance Criteria**
 - [ ] Perintah pemulihan hanya dapat dijalankan dari server (akses shell), tidak pernah melalui antarmuka web maupun API.
 - [ ] Perintah menolak berjalan bila masih ada akun Administrator aktif yang login dalam 24 jam terakhir, kecuali dipaksa dengan flag eksplisit yang juga tercatat.
-- [ ] Setiap penggunaan break-glass menghasilkan alarm ke pemantauan sistem (OBS-05) dan notifikasi ke seluruh Pimpinan Sekolah.
+- [ ] Setiap penggunaan break-glass menghasilkan alarm ke pemantauan sistem (OBS-05) dan notifikasi ke seluruh Pimpinan Sekolah (`NT-53`).
 - [ ] Sistem menolak kondisi "hanya satu akun Administrator" pada saat instalasi awal; minimal dua akun wajib dibuat (RS-19).
 - [ ] Entri activity log break-glass tidak dapat dihapus atau disunting oleh siapa pun (AL-03).
 
@@ -330,6 +330,7 @@ Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-archit
 | **NT-38a** | Password berhasil diganti setelah reset | Pengguna terkait | In-app + Push | ✅ | "Password Anda berhasil diperbarui pada {waktu}. Bila ini bukan Anda, segera hubungi Administrator." |
 | **NT-39** | Akun terkunci karena percobaan login gagal | Pengguna + Administrator | In-app | ✅ | "Akun terkunci sementara akibat 5 percobaan login gagal." |
 | **NT-39a** | 2FA diaktifkan pada sebuah akun | Administrator | In-app | ✅ | "{pengguna} mengaktifkan 2FA pada {waktu} dari {perangkat}. Bila pengguna tidak mengenalinya, reset 2FA dari detail pengguna." |
+| **NT-53** | Pemulihan darurat Administrator dijalankan (break-glass, `FR-01.6`) | Seluruh Pimpinan Sekolah | In-app + Push | ✅ | "Pemulihan darurat dijalankan untuk akun Administrator {email} pada {waktu}. Seluruh sesi di sistem telah dikeluarkan; pastikan ini sah." |
 
 Ketentuan umum kanal, latensi, dan preferensi: [`m17-notifications.md`](m17-notifications.md).
 

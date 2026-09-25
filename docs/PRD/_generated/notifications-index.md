@@ -5,7 +5,7 @@
 # Indeks Notifikasi
 
 > Setiap notifikasi dimiliki modul yang menerbitkan event-nya.
-> Total: **54** baris, dikumpulkan dari 22 berkas modul.
+> Total: **55** baris, dikumpulkan dari 22 berkas modul.
 
 | Kode | Event | Penerima | Kanal | Wajib | Contoh | Pemilik |
 |---|---|---|---|:---:|---|---|
@@ -63,3 +63,4 @@
 | **NT-50** | Permintaan bahan siap diambil | Pemohon | In-app + Push | ❌ | "Permintaan {nomor} siap diambil di {lokasi}." | [M-22](../02-modules/m22-materials.md) |
 | **NT-51** | Bahan diserahkan | Pemohon | In-app | ❌ | "{jumlah} {satuan} {bahan} telah diserahkan pada {tanggal}." | [M-22](../02-modules/m22-materials.md) |
 | **NT-52** | Impor massal pengguna selesai diproses (`IMPT-04`) | Administrator pengunggah | In-app | ✅ | "Impor pengguna selesai: {sukses} berhasil, {gagal} gagal dari {total} baris." | [M-02](../02-modules/m02-users.md) |
+| **NT-53** | Pemulihan darurat Administrator dijalankan (break-glass, `FR-01.6`) | Seluruh Pimpinan Sekolah | In-app + Push | ✅ | "Pemulihan darurat dijalankan untuk akun Administrator {email} pada {waktu}. Seluruh sesi di sistem telah dikeluarkan; pastikan ini sah." | [M-01](../02-modules/m01-auth.md) |

@@ -210,19 +210,45 @@ Gerbang (`SDD-SESS-15`): role wajib 2FA (R-01 dan R-03, `BR-070`) dengan `amr` t
 
 Toleransi jam ±30 detik dipilih agar perbedaan jam perangkat yang wajar tidak menggagalkan login, tanpa memperlebar jendela serangan secara berarti.
 
-### 4.5 Break-glass (`FR-01.6`)
+### 4.5 Break-glass (`FR-01.6`, `PR-02-08`)
 
 ```
 sigm4 admin:recover --email=<email> [--force]
 
-  1. tolak bila ada Administrator aktif yang login < 24 jam terakhir,
-     kecuali --force (yang juga dicatat)
-  2. nonaktifkan 2FA target; hapus backup codes
-  3. terbitkan password sementara; must_change_password = true
-  4. cabut SELURUH refresh token di sistem
-  5. catat ADMIN_BREAK_GLASS_RECOVERY, pelaku 'SYSTEM:CLI'
-  6. alarm ke pemantauan + notifikasi seluruh Pimpinan Sekolah
+  1. cari Administrator (R-01) AKTIF bernama email; tidak ada / bukan R-01 / NONAKTIF -> tolak
+  2. tolak bila ADA Administrator LAIN (bukan target) yang AKTIF dan login_terakhir_pada dalam
+     24 jam terakhir, kecuali --force (yang juga dicatat pada activity log) — A1
+  3. nonaktifkan 2FA target; hapus kode cadangan DAN kode aktivasi aktif sebelumnya
+  4. terbitkan password sementara (must_change_password = true) DAN kode aktivasi 2FA baru
+     (`BR-070d`, `SDD-SESS-17`; `issued_by`/`metode_verifikasi` NULL — pembeda CLI) — langkah 3
+  5. cabut SELURUH refresh token DI SISTEM (bukan hanya milik target); revoke_reason
+     admin_break_glass_recovery; satu event SessionRevoked per keluarga
+  6. catat ADMIN_BREAK_GLASS_RECOVERY, pelaku SYSTEM:CLI (bukan SYSTEM pekerjaan terjadwal,
+     AL-06); event AdminBreakGlassRecovery -> NT-53 (Pimpinan Sekolah, PR-02-25)
+  7. alarm ke pemantauan (OBS-05, logger.warn) SETELAH commit
+
+sigm4 admin:activation-code --email=<email>                              (FR-01.5 A6, BR-070d)
+
+  1. cari akun AKTIF bernama email, role WAJIB 2FA (R-01/R-03), totp_enabled_at NULL; selain
+     itu tolak (tidak ada / nonaktif / role opsional / sudah ber-2FA)
+  2. terbitkan kode aktivasi baru (menggantikan yang lama); issued_by/metode_verifikasi NULL
+  3. catat TWO_FA_ACTIVATION_CODE_ISSUED, pelaku SYSTEM:CLI
 ```
+
+Kedua perintah TIDAK PERNAH terdaftar sebagai route HTTP (`SDD-SESS-11`) — satu-satunya jalan
+menjalankannya adalah akses shell ke server yang menjalankan artefak worker; itulah kontrol akses
+yang dimaksud `BR-070b`, bukan permission RBAC. Repository-nya (`CliRepository`) adalah
+pengecualian `SDD-AUTH-02` yang terdokumentasi eksplisit — pola yang sama dengan `AuthRepository`
+pra-`AuthContext` (§4.2): tidak ada sesi HTTP yang dapat menghasilkan `AuthContext` di sini.
+Pelaku activity log `SYSTEM:CLI` (`AuditLogger.writeCli`) dibedakan dari `SYSTEM` pekerjaan
+terjadwal (`AuditLogger.writeSystem`, `AL-06`): satu berjalan otomatis, satu menuntut kehadiran
+operator. `event_outbox.actor_id` diisi identitas TARGET sendiri (tidak ada pelaku manusia) —
+pola yang sama dengan `AccountLocked` pra-autentikasi (§4.2).
+
+Kunci enkripsi secret TOTP tidak dipakai baik oleh `admin:recover` maupun `admin:activation-code`:
+keduanya hanya MELEPAS (NULL-kan) atau MENERBITKAN hash baru, tidak pernah mendekripsi secret
+lama. `TOTP_ENCRYPTION_KEY` tetap divalidasi saat startup worker/CLI (`SDD-16 §4.7`) untuk
+menutup celah startup diam-diam — bukan karena logikanya membutuhkannya.
 
 ### 4.6 Logout & pencabutan
 
@@ -312,7 +338,7 @@ Siklus status: `MENUNGGU → DITERBITKAN → SELESAI` (pengguna mengganti passwo
 
 `FR-01.1` `FR-01.2` `FR-01.3` `FR-01.4` `FR-01.5` `FR-01.6` · `BR-070` `BR-070a` `BR-070b` `BR-070c` `BR-070d` `BR-070e` ·
 `NFR-S-01` `NFR-S-02` `NFR-S-03` `NFR-S-03a` `NFR-S-03b` `NFR-S-07` `NFR-S-09` `NFR-S-10` `NFR-S-16` ·
-`FR-01.3` · `NT-37` `NT-38` `NT-38a` `NT-39` `NT-39a` · `AL-02` `AL-05` `AL-07` · `MOB-SEC-05` · `SEC-CFG-01` `SEC-CFG-02` · `MOB-SEC-01` `MOB-SEC-05`
+`FR-01.3` · `NT-37` `NT-38` `NT-38a` `NT-39` `NT-39a` `NT-53` · `AL-02` `AL-05` `AL-07` · `MOB-SEC-05` · `SEC-CFG-01` `SEC-CFG-02` · `MOB-SEC-01` `MOB-SEC-05`
 
 ---
 

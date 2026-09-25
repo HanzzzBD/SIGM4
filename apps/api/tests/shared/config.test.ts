@@ -11,6 +11,7 @@ import {
     parseLogLevel,
     readApiConfig,
     readProcessConfig,
+    readWorkerConfig,
 } from "../../src/shared/config/index.js";
 import { bootstrap } from "../../src/worker/index.js";
 import { bangkitkanPem, envJwtUji } from "../helpers/auth.js";
@@ -223,6 +224,33 @@ describe("readApiConfig — kunci enkripsi TOTP (SDD-SESS-08, SDD-SYS-14)", () =
     });
 });
 
+describe("readWorkerConfig — TOTP_ENCRYPTION_KEY masuk skema worker (SDD-SESS-11, PR-02-08)", () => {
+    const SAH_WORKER = { ...SAH, TOTP_ENCRYPTION_KEY: KUNCI_TOTP };
+
+    it("TOTP_ENCRYPTION_KEY wajib, dengan pesan yang sama dengan skema API", () => {
+        expect(masalahDari(() => readWorkerConfig(tanpa(SAH_WORKER, "TOTP_ENCRYPTION_KEY"), "UTC"))).toEqual([
+            "Variabel lingkungan TOTP_ENCRYPTION_KEY wajib diisi (SDD-INF-08).",
+        ]);
+    });
+
+    it("kunci base64 32 byte terurai menjadi kotak yang dapat mengenkripsi dan mendekripsi", () => {
+        const { totpKey } = readWorkerConfig(SAH_WORKER, "UTC");
+        const kotak = totpKey.enkripsi(Buffer.from("rahasia-totp"), "totp:7");
+        expect(totpKey.dekripsi(kotak, "totp:7").toString()).toBe("rahasia-totp");
+    });
+
+    it("bukan base64 32 byte ditolak saat startup tanpa membocorkan nilainya", () => {
+        const masalah = masalahDari(() => readWorkerConfig({ ...SAH_WORKER, TOTP_ENCRYPTION_KEY: "rahasia bukan base64!" }, "UTC"));
+        const teks = masalah.join("\n");
+        expect(teks).toMatch(/TOTP_ENCRYPTION_KEY tidak sah/);
+        expect(teks).not.toContain("rahasia bukan base64");
+    });
+
+    it("TIDAK menuntut JWT_PRIVATE_KEY/JWT_PUBLIC_KEY maupun S3_PUBLIC_ENDPOINT — worker tidak menandatangani token maupun menyajikan presigned URL", () => {
+        expect(() => readWorkerConfig(SAH_WORKER, "UTC")).not.toThrow();
+    });
+});
+
 describe("parseLogLevel", () => {
     it("bawaan info bila tidak disetel; ditolak bila tak dikenal", () => {
         expect(parseLogLevel({})).toBe("info");
@@ -248,9 +276,15 @@ describe("entrypoint menolak menyala dengan konfigurasi tidak valid", () => {
         ).rejects.toThrow(/Zona waktu proses harus UTC/);
     });
 
-    it("sigm4-worker memakai skema proses sebelum membuka koneksi", async () => {
+    it("sigm4-worker memakai skema worker sebelum membuka koneksi", async () => {
         await expect(bootstrap({}, "UTC")).rejects.toThrow(
             /DATABASE_URL wajib diisi/,
+        );
+    });
+
+    it("sigm4-worker memakai skema worker — TOTP_ENCRYPTION_KEY ikut dituntut (PR-02-08)", async () => {
+        await expect(bootstrap({ ...SAH }, "UTC")).rejects.toThrow(
+            /TOTP_ENCRYPTION_KEY wajib diisi/,
         );
     });
 });

@@ -13,7 +13,7 @@ import { getRedis } from "../shared/cache/index.js";
 import { AuditLogger, ensurePartitions, verifyChain } from "../shared/audit/index.js";
 import { PermissionCache } from "../shared/auth/index.js";
 import { SystemClock } from "../shared/clock/index.js";
-import { readProcessConfig, zonaProses } from "../shared/config/index.js";
+import { readWorkerConfig, zonaProses } from "../shared/config/index.js";
 import { assertDatabaseTimeZoneUtc, getDb } from "../shared/db/index.js";
 import { Penghenti } from "../shared/lifecycle/index.js";
 import {
@@ -156,7 +156,9 @@ export async function bootstrap(
 ): Promise<Penghenti> {
     // Konfigurasi divalidasi sebelum koneksi apa pun dibuka: proses menolak menyala
     // dengan konfigurasi tidak valid atau zona waktu bukan UTC (SDD-INF-08/09).
-    const config = readProcessConfig(env, zona);
+    // `TOTP_ENCRYPTION_KEY` divalidasi juga (`readWorkerConfig`, PR-02-08) meski worker
+    // belum memakainya: operator sudah menyediakannya di berkas env yang sama dengan API.
+    const config = readWorkerConfig(env, zona);
     // Sesi basis data dipaksa UTC oleh createDb; pemeriksaan ini membuktikannya (SDD-INF-09).
     await assertDatabaseTimeZoneUtc(getDb());
     const connection = getRedis();

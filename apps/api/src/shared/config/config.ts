@@ -242,6 +242,47 @@ export interface ApiConfig extends ProcessConfig {
     readonly totpKey: KotakRahasia;
 }
 
+export interface WorkerConfig extends ProcessConfig {
+    /** Kotak enkripsi secret TOTP (`TOTP_ENCRYPTION_KEY`); sudah tervalidasi. */
+    readonly totpKey: KotakRahasia;
+}
+
+/**
+ * Validasi startup sigm4-worker DAN CLI break-glass yang berjalan pada artefak yang sama
+ * (`SDD-SESS-11`, `PR-02-08`). Worker tidak pernah menandatangani atau memverifikasi token
+ * (tanpa `JWT_*`) maupun menyajikan presigned URL (tanpa `S3_PUBLIC_ENDPOINT`), tetapi
+ * `TOTP_ENCRYPTION_KEY` operator sudah menyediakannya di berkas env yang sama dengan API
+ * (`SDD-16 §4.7`) — memvalidasinya di sini menutup celah startup diam-diam (`SDD-INF-08`)
+ * yang sebelumnya ada: variabel itu terpasang tetapi tidak pernah diperiksa proses worker.
+ */
+export function readWorkerConfig(
+    env: NodeJS.ProcessEnv = process.env,
+    zona: string = zonaProses(),
+): WorkerConfig {
+    const totp = periksaKunciTotp(env);
+    const d = urai(
+        z.object({
+            ...bentukDatabase,
+            ...bentukRedis,
+            ...bentukLog,
+            ...bentukZona,
+            ...bentukTotp,
+        }),
+        env,
+        [...periksaZona(zona), ...totp.masalah],
+    );
+    return {
+        database: {
+            connectionString: d.DATABASE_URL,
+            poolSize: d.DB_POOL_SIZE,
+        },
+        redis: { url: d.REDIS_URL },
+        logLevel: d.LOG_LEVEL,
+        // `periksaKunciTotp` hanya diam bila variabelnya sah.
+        totpKey: totp.kotak!,
+    };
+}
+
 /** Validasi startup sigm4-api: skema proses ditambah variabel yang dipakai API. */
 export function readApiConfig(
     env: NodeJS.ProcessEnv = process.env,
