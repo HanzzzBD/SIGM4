@@ -46,6 +46,7 @@ Skema khusus `booking_slots`, `idempotency_keys`, dan `document_counters` didefi
 | **SDD-DB-20** | Kelas siswa adalah **data per tahun ajaran** (`SL-01`): baris `student_enrollments`, bukan kolom pada `users`. Menandai lulus (`SL-02`) hanya menandai baris tahun ajaran itu; **penonaktifan akun menunggu tahun ajaran itu berakhir** (`SL-03`) dan diblokir oleh kewajiban (`SL-04`). Definisi "kewajiban" tidak ditulis di modul pengguna — modul pemiliknya mendaftarkan pemeriksa ke titik ekstensi (§4.7d), sehingga aturan tidak pernah mengasumsikan "tidak ada kewajiban". |
 | **SDD-DB-21** | Persetujuan wali (`DP-02`) adalah kolom `users.consent_guardian_at` (`timestamptz`, NULL = belum terekam), **diisi server dari `Clock`** — klien hanya menyatakan `consent_wali: true`. Direkam sekali, **tidak pernah dicabut atau ditimpa**, dan hanya untuk akun Siswa/OSIS (`DP-03`). Gerbangnya ditegakkan service, bukan skema (§4.7e). |
 | **SDD-DB-22** | Setiap impor pengguna — sinkron maupun asinkron — adalah satu baris `user_import_jobs`: jangkar idempotensi (`IMPT-03`, hash SHA-256 isi berkas, jendela 24 jam, pekerjaan `GAGAL` tidak di-*replay*) dan sumber laporan per baris (`IMPT-02`, hanya baris gagal). Isi berkas hanya disimpan selama `MENUNGGU`/`BERJALAN` dan dikosongkan begitu berakhir (`DP-03`). Pemrosesan asinkron dijadwalkan lewat outbox, bukan panggilan langsung ke antrean (§4.7f). |
+| **SDD-DB-23** | Kode aset (`assets.kode_barang`, `BR-002`) diberi nomor urut lewat `asset_code_counters`, penghitung terpisah per **kombinasi (`category_id`, `room_id`)** — bukan `document_counters`/`SEQ-01..04` (dokumen transaksional, dimensi tahun, katalog `PREFIKS` tertutup). Formatnya sendiri dikonfigurasi Administrator (`FR-20.1`, kelompok `KODE_ASET`, §4.7g) — nomor urut selalu ditambahkan di akhir, tidak dapat dihilangkan lewat konfigurasi, sehingga keunikan (`BR-002`) tidak pernah bergantung pilihan Administrator. |
 
 ---
 
@@ -284,6 +285,8 @@ Bukan entitas domain: tidak memakai `created_*`, dan tidak memakai `id` — `key
 
 **Katalog awal** — hanya parameter yang nilai bawaannya tertulis di `FR-20.1`. Kolom rentang adalah pagar kewajaran teknis (`FR-20.1` langkah 3: "rentang nilai yang wajar"); menyesuaikannya berarti migration seed, bukan kode.
 
+**Tiga baris `kode_aset.*`** (`PR-02-11`, §4.7g) adalah pengecualian tertulis pada kalimat pertama: `FR-20.1` hanya memberi CONTOH pola (`{KATEGORI}-{LOKASI}-{URUT}`), bukan nilai literal per parameter — tetapi contoh itu diulang identik pada lima tempat lintas PRD/UX/DESIGN (`LAB-KOM-0002`: `glossary.md`, `NAVIGATION.md`, `PATTERNS.md`, `DESIGN-SYSTEM.md`), cukup sebagai bawaan yang **diturunkan** docs. Baris `TEKS` tanpa `Rentang` (`—`) adalah yang PERTAMA pada tabel ini — kolom itu hanya bermakna bagi angka (`system_settings_rentang_angka`, `0015`).
+
 | Kunci | Kelompok | Tipe | Bawaan | Rentang | Sumber |
 |---|---|---|---:|---|---|
 | `peminjaman.batas_perpanjangan` | `PEMINJAMAN` | `BILANGAN_BULAT` | 1 | 0 – 10 | `FR-20.1`, `FR-09.5` |
@@ -292,6 +295,9 @@ Bukan entitas domain: tidak memakai `created_*`, dan tidak memakai `id` — `key
 | `reservasi.ttl_tentative_jam` | `RESERVASI` | `BILANGAN_BULAT` | 48 | 1 – 168 | `BR-023b` |
 | `reservasi.kuota_tertunda_guru_staf` | `RESERVASI` | `BILANGAN_BULAT` | 5 | 1 – 50 | `BR-023a` |
 | `reservasi.kuota_tertunda_siswa_osis` | `RESERVASI` | `BILANGAN_BULAT` | 2 | 1 – 50 | `BR-023a` |
+| `kode_aset.pola` | `KODE_ASET` | `TEKS` | `"KATEGORI,LOKASI"` | — | `FR-20.1` |
+| `kode_aset.pemisah` | `KODE_ASET` | `TEKS` | `"-"` | — | `FR-20.1` |
+| `kode_aset.panjang_urut` | `KODE_ASET` | `BILANGAN_BULAT` | 4 | 1 – 10 | `FR-20.1` |
 
 Parameter kelompok lain (jam operasional, tarif denda, durasi sesi, dst.) **tidak dikarang di sini**: nilai bawaannya belum ditetapkan PRD, dan masing-masing ditambahkan PR yang mengonsumsinya (`SDD-DB-17`).
 
@@ -369,6 +375,16 @@ Tidak ada trigger basis data: gerbangnya bergantung pada role (lintas tabel) dan
 | Percobaan ulang (`JOB-06`) | `baris_terproses` diperbarui **per baris**; percobaan berikutnya melanjutkan dari sana sehingga pengguna yang sudah dibuat tidak dibuat dua kali. Pada percobaan terakhir yang masih gagal, pekerjaan ditutup `GAGAL` (`pesan_galat`) |
 | `NT-52` | Event `UserImportCompleted` terbit dalam transaksi penutupan pekerjaan (hanya jalur asinkron). **Konsumennya belum ada** — modul notifikasi `M-17` baru di Phase 02 (`PR-02-25`); sebelum itu hasil dipantau lewat `GET /users/import/{id}` |
 | Retensi | Berkas dikosongkan saat berakhir (`DP-03`). Laporan (memuat email baris gagal) belum punya masa simpan — belum ditetapkan PRD |
+
+### 4.7g Skema penomoran kode aset
+
+`asset_code_counters` (`0027`, PR-02-11) — tabel infrastruktur (pola `document_counters`, `SDD-AVL-09`): kunci komposit `(category_id, room_id)`, `value bigint`. `ON CONFLICT DO UPDATE` mengunci baris sehingga permintaan bersamaan atas kombinasi yang sama diserialisasi basis data, bukan kunci aplikasi.
+
+**Scope per kombinasi (kategori, ruangan) — keputusan pemilik produk** (25 September 2026, log `phase-02.md`): menghasilkan nomor kecil & rapi sesuai contoh yang berulang di seluruh docs (`LAB-KOM-0002` — `glossary.md`, `NAVIGATION.md`, `PATTERNS.md`, `DESIGN-SYSTEM.md`), dan cocok dengan alur "buat N unit identik dalam satu kategori+lokasi" (`FR-04.1` langkah 3-4). Kode LENGKAP tetap unik sistem-wide (`BR-002`, `assets_kode_barang_uq`) karena kategori+lokasi ikut termuat pada kodenya — scope counter tidak memengaruhi jaminan itu.
+
+**Katalog `KODE_ASET`** (`system_settings`, `SDD-DB-17`): tiga baris `kode_aset.pola`/`kode_aset.pemisah`/`kode_aset.panjang_urut` — nilai bawaan dan alasannya ada di katalog [§4.7a](#47a-skema-system_settings), tidak diulang di sini. `pola` memuat urutan token (`KATEGORI`/`LOKASI`) dipisah koma; Administrator dapat menukar urutan atau menghilangkan token, tetapi `URUT` SELALU ditambahkan `AssetService` di akhir — bukan bagian pola yang dapat disunting, sehingga keunikan tidak pernah bergantung konfigurasi. Nilai yang melebihi `panjang_urut` TIDAK dipotong (kode tetap unik, hanya lebih panjang).
+
+Token `KATEGORI` diselesaikan ke `asset_categories.kode`, `LOKASI` ke `rooms.kode` — keduanya dibaca saat pendaftaran, bukan disalin/di-*cache* pada baris aset (mengubah kode kategori/ruangan TIDAK mengubah kode aset yang sudah terbit, sejalan `FR-20.1 A2`: perubahan format hanya berlaku aset baru).
 
 ### 4.8 Saldo bahan — ledger dan agregat
 
@@ -469,7 +485,7 @@ Baris `material_balances` dibuat saat bahan pertama kali bertransaksi di suatu l
 
 ## 7. Requirement Terkait
 
-`BR-002` `BR-003` `BR-008` `BR-067` `BR-081` `BR-082` `BR-083` `BR-085` `BR-088` `BR-092` `BR-068` `BR-070a` `BR-071` `BR-072` `BR-078` ·
+`BR-002` `BR-003` `BR-008` `BR-009` `BR-067` `BR-081` `BR-082` `BR-083` `BR-085` `BR-088` `BR-092` `BR-068` `BR-070a` `BR-071` `BR-072` `BR-078` · `FR-04.1` `FR-20.1` ·
 `AL-01` `AL-03` `AL-03a` `AL-03b` `AL-05` `AL-09` · `NFR-R-05` `NFR-M-04` `NFR-SC-03` `NFR-SC-06` ·
 `NFR-S-03d` `NFR-S-12` · `NFR-C-10` · `CD-04` `CD-05` `SEC-CFG-03` · `CAL-01` … `CAL-03` · `DP-AI-05` · `INF-01`
 

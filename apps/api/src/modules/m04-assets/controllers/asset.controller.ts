@@ -2,8 +2,37 @@
 
 import type { RequestHandler } from "express";
 import { requireAuthContext } from "../../../shared/auth/index.js";
-import { ListRoomAssetsQuerySchema, RoomIdParamSchema } from "../schemas/asset.schema.js";
+import { CreateAssetBodySchema, ListRoomAssetsQuerySchema, RoomIdParamSchema } from "../schemas/asset.schema.js";
 import type { AssetService } from "../services/asset.service.js";
+
+export function createAssetHandler(service: AssetService): RequestHandler {
+    return async (req, res) => {
+        const ctx = requireAuthContext(res);
+        const body = CreateAssetBodySchema.parse(req.body);
+        const dibuat = await service.daftarkan(ctx, {
+            nama: body.nama,
+            categoryId: body.category_id,
+            merek: body.merek ?? null,
+            model: body.model ?? null,
+            nomorSeri: body.nomor_seri ?? null,
+            tahunPerolehan: body.tahun_perolehan,
+            sumberPerolehan: body.sumber_perolehan,
+            nilaiPerolehan: body.nilai_perolehan ?? null,
+            roomId: body.room_id,
+            kondisi: body.kondisi,
+            dapatDipinjam: body.dapat_dipinjam,
+            bolehDipinjamSiswa: body.boleh_dipinjam_siswa,
+            penanggungJawabId: body.penanggung_jawab_id ?? null,
+            procurementId: body.procurement_id ?? null,
+            jumlahUnit: body.jumlah_unit,
+        });
+        res.status(201).json({
+            success: true,
+            data: dibuat,
+            meta: { jumlah_unit: dibuat.length },
+        });
+    };
+}
 
 export function listRoomAssetsHandler(service: AssetService): RequestHandler {
     return async (req, res) => {

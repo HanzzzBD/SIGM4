@@ -492,6 +492,18 @@ export interface AssetConditionHistoryTable {
     diubah_pada: ColumnType<Date, Date, Date>;
 }
 
+/**
+ * `asset_code_counters` (0027, PR-02-11). Penghitung nomor urut kode aset per
+ * kombinasi (`category_id`, `room_id`) — pola `document_counters` (SDD-AVL-09),
+ * tanpa dimensi tahun. `value` kembali sebagai **string** dari driver `pg`,
+ * sama seperti `document_counters.value`.
+ */
+export interface AssetCodeCountersTable {
+    category_id: ColumnType<string, string | number, string | number>;
+    room_id: ColumnType<string, string | number, string | number>;
+    value: ColumnType<string, string | number | undefined, string | number>;
+}
+
 /** Peta nama tabel -> bentuk barisnya. Diisi bersama migration pemiliknya. */
 export interface Database {
     document_counters: DocumentCountersTable;
@@ -520,4 +532,5 @@ export interface Database {
     asset_categories: AssetCategoriesTable;
     assets: AssetsTable;
     asset_condition_history: AssetConditionHistoryTable;
+    asset_code_counters: AssetCodeCountersTable;
 }

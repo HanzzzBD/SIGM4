@@ -394,6 +394,26 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 const area = await langkah("POST /areas", "/areas", { building_id: id(gedung), nama: `Area ${sfx}`, kode: `A${sfx}`, lantai: 1 }, ["LOCATION_CREATED"]);
                 const ruang = await langkah("POST /rooms", "/rooms", { area_id: id(area), nama: `Ruang ${sfx}`, kode: `R${sfx}`, jenis: "KELAS", kapasitas: 30, dapat_direservasi: true, boleh_direservasi_siswa: false }, ["LOCATION_CREATED"]);
                 await langkah("PUT /rooms/:id", `/rooms/${id(ruang)}`, { area_id: id(area), nama: `Ruang ${sfx} B`, kode: `R${sfx}`, jenis: "KELAS", kapasitas: 32, dapat_direservasi: true, boleh_direservasi_siswa: false }, ["LOCATION_UPDATED"]);
+
+                // --- M-04: aset (PR-02-11) — SEBELUM ruangan dinonaktifkan (BR-009: ruangan wajib AKTIF).
+                // asset_categories belum berendpoint (CRUD milik PR-02-15) — kategori disisipkan langsung.
+                const [kategoriAset] = await kueri<{ id: string }>(
+                    `INSERT INTO asset_categories (nama, kode) VALUES ('Kategori Gerbang ${sfx}', 'KAT${sfx}') RETURNING id::text`,
+                );
+                await langkah(
+                    "POST /assets",
+                    "/assets",
+                    {
+                        nama: `Aset Gerbang ${sfx}`,
+                        category_id: Number(kategoriAset?.id),
+                        tahun_perolehan: 2024,
+                        sumber_perolehan: "PEMBELIAN",
+                        room_id: Number(id(ruang)),
+                        kondisi: "BAIK",
+                    },
+                    ["ASSET_CREATED"],
+                );
+
                 await langkah("PATCH /rooms/:id/status", `/rooms/${id(ruang)}/status`, { status: "NONAKTIF" }, ["LOCATION_DEACTIVATED"]);
                 await langkah("PATCH /buildings/:id/status", `/buildings/${id(gedung)}/status`, { status: "NONAKTIF" }, ["LOCATION_DEACTIVATED"]);
 
@@ -453,6 +473,10 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await kueri("DELETE FROM user_import_jobs");
                 await kueri("DELETE FROM student_enrollments");
                 await kueri("UPDATE users SET work_unit_id = NULL");
+                // PR-02-11: assets/asset_code_counters menunjuk rooms DAN asset_categories — sebelum keduanya.
+                await kueri("DELETE FROM assets");
+                await kueri("DELETE FROM asset_code_counters");
+                await kueri("DELETE FROM asset_categories");
                 await kueri("DELETE FROM rooms");
                 await kueri("DELETE FROM areas");
                 await kueri("DELETE FROM buildings");

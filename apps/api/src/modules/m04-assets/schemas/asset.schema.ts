@@ -14,8 +14,64 @@ const AssetStatusSchema = z.enum([
     "TIDAK_TERSEDIA",
 ]);
 
+const SumberPerolehanSchema = z.enum(["PEMBELIAN", "HIBAH", "BANTUAN_PEMERINTAH", "SUMBANGAN", "LAINNYA"]);
+
 export const RoomIdParamSchema = z.object({
     id: z.coerce.number().int().positive(),
+});
+
+/**
+ * `POST /assets` (FR-04.1 langkah 2-3, `m04-assets.md` §7). `jumlah_unit`
+ * dibatasi sama dengan rentang impor massal (conventions.md E.5.1: 1-500).
+ * Rentang wajar tahun (1900-2100) HANYA pagar teknis dasar — validasi bisnis
+ * "1950 - tahun berjalan" adalah aturan jalur impor (E.5.1), belum diterapkan
+ * di jalur manual ini.
+ */
+export const CreateAssetBodySchema = z.object({
+    nama: z.string().trim().min(1).max(150),
+    category_id: z.coerce.number().int().positive(),
+    merek: z.string().trim().min(1).max(100).nullable().optional(),
+    model: z.string().trim().min(1).max(100).nullable().optional(),
+    nomor_seri: z.string().trim().min(1).max(100).nullable().optional(),
+    tahun_perolehan: z.coerce.number().int().min(1900).max(2100),
+    sumber_perolehan: SumberPerolehanSchema,
+    nilai_perolehan: z.coerce.number().nonnegative().nullable().optional(),
+    room_id: z.coerce.number().int().positive(),
+    kondisi: z.enum(["BAIK", "RUSAK_RINGAN", "RUSAK_BERAT", "HILANG"]),
+    dapat_dipinjam: z.boolean().default(true),
+    boleh_dipinjam_siswa: z.boolean().default(false),
+    penanggung_jawab_id: z.coerce.number().int().positive().nullable().optional(),
+    procurement_id: z.coerce.number().int().positive().nullable().optional(),
+    jumlah_unit: z.coerce.number().int().min(1).max(500).default(1),
+});
+
+const AssetSchema = z.object({
+    id: z.string(),
+    uuid: z.string(),
+    kode_barang: z.string(),
+    nama: z.string(),
+    category_id: z.string(),
+    merek: z.string().nullable(),
+    model: z.string().nullable(),
+    nomor_seri: z.string().nullable(),
+    tahun_perolehan: z.number(),
+    sumber_perolehan: SumberPerolehanSchema,
+    nilai_perolehan: z.string().nullable(),
+    room_id: z.string(),
+    kondisi: z.enum(["BAIK", "RUSAK_RINGAN", "RUSAK_BERAT", "HILANG"]),
+    status: z.enum(["TERSEDIA", "DIRESERVASI", "DIPINJAM", "DALAM_PERBAIKAN", "TIDAK_TERSEDIA"]),
+    dapat_dipinjam: z.boolean(),
+    boleh_dipinjam_siswa: z.boolean(),
+    penanggung_jawab_id: z.string().nullable(),
+    procurement_id: z.string().nullable(),
+    created_at: z.string(),
+});
+
+/** FR-04.1 langkah 6: daftar SELURUH unit yang baru dibuat (1..jumlah_unit). */
+export const CreateAssetResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.array(AssetSchema),
+    meta: z.object({ jumlah_unit: z.number() }),
 });
 
 /**
