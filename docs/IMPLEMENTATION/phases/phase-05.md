@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Milestone PRD** | `M3` (M-09) — **menutup M3** · `M4` (M-21, M-22) — **menutup M4** |
-| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
+| **Status** | `Not Started` |
 | **Modul PRD** | M-09 Peminjaman · M-21 Penghapusan Aset · M-22 Manajemen Bahan |
 | **Bergantung pada** | Phase 04 |
 | **Memblokir** | Phase 06 |
@@ -95,43 +95,35 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 
 ## 7. Pull Request Plan
 
-| PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
-|---|---|:---:|:---:|---|---|---|
-| `PR-05-01` | Skema peminjaman + check-out dari reservasi | L | L | Ph04 | `FR-09.1`, `BR-026` `BR-026a` `BR-027` | Check-out tanpa reservasi disetujui ditolak |
-| `PR-05-02` | Bukti serah terima: foto + tanda tangan | M | M | 01, Ph03 | `FR-09.1`, `SDD-FS-08`, `DP-01` `DP-05a`, `SDD-FS-11` | Foto tersimpan ter-*scan* AV; foto berwajah dipertahankan utuh dan dilindungi `DP-05` — tidak dikaburkan, tidak dihapus |
-| `PR-05-03` | Check-in + pemeriksaan kondisi + kerusakan baru | L | L | 01, Ph03 | `FR-09.2`, `BR-028` … `BR-028e` | Kerusakan saat kembali membuat laporan M-11 otomatis |
-| `PR-05-04` | Pelepasan slot & pemulihan status aset saat check-in | M | M | 03, Ph02 | `BR-030`, `SDD-AVL-07` | Aset kembali tersedia seketika |
-| `PR-05-05` | Pemantauan keterlambatan + pengingat berjenjang | M | M | 01 | `FR-09.3`, `BR-029` `BR-031`, `CAL-01` … `CAL-03` | Keterlambatan dihitung dengan hari kerja |
-| `PR-05-06` | Perhitungan denda | M | M | 05 | `FR-09.4`, `BR-032` `BR-033` | Denda berhenti bertambah setelah aset dinyatakan hilang |
-| `PR-05-07` | Pelunasan & pembebasan denda | M | M | 06 | `FR-09.4`, `BR-031` `BR-028e` | Pembebasan `Keterlambatan` memakai `fine.waive`; pembebasan `Ganti Rugi` memakai `fine.waive_compensation` (Pimpinan saja) + alasan, penuh atau sebagian |
-| `PR-05-08` | Perpanjangan peminjaman | M | M | 01, Ph04 | `FR-09.5`, `BR-035` | Perpanjangan ditolak bila ada reservasi menyusul |
-| `PR-05-09` | **Penutupan `SL-04`**: definisi kewajiban aktif | M | M | 06, Ph01 | `SL-04` | Siswa dengan pinjaman/denda aktif tidak dapat dinonaktifkan |
-| `PR-05-10` | Skema penghapusan + pengajuan | M | M | Ph04 | `FR-21.1`, `BR-065a` `BR-065b` | Aset dalam peminjaman aktif tidak dapat diajukan |
-| `PR-05-11` | Approval bertingkat penghapusan | M | M | 10, Ph02 | `FR-21.2`, `BR-065c` `BR-065d` | Jalur approval mengikuti nilai perolehan aset |
-| `PR-05-12` | Eksekusi penghapusan + transisi status final | M | M | 11 | `FR-21.2`, `BR-008`, `BR-065e` | Aset terhapus tidak muncul di pencarian aktif; barisnya tetap ada |
-| `PR-05-13` | Arsip & pelaporan penghapusan | M | M | 12 | `FR-21.3`, `BR-065f` `BR-065g` | Berita acara dapat diunduh kapan saja |
-| `PR-05-14` | Jalur `BR-012`: aset hilang hasil opname → kandidat penghapusan | S | S | 12, Ph04 | `BR-012` | Kandidat muncul otomatis, keputusan tetap manual |
-| `PR-05-15` | Skema bahan: `material_categories`, `materials`, `material_units` (M-20) — migration `expand` | M | M | Ph01 | `FR-22.1`, `BR-084`, `SDD-DB-02` | Satuan tidak dapat diisi di luar master; **tinjauan arsitek: migration** |
-| `PR-05-16` | Master bahan & kategori bahan (CRUD) | M | M | 15 | `FR-22.1`, `BR-080` `BR-091` | Kategori bahan tidak pernah muncul pada pemilihan kategori aset |
-| `PR-05-17` | **Ledger saldo**: `material_balances` + `material_transactions`, invarian saldo↔ledger | L | L | 15 | `BR-081` `BR-082` `BR-083` `BR-092`, `SDD-DB-13`, `SDD-DB-14` | Saldo tidak dapat ditulis tanpa baris ledger berpasangan; `CHECK (saldo >= 0)` aktif. **Tinjauan arsitek wajib** — tulang punggung seluruh modul |
-| `PR-05-18` | Penerimaan bahan + jalur pengadaan (`procurement_items.jenis`) | M | L | 17, Ph03 | `FR-22.3`, `BR-063` `BR-064` | Item berjenis Bahan menambah saldo dan **tidak** membuat record aset |
-| `PR-05-19` | Permintaan bahan + evaluasi ambang approval | M | M | 17, Ph02 | `FR-22.4`, `BR-086`, `SDD-APR-03` | Di bawah ambang tidak membentuk instance approval sama sekali |
-| `PR-05-20` | Penyerahan bahan — row lock & batas jumlah | M | L | 19 | `FR-22.5`, `BR-083` `BR-087` `BR-089`, `SDD-DB-14` | 20 penyerahan simultan atas saldo 10 → tepat 10 unit keluar, sisanya ditolak `422` |
-| `PR-05-21` | Penyesuaian saldo dengan alasan wajib | S | S | 17 | `FR-22.6`, `BR-088` | Penyesuaian tanpa alasan ditolak skema, bukan hanya service |
-| `PR-05-22` | Stok minimum + `NT-49` lewat outbox | M | M | 17, Ph02 | `FR-22.7`, `BR-085`, `SDD-EVT-03` | Notifikasi terbit sekali saat ambang ditembus, tidak berulang tiap transaksi |
-| `PR-05-23` | QR bahan per jenis + pemindaian | S | S | 16, Ph03 | `BR-090`, `FR-05.1` `FR-05.2` | QR bahan membuka halaman bahan, tidak pernah dibaca sebagai unit aset; payload memakai `APP_BASE_URL` yang sama dengan `PR-03-01` |
-| `PR-05-24` | Opname bahan: sesi domain `BAHAN` + layar mobile `MS-22`/`MS-23` | L | L | 17, Ph04 | `FR-13.4`, `BR-093` `BR-094` `BR-095`, `MOB-PERF-06` | Sesi campur domain ditolak; saldo berubah hanya setelah disetujui Pimpinan |
-| `PR-05-25` | Tool chatbot bahan: `get_material_stock` + `get_low_stock_materials` | S | S | 17, 22, Ph03 | 22.3, `BR-075` `BR-076`, `SDD-AUTH-07`, `SDD-AI-13`, `AI-SEC-03` | Kedua tool memanggil repository M-22 dengan `AuthContext` penanya; role tanpa hak atas M-22 menerima hasil kosong, bukan galat. Awalan statis terbentuk ulang dan `usage.total_cached_tokens > 0` pada permintaan kedua setelah rilis |
-| `PR-05-26` | Pseudonimisasi akun (`DP-04`, `DP-10`, `SL-05`) *(baru, keputusan 31 log phase-01)* | M | M | 09, Ph01 | `DP-04`, `DP-10`, `SL-05`, `SDD-SEC-08`, `DP-05a` | Identitas akun diganti penanda satu arah; baris transaksi dan activity log tetap; akun yang masih berkewajiban dikecualikan; foto berwajah dipertahankan sebagai bukti |
+| PR | Judul | Kompleksitas | Bergantung | FR/SDD | Acceptance |
+|---|---|:---:|---|---|---|
+| `PR-05-01` | Skema peminjaman + check-out dari reservasi | L | Ph04 | `FR-09.1`, `BR-026` `BR-026a` `BR-027` | Check-out tanpa reservasi disetujui ditolak |
+| `PR-05-02` | Bukti serah terima: foto + tanda tangan | M | 01, Ph03 | `FR-09.1`, `SDD-FS-08`, `DP-01` `DP-05a`, `SDD-FS-11` | Foto tersimpan ter-*scan* AV; foto berwajah dipertahankan utuh dan dilindungi `DP-05` — tidak dikaburkan, tidak dihapus |
+| `PR-05-03` | Check-in + pemeriksaan kondisi + kerusakan baru | L | 01, Ph03 | `FR-09.2`, `BR-028` … `BR-028e` | Kerusakan saat kembali membuat laporan M-11 otomatis |
+| `PR-05-04` | Pelepasan slot & pemulihan status aset saat check-in | M | 03, Ph02 | `BR-030`, `SDD-AVL-07` | Aset kembali tersedia seketika |
+| `PR-05-05` | Pemantauan keterlambatan + pengingat berjenjang | M | 01 | `FR-09.3`, `BR-029` `BR-031`, `CAL-01` … `CAL-03` | Keterlambatan dihitung dengan hari kerja |
+| `PR-05-06` | Perhitungan denda | M | 05 | `FR-09.4`, `BR-032` `BR-033` | Denda berhenti bertambah setelah aset dinyatakan hilang |
+| `PR-05-07` | Pelunasan & pembebasan denda | M | 06 | `FR-09.4`, `BR-031` `BR-028e` | Pembebasan `Keterlambatan` memakai `fine.waive`; pembebasan `Ganti Rugi` memakai `fine.waive_compensation` (Pimpinan saja) + alasan, penuh atau sebagian |
+| `PR-05-08` | Perpanjangan peminjaman | M | 01, Ph04 | `FR-09.5`, `BR-035` | Perpanjangan ditolak bila ada reservasi menyusul |
+| `PR-05-09` | **Penutupan `SL-04`**: definisi kewajiban aktif | M | 06, Ph01 | `SL-04` | Siswa dengan pinjaman/denda aktif tidak dapat dinonaktifkan |
+| `PR-05-10` | Skema penghapusan + pengajuan | M | Ph04 | `FR-21.1`, `BR-065a` `BR-065b` | Aset dalam peminjaman aktif tidak dapat diajukan |
+| `PR-05-11` | Approval bertingkat penghapusan | M | 10, Ph02 | `FR-21.2`, `BR-065c` `BR-065d` | Jalur approval mengikuti nilai perolehan aset |
+| `PR-05-12` | Eksekusi penghapusan + transisi status final | M | 11 | `FR-21.2`, `BR-008`, `BR-065e` | Aset terhapus tidak muncul di pencarian aktif; barisnya tetap ada |
+| `PR-05-13` | Arsip & pelaporan penghapusan | M | 12 | `FR-21.3`, `BR-065f` `BR-065g` | Berita acara dapat diunduh kapan saja |
+| `PR-05-14` | Jalur `BR-012`: aset hilang hasil opname → kandidat penghapusan | S | 12, Ph04 | `BR-012` | Kandidat muncul otomatis, keputusan tetap manual |
+| `PR-05-15` | Skema bahan: `material_categories`, `materials`, `material_units` (M-20) — migration `expand` | M | Ph01 | `FR-22.1`, `BR-084`, `SDD-DB-02` | Satuan tidak dapat diisi di luar master; **tinjauan arsitek: migration** |
+| `PR-05-16` | Master bahan & kategori bahan (CRUD) | M | 15 | `FR-22.1`, `BR-080` `BR-091` | Kategori bahan tidak pernah muncul pada pemilihan kategori aset |
+| `PR-05-17` | **Ledger saldo**: `material_balances` + `material_transactions`, invarian saldo↔ledger | L | 15 | `BR-081` `BR-082` `BR-083` `BR-092`, `SDD-DB-13`, `SDD-DB-14` | Saldo tidak dapat ditulis tanpa baris ledger berpasangan; `CHECK (saldo >= 0)` aktif. **Tinjauan arsitek wajib** — tulang punggung seluruh modul |
+| `PR-05-18` | Penerimaan bahan + jalur pengadaan (`procurement_items.jenis`) | M | 17, Ph03 | `FR-22.3`, `BR-063` `BR-064` | Item berjenis Bahan menambah saldo dan **tidak** membuat record aset |
+| `PR-05-19` | Permintaan bahan + evaluasi ambang approval | M | 17, Ph02 | `FR-22.4`, `BR-086`, `SDD-APR-03` | Di bawah ambang tidak membentuk instance approval sama sekali |
+| `PR-05-20` | Penyerahan bahan — row lock & batas jumlah | M | 19 | `FR-22.5`, `BR-083` `BR-087` `BR-089`, `SDD-DB-14` | 20 penyerahan simultan atas saldo 10 → tepat 10 unit keluar, sisanya ditolak `422` |
+| `PR-05-21` | Penyesuaian saldo dengan alasan wajib | S | 17 | `FR-22.6`, `BR-088` | Penyesuaian tanpa alasan ditolak skema, bukan hanya service |
+| `PR-05-22` | Stok minimum + `NT-49` lewat outbox | M | 17, Ph02 | `FR-22.7`, `BR-085`, `SDD-EVT-03` | Notifikasi terbit sekali saat ambang ditembus, tidak berulang tiap transaksi |
+| `PR-05-23` | QR bahan per jenis + pemindaian | S | 16, Ph03 | `BR-090`, `FR-05.1` `FR-05.2` | QR bahan membuka halaman bahan, tidak pernah dibaca sebagai unit aset |
+| `PR-05-24` | Opname bahan: sesi domain `BAHAN` + layar mobile `MS-22`/`MS-23` | L | 17, Ph04 | `FR-13.4`, `BR-093` `BR-094` `BR-095`, `MOB-PERF-06` | Sesi campur domain ditolak; saldo berubah hanya setelah disetujui Pimpinan |
+| `PR-05-25` | Tool chatbot bahan: `get_material_stock` + `get_low_stock_materials` | S | 17, 22, Ph03 | 22.3, `BR-075` `BR-076`, `SDD-AUTH-07`, `SDD-AI-13`, `AI-SEC-03` | Kedua tool memanggil repository M-22 dengan `AuthContext` penanya; role tanpa hak atas M-22 menerima hasil kosong, bukan galat. Awalan statis terbentuk ulang dan `usage.total_cached_tokens > 0` pada permintaan kedua setelah rilis |
 
 ## 8. Task Breakdown
-
-### `PR-05-26` — Pseudonimisasi akun
-- [ ] Operasi satu arah pada kolom identitas `users` (`SDD-SEC-08`, `SDD-13 §4.7`): nama, email, `nip_nis`, telepon, `work_unit_id`; baris transaksi, denda, dan `activity_logs` **tidak disentuh** (`AL-03`, `BR-008`)
-- [ ] Akun siswa nonaktif dipseudonimisasi setelah 2 tahun (`SL-05`, `DP-10`), **kecuali** masih berkewajiban — memakai `studentObligations` yang diisi `PR-05-09`
-- [ ] Hak penghapusan (`DP-04`) memakai operasi yang sama; foto berwajah **tidak** disentuh (`DP-05a`, `SDD-FS-11`)
-- [ ] Pekerjaan terjadwal berpelaku `SYSTEM` — bergantung `SystemAuthContext` (`PR-02-32`)
-- [ ] Uji: identitas tidak dapat dipulihkan; riwayat peminjaman lama tetap terbaca; akun berdenda aktif tidak dipseudonimisasi
 
 ### `PR-05-03` — Check-in
 - [ ] Bandingkan kondisi saat keluar dan saat kembali (`BR-028`)
@@ -140,7 +132,7 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 - [ ] Uji: check-out kondisi Baik, check-in kondisi Rusak Ringan → satu laporan kerusakan
 
 ### `PR-05-09` — Penutupan `SL-04`
-- [ ] Isi titik ekstensi `PR-01-13` dengan pemeriksaan nyata: daftarkan pemeriksa ke `studentObligations` (`m02-users/index.ts`) di proses **API dan worker** — registri hidup per proses, dan job penonaktifan lulusan berjalan di worker
+- [ ] Isi titik ekstensi `PR-01-13` dengan pemeriksaan nyata
 - [ ] Kewajiban aktif = peminjaman belum kembali **atau** denda belum lunas
 - [ ] Pesan penolakan menyebut kewajiban spesifik, bukan sekadar "tidak dapat dinonaktifkan"
 - [ ] Uji: siswa berdenda lunas dapat dinonaktifkan; berdenda aktif tidak

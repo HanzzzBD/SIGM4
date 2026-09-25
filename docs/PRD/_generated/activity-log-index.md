@@ -5,13 +5,11 @@
 # Indeks Aksi Activity Log
 
 > Setiap aksi dimiliki modul penerbitnya. Prinsip pencatatan di `../03-architecture/activity-log.md`.
-> Total: **75** baris, dikumpulkan dari 22 berkas modul.
+> Total: **59** baris, dikumpulkan dari 22 berkas modul.
 
 | Aksi | Keterangan | Pemilik |
 |---|---|---|
-| `ACADEMIC_YEAR_ACTIVATED` | Pergantian tahun ajaran aktif (`AC-YR-02`), tahun sebelumnya dan sesudahnya | [M-20](../02-modules/m20-settings.md) |
-| `ACADEMIC_YEAR_CREATED` / `ACADEMIC_YEAR_UPDATED` | Pembuatan atau perubahan tahun ajaran dan semesternya, nilai lama/baru | [M-20](../02-modules/m20-settings.md) |
-| `ACCOUNT_LOCKED` / `ACCOUNT_UNLOCKED` | Penguncian akibat percobaan gagal (kegagalan ke-5 dalam jendela 15 menit). Kunci yang berakhir sendiri tidak menulis entri | [M-01](../02-modules/m01-auth.md) |
+| `ACCOUNT_LOCKED` / `ACCOUNT_UNLOCKED` | Penguncian akibat percobaan gagal | [M-01](../02-modules/m01-auth.md) |
 | `ACTIVITY_LOG_VIEWED` / `ACTIVITY_LOG_EXPORTED` | Akses terhadap log itu sendiri | [M-18](../02-modules/m18-activity-log.md) |
 | `ADMIN_BREAK_GLASS_RECOVERY` | Pemulihan darurat Administrator via CLI (FR-01.6); pelaku `SYSTEM:CLI` | [M-01](../02-modules/m01-auth.md) |
 | `APPROVAL_DECIDED` | Keputusan beserta approver, catatan, dan level | [M-10](../02-modules/m10-approval.md) |
@@ -39,15 +37,14 @@
 | `DAMAGE_REPORTED` / `DAMAGE_VERIFIED` / `DAMAGE_REJECTED` / `DAMAGE_CLOSED` | Siklus tiket | [M-11](../02-modules/m11-damage-reports.md) |
 | `DOCUMENT_UPLOADED` / `DOCUMENT_DOWNLOADED` / `DOCUMENT_DELETED` | Termasuk pencatatan siapa mengunduh | [M-06](../02-modules/m06-documents.md) |
 | `FINE_ISSUED` / `FINE_PAID` / `FINE_WAIVED` | Termasuk alasan pembebasan | [M-09](../02-modules/m09-loans.md) |
-| `HOLIDAY_CREATED` / `HOLIDAY_UPDATED` / `HOLIDAY_DELETED` | Perubahan daftar hari libur | [M-20](../02-modules/m20-settings.md) |
 | `LOAN_CHECKIN` | Pengembalian beserta kondisi akhir | [M-09](../02-modules/m09-loans.md) |
 | `LOAN_CHECKOUT` | Serah terima beserta unit dan kondisi awal | [M-09](../02-modules/m09-loans.md) |
 | `LOAN_EXTENDED` | Perpanjangan yang disetujui | [M-09](../02-modules/m09-loans.md) |
 | `LOAN_MARKED_LOST` | Penetapan aset hilang | [M-09](../02-modules/m09-loans.md) |
 | `LOAN_UNIT_SUBSTITUTED` | Penggantian unit saat serah terima beserta alasan | [M-09](../02-modules/m09-loans.md) |
 | `LOCATION_CREATED` / `LOCATION_UPDATED` / `LOCATION_DEACTIVATED` | Perubahan struktur lokasi | [M-03](../02-modules/m03-locations.md) |
-| `LOGIN_SUCCESS` / `LOGIN_FAILED` | Termasuk IP dan perangkat. `LOGIN_FAILED` juga mencatat email tak terdaftar dan percobaan atas akun terkunci — pelaku kosong, akun sasaran pada entitas, email yang dicoba tidak disimpan. Kode 2FA yang salah pada `/auth/2fa/verify` juga dicatat di sini, dengan alasan `KODE_2FA_SALAH` | [M-01](../02-modules/m01-auth.md) |
-| `LOGOUT` / `LOGOUT_ALL_DEVICES` | Pencabutan sesi. `LOGOUT` juga dicatat saat pengguna mencabut satu perangkat lain (nilai memuat `alasan: device_revoked`); `LOGOUT_ALL_DEVICES` memuat jumlah sesi yang dicabut. Termasuk IP dan perangkat pelaku | [M-01](../02-modules/m01-auth.md) |
+| `LOGIN_SUCCESS` / `LOGIN_FAILED` | Termasuk IP dan perangkat | [M-01](../02-modules/m01-auth.md) |
+| `LOGOUT` / `LOGOUT_ALL_DEVICES` | Pencabutan sesi | [M-01](../02-modules/m01-auth.md) |
 | `MAINTENANCE_SCHEDULE_CREATED` / `UPDATED` / `DEACTIVATED` / `SKIPPED` | Jadwal preventif | [M-12](../02-modules/m12-maintenance.md) |
 | `MATERIAL_ADJUSTED` | Penyesuaian saldo beserta alasan wajib | [M-22](../02-modules/m22-materials.md) |
 | `MATERIAL_CATEGORY_CREATED` / `UPDATED` / `DELETED` | Siklus kategori bahan | [M-22](../02-modules/m22-materials.md) |
@@ -55,32 +52,19 @@
 | `MATERIAL_ISSUED` | Penyerahan bahan beserta penerima | [M-22](../02-modules/m22-materials.md) |
 | `MATERIAL_RECEIVED` | Penerimaan bahan beserta jumlah & lokasi | [M-22](../02-modules/m22-materials.md) |
 | `MATERIAL_REQUEST_SUBMITTED` / `APPROVED` / `REJECTED` / `CANCELLED` | Siklus permintaan bahan | [M-22](../02-modules/m22-materials.md) |
-| `PASSWORD_CHANGED` | Ganti password sendiri (`FR-01.4`); memuat jumlah sesi lain yang dicabut, tanpa merekam nilai password | [M-01](../02-modules/m01-auth.md) |
-| `PASSWORD_RESET_REQUESTED` / `PASSWORD_RESET_ISSUED` / `PASSWORD_RESET_REJECTED` | Alur reset administratif. `PASSWORD_RESET_REQUESTED` dicatat tanpa pelaku (pemohon belum login; akun sasaran pada entitas), juga untuk percobaan yang tidak menghasilkan permintaan — email tak terdaftar, akun nonaktif, melebihi batas — dengan hasil `Gagal` dan tanpa menyimpan email yang dicoba. `PASSWORD_RESET_ISSUED` memuat metode verifikasi dan jumlah sesi yang dicabut. Tidak satu pun memuat password | [M-01](../02-modules/m01-auth.md) |
+| `PASSWORD_CHANGED` | Tanpa merekam nilai password | [M-01](../02-modules/m01-auth.md) |
+| `PASSWORD_RESET_REQUESTED` / `PASSWORD_RESET_ISSUED` / `PASSWORD_RESET_REJECTED` | Alur reset administratif | [M-01](../02-modules/m01-auth.md) |
 | `PROCUREMENT_ASSETS_GENERATED` | Pembentukan aset dari penerimaan | [M-14](../02-modules/m14-procurement.md) |
 | `PROCUREMENT_CREATED` / `SUBMITTED` / `DECIDED` | Siklus usulan | [M-14](../02-modules/m14-procurement.md) |
 | `PROCUREMENT_RECEIVED` | Penerimaan barang beserta jumlah | [M-14](../02-modules/m14-procurement.md) |
-| `PROFILE_UPDATED` | Perubahan nama/telepon profil sendiri (`FR-01.4` langkah 5, `PUT /me`); foto menunggu `PR-03-04` | [M-01](../02-modules/m01-auth.md) |
-| `REFRESH_TOKEN_REUSE_DETECTED` | Refresh token yang sudah dirotasi dipakai ulang; seluruh rantai dicabut. Termasuk IP dan perangkat | [M-01](../02-modules/m01-auth.md) |
 | `REPORT_EXPORTED` | Ekspor laporan beserta jenis dan filter | [M-16](../02-modules/m16-analytics.md) |
 | `RESERVATION_CREATED` / `RESERVATION_UPDATED` / `RESERVATION_CANCELLED` / `RESERVATION_EXPIRED` | Termasuk alasan pembatalan | [M-07](../02-modules/m07-reservation-room.md) |
 | `ROLE_PERMISSION_UPDATED` | Perubahan matriks permission | [M-02](../02-modules/m02-users.md) |
 | `SETTING_UPDATED` | Perubahan parameter sistem beserta nilai lama/baru | [M-20](../02-modules/m20-settings.md) |
-| `STUDENT_ENROLLMENT_SET` | Kelas siswa pada suatu tahun ajaran ditetapkan atau diubah (`SL-01`, `SL-02`), nilai lama/baru | [M-02](../02-modules/m02-users.md) |
-| `STUDENT_GRADUATION_DEACTIVATED` | Akun siswa lulus dinonaktifkan setelah tahun ajarannya berakhir (`SL-03`); pelaku `SYSTEM` bila dijalankan pekerjaan terjadwal | [M-02](../02-modules/m02-users.md) |
-| `STUDENT_MARKED_GRADUATED` | Siswa ditandai lulus pada suatu tahun ajaran (`SL-02`) | [M-02](../02-modules/m02-users.md) |
-| `TWO_FA_ACTIVATION_CODE_ISSUED` | Kode aktivasi 2FA diterbitkan (`BR-070d`): akun sasaran pada entitas, penerbit sebagai pelaku (`SYSTEM:CLI` bila lewat CLI), metode verifikasi. Nilai kode tidak pernah dicatat | [M-01](../02-modules/m01-auth.md) |
-| `TWO_FA_ACTIVATION_CODE_REJECTED` | Kode aktivasi salah, kedaluwarsa, atau hangus saat pendaftaran; memuat sisa percobaan. Nilai yang dimasukkan tidak dicatat | [M-01](../02-modules/m01-auth.md) |
-| `TWO_FA_BACKUP_CODES_REGENERATED` | Seluruh kode cadangan diganti (`FR-01.5` AC); nilainya tidak dicatat | [M-01](../02-modules/m01-auth.md) |
 | `TWO_FA_BACKUP_CODE_USED` | Pemakaian kode cadangan, termasuk sisa kode | [M-01](../02-modules/m01-auth.md) |
-| `TWO_FA_ENABLED` / `TWO_FA_DISABLED` / `TWO_FA_RESET` | Perubahan 2FA. `TWO_FA_ENABLED` memuat jumlah sesi lain yang dicabut (`BR-070e`) | [M-01](../02-modules/m01-auth.md) |
-| `TWO_FA_ENROLLMENT_STARTED` | Pendaftaran 2FA dimulai (secret dan kode cadangan dibangkitkan). Secret dan kode tidak pernah dicatat | [M-01](../02-modules/m01-auth.md) |
+| `TWO_FA_ENABLED` / `TWO_FA_DISABLED` / `TWO_FA_RESET` | Perubahan 2FA | [M-01](../02-modules/m01-auth.md) |
 | `USER_CREATED` / `USER_UPDATED` / `USER_DEACTIVATED` / `USER_REACTIVATED` | Manajemen akun | [M-02](../02-modules/m02-users.md) |
-| `USER_IMPORTED` | Impor massal beserta ringkasan hasil; pelaku = Administrator pengunggah, juga bila dijalankan worker | [M-02](../02-modules/m02-users.md) |
-| `USER_IMPORT_REQUESTED` | Berkas impor diterima dan tercatat sebagai pekerjaan impor (sinkron atau dijadwalkan asinkron, `IMPT-04`) | [M-02](../02-modules/m02-users.md) |
+| `USER_IMPORTED` | Impor massal beserta ringkasan hasil | [M-02](../02-modules/m02-users.md) |
 | `WORKORDER_COMPLETED` / `WORKORDER_VERIFIED` / `WORKORDER_RETURNED` / `WORKORDER_CANCELLED` | Penyelesaian | [M-12](../02-modules/m12-maintenance.md) |
 | `WORKORDER_CREATED` / `WORKORDER_ASSIGNED` / `WORKORDER_STARTED` | Penugasan dan pelaksanaan | [M-12](../02-modules/m12-maintenance.md) |
 | `WORKORDER_PROGRESS_UPDATED` | Termasuk perubahan biaya | [M-12](../02-modules/m12-maintenance.md) |
-| `WORK_DAYS_UPDATED` | Perubahan hari kerja sekolah, nilai lama/baru | [M-20](../02-modules/m20-settings.md) |
-| `WORK_UNIT_CREATED` / `WORK_UNIT_UPDATED` | Pembuatan atau perubahan unit kerja | [M-20](../02-modules/m20-settings.md) |
-| `WORK_UNIT_DEACTIVATED` / `WORK_UNIT_REACTIVATED` | Perubahan status unit kerja (`WU-02`) | [M-20](../02-modules/m20-settings.md) |

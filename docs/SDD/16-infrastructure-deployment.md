@@ -29,15 +29,13 @@ Keputusan platform sudah ditetapkan PRD Bab 27.1 dan tidak diulang. Berkas ini m
 | **SDD-INF-02** | *Build* memakai **multi-stage** dengan image runtime non-root, tanpa perkakas build. |
 | **SDD-INF-03** | Migration dijalankan sebagai **job terpisah sebelum** instance baru menerima trafik, dengan akun DB ber-DDL yang berbeda dari akun aplikasi (`CD-04`, `SEC-CFG-03`). |
 | **SDD-INF-04** | Deployment memakai pola **rolling dengan readiness gate**; instance lama tetap melayani sampai instance baru siap. |
-| **SDD-INF-05** | Worker **di-drain lebih dulu** saat deploy: berhenti mengambil pekerjaan baru, selesaikan yang berjalan, baru diganti. Drain dipicu `SIGTERM` yang **ditangkap proses sendiri** — `node` sebagai PID 1 container mengabaikan `SIGTERM` tanpa penangkap — dan dibatasi **tenggat internal di bawah `stop_grace_period`**; lewat tenggat, job aktif dilepas tanpa ditunggu, proses keluar dengan kode bukan nol, dan job kembali ke antrean untuk dijalankan ulang (`JOB-03`). API memakai mekanisme yang sama: readiness tidak siap, port berhenti menerima koneksi baru, permintaan berjalan dituntaskan (keputusan pemilik produk, 15 September 2026). |
+| **SDD-INF-05** | Worker **di-drain lebih dulu** saat deploy: berhenti mengambil pekerjaan baru, selesaikan yang berjalan, baru diganti. |
 | **SDD-INF-06** | Cadangan basis data memakai **base backup harian + arsip WAL berkelanjutan** (PITR), bukan hanya `pg_dump` (`BR-DR-01`). |
 | **SDD-INF-07** | Uji restore **otomatis bulanan** ke lingkungan sementara; hasilnya menjadi metrik, bukan laporan manual (`BR-DR-04`). |
 | **SDD-INF-08** | Seluruh konfigurasi lewat **variabel lingkungan**, divalidasi skema saat *startup*; konfigurasi tidak valid mencegah proses berjalan. |
-| **SDD-INF-09** | Zona waktu container dan basis data **UTC** (`INF-07`). Container dipaksa lewat variabel lingkungan `TZ`; sesi basis data dipaksa lewat parameter sesi `TimeZone=UTC` pada setiap koneksi aplikasi dan jalur migration, sehingga tidak bergantung pada setelan penyedia. Keduanya diverifikasi saat startup api dan worker (keputusan pemilik produk, 15 September 2026). |
+| **SDD-INF-09** | Zona waktu container dan basis data **UTC**, dipaksa lewat variabel lingkungan dan diverifikasi saat startup (`INF-07`). |
 | **SDD-INF-10** | Orkestrasi memakai **Docker Compose**, bawaan `INF-05`. *Rolling deploy* `SDD-INF-04` dicapai lewat **koreografi pipeline** — reverse proxy (`INF-06`) memeriksa kesehatan upstream, instance API diganti satu per satu — bukan lewat fitur platform. Pengecualian Kubernetes pada `INF-05` **tidak berlaku**: `SDD-INF-11` menetapkan sekolah tidak menjalankan klaster Kubernetes. |
 | **SDD-INF-11** | **Penyedia infrastruktur: VPS ber-region Indonesia** untuk API, worker, Redis, dan reverse proxy, ditambah **PostgreSQL sebagai layanan terkelola ber-region Indonesia** — bukan container PostgreSQL yang dipelihara sendiri. Object storage `INF-02` mengikuti batasan region yang sama (`SDD-SEC-10`). Menutup `TBD-INF-A` (keputusan pemilik produk, 25 Agustus 2026). Yang diputuskan **hanya penyedianya**; sizing dan biaya nyata (PRD 27.3, 27.9) tetap ditetapkan setelah uji beban `NFR-P-09` bersama `TBD-AVL-C`. |
-| **SDD-INF-12** | **Penyedia CI/CD adalah GitHub Actions.** Seluruh tahap §4.3 dijalankan sebagai *workflow* di `.github/workflows/` ([SDD-17 §4.1](17-repo-layout.md)). Gerbang `CD-01`/`CD-02` ditegakkan sebagai *required status check* pada `develop`, `staging`, dan `main`; penegakan itu adalah bagian dari keputusan ini, bukan setelan opsional sesudahnya. Pipeline dibangun `PR-00-17` dan `PR-00-18`. |
-| **SDD-INF-13** | *Reverse proxy* adalah **Nginx**, memilih satu dari dua nama yang `INF-06` sebut. Perpanjangan sertifikat Let's Encrypt (`INF-06`) dijalankan **certbot sebagai komponen tersendiri** pada topologi §4.2, bukan oleh proxy. Pemeriksaan kesehatan upstream `SDD-INF-04` memakai mekanisme **pasif** Nginx OSS (`max_fails`/`fail_timeout`) ditambah *readiness gate* pada skrip deploy milik kita (`SDD-INF-10`); *active health check* tidak dipakai karena hanya tersedia pada NGINX Plus. |
 
 ---
 
@@ -54,18 +52,6 @@ Keputusan platform sudah ditetapkan PRD Bab 27.1 dan tidak diulang. Berkas ini m
 **SDD-INF-07 — restore diuji otomatis.** Cadangan yang tidak pernah dipulihkan bukan cadangan. `BR-DR-04` mewajibkan uji berkala; mengotomasinya membuat kegagalan terdeteksi dalam sebulan, bukan saat bencana.
 
 **SDD-INF-08 — konfigurasi divalidasi saat startup.** Konfigurasi yang salah sebaiknya mencegah proses berjalan, bukan menghasilkan perilaku aneh di produksi. Kunci Gemini API yang kosong lebih baik menggagalkan *startup* daripada membuat chatbot gagal diam-diam pada permintaan pertama pengguna.
-
-**SDD-INF-13 — Nginx, dan dua konsekuensi yang ikut dengannya.** `INF-06` menyebut dua nama; memilih di antaranya bukan soal selera karena `deployment-ops.md` §Topologi dan [SDD-13 §3](13-security-design.md) sudah menulis "Nginx" dalam prosa, sehingga garis miring itu sebenarnya sudah berselisih dengan dua berkas. Keputusan ini menyelaraskannya ke arah yang sudah tertulis.
-
-Yang tidak boleh disembunyikan adalah harganya, karena Caddy — kandidat yang ditolak — menyediakan keduanya secara bawaan. **Pertama**, HTTPS otomatis: Nginx tidak memperbarui sertifikatnya sendiri, sehingga `INF-06` ("diperbarui otomatis") menuntut certbot hadir sebagai komponen dan pembaruannya ikut dipantau — sebuah sertifikat yang gagal diperpanjang mematikan seluruh sistem dan gejalanya baru muncul pada hari ke-90. **Kedua**, `SDD-INF-04` menuntut *readiness gate*, dan Nginx OSS hanya memiliki pemeriksaan **pasif**: ia menandai upstream mati setelah permintaan nyata gagal, bukan sebelumnya. Konsekuensinya bukan bahwa `SDD-INF-04` tidak terpenuhi, melainkan bahwa pemenuhannya berpindah sepenuhnya ke skrip deploy — yang memang sudah menjadi milik kita menurut `SDD-INF-10`, dan yang §5 sudah wajibkan diuji di staging serta ditutup *smoke test* (`CD-07`).
-
-Alasan menerimanya: keduanya jatuh pada pekerjaan yang sudah ada pemiliknya, sementara keunggulan Nginx — jumlah contoh operasional dan kemudahan mencari jawaban saat ada yang salah — jatuh tepat pada pihak yang [§6](#6-risiko-teknis) tandai sebagai risiko kapasitas operasional.
-
-**SDD-INF-12 — GitHub Actions, dinyatakan alih-alih tersirat.** Sebelum keputusan ini yang ditetapkan hanyalah **letak** berkasnya — `.github/workflows/` pada [SDD-17 §4.1](17-repo-layout.md) — sehingga penyedianya tersirat dari tata letak dan tidak pernah tertulis di mana pun. Itu bukan detail administratif: `CD-01` dan `CD-02` adalah gerbang yang **memblokir merge**, dan sebuah gerbang yang memblokir merge hanya ada bila ia berupa *required status check* pada penyedia yang sama dengan tempat pull request dinilai. Repositori, `CODEOWNERS` (`BRANCHING §3.1`), template PR, dan proteksi cabang sudah berada di GitHub; menaruh eksekusi pipeline di tempat lain berarti gerbang rilis dinilai di satu sistem dan ditegakkan di sistem lain.
-
-Penyedia lain ditolak atas dasar itu, bukan atas dasar fitur. **GitLab CI** membawa tahap SAST/SCA/DAST bawaan yang relevan bagi `ST-01`…`ST-03`, tetapi menuntut repositori dan seluruh perkakas tata kelolanya ikut pindah atau dicerminkan — dan cermin adalah dua sumber. **CI swa-kelola** ditolak dengan alasan yang sama dengan penolakan observability swa-kelola pada [SDD-15 §3](15-observability-logging.md): ia menambah satu layanan lagi yang dioperasikan sekolah, tepat pada risiko kapasitas operasional yang §6 sudah tandai.
-
-Keputusan ini **tidak** mengubah isi maupun urutan §4.3. Tahapnya ditetapkan `CD-01`; yang ditetapkan di sini hanya siapa yang menjalankannya.
 
 **SDD-INF-10 — Docker Compose.** `INF-05` sudah menetapkan bawaannya sekaligus syarat pengecualiannya, jadi yang tersisa bukan memilih bebas melainkan memeriksa apakah syarat itu terpenuhi — dan `SDD-INF-11` menetapkan bahwa ia **tidak** terpenuhi: sekolah tidak menjalankan klaster Kubernetes. Keputusan #1 (single sekolah, satu instansi) juga menghapus argumen terkuat Kubernetes sejak awal: tidak ada armada instalasi yang perlu dikelola seragam.
 
@@ -119,35 +105,30 @@ CMD ["node", "dist/api/index.js"]        # worker: dist/worker/index.js
 ```
 VPS (region Indonesia)                         layanan terkelola (region Indonesia)
 ──────────────────────────────────         ──────────────────────────────────
-nginx (TLS, HSTS)          →  api ×2        →  postgres terkelola (SDD-INF-11)
-certbot (renewal INF-06)      worker ×1     →  object storage (S3-compatible)
+reverse proxy (TLS, HSTS)  →  api ×2        →  postgres terkelola (SDD-INF-11)
+                              worker ×1     →  object storage (S3-compatible)
                               av-scanner    →  FCM
                               redis         
                               ClamAV        
 ```
 
-Web (hasil build Vite, `SDD-FE-14`) disajikan sebagai aset statis **oleh Nginx pada origin yang sama dengan API** — web di `/`, API di `/api/v1` — bukan dari CDN berorigin lain dan bukan dari proses Node. Konsekuensinya `cors` tidak dipasang ([SDD-06 §4.2](06-api-design.md)).
-
-**Pengiriman & job migration** (keputusan pemilik produk, 15 September 2026). Image yang lulus pipeline — artefak yang sama dengan yang dipindai Trivy — diterbitkan ke **GHCR** bertag SHA commit, lalu ditarik VPS. Job migration (`SDD-INF-03`) berjalan sebagai container sekali-jalan dari **image yang sama**, sehingga api, worker, dan skema berasal dari satu tag (`SDD-INF-01`); runtime image karena itu memuat `apps/api/migrations/`, `scripts/migrate.mjs`, dan dbmate, tetapi tidak npm. Topologi staging beserta koreografinya berada di `deploy/staging/` ([SDD-17 §4.1](17-repo-layout.md)).
+Web (React build) disajikan sebagai aset statis dari CDN atau reverse proxy, bukan dari proses Node.
 
 **Replika dan arsip WAL tidak lagi menjadi container pada topologi ini.** Keduanya adalah tanggung jawab layanan PostgreSQL terkelola (`SDD-INF-11`) dan tampil sebagai konfigurasi langganan, bukan sebagai proses yang di-*compose*. Redis tetap swa-kelola di VPS: kehilangannya berarti kehilangan cache dan *rate limit* — degradasi yang `SDD-SEC-05` dan §6 sudah antisipasi — bukan kehilangan data.
 
 ### 4.3 Pipeline CI/CD
 
 ```
-push / PR                     .github/workflows/ci.yml — required check `CI lulus`
+push / PR
  ├─ lint
- ├─ unit test
+ ├─ unit test                 gagal < 70% cakupan inti → stop   (CD-02, NFR-M-03)
  ├─ integration test          termasuk uji konkurensi CC-01..07
- │                            cakupan gabungan unit+integrasi < 70% statements/lines → stop
- │                            (CD-02, NFR-M-03); uji ter-skip → stop
  ├─ uji otorisasi tergenerate SEC-T-01
+ ├─ SAST                      ST-01
+ ├─ SCA                       ST-02 — Critical/High → stop
  ├─ build image
- ├─ SAST                      ST-01  CodeQL — security-severity ≥ 7,0 → stop   (SDD-SEC-11)
- ├─ SCA                       ST-02  dependency-review + npm audit — Critical/High → stop
- │                                   (harian: sca-harian.yml; alert & PR: Dependabot)
- ├─ image scan                CD-01  Trivy — HIGH/CRITICAL → stop
- └─ deploy staging  →  DAST (ST-03, OWASP ZAP)  →  smoke test (CD-07)
+ ├─ image scan                CD-01
+ └─ deploy staging  →  DAST (ST-03)  →  smoke test (CD-07)
 
 tag rilis
  ├─ migration job (akun DDL)                        CD-04
@@ -214,7 +195,7 @@ Setiap langkah memiliki penanggung jawab bernama dan cara verifikasi. Runbook wa
 
 ```
 # Wajib — startup gagal bila kosong (SDD-INF-08)
-DATABASE_URL, REDIS_URL, S3_ENDPOINT, S3_PUBLIC_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY
+DATABASE_URL, REDIS_URL, S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY
 JWT_PRIVATE_KEY, JWT_PUBLIC_KEY, TOTP_ENCRYPTION_KEY
 GEMINI_API_KEY, FCM_CREDENTIALS
 APP_BASE_URL, TZ=UTC
@@ -222,14 +203,6 @@ APP_BASE_URL, TZ=UTC
 # Opsional dengan bawaan
 LOG_LEVEL=info, DB_POOL_SIZE=<TBD-AVL-C>, CHAT_ENABLED=true
 ```
-
-**Kunci JWT** (`PR-02-02`). `JWT_PRIVATE_KEY` dan `JWT_PUBLIC_KEY` berformat PEM Ed25519 (PKCS#8 dan SPKI; `\n` literal diterima untuk berkas env satu baris). Membangkitkan pasangan: `openssl genpkey -algorithm ed25519 -out jwt-private.pem && openssl pkey -in jwt-private.pem -pubout -out jwt-public.pem`. Startup menolak pasangan yang tak cocok tanpa mencetak isinya. Kunci publik cukup bagi komponen yang hanya memverifikasi (`SDD-SESS-02`).
-
-**Kunci TOTP** (`PR-02-07`). `TOTP_ENCRYPTION_KEY` berformat base64 dari tepat **32 byte** (`openssl rand -base64 32`); ia mengenkripsi secret TOTP (AES-256-GCM, `SDD-SESS-08`) dan **terpisah** dari kunci JWT karena siklus rotasinya berbeda. Startup menolak nilai yang bukan base64 sah atau bukan 32 byte tanpa mencetak isinya. Kehilangan kunci ini berarti seluruh 2FA harus didaftarkan ulang (SDD-04 §6): cadangkan terpisah dari basis data. API memvalidasinya sejak `PR-02-07`; worker (termasuk CLI break-glass, `SDD-SESS-11`) memvalidasinya sejak `PR-02-08` — meski logikanya sendiri tidak mendekripsi apa pun, validasi menutup celah startup diam-diam (`SDD-INF-08`).
-
-**Validasi bertahap.** Daftar di atas adalah keadaan akhir. Skema `shared/config` (`SDD-SYS-14`) memuat sebuah variabel sejak PR pertama yang memakainya; sebelum itu variabel tersebut tidak dituntut. `S3_ENDPOINT` dipakai operasi sisi server, sedangkan `S3_PUBLIC_ENDPOINT` — origin yang dapat dijangkau peramban dan aplikasi mobile — dipakai presigned URL dan `img-src` (`SDD-FS-13`). `APP_BASE_URL` adalah origin halaman publik QR (`https://{domain}/a/{asset_uuid}`, `FR-05.1`) dan masuk skema bersama `PR-03-01`.
-
-**Dua akun basis data, dua variabel.** `DATABASE_URL` memuat akun **aplikasi** — `sigm4_app`, tanpa hak DDL dan tanpa `UPDATE`/`DELETE` atas `activity_logs` (`SEC-CFG-03`, `AL-03b`, `SDD-DB-11`). `MIGRATION_DATABASE_URL` memuat akun **migration** ber-DDL yang memiliki skema, dan **hanya** job migration (`SDD-INF-03`) yang membacanya; proses API dan worker tidak pernah menerimanya. Bila ia tidak diisi, jalur migration jatuh kembali ke `DATABASE_URL` — kemudahan pengembangan yang di production ditutup oleh kenyataan bahwa akun aplikasi memang tidak dapat menjalankan DDL.
 
 Rahasia berasal dari *secret manager* (`SEC-CFG-01`), tidak pernah dari berkas di repositori. Validasi skema saat startup mencetak **nama** variabel yang hilang, tidak pernah nilainya.
 
@@ -252,11 +225,6 @@ Menyalin data produksi ke staging tanpa anonimisasi dilarang keras; skrip anonim
 - PITR menambah kebutuhan penyimpanan arsip WAL yang harus dipantau bersama disk (`OBS-05`).
 - Aturan expand/contract berarti perubahan skema yang menghapus kolom memerlukan **dua rilis** — perlu diperhitungkan dalam perencanaan milestone.
 - Worker tunggal (`SDD-SYS-08`) berarti drain saat deploy menghentikan sementara pemrosesan job; karena job idempoten dan berjadwal, jeda beberapa menit dapat diterima.
-- **Jeda serah terikat pada Nginx.** Container yang `healthy` belum tentu dipakai Nginx lagi: nama upstream diselesaikan ulang setelah `valid` resolver dan tanda gagal lepas setelah `fail_timeout` (keduanya 5 s). `deploy.sh` karena itu menunggu `JEDA_SERAH_DETIK` (12 s) setelah `api-1` siap sebelum mengganti `api-2`; tanpanya kedua upstream dianggap mati dan Nginx menjawab 502 (keputusan pemilik produk, 15 September 2026).
-- **Tenggat drain terikat pada `stop_grace_period`.** Worker: tenggat 50 s dari 60 s; API: 25 s dari 30 s (`deploy/staging/docker-compose.yml`). Mengubah salah satunya tanpa yang lain mengembalikan pemutusan paksa tanpa jejak. Job yang lebih lama dari tenggat worker selalu terputus saat deploy dan dijalankan ulang; bila itu terjadi dua kali pada job yang sama, BullMQ menandainya `failed` (`maxStalledCount` 1) dan alarm `JOB-06` berbunyi — perilaku yang dipertahankan dengan sengaja.
-- **certbot menjadi komponen kelima pada topologi §4.2** (`SDD-INF-13`), dan kegagalan perpanjangannya wajib memicu alarm (`OBS-05`) — bukan diketahui saat sertifikat sudah kedaluwarsa.
-- **Pembangkit PDF membawa Chromium ke dalam image** (`SDD-FS-12`). Karena API dan worker berbagi satu image (`SDD-INF-01`), image API ikut membesar dan permukaan yang dipindai `CD-01` ikut bertambah. Diterima sadar; bila ukurannya menjadi persoalan, jalannya adalah memisahkan image — perubahan pada `SDD-INF-01`, bukan penggantian pembangkit PDF secara diam-diam.
-- `SDD-INF-12` menjadikan proteksi cabang bagian dari infrastruktur, bukan kebiasaan: daftar *required status check* pada `develop`, `staging`, dan `main` wajib disetel manual di GitHub dan **tidak dapat diberkaskan** — keadaannya dilacak [`IMPLEMENTATION/GITHUB-CI-STATE.md §4`](../IMPLEMENTATION/GITHUB-CI-STATE.md). Pipeline yang hijau tanpa setelan itu tidak memblokir apa pun.
 - Karena Compose tidak menyediakan *rolling deploy* ber-*readiness gate* (`SDD-INF-10`), `SDD-INF-04` dan `SDD-INF-05` menjadi **koreografi milik kita**: pemeriksaan kesehatan upstream pada reverse proxy, penggantian instance API satu per satu, `stop_grace_period` bagi drain worker, dan migration sebagai container sekali-jalan. Semuanya wajib diuji di staging dan ditutup *smoke test* (`CD-07`) — sebuah skrip deploy yang tidak diuji adalah *readiness gate* yang tidak ada.
 - Compose menggoda menaruh rahasia pada berkas `.env` di repositori. Itu dilarang `SEC-CFG-01`: nilai tetap berasal dari *secret manager* dan disuntikkan ke lingkungan proses (§4.7), dan `SEC-CFG-04` memindai repositori untuk memastikannya.
 - Pengecualian `INF-05` **tertutup**: `SDD-INF-11` menetapkan sekolah tidak menjalankan Kubernetes, sehingga Docker Compose (`SDD-INF-10`) berlaku tanpa syarat dan tidak ada cabang manifest kedua yang perlu dipelihara.
