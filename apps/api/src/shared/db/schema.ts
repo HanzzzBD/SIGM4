@@ -427,6 +427,71 @@ export interface AcademicTermsTable extends KolomBaku {
     tanggal_selesai: ColumnType<string, string, string>;
 }
 
+/**
+ * `asset_categories` (0026, PR-02-10). Self-referencing (`parent_id`) — minimal
+ * dua tingkat induk-anak (`FR-04.5` AC).
+ */
+export interface AssetCategoriesTable extends KolomBaku {
+    id: Generated<string>;
+    parent_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    nama: string;
+    kode: string;
+    umur_teknis_tahun: number | null;
+    interval_preventif_hari: number | null;
+}
+
+/**
+ * `assets` (0026, PR-02-10). `uuid` pengecualian tertulis `SDD-DB-01` (kunci
+ * sekunder ber-indeks unik, bukan kunci primer) — dipakai halaman publik QR
+ * (`FR-05.1`/`FR-05.2 A3`). `status` lahir `TERSEDIA` (`FR-04.1` langkah 5).
+ * `procurement_id` NULLABLE tanpa FK aktif — tabel `procurements` milik M-14
+ * belum ada; ditambahkan migration M-14 sendiri (`expand`).
+ * `nilai_perolehan` bertipe `numeric(14,2)` dan kembali sebagai **string** dari
+ * driver `pg`, sama seperti `system_settings.nilai_min`.
+ */
+export interface AssetsTable extends KolomBaku {
+    id: Generated<string>;
+    uuid: Generated<string>;
+    kode_barang: string;
+    nama: string;
+    category_id: ColumnType<string, string | number, string | number>;
+    merek: string | null;
+    model: string | null;
+    nomor_seri: string | null;
+    tahun_perolehan: number;
+    sumber_perolehan: "PEMBELIAN" | "HIBAH" | "BANTUAN_PEMERINTAH" | "SUMBANGAN" | "LAINNYA";
+    nilai_perolehan: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    room_id: ColumnType<string, string | number, string | number>;
+    kondisi: "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT" | "HILANG";
+    status: Generated<"TERSEDIA" | "DIRESERVASI" | "DIPINJAM" | "DALAM_PERBAIKAN" | "TIDAK_TERSEDIA">;
+    dapat_dipinjam: Generated<boolean>;
+    boleh_dipinjam_siswa: Generated<boolean>;
+    penanggung_jawab_id: ColumnType<string | null, string | number | null, string | number | null>;
+    qr_terpasang: Generated<boolean>;
+    procurement_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    dihapuskan: Generated<boolean>;
+    tanggal_penghapusan: ColumnType<Date | null, Date | null | undefined, Date | null>;
+}
+
+/**
+ * `asset_condition_history` (0026, PR-02-10). Append-only (pola
+ * `material_transactions`, `SDD-05 §4.2`): tanpa kolom baku, kolom waktu
+ * bermakna sendiri (`diubah_pada`, bukan `created_at`).
+ * `referensi_jenis`/`referensi_id` polimorfik tanpa FK — sesi stock opname
+ * atau berita acara kehilangan (`FR-04.3 A2`, `BR-012`).
+ */
+export interface AssetConditionHistoryTable {
+    id: Generated<string>;
+    asset_id: ColumnType<string, string | number, string | number>;
+    kondisi_lama: "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT" | "HILANG";
+    kondisi_baru: "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT" | "HILANG";
+    alasan: string;
+    referensi_jenis: string | null;
+    referensi_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    diubah_oleh: ColumnType<string, string | number, string | number>;
+    diubah_pada: ColumnType<Date, Date, Date>;
+}
+
 /** Peta nama tabel -> bentuk barisnya. Diisi bersama migration pemiliknya. */
 export interface Database {
     document_counters: DocumentCountersTable;
@@ -452,4 +517,7 @@ export interface Database {
     password_reset_requests: PasswordResetRequestsTable;
     totp_backup_codes: TotpBackupCodesTable;
     totp_activation_codes: TotpActivationCodesTable;
+    asset_categories: AssetCategoriesTable;
+    assets: AssetsTable;
+    asset_condition_history: AssetConditionHistoryTable;
 }
