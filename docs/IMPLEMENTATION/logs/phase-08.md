@@ -4,7 +4,7 @@
 |---|---|
 | **Phase** | [`phases/phase-08.md`](../phases/phase-08.md) |
 | **Milestone PRD** | `M6 — **menutup M6**` |
-| **Status** | `Not Started` — lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
+| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
 | **Mulai** | — |
 | **Selesai** | — |
 
@@ -78,7 +78,7 @@ Angka nyata, bukan perkiraan. Kosongkan bila belum diukur — jangan diisi tebak
 
 Diisi saat phase dinyatakan selesai. Daftar lengkapnya ada di [`phase-08.md` §9 dan §12](../phases/phase-08.md).
 
-- [ ] Seluruh 15 PR tergabung
+- [ ] Seluruh 16 PR tergabung
 - [ ] Acceptance checklist phase terpenuhi
 - [ ] Definition of Done phase terpenuhi
 - [ ] Bagian 5 log ini terisi seluruhnya

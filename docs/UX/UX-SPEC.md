@@ -320,7 +320,7 @@ Tidak seluruh business rule berdampak visual. Tabel ini memuat yang **mengubah a
 | Diagram Mermaid | 30 | — | IA (1), sitemap (3), alur navigasi (1), dan 25 diagram alur |
 | Keadaan global | 6 | 6 | Lima dari 31.5 + keadaan sukses (**UXD-06**) |
 | Keputusan UX diambil | 13 | — | §12.2 — 11 User Decision, 2 turunan PRD/SDD |
-| Keputusan masih terbuka | 5 | — | §12.3 — seluruhnya memetakan TBD kelompok A |
+| Keputusan masih terbuka | 0 | — | §12.3 — kosong sejak 25 Agustus 2026; kelima keputusan pindah ke §12.2 |
 | Konflik ditemukan | 4 | — | §12.4 — seluruhnya tertutup: 2 lewat aturan prioritas, 1 oleh pemilik produk, 1 sudah ditutup PRD |
 
 ---
@@ -343,7 +343,7 @@ Tidak seluruh business rule berdampak visual. Tabel ini memuat yang **mengubah a
 | # | Tindakan | Pemilik |
 |---|---|---|
 | 1 | ~~Perbaiki tabel endpoint `m07` bagian 7: `reservation.cancel` menjadi `reservation.cancel_own` / `reservation.cancel_any` (**K-02**)~~ — **selesai 24 Agustus 2026**: satu endpoint menerima kedua permission, kepemilikan diperiksa di server | Pemilik berkas modul M-07 |
-| 2 | ~~Tutup `TBD-FE-B`, `TBD-MOB-B`, `TBD-NTF-A`~~ — **selesai 22 Agustus 2026**; rancangan `SDD-08 §4.5` serta `SDD-12 §4.8` sudah diselaraskan. Register kini **13 terbuka · 28 tertutup** (empat TBD Bahan ditutup 23 Agustus; dua belas TBD ditutup 25 Agustus dalam empat batch; `TBD-AI-D` dibuka dan ditutup 2 September — kelompok A, C, dan D kosong) | Software Architect |
+| 2 | ~~Tutup `TBD-FE-B`, `TBD-MOB-B`, `TBD-NTF-A`~~ — **selesai 22 Agustus 2026**; rancangan `SDD-08 §4.5` serta `SDD-12 §4.8` sudah diselaraskan. Register kini **13 terbuka · 42 tertutup** (empat TBD Bahan ditutup 23 Agustus; dua belas TBD ditutup 25 Agustus dalam empat batch; `TBD-AI-D` dibuka dan ditutup 2 September — kelompok A, C, dan D kosong) | Software Architect |
 | 3 | ~~Selesaikan `TBD-APR-A`, `TBD-NTF-B`, `TBD-EVT-B`, `TBD-FS-A`, `TBD-AVL-B`~~ — **seluruhnya selesai 25 Agustus 2026** (`UXD-09`, `UXD-10`, `UXD-13`, `UXD-14`, `UXD-15`). Tidak ada lagi bagian UX-SPEC yang tertahan | Pemilik produk |
 | 4 | Naikkan enam kelompok notifikasi (**UXD-05**) ke PRD `M-17` — kini bermukim di `SDD-08 §4.5`, padahal sifatnya kebijakan produk | Pemilik produk |
 | 5 | ~~Pulihkan atau bangun ulang `PRD.v1.1.full.md`; tanpanya `scripts/audit_docs.py` berhenti dengan `FileNotFoundError`~~ — **selesai 24 Agustus 2026**: arsip tidak dipulihkan; `audit_docs.py` dilepaskan dari perbandingan arsip dan kini memeriksa invarian yang berlaku terus-menerus | Pemilik berkas PRD |

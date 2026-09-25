@@ -1,0 +1,44 @@
+{
+  "name": "sigm4",
+  "private": true,
+  "type": "module",
+  "description": "SIGM4 — Sistem Informasi Management Aset, sarana dan prasarana sekolah",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": "^20.19.0 || ^22.13.0 || >=24"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "lint": "eslint . && npm run lint --workspaces --if-present",
+    "typecheck": "tsc --build",
+    "build": "npm run build --workspaces --if-present",
+    "check:boundaries": "node scripts/check_import_boundaries.mjs",
+    "test": "npm run test --workspaces --if-present",
+    "db:migrate": "node scripts/migrate.mjs up",
+    "db:rollback": "node scripts/migrate.mjs down",
+    "db:status": "node scripts/migrate.mjs status"
+  },
+  "dependencies": {
+    "dbmate": "^2.35.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@vitest/coverage-v8": "^5.0.0",
+    "eslint": "^10.10.0",
+    "eslint-import-resolver-typescript": "^3.6.3",
+    "eslint-plugin-import": "^2.31.0",
+    "globals": "^15.12.0",
+    "pg": "^8.23.0",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.15.0",
+    "vitest": "^5.0.0"
+  },
+  "overrides": {
+    "eslint-plugin-import": {
+      "eslint": "$eslint"
+    }
+  }
+}

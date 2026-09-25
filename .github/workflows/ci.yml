@@ -1,0 +1,361 @@
+# Pipeline CI SIGM4 — PR-00-17.
+#
+# Urutan wajib CD-01: lint → uji berkas → uji integrasi → build → SAST → SCA →
+# pemindaian image. Gerbang CD-02: cakupan logika inti < 70% atau kerentanan
+# High/Critical menggagalkan pipeline. Penyedia GitHub Actions (SDD-INF-12);
+# perkakas Vitest (SDD-REPO-11), CodeQL · dependency-review + npm audit · Trivy
+# (SDD-SEC-11). Deploy staging, DAST, dan smoke test milik PR-00-18.
+#
+# Required status check pada develop/staging/main adalah job `ci-lulus` —
+# satu nama yang tetap, apa pun job yang dilewati penyaringan jalur.
+#
+# Setiap action dipatok ke SHA commit, bukan tag: tag dapat dipindahkan pemiliknya
+# (atau penyerang) tanpa jejak. Dependabot memutakhirkan SHA-nya (dependabot.yml).
+
+name: CI
+
+on:
+    pull_request:
+        branches: [develop, staging, main]
+    push:
+        branches: [develop, staging, main]
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+    # Mayor yang sama dengan Dockerfile (node:22-alpine) — INF-04.
+    NODE_VERSION: "22"
+
+jobs:
+    # Penyaringan jalur (SDD-17 §5): perubahan yang tidak menyentuh pohon backend
+    # tidak menjalankan uji integrasi dan build image. docs/PRD dan docs/SDD TIDAK
+    # dilewati — uji pembanding membaca Bab 11.3, Lampiran C, SDD-03, dan SDD-13
+    # langsung, sehingga suntingan dokumen itu dapat memerahkan uji.
+    perubahan:
+        name: Penyaringan jalur
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        outputs:
+            api: ${{ steps.saring.outputs.api }}
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  fetch-depth: 0
+            - id: saring
+              env:
+                  BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+              run: |
+                  # Dispatch, push pertama sebuah cabang, atau basis yang tidak dikenal:
+                  # jalankan semuanya. Salah ke arah menjalankan lebih banyak, bukan kurang.
+                  if [ -z "$BASE" ] || ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+                      echo "api=true" >> "$GITHUB_OUTPUT"
+                      exit 0
+                  fi
+                  berubah=$(git diff --name-only "$BASE" HEAD)
+                  printf '%s\n' "$berubah"
+                  pola='^(apps/api/|packages/|scripts/|docs/PRD/|docs/SDD/|package(-lock)?\.json$|tsconfig[^/]*\.json$|eslint\.config\.js$|\.prettierrc\.json$|Dockerfile$|\.dockerignore$|docker-compose\.yml$|\.github/workflows/)'
+                  if printf '%s\n' "$berubah" | grep -qE "$pola"; then
+                      echo "api=true" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "api=false" >> "$GITHUB_OUTPUT"
+                  fi
+
+    lint:
+        name: Lint · typecheck · batas impor
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: npm
+            - run: npm ci
+            - run: npm run lint
+            - run: npm run typecheck
+            # Uji negatif batas modul dan batas antar-pohon (SDD-SYS-02, SDD-17 §4.2).
+            - run: npm run check:boundaries
+
+    uji-berkas:
+        name: Uji berkas
+        needs: [perubahan, lint]
+        if: needs.perubahan.outputs.api == 'true'
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: npm
+            - run: npm ci
+            # Seluruh workspace; untuk apps/api didahului tsc atas uji negatif @ts-expect-error.
+            - run: npm run test
+
+    # Uji integrasi terhadap PostgreSQL dan Redis NYATA (SDD-REPO-11) sekaligus
+    # gerbang cakupan gabungan CD-02 (keputusan 46). Uji berkas ikut dijalankan
+    # ulang di sini karena cakupannya harus satu laporan dengan integrasi.
+    uji-integrasi:
+        name: Uji integrasi · cakupan ≥ 70%
+        needs: [perubahan, uji-berkas]
+        if: needs.perubahan.outputs.api == 'true'
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        services:
+            postgres:
+                image: postgres:15-alpine
+                env:
+                    POSTGRES_DB: sigm4
+                    POSTGRES_USER: sigm4
+                    POSTGRES_PASSWORD: sigm4_ci
+                    TZ: UTC
+                    PGTZ: UTC
+                ports: ["5432:5432"]
+                options: >-
+                    --health-cmd "pg_isready -U sigm4 -d sigm4"
+                    --health-interval 5s --health-timeout 5s --health-retries 12
+            redis:
+                image: redis:7-alpine
+                ports: ["6379:6379"]
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 5s --health-timeout 3s --health-retries 12
+        env:
+            # Kredensial container sekali-pakai milik job ini, bukan rahasia.
+            DATABASE_URL: postgres://sigm4:sigm4_ci@localhost:5432/sigm4?sslmode=disable
+            REDIS_URL: redis://localhost:6379
+            # AL-03b wajib benar-benar berjalan: sandi akun aplikasi disetel jalur
+            # migration, lalu acceptance terhubung sebagai akun itu.
+            APP_DB_PASSWORD: sigm4_app_ci
+            APP_DATABASE_URL: postgres://sigm4_app:sigm4_app_ci@localhost:5432/sigm4?sslmode=disable
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: npm
+            - run: npm ci
+            - name: Uji berkas + integrasi, gerbang cakupan statements & lines ≥ 70%
+              run: npm run test:ci -w apps/api
+            # Suite yang ter-skip = lingkungan tidak lengkap = FAILED, bukan hijau.
+            - name: Tidak ada uji yang ter-skip
+              if: ${{ !cancelled() }}
+              run: node scripts/assert_no_skipped.mjs apps/api/coverage-ci/vitest-report.json
+            - name: Ringkasan cakupan
+              if: ${{ !cancelled() }}
+              run: cat apps/api/coverage-ci/coverage-summary.json
+
+    build:
+        name: Build · image
+        needs: [perubahan, uji-integrasi]
+        if: needs.perubahan.outputs.api == 'true'
+        runs-on: ubuntu-latest
+        # Tahap `dbmate` membangun biner Go dari sumber tanpa cache (keputusan 56):
+        # ±11 menit terukur lokal.
+        timeout-minutes: 30
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: npm
+            - run: npm ci
+            - run: npm run build
+            # Konteks bersih setiap PR — mitigasi phantom dependency (SDD-17 §6).
+            - name: Build image (SDD-INF-01)
+              run: docker build --tag "sigm4:${{ github.sha }}" .
+            - run: docker save "sigm4:${{ github.sha }}" --output image.tar
+            # Yang dipindai Trivy adalah image hasil build INI, bukan hasil build ulang.
+            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: image
+                  path: image.tar
+                  retention-days: 1
+
+    # SAST (ST-01) pada setiap PR. CodeQL sendiri hanya melaporkan; gerbang CD-02
+    # ditegakkan langkah sesudahnya atas temuan ber-security-severity ≥ 7,0.
+    sast:
+        name: SAST · CodeQL
+        needs: [build]
+        if: ${{ !failure() && !cancelled() }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        permissions:
+            contents: read
+            security-events: write
+            actions: read
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+              with:
+                  languages: javascript-typescript
+                  build-mode: none
+                  config-file: ./.github/codeql/codeql-config.yml
+            - uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+              with:
+                  output: sarif
+            - name: Gagal bila ada temuan High/Critical (CD-02)
+              # security-severity ≥ 7,0 = High/Critical menurut skala CVSS CodeQL.
+              run: |
+                  temuan=$(jq -r '.runs[]
+                      | ([.tool.driver.rules[]?, .tool.extensions[]?.rules[]?]
+                         | map({key: .id, value: ((.properties["security-severity"] // "0") | tonumber)})
+                         | from_entries) as $sev
+                      | .results[]?
+                      | select(($sev[.ruleId] // 0) >= 7.0)
+                      | "\(.ruleId)  \(.locations[0].physicalLocation.artifactLocation.uri):\(.locations[0].physicalLocation.region.startLine)"' sarif/*.sarif)
+                  if [ -n "$temuan" ]; then
+                      printf 'Temuan High/Critical:\n%s\n' "$temuan"
+                      exit 1
+                  fi
+                  echo "Tidak ada temuan High/Critical."
+
+    # SCA (ST-02) — keputusan 45. Dependabot tidak dapat menghentikan pipeline,
+    # jadi gerbangnya dua: dependency-review atas dependensi yang DIUBAH sebuah PR,
+    # dan npm audit atas SELURUH pohon. Keduanya membaca GitHub Advisory Database,
+    # basis data yang sama dengan Dependabot.
+    sca:
+        name: SCA · dependency-review + npm audit
+        needs: [sast]
+        if: ${{ !failure() && !cancelled() }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+            - name: Dependensi baru ber-High/Critical ditolak
+              if: github.event_name == 'pull_request'
+              uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+              with:
+                  fail-on-severity: high
+            - name: Seluruh pohon dependensi tanpa High/Critical
+              run: npm audit --audit-level=high
+
+    # Pemindaian image (CD-01) atas artefak tahap build.
+    image-scan:
+        name: Pindai image · Trivy
+        needs: [perubahan, sca]
+        if: ${{ needs.perubahan.outputs.api == 'true' && !failure() && !cancelled() }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+              with:
+                  name: image
+            - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+              with:
+                  input: image.tar
+                  severity: HIGH,CRITICAL
+                  exit-code: "1"
+                  format: table
+
+    # Satu-satunya required status check. Job yang dilewati penyaringan jalur
+    # dianggap lulus; job yang gagal atau dibatalkan tidak.
+    ci-lulus:
+        name: CI lulus
+        needs: [perubahan, lint, uji-berkas, uji-integrasi, build, sast, sca, image-scan]
+        if: always()
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        steps:
+            - env:
+                  HASIL: ${{ join(needs.*.result, ' ') }}
+              run: |
+                  echo "Hasil job: $HASIL"
+                  for r in $HASIL; do
+                      case "$r" in
+                          success|skipped) ;;
+                          *) echo "Ada job berstatus $r"; exit 1 ;;
+                      esac
+                  done
+
+    # ---- Deploy staging (CD-03) — PR-00-18 --------------------------------
+    # Hanya push ke `staging`, dan hanya setelah seluruh gerbang lulus. Yang
+    # diterbitkan adalah artefak job `build` yang SAMA dengan yang dipindai Trivy,
+    # bukan hasil build ulang (keputusan 52).
+    publikasi-image:
+        name: Terbitkan image · GHCR
+        needs: [perubahan, ci-lulus]
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging' && needs.perubahan.outputs.api == 'true'
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        permissions:
+            contents: read
+            packages: write
+        outputs:
+            image: ${{ steps.terbit.outputs.image }}
+        steps:
+            - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+              with:
+                  name: image
+            - id: terbit
+              env:
+                  GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  # Nama repositori GHCR wajib huruf kecil.
+                  image="ghcr.io/${GITHUB_REPOSITORY,,}:${GITHUB_SHA}"
+                  docker load --input image.tar
+                  docker tag "sigm4:${GITHUB_SHA}" "$image"
+                  echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+                  docker push "$image"
+                  echo "image=$image" >> "$GITHUB_OUTPUT"
+
+    # Koreografi deploy (SDD-INF-10) dijalankan di VPS lewat SSH; smoke test (CD-07)
+    # dijalankan dari runner terhadap origin publik — jalur yang sama dengan pengguna.
+    # Secret & variabel environment `staging`: STAGING_SSH_HOST, STAGING_SSH_USER,
+    # STAGING_SSH_KEY, STAGING_SSH_KNOWN_HOSTS · vars.STAGING_DOMAIN.
+    deploy-staging:
+        name: Deploy staging
+        needs: [publikasi-image]
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        environment:
+            name: staging
+            url: https://${{ vars.STAGING_DOMAIN }}
+        # Dua deploy tidak pernah berjalan bersamaan; yang datang belakangan menunggu.
+        concurrency:
+            group: deploy-staging
+            cancel-in-progress: false
+        permissions:
+            contents: read
+            packages: read
+        env:
+            IMAGE: ${{ needs.publikasi-image.outputs.image }}
+            TUJUAN: ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}
+            DIR_VPS: /opt/sigm4/staging
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - name: Kunci SSH & known_hosts
+              env:
+                  SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+                  KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+              run: |
+                  install -d -m 700 ~/.ssh
+                  printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+                  # known_hosts dipatok, bukan StrictHostKeyChecking=no: host palsu
+                  # tidak boleh menerima image beserta kredensial registry.
+                  printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+            - name: Salin berkas deploy
+              run: |
+                  ssh -i ~/.ssh/id_deploy "$TUJUAN" "mkdir -p $DIR_VPS"
+                  scp -i ~/.ssh/id_deploy -r deploy/staging/. "$TUJUAN:$DIR_VPS/"
+            - name: Migration + rolling deploy
+              env:
+                  GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  DOMAIN: ${{ vars.STAGING_DOMAIN }}
+              run: |
+                  # Token GITHUB_TOKEN berumur sepanjang job ini saja — cukup untuk satu tarik.
+                  echo "$GHCR_TOKEN" | ssh -i ~/.ssh/id_deploy "$TUJUAN" \
+                      "docker login ghcr.io -u '$GITHUB_ACTOR' --password-stdin"
+                  ssh -i ~/.ssh/id_deploy "$TUJUAN" \
+                      "cd $DIR_VPS && chmod +x deploy.sh smoke-test.sh && SIGM4_DOMAIN='$DOMAIN' ./deploy.sh '$IMAGE'; kode=\$?; docker logout ghcr.io >/dev/null; exit \$kode"
+            - name: Smoke test (CD-07)
+              run: bash deploy/staging/smoke-test.sh "https://${{ vars.STAGING_DOMAIN }}"

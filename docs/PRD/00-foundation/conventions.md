@@ -41,7 +41,7 @@ Diperlukan karena Bab 19 menyediakan filter "semester berjalan" dan "tahun ajara
 | `academic_years` | id, nama (mis. "2026/2027"), tanggal_mulai, tanggal_selesai, is_active | Tepat satu tahun ajaran berstatus aktif |
 | `academic_terms` | id, academic_year_id, nama (Ganjil/Genap), tanggal_mulai, tanggal_selesai | Dipakai filter dashboard & analitik |
 | `holidays` | id, tanggal, nama, jenis (Nasional/Sekolah/Cuti Bersama), academic_year_id | Dasar CAL-01 dan FR-07.5 A4 |
-| `work_days` | hari (0–6), aktif | Bawaan: Senin–Sabtu aktif |
+| `work_days` | hari (1–7, ISO-8601; 1 = Senin), aktif | Bawaan: Senin–Sabtu aktif |
 
 | Kode | Requirement |
 |---|---|
@@ -112,6 +112,8 @@ Sebelumnya impor massal disebut pada FR-02.1 A4, FR-04.1 A2, dan FR-07.5 A2 tanp
 | `telepon` | ❌ | Format nomor Indonesia |
 | `consent_wali` | Kondisional | Wajib `true` bila role Siswa/OSIS (DP-02, SL-06) |
 
+**Ketentuan template pengguna.** `kode_unit_kerja` wajib pada **setiap baris, tanpa pengecualian role** (termasuk Siswa/OSIS) — hanya `kelas` dan `consent_wali` yang kondisional. Kolom yang tidak ada di header menolak seluruh berkas (`400 INVALID_REQUEST`, tidak ada pekerjaan impor tercatat); sel yang kosong menggagalkan baris itu saja, dengan alasan pada laporan (`IMPT-01`, `IMPT-02`). Seluruh sel dibaca sebagai **teks**: NIP/NIS yang ber-angka nol di depan atau berjumlah digit besar tersimpan persis seperti yang ditulis, tidak dikonversi menjadi angka.
+
 **E.5.3 Impor Jadwal Tetap Ruangan** (`template_jadwal_tetap.csv`)
 
 | Kolom | Wajib | Validasi |
@@ -129,7 +131,7 @@ Sebelumnya impor massal disebut pada FR-02.1 A4, FR-04.1 A2, dan FR-07.5 A2 tanp
 | IMPT-01 | Validasi dilakukan baris per baris; baris gagal tidak menggagalkan seluruh berkas (FR-02.1 AC, FR-04.1 AC) |
 | IMPT-02 | Hasil impor menampilkan laporan: jumlah sukses, jumlah gagal, dan alasan galat per nomor baris |
 | IMPT-03 | Impor bersifat idempoten terhadap unggahan ulang berkas yang sama dalam 24 jam (memakai *hash* berkas) |
-| IMPT-04 | Impor > 200 baris diproses asinkron dengan notifikasi saat selesai (NT-42) |
+| IMPT-04 | Impor > 200 baris diproses asinkron dengan notifikasi saat selesai (NT-52 bagi impor pengguna; entitas lain menetapkan kode notifikasinya sendiri saat impornya dibangun) |
 | IMPT-05 | Berkas templat dapat diunduh langsung dari halaman impor beserta contoh isian |
 
 ---

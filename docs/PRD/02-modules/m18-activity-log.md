@@ -37,7 +37,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 
 **Main Flow**
 1. Setiap operasi tulis (create/update/delete) dan setiap event keamanan memicu pencatatan log.
-2. Sistem menyimpan: waktu, pelaku, role pelaku, alamat IP, agen pengguna/perangkat, modul, jenis aksi, entitas & ID terdampak, nilai sebelum, nilai sesudah, dan hasil (sukses/gagal).
+2. Sistem menyimpan: waktu, pelaku, role pelaku, alamat IP, agen pengguna/perangkat, modul, jenis aksi, entitas & ID terdampak, nilai sebelum, nilai sesudah, dan hasil (`SUKSES`/`GAGAL`).
 3. Log disimpan dalam tabel khusus yang hanya dapat ditambah (*append-only*).
 
 **Alternative Flow**

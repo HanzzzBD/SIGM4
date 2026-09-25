@@ -13,7 +13,7 @@ Berkas ini memuat bagian **normatif**: daftar role, matriks akses, katalog kode 
 | Bab 5 — daftar role & aturan role | Normatif | Berkas ini (PRD) |
 | Bab 18 — matriks permission per role | Normatif (ringkasan bagi non-teknis) | Berkas ini (PRD) |
 | Lampiran C.1 — konvensi penamaan & scope | Normatif | Berkas ini (PRD) |
-| Lampiran C.2 — katalog 78 kode permission | Normatif — sumber kebenaran tunggal RBAC | Berkas ini (PRD) |
+| Lampiran C.2 — katalog 79 kode permission | Normatif — sumber kebenaran tunggal RBAC | Berkas ini (PRD) |
 | Lampiran C.3 — aturan penegakan (`PM-01`…`PM-06`) | Normatif | Berkas ini (PRD) |
 | Middleware, `AuthContext`, scope di repository, serializer | **Rancangan** | [`../../SDD/03-authorization.md`](../../SDD/03-authorization.md) |
 | Cache permission, urutan gerbang sesi, otorisasi tool AI | **Rancangan** | [`../../SDD/03-authorization.md`](../../SDD/03-authorization.md) |
@@ -236,7 +236,7 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 
 | Kode | Requirement |
 |---|---|
-| PM-01 | Setiap endpoint pada Bab 17 wajib mendeklarasikan **tepat satu** permission dari katalog ini; endpoint tanpa deklarasi ditolak pada tahap *code review* |
+| PM-01 | Setiap endpoint pada Bab 17 wajib mendeklarasikan **tepat satu** permission dari katalog ini; endpoint tanpa deklarasi ditolak pada tahap *code review*. Dua golongan endpoint tidak punya permission katalog dan **wajib menyatakannya eksplisit**, bukan diam: endpoint *publik* (tanpa autentikasi, mis. login) dan endpoint *"Bearer"* (hanya menuntut autentikasi karena datanya milik pemanggil sendiri, mis. `/me`, logout, daftar perangkat) |
 | PM-02 | Penegakan dilakukan sebagai *middleware* server; UI hanya menyembunyikan menu sebagai kenyamanan, bukan sebagai kontrol (NFR-S-05) |
 | PM-03 | *Scope* data (`all`/`own`/`assigned`/`restricted`) diterapkan pada lapisan repository sebagai filter wajib, bukan sebagai parameter opsional yang bisa dilupakan pemanggil |
 | PM-04 | Endpoint `GET /me` mengembalikan daftar kode permission efektif beserta scope-nya, dan menjadi satu-satunya sumber bagi klien untuk merender menu dan kartu dashboard (19.1) |

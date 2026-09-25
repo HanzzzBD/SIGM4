@@ -5,11 +5,14 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **119** baris, dikumpulkan dari 22 berkas modul.
+> Total: **151** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
+| DELETE | `/auth/sessions/{id}` | Bearer | Mencabut satu sesi milik pengguna sendiri | 204 | 400, 401, 403 | [M-01](../02-modules/m01-auth.md) |
 | DELETE | `/device-tokens/{token}` | Bearer | Cabut token perangkat | [M-17](../02-modules/m17-notifications.md) |
+| DELETE | `/holidays/{id}` | `setting.manage` | Hapus hari libur | [M-20](../02-modules/m20-settings.md) |
+| GET | `/academic-years` | `setting.view` | Daftar tahun ajaran beserta semesternya (Lampiran E.2) | [M-20](../02-modules/m20-settings.md) |
 | GET | `/activity-logs/export` | `activity_log.export` | Ekspor log | [M-18](../02-modules/m18-activity-log.md) |
 | GET | `/activity-logs` | `activity_log.view` | Telusuri activity log | [M-18](../02-modules/m18-activity-log.md) |
 | GET | `/analytics/{jenis}` | `report.view` | Data laporan analitik | [M-16](../02-modules/m16-analytics.md) |
@@ -28,11 +31,18 @@
 | GET | `/assets` | `asset.view` | Daftar aset (filter & pencarian) | [M-04](../02-modules/m04-assets.md) |
 | GET | `/audit-sessions/{id}/items` | `audit.execute` | Daftar aset target (filter lokasi) | [M-13](../02-modules/m13-audit-stocktake.md) |
 | GET | `/audit-sessions/{id}/report` | `audit.view` | Unduh berita acara PDF | [M-13](../02-modules/m13-audit-stocktake.md) |
+| GET | `/auth/password/requests` | `user.reset_password` | Antrean permintaan reset (filter status; memuat identitas pemohon untuk verifikasi luring) | 200 daftar terpaginasi | 401, 403 | [M-01](../02-modules/m01-auth.md) |
+| GET | `/auth/sessions` | Bearer | Daftar sesi (perangkat) aktif milik pengguna | 200 `[{id, platform, ip, user_agent, dibuat_pada, terakhir_diperbarui, berlaku_sampai, saat_ini}]` | 401 | [M-01](../02-modules/m01-auth.md) |
 | GET | `/chat/sessions` | Bearer | Riwayat percakapan sendiri | [M-19](../02-modules/m19-chatbot.md) |
 | GET | `/damage-reports/open` | `damage.view` | Tiket terbuka untuk aset tertentu | [M-11](../02-modules/m11-damage-reports.md) |
+| GET | `/damage-reports/{id}` | `damage.view` | Detail tiket beserta foto | [M-11](../02-modules/m11-damage-reports.md) |
 | GET | `/damage-reports` | `damage.view` | Daftar tiket (tersaring sesuai role) | [M-11](../02-modules/m11-damage-reports.md) |
 | GET | `/dashboard` | Sesuai role | Data dashboard sesuai role pengguna | [M-15](../02-modules/m15-dashboard.md) |
 | GET | `/fines` | `fine.view` | Daftar denda | [M-09](../02-modules/m09-loans.md) |
+| GET | `/health/live` | publik | Liveness probe — tanpa memeriksa dependensi (`OBS-04`) | [M-20](../02-modules/m20-settings.md) |
+| GET | `/health/ready` | publik | Readiness probe — DB, Redis, storage siap | [M-20](../02-modules/m20-settings.md) |
+| GET | `/health` | `setting.view` | Ringkasan kesehatan dependensi untuk kartu Kesehatan Integrasi (`OBS-06`) | [M-20](../02-modules/m20-settings.md) |
+| GET | `/holidays` | `setting.view` | Daftar hari libur (filter tahun ajaran) | [M-20](../02-modules/m20-settings.md) |
 | GET | `/loans/by-asset/{uuid}` | `loan.manage` | Peminjaman aktif atas suatu unit | [M-09](../02-modules/m09-loans.md) |
 | GET | `/loans/ready-checkout` | `loan.manage` | Reservasi siap diserahkan hari ini | [M-09](../02-modules/m09-loans.md) |
 | GET | `/loans` | `loan.view` | Daftar peminjaman (tab aktif/terlambat/selesai) | [M-09](../02-modules/m09-loans.md) |
@@ -53,10 +63,15 @@
 | GET | `/rooms/availability` | `reservation.view` | Ketersediaan ruangan pada rentang waktu | [M-07](../02-modules/m07-reservation-room.md) |
 | GET | `/rooms/{id}/assets` | `asset.view` | Aset dalam satu ruangan | [M-04](../02-modules/m04-assets.md) |
 | GET | `/settings` | `setting.view` | Baca parameter sistem | [M-20](../02-modules/m20-settings.md) |
+| GET | `/users/import/{id}` | `user.create` | Status dan laporan per baris sebuah pekerjaan impor (`IMPT-02`) | [M-02](../02-modules/m02-users.md) |
 | GET | `/users/{id}` | `user.view` | Detail pengguna | [M-02](../02-modules/m02-users.md) |
 | GET | `/users` | `user.view` | Daftar pengguna (filter role, status, unit kerja) | [M-02](../02-modules/m02-users.md) |
+| GET | `/work-days` | `setting.view` | Baca hari kerja sekolah | [M-20](../02-modules/m20-settings.md) |
 | GET | `/work-orders/mine` | `workorder.execute` | Work order yang ditugaskan kepada saya | [M-12](../02-modules/m12-maintenance.md) |
+| GET | `/work-units` | `setting.view` | Daftar unit kerja (filter jenis, status) — Lampiran E.3 | [M-20](../02-modules/m20-settings.md) |
+| PATCH | `/academic-years/{id}/activate` | `setting.manage` | Jadikan tahun ajaran aktif; tepat satu yang aktif (`AC-YR-02`) | [M-20](../02-modules/m20-settings.md) |
 | PATCH | `/assets/{id}/condition` | `asset.update` | Ubah kondisi + alasan | [M-04](../02-modules/m04-assets.md) |
+| PATCH | `/buildings/{id}/status` · `/rooms/{id}/status` | `location.manage` | Aktifkan/nonaktifkan berjenjang (`BR-015`) | [M-03](../02-modules/m03-locations.md) |
 | PATCH | `/fines/{id}/pay` | `fine.manage` | Tandai lunas | [M-09](../02-modules/m09-loans.md) |
 | PATCH | `/fines/{id}/waive-compensation` | `fine.waive_compensation` | Bebaskan ganti rugi penuh/sebagian + alasan | [M-09](../02-modules/m09-loans.md) |
 | PATCH | `/fines/{id}/waive` | `fine.waive` | Bebaskan denda keterlambatan + alasan | [M-09](../02-modules/m09-loans.md) |
@@ -66,6 +81,8 @@
 | PATCH | `/users/{id}/status` | `user.update` | Aktifkan/nonaktifkan | [M-02](../02-modules/m02-users.md) |
 | PATCH | `/work-orders/{id}/progress` | `workorder.execute` | Perbarui progres, biaya, foto | [M-12](../02-modules/m12-maintenance.md) |
 | PATCH | `/work-orders/{id}/start` | `workorder.execute` | Mulai kerjakan | [M-12](../02-modules/m12-maintenance.md) |
+| PATCH | `/work-units/{id}/status` | `setting.manage` | Aktifkan atau nonaktifkan unit kerja; tidak ada hapus (`WU-02`) | [M-20](../02-modules/m20-settings.md) |
+| POST | `/academic-years` | `setting.manage` | Buat tahun ajaran beserta semesternya; tahun ajaran pertama otomatis aktif (`AC-YR-01`) | [M-20](../02-modules/m20-settings.md) |
 | POST | `/analytics/{jenis}/export` | `report.export` | Ekspor (asinkron bila berat) | [M-16](../02-modules/m16-analytics.md) |
 | POST | `/approval-rules/preview` | `approval_rule.manage` | Pratinjau aturan yang akan berlaku | [M-10](../02-modules/m10-approval.md) |
 | POST | `/approval-rules` | `approval_rule.manage` | Buat aturan + langkah | [M-10](../02-modules/m10-approval.md) |
@@ -80,25 +97,34 @@
 | POST | `/assets/{id}/reinstate` | `disposal.reinstate` | Pulihkan aset yang telah dihapuskan | [M-21](../02-modules/m21-disposal.md) |
 | POST | `/assets` | `asset.create` | Buat aset (mendukung `jumlah_unit` untuk N record) | [M-04](../02-modules/m04-assets.md) |
 | POST | `/audit-sessions/{id}/approve` | `audit.approve` | Setujui & terapkan penyesuaian | [M-13](../02-modules/m13-audit-stocktake.md) |
+| POST | `/audit-sessions/{id}/complete-location` | `audit.execute` | Tandai satu lokasi selesai diperiksa | [M-13](../02-modules/m13-audit-stocktake.md) |
 | POST | `/audit-sessions/{id}/finalize` | `audit.manage` | Hasilkan rekonsiliasi | [M-13](../02-modules/m13-audit-stocktake.md) |
 | POST | `/audit-sessions/{id}/scan` | `audit.execute` | Catat hasil pemindaian | [M-13](../02-modules/m13-audit-stocktake.md) |
 | POST | `/audit-sessions/{id}/submit` | `audit.manage` | Kirim untuk persetujuan | [M-13](../02-modules/m13-audit-stocktake.md) |
 | POST | `/audit-sessions` | `audit.manage` | Buat sesi opname | [M-13](../02-modules/m13-audit-stocktake.md) |
-| POST | `/auth/2fa/verify` | Challenge token | Verifikasi kode TOTP | 200 `{tokens, user}` | 401, 423 | [M-01](../02-modules/m01-auth.md) |
-| POST | `/auth/login` | Publik | Login email + password | 200 `{tokens, user, permissions}` atau `{requires_2fa}` | 401, 423, 429 | [M-01](../02-modules/m01-auth.md) |
-| POST | `/auth/logout` | Bearer | Mencabut sesi | 204 | 401 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/2fa/backup-codes/regenerate` | Bearer (2FA terverifikasi) | Membuat ulang seluruh kode cadangan; yang lama, terpakai atau tidak, tak berlaku lagi | 200 `{kode_cadangan}` | 401, 403, 422 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/2fa/enroll/confirm` | Bearer | Konfirmasi pendaftaran dengan kode 6 digit; 2FA berlaku dan sesi ini naik ke `amr` `["pwd","otp"]`. Terjangkau oleh sesi yang belum lolos 2FA. Mencabut seluruh sesi lain pemilik akun (`BR-070e`) | 200 `{access_token}` (null pada WEB) | 400, 401, 422 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/2fa/enroll` | Bearer | Mulai pendaftaran 2FA: secret TOTP, URI `otpauth://`, dan 10 kode cadangan — tampil **satu kali**. Terjangkau oleh sesi yang belum lolos 2FA. Role wajib 2FA: body memuat `kode_aktivasi` (`BR-070d`) | 200 `{secret, otpauth_uri, kode_cadangan}` | 401, 422 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/2fa/verify` | Challenge token | Verifikasi faktor kedua — kode TOTP 6 digit atau kode cadangan — dengan challenge token dari login; menerbitkan sesi | 200 `{tokens, expires_in, user, permissions, sisa_kode_cadangan, kode_cadangan_menipis}` (`tokens` null pada WEB) | 400, 401, 423 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/login` | Publik | Login email + password + `platform` (`WEB`, `ANDROID`, `IOS`) | 200 `{tokens, expires_in, user, permissions}` (`tokens` null pada WEB: token hanya di cookie httpOnly) atau `{requires_2fa, challenge_token, expires_in}` (akun ber-2FA: sesi belum terbit) | 400, 401, 403, 429 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/logout-all` | Bearer | Keluar dari semua perangkat: mencabut seluruh sesi pengguna | 204 | 401 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/logout` | Bearer | Mencabut sesi yang membawa permintaan ini | 204 | 401 | [M-01](../02-modules/m01-auth.md) |
 | POST | `/auth/password/change` | Bearer | Ganti password sendiri | 200 | 401, 422 | [M-01](../02-modules/m01-auth.md) |
-| POST | `/auth/password/forgot` | Publik | Ajukan permintaan reset | 202 `{message}` | 429 | [M-01](../02-modules/m01-auth.md) |
-| POST | `/auth/refresh` | Refresh token | Menukar refresh token | 200 `{access_token}` | 401 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/password/forgot` | Publik | Ajukan permintaan reset; jawaban netral untuk email apa pun (`FR-01.3 A1`) | 202 `{message}` | 400, 429 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/password/requests/{id}/issue` | `user.reset_password` | Terbitkan password sementara; `metode_verifikasi` wajib; password tampil **satu kali** pada respons | 200 `{permintaan, password_sementara}` | 400, 401, 403, 404, 422 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/password/requests/{id}/reject` | `user.reset_password` | Tolak permintaan; `alasan` wajib (`FR-01.3 A2`) | 200 `{permintaan}` | 400, 401, 403, 404, 422 | [M-01](../02-modules/m01-auth.md) |
+| POST | `/auth/refresh` | Refresh token | Menukar refresh token (rotasi; refresh token baru ikut diterbitkan, pemakaian ulang mencabut seluruh rantai) | 200 `{tokens, expires_in}` (`tokens` null pada WEB) | 401 | [M-01](../02-modules/m01-auth.md) |
 | POST | `/buildings` · `/areas` · `/rooms` | `location.manage` | Buat entitas lokasi | [M-03](../02-modules/m03-locations.md) |
 | POST | `/chat/messages/{id}/feedback` | Bearer | Beri umpan balik jawaban | [M-19](../02-modules/m19-chatbot.md) |
 | POST | `/chat/messages` | Bearer | Kirim pesan ke chatbot | [M-19](../02-modules/m19-chatbot.md) |
 | POST | `/chat/sessions` | Bearer | Mulai sesi chatbot | [M-19](../02-modules/m19-chatbot.md) |
+| POST | `/class-promotions` | `user.update` | Kenaikan kelas massal: tetapkan kelas atau tandai lulus per siswa pada satu tahun ajaran (`SL-02`) | [M-02](../02-modules/m02-users.md) |
 | POST | `/damage-reports/{id}/verify` | `damage.verify` | Verifikasi / tolak tiket | [M-11](../02-modules/m11-damage-reports.md) |
 | POST | `/damage-reports` | `damage.create` | Buat tiket kerusakan | [M-11](../02-modules/m11-damage-reports.md) |
 | POST | `/device-tokens` | Bearer | Daftarkan token perangkat FCM | [M-17](../02-modules/m17-notifications.md) |
 | POST | `/files/confirm` | Bearer | Daftarkan berkas terunggah & antrekan pemindaian AV | [M-06](../02-modules/m06-documents.md) |
 | POST | `/files/presign` | Bearer | Minta URL unggah bertanda tangan ke object storage | [M-06](../02-modules/m06-documents.md) |
+| POST | `/holidays` | `setting.manage` | Tambah hari libur | [M-20](../02-modules/m20-settings.md) |
 | POST | `/loans/checkout` | `loan.manage` | Proses serah terima | [M-09](../02-modules/m09-loans.md) |
 | POST | `/loans/{id}/checkin` | `loan.manage` | Proses pengembalian | [M-09](../02-modules/m09-loans.md) |
 | POST | `/loans/{id}/extend` | `loan.extend` | Ajukan perpanjangan | [M-09](../02-modules/m09-loans.md) |
@@ -114,17 +140,23 @@
 | POST | `/procurements` | `procurement.create` | Buat usulan pengadaan | [M-14](../02-modules/m14-procurement.md) |
 | POST | `/reservations/{id}/cancel` | `reservation.cancel_own` · `reservation.cancel_any` | Batalkan reservasi + alasan. Pemilik reservasi cukup `cancel_own`; membatalkan reservasi pihak lain wajib `cancel_any` (`FR-07.3 A2`). Kepemilikan diperiksa di server, bukan disimpulkan dari role | [M-07](../02-modules/m07-reservation-room.md) |
 | POST | `/reservations` | `reservation.create` | Ajukan reservasi ruangan/aset | [M-07](../02-modules/m07-reservation-room.md) |
-| POST | `/users/import` | `user.create` | Impor massal CSV/XLSX | [M-02](../02-modules/m02-users.md) |
-| POST | `/users/{id}/reset-2fa` | `user.reset_2fa` | Reset 2FA pengguna | [M-02](../02-modules/m02-users.md) |
-| POST | `/users/{id}/reset-password` | `user.reset_password` | Terbitkan password sementara | [M-02](../02-modules/m02-users.md) |
+| POST | `/users/import` | `user.create` | Impor massal CSV/XLSX: ≤ 200 baris diproses sinkron, lebih dari itu asinkron (`IMPT-04`); berkas identik dalam 24 jam mengembalikan hasil sebelumnya (`IMPT-03`) | [M-02](../02-modules/m02-users.md) |
+| POST | `/users/{id}/2fa-activation-code` | `user.reset_2fa` | Terbitkan kode aktivasi 2FA bagi akun role wajib yang belum ber-2FA (`FR-01.5 A7`, `BR-070d`); `metode_verifikasi` wajib; kode tampil satu kali; tidak untuk akun sendiri | [M-02](../02-modules/m02-users.md) |
+| POST | `/users/{id}/reset-2fa` | `user.reset_2fa` | Reset 2FA pengguna (`FR-01.5 A3`): menonaktifkan 2FA, menghapus kode cadangan, mencabut seluruh sesi; `metode_verifikasi` wajib; untuk role wajib 2FA menerbitkan kode aktivasi baru, tampil satu kali (`BR-070d`) | [M-02](../02-modules/m02-users.md) |
+| POST | `/users/{id}/reset-password` | `user.reset_password` | Terbitkan password sementara langsung dari detail pengguna (`FR-01.3 A5`); `metode_verifikasi` wajib; password tampil satu kali; sesi dicabut dan kunci login dibuka. Logikanya milik M-01 | [M-02](../02-modules/m02-users.md) |
 | POST | `/users` | `user.create` | Buat pengguna baru | [M-02](../02-modules/m02-users.md) |
 | POST | `/work-orders/{id}/complete` | `workorder.execute` | Ajukan penyelesaian | [M-12](../02-modules/m12-maintenance.md) |
 | POST | `/work-orders/{id}/verify` | `workorder.verify` | Verifikasi & tutup | [M-12](../02-modules/m12-maintenance.md) |
 | POST | `/work-orders` | `workorder.create` | Buat work order | [M-12](../02-modules/m12-maintenance.md) |
+| POST | `/work-units` | `setting.manage` | Buat unit kerja | [M-20](../02-modules/m20-settings.md) |
+| PUT | `/academic-years/{id}` | `setting.manage` | Sunting nama, rentang tanggal, dan semester tahun ajaran | [M-20](../02-modules/m20-settings.md) |
 | PUT | `/assets/{id}` | `asset.update` | Perbarui aset | [M-04](../02-modules/m04-assets.md) |
+| PUT | `/holidays/{id}` | `setting.manage` | Sunting hari libur | [M-20](../02-modules/m20-settings.md) |
 | PUT | `/me` | Bearer | Perbarui profil sendiri | 200 | 401, 422 | [M-01](../02-modules/m01-auth.md) |
 | PUT | `/notifications/preferences` | Bearer | Atur preferensi notifikasi | [M-17](../02-modules/m17-notifications.md) |
 | PUT | `/roles/{id}/permissions` | `role.update` | Perbarui matriks permission | [M-02](../02-modules/m02-users.md) |
 | PUT | `/rooms/{id}` | `location.manage` | Perbarui ruangan | [M-03](../02-modules/m03-locations.md) |
 | PUT | `/settings` | `setting.manage` | Perbarui parameter sistem | [M-20](../02-modules/m20-settings.md) |
 | PUT | `/users/{id}` | `user.update` | Perbarui pengguna | [M-02](../02-modules/m02-users.md) |
+| PUT | `/work-days` | `setting.manage` | Perbarui hari kerja sekolah | [M-20](../02-modules/m20-settings.md) |
+| PUT | `/work-units/{id}` | `setting.manage` | Sunting unit kerja | [M-20](../02-modules/m20-settings.md) |

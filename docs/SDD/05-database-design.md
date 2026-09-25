@@ -25,7 +25,7 @@ Skema khusus `booking_slots`, `idempotency_keys`, dan `document_counters` didefi
 | ID | Keputusan |
 |---|---|
 | **SDD-DB-01** | Kunci primer memakai `bigserial` (integer berurut), bukan UUID. Pengecualian: `assets.uuid` yang memang diwajibkan `FR-05.1` untuk QR. |
-| **SDD-DB-02** | Enum disimpan sebagai **PostgreSQL native enum** dengan nilai berupa **kode teknis huruf besar** (`BAIK`, `RUSAK_RINGAN`, `MENUNGGU_PERSETUJUAN`), sesuai ketetapan pemisahan kode ↔ label pada Bab 11.3. |
+| **SDD-DB-02** | Enum disimpan sebagai **PostgreSQL native enum** dengan nilai berupa **kode teknis huruf besar** (`BAIK`, `RUSAK_RINGAN`, `MENUNGGU_PERSETUJUAN`), sesuai ketetapan pemisahan kode ↔ label pada Bab 11.3. Aturan ini berlaku bagi **setiap himpunan nilai tetap**, bukan hanya yang terdaftar Bab 11.3: kolom berhimpunan tertutup tidak boleh bertipe `text` berkomentar. Satu pengecualian tertulis — `booking_resource` dan `booking_origin` tetap huruf kecil karena [`glossary.md`](../PRD/00-foundation/glossary.md) memakukan `resource_type='asset'` sebagai kontrak teknis yang tidak berubah. |
 | **SDD-DB-03** | Seluruh kolom waktu bertipe `timestamptz`. Tidak ada `timestamp` polos di mana pun. |
 | **SDD-DB-04** | *Soft delete* memakai kolom eksplisit per entitas (`status`, `dihapuskan`), **bukan** kolom generik `deleted_at`. Alasannya: PRD memberi makna berbeda pada tiap penonaktifan. |
 | **SDD-DB-05** | Uniqueness bersyarat memakai **partial unique index**, bukan `UNIQUE` biasa — khususnya `assets.nomor_seri` yang unik hanya bila diisi (`BR-003`). |
@@ -37,7 +37,15 @@ Skema khusus `booking_slots`, `idempotency_keys`, dan `document_counters` didefi
 | **SDD-DB-11** | Akun aplikasi tidak memiliki hak DDL; migration dijalankan akun terpisah (`SEC-CFG-03`). Akun aplikasi juga **tidak** punya `UPDATE`/`DELETE` pada `activity_logs` (`AL-03b`). |
 | **SDD-DB-13** | Saldo bahan disimpan sebagai **ledger + saldo termaterialisasi**: `material_transactions` adalah kebenaran, `material_balances` adalah agregat turunannya yang diperbarui **dalam transaksi yang sama**. Tidak ada saldo yang dihitung ulang saat baca (`BR-081`, `BR-092`). |
 | **SDD-DB-14** | Pengurangan saldo bahan mengunci baris `material_balances` dengan `SELECT … FOR UPDATE` sebelum memeriksa kecukupan. Larangan saldo negatif (`BR-083`) ditegakkan **CHECK constraint + row lock**, bukan hanya validasi service. |
-| **SDD-DB-12** | Berkas migration §4.5 dijalankan **runner SQL siap pakai** (kelas dbmate/Postgrator) — bukan runner buatan sendiri, bukan pula perkakas ber-DSL JavaScript. Dua kemampuan bersifat wajib, bukan preferensi: **opt-out transaksi per-migration** dan *advisory lock*. |
+| **SDD-DB-12** | Berkas migration §4.5 dijalankan **dbmate** — runner SQL siap pakai, bukan runner buatan sendiri, bukan pula perkakas ber-DSL JavaScript. Dua kemampuan bersifat wajib, bukan preferensi: **opt-out transaksi per-migration** dan *advisory lock*. Keduanya wajib bagi **jalur migration**, bukan harus berasal dari runner-nya: verifikasi `PR-00-05` menunjukkan dbmate memenuhi yang pertama dan **tidak memiliki** yang kedua, sehingga advisory lock dipegang pembungkus milik kita yang memanggil dbmate (`scripts/migrate.mjs`). Pembagian ini ditetapkan setelah pembuktian, bukan sebelumnya. |
+| **SDD-DB-15** | Akses data memakai **Kysely di atas driver `pg`** — *query builder* ber-tipe yang **tidak memiliki skema**. Berkas `.sql` §4.3/§4.4 tetap satu-satunya sumber skema (`SDD-DB-08`); tipe tabel Kysely adalah cerminan yang diturunkan dari basis data, bukan pendefinisinya. Fitur PostgreSQL yang ditetapkan berkas ini — *exclusion constraint* (`CI-01`), `tstzrange`, native enum (`SDD-DB-02`), partial unique index (`SDD-DB-05`), `SELECT … FOR UPDATE` (`SDD-DB-14`), tabel terpartisi (`SDD-DB-07`) — ditulis sebagai SQL mentah lewat *template* `sql` tanpa kehilangan tipe. ORM yang memiliki skema sendiri tidak dipakai. |
+| **SDD-DB-16** | Scope data permission (Lampiran C.1) disimpan **per baris `role_permissions`** sebagai native enum `permission_scope`, bukan diturunkan dari kode saat runtime. Nilai bawaannya ditetapkan tafsir [`SDD-03 §4.8`](03-authorization.md). Lolos uji tiga syarat `SDD-AUTH-11`: ia menyimpan scope yang C.1 sudah definisikan, tanpa menambah permission maupun perilaku. |
+| **SDD-DB-17** | Parameter sistem (`FR-20.1`) disimpan sebagai baris `system_settings` yang **mendeskripsikan dirinya sendiri**: tiap baris membawa `tipe`, `nilai_bawaan`, dan — untuk angka — `nilai_min`/`nilai_maks`; validasi rentang (`FR-20.1 A1`) membaca baris itu, bukan daftar di kode. Kunci baru ditambahkan **PR konsumennya** sebagai baris seed (`SDD-DB-10`), tanpa perubahan skema maupun kode validasi. Katalog awal ([§4.7a](#47a-skema-system_settings)) hanya memuat parameter yang nilai bawaannya disebut eksplisit di `FR-20.1`; rentangnya pagar kewajaran teknis, bukan business rule. |
+| **SDD-DB-18** | Invariant "tepat satu tahun ajaran aktif" (`Lampiran E.2`, `AC-YR-01`) ditegakkan **basis data**, bukan hanya service: paling banyak satu lewat *partial unique index* (`SDD-DB-05`), paling sedikit satu — begitu ada tahun ajaran — lewat *constraint trigger* `DEFERRABLE INITIALLY DEFERRED` yang diperiksa saat `COMMIT`. Ditunda karena pergantian tahun aktif adalah dua `UPDATE` dalam satu transaksi yang sesaat tanpa tahun aktif. Tabel kosong sah (instalasi awal). Rasionya sama `SDD-DB-14`: constraint basis data tidak dapat dilewati service yang keliru. |
+| **SDD-DB-19** | Migrasi data teks bebas → master (`WU-01`, pola *expand → migrate*) dijalankan **fungsi SQL idempoten** yang dapat dijalankan ulang setelah master terisi, bukan skrip sekali pakai: mencocokkan tanpa menebak (tepat satu kandidat; yang sudah tertaut tidak ditimpa), dan **mengembalikan** yang tak terpetakan sebagai laporan. Keunikan master ditegakkan pada bentuk ternormalisasi yang sama dengan pencocokannya. Kolom lama tetap ada dan berhenti ditulis sampai `contract` (`PR-08-11`). |
+| **SDD-DB-20** | Kelas siswa adalah **data per tahun ajaran** (`SL-01`): baris `student_enrollments`, bukan kolom pada `users`. Menandai lulus (`SL-02`) hanya menandai baris tahun ajaran itu; **penonaktifan akun menunggu tahun ajaran itu berakhir** (`SL-03`) dan diblokir oleh kewajiban (`SL-04`). Definisi "kewajiban" tidak ditulis di modul pengguna — modul pemiliknya mendaftarkan pemeriksa ke titik ekstensi (§4.7d), sehingga aturan tidak pernah mengasumsikan "tidak ada kewajiban". |
+| **SDD-DB-21** | Persetujuan wali (`DP-02`) adalah kolom `users.consent_guardian_at` (`timestamptz`, NULL = belum terekam), **diisi server dari `Clock`** — klien hanya menyatakan `consent_wali: true`. Direkam sekali, **tidak pernah dicabut atau ditimpa**, dan hanya untuk akun Siswa/OSIS (`DP-03`). Gerbangnya ditegakkan service, bukan skema (§4.7e). |
+| **SDD-DB-22** | Setiap impor pengguna — sinkron maupun asinkron — adalah satu baris `user_import_jobs`: jangkar idempotensi (`IMPT-03`, hash SHA-256 isi berkas, jendela 24 jam, pekerjaan `GAGAL` tidak di-*replay*) dan sumber laporan per baris (`IMPT-02`, hanya baris gagal). Isi berkas hanya disimpan selama `MENUNGGU`/`BERJALAN` dan dikosongkan begitu berakhir (`DP-03`). Pemrosesan asinkron dijadwalkan lewat outbox, bukan panggilan langsung ke antrean (§4.7f). |
 
 ---
 
@@ -59,6 +67,12 @@ Konsekuensi yang diterima: menambah nilai enum memerlukan migration (`ALTER TYPE
 
 **SDD-DB-09 — jangan indeks isi JSON.** Menggoda untuk memberi GIN pada `nilai_sesudah` agar bisa mencari "siapa mengubah kondisi menjadi Rusak Berat". Ditolak karena indeks GIN pada jsonb yang sering ditulis memperlambat setiap operasi tulis di seluruh sistem, sementara `FR-18.2` hanya menuntut filter berdasarkan tanggal, pengguna, role, modul, aksi, dan entitas — semuanya kolom biasa.
 
+**SDD-DB-15 — query builder, bukan ORM.** Batasan yang mengikat pilihan ini seluruhnya sudah ada di berkas ini, dan hanya satu di antaranya yang menentukan: `SDD-DB-08` menempatkan kepemilikan skema pada berkas `.sql` tulisan tangan. Perkakas yang **juga** memiliki skema karena itu gugur bukan karena kemampuannya, melainkan karena ia menciptakan sumber kedua bagi hal yang `SDD-DB-08` sudah tetapkan pemiliknya — alasan yang sama persis dengan penolakan perkakas ber-DSL pada `SDD-DB-12`.
+
+**Prisma** ditolak atas dasar itu, dan kemampuannya memperkuat penolakan alih-alih melunakkannya: *exclusion constraint*, `tstzrange`, dan partisi RANGE tidak dapat dinyatakan pada modelnya, sehingga `CI-01` dan `SDD-DB-07` — dua hal yang paling perlu dijaga — justru jatuh ke `$queryRaw` yang kehilangan tipe. **Drizzle** ditolak lebih tipis: ia mendukung fitur-fitur itu, tetapi skemanya dideklarasikan di TypeScript; memakainya hanya sebagai pembaca skema berarti membayar ketergantungan untuk sebagian kecil nilainya. **`pg` polos** ditolak karena harganya jatuh di tempat lain: tanpa lapisan ber-tipe, setiap repository menulis pemetaan barisnya sendiri, dan `SDD-AUTH-05` (`AuthContext` pada setiap repository) kehilangan satu titik yang dapat menegakkannya secara seragam.
+
+Kysely menyisakan skema persis di tempat `SDD-DB-08` menaruhnya sambil memberi tipe pada kueri. Konvensi nama kolom Bahasa Indonesia bukan hambatan bagi pilihan ini melainkan alasannya: karena tidak ada pemetaan otomatis berbahasa Inggris yang perlu dilawan, tipe tabel ditulis apa adanya — `tanggal_jatuh_tempo` tetap `tanggal_jatuh_tempo`.
+
 **SDD-DB-12 — runner SQL, bukan DSL dan bukan buatan sendiri.** Bentuk artefaknya sudah ditetapkan `SDD-DB-08` dan §4.5: berkas `.sql` bernomor maju-saja dengan pasangan `down` yang diuji. Yang belum ditetapkan hanya siapa yang menjalankannya, dan tiga jalur dipertimbangkan.
 
 **Perkakas ber-DSL JavaScript** (mis. node-pg-migrate) ditolak. Ia mendukung `down`, opt-out transaksi, dan advisory lock — jadi penolakannya bukan soal kemampuan. Persoalannya, satu-satunya nilai tambahnya adalah DSL-nya, dan batasan berkas ini membuat DSL itu tidak boleh dipakai: fitur PostgreSQL yang sudah ditetapkan di sini — exclusion constraint (`CI-01`), partial unique index (§4.3), partisi RANGE (§4.4), GIN terbatas (`SDD-DB-09`) — tetap harus ditulis sebagai SQL mentah. Yang tersisa hanyalah permukaan tambahan yang mengundang skema ditulis dalam JavaScript, padahal yang di-*review* dan yang harus cocok dengan §4.3/§4.4 adalah SQL-nya.
@@ -66,6 +80,12 @@ Konsekuensi yang diterima: menambah nilai enum memerlukan migration (`ALTER TYPE
 **Runner buatan sendiri** ditolak karena harganya tidak sepadan. Advisory lock (agar dua job migration tidak berlomba, `SDD-INF-03`), urutan, tabel versi, checksum berkas yang telah diterapkan, dan eksekusi `down` semuanya menjadi kode yang harus ditulis dan diuji — infrastruktur murni tanpa kandungan domain, di proyek yang sudah punya cukup permukaan untuk dipelihara.
 
 **Runner SQL siap pakai** menyisakan berkas persis seperti §4.5 sambil menyediakan mekanisme itu. Dua kemampuannya dinyatakan wajib karena lahir dari keputusan yang sudah diambil, bukan dari selera: opt-out transaksi per-migration dituntut konsekuensi `SDD-DB-02` (`ALTER TYPE … ADD VALUE` tidak dapat di-*rollback* dalam transaksi) dan akan dituntut lagi oleh `CREATE INDEX CONCURRENTLY` pada tabel yang sudah berisi data; advisory lock dituntut `SDD-INF-03` yang menjalankan migration sebagai job terpisah. Runner yang tidak memenuhi keduanya tidak memenuhi syarat, sekalipun populer.
+
+**dbmate dipilih di dalam kelas itu.** Ia menyimpan `migrate:up` dan `migrate:down` pada satu berkas `.sql`, sehingga pasangan `down` yang `SDD-DB-08` wajibkan berada tepat di sebelah `up`-nya alih-alih pada berkas terpisah yang mudah tertinggal. Ia juga berupa biner mandiri, sehingga `SDD-INF-03` — migration sebagai job sekali-jalan dengan akun DDL terpisah — tidak menuntut *runtime* aplikasi ikut hadir di dalam container job. Postgrator, kandidat lain di kelas yang sama, tidak gugur karena cacat; ia hanya mengembalikan sebagian mekanisme yang menjadi alasan memakai runner siap pakai kepada kita. Kedua kemampuan wajib di atas tetap **diverifikasi** pada `PR-00-05`; memilih nama tidak menggantikan pembuktian.
+
+**Hasil pembuktian itu, dan koreksi yang lahir darinya.** Verifikasi `PR-00-05` (7 September 2026) menemukan dbmate 2.35.1 memenuhi opt-out transaksi — `CREATE INDEX CONCURRENTLY` ditolak `25001` tanpa `transaction:false` dan berhasil dengannya — tetapi **tidak mengambil advisory lock sama sekali**: `pg_locks` kosong sepanjang migration yang terbukti sedang berjalan, dan CLI-nya tidak memiliki opsi lock. Paragraf di atas karena itu keliru pada satu titik: ia memperlakukan advisory lock sebagai syarat **runner**, padahal yang dituntut `SDD-INF-03` adalah agar dua job migration tidak berlomba — sebuah syarat pada **jalur** migration, yang dapat dipenuhi pemanggil. Pembungkus tipis memegang `pg_advisory_lock` selama dbmate berjalan dan melepasnya sesudahnya; dbmate tetap dipakai karena alasan yang memilihnya — `up` dan `down` pada satu berkas, biner mandiri — tidak tersentuh temuan ini.
+
+Mengganti runner dipertimbangkan dan ditolak. golang-migrate memang mengunci sendiri, tetapi memisahkan `up` dan `down` ke dua berkas — persis hal yang paragraf di atas sebut sebagai alasan memilih dbmate, dan yang membuat pasangan `down` yang `SDD-DB-08` wajibkan lebih mudah tertinggal. Menukar risiko yang sudah diketahui dengan risiko itu tidak sepadan ketika bagian yang hilang berukuran empat puluh baris.
 
 ---
 
@@ -97,7 +117,17 @@ created_by  bigint REFERENCES users(id),
 updated_by  bigint REFERENCES users(id)
 ```
 
-`updated_at` dipelihara trigger, bukan aplikasi, agar tidak bisa lupa. Tabel master data acuan (`work_days`, `holidays`) dikecualikan.
+`updated_at` dipelihara trigger, bukan aplikasi, agar tidak bisa lupa.
+
+**Cakupan "transaksional".** Yang dimaksud adalah tabel **entitas domain** — sesuatu yang dibuat, disunting, dan dipertanggungjawabkan seseorang (`assets`, `reservations`, `loans`, `work_orders`, …). Tiga kelompok dikecualikan, dan pengecualiannya bukan kelonggaran melainkan konsekuensi bentuknya:
+
+| Kelompok | Contoh | Yang tidak berlaku, dan mengapa |
+|---|---|---|
+| Master data acuan | `work_days`, `holidays` | Tidak dimiliki siapa pun; tidak ada pelaku yang perlu dicatat |
+| *Append-only* | `activity_logs`, `material_transactions` | `updated_at`/`updated_by` mustahil bermakna pada baris yang tidak pernah disunting — `AL-03b` bahkan mencabut hak `UPDATE` dari akun aplikasi atas `activity_logs` |
+| Infrastruktur | `idempotency_keys`, `document_counters`, `booking_slots`, `refresh_tokens`, `totp_backup_codes`, `totp_activation_codes`, `stored_files`, `notification_*`, `event_outbox` | Mekanisme, bukan entitas; kolom waktunya sudah punya nama yang bermakna sendiri (`expires_at`, `used_at`, `sent_at`, `slot_range`) |
+
+Nama kolomnya tetap **`created_at`/`created_by`** di mana pun ia hadir — bukan `dibuat_pada`/`dibuat_oleh` — karena §4.1 sudah menempatkannya di antara nama teknis lintas domain. Satu pengecualian: `activity_logs.waktu` tetap `waktu`, sebab ia kolom partisi RANGE (`SDD-DB-07`) dan maknanya adalah *kapan peristiwa terjadi*, bukan kapan barisnya dibuat.
 
 ### 4.3 Pola uniqueness bersyarat
 
@@ -133,7 +163,7 @@ CREATE TABLE activity_logs (
     nilai_sebelum jsonb,
     nilai_sesudah jsonb,
     keterangan    text,
-    hasil         text        NOT NULL,
+    hasil         activity_result NOT NULL,   -- SDD-DB-02
     request_id    text,
     prev_hash     bytea,                   -- rantai hash (NFR-S-03d)
     row_hash      bytea NOT NULL,
@@ -149,6 +179,14 @@ CREATE INDEX ON activity_logs (modul, aksi, waktu DESC);
 Partisi bulan berikutnya dibuat otomatis oleh job terjadwal; kegagalannya memicu alarm (`OBS-05`).
 
 **Rantai hash** (`NFR-S-03d`, `AL-03a`): `row_hash = sha256(prev_hash || kanonikal(baris))`. Job harian memverifikasi rantai per partisi dan mengalarmi bila terputus. Karena `activity_logs` bersifat *append-only* dan akun aplikasi tidak punya `UPDATE`/`DELETE` (`SDD-DB-11`), rantai hanya perlu diverifikasi, tidak diperbaiki.
+
+**Rantainya SATU untuk seluruh tabel, melintasi batas partisi.** Hanya entri pertama yang ber-`prev_hash` NULL; entri pertama tiap bulan menunjuk entri terakhir bulan sebelumnya. Verifikasi tetap berjalan partisi demi partisi, dengan membawa hash batas dari partisi sebelumnya sebagai titik awal.
+
+Rantai per partisi akan lebih murah disisipkan — cukup melihat ekor bulan berjalan — tetapi ia buta terhadap kegagalan yang paling perlu terlihat: **penghapusan satu partisi utuh**. Bila tiap bulan memulai rantai baru ber-`prev_hash` NULL, tidak ada satu pun entri yang menunjuk ke luar bulannya, sehingga hilangnya seluruh Agustus tidak memutus rantai mana pun. `AL-09` melarang penghapusan permanen, dan rantai inilah yang seharusnya membuktikannya.
+
+**Penyisipan bersifat serial**, dan itu konsekuensi yang diterima: rantai hash tidak dapat dihitung dua kali secara paralel tanpa bercabang. Penulisan mengambil advisory lock bernama tetap sebelum membaca ekor rantai, sehingga dua transaksi tidak pernah membaca ekor yang sama. Pada volume `NFR-SC-03` (±150.000 entri/tahun) biayanya tidak berarti; bila suatu saat berarti, yang berubah adalah bentuk buktinya, bukan kuncinya.
+
+**Kanonikalisasi baris** ditetapkan eksplisit karena hash bergantung padanya sampai ke byte: field digabung dalam urutan tetap `waktu|user_id|user_nama|role|ip|user_agent|modul|aksi|entitas|entitas_id|nilai_sebelum|nilai_sesudah|keterangan|hasil|request_id`, dipisah ``, dengan NULL sebagai string kosong, `jsonb` dalam bentuk terurut kunci, dan `waktu` sebagai ISO-8601 UTC bermilidetik. Urutan atau pemisah yang berbeda menghasilkan rantai yang tidak dapat diverifikasi ulang.
 
 ### 4.5 Strategi migration
 
@@ -177,11 +215,160 @@ Aturannya: satu rilis tidak boleh memuat expand dan contract untuk kolom yang sa
 
 | Seed | Sumber kebenaran | Idempoten karena |
 |---|---|---|
-| 78 kode permission | [Lampiran C](../PRD/00-foundation/roles-permissions.md) | `ON CONFLICT (kode) DO UPDATE` |
+| 79 kode permission | [Lampiran C](../PRD/00-foundation/roles-permissions.md) | `ON CONFLICT (kode) DO UPDATE` |
 | 7 role bawaan + matriks | Bab 5 & Bab 18 | idem |
 | Aturan approval bawaan | `RE-06` — konstanta kode, bukan baris | tidak di-seed (lihat SDD-APR §4.3) |
-| `work_days` Senin–Sabtu | [Lampiran E.2](../PRD/00-foundation/conventions.md) | idem |
-| Parameter sistem bawaan | `FR-20.1` | idem |
+| `work_days` Senin–Sabtu | [Lampiran E.2](../PRD/00-foundation/conventions.md) | `ON CONFLICT (hari) DO UPDATE` |
+| Parameter sistem bawaan | `FR-20.1` — katalog kunci & nilai bawaan: [§4.7a](#47a-skema-system_settings) (`SDD-DB-17`) | `ON CONFLICT (key) DO NOTHING` — nilai yang sudah diubah Administrator tidak ditimpa |
+
+Seed permission, role, matriks, dan `work_days` lahir di `PR-00-16`; parameter sistem menyusul `PR-01-10` karena tabel `system_settings` dan validasi rentangnya milik PR itu.
+
+### 4.7 Skema RBAC
+
+```sql
+-- Lampiran C.1 — nilai ditulis sebagai kode teknis (SDD-DB-02, SDD-DB-16)
+CREATE TYPE permission_scope AS ENUM ('ALL', 'OWN', 'ASSIGNED', 'RESTRICTED');
+
+CREATE TABLE roles (
+    id        bigserial PRIMARY KEY,
+    kode      text    NOT NULL,        -- R-01 … R-07 untuk role bawaan (Bab 5)
+    nama      text    NOT NULL,
+    deskripsi text,
+    is_system boolean NOT NULL DEFAULT false,
+    CONSTRAINT roles_kode_uq UNIQUE (kode),
+    CONSTRAINT roles_nama_uq UNIQUE (nama)
+);
+
+CREATE TABLE permissions (
+    id        bigserial PRIMARY KEY,
+    kode      text    NOT NULL,        -- {domain}.{aksi} (C.1)
+    modul     text    NOT NULL,
+    aksi      text    NOT NULL,
+    deskripsi text    NOT NULL,
+    inti      boolean NOT NULL DEFAULT false,   -- 🔒 (FR-02.2 A1, SDD-AUTH-10)
+    CONSTRAINT permissions_kode_uq UNIQUE (kode)
+);
+
+CREATE TABLE role_permissions (
+    role_id       bigint           NOT NULL REFERENCES roles(id),
+    permission_id bigint           NOT NULL REFERENCES permissions(id),
+    scope         permission_scope NOT NULL,     -- tanpa bawaan (SDD-AUTH-02)
+    PRIMARY KEY (role_id, permission_id)
+);
+```
+
+`permissions` adalah master data acuan milik sistem, dan `role_permissions` relasi — keduanya dikecualikan dari kolom baku §4.2. `roles` adalah entitas domain (`FR-02.2 A2` membuat role kustom): kolom baku §4.2 beserta trigger `updated_at`-nya ditambahkan `PR-01-01` bersama `users`, karena `created_by` merujuk `users(id)`. `role_version` (`SDD-AUTH-04`) ditambahkan `PR-01-04`.
+
+### 4.7a Skema `system_settings`
+
+```sql
+CREATE TYPE setting_type  AS ENUM ('BILANGAN_BULAT', 'DESIMAL', 'BOOLEAN', 'TEKS');   -- SDD-DB-02
+CREATE TYPE setting_group AS ENUM ('IDENTITAS_SEKOLAH', 'KODE_ASET', 'PEMINJAMAN', 'DENDA', 'RESERVASI',
+                                   'MAINTENANCE', 'BAHAN', 'NOTIFIKASI', 'KEAMANAN', 'CHATBOT_AI');
+
+CREATE TABLE system_settings (
+    key          text          PRIMARY KEY,          -- {kelompok}.{nama}, huruf kecil
+    kelompok     setting_group NOT NULL,             -- sepuluh tab P-70
+    tipe         setting_type  NOT NULL,
+    value        jsonb         NOT NULL,             -- bentuknya dijaga CHECK terhadap `tipe`
+    nilai_bawaan jsonb         NOT NULL,             -- AC FR-20.1: "menampilkan penjelasan dan nilai bawaan"
+    nilai_min    numeric,                            -- hanya INTEGER/DECIMAL; NULL = tanpa batas bawah
+    nilai_maks   numeric,
+    deskripsi    text          NOT NULL,
+    updated_at   timestamptz   NOT NULL DEFAULT now(),
+    updated_by   bigint        REFERENCES users(id)  -- NULL = nilai seed, belum pernah diubah
+);
+```
+
+Bukan entitas domain: tidak memakai `created_*`, dan tidak memakai `id` — `key` adalah pengenal yang dirujuk kode konsumen. `Kalender Akademik` (`academic_years`/`holidays`, `PR-01-11`), `Satuan Bahan` (`material_units`), dan logo sekolah (`stored_files`) adalah kelompok `FR-20.1` yang **bukan** baris kunci–nilai dan tidak masuk tabel ini.
+
+**Katalog awal** — hanya parameter yang nilai bawaannya tertulis di `FR-20.1`. Kolom rentang adalah pagar kewajaran teknis (`FR-20.1` langkah 3: "rentang nilai yang wajar"); menyesuaikannya berarti migration seed, bukan kode.
+
+| Kunci | Kelompok | Tipe | Bawaan | Rentang | Sumber |
+|---|---|---|---:|---|---|
+| `peminjaman.batas_perpanjangan` | `PEMINJAMAN` | `BILANGAN_BULAT` | 1 | 0 – 10 | `FR-20.1`, `FR-09.5` |
+| `denda.cap_persen` | `DENDA` | `DESIMAL` | 30 | 1 – 100 | `BR-028b` |
+| `reservasi.horizon_hari` | `RESERVASI` | `BILANGAN_BULAT` | 90 | 1 – 365 | `BR-023c`, `AV-05` |
+| `reservasi.ttl_tentative_jam` | `RESERVASI` | `BILANGAN_BULAT` | 48 | 1 – 168 | `BR-023b` |
+| `reservasi.kuota_tertunda_guru_staf` | `RESERVASI` | `BILANGAN_BULAT` | 5 | 1 – 50 | `BR-023a` |
+| `reservasi.kuota_tertunda_siswa_osis` | `RESERVASI` | `BILANGAN_BULAT` | 2 | 1 – 50 | `BR-023a` |
+
+Parameter kelompok lain (jam operasional, tarif denda, durasi sesi, dst.) **tidak dikarang di sini**: nilai bawaannya belum ditetapkan PRD, dan masing-masing ditambahkan PR yang mengonsumsinya (`SDD-DB-17`).
+
+**Perilaku baca** (`GET /settings`): terpaginasi (`SDD-PERF-04`) dan dapat disaring `filter[kelompok]` — satu kelompok satu tab P-70; `PUT` mengembalikan hanya parameter yang diminta.
+
+**Perilaku tulis** (`PUT /settings`): seluruh nilai divalidasi lebih dulu; satu saja tidak sah menolak seluruh permintaan (`VALIDATION_ERROR`, daftar per kunci beserta batas yang diizinkan — `FR-20.1 A1`) tanpa mengubah apa pun. Hanya nilai yang **berubah** ditulis; satu entri `SETTING_UPDATED` memuat nilai lama dan baru semuanya, dalam transaksi yang sama. Cache 60 detik parameter (`SDD-14`) ditunda sampai konsumen pertama membaca parameter ini; hingga itu pembacaan langsung ke basis data sehingga perubahan berlaku pada permintaan berikutnya (`FR-20.1` langkah 4).
+
+### 4.7b Skema kalender akademik
+
+`academic_years` dan `academic_terms` (`Lampiran E.2`) — entitas domain milik Administrator, jadi memakai kolom baku §4.2 (berbeda dari `holidays`/`work_days`, master data acuan). `holidays.academic_year_id` ditambahkan sebagai kolom **NULLABLE** (migration `expand`): hari libur nasional tidak intrinsik milik satu tahun ajaran.
+
+| Aturan | Ditegakkan oleh |
+|---|---|
+| Paling banyak satu tahun ajaran aktif | `UNIQUE INDEX … (is_active) WHERE is_active` |
+| Bila ada tahun ajaran, satu wajib aktif (`AC-YR-01`) | constraint trigger *deferred* — `SDD-DB-18` |
+| Tahun ajaran tidak beririsan; semester tidak beririsan dalam satu tahun ajaran | `EXCLUDE USING gist` atas `daterange(mulai, selesai, '[]')` — `btree_gist` sudah ada sejak `0001` |
+| `tanggal_mulai < tanggal_selesai`; nama unik; satu Ganjil dan satu Genap per tahun | `CHECK` / `UNIQUE` |
+| Semester berada di dalam rentang tahun ajarannya; kedua semester (Ganjil dan Genap) wajib ada; semester tidak beririsan | service (`AcademicYearService`, `PR-01-18`) — semester tidak beririsan juga dijaga `EXCLUDE` di atas |
+| Tahun ajaran pertama otomatis aktif (`AC-YR-01`); pergantian aktif dalam **satu** transaksi (`AC-YR-02`) | service — nonaktifkan yang lama, aktifkan yang baru; seluruh perubahan tahun ajaran diserialkan `pg_advisory_xact_lock` (kalender dikelola satu-dua Administrator), jika tidak dua pembuatan bersamaan pada tabel kosong sama-sama menjadi aktif |
+
+`academic_term_name` (`GANJIL`, `GENAP`) adalah kelompok Bab 11.3 "Nama Semester". Endpoint tahun ajaran, hari libur, dan hari kerja dimiliki `m20-settings.md` §7 (`PR-01-18`). Semester diganti **hapus lalu sisip** pada `PUT`, bukan `UPDATE` per baris: `EXCLUDE` diperiksa per baris, sehingga menukar rentang Ganjil/Genap tersandung di tengah jalan. Kolom `date` dibaca `to_char(..., 'YYYY-MM-DD')` (driver `pg` mengembalikan `Date`). `work_days.hari` mengikuti ISO-8601 (1 = Senin … 7 = Minggu); `PUT /work-days` menuntut ketujuh hari dan minimal satu aktif — tanpa itu `BusinessCalendarService` (`CAL-01`) tidak pernah menemukan hari kerja.
+
+### 4.7c Skema `work_units` dan migrasi `users.unit_kerja`
+
+`work_units` (`Lampiran E.3`) — entitas domain milik Administrator (kolom baku §4.2). `jenis` (`work_unit_type`) dan `status` (`work_unit_status`) adalah kelompok Bab 11.3 "Jenis Unit Kerja" dan "Status Unit Kerja". `users.work_unit_id` ditambahkan NULLABLE (`expand`); `users.unit_kerja` **tetap ada** dan tidak lagi ditulis kode — dihapus `PR-08-11` (`contract`).
+
+| Aturan | Ditegakkan oleh |
+|---|---|
+| `kode` dan `nama` unik tanpa memandang huruf besar-kecil dan spasi tepi | `UNIQUE INDEX` atas `lower(btrim(...))` — bentuk yang sama dengan pencocokan `map_users_unit_kerja()` dan impor `kode_unit_kerja` (`E.5.2`) |
+| Unit yang masih dirujuk pengguna tidak dapat dihapus, hanya dinonaktifkan (`WU-02`) | FK `users.work_unit_id` tanpa `ON DELETE` (RESTRICT) — lebih ketat dari "pengguna aktif" |
+| `work_unit_id` pada pengguna harus unit **ada dan aktif** | service (`UserService`), bukan skema — unit nonaktif tetap sah bagi pengguna yang sudah memakainya |
+| `jenis` sebuah unit tidak dapat diubah dari `KELAS` selama masih dipakai `student_enrollments.kelas_id` (§4.7d) | service (`WorkUnitService`, `PR-01-18`) — lintas tabel |
+| Menonaktifkan unit yang masih dipakai pengguna aktif | **diizinkan** (`WU-02` hanya melarang hapus); penggunanya tidak kehilangan unit |
+
+**Pemetaan** (`SDD-DB-19`): `map_users_unit_kerja()` mencocokkan teks lama dengan `nama` **atau** `kode` unit, mengisi hanya bila tepat satu kandidat dan `work_unit_id` masih kosong, lalu mengembalikan daftar `(unit_kerja, jumlah_pengguna)` yang tak terpetakan. Dijalankan sekali oleh migration `0017`, dan dapat dipanggil ulang setelah Administrator mengisi master. Pemetaan tidak membuat unit dari teks — `jenis` tidak dapat ditebak. `procurements.unit_kerja` mengikuti pola yang sama pada phase pemiliknya.
+
+Endpoint `work_units` (buat, sunting, `PATCH …/status`; tanpa hapus) dimiliki `m20-settings.md` §7 (`PR-01-18`).
+
+### 4.7d Skema `student_enrollments` dan siklus akun siswa
+
+`student_enrollments` (`Lampiran E.4`): satu baris = "siswa X berada di kelas K pada tahun ajaran Y". Entitas domain milik Administrator (kolom baku §4.2).
+
+| Aturan | Ditegakkan oleh |
+|---|---|
+| Satu baris per siswa per tahun ajaran (`SL-01`) | `UNIQUE (user_id, academic_year_id)` |
+| `kelas_id` menunjuk unit kerja **berjenis `KELAS`, aktif** | service (`ClassPromotionService`) — lintas tabel |
+| `user_id` adalah akun **Siswa/OSIS** (`R-07`), aktif | service |
+| Kenaikan kelas: `NAIK` menetapkan `kelas_id` pada tahun ajaran itu (dan menghapus tanda lulus); `LULUS` menandai baris tahun ajaran itu, yang wajib sudah ada | service |
+
+**Penonaktifan lulusan** (`SL-03`, `DP-10`): akun berbaris `lulus = true` dinonaktifkan bila `academic_years.tanggal_selesai` tahun itu **sebelum** hari ini (hari WIB, `CAL-03`); menandai sebelum tahun berakhir tidak menonaktifkan seketika. `GraduationService.deactivateDueGraduates` idempoten (`JOB-03`); memasangnya sebagai pekerjaan `student-graduation` menunggu `SystemAuthContext` (`SDD-03`) — butir terbuka `phase-01` log §10.
+
+**Titik ekstensi `SL-04`** — `StudentObligationRegistry`: modul yang mendefinisikan kewajiban (peminjaman aktif, denda belum lunas — Phase 05, `PR-05-09`) mendaftarkan `StudentObligationChecker` dengan `daftarKewajiban(scope, userId)`. Penonaktifan akun **Siswa/OSIS** — lewat `PATCH /users/{id}/status` maupun penonaktifan lulusan — ditolak bila salah satu pemeriksa mengembalikan kewajiban, dan daftarnya dikembalikan kepada Administrator. Registri **kosong** sampai `PR-05-09`; kosongnya berarti "belum ada yang mendefinisikan kewajiban", bukan "siswa tidak berkewajiban".
+
+### 4.7e Penanda persetujuan wali
+
+`users.consent_guardian_at` (`0019`, `expand`): kolom NULLABLE tanpa nilai bawaan dan tanpa pengisian ulang. `UserService` menegakkan `DP-02` / `SL-06` di tiga titik, seluruhnya untuk akun **Siswa/OSIS (`R-07`)**:
+
+| Titik | Aturan |
+|---|---|
+| `POST /users` dan impor (`consent_wali`, `E.5.2`) | Akun lahir `AKTIF`, jadi membuat siswa = mengaktifkannya: tanpa `consent_wali: true` ditolak `VALIDATION_ERROR` (`rule: DP-02`), baris tidak terbentuk |
+| `PATCH /users/{id}/status` → `AKTIF` | Ditolak bila penanda masih NULL |
+| `PUT /users/{id}` | `consent_wali: true` merekam penanda bila belum ada; mengganti role menjadi Siswa tanpa penanda ditolak; menyunting siswa yang sudah ada (tanpa ganti role) tidak diblokir |
+
+Tidak ada trigger basis data: gerbangnya bergantung pada role (lintas tabel) dan bukan bagian acceptance. Pencabutan persetujuan tidak didefinisikan `DP-02`, sehingga tidak ada jalurnya. **`NT-48`** (notifikasi in-app ke Administrator) **belum terbit** — modul notifikasi `M-17` baru ada di Phase 02 (`PR-02-25`), dan penolakan me-*rollback* transaksinya sehingga event outbox di dalamnya ikut hilang (`SDD-EVT-04`); penolakan dikembalikan langsung kepada pemanggil.
+
+### 4.7f Pekerjaan impor pengguna
+
+`user_import_jobs` (`0020`, `expand`; enum `user_import_status` = `MENUNGGU`, `BERJALAN`, `SELESAI`, `GAGAL`). Entitas domain milik Administrator (kolom baku §4.2). `berkas` (bytea) memuat isi berkas hanya untuk jalur asinkron.
+
+| Pertanyaan | Jawaban |
+|---|---|
+| Idempotensi (`IMPT-03`) | `file_hash` sama, `created_at` dalam 24 jam, status bukan `GAGAL` → pekerjaan itu dikembalikan (`meta.idempotent_replay`). Pencarian dan penyisipan dilindungi `pg_advisory_xact_lock` atas hash, sehingga dua unggahan identik bersamaan menghasilkan satu pekerjaan |
+| Ambang | ≤ 200 baris: diproses dalam permintaan (`200`); di atasnya: baris pekerjaan `MENUNGGU` + event outbox `UserImportRequested` dalam **satu** transaksi (`202`, `SDD-EVT-04`). Handler outbox memasukkan pekerjaan `user-import` ke antrean `sigm4-jobs` dengan `jobId` tetap (`SDD-EVT-07`) |
+| Pelaku | Worker membangun ulang `AuthContext` **pengunggah** dari basis data saat berjalan — akun harus `AKTIF` dan masih memegang `user.create`, bila tidak pekerjaan `GAGAL`. Pekerjaan bukan dijalankan sebagai `SYSTEM` (`SystemAuthContext` baru lahir di `PR-02-32`); `USER_CREATED` dan `USER_IMPORTED` tercatat atas nama pengunggah |
+| Percobaan ulang (`JOB-06`) | `baris_terproses` diperbarui **per baris**; percobaan berikutnya melanjutkan dari sana sehingga pengguna yang sudah dibuat tidak dibuat dua kali. Pada percobaan terakhir yang masih gagal, pekerjaan ditutup `GAGAL` (`pesan_galat`) |
+| `NT-52` | Event `UserImportCompleted` terbit dalam transaksi penutupan pekerjaan (hanya jalur asinkron). **Konsumennya belum ada** — modul notifikasi `M-17` baru di Phase 02 (`PR-02-25`); sebelum itu hasil dipantau lewat `GET /users/import/{id}` |
+| Retensi | Berkas dikosongkan saat berakhir (`DP-03`). Laporan (memuat email baris gagal) belum punya masa simpan — belum ditetapkan PRD |
 
 ### 4.8 Saldo bahan — ledger dan agregat
 
@@ -206,11 +393,11 @@ CREATE TABLE material_transactions (
     jenis          material_transaction_type NOT NULL,  -- SDD-DB-02
     jumlah         integer     NOT NULL,
     saldo_sesudah  integer     NOT NULL,
-    referensi_tipe text,
+    referensi_jenis text,
     referensi_id   bigint,
     alasan         text,                                -- BR-088: wajib saat PENYESUAIAN
-    dibuat_oleh    bigint      NOT NULL REFERENCES users(id),
-    dibuat_pada    timestamptz NOT NULL,                -- SDD-DB-03, dari Clock (SDD-SYS-07)
+    created_by     bigint      NOT NULL REFERENCES users(id),
+    created_at     timestamptz NOT NULL,                -- SDD-DB-03, dari Clock (SDD-SYS-07)
     CONSTRAINT material_transactions_jumlah_nonzero CHECK (jumlah <> 0),
     -- BR-088 ditegakkan skema, bukan hanya service
     CONSTRAINT material_transactions_alasan_penyesuaian
@@ -219,7 +406,7 @@ CREATE TABLE material_transactions (
 
 -- kartu stok FR-22.2: selalu dibaca per bahan, berurutan waktu
 CREATE INDEX material_transactions_kartu_stok_idx
-    ON material_transactions (material_id, room_id, dibuat_pada DESC);
+    ON material_transactions (material_id, room_id, created_at DESC);
 ```
 
 **Urutan wajib setiap mutasi saldo** — dijalankan seluruhnya dalam **satu** transaksi (`SDD-EVT-02`):
@@ -258,9 +445,10 @@ Baris `material_balances` dibuat saat bahan pertama kali bertransaksi di suatu l
 
 - Penambahan nilai enum selalu menjadi migration tersendiri dan tidak dapat digabung dengan perubahan lain dalam satu transaksi.
 - Rantai hash `activity_logs` mengharuskan penulisan log **berurutan per partisi**; penulisan paralel memerlukan penguncian ringan pada baris terakhir. Ini diterima karena volume log rendah (±150.000/tahun ≈ 0,005 tulis/detik rata-rata).
-- Konvensi nama kolom Bahasa Indonesia berarti pemetaan ORM tidak dapat mengandalkan konvensi otomatis berbahasa Inggris; pemetaan ditulis eksplisit.
+- Konvensi nama kolom Bahasa Indonesia berarti tidak ada pemetaan otomatis berbahasa Inggris yang dapat diandalkan; nama kolom dipakai apa adanya pada tipe tabel `SDD-DB-15`, ditulis eksplisit dan diperiksa terhadap basis data.
+- Tipe tabel `SDD-DB-15` adalah artefak turunan, bukan sumber. Setiap migration yang mengubah bentuk tabel mewajibkan tipe itu ikut disegarkan pada PR yang sama — bila tidak, kompilator berhenti mencerminkan skema dan berubah menjadi kebohongan yang diperiksa CI.
 - Aturan expand→contract berarti perubahan skema yang menghapus kolom memerlukan **dua rilis**.
-- Runner migration (`SDD-DB-12`) menjadi dependensi yang ikut ke dalam image (`SDD-INF-01`) dan dijalankan sebagai job terpisah dengan akun DDL (`SDD-INF-03`, `SEC-CFG-03`). Penggantian runner di kemudian hari hanya menyentuh cara berkas dijalankan, bukan isinya — berkas `.sql` tetap portabel.
+- Runner migration dbmate (`SDD-DB-12`) menjadi dependensi yang ikut ke dalam image (`SDD-INF-01`) dan dijalankan sebagai job terpisah dengan akun DDL (`SDD-INF-03`, `SEC-CFG-03`). Penggantian runner di kemudian hari hanya menyentuh cara berkas dijalankan, bukan isinya — berkas `.sql` tetap portabel.
 - Runner tidak membangkitkan `down`; ia tetap ditulis tangan dan diuji sebagaimana `SDD-DB-08` mensyaratkan. Memilih perkakas tidak mengurangi kewajiban itu.
 
 ---

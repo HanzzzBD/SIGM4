@@ -6,8 +6,386 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 
 ---
 
+## 21 September 2026 — `PR-02-33` baru; `PR-02-08` diperluas
 
-## 3 September 2026 — Celah telusur: nomor surat `GL-07`, `DP-AI-04`, dan `AI-CTL-07`…`AI-CTL-10`
+Tidak ada TBD baru. Requirement baru (`BR-070d`, `BR-070e`, `NT-39a`) sudah diputuskan pemilik produk dan ditulis ke PRD/SDD/UX (keputusan 46–47 di [`logs/phase-02.md` §2](logs/phase-02.md)); entri ini hanya mencatat penetapan PR pelaksananya (keputusan 48).
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `phases/phase-02.md` §7, §8 | **PR baru `PR-02-33`** — kode aktivasi 2FA (`BR-070d`) + reset 2FA oleh Administrator di M-02; `PR-02-08` menambah CLI penerbit kode aktivasi dan bergantung pada `PR-02-33` |
+| `DELIVERY-PLAN.md` §1, `README.md`, `IMPLEMENTATION-STATUS.md`, `CLAUDE.md`, `scripts/validate_impl.py` | Total rencana 169 → **170**; Phase 02 30 → **31** |
+| `logs/phase-02.md` §2, §3, §9, §10 | Keputusan 48; hitungan gerbang keluar (sebelumnya tertulis 29, seharusnya 31) diperbaiki |
+
+Total PR kini **170**.
+
+---
+
+## 16 September 2026 — skema label pull request
+
+Tidak ada TBD, requirement, maupun business rule baru. Keputusan pemilik produk 12 dicatat di [`logs/phase-01.md` §2](logs/phase-01.md).
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `BRANCHING-STRATEGY.md` §4, §4.2 (baru) | Dua label wajib (phase + jenis) dan satu opsional (`tinjauan-arsitek`); label bukan gerbang |
+| `GITHUB-CI-STATE.md` §4 | Tiga belas label berlaku 16 September 2026; sembilan label bawaan GitHub dihapus setelah diverifikasi tidak terpakai |
+| `templates/PULL-REQUEST.md` | Aturan label pada bagian pemakaian |
+| `IMPLEMENTATION-STATUS.md` | `PR-01-16` `Done` (#43, *squash*); Phase 01 2/16; total 20/165 |
+| `logs/phase-01.md` §1, §2 | `PR-01-16` tergabung; keputusan 12 |
+
+Total PR tetap **165**.
+
+---
+
+## 16 September 2026 — `PR-01-16`: hash password Argon2id; `PR-02-31` baru
+
+Tidak ada TBD, requirement, maupun business rule baru. Keputusan pemilik produk 7–10 dan keputusan teknis 11 dicatat di [`logs/phase-01.md` §2](logs/phase-01.md).
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `../SDD/00-system-architecture.md` §2, §4.1 | **`SDD-SYS-15`** — `shared/security/` menjadi anggota *shared kernel*; daftar tertutup `SDD-SYS-06` dan pohon §4.1 menyusul |
+| `../SDD/13-security-design.md` §2 | **`SDD-SEC-12`** — pustaka Argon2id `@node-rs/argon2` (biner napi, varian musl) |
+| `phases/phase-01.md` §2, §4, §7 | Rujukan `PR-01-16` diperbaiki dari `NFR-S-01` menjadi `NFR-S-02` dan `NFR-S-03a`; cakupan kebijakan kata sandi dibatasi |
+| `phases/phase-02.md` §2, §7 | **PR baru `PR-02-31`** — daftar password bocor + riwayat 3 password terakhir (keputusan 9) |
+| `IMPLEMENTATION-STATUS.md` | `PR-01-01` `Done` (#42); `PR-01-16` `In Progress`; Phase 01 1/16; Phase 02 29 PR |
+| `logs/phase-01.md` §1, §2, §7, §10 | Pembukaan `PR-01-16`, keputusan 7–11, dua temuan, dan serah terima `NFR-S-03a` |
+| `DELIVERY-PLAN.md` §1 · `README.md` · `../../README.md` · `../../CLAUDE.md` · `scripts/validate_impl.py` | Rencana **164 → 165** PR |
+
+Total PR menjadi **165**.
+
+---
+
+## 15 September 2026 — `PR-01-01` dibuka; `PR-02-01` menjadi `PR-01-16`
+
+Tidak ada TBD maupun business rule baru. Keputusan pemilik produk 1–4 dan keputusan teknis 5–6 dicatat di [`logs/phase-01.md` §2](logs/phase-01.md); suntingan PRD tercatat di [`../PRD/CHANGELOG.md`](../PRD/CHANGELOG.md).
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `IMPLEMENTATION-STATUS.md` | Phase 01 `In Progress` dengan satu baris per PR; `PR-01-01` `In Progress`; `M1` dan `M5` `In Progress` |
+| `logs/phase-01.md` §1, §2, §9, §10 | Pembukaan `PR-01-01`, keputusan 1–6, serah terima kolom `users` yang ditunda |
+| `phases/phase-01.md` §2, §4, §5, §7 · `phases/phase-02.md` §3, §7 | **`PR-02-01` dipensiunkan, isinya menjadi `PR-01-16`** (keputusan 3); `PR-01-02` bergantung padanya; `PR-02-02` bergantung `Ph01`; foto profil `PR-02-06` menunggu `PR-03-04` |
+| `phases/phase-03.md` §7 | `PR-03-04` menambahkan `users.foto_file_id` (keputusan 4) |
+| `DELIVERY-PLAN.md` §1 · `BRANCHING-STRATEGY.md` §1 · `logs/phase-02.md` | Phase 01: 15 → **16** PR; Phase 02: 29 → **28** |
+
+Total PR tetap **164**.
+
+---
+
+## 15 September 2026 — penyegaran dokumen setelah Phase 00 seluruhnya tergabung; `PR-02-09` menjadi `PR-01-15`
+
+Tidak ada TBD, requirement, maupun business rule baru. Empat keputusan pemilik produk (62–65) dicatat di [`logs/phase-00.md` §2](logs/phase-00.md).
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `IMPLEMENTATION-STATUS.md` | #40 tergabung; judul bagian Phase 00 `In Progress` → `In Review`, selaras tabel ringkasan; gerbang keluar Phase 00 masuk Penghalang aktif; Phase 01 boleh dimulai (keputusan 62) dan tercatat di Pergeseran jadwal |
+| `logs/phase-00.md` §1, §2, §5, §7, §9, §10 | Verifikasi #6–#40 tergabung; keputusan 62–65; butir `cors` ditutup keputusan 51; butir job migration dan check `staging` diselaraskan dengan keputusan 53 dan 55; tiga temuan (metode merge, vendor observability, middleware otorisasi Phase 01) |
+| `GITHUB-CI-STATE.md` §1, §2, §3, §4, §6 | `staging` menunggu infrastruktur (keputusan 55), bukan `PR-00-18`; penyimpangan *merge commit* tercatat dan *squash* kembali wajib (keputusan 64); `SEC-T-01` milik `PR-01-15`; proteksi dibaca ulang dari API |
+| `BRANCHING-STRATEGY.md` §0 | Pipeline `CD-01` sudah berdiri; transisi berakhir saat cabang `staging` dibuat |
+| `ROADMAP.md` §8 | Seleksi vendor observability bersama penyediaan staging nyata (keputusan 65), bukan `PR-00-06` yang sudah lewat |
+| `phases/phase-01.md` §1, §2, §3, §5, §7 · `phases/phase-02.md` §3, §7 | **`PR-02-09` dipensiunkan, isinya menjadi `PR-01-15`** (keputusan 63); dependensi PR endpoint Phase 01 serta `PR-02-29`/`PR-02-30` disesuaikan |
+| `DELIVERY-PLAN.md` §1, §2 · `BRANCHING-STRATEGY.md` §1 · `logs/phase-01.md` · `logs/phase-02.md` | Phase 01: 14 → **15** PR; Phase 02: 30 → **29**; urutan wajib `PR-01-15` → PR endpoint |
+| `IMPLEMENTATION-STATUS.md` §Ringkasan · `DELIVERY-PLAN.md` §1 · `logs/phase-05.md` · `logs/phase-08.md` | Hitungan basi diselaraskan dengan berkas phase: Phase 05 **25** PR dan 3 modul (tertulis 14 atau 24, dan 2 modul); log Phase 08 **16** PR (tertulis 15) |
+| `scripts/validate_impl.py` | Menerima baris PR pensiun (`**Pensiun** — dipindah ke …`) yang menunjuk PR aktif; baris pensiun tidak dihitung |
+
+Total PR tetap **164**.
+
+---
+
+## 15 September 2026 — tindak lanjut `PR-00-18`: graceful shutdown worker + API
+
+Tidak ada TBD, requirement, maupun business rule baru. Keputusan pemilik produk 57–61 dicatat di [`logs/phase-00.md` §2](logs/phase-00.md).
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `IMPLEMENTATION-STATUS.md` | `PR-00-18` `Done`; Phase 00 18/18 berstatus `In Review` (gerbang keluar belum lulus); tindak lanjut graceful shutdown tercatat |
+| `logs/phase-00.md` §1, §2, §4, §5, §7, §8, §10 | Audit drain, keputusan 57–61, cabang di luar rencana, butir drain worker ditutup, tiga temuan saat pembuktian, hasil ukur |
+
+Total PR tetap **164**.
+
+---
+
+## 15 September 2026 — `PR-00-18`: deploy staging pada staging tiruan
+
+Tidak ada TBD, requirement, maupun business rule baru. Keputusan pemilik produk 50–53 dicatat di [`logs/phase-00.md` §2](logs/phase-00.md).
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `GITHUB-CI-STATE.md` §2, §3 | Deploy staging dan smoke test berstatus ditulis & terbukti pada staging tiruan; DAST dipisah sebagai tahap tanpa PR pemilik |
+| `IMPLEMENTATION-STATUS.md` | `PR-00-17` `Done`; `PR-00-18` `In Progress`; Phase 00 17/18 |
+| `logs/phase-00.md` §1, §2, §3, §5, §7, §8, §10 | Pelaksanaan, keputusan 50–55, butir blocking worker ditutup, hasil staging tiruan, serah terima infrastruktur |
+| `phases/phase-08.md` §7, §9 | **PR baru `PR-08-16`** — DAST OWASP ZAP `ST-03`, yang sebelumnya tidak dimiliki PR mana pun (keputusan 54) |
+| `DELIVERY-PLAN.md` · `README.md` · `IMPLEMENTATION-STATUS.md` · `README.md` akar · `CLAUDE.md` · `scripts/validate_impl.py` | Phase 08: 15 → **16** PR; total rencana **163 → 164** |
+
+Total PR menjadi **164**.
+
+---
+
+## 15 September 2026 — `PR-00-17`: pipeline CI berdiri
+
+Tidak ada TBD, requirement, maupun business rule baru. Keputusan pemilik produk 44–49 dicatat di [`logs/phase-00.md` §2](logs/phase-00.md).
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `GITHUB-CI-STATE.md` §1, §3, §4 | Tahap lint, uji, integrasi+cakupan, build, SAST, SCA, dan image scan berstatus berjalan; `SEC-T-01` dipindah ke Phase 01–02; Dependabot alerts menyala; required status check `CI lulus` |
+| `IMPLEMENTATION-STATUS.md` | `PR-00-16` `Done`; `PR-00-17` `In Progress`; Phase 00 16/18 |
+| `logs/phase-00.md` §1, §2, §3, §5, §7, §8, §10 | Pelaksanaan, keputusan 44–49, penyimpangan, hasil ukur, dan serah terima ke `PR-00-18` |
+
+Total PR tetap **163**.
+
+---
+
+## 15 September 2026 — `PR-00-16` menarik skema RBAC; seed parameter sistem pindah ke `PR-01-10`
+
+Tidak ada TBD, requirement, maupun business rule baru. Keputusan pemilik produk 39–43 dicatat di [`logs/phase-00.md` §2](logs/phase-00.md).
+
+Rencana `PR-00-16` men-seed empat tabel yang baru dibuat Phase 01. Skema `roles`, `permissions`, `role_permissions` karena itu ditarik dari `PR-01-01`, dan seed parameter sistem diserahkan ke `PR-01-10` yang memiliki tabelnya.
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `phases/phase-00.md` §2, §7, §8 | Scope `PR-00-16` menjadi skema RBAC + seed permission, role, matriks ber-scope, `work_days`; kode `M` → `L`; task breakdown dilengkapi |
+| `phases/phase-01.md` §7 | `PR-01-01` menjadi `users` + kolom baku `roles`; `PR-01-10` ditambah seed parameter bawaan beserta syarat katalog kuncinya di SDD |
+| `IMPLEMENTATION-STATUS.md` | `PR-00-16` `In Progress` |
+| `logs/phase-00.md` §1, §2, §3, §7, §8, §10 | Pelaksanaan, keputusan 39–43, penyimpangan, hasil ukur, dan serah terima ke Phase 01 |
+
+Total PR tetap **163**.
+
+---
+
+## 15 September 2026 — peninjau kedua pada `CODEOWNERS`; tinjauan wajib di `develop`
+
+Tidak ada TBD, requirement, maupun business rule yang berubah.
+
+Butir "Pemilik `CODEOWNERS`" yang sapuan ketiga (6 September 2026) tinggalkan sebagai bergantung pihak luar **ditutup**: pemilik produk menetapkan `@PM-Codexpert` (PM, kolaborator berakses `write`) sebagai peninjau. Dengan dua pemilik, dua setelan tinjauan yang ditunda di `GITHUB-CI-STATE §4` dapat dinyalakan tanpa mengunci repositori — di `develop`.
+
+### Dua temuan saat menyalakannya
+
+| Temuan | Akibat |
+|---|---|
+| **Baris spesifik `CODEOWNERS` mengalahkan `*`.** [#35](https://github.com/HanzzzBD/SIGM4/pull/35) hanya menambahkan `@PM-Codexpert` pada `*`; sembilan baris lain tetap berisi `@HanzzzBD` saja | Setiap PR `@HanzzzBD` yang menyentuh migration, `shared/auth`, `shared/audit`, `m10`, `m07`, `.github/`, `docs/PRD`, `docs/SDD`, atau `packages/schemas` tidak akan pernah dapat digabungkan. `@PM-Codexpert` kini dicantumkan pada **setiap** baris |
+| **GitHub membaca `CODEOWNERS` dari cabang tujuan.** `main` masih memuat versi satu-pemilik sampai isi `develop` dipromosikan | Code Owners review di `main` tetap ⏸ **ditunda**; menyalakannya sekarang mengunci setiap PR `@HanzzzBD` ke `main` |
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `.github/CODEOWNERS` | `@PM-Codexpert` pada seluruh baris; catatan pemilik ditulis ulang |
+| `GITHUB-CI-STATE.md` §4, §6 | Code Owners review + minimal 1 approval ✅ di `develop`; `main` ditunda dengan alasan tertulis; butir pemilik `CODEOWNERS` diganti butir tinjauan wajib `main` |
+| `logs/phase-00.md` §1, §4 | Pelaksanaan dan cabang `chore/` di luar rencana tercatat |
+
+**Akibat bagi alur kerja:** setiap PR ke `develop` kini wajib disetujui satu code owner selain penulisnya. Total PR tetap **163**.
+
+
+## 6 September 2026 — sapuan ketiga: butir menggantung di luar keputusan stack
+
+**Status TBD: 13 terbuka · 42 tertutup** — A (0) · B (13) · C (0) · D (0). Satu TBD dibuka & ditutup pada hari yang sama (`TBD-SYS-A`). Tidak ada requirement, business rule, maupun ambang yang berubah.
+
+Lima butir yang dua sapuan sebelumnya laporkan tetapi tidak kerjakan, ditinjau ulang. **Tiga ditutup, dua tetap terbuka karena bergantung pihak di luar repositori.**
+
+### Ditutup
+
+| Butir | Tindakan |
+|---|---|
+| Letak kode `SlotService` | `SDD-SYS-10` — ***shared kernel*** `shared/booking/`. Daftar tertutup `SDD-SYS-06` disunting untuk memuatnya. Angka yang dipakai memutuskan dikoreksi lebih dulu: `BRANCHING §3.1` menulis "tiga modul", `SDD-01` sebenarnya menyebut **enam** (M-04, M-07, M-08, M-09, M-12, M-21) |
+| Branch protection | Dinyalakan pada `main` dan `develop` lewat `gh api` dan diverifikasi kembali dari API: wajib lewat PR, larang force push, larang penghapusan, larang bypass admin, wajib resolusi percakapan, dismiss stale approval |
+| `npm run typecheck` (`TS5083`) | Cabang `chore/tsconfig-akar-typecheck` — `tsconfig.json` akar bertipe solution. Tidak ada compiler option baru. Empat perintah verifikasi hijau |
+
+### Tetap terbuka — bergantung pihak luar
+
+| Butir | Mengapa tidak dapat ditutup di repositori |
+|---|---|
+| Nomor surat `SDD-AI-16` | Menunggu salinan resmi dari sekolah. **Pelacakannya sudah lengkap** — `phase-08.md` §8 dan §9, `RELEASE-PLAN.md` §2, `IMPLEMENTATION-STATUS.md` — sejak celah telusurnya ditutup hari ini juga. Yang kurang dokumennya, bukan pencatatannya |
+| Pemilik `CODEOWNERS` | Menuntut username GitHub tim arsitek yang belum terbentuk |
+
+### Dua temuan baru saat memasang proteksi cabang
+
+| Temuan | Akibat pada `GITHUB-CI-STATE §4` |
+|---|---|
+| **Required approvals + Code Owners review akan mengunci repositori.** GitHub tidak mengizinkan orang menyetujui PR-nya sendiri, dan `CODEOWNERS` hanya berisi `@HanzzzBD` | Kedua baris ditandai ⏸ **ditunda**, bukan dinyalakan. Dinyalakan bersamaan dengan penggantian `CODEOWNERS`. Menyalakannya sekarang akan menghentikan setiap merge, termasuk PR yang sedang terbuka |
+| **Metode merge per-cabang tidak dapat ditegakkan.** `allow_squash_merge` / `allow_merge_commit` adalah setelan **tingkat repositori**, bukan cabang | Baris "squash saja untuk `develop`" dan "merge commit saja untuk `main`/`staging`" ditandai ❌ **tidak dapat disetel**; `BRANCHING §3` pada titik ini berlaku sebagai disiplin peninjau, bukan pagar |
+| *Require branches to be up to date* hanya tersedia bersama required status check | Ditandai ⏳ menunggu `PR-00-17`, bukan "belum disetel" |
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `SDD/00-system-architecture.md` | `SDD-SYS-10` baru; `SDD-SYS-06` memuat `SlotService` dan dinyatakan tertutup; `shared/booking/` masuk pohon §4.1 |
+| `SDD/TBD-REGISTER.md` | `TBD-SYS-A` tertutup; hitungan `13 · 42` |
+| `BRANCHING-STRATEGY.md` §3.1 | Jumlah modul dikoreksi tiga → enam; path `shared/booking/` dicantumkan |
+| `GITHUB-CI-STATE.md` §2, §4, §6 | Tabel §4 memperoleh kolom Status dengan keadaan nyata; dua catatan keterbatasan GitHub; §6 tidak lagi mencantumkan letak `SlotService` sebagai terbuka |
+| `phases/phase-02.md` | `PR-02-17` merujuk `SDD-SYS-10` |
+| `logs/phase-00.md` §1, §4, §5, §7 | Sapuan ketiga; `chore/` tercatat sebagai pekerjaan di luar rencana beserta alasannya; `TS5083` ditutup; dua butir wajib baru |
+| `ROADMAP.md` §8 · `SDD/README.md` · `IMPLEMENTATION-STATUS.md` · `README.md` · `UX/UX-SPEC.md` | Hitungan register diselaraskan ke `42 tertutup` |
+
+**Dampak pada lintasan kritis:** `PR-02-17` tidak lagi menunggu keputusan letak kode, dan `PR-00-17` memperoleh satu perintah verifikasi yang sudah hijau. Total PR tetap **163**.
+
+
+## 6 September 2026 — sapuan audit kedua: sembilan perkakas sisanya dikunci
+
+**Status TBD: 13 terbuka · 41 tertutup** — A (0) · B (13) · C (0) · D (0). Sembilan TBD **dibuka dan ditutup pada hari yang sama**, seluruhnya kelompok C. Tidak ada requirement, business rule, kriteria penerimaan, maupun angka ambang yang berubah.
+
+Sapuan pertama hari itu menutup empat celah yang memblokir Phase 00. Sapuan kedua menyisir **sisa** `docs/` untuk pola yang sama — kelas keputusan ditulis, anggotanya tidak — dan menemukan sembilan lagi. Satu di antaranya sudah menjadi kontradiksi aktif: `INF-06` menulis "Nginx/Caddy" sementara `deployment-ops.md` §Topologi dan `SDD-13 §3` sudah menulis "Nginx" dalam prosa.
+
+### TBD dibuka & ditutup
+
+| TBD | Pemilik | Keputusan |
+|---|---|---|
+| `TBD-INF-D` | `SDD-INF-13` | **Nginx**. Dua konsekuensi dicatat terbuka: certbot menjadi komponen tersendiri bagi `INF-06`, dan *readiness gate* `SDD-INF-04` bersandar pada pemeriksaan **pasif** + skrip deploy `SDD-INF-10` karena *active health check* hanya ada di NGINX Plus |
+| `TBD-SEC-C` | `SDD-SEC-11` | **CodeQL** (`ST-01`) · **Dependabot** (`ST-02`) · **Trivy** (`CD-01`) · **OWASP ZAP** (`ST-03`). Snyk ditolak karena menambah pihak penerima data terhadap `SDD-SEC-10` |
+| `TBD-API-C` | `SDD-API-13` | **`zod-openapi`** lewat registri route `SDD-API §4.1` yang sudah ada; registri kedua ditolak karena melanggar `SDD-API-02` |
+| `TBD-FE-D` | `SDD-FE-14` | **Vite** — satu konfigurasi melayani build dan Vitest (`SDD-REPO-11`) |
+| `TBD-FE-E` | `SDD-FE-15` | **TanStack Router** — *search param* divalidasi skema Zod, menjadikan `SDD-FE-10` kontrak yang diperiksa kompilator |
+| `TBD-FE-F` | `SDD-FE-16` | **axios** — bentuk identik di web dan mobile untuk mutex refresh (`SDD-FE-07`, `SDD-MOB-09`) dan gerbang `426` (`SDD-MOB-05`) |
+| `TBD-MOB-C` | `SDD-MOB-11` | **expo-sqlite** — antrean bersifat transaksional; kunci–nilai ditolak karena blob yang ditulis ulang rusak saat proses mati di tengah tulis |
+| `TBD-MOB-D` | `SDD-MOB-12` | **expo-router** — path rute adalah path `deep_link` `SDD-NTF-09`, tanpa tabel penerjemah yang gagal secara diam |
+| `TBD-FS-C` | `SDD-FS-12` | **Playwright (Chromium)** HTML → PDF, mesin yang sama dengan E2E Web. Biaya ukuran image dicatat `SDD-16 §5` |
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `SDD/16-infrastructure-deployment.md` | `SDD-INF-13` baru; §4.2 menamai nginx + certbot; §4.3 menamai perkakas tiap tahap keamanan; dua konsekuensi baru di §5 (certbot, Chromium pada image) |
+| `SDD/13-security-design.md` | `SDD-SEC-11` baru (§2, §3) |
+| `SDD/06-api-design.md` | `SDD-API-13` baru (§2, §3) |
+| `SDD/11-frontend-architecture.md` | `SDD-FE-14`, `SDD-FE-15`, `SDD-FE-16` baru (§2, §3) |
+| `SDD/12-mobile-architecture.md` | `SDD-MOB-11`, `SDD-MOB-12` baru; §4.1 menamai axios, expo-sqlite, expo-router |
+| `SDD/09-file-storage-design.md` | `SDD-FS-12` baru (§2, §3) |
+| `SDD/17-repo-layout.md` §4.1 | `apps/web/vite.config.ts` masuk pohon berkas |
+| `SDD/TBD-REGISTER.md` | Sembilan baris tertutup; hitungan `13 · 41` |
+| `ROADMAP.md` §8 | Sembilan baris jadwal; ringkasan audit menjadi "dua sapuan" |
+| `phases/phase-00.md` §7 | `PR-00-09`, `PR-00-17`, `PR-00-18` merujuk `SDD-API-13`, `SDD-SEC-11`, `SDD-INF-13` |
+| `logs/phase-00.md` §1, §5, §6 | Sapuan kedua dicatat; sembilan TBD tertutup; tiga butir wajib baru |
+| `SDD/README.md` · `IMPLEMENTATION-STATUS.md` · `README.md` · `UX/UX-SPEC.md` | Hitungan register diselaraskan ke `41 tertutup` |
+
+**Yang sengaja tidak diubah:** `INF-06` tetap menulis "Nginx/Caddy". PRD menetapkan ruang pilihannya; SDD memilih di dalamnya. Menyunting PRD agar menyebut satu nama akan menaikkan keputusan teknis menjadi requirement — arah aliran yang salah.
+
+**Dampak pada lintasan kritis:** `PR-00-09`, `PR-00-17`, dan `PR-00-18` tidak lagi terhalang perkakas tanpa nama. Total PR tetap **163**.
+
+
+## 6 September 2026 — audit keputusan stack: empat perkakas dikunci, tiga dokumen usang dibetulkan
+
+**Status TBD: 13 terbuka · 32 tertutup** — A (0) · B (13) · C (0) · D (0). Empat TBD **dibuka dan ditutup pada hari yang sama**, seluruhnya kelompok C. Tidak ada requirement, business rule, kriteria penerimaan, maupun angka ambang yang berubah.
+
+Audit sebelum `PR-00-04` menemukan pola yang berulang empat kali: **kelas keputusan sudah ditulis, anggotanya tidak.** `SDD-DB-12` menyebut "kelas dbmate/Postgrator"; `PRD 30` menetapkan ambang cakupan tanpa alat pengukur; `SDD-17 §4.1` menetapkan letak `.github/workflows/` tanpa penyedianya; `SDD-FE-12` menulis "Radix UI / React Aria" dengan garis miring. Keempatnya baru terlihat saat PR yang memakainya hendak dikerjakan. Pustaka akses data bahkan tidak punya kelas — ia tidak disebut satu kali pun di seluruh `docs/`.
+
+### TBD dibuka & ditutup
+
+| TBD | Pemilik | Keputusan |
+|---|---|---|
+| `TBD-DB-B` | `SDD-DB-15` | **Kysely + `pg`** — *query builder* ber-tipe yang tidak memiliki skema. Prisma dan Drizzle ditolak karena memiliki skema, bertabrakan dengan `SDD-DB-08`; `pg` polos ditolak karena `SDD-AUTH-05` kehilangan titik penegakan seragam |
+| `TBD-QA-A` | `SDD-REPO-11` | **Vitest** (unit & integration, ketiga pohon) · **Playwright** (E2E Web) · **Maestro** (E2E Mobile di atas dev build Expo) |
+| `TBD-INF-C` | `SDD-INF-12` | **GitHub Actions**, dengan gerbang `CD-01`/`CD-02` sebagai *required status check* |
+| `TBD-FE-C` | `SDD-FE-13` | **Radix UI** bawaan; **React Aria** hanya untuk pemilih tanggal/kalender dan number field. Daftar tertutup |
+
+`SDD-DB-12` juga **dipertajam** — bukan dibuka ulang: kelasnya tidak berubah, namanya (**dbmate**) kini tertulis, dan kedua kemampuan wajib tetap diverifikasi di `PR-00-05`.
+
+### Gerbang yang sengaja tetap tertunda
+
+| Gerbang | Alasan |
+|---|---|
+| Vendor observability terkelola | `SDD-OBS-09` sudah final (OpenTelemetry + backend terkelola). `SDD-OBS-10` menjadikan region Indonesia **kriteria gugur** yang diverifikasi sebelum kontrak — memilih nama sekarang mendahului verifikasi itu. Ditutup pada seleksi `PR-00-06` |
+| Versi Expo / React Native | `SDD-MOB-10` sudah final. Lantai OS lini wajib diverifikasi terhadap `NFR-C-03` sebelum dikunci; Phase 03 |
+
+Keduanya dicatat di `TBD-REGISTER.md` sebagai **gerbang tertunda** dan **tidak dihitung sebagai TBD** — keputusannya menunggu verifikasi, bukan menunggu orang.
+
+### Dokumen usang yang dibetulkan
+
+| Berkas | Yang salah | Menjadi |
+|---|---|---|
+| `SDD/README.md` | Kelompok A dihitung **1** (`TBD-AI-D` masih terbuka) | 0 — `TBD-AI-D` tertutup 2 September 2026 (`SDD-AI-16`); hitungan register ikut ditulis |
+| `SDD/11-frontend-architecture.md` §3, §5 | `TBD-FE-B` disebut "masih terbuka", padahal §TBD berkas yang sama menyatakannya tertutup 22 Agustus 2026 | Dirujuk sebagai tertutup lewat `UXD-12` |
+| `UX/UX-SPEC.md` §Ringkasan | "Keputusan masih terbuka \| **5**", padahal `UX/DECISIONS.md` §12.3 kosong sejak 25 Agustus 2026 | 0, dengan rujukan ke §12.2 |
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `SDD/05-database-design.md` | `SDD-DB-15` baru (§2, §3, §5); `SDD-DB-12` menamai dbmate; konsekuensi pemetaan kolom Bahasa Indonesia ditulis ulang terhadap tipe tabel Kysely |
+| `SDD/17-repo-layout.md` | `SDD-REPO-11` baru; §4.1 menamai dbmate dan GitHub Actions pada pohon berkas; §4.4 memperoleh `npm run test` |
+| `SDD/16-infrastructure-deployment.md` | `SDD-INF-12` baru (§2, §3, §5) — penyedia CI beserta konsekuensi *required status check* |
+| `SDD/11-frontend-architecture.md` | `SDD-FE-13` baru; `SDD-FE-12` merujuknya alih-alih menyebut dua pustaka |
+| `SDD/00-system-architecture.md` | `shared/db/` pada §4.1 merujuk `SDD-DB-15` |
+| `SDD/TBD-REGISTER.md` | Empat baris tertutup; hitungan `13 · 32`; bagian **Gerbang tertunda** baru |
+| `DESIGN/DESIGN-SYSTEM.md` §6.2, §9 | Baris "Radix UI / React Aria" diganti pembagian `SDD-FE-13` |
+| `phases/phase-00.md` §6, §7 | `PR-00-04`, `PR-00-05`, `PR-00-17` merujuk ID keputusan yang baru dikunci |
+| `logs/phase-00.md` §1, §2, §5, §6 | Audit dicatat; empat TBD tertutup; dua butir wajib baru pada §5 |
+| `GITHUB-CI-STATE.md` §Sumber, §3, §6 | Penyedia CI berpindah dari "Yang masih terbuka" menjadi aturan bersumber; vendor observability menggantikannya di §6 |
+
+**Dampak pada lintasan kritis:** `PR-00-04`, `PR-00-05`, dan `PR-00-17` tidak lagi berdiri di atas perkakas yang tidak beralamat ID. Total PR tetap **163**; tidak ada PR yang ditambah, dipecah, atau dijadwal ulang.
+
+
+## 6 September 2026 — status Phase 00 dan pencatatan pelaksanaan disegarkan
+
+**Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). Tidak ada requirement, keputusan desain, maupun business rule yang berubah.
+
+### Diubah
+
+| Berkas | Perubahan |
+|---|---|
+| `IMPLEMENTATION-STATUS.md` | Phase 00 menjadi `In Progress`, `PR-00-01` dan `PR-00-02` tercatat `Done`, total kemajuan menjadi 2/163 |
+| `logs/phase-00.md` | Mencatat dua PR yang tergabung, penyimpangan pembentukan `develop`, dan kegagalan `npm run typecheck` akar yang belum ditangani |
+| `BRANCHING-STRATEGY.md` §0 | Keadaan transisi diselaraskan: `develop` dan `apps/` sudah ada, `staging` dan pipeline masih menunggu PR-00-18 dan PR-00-17 |
+| `CLAUDE.md` | Pembaruan status dan log phase menjadi langkah wajib sebelum pekerjaan PR dilaporkan selesai |
+| README, header phase/log, dan template phase | Tidak lagi menyimpan nilai status sendiri; seluruhnya merujuk `IMPLEMENTATION-STATUS.md`, dan validator menolak header yang menyalin status |
+
+**Dampak pada lintasan kritis:** tidak ada. Total PR tetap **163**; perubahan ini hanya membetulkan catatan pelaksanaan agar keadaan aktual dapat ditelusuri.
+
+
+## 6 September 2026 — `GITHUB-CI-STATE.md` §3: batas antar-modul ditegakkan `PR-00-02`
+
+**Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). Tidak ada TBD, requirement, maupun keputusan yang berubah.
+
+### Diubah
+
+`PR-00-02` menutup batas antar-modul `SDD-00 §4.2` baris 1 (`SDD-SYS-02`, `SDD-SYS-03`), sehingga satu baris §3 menjadi salah.
+
+| Bagian | Sebelum | Sesudah |
+|---|---|---|
+| §3 — baris lint | "Batas antar-**modul** dan pemasangannya di CI belum" · dibangun `PR-00-02`, `PR-00-17` | Batas antar-modul ditegakkan sejak `PR-00-02` dan dibuktikan uji negatif; yang tersisa tinggal pemasangannya di CI · dibangun `PR-00-17` |
+
+**Dampak pada lintasan kritis:** tidak ada. Total PR tetap **163**. Tidak ada requirement, business rule, ambang, ID, maupun PR baru.
+
+## 6 September 2026 — `GITHUB-CI-STATE.md` disegarkan setelah `develop` hidup & `PR-00-01` tergabung
+
+**Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). Tidak ada TBD, requirement, maupun keputusan yang berubah.
+
+### Diubah
+
+Berkas ini mencatat *current state*, sehingga ia menjadi salah begitu keadaannya berubah. Dua peristiwa 6 September 2026 membuat tujuh baris di dalamnya tidak lagi akurat: `develop` mulai hidup, dan `PR-00-01` menggabungkan kerangka monorepo sehingga `apps/*` beserta lint dan TypeScript-nya benar-benar ada.
+
+| Bagian | Sebelum | Sesudah |
+|---|---|---|
+| §1 | "`apps/` belum ada, tidak ada kode untuk di-*lint*, diuji, dibangun" | `apps/*` dan `packages/schemas` ada; `npm run lint` dan `npm run build` punya sasaran nyata. Yang belum ada adalah pipeline yang menjalankannya |
+| §2 — topologi | "Hanya `main` hidup; `develop` dan `staging` belum ada" · penutup `PR-00-18` | `main` dan `develop` hidup; hanya `staging` yang menunggu `PR-00-18` |
+| §2 — dorongan langsung | "Seluruh riwayat masuk lewat `main`" | Sejak `PR-00-01` sasarannya `develop` |
+| §2 — squash | "Belum berlaku — `develop` belum ada" | Berlaku; `PR-00-01` digabungkan dengan *squash*, masih sebagai kebiasaan karena setelan belum aktif |
+| §3 — baris lint | "Belum ada" | Lint ada sejak `PR-00-01`, menegakkan batas antar-pohon dan batas lapisan, dibuktikan uji negatif. Batas antar-**modul** dan pemasangannya di CI tetap `PR-00-02` dan `PR-00-17` |
+| §3 — `.github/workflows/` | Kosong "karena `apps/` belum ada" | Kosong karena urutan pekerjaan, bukan ketiadaan sasaran — alasan lamanya sudah gugur |
+| §4 — penutup | "Selama `develop` dan `staging` belum ada, hanya `main` yang dapat disetel" | `main` dan `develop` dapat disetel sekarang; `staging` menunggu `PR-00-18` |
+
+**Penyimpangan baru dicatat.** `develop` dibuat **manual** pada 6 September 2026 saat pemulihan cabang, bukan oleh `PR-00-18` sebagaimana §2 merencanakannya. Ia dibuat dari `main` pada SHA identik lalu menerima isinya lewat PR seperti biasa. Dicatat sejajar dengan penyimpangan `docs/domain-aset-bahan-m22` yang sudah ada, karena rencana dan kenyataan berbeda dan yang berlaku adalah kenyataan.
+
+**Yang sengaja tidak diubah.** §4 tetap berbunyi "belum satupun aktif": `main` dan `develop` diperiksa lewat `gh api` pada tanggal yang sama dan dua-duanya menjawab `Branch not protected`. Menyalakan branch protection adalah tindakan di Settings GitHub yang mengubah perilaku repositori bagi semua orang — keputusan tersendiri, bukan efek samping penyegaran catatan. §5 dan §6 tidak tersentuh.
+
+**Dampak pada lintasan kritis:** tidak ada. Total PR tetap **163**. Tidak ada requirement, business rule, ambang, ID, maupun PR baru.
+
+## 6 September 2026 — Celah telusur: nomor surat `GL-07`, `DP-AI-04`, dan `AI-CTL-07`…`AI-CTL-10`
 
 **Status TBD: 13 terbuka · 28 tertutup** — A (0) · B (13) · C (0) · D (0). **Tidak ada TBD yang dibuka maupun ditutup**, dan tidak ada keputusan tertutup yang diubah.
 

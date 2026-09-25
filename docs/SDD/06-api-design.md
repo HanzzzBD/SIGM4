@@ -9,7 +9,7 @@
 | Kelompok | ID |
 |---|---|
 | Konvensi & kontrak | Bab 17.1 – 17.3, 17.5 |
-| Daftar endpoint | 119 endpoint, dimiliki modul masing-masing (bagian 7) |
+| Daftar endpoint | 124 endpoint, dimiliki modul masing-masing (bagian 7) |
 | Otorisasi | `PM-01` … `PM-04`, `NFR-S-05` |
 | Idempotensi | `ID-01` … `ID-05` |
 | Performa | `NFR-P-01`, `NFR-P-02` |
@@ -34,10 +34,18 @@
 | **SDD-API-10** | Endpoint yang mengembalikan berkas **tidak pernah** menyalurkan byte melalui API; selalu mengembalikan URL bertanda tangan (lihat [SDD-09](09-file-storage-design.md)). |
 | **SDD-API-11** | Pustaka skema runtime yang dimaksud `SDD-API-01` adalah **Zod**. Skema Zod adalah satu-satunya definisi; tipe statis dan OpenAPI diturunkan darinya. |
 | **SDD-API-12** | `/api/docs` **tetap tidak diaktifkan di produksi** (Bab 17.1); ia tersedia di development dan staging. Sebagai gantinya `openapi.json` diterbitkan pipeline sebagai **artefak rilis bertanda versi**. Pencabutan larangan ini menuntut perubahan Bab 17.1 lebih dulu — bukan wewenang SDD. |
+| **SDD-API-13** | Pembangkit OpenAPI yang dimaksud `SDD-API-02` adalah **`zod-openapi`**, dipakai lewat **registri route yang sudah ada** (§4.1, dipindai saat *bootstrap*). Registri itu tetap satu-satunya daftar route: OpenAPI **dan** matriks uji otorisasi `SEC-T-01` sama-sama diturunkan darinya. Tidak ada registri kedua yang mendaftarkan route untuk keperluan dokumentasi. |
+| **SDD-API-14** | Amplop galat Bab 17.2 **tidak berubah bentuk**; `ErrorMapper` hanya menentukan isinya. `error.message` dan `error.details` dikirim **hanya** dari `DomainError` galat klien (4xx, bukan 401/403) yang pesannya **sengaja ditulis** (`pesanEksplisit`); `details` diturunkan dari `detail.field` dan `detail.errors[{ field, message }]`. Selebihnya — galat skema (Zod), basis data, sistem, 5xx, dan 401/403 — berpesan generik per kode tanpa `details`. Kunci `detail` lain (`rule`, `kewajiban`, `permissions`) adalah konteks log/uji, bukan kontrak klien. |
 
 ---
 
 ## 3. Alasan
+
+**SDD-API-13 — satu registri, dua keluaran.** `SDD-API-11 §3` menjadikan "generator OpenAPI paling matang" sebagai alasan memilih Zod tetapi tidak menyebut generatornya, sehingga penopang `NFR-M-05` menggantung pada perkakas yang belum ada namanya.
+
+Yang menentukan pilihan bukan kelengkapan fitur melainkan bentuk integrasinya. §4.1 sudah menetapkan registri route yang dipindai saat *bootstrap*, dan registri itu sudah memikul dua kewajiban: memvalidasi bahwa setiap route mendeklarasikan permission-nya (`PM-01`) dan membangun matriks uji otorisasi (`SEC-T-01`). **`@asteasolutions/zod-to-openapi`** ditolak karena bekerja lewat `OpenAPIRegistry` miliknya sendiri — route lalu terdaftar di dua tempat, dan dua daftar atas objek yang sama adalah persis bentuk yang `SDD-API-02` ada untuk menghapusnya. **`z.toJSONSchema` bawaan Zod** cukup untuk skemanya tetapi menyisakan path, method, parameter, dan respons sebagai perekat OpenAPI 3.1 milik kita sendiri — infrastruktur tanpa kandungan domain, pada bagian yang `NFR-M-05` justru tuntut tidak rapuh.
+
+`zod-openapi` memperkaya skema Zod di tempatnya berada dan merakit dokumen dari daftar yang kita berikan, sehingga registri §4.1 tetap menjadi satu-satunya sumber. Konsekuensinya sengaja: route yang lupa didaftarkan tidak menghasilkan dokumentasi yang salah — ia menggagalkan *bootstrap*, karena daftar yang sama juga yang menegakkan `PM-01`.
 
 **SDD-API-01/02 — satu sumber skema.** Menulis validasi, tipe TypeScript, dan OpenAPI secara terpisah menjamin ketiganya menyimpang dalam hitungan minggu. `NFR-M-05` menuntut dokumentasi API selalu sinkron dengan implementasi — itu hanya realistis bila dokumentasi diturunkan dari kode yang benar-benar dieksekusi saat memvalidasi permintaan.
 
@@ -57,7 +65,7 @@ Zod dipilih karena ketiga batasan itu menunjuk ke arah yang sama: generator Open
 
 **SDD-API-12 — `/api/docs` tetap dilarang di produksi.** Pertanyaannya bukan apakah proteksi autentikasi cukup aman, melainkan siapa yang berwenang menjawabnya. Bab 17.1 adalah teks **PRD**, dan [README SDD](README.md) menetapkan PRD berlaku di atas SDD; mengaktifkan `/api/docs` di produksi karena itu bukan pilihan teknis melainkan perubahan requirement.
 
-Alasan larangannya juga masih berdiri sendiri. `NFR-M-05` menuntut dokumentasi **tersinkron**, bukan **terhosting di produksi** — dan sinkronisasi sudah dijamin `SDD-API-02` (digenerate dari kode yang benar-benar dieksekusi saat memvalidasi permintaan), sehingga menyajikannya di produksi tidak menambah kepatuhan apa pun. Di sisi lain, menerbitkan katalog 119 endpoint beserta skemanya bergerak berlawanan dengan `SDD-AUTH-08` dan 17.5 poin 3, dan gerbang autentikasinya sendiri menjadi route baru yang wajib masuk matriks `SEC-T-01` serta lingkup DAST `ST-03`.
+Alasan larangannya juga masih berdiri sendiri. `NFR-M-05` menuntut dokumentasi **tersinkron**, bukan **terhosting di produksi** — dan sinkronisasi sudah dijamin `SDD-API-02` (digenerate dari kode yang benar-benar dieksekusi saat memvalidasi permintaan), sehingga menyajikannya di produksi tidak menambah kepatuhan apa pun. Di sisi lain, menerbitkan katalog 124 endpoint beserta skemanya bergerak berlawanan dengan `SDD-AUTH-08` dan 17.5 poin 3, dan gerbang autentikasinya sendiri menjadi route baru yang wajib masuk matriks `SEC-T-01` serta lingkup DAST `ST-03`.
 
 Yang ditambahkan keputusan ini adalah penutup celah praktisnya: `openapi.json` per tag rilis diterbitkan sebagai artefak pipeline. Tanpa itu, kebutuhan nyata membandingkan kontrak antar-versi (`MOB-VER-05`, `NFR-C-09`) tidak punya jalur resmi — dan kebutuhan yang tidak punya jalur resmi pada akhirnya membuat orang mengaktifkan `/api/docs` di produksi.
 
@@ -101,6 +109,8 @@ requestId → logger → cors → helmet(header keamanan NFR-S-11)
 
 Urutan ini tetap dan diuji; menyisipkan sesuatu di tengahnya memerlukan pembaruan berkas ini.
 
+**`cors` tidak dipasang.** Web dan API disajikan dari **satu origin** di belakang Nginx — web statis di `/`, API di `/api/v1` ([SDD-16 §4.2](16-infrastructure-deployment.md)) — sehingga peramban tidak pernah melakukan permintaan lintas origin, dan aplikasi mobile tidak tunduk pada CORS. Slot `cors` pada rantai di atas tetap tertulis sebagai tempatnya bila topologi itu berubah; memasangnya tanpa origin lain untuk diizinkan hanya menambah permukaan konfigurasi (keputusan pemilik produk, 15 September 2026).
+
 ### 4.3 Kontrak respons
 
 Bentuk amplop sudah ditetapkan Bab 17.2 dan tidak diulang di sini. Yang ditetapkan rancangan:
@@ -138,6 +148,16 @@ const MAP: Array<[matcher, httpStatus, code]> = [
 ```
 
 Galat 500 **tidak pernah** menyertakan pesan asli ke klien (`NFR-R-10`); pesan asli hanya masuk log terstruktur bersama `request_id`.
+
+**Pesan dan `details` ke klien** (`SDD-API-14`, Bab 17.2). Sebuah `DomainError` membawa `kode`, `pesan` opsional, dan `detail` opsional. Tiga syarat harus terpenuhi agar pesannya sampai ke klien:
+
+| Syarat | Alasan |
+|---|---|
+| `pesan` diisi pengembang (`pesanEksplisit`) | Tanpa `pesan`, `message` hanya berisi kode — bukan kalimat untuk pengguna |
+| Status 4xx | Galat 5xx tidak pernah membawa pesan (`NFR-R-10`) |
+| Kode bukan `UNAUTHENTICATED`, `TOKEN_EXPIRED`, `FORBIDDEN`, `INSUFFICIENT_PERMISSION` | Jawaban autentikasi/otorisasi seragam (`SDD-AUTH-08`) |
+
+Bila salah satu tidak terpenuhi, ujung rantai memakai pesan generik per kode dan tidak menyertakan `details`. `details` diturunkan `ErrorMapper`: `detail.field` menjadi satu butir berpesan galat itu sendiri, `detail.errors` diteruskan butir per butir. Konsekuensi bagi penulis service: **jangan menyisipkan data pribadi ke `pesan`** (mis. nama pengguna) — ia ikut ke respons dan log klien; cukup rujuk aturannya. Galat skema (Zod) sengaja tidak menghasilkan `details`: pesan bawaan Zod berbahasa Inggris, sedangkan `NFR-AC-09` mewajibkan pesan pengguna berbahasa Indonesia.
 
 Pemetaan `23P01 → RESERVATION_CONFLICT` disesuaikan menjadi `ASSET_NOT_AVAILABLE` bila `resource_type = 'asset'`, berdasarkan nama constraint yang dilanggar.
 
