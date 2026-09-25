@@ -413,6 +413,10 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                     },
                     ["ASSET_CREATED"],
                 );
+                // BR-015 (fix/PR-02-10): ruangan beraset tidak dapat dinonaktifkan. Aset
+                // di atas hanya untuk membuktikan AL-01 POST /assets, bukan untuk diuji di
+                // sini — disingkirkan sebelum langkah PATCH .../status di bawah.
+                await kueri(`DELETE FROM assets WHERE room_id = ${id(ruang)}`);
 
                 await langkah("PATCH /rooms/:id/status", `/rooms/${id(ruang)}/status`, { status: "NONAKTIF" }, ["LOCATION_DEACTIVATED"]);
                 await langkah("PATCH /buildings/:id/status", `/buildings/${id(gedung)}/status`, { status: "NONAKTIF" }, ["LOCATION_DEACTIVATED"]);
