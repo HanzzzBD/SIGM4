@@ -15,14 +15,14 @@
   "dependencies": {
     "@node-rs/argon2": "^2.2.1",
     "@sigm4/schemas": "*",
-    "bullmq": "6.3.4",
+    "bullmq": "6.3.8",
     "exceljs": "4.4.0",
     "express": "5.2.1",
     "helmet": "8.3.0",
     "ioredis": "6.0.0",
-    "kysely": "0.29.5",
+    "kysely": "0.29.6",
     "pg": "8.23.0",
-    "zod": "4.5.4",
+    "zod": "4.6.5",
     "zod-openapi": "6.0.2"
   },
   "devDependencies": {
