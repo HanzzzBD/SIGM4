@@ -91,6 +91,10 @@ describe.skipIf(!ADA_DB)("PR-01-06 — pohon lokasi + penonaktifan berjenjang (a
     });
 
     beforeEach(async () => {
+        // BR-015 (fix/PR-02-10): assets menunjuk rooms DAN asset_categories —
+        // dibersihkan SEBELUM keduanya.
+        await kueri("DELETE FROM assets");
+        await kueri("DELETE FROM asset_categories");
         await kueri("DELETE FROM rooms");
         await kueri("DELETE FROM areas");
         await kueri("DELETE FROM buildings");
@@ -98,6 +102,8 @@ describe.skipIf(!ADA_DB)("PR-01-06 — pohon lokasi + penonaktifan berjenjang (a
     });
 
     afterAll(async () => {
+        await kueri("DELETE FROM assets");
+        await kueri("DELETE FROM asset_categories");
         await kueri("DELETE FROM rooms");
         await kueri("DELETE FROM areas");
         await kueri("DELETE FROM buildings");
@@ -264,5 +270,111 @@ describe.skipIf(!ADA_DB)("PR-01-06 — pohon lokasi + penonaktifan berjenjang (a
         await expect(
             service.updateRoomStatus(buatCtx(adminId), 999_999_999, "NONAKTIF"),
         ).rejects.toThrow(/tidak ditemukan/);
+    });
+
+    describe("updateRoomStatus() — BR-015 tingkat ruangan (fix/PR-02-10, memuat aset)", () => {
+        async function seedKategoriAset(): Promise<string> {
+            const [baris] = await kueri<{ id: string }>(
+                `INSERT INTO asset_categories (nama, kode) VALUES ('Kategori Uji', '${kodeUnik("KAT")}') RETURNING id::text`,
+            );
+            if (baris === undefined) throw new Error("Gagal menyisipkan kategori uji");
+            return baris.id;
+        }
+
+        async function seedAset(roomId: string, kategoriId: string, dihapuskan = false): Promise<string> {
+            const [baris] = await kueri<{ id: string }>(`
+                INSERT INTO assets (kode_barang, nama, category_id, tahun_perolehan, sumber_perolehan, room_id, kondisi, dihapuskan)
+                VALUES ('${kodeUnik("BRG")}', 'Aset Uji', ${kategoriId}, 2024, 'PEMBELIAN', ${roomId}, 'BAIK', ${dihapuskan})
+                RETURNING id::text
+            `);
+            if (baris === undefined) throw new Error("Gagal menyisipkan aset uji");
+            return baris.id;
+        }
+
+        it("ruangan masih memuat aset -> VALIDATION_ERROR (BR-015), status TIDAK berubah", async () => {
+            const adminId = await seedAdmin();
+            const service = buatService();
+            const ctx = buatCtx(adminId);
+            const { area } = await seedHierarki(service, ctx);
+            const room = await service.createRoom(ctx, {
+                areaId: Number(area.id),
+                nama: "Gudang Beraset",
+                kode: kodeUnik("RM"),
+                jenis: "GUDANG",
+                kapasitas: null,
+                penanggungJawabId: null,
+                dapatDireservasi: false,
+                bolehDireservasiSiswa: false,
+            });
+            const kategoriId = await seedKategoriAset();
+            await seedAset(room.id, kategoriId);
+
+            await expect(
+                service.updateRoomStatus(ctx, Number(room.id), "NONAKTIF"),
+            ).rejects.toMatchObject({ kode: "VALIDATION_ERROR", detail: { rule: "BR-015" } });
+
+            const [ulang] = await kueri<{ status: string }>(`SELECT status FROM rooms WHERE id = ${room.id}`);
+            expect(ulang?.status).toBe("AKTIF");
+        });
+
+        it("aset yang SUDAH dihapuskan (M-21) tidak menghalangi penonaktifan", async () => {
+            const adminId = await seedAdmin();
+            const service = buatService();
+            const ctx = buatCtx(adminId);
+            const { area } = await seedHierarki(service, ctx);
+            const room = await service.createRoom(ctx, {
+                areaId: Number(area.id),
+                nama: "Gudang Aset Dihapuskan",
+                kode: kodeUnik("RM"),
+                jenis: "GUDANG",
+                kapasitas: null,
+                penanggungJawabId: null,
+                dapatDireservasi: false,
+                bolehDireservasiSiswa: false,
+            });
+            const kategoriId = await seedKategoriAset();
+            await seedAset(room.id, kategoriId, true);
+
+            const hasil = await service.updateRoomStatus(ctx, Number(room.id), "NONAKTIF");
+            expect(hasil.status).toBe("NONAKTIF");
+        });
+
+        it("aset dipindahkan ke ruangan lain -> ruangan asal dapat dinonaktifkan (\"seluruh asetnya dipindahkan\")", async () => {
+            const adminId = await seedAdmin();
+            const service = buatService();
+            const ctx = buatCtx(adminId);
+            const { area } = await seedHierarki(service, ctx);
+            const asal = await service.createRoom(ctx, {
+                areaId: Number(area.id),
+                nama: "Gudang Asal",
+                kode: kodeUnik("RM"),
+                jenis: "GUDANG",
+                kapasitas: null,
+                penanggungJawabId: null,
+                dapatDireservasi: false,
+                bolehDireservasiSiswa: false,
+            });
+            const tujuan = await service.createRoom(ctx, {
+                areaId: Number(area.id),
+                nama: "Gudang Tujuan",
+                kode: kodeUnik("RM"),
+                jenis: "GUDANG",
+                kapasitas: null,
+                penanggungJawabId: null,
+                dapatDireservasi: false,
+                bolehDireservasiSiswa: false,
+            });
+            const kategoriId = await seedKategoriAset();
+            const asetId = await seedAset(asal.id, kategoriId);
+
+            await expect(
+                service.updateRoomStatus(ctx, Number(asal.id), "NONAKTIF"),
+            ).rejects.toMatchObject({ kode: "VALIDATION_ERROR", detail: { rule: "BR-015" } });
+
+            await kueri(`UPDATE assets SET room_id = ${tujuan.id} WHERE id = ${asetId}`);
+
+            const hasil = await service.updateRoomStatus(ctx, Number(asal.id), "NONAKTIF");
+            expect(hasil.status).toBe("NONAKTIF");
+        });
     });
 });

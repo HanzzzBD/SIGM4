@@ -253,6 +253,26 @@ export class LocationRepository extends BaseRepository {
         );
     }
 
+    /**
+     * BR-015 di tingkat ruangan: apakah ruangan ini masih memuat aset yang
+     * belum dihapuskan (`assets.dihapuskan = false`, `PR-02-10`). Mengueri
+     * `assets` LANGSUNG — tabel milik M-04, bukan lewat repository modul
+     * lain (dilarang lintas modul, `SDD-00 §4.2`); pola yang sama dengan
+     * `AssetRepository.roomExists` yang mengueri `rooms` langsung dari M-04.
+     * Aset yang dihapuskan (M-21) tidak lagi dianggap "memuat" ruangan —
+     * BR-015 hanya menuntut aset AKTIF dipindahkan sebelum penonaktifan.
+     */
+    async hasAssetsInRoom(ctx: AuthContext, roomId: number): Promise<boolean> {
+        return (
+            (await this.query(ctx)
+                .selectFrom("assets")
+                .select("id")
+                .where("room_id", "=", String(roomId))
+                .where("dihapuskan", "=", false)
+                .executeTakeFirst()) !== undefined
+        );
+    }
+
     async updateBuildingStatus(
         ctx: AuthContext,
         id: number,
