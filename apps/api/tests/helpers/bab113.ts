@@ -43,6 +43,15 @@ export function bacaBab113(): ReadonlyMap<string, readonly string[]> {
     return kelompok;
 }
 
+/**
+ * Tipe enum yang SENGAJA di luar Bab 11.3 dan bernilai huruf kecil — pengecualian
+ * TERTULIS, bukan kelonggaran: SDD-01 §4.1 menyatakan `booking_resource` dan
+ * `booking_origin` tidak ikut katalog karena glossary PRD memakukan
+ * `resource_type='asset'` sebagai kontrak teknis (lahir di 0030, PR-02-16).
+ * Menambah tipe ke sini menuntut rujukan dokumen yang sama tegasnya.
+ */
+export const TIPE_DI_LUAR_BAB113: ReadonlySet<string> = new Set(["booking_resource", "booking_origin"]);
+
 /** Kelompok Bab 11.3 -> nama tipe PostgreSQL (`<domain>_<konsep>`, SDD-05 §4.1). */
 export const NAMA_TIPE: ReadonlyMap<string, string> = new Map([
     ["Kondisi Aset", "asset_condition"],

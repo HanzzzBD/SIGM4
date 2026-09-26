@@ -12,7 +12,7 @@
 
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { AKAR, NAMA_TIPE, bacaBab113, kodeTeknis } from "./helpers/bab113.js";
+import { AKAR, NAMA_TIPE, TIPE_DI_LUAR_BAB113, bacaBab113, kodeTeknis } from "./helpers/bab113.js";
 
 const DIR_MIGRATION = new URL("apps/api/migrations/", AKAR);
 
@@ -107,7 +107,7 @@ describe("migration enum terhadap Bab 11.3", () => {
     });
 
     it("migration tidak membuat tipe di luar Bab 11.3", () => {
-        const diizinkan = new Set(NAMA_TIPE.values());
+        const diizinkan = new Set([...NAMA_TIPE.values(), ...TIPE_DI_LUAR_BAB113]);
         expect([...migration.keys()].filter((t) => !diizinkan.has(t))).toEqual(
             [],
         );

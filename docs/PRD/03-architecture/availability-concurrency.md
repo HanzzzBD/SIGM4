@@ -54,23 +54,25 @@ Slot `Released` dipertahankan sebagai arsip untuk analitik utilisasi (SC-05, Bab
 Validasi aplikasi **tidak cukup** untuk mencegah *race condition* (RS-11). Aturan berikut wajib ditegakkan oleh basis data:
 
 ```sql
--- PostgreSQL 15+, ekstensi btree_gist
+-- PostgreSQL 15+, ekstensi btree_gist. Satu constraint per jenis sumber daya:
+-- namanya yang membedakan respons 409 ruangan dari 409 aset (CI-04).
 ALTER TABLE booking_slots
-  ADD CONSTRAINT booking_slots_no_overlap
-  EXCLUDE USING gist (
-    resource_type WITH =,
-    resource_id   WITH =,
-    slot_range    WITH &&
-  )
-  WHERE (status IN ('TENTATIVE','CONFIRMED','ACTIVE'));
+  ADD CONSTRAINT booking_slots_room_no_overlap
+  EXCLUDE USING gist (resource_id WITH =, slot_range WITH &&)
+  WHERE (resource_type = 'room' AND status IN ('TENTATIVE','CONFIRMED','ACTIVE'));
+
+ALTER TABLE booking_slots
+  ADD CONSTRAINT booking_slots_asset_no_overlap
+  EXCLUDE USING gist (resource_id WITH =, slot_range WITH &&)
+  WHERE (resource_type = 'asset' AND status IN ('TENTATIVE','CONFIRMED','ACTIVE'));
 ```
 
 | Kode | Aturan integritas | Penegakan |
 |---|---|---|
-| CI-01 | Dua slot aktif atas sumber daya yang sama tidak boleh beririsan | *Exclusion constraint* di atas |
+| CI-01 | Dua slot aktif atas sumber daya yang sama tidak boleh beririsan | Dua *exclusion constraint* di atas |
 | CI-02 | Pemesanan multi-unit mengunci baris `assets` terurut menaik berdasarkan `asset_id` | Konvensi wajib pada service layer, untuk mencegah *deadlock* |
 | CI-03 | Seluruh operasi pemesanan dijalankan pada isolasi `READ COMMITTED` dengan `SELECT … FOR UPDATE` atas baris aset yang dialokasikan | Service layer |
-| CI-04 | Pelanggaran `booking_slots_no_overlap` dipetakan ke respons `409 ASSET_NOT_AVAILABLE` / `409 RESERVATION_CONFLICT`, bukan `500` | Error mapper |
+| CI-04 | Pelanggaran `booking_slots_asset_no_overlap` dipetakan ke respons `409 ASSET_NOT_AVAILABLE`, pelanggaran `booking_slots_room_no_overlap` ke `409 RESERVATION_CONFLICT` — bukan `500` | Error mapper |
 | CI-05 | `assets.status` diturunkan (*derived*), tidak pernah ditulis langsung oleh modul reservasi | Hanya `LoanService`, `MaintenanceService`, `AssetService`, dan job `slot-activation` boleh menulisnya |
 
 ## 26.4 Algoritma Perhitungan Ketersediaan

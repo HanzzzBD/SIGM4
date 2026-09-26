@@ -104,7 +104,7 @@ describe("mapError (SDD-06 §4.4)", () => {
     });
 
     it("23P01 pada ruangan -> RESERVATION_CONFLICT (CI-04)", () => {
-        expect(mapError(pg("23P01", "booking_slots_no_overlap")).kode).toBe(
+        expect(mapError(pg("23P01", "booking_slots_room_no_overlap")).kode).toBe(
             "RESERVATION_CONFLICT",
         );
     });

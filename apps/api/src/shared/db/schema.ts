@@ -519,6 +519,28 @@ export interface AssetMovementsTable {
     dilakukan_oleh: ColumnType<string, string | number, string | number>;
 }
 
+/**
+ * `booking_slots` (0030, PR-02-16; SDD-01 §4.1). `slot_range` `tstzrange` half-open
+ * `[)` (SDD-AVL-02) — driver `pg` mengembalikannya sebagai string literal rentang.
+ * `reservation_id`/`loan_id`/`work_order_id` NULLABLE tanpa FK sampai modul pemiliknya
+ * lahir (keputusan 63).
+ */
+export interface BookingSlotsTable {
+    id: Generated<string>;
+    resource_type: "room" | "asset";
+    resource_id: ColumnType<string, string | number, string | number>;
+    slot_range: string | null;
+    status: "TENTATIVE" | "CONFIRMED" | "ACTIVE" | "RELEASED";
+    origin: "reservation" | "loan" | "maintenance" | "fixed_schedule" | "manual_block";
+    reservation_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    loan_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    work_order_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    parent_slot_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    expires_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    created_by: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    created_at: Generated<Date>;
+}
+
 /** Peta nama tabel -> bentuk barisnya. Diisi bersama migration pemiliknya. */
 export interface Database {
     document_counters: DocumentCountersTable;
@@ -549,4 +571,5 @@ export interface Database {
     asset_condition_history: AssetConditionHistoryTable;
     asset_code_counters: AssetCodeCountersTable;
     asset_movements: AssetMovementsTable;
+    booking_slots: BookingSlotsTable;
 }
