@@ -2,7 +2,12 @@
 
 import type { RequestHandler } from "express";
 import { requireAuthContext } from "../../../shared/auth/index.js";
-import { CreateAssetBodySchema, ListRoomAssetsQuerySchema, RoomIdParamSchema } from "../schemas/asset.schema.js";
+import {
+    CreateAssetBodySchema,
+    ListAssetsQuerySchema,
+    ListRoomAssetsQuerySchema,
+    RoomIdParamSchema,
+} from "../schemas/asset.schema.js";
 import type { AssetService } from "../services/asset.service.js";
 
 export function createAssetHandler(service: AssetService): RequestHandler {
@@ -64,6 +69,47 @@ export function listRoomAssetsHandler(service: AssetService): RequestHandler {
                     jumlah_dalam_perbaikan: hasil.ringkasan.jumlahDalamPerbaikan,
                 },
             },
+            meta: {
+                page: hasil.page,
+                per_page: hasil.perPage,
+                total: hasil.total,
+                total_pages: hasil.totalPages,
+            },
+        });
+    };
+}
+
+/** `GET /assets` (FR-04.2): pencarian, filter, dan paginasi katalog aset. */
+export function listAssetsHandler(service: AssetService): RequestHandler {
+    return async (req, res) => {
+        const ctx = requireAuthContext(res);
+        const query = ListAssetsQuerySchema.parse({
+            page: req.query["page"],
+            per_page: req.query["per_page"],
+            q: req.query["q"],
+            sort: req.query["sort"],
+            kategori_id: req.query["filter[kategori_id]"],
+            lokasi_id: req.query["filter[lokasi_id]"],
+            kondisi: req.query["filter[kondisi]"],
+            status: req.query["filter[status]"],
+            tahun_perolehan: req.query["filter[tahun_perolehan]"],
+            dapat_dipinjam: req.query["filter[dapat_dipinjam]"],
+        });
+        const hasil = await service.list(ctx, {
+            page: query.page,
+            perPage: query.per_page,
+            sort: query.sort,
+            ...(query.q === undefined ? {} : { q: query.q }),
+            ...(query.kategori_id === undefined ? {} : { categoryId: query.kategori_id }),
+            ...(query.lokasi_id === undefined ? {} : { roomId: query.lokasi_id }),
+            ...(query.kondisi === undefined ? {} : { kondisi: query.kondisi }),
+            ...(query.status === undefined ? {} : { status: query.status }),
+            ...(query.tahun_perolehan === undefined ? {} : { tahunPerolehan: query.tahun_perolehan }),
+            ...(query.dapat_dipinjam === undefined ? {} : { dapatDipinjam: query.dapat_dipinjam }),
+        });
+        res.status(200).json({
+            success: true,
+            data: hasil.rows,
             meta: {
                 page: hasil.page,
                 per_page: hasil.perPage,

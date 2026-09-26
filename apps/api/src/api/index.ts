@@ -96,7 +96,7 @@ import {
     updateRoomRoute,
     updateRoomStatusRoute,
 } from "../modules/m03-locations/index.js";
-import { assetsRouter, createAssetRoute, listRoomAssetsRoute } from "../modules/m04-assets/index.js";
+import { assetsRouter, createAssetRoute, listAssetsRoute, listRoomAssetsRoute } from "../modules/m04-assets/index.js";
 import {
     activityLogRouter,
     exportActivityLogsRoute,
@@ -182,6 +182,7 @@ export const registry = new RouteRegistry().register(
     updateRoomStatusRoute,
     listRoomAssetsRoute,
     createAssetRoute,
+    listAssetsRoute,
     listActivityLogsRoute,
     exportActivityLogsRoute,
     getSettingsRoute,

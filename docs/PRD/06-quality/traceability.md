@@ -26,7 +26,7 @@ Total: **69** requirement.
 | `FR-03.1` | M-03 Manajemen Lokasi | `02-modules/m03-locations.md` | Not Started |  |
 | `FR-03.2` | M-03 Manajemen Lokasi | `02-modules/m03-locations.md` | Not Started |  |
 | `FR-04.1` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | In Progress | PR-02-10 (#81): skema. PR-02-11 (belum digabung): `POST /assets`, N unit sekaligus + penomoran otomatis, diuji termasuk konkurensi. TERBUKA: A2 impor massal (belum ada PR), A4 pembuatan kategori inline (menunggu PR-02-15, belum ada endpoint kategori) |
-| `FR-04.2` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
+| `FR-04.2` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | In Progress | PR-02-12 (belum digabung): `GET /assets` (langkah 2-4: pencarian kode/nama/merek/nomor seri, filter kategori/lokasi/kondisi/status/tahun/kelayakan pinjam, paginasi `COUNT(*) OVER()`), BR-073 (field finansial) & scope `restricted` (A1) ditegakkan di repository, `GET /rooms/{id}/assets` (FR-03.2) tersambung data sungguhan. TERBUKA: langkah 5 (halaman detail lengkap — riwayat lintas modul), A3 ekspor (belum ada PR) |
 | `FR-04.3` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
 | `FR-04.4` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |
 | `FR-04.5` | M-04 Inventaris Aset | `02-modules/m04-assets.md` | Not Started |  |

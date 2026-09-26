@@ -1,6 +1,4 @@
-// Skema Zod M-04 (SDD-API-01, SDD-API-11). Modul lahir PERTAMA kali di sini
-// dengan satu endpoint kerangka (FR-03.2, `m04-assets.md` §7) — tabel `assets`
-// sendiri baru lahir `PR-02-10` (Phase 02).
+// Skema Zod M-04 (SDD-API-01, SDD-API-11, `m04-assets.md` §7).
 
 import { z } from "zod";
 
@@ -74,11 +72,7 @@ export const CreateAssetResponseSchema = z.object({
     meta: z.object({ jumlah_unit: z.number() }),
 });
 
-/**
- * `GET /rooms/{id}/assets` (FR-03.2 langkah 4). Filter DITERIMA dan divalidasi
- * agar kontrak API tidak berubah saat Phase 02 (`PR-02-10`) mengisinya dengan
- * data sungguhan — lihat `AssetService.listByRoom` untuk kerangkanya.
- */
+/** `GET /rooms/{id}/assets` (FR-03.2 langkah 4). */
 export const ListRoomAssetsQuerySchema = z.object({
     page: z.coerce.number().int().positive().default(1),
     per_page: z.coerce.number().int().positive().max(100).default(25),
@@ -101,7 +95,7 @@ const RoomAssetsRingkasanSchema = z.object({
     jumlah_dalam_perbaikan: z.number(),
 });
 
-/** FR-03.2 langkah 2-3 — kerangka: `data.assets` selalu kosong sampai `PR-02-10`. */
+/** FR-03.2 langkah 2-3: daftar aset ruangan + ringkasan kondisi/status. */
 export const RoomAssetsResponseSchema = z.object({
     success: z.literal(true),
     data: z.object({
@@ -109,6 +103,76 @@ export const RoomAssetsResponseSchema = z.object({
         assets: z.array(AssetSummarySchema),
         ringkasan: RoomAssetsRingkasanSchema,
     }),
+    meta: z.object({
+        page: z.number(),
+        per_page: z.number(),
+        total: z.number(),
+        total_pages: z.number(),
+    }),
+});
+
+/**
+ * `sort` (SDD-API §4.5 allow-list): awalan `-` = menurun. Sama dengan
+ * `AssetSortField` di repository — diulang di sini karena Zod (validasi
+ * masukan) dan tipe TypeScript (repository) adalah dua lapisan berbeda yang
+ * SENGAJA memvalidasi hal yang sama (SDD-API-01).
+ */
+const AssetSortSchema = z
+    .enum(["created_at", "-created_at", "nama", "-nama", "kode_barang", "-kode_barang", "tahun_perolehan", "-tahun_perolehan"])
+    .default("-created_at");
+
+/** Query boolean `filter[dapat_dipinjam]` — pola `consent_wali` (`user-import.schema.ts`). */
+const FilterBooleanSchema = z
+    .preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : v), z.enum(["true", "false"]).or(z.boolean()))
+    .transform((v) => v === true || v === "true")
+    .optional();
+
+/**
+ * `GET /assets` (FR-04.2 langkah 2-4, SDD-API §4.5). `q` mencari kode aset,
+ * nama, merek, atau nomor seri (langkah 3); `filter[...]` menyaring kategori,
+ * lokasi, kondisi, status, tahun perolehan, dan kelayakan pinjam (langkah 4).
+ */
+export const ListAssetsQuerySchema = z.object({
+    page: z.coerce.number().int().positive().default(1),
+    per_page: z.coerce.number().int().positive().max(100).default(25),
+    q: z.string().trim().min(1).max(150).optional(),
+    sort: AssetSortSchema,
+    kategori_id: z.coerce.number().int().positive().optional(),
+    lokasi_id: z.coerce.number().int().positive().optional(),
+    kondisi: AssetConditionSchema.optional(),
+    status: AssetStatusSchema.optional(),
+    tahun_perolehan: z.coerce.number().int().min(1900).max(2100).optional(),
+    dapat_dipinjam: FilterBooleanSchema,
+});
+
+/**
+ * Item katalog (FR-04.2). `sumber_perolehan`/`nilai_perolehan` OPSIONAL —
+ * tidak pernah ter-SELECT bagi pemanggil tanpa `asset.view_financial`
+ * (BR-073, SDD-AUTH-06) — bukan `null`, melainkan TIDAK ADA pada respons.
+ */
+const AssetCatalogItemSchema = z.object({
+    id: z.string(),
+    uuid: z.string(),
+    kode_barang: z.string(),
+    nama: z.string(),
+    category_id: z.string(),
+    merek: z.string().nullable(),
+    model: z.string().nullable(),
+    nomor_seri: z.string().nullable(),
+    tahun_perolehan: z.number(),
+    room_id: z.string(),
+    kondisi: AssetConditionSchema,
+    status: AssetStatusSchema,
+    dapat_dipinjam: z.boolean(),
+    boleh_dipinjam_siswa: z.boolean(),
+    created_at: z.string(),
+    sumber_perolehan: SumberPerolehanSchema.optional(),
+    nilai_perolehan: z.string().nullable().optional(),
+});
+
+export const ListAssetsResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.array(AssetCatalogItemSchema),
     meta: z.object({
         page: z.number(),
         per_page: z.number(),
