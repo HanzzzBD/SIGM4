@@ -75,10 +75,8 @@ function buatCtx(userId: number): AuthContext {
 }
 
 function buatService(): AssetService {
-    return new AssetService(
-        getDb(),
-        new AuditLogger({ clock: new FixedClock(new Date("2026-09-25T00:00:00Z")) }),
-    );
+    const clock = new FixedClock(new Date("2026-09-25T00:00:00Z"));
+    return new AssetService(getDb(), new AuditLogger({ clock }), clock);
 }
 
 async function aksiTerakhir(entitasId: string): Promise<{ aksi: string; hasil: string } | undefined> {

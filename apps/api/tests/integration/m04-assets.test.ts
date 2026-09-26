@@ -60,10 +60,8 @@ function buatLocationService(): LocationService {
 }
 
 function buatAssetService(): AssetService {
-    return new AssetService(
-        getDb(),
-        new AuditLogger({ clock: new FixedClock(new Date("2026-09-18T00:00:00Z")) }),
-    );
+    const clock = new FixedClock(new Date("2026-09-18T00:00:00Z"));
+    return new AssetService(getDb(), new AuditLogger({ clock }), clock);
 }
 
 describe.skipIf(!ADA_DB)("PR-01-07 — daftar aset per lokasi, kerangka (acceptance)", () => {

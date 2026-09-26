@@ -3,9 +3,11 @@
 
 import { describe, expect, it } from "vitest";
 import {
+    AssetIdParamSchema,
     CreateAssetBodySchema,
     ListRoomAssetsQuerySchema,
     RoomIdParamSchema,
+    UpdateAssetConditionBodySchema,
 } from "../../../src/modules/m04-assets/schemas/asset.schema.js";
 
 const DASAR = {
@@ -104,5 +106,41 @@ describe("CreateAssetBodySchema (FR-04.1 langkah 2-3, PR-02-11)", () => {
         expect(hasil.nilai_perolehan).toBe(150000);
         expect(hasil.penanggung_jawab_id).toBe(2);
         expect(hasil.procurement_id).toBe(9);
+    });
+});
+
+describe("AssetIdParamSchema", () => {
+    it("menolak id bukan angka positif", () => {
+        expect(() => AssetIdParamSchema.parse({ id: "0" })).toThrow();
+        expect(() => AssetIdParamSchema.parse({ id: "-1" })).toThrow();
+    });
+});
+
+describe("UpdateAssetConditionBodySchema (FR-04.3 langkah 2-3, PR-02-13)", () => {
+    it("menerima kondisi + alasan tanpa referensi (bentuk minimal)", () => {
+        const hasil = UpdateAssetConditionBodySchema.parse({ kondisi: "RUSAK_RINGAN", alasan: "Tergores saat pemindahan" });
+        expect(hasil.kondisi).toBe("RUSAK_RINGAN");
+        expect(hasil.referensi_jenis).toBeUndefined();
+        expect(hasil.referensi_id).toBeUndefined();
+    });
+
+    it("BR-007: menolak alasan kosong", () => {
+        expect(() => UpdateAssetConditionBodySchema.parse({ kondisi: "RUSAK_RINGAN", alasan: "" })).toThrow();
+        expect(() => UpdateAssetConditionBodySchema.parse({ kondisi: "RUSAK_RINGAN", alasan: "   " })).toThrow();
+    });
+
+    it("menolak kondisi di luar katalog asset_condition", () => {
+        expect(() => UpdateAssetConditionBodySchema.parse({ kondisi: "SEDANG_DIPERBAIKI", alasan: "x" })).toThrow();
+    });
+
+    it("BR-012: menerima referensi_jenis + referensi_id (kewajibannya saat HILANG diperiksa service, bukan skema)", () => {
+        const hasil = UpdateAssetConditionBodySchema.parse({
+            kondisi: "HILANG",
+            alasan: "Tidak ditemukan saat stock opname",
+            referensi_jenis: "STOCK_OPNAME",
+            referensi_id: "42",
+        });
+        expect(hasil.referensi_jenis).toBe("STOCK_OPNAME");
+        expect(hasil.referensi_id).toBe(42);
     });
 });
