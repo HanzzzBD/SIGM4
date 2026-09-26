@@ -12,6 +12,7 @@ import {
     createAssetHandler,
     listAssetsHandler,
     listRoomAssetsHandler,
+    moveAssetsHandler,
     updateAssetConditionHandler,
 } from "./controllers/asset.controller.js";
 import {
@@ -19,6 +20,8 @@ import {
     CreateAssetBodySchema,
     CreateAssetResponseSchema,
     ListAssetsResponseSchema,
+    MoveAssetsBodySchema,
+    MoveAssetsResponseSchema,
     RoomAssetsResponseSchema,
     RoomIdParamSchema,
     UpdateAssetConditionBodySchema,
@@ -82,6 +85,23 @@ export const updateAssetConditionRoute = defineRoute({
     response: UpdateAssetConditionResponseSchema,
 });
 
+/**
+ * FR-04.4 langkah 1-4 (`asset.update` — katalog §10: "Menyunting aset & mutasi
+ * lokasi"). `200`, bukan bawaan POST `201`: tidak ada sumber daya baru yang
+ * dibuat, aset yang ada dipindahkan.
+ */
+export const moveAssetsRoute = defineRoute({
+    method: "POST",
+    path: "/assets/move",
+    permission: "asset.update",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Mutasi lokasi aset (1..50 sekaligus, atomik) + riwayat mutasi (FR-04.4)",
+    body: MoveAssetsBodySchema,
+    response: MoveAssetsResponseSchema,
+    successStatus: 200,
+});
+
 export interface AssetsModuleDeps {
     readonly db: Kysely<Database>;
     readonly auditLogger: AuditLogger;
@@ -120,6 +140,12 @@ export function assetsRouter(
         batasi(updateAssetConditionRoute),
         otorisasi(updateAssetConditionRoute.permission),
         updateAssetConditionHandler(service),
+    );
+    router.post(
+        moveAssetsRoute.path,
+        batasi(moveAssetsRoute),
+        otorisasi(moveAssetsRoute.permission),
+        moveAssetsHandler(service),
     );
 
     return router;

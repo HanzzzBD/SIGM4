@@ -101,6 +101,7 @@ import {
     createAssetRoute,
     listAssetsRoute,
     listRoomAssetsRoute,
+    moveAssetsRoute,
     updateAssetConditionRoute,
 } from "../modules/m04-assets/index.js";
 import {
@@ -190,6 +191,7 @@ export const registry = new RouteRegistry().register(
     createAssetRoute,
     listAssetsRoute,
     updateAssetConditionRoute,
+    moveAssetsRoute,
     listActivityLogsRoute,
     exportActivityLogsRoute,
     getSettingsRoute,

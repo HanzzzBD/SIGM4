@@ -6,6 +6,7 @@ import {
     AssetIdParamSchema,
     CreateAssetBodySchema,
     ListRoomAssetsQuerySchema,
+    MoveAssetsBodySchema,
     RoomIdParamSchema,
     UpdateAssetConditionBodySchema,
 } from "../../../src/modules/m04-assets/schemas/asset.schema.js";
@@ -142,5 +143,27 @@ describe("UpdateAssetConditionBodySchema (FR-04.3 langkah 2-3, PR-02-13)", () =>
         });
         expect(hasil.referensi_jenis).toBe("STOCK_OPNAME");
         expect(hasil.referensi_id).toBe(42);
+    });
+});
+
+describe("MoveAssetsBodySchema (FR-04.4 langkah 1-2, PR-02-14)", () => {
+    const DASAR_MUTASI = { asset_ids: ["1", "2"], room_tujuan_id: "3", tanggal_mutasi: "2026-09-26", alasan: "Penataan ulang" };
+
+    it("menerima bentuk minimal; penanggung_jawab_baru_id opsional", () => {
+        const hasil = MoveAssetsBodySchema.parse(DASAR_MUTASI);
+        expect(hasil.asset_ids).toEqual([1, 2]);
+        expect(hasil.penanggung_jawab_baru_id).toBeUndefined();
+    });
+
+    it("AC: menerima tepat 50 aset, menolak 0 dan 51", () => {
+        const n = (k: number) => Array.from({ length: k }, (_, i) => String(i + 1));
+        expect(MoveAssetsBodySchema.parse({ ...DASAR_MUTASI, asset_ids: n(50) }).asset_ids).toHaveLength(50);
+        expect(() => MoveAssetsBodySchema.parse({ ...DASAR_MUTASI, asset_ids: [] })).toThrow();
+        expect(() => MoveAssetsBodySchema.parse({ ...DASAR_MUTASI, asset_ids: n(51) })).toThrow();
+    });
+
+    it("menolak tanggal_mutasi bukan tanggal ISO dan alasan kosong", () => {
+        expect(() => MoveAssetsBodySchema.parse({ ...DASAR_MUTASI, tanggal_mutasi: "26/09/2026" })).toThrow();
+        expect(() => MoveAssetsBodySchema.parse({ ...DASAR_MUTASI, alasan: "   " })).toThrow();
     });
 });

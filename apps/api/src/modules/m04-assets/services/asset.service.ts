@@ -1,4 +1,4 @@
-// AssetService (FR-03.2, FR-04.1, FR-04.2, FR-04.3, `m04-assets.md` §7).
+// AssetService (FR-03.2, FR-04.1, FR-04.2, FR-04.3, FR-04.4, `m04-assets.md` §7).
 // `daftarkan` (PR-02-11) adalah tulis pertama M-04: batas transaksi SDD-07 —
 // INSERT + penomoran + `AuditLogger.write()` sinkron dalam SATU transaksi per
 // unit (SDD-EVT-02, AL-01); tidak ada efek tertunda di sini, jadi tanpa outbox.
@@ -122,6 +122,18 @@ export interface ListAssetsOutput {
     readonly total: number;
     readonly totalPages: number;
 }
+
+export interface MutasiLokasiInput {
+    readonly assetIds: readonly number[];
+    readonly roomTujuanId: number;
+    /** `YYYY-MM-DD`, dipilih pengguna (FR-04.4 langkah 2). */
+    readonly tanggal: string;
+    readonly alasan: string;
+    readonly penanggungJawabBaruId: number | null;
+}
+
+/** FR-04.4 Preconditions: HANYA dua status ini yang boleh dimutasi (BR-010, A1). */
+const STATUS_BOLEH_MUTASI: ReadonlySet<AssetStatus> = new Set(["TERSEDIA", "DALAM_PERBAIKAN"]);
 
 export interface UbahKondisiInput {
     readonly kondisi: AssetCondition;
@@ -389,6 +401,81 @@ export class AssetService {
                 }
 
                 return diperbarui;
+            },
+            this.db,
+        );
+    }
+
+    /**
+     * `POST /assets/move` (FR-04.4 langkah 1-4; `asset.update`). Satu ruangan
+     * tujuan untuk 1..50 aset (AC), SATU transaksi: aset mana pun yang tak lolos
+     * membatalkan seluruhnya (AC "atomik"). Ruangan tujuan wajib AKTIF (BR-009);
+     * status aset wajib `TERSEDIA`/`DALAM_PERBAIKAN` (Preconditions — mencakup
+     * BR-010 `Dipinjam` dan A1 `Direservasi`).
+     *
+     * **TERBUKA:** A1 memeriksa pinjaman/reservasi PADA `tanggal` mutasi — itu
+     * `booking_slots` (BR-005a, `PR-02-16`/`PR-02-17`), belum ada; yang diperiksa
+     * di sini hanya `status` SAAT INI. Validasi kapasitas lokasi tujuan (langkah 3)
+     * ditunda — tidak ada konsep kapasitas aset di skema (`rooms.kapasitas` adalah
+     * kapasitas orang); dikonfirmasi pemilik produk. Berita acara PDF (AC) menunggu
+     * pembangkit PDF (`SDD-FS-12`) yang belum dibangun.
+     */
+    async mutasiLokasi(ctx: AuthContext, input: MutasiLokasiInput): Promise<readonly AssetRow[]> {
+        const assetIds = [...new Set(input.assetIds)];
+
+        return withTransaction(
+            ctx,
+            async (scope) => {
+                const repo = createAssetRepository(scope.tx);
+                const ruangan = await repo.findRuanganAktifById(scope.ctx, input.roomTujuanId);
+                if (ruangan === undefined) {
+                    throw new DomainError(
+                        "VALIDATION_ERROR",
+                        "Ruangan tujuan tidak ditemukan atau berstatus nonaktif.",
+                        { field: "room_tujuan_id" },
+                    );
+                }
+
+                const dipindah: AssetRow[] = [];
+                for (const id of assetIds) {
+                    const aset = await repo.findById(scope.ctx, id);
+                    if (aset === undefined) {
+                        throw new DomainError("VALIDATION_ERROR", `Aset ${id} tidak ditemukan.`, {
+                            field: "asset_ids",
+                        });
+                    }
+                    if (!STATUS_BOLEH_MUTASI.has(aset.status)) {
+                        throw new DomainError(
+                            "VALIDATION_ERROR",
+                            `Aset ${aset.kode_barang} berstatus ${aset.status} — hanya aset Tersedia atau Dalam Perbaikan yang dapat dimutasi.`,
+                            { field: "asset_ids" },
+                        );
+                    }
+
+                    const diperbarui = await repo.updateLokasi(scope.ctx, id, {
+                        roomId: input.roomTujuanId,
+                        ...(input.penanggungJawabBaruId === null ? {} : { penanggungJawabId: input.penanggungJawabBaruId }),
+                    });
+                    await repo.insertMutasi(scope.ctx, {
+                        assetId: id,
+                        roomAsalId: aset.room_id,
+                        roomTujuanId: input.roomTujuanId,
+                        tanggal: input.tanggal,
+                        alasan: input.alasan,
+                        dilakukanOleh: ctx.userId,
+                    });
+                    // AL-01: satu entri per aset, pola pembuatan massal `daftarkan` (§11 "asal dan tujuan").
+                    await this.audit.write(scope, {
+                        modul: MODUL,
+                        aksi: "ASSET_MOVED",
+                        entitas: "assets",
+                        entitasId: String(id),
+                        nilaiSebelum: { room_id: aset.room_id },
+                        nilaiSesudah: { room_id: String(input.roomTujuanId), tanggal: input.tanggal, alasan: input.alasan },
+                    });
+                    dipindah.push(diperbarui);
+                }
+                return dipindah;
             },
             this.db,
         );

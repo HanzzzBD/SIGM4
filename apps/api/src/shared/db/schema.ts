@@ -504,6 +504,21 @@ export interface AssetCodeCountersTable {
     value: ColumnType<string, string | number | undefined, string | number>;
 }
 
+/**
+ * `asset_movements` (0029, PR-02-14). Append-only, tanpa kolom baku (pola
+ * `asset_condition_history`): `tanggal` bertipe `date` dipilih pengguna
+ * (`FR-04.4` langkah 2), kembali sebagai string `YYYY-MM-DD` dari driver `pg`.
+ */
+export interface AssetMovementsTable {
+    id: Generated<string>;
+    asset_id: ColumnType<string, string | number, string | number>;
+    room_asal_id: ColumnType<string, string | number, string | number>;
+    room_tujuan_id: ColumnType<string, string | number, string | number>;
+    tanggal: ColumnType<string, string, string>;
+    alasan: string;
+    dilakukan_oleh: ColumnType<string, string | number, string | number>;
+}
+
 /** Peta nama tabel -> bentuk barisnya. Diisi bersama migration pemiliknya. */
 export interface Database {
     document_counters: DocumentCountersTable;
@@ -533,4 +548,5 @@ export interface Database {
     assets: AssetsTable;
     asset_condition_history: AssetConditionHistoryTable;
     asset_code_counters: AssetCodeCountersTable;
+    asset_movements: AssetMovementsTable;
 }
