@@ -18,6 +18,10 @@ export const RoomIdParamSchema = z.object({
     id: z.coerce.number().int().positive(),
 });
 
+export const AssetIdParamSchema = z.object({
+    id: z.coerce.number().int().positive(),
+});
+
 /**
  * `POST /assets` (FR-04.1 langkah 2-3, `m04-assets.md` §7). `jumlah_unit`
  * dibatasi sama dengan rentang impor massal (conventions.md E.5.1: 1-500).
@@ -43,7 +47,7 @@ export const CreateAssetBodySchema = z.object({
     jumlah_unit: z.coerce.number().int().min(1).max(500).default(1),
 });
 
-const AssetSchema = z.object({
+export const AssetSchema = z.object({
     id: z.string(),
     uuid: z.string(),
     kode_barang: z.string(),
@@ -70,6 +74,29 @@ export const CreateAssetResponseSchema = z.object({
     success: z.literal(true),
     data: z.array(AssetSchema),
     meta: z.object({ jumlah_unit: z.number() }),
+});
+
+/**
+ * `PATCH /assets/{id}/condition` (FR-04.3 langkah 2-3). `alasan` wajib
+ * (BR-007) — pola `max(500)` sama dengan `alasan` di modul lain
+ * (`password-reset.schema.ts`, `user.schema.ts`). `referensi_jenis`/
+ * `referensi_id` OPSIONAL di skema (bentuk/tipe saja) — kewajibannya HANYA
+ * saat `kondisi = HILANG` adalah aturan bisnis (BR-012), diperiksa
+ * `AssetService.ubahKondisi`, bukan di sini (SDD-API §4.4: galat Zod tidak
+ * berpesan Indonesia).
+ */
+export const UpdateAssetConditionBodySchema = z.object({
+    kondisi: AssetConditionSchema,
+    alasan: z.string().trim().min(1).max(500),
+    referensi_jenis: z.string().trim().min(1).max(50).nullable().optional(),
+    referensi_id: z.coerce.number().int().positive().nullable().optional(),
+});
+
+/** FR-04.3 langkah 4: aset lengkap pasca-perubahan (kondisi + status turunan). */
+export const UpdateAssetConditionResponseSchema = z.object({
+    success: z.literal(true),
+    data: AssetSchema,
+    meta: z.null(),
 });
 
 /** `GET /rooms/{id}/assets` (FR-03.2 langkah 4). */

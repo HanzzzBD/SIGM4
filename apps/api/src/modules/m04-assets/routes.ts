@@ -4,27 +4,32 @@ import express from "express";
 import type { RequestHandler, Router } from "express";
 import type { Kysely } from "kysely";
 import type { AuditLogger } from "../../shared/audit/index.js";
+import type { Clock } from "../../shared/clock/index.js";
 import type { Database } from "../../shared/db/index.js";
 import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
-import { createAssetHandler, listAssetsHandler, listRoomAssetsHandler } from "./controllers/asset.controller.js";
 import {
+    createAssetHandler,
+    listAssetsHandler,
+    listRoomAssetsHandler,
+    updateAssetConditionHandler,
+} from "./controllers/asset.controller.js";
+import {
+    AssetIdParamSchema,
     CreateAssetBodySchema,
     CreateAssetResponseSchema,
     ListAssetsResponseSchema,
     RoomAssetsResponseSchema,
     RoomIdParamSchema,
+    UpdateAssetConditionBodySchema,
+    UpdateAssetConditionResponseSchema,
 } from "./schemas/asset.schema.js";
 import { AssetService } from "./services/asset.service.js";
 
 /** Pemilik katalog endpoint M-04 (m04-assets.md §7). */
 const MODUL = "m04-assets";
 
-/**
- * FR-03.2 langkah 2-3 — KERANGKA (fase ini): `assets` belum ada (`PR-02-10`),
- * jadi `data.assets` selalu kosong. Filter divalidasi agar kontrak stabil saat
- * data sungguhan tersambung.
- */
+/** FR-03.2 langkah 2-3: daftar aset per ruangan + ringkasan kondisi/status. */
 export const listRoomAssetsRoute = defineRoute({
     method: "GET",
     path: "/rooms/:id/assets",
@@ -59,9 +64,28 @@ export const listAssetsRoute = defineRoute({
     response: ListAssetsResponseSchema,
 });
 
+/**
+ * FR-04.3 langkah 1-4. Permission `asset.update_condition` (bukan `asset.update`
+ * — katalog `m04-assets.md` §10 + seed RBAC `0010` memberi Teknisi scope
+ * `ASSIGNED` khusus di sini; tabel endpoint §7 keliru menyebut `asset.update`,
+ * dikonfirmasi pemilik produk).
+ */
+export const updateAssetConditionRoute = defineRoute({
+    method: "PATCH",
+    path: "/assets/:id/condition",
+    permission: "asset.update_condition",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Ubah kondisi aset + alasan wajib, riwayat kondisi (FR-04.3)",
+    params: AssetIdParamSchema,
+    body: UpdateAssetConditionBodySchema,
+    response: UpdateAssetConditionResponseSchema,
+});
+
 export interface AssetsModuleDeps {
     readonly db: Kysely<Database>;
     readonly auditLogger: AuditLogger;
+    readonly clock: Clock;
 }
 
 /** Router M-04. `batasi`/`otorisasi` datang dari perakit `api/index.ts`. */
@@ -70,7 +94,7 @@ export function assetsRouter(
     batasi: (route: RouteDefinition) => RequestHandler,
     otorisasi: (permission: string) => RequestHandler,
 ): Router {
-    const service = new AssetService(deps.db, deps.auditLogger);
+    const service = new AssetService(deps.db, deps.auditLogger, deps.clock);
     const router = express.Router();
 
     router.get(
@@ -90,6 +114,12 @@ export function assetsRouter(
         batasi(listAssetsRoute),
         otorisasi(listAssetsRoute.permission),
         listAssetsHandler(service),
+    );
+    router.patch(
+        updateAssetConditionRoute.path,
+        batasi(updateAssetConditionRoute),
+        otorisasi(updateAssetConditionRoute.permission),
+        updateAssetConditionHandler(service),
     );
 
     return router;

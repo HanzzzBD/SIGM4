@@ -1,13 +1,17 @@
-// AssetService (FR-03.2, FR-04.1, FR-04.2, `m04-assets.md` §7). `daftarkan`
-// (PR-02-11) adalah tulis pertama M-04: batas transaksi SDD-07 — INSERT +
-// penomoran + `AuditLogger.write()` sinkron dalam SATU transaksi per unit
-// (SDD-EVT-02, AL-01); tidak ada efek tertunda di sini, jadi tanpa outbox.
+// AssetService (FR-03.2, FR-04.1, FR-04.2, FR-04.3, `m04-assets.md` §7).
+// `daftarkan` (PR-02-11) adalah tulis pertama M-04: batas transaksi SDD-07 —
+// INSERT + penomoran + `AuditLogger.write()` sinkron dalam SATU transaksi per
+// unit (SDD-EVT-02, AL-01); tidak ada efek tertunda di sini, jadi tanpa outbox.
 // `list`/`listByRoom` (PR-02-12) murni baca — tanpa activity log (FR-04.2
-// Post Conditions: "Tidak ada perubahan data").
+// Post Conditions: "Tidak ada perubahan data"). `ubahKondisi` (PR-02-13) sama
+// polanya dengan `daftarkan`: UPDATE + riwayat + `AuditLogger.write()` sinkron
+// satu transaksi, tanpa efek tertunda — pembatalan reservasi mendatang (A1) dan
+// notifikasi (A1/A2) TIDAK ada di sini, lihat docstring `ubahKondisi`.
 
 import type { Kysely } from "kysely";
 import type { AuthContext } from "../../../shared/auth/index.js";
 import type { AuditLogger } from "../../../shared/audit/index.js";
+import type { Clock } from "../../../shared/clock/index.js";
 import type { Database } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
 import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
@@ -119,10 +123,19 @@ export interface ListAssetsOutput {
     readonly totalPages: number;
 }
 
+export interface UbahKondisiInput {
+    readonly kondisi: AssetCondition;
+    readonly alasan: string;
+    /** BR-012: wajib bila `kondisi === "HILANG"` — divalidasi di `ubahKondisi`. */
+    readonly referensiJenis: string | null;
+    readonly referensiId: number | null;
+}
+
 export class AssetService {
     constructor(
         private readonly db: Kysely<Database>,
         private readonly audit: AuditLogger,
+        private readonly clock: Clock,
     ) {}
 
     /**
@@ -293,5 +306,91 @@ export class AssetService {
             total,
             totalPages: total === 0 ? 1 : Math.ceil(total / filter.perPage),
         };
+    }
+
+    /**
+     * `PATCH /assets/{id}/condition` (FR-04.3 langkah 1-4; `asset.update_condition`,
+     * bukan `asset.update` — katalog permission `m04-assets.md` §10 dan seed RBAC
+     * `0010` memberi Teknisi scope `ASSIGNED` khusus di sini, cocok Actor FR-04.3
+     * "Teknisi (khusus kondisi pasca-perbaikan)"; tabel `§7` menyebut `asset.update`,
+     * dianggap keliru — dikonfirmasi pemilik produk).
+     *
+     * **TERBUKA (scope `ASSIGNED`):** `work_orders` (M-12 Maintenance, Phase 04)
+     * belum ada, sehingga Teknisi TIDAK dibatasi ke aset yang ditugaskan padanya —
+     * scope ini berlaku seperti `all` untuk sementara (dikonfirmasi pemilik produk).
+     * Ditutup begitu `work_orders` ada, mengikuti pola `SDD-AUTH-03 §4.2`.
+     *
+     * **TERBUKA (efek lintas modul):** A1 (membatalkan reservasi mendatang +
+     * notifikasi pemohon) dan A2 (notifikasi Pimpinan Sekolah) TIDAK diterbitkan
+     * di sini — `booking_slots` (M-07, `PR-02-16`) dan notifikasi (M-17,
+     * `PR-02-25`) belum ada; `m04-assets.md` §9 juga menyatakan modul ini TIDAK
+     * menerbitkan notifikasi sama sekali (kondisi `Hilang` resmi dinotifikasi M-13,
+     * `NT-33`, di luar endpoint generik ini).
+     */
+    async ubahKondisi(ctx: AuthContext, id: number, input: UbahKondisiInput): Promise<AssetRow> {
+        if (input.kondisi === "HILANG" && (input.referensiJenis === null || input.referensiId === null)) {
+            throw new DomainError(
+                "VALIDATION_ERROR",
+                "Kondisi Hilang wajib merujuk sesi stock opname atau berita acara kehilangan.",
+                { field: "referensi_jenis" },
+            );
+        }
+
+        return withTransaction(
+            ctx,
+            async (scope) => {
+                const repo = createAssetRepository(scope.tx);
+                const existing = await repo.findById(scope.ctx, id);
+                if (existing === undefined) {
+                    throw new NotFoundError("Aset tidak ditemukan.");
+                }
+
+                const kondisiLama = existing.kondisi;
+                // BR-006/FR-04.3 A1/A2: kondisi memburuk -> status turunan Tidak Tersedia.
+                const statusBaru: AssetStatus | undefined =
+                    input.kondisi === "RUSAK_BERAT" || input.kondisi === "HILANG" ? "TIDAK_TERSEDIA" : undefined;
+
+                const diperbarui = await repo.updateKondisi(scope.ctx, id, {
+                    kondisi: input.kondisi,
+                    ...(statusBaru === undefined ? {} : { status: statusBaru }),
+                });
+
+                // BR-007: riwayat kondisi (nilai lama -> baru, pelaku, waktu, alasan).
+                await repo.insertRiwayatKondisi(scope.ctx, {
+                    assetId: id,
+                    kondisiLama,
+                    kondisiBaru: input.kondisi,
+                    alasan: input.alasan,
+                    referensiJenis: input.referensiJenis,
+                    referensiId: input.referensiId,
+                    diubahOleh: ctx.userId,
+                    diubahPada: this.clock.now(),
+                });
+
+                await this.audit.write(scope, {
+                    modul: MODUL,
+                    aksi: "ASSET_CONDITION_CHANGED",
+                    entitas: "assets",
+                    entitasId: String(id),
+                    nilaiSebelum: { kondisi: kondisiLama },
+                    nilaiSesudah: { kondisi: input.kondisi, alasan: input.alasan },
+                });
+
+                // §11: "termasuk yang otomatis oleh sistem" — hanya bila status BENAR berubah.
+                if (statusBaru !== undefined && existing.status !== statusBaru) {
+                    await this.audit.write(scope, {
+                        modul: MODUL,
+                        aksi: "ASSET_STATUS_CHANGED",
+                        entitas: "assets",
+                        entitasId: String(id),
+                        nilaiSebelum: { status: existing.status },
+                        nilaiSesudah: { status: statusBaru },
+                    });
+                }
+
+                return diperbarui;
+            },
+            this.db,
+        );
     }
 }

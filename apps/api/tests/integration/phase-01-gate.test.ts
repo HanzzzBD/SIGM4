@@ -400,7 +400,7 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 const [kategoriAset] = await kueri<{ id: string }>(
                     `INSERT INTO asset_categories (nama, kode) VALUES ('Kategori Gerbang ${sfx}', 'KAT${sfx}') RETURNING id::text`,
                 );
-                await langkah(
+                const aset = await langkah(
                     "POST /assets",
                     "/assets",
                     {
@@ -413,9 +413,20 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                     },
                     ["ASSET_CREATED"],
                 );
+                // PR-02-13: kondisi -> RUSAK_BERAT sekaligus membuktikan status turunan
+                // (BR-006) tercatat sebagai aksi TERPISAH (§11: "termasuk yang otomatis").
+                const asetId = (aset.json.data as ReadonlyArray<{ id: string }>)[0]?.id;
+                await langkah(
+                    "PATCH /assets/:id/condition",
+                    `/assets/${asetId}/condition`,
+                    { kondisi: "RUSAK_BERAT", alasan: "Uji gerbang AL-01" },
+                    ["ASSET_CONDITION_CHANGED", "ASSET_STATUS_CHANGED"],
+                );
                 // BR-015 (fix/PR-02-10): ruangan beraset tidak dapat dinonaktifkan. Aset
-                // di atas hanya untuk membuktikan AL-01 POST /assets, bukan untuk diuji di
-                // sini — disingkirkan sebelum langkah PATCH .../status di bawah.
+                // di atas hanya untuk membuktikan AL-01 POST/PATCH /assets, bukan untuk diuji di
+                // sini — disingkirkan sebelum langkah PATCH .../status di bawah (riwayat
+                // kondisi PR-02-13 lebih dulu — FK asset_condition_history.asset_id).
+                await kueri(`DELETE FROM asset_condition_history WHERE asset_id = ${asetId}`);
                 await kueri(`DELETE FROM assets WHERE room_id = ${id(ruang)}`);
 
                 await langkah("PATCH /rooms/:id/status", `/rooms/${id(ruang)}/status`, { status: "NONAKTIF" }, ["LOCATION_DEACTIVATED"]);
@@ -477,6 +488,8 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await kueri("DELETE FROM user_import_jobs");
                 await kueri("DELETE FROM student_enrollments");
                 await kueri("UPDATE users SET work_unit_id = NULL");
+                // PR-02-13: asset_condition_history menunjuk assets — sebelum dihapus.
+                await kueri("DELETE FROM asset_condition_history");
                 // PR-02-11: assets/asset_code_counters menunjuk rooms DAN asset_categories — sebelum keduanya.
                 await kueri("DELETE FROM assets");
                 await kueri("DELETE FROM asset_code_counters");

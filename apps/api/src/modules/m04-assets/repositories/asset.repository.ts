@@ -354,6 +354,66 @@ export class AssetRepository extends BaseRepository {
             .returning(KOLOM_ASSET)
             .executeTakeFirstOrThrow();
     }
+
+    /** `PATCH /assets/{id}/condition` (FR-04.3 langkah 1): baris lengkap, termasuk `status` saat ini. */
+    async findById(ctx: AuthContext, id: number): Promise<AssetRow | undefined> {
+        return this.query(ctx)
+            .selectFrom("assets")
+            .select(KOLOM_ASSET)
+            .where("id", "=", String(id))
+            .executeTakeFirst();
+    }
+
+    /**
+     * FR-04.3 langkah 4: memperbarui `kondisi`, dan `status` HANYA bila
+     * dinyatakan (BR-006/FR-04.3 A1/A2: `RUSAK_BERAT`/`HILANG` → `TIDAK_TERSEDIA`
+     * ditentukan pemanggil, bukan di sini — repository tidak berisi aturan bisnis).
+     */
+    async updateKondisi(
+        ctx: AuthContext,
+        id: number,
+        data: { kondisi: AssetCondition; status?: AssetStatus },
+    ): Promise<AssetRow> {
+        return this.query(ctx)
+            .updateTable("assets")
+            .set({
+                kondisi: data.kondisi,
+                ...(data.status === undefined ? {} : { status: data.status }),
+                updated_by: ctx.userId,
+            })
+            .where("id", "=", String(id))
+            .returning(KOLOM_ASSET)
+            .executeTakeFirstOrThrow();
+    }
+
+    /** BR-007: setiap perubahan kondisi wajib tercatat (nilai lama → baru, pelaku, waktu, alasan). */
+    async insertRiwayatKondisi(
+        ctx: AuthContext,
+        data: {
+            readonly assetId: number;
+            readonly kondisiLama: AssetCondition;
+            readonly kondisiBaru: AssetCondition;
+            readonly alasan: string;
+            readonly referensiJenis: string | null;
+            readonly referensiId: number | null;
+            readonly diubahOleh: number;
+            readonly diubahPada: Date;
+        },
+    ): Promise<void> {
+        await this.query(ctx)
+            .insertInto("asset_condition_history")
+            .values({
+                asset_id: data.assetId,
+                kondisi_lama: data.kondisiLama,
+                kondisi_baru: data.kondisiBaru,
+                alasan: data.alasan,
+                referensi_jenis: data.referensiJenis,
+                referensi_id: data.referensiId,
+                diubah_oleh: data.diubahOleh,
+                diubah_pada: data.diubahPada,
+            })
+            .execute();
+    }
 }
 
 /** Gerbang kompilasi `ScopedRepository` (SDD-AUTH-02). */

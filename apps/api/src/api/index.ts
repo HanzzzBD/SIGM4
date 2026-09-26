@@ -96,7 +96,13 @@ import {
     updateRoomRoute,
     updateRoomStatusRoute,
 } from "../modules/m03-locations/index.js";
-import { assetsRouter, createAssetRoute, listAssetsRoute, listRoomAssetsRoute } from "../modules/m04-assets/index.js";
+import {
+    assetsRouter,
+    createAssetRoute,
+    listAssetsRoute,
+    listRoomAssetsRoute,
+    updateAssetConditionRoute,
+} from "../modules/m04-assets/index.js";
 import {
     activityLogRouter,
     exportActivityLogsRoute,
@@ -183,6 +189,7 @@ export const registry = new RouteRegistry().register(
     listRoomAssetsRoute,
     createAssetRoute,
     listAssetsRoute,
+    updateAssetConditionRoute,
     listActivityLogsRoute,
     exportActivityLogsRoute,
     getSettingsRoute,
@@ -333,6 +340,7 @@ export function createApp(deps: AppDeps): Express {
                     clock: deps.clock,
                     logger: deps.logger,
                 }),
+                clock: deps.clock,
             },
             (route) => rateLimit(route, deps.limiter, deps.logger),
             authorize,

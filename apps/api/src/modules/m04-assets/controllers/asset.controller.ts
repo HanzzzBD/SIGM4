@@ -3,10 +3,12 @@
 import type { RequestHandler } from "express";
 import { requireAuthContext } from "../../../shared/auth/index.js";
 import {
+    AssetIdParamSchema,
     CreateAssetBodySchema,
     ListAssetsQuerySchema,
     ListRoomAssetsQuerySchema,
     RoomIdParamSchema,
+    UpdateAssetConditionBodySchema,
 } from "../schemas/asset.schema.js";
 import type { AssetService } from "../services/asset.service.js";
 
@@ -117,5 +119,21 @@ export function listAssetsHandler(service: AssetService): RequestHandler {
                 total_pages: hasil.totalPages,
             },
         });
+    };
+}
+
+/** `PATCH /assets/{id}/condition` (FR-04.3): ubah kondisi + alasan, riwayat kondisi. */
+export function updateAssetConditionHandler(service: AssetService): RequestHandler {
+    return async (req, res) => {
+        const ctx = requireAuthContext(res);
+        const { id } = AssetIdParamSchema.parse(req.params);
+        const body = UpdateAssetConditionBodySchema.parse(req.body);
+        const diperbarui = await service.ubahKondisi(ctx, id, {
+            kondisi: body.kondisi,
+            alasan: body.alasan,
+            referensiJenis: body.referensi_jenis ?? null,
+            referensiId: body.referensi_id ?? null,
+        });
+        res.status(200).json({ success: true, data: diperbarui, meta: null });
     };
 }
