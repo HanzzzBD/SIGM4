@@ -90,9 +90,168 @@ export interface AssetFields {
     readonly procurementId: number | null;
 }
 
+type AssetCondition = "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT" | "HILANG";
+type AssetStatus = "TERSEDIA" | "DIRESERVASI" | "DIPINJAM" | "DALAM_PERBAIKAN" | "TIDAK_TERSEDIA";
+
+/** `sort` (SDD-API-06 allow-list) — awalan `-` = menurun (SDD-API §4.5). */
+export type AssetSortField =
+    | "created_at"
+    | "-created_at"
+    | "nama"
+    | "-nama"
+    | "kode_barang"
+    | "-kode_barang"
+    | "tahun_perolehan"
+    | "-tahun_perolehan";
+
+const KOLOM_URUT: Record<AssetSortField, "created_at" | "nama" | "kode_barang" | "tahun_perolehan"> = {
+    created_at: "created_at",
+    "-created_at": "created_at",
+    nama: "nama",
+    "-nama": "nama",
+    kode_barang: "kode_barang",
+    "-kode_barang": "kode_barang",
+    tahun_perolehan: "tahun_perolehan",
+    "-tahun_perolehan": "tahun_perolehan",
+};
+
+function arahUrut(sort: AssetSortField): "asc" | "desc" {
+    return sort.startsWith("-") ? "desc" : "asc";
+}
+
+/** Field dasar (FR-04.2 langkah 2-4) — SELALU terlihat oleh siapa pun ber-`asset.view`. */
+const KOLOM_KATALOG_BASE = [
+    "id",
+    "uuid",
+    "kode_barang",
+    "nama",
+    "category_id",
+    "merek",
+    "model",
+    "nomor_seri",
+    "tahun_perolehan",
+    "room_id",
+    "kondisi",
+    "status",
+    "dapat_dipinjam",
+    "boleh_dipinjam_siswa",
+    "created_at",
+] as const;
+
+/** BR-073: hanya ter-SELECT bila pemanggil memegang `asset.view_financial` (SDD-03 §4.3, SDD-AUTH-06). */
+const KOLOM_KATALOG_FINANSIAL = ["nilai_perolehan", "sumber_perolehan"] as const;
+
+export interface AssetCatalogFilter {
+    /** FR-04.2 langkah 3: kode aset, nama, merek, atau nomor seri (substring, tanpa mempedulikan huruf besar/kecil). */
+    readonly q?: string;
+    readonly categoryId?: number;
+    readonly roomId?: number;
+    readonly kondisi?: AssetCondition;
+    readonly status?: AssetStatus;
+    readonly tahunPerolehan?: number;
+    readonly dapatDipinjam?: boolean;
+}
+
+export interface ListAssetsFilter extends AssetCatalogFilter {
+    readonly page: number;
+    readonly perPage: number;
+    readonly sort: AssetSortField;
+}
+
+export interface ListAssetsResult {
+    readonly rows: readonly Record<string, unknown>[];
+    readonly total: number;
+}
+
+export interface RingkasanBarisRow {
+    readonly kondisi: AssetCondition;
+    readonly status: AssetStatus;
+    readonly jumlah: string;
+}
+
 export class AssetRepository extends BaseRepository {
     constructor(executor: QueryExecutor) {
         super(executor);
+    }
+
+    /**
+     * Kueri dasar katalog aset (FR-04.2, dipakai bersama `GET /assets` dan
+     * `GET /rooms/{id}/assets`). `dihapuskan = false` SELALU diterapkan (BR-008:
+     * aset terhapuskan tetap tertelusuri, tetapi bukan pada katalog biasa).
+     * Scope `restricted` (Siswa/OSIS, `SDD-AUTH-03 §4.2`) hanya melihat
+     * `boleh_dipinjam_siswa = true` (`BR-073`, `FR-04.2 A1`).
+     */
+    private dasarKatalog(ctx: AuthContext, filter: AssetCatalogFilter) {
+        let q = this.query(ctx)
+            .selectFrom("assets")
+            .where("dihapuskan", "=", false);
+        if (filter.roomId !== undefined) q = q.where("room_id", "=", String(filter.roomId));
+        if (filter.categoryId !== undefined) q = q.where("category_id", "=", String(filter.categoryId));
+        if (filter.kondisi !== undefined) q = q.where("kondisi", "=", filter.kondisi);
+        if (filter.status !== undefined) q = q.where("status", "=", filter.status);
+        if (filter.tahunPerolehan !== undefined) q = q.where("tahun_perolehan", "=", filter.tahunPerolehan);
+        if (filter.dapatDipinjam !== undefined) q = q.where("dapat_dipinjam", "=", filter.dapatDipinjam);
+        if (filter.q !== undefined && filter.q.length > 0) {
+            const kata = `%${filter.q}%`;
+            q = q.where((eb) =>
+                eb.or([
+                    eb("kode_barang", "ilike", kata),
+                    eb("nama", "ilike", kata),
+                    eb("merek", "ilike", kata),
+                    eb("nomor_seri", "ilike", kata),
+                ]),
+            );
+        }
+        if (ctx.scopeOf("asset.view") === "restricted") {
+            q = q.where("boleh_dipinjam_siswa", "=", true);
+        }
+        return q;
+    }
+
+    /**
+     * `GET /assets` (FR-04.2) dan `GET /rooms/{id}/assets` (FR-03.2, roomId
+     * terisi). `total` dihitung `COUNT(*) OVER ()` pada kueri yang sama
+     * (`SDD-API-05 §4.5`), bukan kueri kedua.
+     */
+    async list(ctx: AuthContext, filter: ListAssetsFilter): Promise<ListAssetsResult> {
+        const dasar = this.dasarKatalog(ctx, filter)
+            .orderBy(KOLOM_URUT[filter.sort], arahUrut(filter.sort))
+            .orderBy("id", arahUrut(filter.sort))
+            .limit(filter.perPage)
+            .offset((filter.page - 1) * filter.perPage)
+            .select(sql<string>`count(*) over()`.as("total"));
+
+        const rows = ctx.can("asset.view_financial")
+            ? await dasar.select([...KOLOM_KATALOG_BASE, ...KOLOM_KATALOG_FINANSIAL]).execute()
+            : await dasar.select(KOLOM_KATALOG_BASE).execute();
+
+        const total = rows.length > 0 ? Number((rows[0] as { total: string }).total) : 0;
+        return {
+            rows: rows.map((baris) => {
+                const sisanya: Record<string, unknown> = { ...baris };
+                delete sisanya["total"];
+                return sisanya;
+            }),
+            total,
+        };
+    }
+
+    /**
+     * Ringkasan kondisi/status SELURUH aset ruangan (FR-03.2 langkah 2),
+     * TANPA paginasi/filter daftar — kartu ringkasan selalu menghitung
+     * keseluruhan isi ruangan, bukan hasil filter yang sedang ditampilkan.
+     */
+    async ringkasanRuangan(ctx: AuthContext, roomId: number): Promise<readonly RingkasanBarisRow[]> {
+        let q = this.query(ctx)
+            .selectFrom("assets")
+            .select(["kondisi", "status", sql<string>`count(*)`.as("jumlah")])
+            .where("room_id", "=", String(roomId))
+            .where("dihapuskan", "=", false)
+            .groupBy(["kondisi", "status"]);
+        if (ctx.scopeOf("asset.view") === "restricted") {
+            q = q.where("boleh_dipinjam_siswa", "=", true);
+        }
+        return q.execute();
     }
 
     async roomExists(ctx: AuthContext, roomId: number): Promise<boolean> {

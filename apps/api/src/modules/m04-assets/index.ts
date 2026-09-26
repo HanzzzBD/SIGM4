@@ -2,4 +2,4 @@
 // diimpor modul lain / entrypoint `api/` — `repositories/`, `controllers/`,
 // dan `services/` privat terhadap modul ini.
 export type { AssetsModuleDeps } from "./routes.js";
-export { assetsRouter, createAssetRoute, listRoomAssetsRoute } from "./routes.js";
+export { assetsRouter, createAssetRoute, listAssetsRoute, listRoomAssetsRoute } from "./routes.js";

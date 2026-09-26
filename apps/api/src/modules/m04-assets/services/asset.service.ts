@@ -1,8 +1,9 @@
-// AssetService (FR-03.2, FR-04.1, `m04-assets.md` §7). `listByRoom` tetap
-// KERANGKA baca (FR-03.2, milik `PR-02-12` menyambungkannya). `daftarkan`
+// AssetService (FR-03.2, FR-04.1, FR-04.2, `m04-assets.md` §7). `daftarkan`
 // (PR-02-11) adalah tulis pertama M-04: batas transaksi SDD-07 — INSERT +
 // penomoran + `AuditLogger.write()` sinkron dalam SATU transaksi per unit
 // (SDD-EVT-02, AL-01); tidak ada efek tertunda di sini, jadi tanpa outbox.
+// `list`/`listByRoom` (PR-02-12) murni baca — tanpa activity log (FR-04.2
+// Post Conditions: "Tidak ada perubahan data").
 
 import type { Kysely } from "kysely";
 import type { AuthContext } from "../../../shared/auth/index.js";
@@ -10,7 +11,12 @@ import type { AuditLogger } from "../../../shared/audit/index.js";
 import type { Database } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
 import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
-import type { AssetFields, AssetRow, PengaturanKodeAset } from "../repositories/asset.repository.js";
+import type {
+    AssetFields,
+    AssetRow,
+    ListAssetsFilter,
+    PengaturanKodeAset,
+} from "../repositories/asset.repository.js";
 import { createAssetRepository } from "../repositories/asset.repository.js";
 
 const MODUL = "m04-assets";
@@ -97,6 +103,16 @@ export interface RoomAssetsResult {
         readonly jumlahDipinjam: number;
         readonly jumlahDalamPerbaikan: number;
     };
+    readonly page: number;
+    readonly perPage: number;
+    readonly total: number;
+    readonly totalPages: number;
+}
+
+export type ListAssetsInput = ListAssetsFilter;
+
+export interface ListAssetsOutput {
+    readonly rows: readonly Record<string, unknown>[];
     readonly page: number;
     readonly perPage: number;
     readonly total: number;
@@ -208,11 +224,10 @@ export class AssetService {
     }
 
     /**
-     * `GET /rooms/{id}/assets` (FR-03.2 langkah 2-3) — KERANGKA: tabel `assets`
-     * baru lahir `PR-02-10` (Phase 02), sehingga daftar dan ringkasan SELALU
-     * kosong hari ini. Filter (`kategoriId`/`kondisi`/`status`) sudah diterima
-     * dan divalidasi (lihat skema) agar kontrak tidak berubah saat data
-     * sungguhan tersambung — lihat log phase-01 §10.
+     * `GET /rooms/{id}/assets` (FR-03.2 langkah 2-3). Daftar terpaginasi lewat
+     * kueri katalog bersama (`AssetRepository.list`, `PR-02-12`); ringkasan
+     * kondisi/status SELALU mencakup SELURUH isi ruangan, tidak terpotong
+     * filter/paginasi daftar (`ringkasanRuangan`).
      */
     async listByRoom(
         ctx: AuthContext,
@@ -224,19 +239,59 @@ export class AssetService {
             throw new NotFoundError("Ruangan tidak ditemukan.");
         }
 
-        return {
-            roomId: String(roomId),
-            assets: [],
-            ringkasan: {
-                total: 0,
-                perKondisi: { BAIK: 0, RUSAK_RINGAN: 0, RUSAK_BERAT: 0, HILANG: 0 },
-                jumlahDipinjam: 0,
-                jumlahDalamPerbaikan: 0,
-            },
+        const { rows, total } = await repo.list(ctx, {
+            roomId,
             page: filter.page,
             perPage: filter.perPage,
-            total: 0,
-            totalPages: 1,
+            sort: "-created_at",
+            ...(filter.kategoriId === undefined ? {} : { categoryId: filter.kategoriId }),
+            ...(filter.kondisi === undefined ? {} : { kondisi: filter.kondisi }),
+            ...(filter.status === undefined ? {} : { status: filter.status }),
+        });
+        const ringkasanRows = await repo.ringkasanRuangan(ctx, roomId);
+
+        const perKondisi: Record<AssetCondition, number> = { BAIK: 0, RUSAK_RINGAN: 0, RUSAK_BERAT: 0, HILANG: 0 };
+        let totalRuangan = 0;
+        let jumlahDipinjam = 0;
+        let jumlahDalamPerbaikan = 0;
+        for (const baris of ringkasanRows) {
+            const jumlah = Number(baris.jumlah);
+            perKondisi[baris.kondisi] += jumlah;
+            totalRuangan += jumlah;
+            if (baris.status === "DIPINJAM") jumlahDipinjam += jumlah;
+            if (baris.status === "DALAM_PERBAIKAN") jumlahDalamPerbaikan += jumlah;
+        }
+
+        return {
+            roomId: String(roomId),
+            assets: rows.map((baris) => ({
+                kode_barang: baris["kode_barang"] as string,
+                nama: baris["nama"] as string,
+                kondisi: baris["kondisi"] as AssetCondition,
+                status: baris["status"] as AssetStatus,
+            })),
+            ringkasan: { total: totalRuangan, perKondisi, jumlahDipinjam, jumlahDalamPerbaikan },
+            page: filter.page,
+            perPage: filter.perPage,
+            total,
+            totalPages: total === 0 ? 1 : Math.ceil(total / filter.perPage),
+        };
+    }
+
+    /**
+     * `GET /assets` (FR-04.2): katalog aset dengan pencarian, filter, dan
+     * paginasi. BR-073 (field finansial) dan scope `restricted` (Siswa/OSIS,
+     * `boleh_dipinjam_siswa`) ditegakkan di repository (`SDD-AUTH-06`).
+     */
+    async list(ctx: AuthContext, filter: ListAssetsInput): Promise<ListAssetsOutput> {
+        const repo = createAssetRepository(this.db);
+        const { rows, total } = await repo.list(ctx, filter);
+        return {
+            rows,
+            page: filter.page,
+            perPage: filter.perPage,
+            total,
+            totalPages: total === 0 ? 1 : Math.ceil(total / filter.perPage),
         };
     }
 }

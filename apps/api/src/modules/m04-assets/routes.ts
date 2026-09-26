@@ -7,10 +7,11 @@ import type { AuditLogger } from "../../shared/audit/index.js";
 import type { Database } from "../../shared/db/index.js";
 import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
-import { createAssetHandler, listRoomAssetsHandler } from "./controllers/asset.controller.js";
+import { createAssetHandler, listAssetsHandler, listRoomAssetsHandler } from "./controllers/asset.controller.js";
 import {
     CreateAssetBodySchema,
     CreateAssetResponseSchema,
+    ListAssetsResponseSchema,
     RoomAssetsResponseSchema,
     RoomIdParamSchema,
 } from "./schemas/asset.schema.js";
@@ -30,7 +31,7 @@ export const listRoomAssetsRoute = defineRoute({
     permission: "asset.view",
     rateLimitClass: "default",
     module: MODUL,
-    summary: "Daftar aset per ruangan + ringkasan kondisi (kerangka, FR-03.2)",
+    summary: "Daftar aset per ruangan + ringkasan kondisi (FR-03.2)",
     params: RoomIdParamSchema,
     response: RoomAssetsResponseSchema,
 });
@@ -45,6 +46,17 @@ export const createAssetRoute = defineRoute({
     summary: "Daftarkan aset baru (mendukung N unit sekaligus)",
     body: CreateAssetBodySchema,
     response: CreateAssetResponseSchema,
+});
+
+/** FR-04.2 langkah 2-4: katalog aset — pencarian, filter, dan paginasi (SDD-API-05). */
+export const listAssetsRoute = defineRoute({
+    method: "GET",
+    path: "/assets",
+    permission: "asset.view",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Katalog aset: pencarian, filter, dan paginasi (FR-04.2)",
+    response: ListAssetsResponseSchema,
 });
 
 export interface AssetsModuleDeps {
@@ -72,6 +84,12 @@ export function assetsRouter(
         batasi(createAssetRoute),
         otorisasi(createAssetRoute.permission),
         createAssetHandler(service),
+    );
+    router.get(
+        listAssetsRoute.path,
+        batasi(listAssetsRoute),
+        otorisasi(listAssetsRoute.permission),
+        listAssetsHandler(service),
     );
 
     return router;
