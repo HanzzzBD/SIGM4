@@ -7,7 +7,7 @@
 // menuntut dependensi yang tidak ada di setiap mesin (PR-00-17 menyediakannya di CI).
 
 import { beforeAll, describe, expect, it } from "vitest";
-import { bacaBab113, kodeTeknis } from "../helpers/bab113.js";
+import { TIPE_DI_LUAR_BAB113, bacaBab113, kodeTeknis } from "../helpers/bab113.js";
 import { dbmate, kueri } from "../helpers/db.js";
 
 const bab113 = bacaBab113();
@@ -92,8 +92,10 @@ describe.skipIf(process.env["DATABASE_URL"] === undefined)(
         });
 
         it("nilai tersimpan sebagai kode teknis huruf besar, bukan label (SDD-DB-02)", async () => {
+            // Kecuali tipe yang SDD-01 §4.1 tetapkan huruf kecil (TIPE_DI_LUAR_BAB113).
             const rows = await kueri<{ enumlabel: string }>(
-                "SELECT enumlabel FROM pg_enum",
+                `SELECT e.enumlabel FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid
+                  WHERE t.typname NOT IN (${[...TIPE_DI_LUAR_BAB113].map((t) => `'${t}'`).join(", ")})`,
             );
             expect(
                 rows.map((r) => r.enumlabel).filter((l) => l !== kodeTeknis(l)),

@@ -90,9 +90,11 @@ CREATE TABLE booking_slots (
     slot_range      tstzrange,                    -- NULL hanya untuk baris induk berulang
     status          booking_status   NOT NULL,
     origin          booking_origin   NOT NULL,
-    reservation_id  bigint REFERENCES reservations(id),
-    loan_id         bigint REFERENCES loans(id),
-    work_order_id   bigint REFERENCES work_orders(id),
+    -- Tanpa FK saat lahir (PR-02-16): reservations/loans/work_orders dibuat modul
+    -- pemiliknya kemudian, yang menambahkan FK-nya sendiri (expand, SDD-DB-08).
+    reservation_id  bigint,
+    loan_id         bigint,
+    work_order_id   bigint,
     parent_slot_id  bigint REFERENCES booking_slots(id) ON DELETE CASCADE,
     expires_at      timestamptz,                  -- TTL slot Tentative (BR-023b)
     created_by      bigint REFERENCES users(id),
@@ -106,14 +108,18 @@ CREATE TABLE booking_slots (
         CHECK (status <> 'TENTATIVE' OR expires_at IS NOT NULL)
 );
 
--- CI-01: penegak nol double-booking
+-- CI-01: penegak nol double-booking — SATU constraint per jenis sumber daya, agar
+-- ErrorMapper membedakan 409 aset dari 409 ruangan lewat nama constraint (CI-04,
+-- SDD-06 §4.4). Semantik sama dengan satu constraint ber-`resource_type WITH =`.
 ALTER TABLE booking_slots
-    ADD CONSTRAINT booking_slots_no_overlap
-    EXCLUDE USING gist (
-        resource_type WITH =,
-        resource_id   WITH =,
-        slot_range    WITH &&
-    ) WHERE (status IN ('TENTATIVE','CONFIRMED','ACTIVE') AND slot_range IS NOT NULL);
+    ADD CONSTRAINT booking_slots_room_no_overlap
+    EXCLUDE USING gist (resource_id WITH =, slot_range WITH &&)
+    WHERE (resource_type = 'room' AND status IN ('TENTATIVE','CONFIRMED','ACTIVE') AND slot_range IS NOT NULL);
+
+ALTER TABLE booking_slots
+    ADD CONSTRAINT booking_slots_asset_no_overlap
+    EXCLUDE USING gist (resource_id WITH =, slot_range WITH &&)
+    WHERE (resource_type = 'asset' AND status IN ('TENTATIVE','CONFIRMED','ACTIVE') AND slot_range IS NOT NULL);
 
 -- AV-01
 CREATE INDEX booking_slots_lookup
@@ -123,10 +129,9 @@ CREATE INDEX booking_slots_lookup
 CREATE INDEX booking_slots_expiry
     ON booking_slots (expires_at) WHERE status = 'TENTATIVE';
 
--- AV-02
-CREATE INDEX assets_availability
-    ON assets (category_id, status, kondisi)
-    WHERE dapat_dipinjam AND NOT dihapuskan;
+-- AV-02: dilayani assets_kandidat_pinjam_idx (0026, PR-02-10) —
+-- (category_id, status, kondisi, dapat_dipinjam, boleh_dipinjam_siswa). Indeks
+-- parsial semula tidak dibuat; pilihan final lewat EXPLAIN ANALYZE (SDD-PERF-07).
 ```
 
 Trigger validasi polimorfik (SDD-AVL-04):

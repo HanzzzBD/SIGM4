@@ -100,7 +100,7 @@ Mengganti runner dipertimbangkan dan ditolak. golang-migrate memang mengunci sen
 | Kolom | `snake_case`, tunggal | `tanggal_jatuh_tempo` |
 | Kunci asing | `<entitas_tunggal>_id` | `asset_id`, `peminjam_id` |
 | Indeks | `<tabel>_<kolom>_<jenis>` | `assets_kode_barang_uq` |
-| Constraint | `<tabel>_<aturan>` | `booking_slots_no_overlap` |
+| Constraint | `<tabel>_<aturan>` | `booking_slots_asset_no_overlap` |
 | Enum type | `<domain>_<konsep>` | `asset_condition`, `booking_status` |
 | Partisi | `<tabel>_yYYYYmMM` | `activity_logs_y2026m08` |
 
