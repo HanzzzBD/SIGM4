@@ -1,0 +1,285 @@
+// SlotService — SATU-SATUNYA penulis `booking_slots` (SDD-SYS-10, SDD-AVL-04).
+// Enam modul (M-04, M-07, M-08, M-09, M-12, M-21) memesan dan melepas slot lewat
+// antarmuka ini, tidak pernah menyentuh tabelnya langsung.
+//
+// Setiap metode berjalan di TransactionScope PEMANGGIL: slot dan dokumen bisnisnya
+// (reservasi, peminjaman, work order) commit atau batal bersama (SDD-01 §4.2
+// langkah 6-7, CI-03). Activity log dicatat pemanggil atas aksi bisnisnya dalam
+// transaksi yang sama — slot adalah detail teknis operasi itu (keputusan 64).
+//
+// Yang BUKAN urusan layanan ini: aturan reservasi (blokir peminjam BR-030, kuota
+// BR-023a, horizon BR-023c) milik M-07/M-08; kelayakan aset untuk `reserve()`
+// milik pemanggil — blokade pemeliharaan (`maintenance`) justru menyasar aset rusak.
+
+import { sql } from "kysely";
+import type { Clock } from "../clock/index.js";
+import type { TransactionScope } from "../db/index.js";
+import { DomainError } from "../errors/index.js";
+
+export type JenisSumberDaya = "room" | "asset";
+export type AsalSlot = "reservation" | "loan" | "maintenance" | "fixed_schedule" | "manual_block";
+export type StatusSlot = "TENTATIVE" | "CONFIRMED" | "ACTIVE" | "RELEASED";
+
+export interface SumberDaya {
+    readonly jenis: JenisSumberDaya;
+    readonly id: number;
+}
+
+/** Rentang `[mulai, selesai)` — half-open, SELALU (SDD-AVL-02). */
+export interface RentangWaktu {
+    readonly mulai: Date;
+    readonly selesai: Date;
+}
+
+export interface RujukanSlot {
+    readonly reservationId?: number;
+    readonly loanId?: number;
+    readonly workOrderId?: number;
+}
+
+/** `TENTATIVE` wajib ber-TTL (BR-023b, CHECK `tentative_needs_ttl`) — ditegakkan tipe. */
+export type StatusAwal =
+    | { readonly status: "TENTATIVE"; readonly kedaluwarsa: Date }
+    | { readonly status: "CONFIRMED" };
+
+export type PesanSlot = StatusAwal & {
+    readonly sumberDaya: readonly SumberDaya[];
+    readonly rentang: RentangWaktu;
+    readonly asal: AsalSlot;
+    readonly rujukan?: RujukanSlot;
+};
+
+export interface AlokasiUnit {
+    readonly categoryId: number;
+    readonly jumlah: number;
+    readonly rentang: RentangWaktu;
+    readonly kedaluwarsa: Date;
+    readonly asal: "reservation" | "loan";
+    /** Pemohon Siswa/OSIS: hanya unit `boleh_dipinjam_siswa` (BR-073, SDD-01 §4.2). */
+    readonly untukSiswa: boolean;
+    readonly rujukan?: RujukanSlot;
+}
+
+export interface SlotRow {
+    readonly id: string;
+    readonly resource_type: JenisSumberDaya;
+    readonly resource_id: string;
+    readonly slot_range: string | null;
+    readonly status: StatusSlot;
+    readonly origin: AsalSlot;
+    readonly expires_at: Date | null;
+}
+
+const KOLOM_SLOT = ["id", "resource_type", "resource_id", "slot_range", "status", "origin", "expires_at"] as const;
+
+/** SQLSTATE `lock_not_available` — kegagalan `FOR UPDATE NOWAIT`. */
+const LOCK_NOT_AVAILABLE = "55P03";
+
+export class SlotService {
+    constructor(private readonly clock: Clock) {}
+
+    /**
+     * Memesan slot atas sumber daya EKSPLISIT (ruangan, unit aset pilihan Petugas,
+     * blokade pemeliharaan). Baris aset dikunci terurut `id` menaik (CI-02,
+     * SDD-AVL-06) dengan `NOWAIT` — pilihan manual gagal CEPAT, bukan antre
+     * (SDD-AVL-05). Irisan diputus exclusion constraint (CI-01): `23P01` diteruskan
+     * ke ErrorMapper, yang memetakannya per nama constraint (CI-04).
+     */
+    async reserve(scope: TransactionScope, pesan: PesanSlot): Promise<readonly SlotRow[]> {
+        this.periksaRentang(pesan.rentang);
+        if (pesan.sumberDaya.length === 0) return [];
+
+        const asetIds = [...new Set(pesan.sumberDaya.filter((s) => s.jenis === "asset").map((s) => s.id))].sort(
+            (a, b) => a - b,
+        );
+        const ruanganIds = [...new Set(pesan.sumberDaya.filter((s) => s.jenis === "room").map((s) => s.id))];
+
+        if (asetIds.length > 0) {
+            const terkunci = await this.kunciAsetNowait(scope, asetIds);
+            if (terkunci.length !== asetIds.length) {
+                throw new DomainError("VALIDATION_ERROR", "Aset yang dipesan tidak ditemukan.", { field: "sumber_daya" });
+            }
+        }
+        if (ruanganIds.length > 0) {
+            const ada = await scope.tx.selectFrom("rooms").select("id").where("id", "in", ruanganIds.map(String)).execute();
+            if (ada.length !== ruanganIds.length) {
+                throw new DomainError("VALIDATION_ERROR", "Ruangan yang dipesan tidak ditemukan.", { field: "sumber_daya" });
+            }
+        }
+
+        // Urutan sisip mengikuti urutan kunci (aset menaik, lalu ruangan) — deterministik.
+        const urut: SumberDaya[] = [
+            ...asetIds.map((id) => ({ jenis: "asset" as const, id })),
+            ...ruanganIds.map((id) => ({ jenis: "room" as const, id })),
+        ];
+        return this.sisipkan(scope, urut, pesan.rentang, pesan.asal, pesan, pesan.rujukan);
+    }
+
+    /**
+     * Alokasi unit OTOMATIS per kategori (FR-08.2; SDD-01 §4.2 langkah 4-6):
+     * kandidat disaring kelayakan + ketiadaan slot aktif beririsan, dikunci
+     * `ORDER BY id … FOR UPDATE SKIP LOCKED` (CI-02, SDD-AVL-05) sehingga
+     * permintaan serentak mengambil unit bebas berikutnya alih-alih antre. Kurang
+     * unit → `409 ASSET_NOT_AVAILABLE`. Pemeriksaan `NOT EXISTS` hanya penyaring;
+     * penjamin kebenaran tetap exclusion constraint saat sisip.
+     */
+    async allocate(scope: TransactionScope, alokasi: AlokasiUnit): Promise<readonly SlotRow[]> {
+        this.periksaRentang(alokasi.rentang);
+        if (!Number.isInteger(alokasi.jumlah) || alokasi.jumlah < 1) {
+            throw new DomainError("VALIDATION_ERROR", "Jumlah unit wajib bilangan bulat positif.", { field: "jumlah" });
+        }
+
+        const hasil = await sql<{ id: string }>`
+            SELECT a.id::text AS id FROM assets a
+             WHERE a.category_id = ${alokasi.categoryId}
+               AND a.dapat_dipinjam AND NOT a.dihapuskan
+               AND a.kondisi IN ('BAIK', 'RUSAK_RINGAN')
+               AND a.status NOT IN ('DALAM_PERBAIKAN', 'TIDAK_TERSEDIA')
+               AND (${!alokasi.untukSiswa} OR a.boleh_dipinjam_siswa)
+               AND NOT EXISTS (
+                     SELECT 1 FROM booking_slots s
+                      WHERE s.resource_type = 'asset' AND s.resource_id = a.id
+                        AND s.status IN ('TENTATIVE', 'CONFIRMED', 'ACTIVE')
+                        AND s.slot_range && ${this.rentangSql(alokasi.rentang)})
+             ORDER BY a.id
+             LIMIT ${alokasi.jumlah}
+             FOR UPDATE OF a SKIP LOCKED
+        `.execute(scope.tx);
+
+        if (hasil.rows.length < alokasi.jumlah) {
+            throw new DomainError(
+                "ASSET_NOT_AVAILABLE",
+                `Hanya ${hasil.rows.length} dari ${alokasi.jumlah} unit tersedia pada rentang itu.`,
+                { field: "jumlah" },
+            );
+        }
+
+        return this.sisipkan(
+            scope,
+            hasil.rows.map((r) => ({ jenis: "asset" as const, id: Number(r.id) })),
+            alokasi.rentang,
+            alokasi.asal,
+            { status: "TENTATIVE", kedaluwarsa: alokasi.kedaluwarsa },
+            alokasi.rujukan,
+        );
+    }
+
+    /** Persetujuan level terakhir: `TENTATIVE` → `CONFIRMED`, TTL dihapus (SDD-01 §4.3). */
+    async confirm(scope: TransactionScope, slotIds: readonly number[]): Promise<readonly SlotRow[]> {
+        return this.transisi(scope, slotIds, "TENTATIVE", "CONFIRMED");
+    }
+
+    /** Serah terima: `CONFIRMED` → `ACTIVE` (SDD-01 §4.3). */
+    async activate(scope: TransactionScope, slotIds: readonly number[]): Promise<readonly SlotRow[]> {
+        return this.transisi(scope, slotIds, "CONFIRMED", "ACTIVE");
+    }
+
+    /**
+     * `*` → `RELEASED` (pengembalian, penolakan, pembatalan, TTL habis, aset masuk
+     * perbaikan — SDD-01 §4.3). Idempoten: slot yang sudah `RELEASED` dilewati.
+     * Baris dipertahankan untuk analitik (TBD-AVL-A), bukan dihapus.
+     */
+    async release(scope: TransactionScope, slotIds: readonly number[]): Promise<readonly SlotRow[]> {
+        if (slotIds.length === 0) return [];
+        return scope.tx
+            .updateTable("booking_slots")
+            .set({ status: "RELEASED", expires_at: null })
+            .where("id", "in", slotIds.map(String))
+            .where("status", "<>", "RELEASED")
+            .returning(KOLOM_SLOT)
+            .execute();
+    }
+
+    /**
+     * Transisi berpenjaga status asal: `UPDATE … WHERE status = asal` mengunci
+     * barisnya, sehingga dua transisi serentak atas slot yang sama tak dapat
+     * sama-sama berhasil. Slot yang tak lagi berstatus asal (mis. TTL-nya telah
+     * dilepas job) menggagalkan seluruh transisi — pemanggil tak boleh diam-diam
+     * mengonfirmasi sebagian.
+     */
+    private async transisi(
+        scope: TransactionScope,
+        slotIds: readonly number[],
+        asal: StatusSlot,
+        tujuan: "CONFIRMED" | "ACTIVE",
+    ): Promise<readonly SlotRow[]> {
+        const unik = [...new Set(slotIds)];
+        if (unik.length === 0) return [];
+        const hasil = await scope.tx
+            .updateTable("booking_slots")
+            .set({ status: tujuan, ...(tujuan === "CONFIRMED" ? { expires_at: null } : {}) })
+            .where("id", "in", unik.map(String))
+            .where("status", "=", asal)
+            .returning(KOLOM_SLOT)
+            .execute();
+        if (hasil.length !== unik.length) {
+            throw new DomainError(
+                "RESERVATION_CONFLICT",
+                `Sebagian slot tidak lagi berstatus ${asal}; transisi ke ${tujuan} dibatalkan.`,
+            );
+        }
+        return hasil;
+    }
+
+    /** `FOR UPDATE NOWAIT`; `55P03` diterjemahkan DI SINI — hanya layanan ini tahu kuncinya milik aset (keputusan 64). */
+    private async kunciAsetNowait(scope: TransactionScope, asetIds: readonly number[]): Promise<readonly { id: string }[]> {
+        try {
+            return await scope.tx
+                .selectFrom("assets")
+                .select("id")
+                .where("id", "in", asetIds.map(String))
+                .orderBy("id")
+                .forUpdate()
+                .noWait()
+                .execute();
+        } catch (e) {
+            if ((e as { code?: unknown }).code === LOCK_NOT_AVAILABLE) {
+                throw new DomainError("ASSET_NOT_AVAILABLE", "Aset sedang dipesan permintaan lain. Coba lagi.");
+            }
+            throw e;
+        }
+    }
+
+    private async sisipkan(
+        scope: TransactionScope,
+        sumberDaya: readonly SumberDaya[],
+        rentang: RentangWaktu,
+        asal: AsalSlot,
+        awal: StatusAwal,
+        rujukan: RujukanSlot | undefined,
+    ): Promise<readonly SlotRow[]> {
+        if (awal.status === "TENTATIVE" && awal.kedaluwarsa <= this.clock.now()) {
+            throw new DomainError("VALIDATION_ERROR", "Batas waktu slot sementara sudah lewat.", { field: "kedaluwarsa" });
+        }
+        return scope.tx
+            .insertInto("booking_slots")
+            .values(
+                sumberDaya.map((s) => ({
+                    resource_type: s.jenis,
+                    resource_id: s.id,
+                    slot_range: this.rentangSql(rentang),
+                    status: awal.status,
+                    origin: asal,
+                    expires_at: awal.status === "TENTATIVE" ? awal.kedaluwarsa : null,
+                    reservation_id: rujukan?.reservationId ?? null,
+                    loan_id: rujukan?.loanId ?? null,
+                    work_order_id: rujukan?.workOrderId ?? null,
+                    created_by: scope.ctx.userId,
+                })),
+            )
+            .returning(KOLOM_SLOT)
+            .execute();
+    }
+
+    /** SDD-AVL-02: literal SELALU `'[)'` — tak pernah dirakit sebagai teks. */
+    private rentangSql(r: RentangWaktu) {
+        return sql<string>`tstzrange(${r.mulai}, ${r.selesai}, '[)')`;
+    }
+
+    /** Rentang kosong/terbalik bukan slot: `tstzrange` terbalik adalah galat 22000 (500). */
+    private periksaRentang(r: RentangWaktu): void {
+        if (!(r.mulai < r.selesai)) {
+            throw new DomainError("VALIDATION_ERROR", "Waktu mulai harus sebelum waktu selesai.", { field: "rentang" });
+        }
+    }
+}

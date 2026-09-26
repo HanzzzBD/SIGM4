@@ -268,6 +268,19 @@ Format dirakit aplikasi sesuai `SEQ-01`, divalidasi terhadap regex `SEQ-04` pada
 
 Setiap job menulis entri `activity_log` berpelaku `SYSTEM` (`JOB-05`, `AL-06`).
 
+### 4.7 Antarmuka `SlotService` (`shared/booking/`)
+
+Ditetapkan pemilik produk saat `PR-02-17` (keputusan 64 [log phase-02](../IMPLEMENTATION/logs/phase-02.md)). Seluruh metode menerima `TransactionScope` **pemanggil** — slot dan dokumen bisnisnya commit atau batal bersama (§4.2 langkah 6-7).
+
+| Metode | Kegunaan | Kunci | Galat |
+|---|---|---|---|
+| `reserve` | Sumber daya eksplisit: ruangan, unit aset pilihan Petugas, blokade pemeliharaan. Status awal `TENTATIVE` (wajib TTL, ditegakkan tipe) atau `CONFIRMED` | Aset `ORDER BY id FOR UPDATE NOWAIT` (CI-02, SDD-AVL-05) | `55P03` diterjemahkan **di dalam** layanan menjadi `409 ASSET_NOT_AVAILABLE`; `23P01` diteruskan ke ErrorMapper (CI-04) |
+| `allocate` | Alokasi otomatis per kategori (§4.2 langkah 4-6), selalu `TENTATIVE` | `ORDER BY id … FOR UPDATE OF a SKIP LOCKED` | Unit kurang → `409 ASSET_NOT_AVAILABLE` |
+| `confirm` / `activate` | `TENTATIVE`→`CONFIRMED` (TTL dihapus) / `CONFIRMED`→`ACTIVE` | `UPDATE … WHERE status = asal` | Ada slot yang tak berstatus asal → `409 RESERVATION_CONFLICT`, seluruh transisi batal |
+| `release` | `*`→`RELEASED`, idempoten; baris dipertahankan (TBD-AVL-A) | — | — |
+
+Yang **bukan** tanggung jawabnya: aturan reservasi (`BR-030`, `BR-023a`, `BR-023c`) milik M-07/M-08, dan kelayakan aset untuk `reserve` milik pemanggil — blokade pemeliharaan justru menyasar aset rusak. **Activity log** dicatat pemanggil atas aksi bisnisnya dalam transaksi yang sama; tidak ada aksi `SLOT_*` (`AL-01`).
+
 ---
 
 ## 5. Konsekuensi
