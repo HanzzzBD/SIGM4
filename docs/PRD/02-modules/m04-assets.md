@@ -153,6 +153,8 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 **Alternative Flow**
 - **A1 — Kode kategori duplikat:** Sistem menolak.
 - **A2 — Menghapus kategori yang masih dipakai aset:** Sistem menolak dan menampilkan jumlah aset terkait.
+- **A3 — Menghapus kategori yang masih memiliki subkategori:** Sistem menolak dan menampilkan jumlah subkategori terkait; subkategori dipindahkan atau dihapus lebih dulu.
+- **A4 — Mengubah kode kategori yang sudah dipakai aset:** Sistem menolak. Kode kategori menjadi awalan kode aset (FR-20.1), dan kode aset yang sudah terbentuk tidak berubah (BR-002); atribut lain tetap dapat diubah.
 
 **Post Conditions** — Daftar kategori terbarui; interval preventif menjadi dasar penjadwalan maintenance (FR-12.2).
 
@@ -197,6 +199,9 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | POST | `/assets/import` | `asset.create` | Impor massal |
 | GET | `/assets/export` | `asset.export` | Ekspor XLSX/PDF |
 | GET | `/asset-categories` | `asset.view` | Daftar kategori |
+| POST | `/asset-categories` | `category.manage` | Buat kategori |
+| PUT | `/asset-categories/{id}` | `category.manage` | Perbarui kategori |
+| DELETE | `/asset-categories/{id}` | `category.manage` | Hapus kategori yang tidak dipakai |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).

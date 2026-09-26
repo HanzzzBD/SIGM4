@@ -396,16 +396,19 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await langkah("PUT /rooms/:id", `/rooms/${id(ruang)}`, { area_id: id(area), nama: `Ruang ${sfx} B`, kode: `R${sfx}`, jenis: "KELAS", kapasitas: 32, dapat_direservasi: true, boleh_direservasi_siswa: false }, ["LOCATION_UPDATED"]);
 
                 // --- M-04: aset (PR-02-11) — SEBELUM ruangan dinonaktifkan (BR-009: ruangan wajib AKTIF).
-                // asset_categories belum berendpoint (CRUD milik PR-02-15) — kategori disisipkan langsung.
-                const [kategoriAset] = await kueri<{ id: string }>(
-                    `INSERT INTO asset_categories (nama, kode) VALUES ('Kategori Gerbang ${sfx}', 'KAT${sfx}') RETURNING id::text`,
-                );
+                // PR-02-15: kategori lewat endpoint sungguhan. PUT sebelum aset dibuat (kode kategori
+                // terpakai tak dapat diubah, FR-04.5 A4); DELETE atas kategori kedua yang tak dipakai (A2).
+                const kategoriAset = await langkah("POST /asset-categories", "/asset-categories", { nama: `Kategori Gerbang ${sfx}`, kode: `KAT${sfx}` }, ["CATEGORY_CREATED"]);
+                await langkah("PUT /asset-categories/:id", `/asset-categories/${id(kategoriAset)}`, { nama: `Kategori Gerbang ${sfx} B`, kode: `KAT${sfx}`, interval_preventif_hari: 90 }, ["CATEGORY_UPDATED"]);
+                const kategoriBuang = await panggil(mode, "POST", "/asset-categories", { nama: `Kategori Buang ${sfx}`, kode: `KB${sfx}` });
+                expect(kategoriBuang.status).toBe(201);
+                await langkah("DELETE /asset-categories/:id", `/asset-categories/${id(kategoriBuang)}`, undefined, ["CATEGORY_DELETED"]);
                 const aset = await langkah(
                     "POST /assets",
                     "/assets",
                     {
                         nama: `Aset Gerbang ${sfx}`,
-                        category_id: Number(kategoriAset?.id),
+                        category_id: Number(id(kategoriAset)),
                         tahun_perolehan: 2024,
                         sumber_perolehan: "PEMBELIAN",
                         room_id: Number(id(ruang)),
