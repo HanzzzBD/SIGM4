@@ -5,10 +5,11 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **151** baris, dikumpulkan dari 22 berkas modul.
+> Total: **154** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
+| DELETE | `/asset-categories/{id}` | `category.manage` | Hapus kategori yang tidak dipakai | [M-04](../02-modules/m04-assets.md) |
 | DELETE | `/auth/sessions/{id}` | Bearer | Mencabut satu sesi milik pengguna sendiri | 204 | 400, 401, 403 | [M-01](../02-modules/m01-auth.md) |
 | DELETE | `/device-tokens/{token}` | Bearer | Cabut token perangkat | [M-17](../02-modules/m17-notifications.md) |
 | DELETE | `/holidays/{id}` | `setting.manage` | Hapus hari libur | [M-20](../02-modules/m20-settings.md) |
@@ -88,6 +89,7 @@
 | POST | `/approval-rules` | `approval_rule.manage` | Buat aturan + langkah | [M-10](../02-modules/m10-approval.md) |
 | POST | `/approvals/delegate` | `approval.delegate` | Tetapkan approver pengganti | [M-10](../02-modules/m10-approval.md) |
 | POST | `/approvals/{id}/decide` | `approval.decide` | Setujui/tolak/minta revisi | [M-10](../02-modules/m10-approval.md) |
+| POST | `/asset-categories` | `category.manage` | Buat kategori | [M-04](../02-modules/m04-assets.md) |
 | POST | `/asset-disposals/{id}/execute` | `disposal.execute` | Catat pelaksanaan fisik & hapuskan aset | [M-21](../02-modules/m21-disposal.md) |
 | POST | `/asset-disposals` | `disposal.create` | Buat usulan penghapusan aset | [M-21](../02-modules/m21-disposal.md) |
 | POST | `/assets/import` | `asset.create` | Impor massal | [M-04](../02-modules/m04-assets.md) |
@@ -150,6 +152,7 @@
 | POST | `/work-orders` | `workorder.create` | Buat work order | [M-12](../02-modules/m12-maintenance.md) |
 | POST | `/work-units` | `setting.manage` | Buat unit kerja | [M-20](../02-modules/m20-settings.md) |
 | PUT | `/academic-years/{id}` | `setting.manage` | Sunting nama, rentang tanggal, dan semester tahun ajaran | [M-20](../02-modules/m20-settings.md) |
+| PUT | `/asset-categories/{id}` | `category.manage` | Perbarui kategori | [M-04](../02-modules/m04-assets.md) |
 | PUT | `/assets/{id}` | `asset.update` | Perbarui aset | [M-04](../02-modules/m04-assets.md) |
 | PUT | `/holidays/{id}` | `setting.manage` | Sunting hari libur | [M-20](../02-modules/m20-settings.md) |
 | PUT | `/me` | Bearer | Perbarui profil sendiri | 200 | 401, 422 | [M-01](../02-modules/m01-auth.md) |

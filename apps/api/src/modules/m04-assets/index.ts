@@ -5,6 +5,10 @@ export type { AssetsModuleDeps } from "./routes.js";
 export {
     assetsRouter,
     createAssetRoute,
+    createCategoryRoute,
+    deleteCategoryRoute,
+    listCategoriesRoute,
+    updateCategoryRoute,
     listAssetsRoute,
     listRoomAssetsRoute,
     moveAssetsRoute,
