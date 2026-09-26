@@ -7,6 +7,7 @@ import {
     CreateAssetBodySchema,
     ListAssetsQuerySchema,
     ListRoomAssetsQuerySchema,
+    MoveAssetsBodySchema,
     RoomIdParamSchema,
     UpdateAssetConditionBodySchema,
 } from "../schemas/asset.schema.js";
@@ -135,5 +136,21 @@ export function updateAssetConditionHandler(service: AssetService): RequestHandl
             referensiId: body.referensi_id ?? null,
         });
         res.status(200).json({ success: true, data: diperbarui, meta: null });
+    };
+}
+
+/** `POST /assets/move` (FR-04.4): mutasi lokasi 1..50 aset ke satu ruangan tujuan, atomik. */
+export function moveAssetsHandler(service: AssetService): RequestHandler {
+    return async (req, res) => {
+        const ctx = requireAuthContext(res);
+        const body = MoveAssetsBodySchema.parse(req.body);
+        const dipindah = await service.mutasiLokasi(ctx, {
+            assetIds: body.asset_ids,
+            roomTujuanId: body.room_tujuan_id,
+            tanggal: body.tanggal_mutasi,
+            alasan: body.alasan,
+            penanggungJawabBaruId: body.penanggung_jawab_baru_id ?? null,
+        });
+        res.status(200).json({ success: true, data: dipindah, meta: { jumlah_aset: dipindah.length } });
     };
 }

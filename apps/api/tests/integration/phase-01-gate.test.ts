@@ -416,6 +416,15 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 // PR-02-13: kondisi -> RUSAK_BERAT sekaligus membuktikan status turunan
                 // (BR-006) tercatat sebagai aksi TERPISAH (§11: "termasuk yang otomatis").
                 const asetId = (aset.json.data as ReadonlyArray<{ id: string }>)[0]?.id;
+                // PR-02-14: mutasi SEBELUM kondisi memburuk — aset TIDAK_TERSEDIA tak dapat
+                // dimutasi. Tujuan = ruangan yang sama: cukup membuktikan AL-01, dan gedung
+                // tetap dapat dinonaktifkan di bawah (tak ada ruangan aktif lain).
+                await langkah(
+                    "POST /assets/move",
+                    "/assets/move",
+                    { asset_ids: [Number(asetId)], room_tujuan_id: Number(id(ruang)), tanggal_mutasi: "2026-09-26", alasan: "Uji gerbang AL-01" },
+                    ["ASSET_MOVED"],
+                );
                 await langkah(
                     "PATCH /assets/:id/condition",
                     `/assets/${asetId}/condition`,
@@ -427,6 +436,7 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 // sini — disingkirkan sebelum langkah PATCH .../status di bawah (riwayat
                 // kondisi PR-02-13 lebih dulu — FK asset_condition_history.asset_id).
                 await kueri(`DELETE FROM asset_condition_history WHERE asset_id = ${asetId}`);
+                await kueri(`DELETE FROM asset_movements WHERE asset_id = ${asetId}`);
                 await kueri(`DELETE FROM assets WHERE room_id = ${id(ruang)}`);
 
                 await langkah("PATCH /rooms/:id/status", `/rooms/${id(ruang)}/status`, { status: "NONAKTIF" }, ["LOCATION_DEACTIVATED"]);
@@ -488,8 +498,9 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await kueri("DELETE FROM user_import_jobs");
                 await kueri("DELETE FROM student_enrollments");
                 await kueri("UPDATE users SET work_unit_id = NULL");
-                // PR-02-13: asset_condition_history menunjuk assets — sebelum dihapus.
+                // PR-02-13/14: asset_condition_history dan asset_movements menunjuk assets — sebelum dihapus.
                 await kueri("DELETE FROM asset_condition_history");
+                await kueri("DELETE FROM asset_movements");
                 // PR-02-11: assets/asset_code_counters menunjuk rooms DAN asset_categories — sebelum keduanya.
                 await kueri("DELETE FROM assets");
                 await kueri("DELETE FROM asset_code_counters");

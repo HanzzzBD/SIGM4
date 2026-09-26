@@ -7,5 +7,6 @@ export {
     createAssetRoute,
     listAssetsRoute,
     listRoomAssetsRoute,
+    moveAssetsRoute,
     updateAssetConditionRoute,
 } from "./routes.js";

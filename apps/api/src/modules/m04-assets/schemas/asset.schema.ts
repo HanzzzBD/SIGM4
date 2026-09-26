@@ -99,6 +99,26 @@ export const UpdateAssetConditionResponseSchema = z.object({
     meta: z.null(),
 });
 
+/**
+ * `POST /assets/move` (FR-04.4 langkah 1-2). `asset_ids` 1..50 (AC mutasi
+ * massal); satu ruangan tujuan untuk seluruhnya. `alasan` pola `max(500)` sama
+ * dengan `alasan` di skema lain; `tanggal_mutasi` pola `z.iso.date()` (M-20).
+ */
+export const MoveAssetsBodySchema = z.object({
+    asset_ids: z.array(z.coerce.number().int().positive()).min(1).max(50),
+    room_tujuan_id: z.coerce.number().int().positive(),
+    tanggal_mutasi: z.iso.date(),
+    alasan: z.string().trim().min(1).max(500),
+    penanggung_jawab_baru_id: z.coerce.number().int().positive().nullable().optional(),
+});
+
+/** FR-04.4 langkah 4: seluruh aset yang dipindahkan, pasca-mutasi. */
+export const MoveAssetsResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.array(AssetSchema),
+    meta: z.object({ jumlah_aset: z.number() }),
+});
+
 /** `GET /rooms/{id}/assets` (FR-03.2 langkah 4). */
 export const ListRoomAssetsQuerySchema = z.object({
     page: z.coerce.number().int().positive().default(1),

@@ -386,6 +386,53 @@ export class AssetRepository extends BaseRepository {
             .executeTakeFirstOrThrow();
     }
 
+    /**
+     * FR-04.4 langkah 4: memindahkan `room_id`; `penanggung_jawab_id` HANYA bila
+     * dinyatakan (langkah 2 "penanggung jawab baru" opsional — tanpa itu, yang
+     * lama dipertahankan).
+     */
+    async updateLokasi(
+        ctx: AuthContext,
+        id: number,
+        data: { roomId: number; penanggungJawabId?: number },
+    ): Promise<AssetRow> {
+        return this.query(ctx)
+            .updateTable("assets")
+            .set({
+                room_id: data.roomId,
+                ...(data.penanggungJawabId === undefined ? {} : { penanggung_jawab_id: data.penanggungJawabId }),
+                updated_by: ctx.userId,
+            })
+            .where("id", "=", String(id))
+            .returning(KOLOM_ASSET)
+            .executeTakeFirstOrThrow();
+    }
+
+    /** FR-04.4 AC: riwayat mutasi memuat lokasi asal, tujuan, tanggal, pelaku, dan alasan. */
+    async insertMutasi(
+        ctx: AuthContext,
+        data: {
+            readonly assetId: number;
+            readonly roomAsalId: string;
+            readonly roomTujuanId: number;
+            readonly tanggal: string;
+            readonly alasan: string;
+            readonly dilakukanOleh: number;
+        },
+    ): Promise<void> {
+        await this.query(ctx)
+            .insertInto("asset_movements")
+            .values({
+                asset_id: data.assetId,
+                room_asal_id: data.roomAsalId,
+                room_tujuan_id: data.roomTujuanId,
+                tanggal: data.tanggal,
+                alasan: data.alasan,
+                dilakukan_oleh: data.dilakukanOleh,
+            })
+            .execute();
+    }
+
     /** BR-007: setiap perubahan kondisi wajib tercatat (nilai lama → baru, pelaku, waktu, alasan). */
     async insertRiwayatKondisi(
         ctx: AuthContext,
