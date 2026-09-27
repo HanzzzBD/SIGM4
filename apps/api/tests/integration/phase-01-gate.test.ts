@@ -475,6 +475,10 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 const csv = `nama_lengkap,email,nip_nis,kode_role,kode_unit_kerja\nImpor Gerbang,${emailUnik()},${nipUnik()},R-05,X1${sfx}\n`;
                 await langkah("POST /users/import", "/users/import", { filename: "kecil.csv", content_base64: Buffer.from(csv, "utf8").toString("base64") }, ["USER_IMPORT_REQUESTED", "USER_IMPORTED"]);
 
+                // --- M-10: delegasi approver (PR-02-20) — penerima wajib aktif & memegang approval.decide (SDD-APR-16).
+                const penerimaDelegasi = await seedPengguna("R-02");
+                await langkah("POST /approvals/delegate", "/approvals/delegate", { penerima_id: penerimaDelegasi, mulai: "2026-09-19", selesai: "2026-09-20" }, ["APPROVAL_DELEGATED"]);
+
                 // --- M-18: dua pembacaan yang WAJIB tercatat
                 await langkah("GET /activity-logs", "/activity-logs?per_page=5", undefined, ["ACTIVITY_LOG_VIEWED"]);
                 await langkah("GET /activity-logs/export", "/activity-logs/export?filter[modul]=m20-settings", undefined, ["ACTIVITY_LOG_EXPORTED"]);
@@ -519,6 +523,7 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await kueri("DELETE FROM password_reset_requests"); // PR-02-05: reset langsung mencatat permintaan
                 await kueri("DELETE FROM totp_activation_codes"); // PR-02-33: kode aktivasi menunjuk users
                 await kueri("DELETE FROM totp_backup_codes");
+                await kueri("DELETE FROM approval_delegations"); // PR-02-20: pemberi/penerima menunjuk users
                 await kueri("DELETE FROM users");
             }
         }, 120_000);

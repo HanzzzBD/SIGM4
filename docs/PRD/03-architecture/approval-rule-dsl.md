@@ -121,7 +121,7 @@ Field di luar tabel ini, atau field yang tidak berlaku bagi `jenis_pengajuan` at
 |---|---|---|
 | `approver_type` | `role` \| `user` | Berdasarkan role atau pengguna spesifik |
 | `on_sla_breach` | `remind` \| `escalate` | Perilaku saat SLA terlampaui |
-| `fallback_approver` | `{ approver_type, approver_role \| approver_user_id }` | **Opsional, tingkat aturan** (bukan tingkat langkah). Dipakai bila seluruh langkah terlewati (`RE-11`). Bila tidak diisi, berlaku role Administrator |
+| `fallback_approver` | `{ approver_type, approver_role \| approver_user_id }` | **Opsional, tingkat aturan** (bukan tingkat langkah). Dipakai bila seluruh langkah terlewati (`RE-11`). Bila tidak diisi, berlaku role Administrator. Langkah fallback yang terbentuk ber-SLA **24 jam kerja** dengan `on_sla_breach = remind`, sama dengan aturan bawaan (RE-06) |
 | `terminal_on_exhausted_escalation` | `hold_and_alert` \| `auto_reject` | **Menutup celah menggantung**: perilaku bila seluruh eskalasi habis dan tetap tidak ada keputusan. Nilai bawaan `hold_and_alert` — pengajuan tetap menunggu namun Administrator dan Petugas Sarpras dialarmi (NT-47) |
 
 ### D.6 Contoh Aturan Lengkap

@@ -108,6 +108,7 @@ import {
     moveAssetsRoute,
     updateAssetConditionRoute,
 } from "../modules/m04-assets/index.js";
+import { approvalRouter, delegateRoute } from "../modules/m10-approval/index.js";
 import {
     activityLogRouter,
     exportActivityLogsRoute,
@@ -200,6 +201,7 @@ export const registry = new RouteRegistry().register(
     createCategoryRoute,
     updateCategoryRoute,
     deleteCategoryRoute,
+    delegateRoute,
     listActivityLogsRoute,
     exportActivityLogsRoute,
     getSettingsRoute,
@@ -344,6 +346,21 @@ export function createApp(deps: AppDeps): Express {
     app.use(
         BASE_PATH,
         assetsRouter(
+            {
+                db: deps.db,
+                auditLogger: new AuditLogger({
+                    clock: deps.clock,
+                    logger: deps.logger,
+                }),
+                clock: deps.clock,
+            },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        approvalRouter(
             {
                 db: deps.db,
                 auditLogger: new AuditLogger({
