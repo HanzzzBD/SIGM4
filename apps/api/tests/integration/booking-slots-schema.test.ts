@@ -178,6 +178,10 @@ describe.skipIf(!ADA_DB)("PR-02-16 — skema booking_slots + exclusion constrain
                 await client.connect();
                 try {
                     await client.query("BEGIN");
+                    // Protokol kunci SlotService (SDD-AVL-06, keputusan 68): baris sumber daya dikunci
+                    // SEBELUM sisip. Tanpanya, sisipan serentak yang beririsan saling menunggu di exclusion
+                    // constraint GiST dan sebagian berakhir 40P01 (deadlock) — bukan konflik (log phase-02 §7).
+                    await client.query(`SELECT id FROM assets WHERE id = ${aset} FOR UPDATE`);
                     // Rentang digeser per menit: seluruhnya tetap beririsan satu sama lain.
                     await client.query(sqlSlot({ jenis: "asset", id: aset, rentang: `[2026-10-02 08:${String(i).padStart(2, "0")}+07, 2026-10-02 10:00+07)` }));
                     await client.query("COMMIT");
