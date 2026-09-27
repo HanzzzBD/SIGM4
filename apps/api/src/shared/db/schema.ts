@@ -541,6 +541,68 @@ export interface BookingSlotsTable {
     created_at: Generated<Date>;
 }
 
+/**
+ * Mesin persetujuan (0031, PR-02-18; FR-10.1, Lampiran D.5, SDD-APR-03/04/12). Nilai
+ * DSL D.5 disimpan teks ber-CHECK literal lampiran (huruf kecil); status instance
+ * adalah kelompok Bab 11.3 "Status Instance Approval" (keputusan 65).
+ */
+export type JenisPengajuanApproval = "RESERVASI_RUANGAN" | "RESERVASI_ASET" | "PERPANJANGAN_PEMINJAMAN" | "PENGADAAN_BARANG" | "PENGHAPUSAN_ASET" | "PERMINTAAN_BAHAN";
+export type TipeApprover = "role" | "user";
+
+export interface ApprovalRulesTable extends KolomBaku {
+    id: Generated<string>;
+    jenis_pengajuan: JenisPengajuanApproval;
+    kondisi: ColumnType<unknown, unknown | undefined, unknown>;
+    prioritas: number;
+    status_aktif: Generated<boolean>;
+    versi: Generated<number>;
+    fallback_approver_type: TipeApprover | null;
+    fallback_role_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    fallback_user_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    terminal_on_exhausted_escalation: Generated<"hold_and_alert" | "auto_reject">;
+}
+
+export interface ApprovalRuleStepsTable {
+    id: Generated<string>;
+    rule_id: ColumnType<string, string | number, string | number>;
+    urutan: number;
+    approver_type: TipeApprover;
+    approver_role_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    approver_user_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    sla_jam: number;
+    on_sla_breach: Generated<"remind" | "escalate">;
+    eskalasi_ke: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+}
+
+/** `rule_snapshot` BEKU — trigger menolak perubahannya (SDD-APR-03). */
+export interface ApprovalInstancesTable {
+    id: Generated<string>;
+    jenis_pengajuan: JenisPengajuanApproval;
+    referensi_id: ColumnType<string, string | number, string | number>;
+    rule_id: ColumnType<string | null, string | number | null | undefined, never>;
+    rule_snapshot: ColumnType<unknown, unknown, never>;
+    langkah_aktif: number | null;
+    status: Generated<"MENUNGGU" | "DISETUJUI" | "DITOLAK" | "PERLU_REVISI" | "DIBATALKAN">;
+    created_at: Generated<Date>;
+    diselesaikan_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+}
+
+export interface ApprovalStepsTable {
+    id: Generated<string>;
+    instance_id: ColumnType<string, string | number, string | number>;
+    urutan: number;
+    approver_type: TipeApprover;
+    approver_role_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    approver_user_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    keputusan: "DISETUJUI" | "DITOLAK" | "PERLU_REVISI" | "DILEWATI" | null;
+    catatan: string | null;
+    diputuskan_oleh: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    diputuskan_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    sla_deadline: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    dilewati: Generated<boolean>;
+    alasan_dilewati: string | null;
+}
+
 /** Peta nama tabel -> bentuk barisnya. Diisi bersama migration pemiliknya. */
 export interface Database {
     document_counters: DocumentCountersTable;
@@ -572,4 +634,8 @@ export interface Database {
     asset_code_counters: AssetCodeCountersTable;
     asset_movements: AssetMovementsTable;
     booking_slots: BookingSlotsTable;
+    approval_rules: ApprovalRulesTable;
+    approval_rule_steps: ApprovalRuleStepsTable;
+    approval_instances: ApprovalInstancesTable;
+    approval_steps: ApprovalStepsTable;
 }

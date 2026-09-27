@@ -46,7 +46,7 @@ Total: **69** requirement.
 | `FR-09.3` | M-09 Peminjaman & Pengembalian | `02-modules/m09-loans.md` | Not Started |  |
 | `FR-09.4` | M-09 Peminjaman & Pengembalian | `02-modules/m09-loans.md` | Not Started |  |
 | `FR-09.5` | M-09 Peminjaman & Pengembalian | `02-modules/m09-loans.md` | Not Started |  |
-| `FR-10.1` | M-10 Approval Workflow Engine | `02-modules/m10-approval.md` | Not Started |  |
+| `FR-10.1` | M-10 Approval Workflow Engine | `02-modules/m10-approval.md` | In Progress | PR-02-18 (belum digabung): skema `approval_rules`/`approval_rule_steps`/`approval_instances`/`approval_steps` (migration 0031) — AC "perubahan aturan tidak mengubah jalur pengajuan berjalan" ditegakkan basis data (trigger snapshot beku, SDD-APR-03), AC "instance menyimpan referensi versi aturan" (rule_id + versi dalam snapshot, aturan terpakai tak dapat dihapus). PRD §8/Bab 11.3 dilengkapi kolom D.5 (keputusan 65). TERBUKA: langkah 1-6 & pratinjau (`PR-02-24`), evaluator (`PR-02-19`) |
 | `FR-10.2` | M-10 Approval Workflow Engine | `02-modules/m10-approval.md` | Not Started |  |
 | `FR-10.3` | M-10 Approval Workflow Engine | `02-modules/m10-approval.md` | Not Started |  |
 | `FR-11.1` | M-11 Laporan Kerusakan | `02-modules/m11-damage-reports.md` | Not Started |  |
