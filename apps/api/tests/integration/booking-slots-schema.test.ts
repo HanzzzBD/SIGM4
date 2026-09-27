@@ -193,6 +193,7 @@ describe.skipIf(!ADA_DB)("PR-02-16 — skema booking_slots + exclusion constrain
         expect(hasil.filter((h) => h.status === "fulfilled")).toHaveLength(1);
         const ditolak = hasil.filter((h): h is PromiseRejectedResult => h.status === "rejected");
         expect(ditolak).toHaveLength(19);
-        expect(ditolak.every((h) => (h.reason as { code?: string }).code === "23P01")).toBe(true);
+        // Kode tiap penolakan ditampilkan bila gagal — galat koneksi lokal (port habis) harus terbedakan dari bug.
+        expect(ditolak.map((h) => (h.reason as { code?: string }).code ?? String(h.reason))).toEqual(Array(19).fill("23P01"));
     });
 });
