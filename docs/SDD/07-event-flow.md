@@ -136,6 +136,7 @@ Konsekuensinya, event yang gagal **menahan** event sesudahnya pada agregat yang 
 | `ReservationSubmitted` | M-07 / M-08 | Notifikasi `NT-01` |
 | `ApprovalDecided` | M-10 | Notifikasi `NT-02`/`NT-03`/`NT-04`/`NT-05` |
 | `ApprovalSlaBreached` | M-10 (job) | Notifikasi `NT-06`/`NT-07`/`NT-47` |
+| `ApprovalFallbackRouted` | M-10 | Notifikasi `NT-47` (Administrator + Petugas Sarpras) — seluruh langkah terlewati, pengajuan dialihkan ke *fallback approver* (`RE-11`, `RE-13`); payload `instance_id`, `urutan_fallback`; agregat `approval_instance` |
 | `LoanCheckedOut` | M-09 | Notifikasi `NT-10` |
 | `LoanReturned` | M-09 | Notifikasi `NT-14`, metrik utilisasi |
 | `FineIssued` | M-09 | Notifikasi `NT-15` |

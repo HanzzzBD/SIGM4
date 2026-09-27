@@ -581,6 +581,8 @@ export interface ApprovalInstancesTable {
     referensi_id: ColumnType<string, string | number, string | number>;
     rule_id: ColumnType<string | null, string | number | null | undefined, never>;
     rule_snapshot: ColumnType<unknown, unknown, never>;
+    /** BR-039 (0032): pemohon; NULLABLE karena expand, mesin selalu mengisi. */
+    pemohon_id: ColumnType<string | null, string | number | null | undefined, never>;
     langkah_aktif: number | null;
     status: Generated<"MENUNGGU" | "DISETUJUI" | "DITOLAK" | "PERLU_REVISI" | "DIBATALKAN">;
     created_at: Generated<Date>;
@@ -601,6 +603,17 @@ export interface ApprovalStepsTable {
     sla_deadline: ColumnType<Date | null, Date | null | undefined, Date | null>;
     dilewati: Generated<boolean>;
     alasan_dilewati: string | null;
+    /** RE-12 (0032): approver asli bila diputus penerima delegasi. */
+    atas_nama_user_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+}
+
+/** Delegasi approver (0032, PR-02-20; FR-10.2 A3, SDD-APR-16) — rentang tanggal WIB inklusif. */
+export interface ApprovalDelegationsTable extends KolomBaku {
+    id: Generated<string>;
+    pemberi_id: ColumnType<string, string | number, string | number>;
+    penerima_id: ColumnType<string, string | number, string | number>;
+    mulai: ColumnType<string, string, string>;
+    selesai: ColumnType<string, string, string>;
 }
 
 /** Peta nama tabel -> bentuk barisnya. Diisi bersama migration pemiliknya. */
@@ -638,4 +651,5 @@ export interface Database {
     approval_rule_steps: ApprovalRuleStepsTable;
     approval_instances: ApprovalInstancesTable;
     approval_steps: ApprovalStepsTable;
+    approval_delegations: ApprovalDelegationsTable;
 }
