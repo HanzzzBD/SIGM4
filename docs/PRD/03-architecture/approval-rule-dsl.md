@@ -38,8 +38,9 @@ Bila SDD dan lampiran ini berbeda, **lampiran ini yang berlaku** dan SDD wajib d
 
 - Node bertipe **grup** memiliki `operator` (`AND` \| `OR`) dan `conditions` (array).
 - Node bertipe **predikat** memiliki `field`, `op`, dan `value`.
-- Kedalaman bersarang maksimum **3 tingkat**; melebihi itu ditolak saat penyimpanan.
+- Kedalaman bersarang maksimum **3 tingkat grup** — grup akar adalah tingkat 1 dan predikat tidak menambah tingkat; grup tingkat ke-4 ditolak saat penyimpanan.
 - Kondisi kosong (`{}`) berarti **selalu cocok** — dipakai untuk aturan bawaan (BR-036).
+- Nilai field bertipe enum ditulis sebagai **kode teknis** (`R-07`, `LABORATORIUM`, `HILANG`), bukan label; label pada contoh lampiran ini bersifat ilustratif.
 
 ### D.2 Field yang Tersedia per Jenis Pengajuan
 
@@ -66,13 +67,15 @@ Bila SDD dan lampiran ini berbeda, **lampiran ini yang berlaku** dan SDD wajib d
 | `disposal_reason` | enum | Penghapusan | Alasan penghapusan |
 | `priority` | enum | Pengadaan | Prioritas usulan |
 
+Field di luar tabel ini, atau field yang tidak berlaku bagi `jenis_pengajuan` aturan, **ditolak saat penyimpanan** (`RE-08`). `RE-02` tetap berlaku sebagai pengaman saat evaluasi.
+
 ### D.3 Operator
 
 | `op` | Berlaku untuk tipe | Semantik |
 |---|---|---|
-| `eq` / `neq` | semua | Sama dengan / tidak sama dengan |
+| `eq` / `neq` | semua kecuali array | Sama dengan / tidak sama dengan |
 | `gt` / `gte` / `lt` / `lte` | numerik | Perbandingan numerik |
-| `in` / `not_in` | enum, array | Keanggotaan himpunan |
+| `in` / `not_in` | enum, array | Keanggotaan himpunan. Pada field array bermakna **irisan**: `in` cocok bila sedikitnya satu elemen ada di `value`; `not_in` cocok bila tidak satu pun ada. `value` berupa array tidak kosong |
 | `between` | numerik | `value` berupa `[min, max]`, inklusif |
 | `is_true` / `is_false` | boolean | Tanpa `value` |
 

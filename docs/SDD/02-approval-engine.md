@@ -24,7 +24,7 @@ Satu mesin melayani **lima** jenis pengajuan. Tidak boleh ada cabang khusus per 
 | ID | Keputusan |
 |---|---|
 | **SDD-APR-01** | Evaluator aturan berjalan di **lapisan aplikasi** sebagai fungsi murni, bukan di basis data. Masukannya objek fakta biasa; tidak menyentuh koneksi DB. |
-| **SDD-APR-02** | Definisi aturan divalidasi terhadap **JSON Schema** saat disimpan, bukan saat dievaluasi. Aturan tidak valid ditolak `422 INVALID_RULE_DEFINITION` (`RE-08`). |
+| **SDD-APR-02** | Definisi aturan divalidasi **saat disimpan**, bukan saat dievaluasi, terhadap skema **Zod** yang menjadi satu-satunya sumber (`SDD-API-01`); JSON Schema, bila dibutuhkan (OpenAPI, editor aturan), **diturunkan** darinya (`z.toJSONSchema`), tidak ditulis terpisah. Aturan tidak valid ditolak `422 INVALID_RULE_DEFINITION` (`RE-08`) beserta seluruh pelanggarannya. |
 | **SDD-APR-03** | `rule_snapshot` disimpan sebagai `jsonb` berisi **definisi aturan utuh** (kondisi + seluruh langkah), bukan sekadar `rule_id` + versi. |
 | **SDD-APR-04** | Instance persetujuan memakai kolom `langkah_aktif` sebagai penunjuk tunggal; baris `approval_steps` dibuat **seluruhnya di muka** saat instance lahir, berstatus `Menunggu`/`Belum Aktif`. |
 | **SDD-APR-05** | Resolusi "first responder wins" (`BR-041`, `RE-09`) memakai **conditional UPDATE + pemeriksaan jumlah baris terpengaruh**, bukan `SELECT` lalu `UPDATE`, dan bukan lock tabel. |
@@ -44,6 +44,8 @@ Satu mesin melayani **lima** jenis pengajuan. Tidak boleh ada cabang khusus per 
 ## 3. Alasan
 
 **SDD-APR-01 — evaluator di aplikasi.** Alternatif menyimpan logika di PostgreSQL (`jsonb` + fungsi PL/pgSQL) ditolak karena `RE-07` mewajibkan pratinjau tanpa efek samping, dan karena aturan harus dapat diuji unit secara masif (`NFR-M-03` menyebut approval engine sebagai logika inti). Fungsi murni tanpa I/O dapat diuji ribuan kasus dalam hitungan detik; fungsi PL/pgSQL tidak.
+
+**SDD-APR-02 — Zod, bukan validator JSON Schema terpisah.** Seluruh validasi masukan API sudah memakai Zod (`SDD-API-01`); menulis JSON Schema tangan dan memvalidasinya dengan pustaka kedua (mis. ajv) menghasilkan dua definisi yang dapat menyimpang diam-diam. Validasi berjalan dua lapis: struktur (bentuk grup/predikat, operator dikenal) lalu makna Lampiran D.2/D.3 (field dikenal dan berlaku bagi jenis pengajuan, operator sah per tipe, bentuk `value`, kedalaman grup). Lapis makna tidak dapat diungkapkan JSON Schema secara ringkas — ia bergantung pada `jenis_pengajuan` aturan — sehingga pustaka JSON Schema tidak menghemat apa pun.
 
 **SDD-APR-03 — snapshot definisi utuh, bukan pointer versi.** `BR-040` dan `RE-05` mengharuskan instance berjalan tidak terpengaruh perubahan aturan. Menyimpan `rule_id + versi` tetap membuat pembacaan bergantung pada baris `approval_rules` yang bisa dihapus atau disunting. Menyimpan definisi utuh membuat instance benar-benar mandiri — dan menjadikan `FR-10.3` (linimasa) dapat direkonstruksi bertahun-tahun kemudian meski aturannya sudah lama tidak ada.
 
@@ -96,7 +98,7 @@ Bila 24 jam terasa terlalu longgar, pengaturnya sudah tersedia dan berada di tem
 ```
 ApprovalService
 ├── RuleRepository        — baca aturan aktif per jenis pengajuan
-├── RuleValidator         — JSON Schema (SDD-APR-02)
+├── RuleValidator         — Zod + makna D.2/D.3 (SDD-APR-02)
 ├── RuleSelector          — RE-04: prioritas tertinggi, seri -> id terkecil
 ├── ConditionEvaluator    — fungsi murni, RE-01..RE-03
 ├── StepPlanner           — bentuk langkah + terapkan BR-039 / RE-11
