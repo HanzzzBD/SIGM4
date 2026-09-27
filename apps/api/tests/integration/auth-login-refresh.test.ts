@@ -121,7 +121,17 @@ describe.skipIf(!ADA)("PR-02-02 — login + rotasi refresh token (PostgreSQL + R
         await closeRedis();
     });
 
-    const ipUnik = () => `198.51.100.${String(1 + Math.floor(Math.random() * 250))}`;
+    // IP per permintaan: DIJAMIN berbeda dalam satu eksekusi (counter), sehingga "IP lain"
+    // tak pernah sama dengan IP yang baru ditutup rate limit. Titik awal acak per eksekusi
+    // karena kunci rate limit di Redis bertahan melewati eksekusi; rentang 198.18.0.0/15
+    // (RFC 2544) memberi ±60.000 titik awal alih-alih 250.
+    const IP_AWAL = Math.floor(Math.random() * 60_000);
+    let ipKe = 0;
+    const ipUnik = (): string => {
+        ipKe += 1;
+        const n = IP_AWAL + ipKe;
+        return `198.18.${String(Math.floor(n / 250))}.${String(1 + (n % 250))}`;
+    };
 
     async function seed(opsi: { status?: "AKTIF" | "NONAKTIF"; wajibGanti?: boolean } = {}): Promise<{ id: number; email: string }> {
         const email = `login-${randomUUID().slice(0, 8)}@sekolah.sch.id`;
