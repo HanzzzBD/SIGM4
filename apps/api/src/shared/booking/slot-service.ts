@@ -82,8 +82,12 @@ export class SlotService {
      * Memesan slot atas sumber daya EKSPLISIT (ruangan, unit aset pilihan Petugas,
      * blokade pemeliharaan). Baris aset dikunci terurut `id` menaik (CI-02,
      * SDD-AVL-06) dengan `NOWAIT` — pilihan manual gagal CEPAT, bukan antre
-     * (SDD-AVL-05). Irisan diputus exclusion constraint (CI-01): `23P01` diteruskan
-     * ke ErrorMapper, yang memetakannya per nama constraint (CI-04).
+     * (SDD-AVL-05). Baris ruangan lalu dikunci terurut `id` menaik dengan MENUNGGU
+     * (SDD-AVL-06, keputusan 68): tanpa kunci, sisipan serentak yang beririsan saling
+     * menunggu di exclusion constraint dan sebagian berakhir `40P01` (deadlock → 500),
+     * bukan konflik. Dengan kunci, yang kalah selalu `23P01`. Irisan diputus exclusion
+     * constraint (CI-01): `23P01` diteruskan ke ErrorMapper, yang memetakannya per nama
+     * constraint (CI-04).
      */
     async reserve(scope: TransactionScope, pesan: PesanSlot): Promise<readonly SlotRow[]> {
         this.periksaRentang(pesan.rentang);
@@ -92,7 +96,9 @@ export class SlotService {
         const asetIds = [...new Set(pesan.sumberDaya.filter((s) => s.jenis === "asset").map((s) => s.id))].sort(
             (a, b) => a - b,
         );
-        const ruanganIds = [...new Set(pesan.sumberDaya.filter((s) => s.jenis === "room").map((s) => s.id))];
+        const ruanganIds = [...new Set(pesan.sumberDaya.filter((s) => s.jenis === "room").map((s) => s.id))].sort(
+            (a, b) => a - b,
+        );
 
         if (asetIds.length > 0) {
             const terkunci = await this.kunciAsetNowait(scope, asetIds);
@@ -101,7 +107,14 @@ export class SlotService {
             }
         }
         if (ruanganIds.length > 0) {
-            const ada = await scope.tx.selectFrom("rooms").select("id").where("id", "in", ruanganIds.map(String)).execute();
+            // Setelah aset: urutan kunci seragam di semua jalur, jadi tidak ada siklus (SDD-AVL-06).
+            const ada = await scope.tx
+                .selectFrom("rooms")
+                .select("id")
+                .where("id", "in", ruanganIds.map(String))
+                .orderBy("id")
+                .forUpdate()
+                .execute();
             if (ada.length !== ruanganIds.length) {
                 throw new DomainError("VALIDATION_ERROR", "Ruangan yang dipesan tidak ditemukan.", { field: "sumber_daya" });
             }

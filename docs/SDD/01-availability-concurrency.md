@@ -32,7 +32,7 @@ Basis teknologi yang sudah ditetapkan dan tidak dibahas ulang: PostgreSQL 15+ (`
 | **SDD-AVL-03** | Larangan irisan ditegakkan oleh **exclusion constraint GiST berpredikat**, bukan oleh pemeriksaan aplikasi. Aplikasi hanya menerjemahkan galatnya. |
 | **SDD-AVL-04** | `resource_id` **tidak** memiliil foreign key (karena polimorfik). Integritas dijaga oleh *trigger* validasi `AFTER INSERT OR UPDATE` dan oleh satu-satunya jalur tulis di service layer. |
 | **SDD-AVL-05** | Alokasi unit otomatis memakai `SELECT … FOR UPDATE SKIP LOCKED`; pemilihan unit manual oleh Petugas memakai `FOR UPDATE NOWAIT` agar konflik langsung terlihat, bukan menunggu. |
-| **SDD-AVL-06** | Penguncian baris **selalu** terurut menaik berdasarkan `assets.id`. Diterapkan sebagai `ORDER BY id` pada kueri pengunci, bukan sebagai konvensi lisan. |
+| **SDD-AVL-06** | Penguncian baris **selalu** terurut menaik berdasarkan `assets.id`. Diterapkan sebagai `ORDER BY id` pada kueri pengunci, bukan sebagai konvensi lisan. Pada `reserve`, baris `rooms` **ikut dikunci** (`FOR UPDATE`, menunggu) terurut `rooms.id` menaik **sesudah** aset — urutan seragam di semua jalur, tanpa siklus (keputusan 68 log phase-02). |
 | **SDD-AVL-07** | `SQLSTATE 23P01` (*exclusion_violation*) dipetakan ke `409 RESERVATION_CONFLICT` / `409 ASSET_NOT_AVAILABLE` oleh *error mapper* terpusat. Tidak ada `try/catch` ad hoc di controller. |
 | **SDD-AVL-08** | Idempotensi memakai tabel `idempotency_keys` + *advisory lock* PostgreSQL untuk mendeteksi permintaan yang sedang berjalan. Bukan Redis, agar berada dalam transaksi yang sama dengan efeknya. |
 | **SDD-AVL-09** | Penomoran dokumen memakai tabel `document_counters` dengan `INSERT … ON CONFLICT DO UPDATE … RETURNING`, bukan `CREATE SEQUENCE` dinamis per tahun. |
@@ -64,6 +64,8 @@ Harga yang dibayar: kehilangan foreign key pada `resource_id`. Dimitigasi oleh S
 
 **SDD-AVL-10 — BullMQ, bukan `SET NX` manual.** `JOB-02` menuntut distributed lock. BullMQ repeatable job sudah menjamin satu eksekusi per periode lintas worker, plus percobaan ulang dan riwayat yang `JOB-06` butuhkan. Menulis lock sendiri berarti menulis ulang komponen yang sudah teruji, termasuk kasus tepi lock kedaluwarsa saat job masih berjalan.
 
+
+**SDD-AVL-06 — ruangan dikunci, bukan hanya aset.** Exclusion constraint GiST memutus irisan dengan benar, tetapi tidak menjamin *kode galat* pihak yang kalah: sisipan serentak yang beririsan menulis entri indeksnya lebih dulu lalu saling menunggu, dan PostgreSQL memutus lingkarannya sebagai `40P01` (*deadlock*) — yang tidak dipetakan ErrorMapper sehingga menjadi 500. Diukur pada `reserve` ruangan tanpa kunci: ±7,5% pihak kalah (20 transaksi serentak, pool 25); pada `INSERT` mentah: ±28%. Mengunci baris `rooms` lebih dulu membuat reservasi ruangan yang sama berurutan, sehingga yang kalah selalu melihat baris pemenang yang sudah *commit* dan menerima `23P01` → `409 RESERVATION_CONFLICT`. Kunci **menunggu**, bukan `NOWAIT`: rentang yang tidak beririsan pada ruangan yang sama tetap berhasil serentak, hanya berurutan. Aset sudah aman sejak awal karena `NOWAIT`/`SKIP LOCKED`.
 ---
 
 ## 4. Rancangan
@@ -274,7 +276,7 @@ Ditetapkan pemilik produk saat `PR-02-17` (keputusan 64 [log phase-02](../IMPLEM
 
 | Metode | Kegunaan | Kunci | Galat |
 |---|---|---|---|
-| `reserve` | Sumber daya eksplisit: ruangan, unit aset pilihan Petugas, blokade pemeliharaan. Status awal `TENTATIVE` (wajib TTL, ditegakkan tipe) atau `CONFIRMED` | Aset `ORDER BY id FOR UPDATE NOWAIT` (CI-02, SDD-AVL-05) | `55P03` diterjemahkan **di dalam** layanan menjadi `409 ASSET_NOT_AVAILABLE`; `23P01` diteruskan ke ErrorMapper (CI-04) |
+| `reserve` | Sumber daya eksplisit: ruangan, unit aset pilihan Petugas, blokade pemeliharaan. Status awal `TENTATIVE` (wajib TTL, ditegakkan tipe) atau `CONFIRMED` | Aset `ORDER BY id FOR UPDATE NOWAIT` (CI-02, SDD-AVL-05), lalu ruangan `ORDER BY id FOR UPDATE` menunggu (SDD-AVL-06) | `55P03` diterjemahkan **di dalam** layanan menjadi `409 ASSET_NOT_AVAILABLE`; `23P01` diteruskan ke ErrorMapper (CI-04). Kunci ruangan menjamin pihak kalah selalu `23P01`, tidak pernah `40P01` |
 | `allocate` | Alokasi otomatis per kategori (§4.2 langkah 4-6), selalu `TENTATIVE` | `ORDER BY id … FOR UPDATE OF a SKIP LOCKED` | Unit kurang → `409 ASSET_NOT_AVAILABLE` |
 | `confirm` / `activate` | `TENTATIVE`→`CONFIRMED` (TTL dihapus) / `CONFIRMED`→`ACTIVE` | `UPDATE … WHERE status = asal` | Ada slot yang tak berstatus asal → `409 RESERVATION_CONFLICT`, seluruh transisi batal |
 | `release` | `*`→`RELEASED`, idempoten; baris dipertahankan (TBD-AVL-A) | — | — |

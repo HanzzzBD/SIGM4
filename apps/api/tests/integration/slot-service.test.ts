@@ -3,13 +3,14 @@
 // "100 permintaan serentak → tepat satu berhasil". Kunci baris, NOWAIT, SKIP
 // LOCKED, dan exclusion constraint tidak dapat dibuktikan lewat tiruan.
 
+import pg from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { SlotService } from "../../src/shared/booking/index.js";
 import type { RentangWaktu, SumberDaya } from "../../src/shared/booking/index.js";
 import { createAuthContext } from "../../src/shared/auth/index.js";
 import type { AuthContext } from "../../src/shared/auth/index.js";
 import { FixedClock } from "../../src/shared/clock/index.js";
-import { getDb, withTransaction } from "../../src/shared/db/index.js";
+import { createDb, getDb, withTransaction } from "../../src/shared/db/index.js";
 import { mapError } from "../../src/shared/errors/index.js";
 import { dbmate, kueri } from "../helpers/db.js";
 
@@ -160,6 +161,114 @@ describe.skipIf(!ADA_DB)("PR-02-17 — SlotService (acceptance)", () => {
             expect(ditolak).toHaveLength(99);
             expect(ditolak.every((h) => mapError(h.reason).status === 409)).toBe(true);
             expect(await kueri(`SELECT id FROM booking_slots WHERE resource_id = ${id}`)).toHaveLength(1);
+        }, 60_000);
+    });
+
+    // Regresi keputusan 68 (log phase-02 §7): ruangan semula tidak dikunci, sehingga sisipan
+    // serentak yang beririsan saling menunggu di exclusion constraint dan sebagian pihak kalah
+    // berakhir 40P01 (deadlock → 500). Balapan dipaksa DETERMINISTIK dengan palang: koneksi
+    // terpisah memegang `LOCK TABLE booking_slots IN SHARE MODE` (bentrok dengan RowExclusiveLock
+    // milik INSERT) sampai SELURUH transaksi menunggu, lalu melepasnya sekaligus. Tanpa kunci
+    // ruangan, 20 INSERT berangkat pada saat yang sama; dengan kunci, satu menunggu di tabel dan
+    // sisanya antre di baris ruangan. Pool KHUSUS 25: pool bawaan (10) tak sanggup 20 transaksi.
+    describe("reserve() ruangan — konkurensi deterministik (SDD-AVL-06)", () => {
+        const PARALEL = 20;
+        const PUTARAN = 10;
+
+        const ruangBaru = async (): Promise<number> =>
+            Number(
+                (
+                    await kueri<{ id: string }>(`
+                INSERT INTO rooms (area_id, nama, kode, jenis)
+                SELECT area_id, 'R', '${unik("RK")}', 'KELAS' FROM rooms WHERE id = ${ruang} RETURNING id::text`)
+                )[0]?.id,
+            );
+
+        /** Menjalankan `jalan` di balik palang; palang dilepas saat `PARALEL` backend lain sedang menunggu kunci. */
+        async function diBalikPalang<T>(palang: pg.Client, jalan: () => Promise<T>): Promise<T> {
+            await palang.query("BEGIN");
+            await palang.query("LOCK TABLE booking_slots IN SHARE MODE");
+            const janji = jalan();
+            try {
+                for (let coba = 0; ; coba += 1) {
+                    const { rows } = await palang.query<{ n: string }>(
+                        "SELECT count(DISTINCT pid)::text AS n FROM pg_locks WHERE NOT granted AND pid <> pg_backend_pid()",
+                    );
+                    if (Number(rows[0]?.n) >= PARALEL) break;
+                    if (coba > 400) throw new Error(`Hanya ${rows[0]?.n ?? "0"} transaksi yang tertahan palang.`);
+                    await new Promise((r) => setTimeout(r, 25));
+                }
+            } finally {
+                await palang.query("COMMIT");
+            }
+            return janji;
+        }
+
+        it(`${String(PARALEL)} reservasi paralel beririsan × ${String(PUTARAN)} putaran -> tiap putaran tepat SATU berhasil, SELURUH yang kalah 23P01 → 409 RESERVATION_CONFLICT (tanpa 40P01)`, async () => {
+            const db = createDb({ connectionString: process.env["DATABASE_URL"] ?? "", poolSize: 25 });
+            const palang = new pg.Client({ connectionString: process.env["DATABASE_URL"] });
+            await palang.connect();
+            try {
+                for (let p = 0; p < PUTARAN; p += 1) {
+                    const id = await ruangBaru();
+                    const hasil = await diBalikPalang(palang, () =>
+                        Promise.allSettled(
+                            Array.from({ length: PARALEL }, (_, i) =>
+                                withTransaction(
+                                    ctx,
+                                    (s) =>
+                                        service.reserve(s, {
+                                            sumberDaya: [{ jenis: "room", id }],
+                                            // Digeser per menit: seluruhnya tetap beririsan satu sama lain.
+                                            rentang: { mulai: new Date(PAGI.mulai.getTime() + i * 60_000), selesai: PAGI.selesai },
+                                            asal: "reservation",
+                                            status: "CONFIRMED",
+                                        }),
+                                    db,
+                                ),
+                            ),
+                        ),
+                    );
+                    const ditolak = hasil.filter((h): h is PromiseRejectedResult => h.status === "rejected");
+                    expect(hasil.filter((h) => h.status === "fulfilled"), `putaran ${String(p)}`).toHaveLength(1);
+                    // Kode tiap penolakan ditampilkan bila gagal: 40P01 harus terbedakan dari galat koneksi.
+                    expect(ditolak.map((h) => (h.reason as { code?: string }).code ?? String(h.reason)), `putaran ${String(p)}`).toEqual(Array(PARALEL - 1).fill("23P01"));
+                    expect(ditolak.every((h) => mapError(h.reason).kode === "RESERVATION_CONFLICT" && mapError(h.reason).status === 409)).toBe(true);
+                }
+            } finally {
+                await palang.end();
+                await db.destroy();
+            }
+        }, 120_000);
+
+        it("rentang TIDAK beririsan pada ruangan sama tetap berhasil serentak — kunci menunggu, bukan NOWAIT", async () => {
+            const db = createDb({ connectionString: process.env["DATABASE_URL"] ?? "", poolSize: 25 });
+            const palang = new pg.Client({ connectionString: process.env["DATABASE_URL"] });
+            await palang.connect();
+            try {
+                const id = await ruangBaru();
+                const hasil = await diBalikPalang(palang, () =>
+                    Promise.allSettled(
+                        Array.from({ length: PARALEL }, (_, i) =>
+                            withTransaction(
+                                ctx,
+                                (s) =>
+                                    service.reserve(s, {
+                                        sumberDaya: [{ jenis: "room", id }],
+                                        rentang: { mulai: new Date(Date.UTC(2026, 9, 5 + i, 1)), selesai: new Date(Date.UTC(2026, 9, 5 + i, 2)) },
+                                        asal: "reservation",
+                                        status: "CONFIRMED",
+                                    }),
+                                db,
+                            ),
+                        ),
+                    ),
+                );
+                expect(hasil.map((h) => h.status)).toEqual(Array(PARALEL).fill("fulfilled"));
+            } finally {
+                await palang.end();
+                await db.destroy();
+            }
         }, 60_000);
     });
 
