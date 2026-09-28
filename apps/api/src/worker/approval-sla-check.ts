@@ -2,9 +2,9 @@
 // SDD-02 §4.5): pengingat, eskalasi, dan perilaku terminal persetujuan berpelaku
 // SYSTEM (AL-06). Ringkasan JOB-05 lewat `jalankanPekerjaanSistem`.
 //
-// Penangan hasil per jenis pengajuan (SDD-APR-17) belum ada yang terdaftar — modul
-// pengaju lahir Phase 03+; saat lahir, worker WAJIB mendaftarkan penangan yang sama
-// dengan proses API agar `auto_reject` melepas slot (log phase-02 §10).
+// `DecisionService` membaca registri proses `penanganHasil` yang sama dengan API
+// (keputusan 75), sehingga `auto_reject` melepas objek lewat penangan modul pengaju
+// (SDD-APR-17). Pendaftar: PR-03-10 (reservasi ruangan), PR-04-02 (reservasi aset).
 
 import type { Kysely } from "kysely";
 import { ApprovalService, DecisionService, SlaTracker } from "../modules/m10-approval/index.js";

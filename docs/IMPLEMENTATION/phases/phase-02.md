@@ -131,7 +131,7 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | `PR-02-22` | SLA, pengingat, eskalasi (job terjadwal) | M | M | 21, 32, Ph00 | `BR-040` … `BR-043`, `SDD-APR-06`, `SDD-APR-15` | Perhitungan memakai jam operasional terkonfigurasi (`CAL-01`); tenggat di luar jam itu tidak bertambah |
 | `PR-02-23` | Riwayat & pelacakan persetujuan | S | S | 21 | `FR-10.3` | Linimasa menampilkan seluruh langkah + alasan |
 | `PR-02-24` | Antarmuka konfigurasi approval rule + pratinjau | M | M | 19 | `FR-10.1`, `RE-01` | Pratinjau menunjukkan jalur yang akan terpilih |
-| `PR-02-25` | Skema notifikasi + penerbitan dari event domain | M | M | Ph00 | `FR-17.1`, `SDD-NTF-01/02` | Notifikasi terbit hanya setelah transaksi commit |
+| `PR-02-25` | Skema notifikasi + penerbitan dari event domain | M | M | Ph00 | `FR-17.1`, `SDD-NTF-01/02` | Notifikasi terbit hanya setelah transaksi commit; konsumen `ApprovalSlaBreached` (`NT-06`/`NT-07`/`NT-47`) dan `ApprovalFallbackRouted` (`NT-47`) terpasang dan idempoten di bawah pengulangan outbox (keputusan 75) |
 | `PR-02-26` | SSE + Redis Pub/Sub fanout multi-instance | L | L | 25 | `FR-17.1`, `SDD-NTF-03/04/05` | Dua instance API → satu notifikasi, satu kali tampil |
 | `PR-02-27` | Push FCM + registrasi token + penanganan token mati | M | M | 25 | `FR-17.2`, `SDD-NTF-06/07` | Token tidak valid dibersihkan otomatis; pemeriksaan `fcm` terdaftar di `/health` tanpa memengaruhi `ready` (`OBS-06`); `FCM_CREDENTIALS` masuk skema `shared/config` (`SDD-SYS-14`) |
 | `PR-02-28` | Preferensi notifikasi | S | S | 25 | `FR-17.3`, **UXD-05** | Enam kelompok `jenis` sesuai `SDD-08 §4.5`, bukan per modul |
@@ -186,6 +186,8 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 ### `PR-02-25` — Skema notifikasi + penerbitan
 - [ ] Pasang notifikasi milik M-02 yang **tertunda dari Phase 01** (keputusan 32 log phase-01): `NT-48` (penolakan mengaktifkan/membuat akun siswa tanpa `consent_guardian_at`, `DP-02`) dan `NT-40` (role/status akun berubah) — keduanya belum terbit sejak `PR-01-02`/`PR-01-14` karena modul notifikasi belum ada
 - [ ] `NT-48` **tidak dapat** terbit dari transaksi yang ditolak (rollback membuang outbox, `SDD-EVT-04`): terbitkan pada transaksi terpisah setelah penolakan, dan tambahkan event-nya ke katalog `SDD-07 §4.3`
+- [ ] Konsumen `ApprovalSlaBreached` (keputusan 75, event terbit sejak `PR-02-22`): baca payload lewat `ApprovalSlaBreachedPayloadSchema` (m10 `index.ts`) — payload tak sah = galat handler (dead letter + alarm), bukan diabaikan; `tindakan` → kode lewat `NOTIFIKASI_TINDAKAN_SLA`: `REMIND` → `NT-06` (pemutus sah langkah + Petugas Sarpras), `ESCALATE` → `NT-07` (`eskalasi_ke`), `EXHAUSTED` → `NT-47` (Administrator + Petugas Sarpras). Konsumen `ApprovalFallbackRouted` → `NT-47`
+- [ ] `dedupe_key` kejadian tunggal berbasis id event (`SDD-08 §4.1`, keputusan 75): uji — handler yang diproses ulang atas event yang sama TIDAK menambah notifikasi; `NT-06` tetap berkunci harian
 - [ ] `NT-52` (impor pengguna > 200 baris selesai, `IMPT-04`): pasang konsumen event `UserImportCompleted` — event-nya **sudah terbit sejak `PR-01-17`** (payload `job_id`, `oleh`; isi pesan dibaca dari `user_import_jobs`), hanya konsumennya yang belum ada (keputusan 33 log phase-01)
 
 ### `PR-02-29` — Dashboard

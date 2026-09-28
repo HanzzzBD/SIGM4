@@ -75,7 +75,7 @@ export interface ApprovalModuleDeps {
     readonly db: Kysely<Database>;
     readonly auditLogger: AuditLogger;
     readonly clock: Clock;
-    /** SDD-APR-17: penangan hasil per jenis pengajuan; didaftarkan modul pengajuan (Phase 03). */
+    /** SDD-APR-17: daftar eksplisit (uji). Tanpa ini: registri proses `penanganHasil`, dipakai juga worker (keputusan 75). */
     readonly penanganHasil?: readonly PenanganHasil[];
 }
 
