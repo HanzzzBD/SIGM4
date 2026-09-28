@@ -128,7 +128,7 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | `PR-02-19` | Evaluator DSL kondisi (`RE-01` … `RE-08`) | L | L | 18 | Lampiran D.2, `SDD-APR-01/02` | Seluruh operator D.2 teruji, termasuk kasus batas |
 | `PR-02-20` | Resolusi approver + delegasi + fallback | M | M | 19 | `RE-09` … `RE-13`, `SDD-APR-04/05/13/14` | Approver nonaktif → langkah dilewati beralasan `approver nonaktif`, lalu jalur fallback `RE-11`; `fallback_approver` kosong berarti Administrator |
 | `PR-02-21` | Eksekusi persetujuan + *first-responder-wins* | L | L | 20 | `FR-10.2`, `BR-035` … `BR-039a`, `SDD-APR-07` | Dua approver serentak → satu 200, satu 409 |
-| `PR-02-22` | SLA, pengingat, eskalasi (job terjadwal) | M | M | 21, Ph00 | `BR-040` … `BR-043`, `SDD-APR-06`, `SDD-APR-15` | Perhitungan memakai jam operasional terkonfigurasi (`CAL-01`); tenggat di luar jam itu tidak bertambah |
+| `PR-02-22` | SLA, pengingat, eskalasi (job terjadwal) | M | M | 21, 32, Ph00 | `BR-040` … `BR-043`, `SDD-APR-06`, `SDD-APR-15` | Perhitungan memakai jam operasional terkonfigurasi (`CAL-01`); tenggat di luar jam itu tidak bertambah |
 | `PR-02-23` | Riwayat & pelacakan persetujuan | S | S | 21 | `FR-10.3` | Linimasa menampilkan seluruh langkah + alasan |
 | `PR-02-24` | Antarmuka konfigurasi approval rule + pratinjau | M | M | 19 | `FR-10.1`, `RE-01` | Pratinjau menunjukkan jalur yang akan terpilih |
 | `PR-02-25` | Skema notifikasi + penerbitan dari event domain | M | M | Ph00 | `FR-17.1`, `SDD-NTF-01/02` | Notifikasi terbit hanya setelah transaksi commit |
@@ -144,11 +144,11 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 ## 8. Task Breakdown
 
 ### `PR-02-32` — `SystemAuthContext` dan `student-graduation`
-- [ ] Bentuk `SystemAuthContext` berscope `all`, pelaku `SYSTEM` (`updated_by` NULL) — **tinjauan arsitek** (`AuthContext` adalah tulang punggung, `BRANCHING-STRATEGY §3.1`); rancang bersama `AuthContext` hasil `PR-02-02`, bukan sebelumnya
-- [ ] Uji arsitektur: `SystemAuthContext` tidak dapat diimpor dari lapisan HTTP (`SDD-03 §4`, risiko "dipakai di jalur HTTP")
-- [ ] Sesuaikan repository yang menulis `updated_by` agar menerima pelaku SYSTEM tanpa mengubah perilaku pemanggil pengguna
-- [ ] Pasang pekerjaan `student-graduation` (00:10 WIB, `wibCronToUtc`) yang memanggil `GraduationService.deactivateDueGraduates` dari `PR-01-13`; entri log pelaku `SYSTEM` + ringkasan `JOB-05`
-- [ ] Uji: lulusan yang tahun ajarannya berakhir dinonaktifkan tanpa permintaan HTTP; menjalankan ulang tidak menghasilkan apa pun (`JOB-03`)
+- [x] Bentuk `SystemAuthContext` berscope `all`, pelaku `SYSTEM` (`updated_by` NULL) — **tinjauan arsitek** (`AuthContext` adalah tulang punggung, `BRANCHING-STRATEGY §3.1`); rancang bersama `AuthContext` hasil `PR-02-02`, bukan sebelumnya
+- [x] Uji arsitektur: `SystemAuthContext` tidak dapat diimpor dari lapisan HTTP (`SDD-03 §4`, risiko "dipakai di jalur HTTP")
+- [x] Sesuaikan repository yang menulis `updated_by` agar menerima pelaku SYSTEM tanpa mengubah perilaku pemanggil pengguna
+- [x] Pasang pekerjaan `student-graduation` (00:10 WIB, `wibCronToUtc`) yang memanggil `GraduationService.deactivateDueGraduates` dari `PR-01-13`; entri log pelaku `SYSTEM` + ringkasan `JOB-05`
+- [x] Uji: lulusan yang tahun ajarannya berakhir dinonaktifkan tanpa permintaan HTTP; menjalankan ulang tidak menghasilkan apa pun (`JOB-03`)
 
 ### `PR-02-33` — Kode aktivasi 2FA dan reset 2FA (M-02)
 - [x] Migration `expand` (`totp_activation_codes`: `user_id`, `code_hash` Argon2id, `issued_by`, `expires_at`, `failed_attempts`, `consumed_at`; satu baris aktif per akun) — `SDD-SESS-17`; `down` teruji

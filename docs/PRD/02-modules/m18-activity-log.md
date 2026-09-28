@@ -136,6 +136,7 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | Aksi | Keterangan |
 |---|---|
 | `ACTIVITY_LOG_VIEWED` / `ACTIVITY_LOG_EXPORTED` | Akses terhadap log itu sendiri |
+| `SCHEDULED_JOB_EXECUTED` | Ringkasan satu eksekusi pekerjaan terjadwal (`JOB-05`): nama pekerjaan, waktu mulai/selesai, jumlah record diproses, jumlah galat; pelaku `SYSTEM` (`AL-06`); hasil `gagal` bila pekerjaan itu sendiri gagal (`AL-07`) |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
 

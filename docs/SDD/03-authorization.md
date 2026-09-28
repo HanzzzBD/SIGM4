@@ -278,7 +278,7 @@ Tafsir ini hanya menetapkan **bawaan**. Administrator tetap dapat menyesuaikanny
 ## 5. Konsekuensi
 
 - **Modul terdampak:** seluruhnya. Tidak ada modul yang boleh mengakses basis data tanpa `AuthContext`.
-- **Batasan yang lahir:** pekerjaan terjadwal dan perintah CLI tidak punya pengguna. Keduanya memakai `SystemAuthContext` khusus berscope `all` yang **hanya** dapat dibentuk dari luar siklus permintaan HTTP, dan setiap pemakaiannya tercatat sebagai pelaku `SYSTEM` (`AL-06`).
+- **Batasan yang lahir:** pekerjaan terjadwal dan perintah CLI tidak punya pengguna. Keduanya memakai `SystemAuthContext` khusus berscope `all` yang **hanya** dapat dibentuk dari luar siklus permintaan HTTP, dan setiap pemakaiannya tercatat sebagai pelaku `SYSTEM` (`AL-06`). Bentuknya (keputusan 71 log phase-02): subtipe `AuthContext` ber-`namaPekerjaan`, dikenali lewat registri identitas (objek tiruan tidak lolos), `userId = 0` sehingga kolom pelaku yang lupa memakai `pelakuId(ctx)` ditolak FK; kolom pelaku (`updated_by`, `created_by`, `event_outbox.actor_id`) bernilai NULL bagi SYSTEM. Pabriknya berada di `shared/auth/system-context.ts`, tidak diekspor `index.ts`, dan lint `import/no-restricted-paths` menutup berkas itu bagi seluruh `src` kecuali `src/worker` dan `shared/auth`. *(CLI break-glass tetap memakai `CliRepository` + `writeCli`, keputusan 53.)*
 - **Beban pengujian:** `SEC-T-01` menuntut matriks endpoint × 7 role. Dengan deklarasi permission per route, matriks ini dapat **digenerate** dari tabel route, bukan ditulis tangan.
 - **Konsekuensi yang diterima:** akses langsung ke PostgreSQL melewati aplikasi tidak tunduk scope (§3). Mitigasinya prosedural (`DP-11`), bukan teknis.
 
@@ -291,7 +291,7 @@ Tafsir ini hanya menetapkan **bawaan**. Administrator tetap dapat menyesuaikanny
 | Repository baru dibuat tanpa `AuthContext` | Kebocoran lintas hak akses | Parameter wajib pada tipe; uji arsitektur menolak metode repository tanpa `ctx` |
 | Cache permission basi setelah perubahan role | Pengguna memakai hak lama ≤60 detik | `role_version` pada kunci membatalkan seketika, bukan menunggu TTL |
 | Serializer lupa menyaring field baru | Data finansial bocor | Allow-list bersifat *opt-in*: field baru tidak muncul sampai sengaja didaftarkan |
-| `SystemAuthContext` dipakai di jalur HTTP | Bypass otorisasi | Pembentukannya dibatasi modul worker; uji arsitektur melarang impornya dari lapisan HTTP |
+| `SystemAuthContext` dipakai di jalur HTTP | Bypass otorisasi | Pembentukannya dibatasi `src/worker`; lint `import/no-restricted-paths` melarang impornya dari `src/api`, `src/modules`, dan `shared/*` lain — dibuktikan uji `tests/shared/auth/system-context.test.ts` |
 | Tool chatbot ditambah tanpa lewat repository | `BR-076` dilanggar | Registry tool hanya menerima metode repository; ditegakkan oleh tipe |
 | Respons 403 vs 404 tidak konsisten | Membocorkan keberadaan data | Error mapper terpusat; diuji `SEC-T-01` |
 

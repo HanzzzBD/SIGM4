@@ -347,7 +347,7 @@ Endpoint `work_units` (buat, sunting, `PATCH …/status`; tanpa hapus) dimiliki 
 | `user_id` adalah akun **Siswa/OSIS** (`R-07`), aktif | service |
 | Kenaikan kelas: `NAIK` menetapkan `kelas_id` pada tahun ajaran itu (dan menghapus tanda lulus); `LULUS` menandai baris tahun ajaran itu, yang wajib sudah ada | service |
 
-**Penonaktifan lulusan** (`SL-03`, `DP-10`): akun berbaris `lulus = true` dinonaktifkan bila `academic_years.tanggal_selesai` tahun itu **sebelum** hari ini (hari WIB, `CAL-03`); menandai sebelum tahun berakhir tidak menonaktifkan seketika. `GraduationService.deactivateDueGraduates` idempoten (`JOB-03`); memasangnya sebagai pekerjaan `student-graduation` menunggu `SystemAuthContext` (`SDD-03`) — butir terbuka `phase-01` log §10.
+**Penonaktifan lulusan** (`SL-03`, `DP-10`): akun berbaris `lulus = true` dinonaktifkan bila `academic_years.tanggal_selesai` tahun itu **sebelum** hari ini (hari WIB, `CAL-03`); menandai sebelum tahun berakhir tidak menonaktifkan seketika. `GraduationService.deactivateDueGraduates` idempoten (`JOB-03`); dipasang sebagai pekerjaan `student-graduation` (00:10 WIB) berpelaku `SYSTEM` lewat `SystemAuthContext` (`SDD-03 §5`, `PR-02-32`).
 
 **Titik ekstensi `SL-04`** — `StudentObligationRegistry`: modul yang mendefinisikan kewajiban (peminjaman aktif, denda belum lunas — Phase 05, `PR-05-09`) mendaftarkan `StudentObligationChecker` dengan `daftarKewajiban(scope, userId)`. Penonaktifan akun **Siswa/OSIS** — lewat `PATCH /users/{id}/status` maupun penonaktifan lulusan — ditolak bila salah satu pemeriksa mengembalikan kewajiban, dan daftarnya dikembalikan kepada Administrator. Registri **kosong** sampai `PR-05-09`; kosongnya berarti "belum ada yang mendefinisikan kewajiban", bukan "siswa tidak berkewajiban".
 

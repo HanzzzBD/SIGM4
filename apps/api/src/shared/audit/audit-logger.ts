@@ -13,6 +13,7 @@
 
 import { sql } from "kysely";
 import type { Transaction } from "kysely";
+import { isSystemAuthContext } from "../auth/index.js";
 import type { Clock } from "../clock/index.js";
 import type { Database, TransactionScope } from "../db/index.js";
 import { Logger, konteksSaatIni, redact } from "../observability/index.js";
@@ -83,6 +84,8 @@ export class AuditLogger {
      * melempar: `AL-08` melarang kegagalan log menggagalkan transaksi bisnis.
      */
     async write(scope: TransactionScope, entry: AuditEntry): Promise<boolean> {
+        // AL-06: transaksi pekerjaan terjadwal tercatat berpelaku SYSTEM + nama pekerjaannya.
+        if (isSystemAuthContext(scope.ctx)) return this.writeSystem(scope.tx, scope.ctx.namaPekerjaan, entry);
         const konteks = konteksSaatIni();
         return this.simpan(scope.tx, entry, {
             userId: scope.ctx.userId,
@@ -105,8 +108,11 @@ export class AuditLogger {
             tx,
             {
                 ...entry,
+                // AL-06: nama pekerjaan tidak boleh hilang meski pemanggil mengisi keterangan.
                 keterangan:
-                    entry.keterangan ?? `Pekerjaan terjadwal: ${namaPekerjaan}`,
+                    entry.keterangan === undefined
+                        ? `Pekerjaan terjadwal: ${namaPekerjaan}`
+                        : `${entry.keterangan} (pekerjaan terjadwal: ${namaPekerjaan})`,
             },
             {
                 userId: null,

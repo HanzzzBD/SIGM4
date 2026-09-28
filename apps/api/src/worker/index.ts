@@ -45,6 +45,7 @@ import {
 import type { Queue } from "bullmq";
 import { createHealthServer } from "./health-server.js";
 import { startOutboxPoller } from "./outbox-poller.js";
+import { PEKERJAAN_KELULUSAN, jalankanKelulusan } from "./student-graduation.js";
 import { BATAS_DRAIN_WORKER_MS, langkahHentiWorker } from "./shutdown.js";
 
 /** Port container — `EXPOSE 3000` pada image bersama (SDD-16 §4.1, SDD-INF-01). */
@@ -94,6 +95,14 @@ export const registry = new JobRegistry().register(
                     `Rantai activity log rusak pada ${String(hasil.kerusakan.length)} entri (AL-03a).`,
                 );
             }
+        },
+    },
+    {
+        // Bab 12.4: setiap hari 00:10 WIB (SL-03, DP-10). Pelaku SYSTEM (AL-06).
+        name: PEKERJAAN_KELULUSAN,
+        cron: wibCronToUtc(10, 0),
+        handler: async () => {
+            await jalankanKelulusan(getDb(), new SystemClock());
         },
     },
     {
