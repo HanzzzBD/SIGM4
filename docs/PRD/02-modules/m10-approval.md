@@ -108,17 +108,17 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 **Main Flow**
 1. Pengguna membuka detail pengajuan dan memilih tab Riwayat Persetujuan.
 2. Sistem menampilkan linimasa: pengajuan dibuat → langkah 1 (approver, keputusan, waktu, catatan) → langkah berikutnya → keputusan final.
-3. Sistem menampilkan indikator langkah yang sedang berjalan dan sisa waktu SLA.
+3. Sistem menampilkan indikator langkah yang sedang berjalan dan sisa waktu SLA dalam **jam kerja** (CAL-01).
 
 **Alternative Flow**
-- **A1 — Pemohon:** Hanya dapat melihat riwayat pengajuan miliknya sendiri.
+- **A1 — Pengguna ber-scope `own`:** Hanya dapat melihat riwayat pengajuan miliknya sendiri, atau pengajuan yang salah satu langkahnya pernah ia putuskan (termasuk atas nama approver lain sebagai penerima delegasi, RE-12) atau yang langkah aktifnya kini menjadi wewenangnya. Pengajuan lain dijawab sama dengan pengajuan yang tidak ada.
 - **A2 — Pengajuan yang mengalami eskalasi atau delegasi:** Linimasa menampilkan penanda khusus beserta alasannya.
 
 **Post Conditions** — Tidak ada perubahan data.
 
 **Acceptance Criteria**
 - [ ] Linimasa menampilkan seluruh langkah termasuk yang dilewati beserta alasannya.
-- [ ] Waktu ditampilkan dalam format lokal beserta durasi antar-langkah.
+- [ ] Waktu ditampilkan dalam format lokal beserta durasi antar-langkah (dalam jam kerja, satuan yang sama dengan SLA — CAL-01).
 
 ## 6. Business Rules
 

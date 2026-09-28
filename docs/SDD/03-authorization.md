@@ -260,7 +260,7 @@ Baris yang kolomnya **bukan** daftar role, atau yang Bab 18-nya bertanda 🟡 ta
 | `loan.view` | Semua (scope berbeda) | Admin, Petugas, Pimpinan, Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Peminjaman — lihat seluruh transaksi"; Teknisi ❌ |
 | `loan.extend` | Guru, Staf, Siswa, Petugas | Petugas, Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Peminjaman — ajukan perpanjangan" 🟡 |
 | `fine.view` | Semua (scope berbeda) | Admin, Petugas, Pimpinan, Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Denda — lihat seluruh"; Teknisi ❌ |
-| `approval.view` | Semua (scope berbeda) | Admin, Petugas, Pimpinan, Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Approval — lihat riwayat"; Teknisi ❌ |
+| `approval.view` | Semua (scope berbeda) | Admin, Petugas, Pimpinan, Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Approval — lihat riwayat"; Teknisi ❌. `own` = pemohon, pemutus/`atas_nama` langkah mana pun, atau pemutus sah langkah aktif (`FR-10.3 A1`, keputusan 76) |
 | `approval.decide` | Sesuai approval rules | Admin, Petugas, Pimpinan | Bab 18 "Approval — memutuskan"; approval rules tetap menyaring siapa yang benar-benar memutuskan |
 | `approval.delegate` | Approver aktif | Admin, Petugas, Pimpinan | Pemegang `approval.decide` |
 | `damage.create` | Semua role | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa | Bab 18 "Laporan Kerusakan — buat" |
