@@ -60,22 +60,43 @@ export interface ItemPending {
     readonly atas_nama_user_id: number | null;
 }
 
+/** Satu penangan per jenis pengajuan (SDD-APR-17). */
+export class RegistriPenanganHasil {
+    private readonly peta = new Map<JenisPengajuan, PenanganHasil>();
+
+    daftar(...penangan: readonly PenanganHasil[]): this {
+        for (const p of penangan) {
+            if (this.peta.has(p.jenis)) throw new Error(`Penangan hasil ganda untuk ${p.jenis} (SDD-APR-17).`);
+            this.peta.set(p.jenis, p);
+        }
+        return this;
+    }
+
+    cari(jenis: JenisPengajuan): PenanganHasil | undefined {
+        return this.peta.get(jenis);
+    }
+}
+
+/**
+ * Registri proses ini (keputusan 75): API (`approvalRouter`) DAN job worker `approval-sla-check`
+ * membaca registri yang SAMA, sehingga `auto_reject` oleh job melepas objek persis seperti
+ * penolakan manusia. Modul pengaju mendaftar sekali (pemilik: PR-03-10, PR-04-02).
+ * Dibaca saat keputusan, bukan saat layanan dibentuk — urutan pendaftaran tak berpengaruh.
+ */
+export const penanganHasil = new RegistriPenanganHasil();
+
 export class DecisionService {
-    private readonly penangan: ReadonlyMap<JenisPengajuan, PenanganHasil>;
+    private readonly penangan: RegistriPenanganHasil;
 
     constructor(
         private readonly db: Kysely<Database>,
         private readonly audit: AuditLogger,
         private readonly clock: Clock,
         private readonly approval: ApprovalService,
-        penangan: readonly PenanganHasil[] = [],
+        /** Bawaan: registri proses. Daftar eksplisit untuk uji terisolasi. */
+        penangan: readonly PenanganHasil[] | RegistriPenanganHasil = penanganHasil,
     ) {
-        const peta = new Map<JenisPengajuan, PenanganHasil>();
-        for (const p of penangan) {
-            if (peta.has(p.jenis)) throw new Error(`Penangan hasil ganda untuk ${p.jenis} (SDD-APR-17).`);
-            peta.set(p.jenis, p);
-        }
-        this.penangan = peta;
+        this.penangan = penangan instanceof RegistriPenanganHasil ? penangan : new RegistriPenanganHasil().daftar(...penangan);
     }
 
     /** `POST /approvals/{id}/decide` — dijalankan di dalam transaksi idempoten pemanggil (ID-01). */
@@ -121,7 +142,7 @@ export class DecisionService {
             );
         }
 
-        const penangan = this.penangan.get(inst.jenis);
+        const penangan = this.penangan.cari(inst.jenis);
         let status: StatusInstance = "MENUNGGU";
         let langkahAktif: number | null = null;
         if (input.keputusan === "DISETUJUI") {
@@ -178,7 +199,7 @@ export class DecisionService {
         const inst = await repo.instance(scope.ctx, instanceId);
         if (inst === undefined) throw new Error(`Instance persetujuan ${String(instanceId)} tidak ada.`);
         await repo.tutup(scope.ctx, instanceId, "DITOLAK", this.clock.now());
-        await this.penangan.get(inst.jenis)?.setelahDitutup(scope, inst.referensiId, "DITOLAK");
+        await this.penangan.cari(inst.jenis)?.setelahDitutup(scope, inst.referensiId, "DITOLAK");
         const hasil = { instance_id: instanceId, urutan, keputusan: "DITOLAK", status: "DITOLAK", langkah_aktif: null } as const;
         await this.audit.write(scope, {
             modul: MODUL,

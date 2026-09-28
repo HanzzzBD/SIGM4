@@ -7,7 +7,7 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { ApprovalService, DecisionService, SlaTracker } from "../../src/modules/m10-approval/index.js";
+import { ApprovalService, ApprovalSlaBreachedPayloadSchema, DecisionService, SlaTracker, penanganHasil } from "../../src/modules/m10-approval/index.js";
 import type { PenanganHasil } from "../../src/modules/m10-approval/index.js";
 import { AuditLogger } from "../../src/shared/audit/index.js";
 import { createAuthContext } from "../../src/shared/auth/index.js";
@@ -89,11 +89,15 @@ const langkahDb = (id: number) =>
                pengingat_terakhir_pada, alarm_terminal_pada FROM approval_steps WHERE instance_id = ${String(id)} ORDER BY urutan`);
 const instansi = async (id: number) =>
     (await kueri<{ status: string; langkah_aktif: number | null }>(`SELECT status::text, langkah_aktif FROM approval_instances WHERE id = ${String(id)}`))[0];
-const eventSla = (id: number) =>
-    kueri<{ event_name: string; payload: Record<string, unknown>; actor_id: string | null }>(
+/** Setiap `ApprovalSlaBreached` yang tersimpan WAJIB lolos kontrak konsumen (keputusan 75). */
+const eventSla = async (id: number) => {
+    const baris = await kueri<{ event_name: string; payload: Record<string, unknown>; actor_id: string | null }>(
         `SELECT event_name, payload, actor_id FROM event_outbox WHERE aggregate_type = 'approval_instance' AND aggregate_id = '${String(id)}'
             AND event_name IN ('ApprovalSlaBreached', 'ApprovalDecided') ORDER BY id`,
     );
+    for (const b of baris) if (b.event_name === "ApprovalSlaBreached") ApprovalSlaBreachedPayloadSchema.parse(b.payload);
+    return baris;
+};
 const log = (aksi: string) =>
     kueri<{ user_id: string | null; role: string | null; keterangan: string | null; nilai_sesudah: Record<string, unknown> }>(
         `SELECT user_id::text, role, keterangan, nilai_sesudah FROM activity_logs WHERE aksi = '${aksi}' AND modul IN ('m10-approval', 'm18-activity-log') ORDER BY id`,
@@ -396,5 +400,28 @@ describe.skipIf(!ADA_DB)("PR-02-22 — SLA, pengingat, eskalasi (acceptance)", (
         expect(await eventSla(diputus)).toEqual([]);
         const [ringkasan] = await log("SCHEDULED_JOB_EXECUTED");
         expect(ringkasan?.nilai_sesudah).toMatchObject({ pekerjaan: PEKERJAAN_SLA, diproses: 1, galat: 0, pengingat: 1, eskalasi: 0 });
+    });
+
+    // TERAKHIR di berkas: mendaftar ke registri PROSES (tidak dapat dicabut) — uji lain di atas
+    // berjalan dengan registri kosong, persis keadaan sebelum modul pengaju lahir.
+    it("keputusan 75: penangan yang didaftarkan modul pengaju ke registri proses dipanggil auto_reject lewat JALUR WORKER", async () => {
+        const kepala = await pengguna("R-03");
+        await aturan([{ user: approver, breach: "escalate", eskalasiKe: kepala }], "auto_reject");
+        const id = await ajukan(pemohon);
+        const dilepas: string[] = [];
+        penanganHasil.daftar({
+            jenis: "PENGADAAN_BARANG",
+            sebelumDisetujui: () => Promise.resolve(),
+            setelahDitutup: (_s, referensiId, status) => {
+                dilepas.push(`${String(referensiId)}:${status}`);
+                return Promise.resolve();
+            },
+        });
+
+        await jalankanPemeriksaanSla(getDb(), LEWAT);
+        await jalankanPemeriksaanSla(getDb(), SESUDAH_ESKALASI);
+
+        expect(await instansi(id)).toEqual({ status: "DITOLAK", langkah_aktif: null });
+        expect(dilepas).toEqual([`${String(900_000 + ref)}:DITOLAK`]);
     });
 });

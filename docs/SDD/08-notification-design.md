@@ -89,7 +89,7 @@ CREATE TABLE notification_deliveries (
 );
 ```
 
-`dedupe_key` dibentuk `"{kode}:{user_id}:{referensi_jenis}:{referensi_id}:{YYYY-MM-DD}"` untuk notifikasi berulang harian (`NT-12`, `NT-13`, `NT-23`), dan `NULL` untuk notifikasi kejadian tunggal.
+`dedupe_key` dibentuk `"{kode}:{user_id}:{referensi_jenis}:{referensi_id}:{YYYY-MM-DD}"` untuk notifikasi berulang harian (`NT-12`, `NT-13`, `NT-23`, `NT-06`), dan `"{kode}:{user_id}:evt:{event_id}"` (id baris `event_outbox`) untuk notifikasi **kejadian tunggal** — bukan `NULL`: dispatcher bersifat *at-least-once* (`SDD-EVT-07`, maks 5 percobaan), sehingga handler yang diulang setelah sebagian penerima tersimpan tidak boleh mengirim ganda. *(Keputusan 75 log phase-02; diterapkan `PR-02-25`.)*
 
 ### 4.2 Alur pengiriman
 

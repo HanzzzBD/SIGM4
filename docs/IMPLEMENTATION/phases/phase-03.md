@@ -111,7 +111,7 @@ M-05  M-06  M-07  M-11  M-14  M-19   ← tanpa ketergantungan antar-modul
 | `PR-03-07` | Turunan gambar + siklus hidup berkas | M | M | 05 | `SDD-FS-06/07` | Berkas yatim terbersihkan job terjadwal |
 | `PR-03-08` | Skema reservasi ruangan + integrasi `booking_slots` | M | L | Ph02 | `FR-07.2`, `SDD-AVL-06` | Slot terbentuk dalam transaksi yang sama |
 | `PR-03-09` | Kalender ketersediaan ruangan | L | L | 08 | `FR-07.1`, `AV-01` … `AV-05`, `SDD-FE-07/08` | Konflik terlihat sebelum pengajuan dikirim |
-| `PR-03-10` | Pengajuan reservasi + pemicuan approval | L | L | 08, Ph02 | `FR-07.2`, `BR-017` … `BR-023c` | Pengajuan bertabrakan → 409 dengan penjelasan |
+| `PR-03-10` | Pengajuan reservasi + pemicuan approval | L | L | 08, Ph02 | `FR-07.2`, `BR-017` … `BR-023c`, `SDD-APR-17` | Pengajuan bertabrakan → 409 dengan penjelasan; penangan hasil `RESERVASI_RUANGAN` terdaftar di registri `penanganHasil` (m10) sehingga penolakan manusia **dan** `auto_reject` job `approval-sla-check` melepas slot — diuji lewat jalur worker (keputusan 75 log phase-02) |
 | `PR-03-11` | Pembatalan & perubahan reservasi + pelepasan slot | M | L | 10 | `FR-07.3`, `BR-024` `BR-024a` `BR-024b` | Slot terlepas seketika saat batal |
 | `PR-03-12` | Penggunaan & penyelesaian reservasi | M | L | 10 | `FR-07.4`, `BR-025` `BR-030` | Aktivasi slot mengikuti sekuens 15.2 |
 | `PR-03-13` | Blokade jadwal tetap + blokade manual | L | L | 08 | `FR-07.5` | Jadwal berulang menutup ruangan tanpa membuat ribuan baris berlebih |
