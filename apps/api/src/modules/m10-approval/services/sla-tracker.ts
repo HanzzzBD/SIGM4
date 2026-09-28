@@ -14,6 +14,8 @@ import { withTransaction } from "../../../shared/db/index.js";
 import { publish } from "../../../shared/events/index.js";
 import type { Logger } from "../../../shared/observability/index.js";
 import type { LangkahTerkunci } from "../repositories/sla.repository.js";
+import { ApprovalSlaBreachedPayloadSchema } from "../schemas/sla-event.schema.js";
+import type { ApprovalSlaBreachedPayload } from "../schemas/sla-event.schema.js";
 import { createSlaRepository } from "../repositories/sla.repository.js";
 import type { ApprovalService, SnapshotAturan } from "./approval.service.js";
 import { tanggalWib } from "./approval.service.js";
@@ -22,7 +24,7 @@ import type { DecisionService } from "./decision.service.js";
 const MODUL = "m10-approval";
 
 /** `ApprovalSlaBreached.tindakan` (SDD-07 §4.3) → NT-06 / NT-07 / NT-47. */
-export type TindakanSla = "REMIND" | "ESCALATE" | "EXHAUSTED";
+export type TindakanSla = ApprovalSlaBreachedPayload["tindakan"];
 
 type Hasil = "LEWAT" | "BELUM" | "AKTIF_ULANG" | "PENGINGAT" | "ESKALASI" | "DITAHAN" | "DITOLAK";
 
@@ -142,7 +144,8 @@ export class SlaTracker {
             name: "ApprovalSlaBreached",
             aggregateType: "approval_instance",
             aggregateId: l.instanceId,
-            payload: { instance_id: l.instanceId, urutan: l.urutan, tindakan, ...tambahan },
+            // Kontrak konsumen M-17 (keputusan 75): payload yang menyimpang gagal di sini, bukan di konsumen.
+            payload: ApprovalSlaBreachedPayloadSchema.parse({ instance_id: l.instanceId, urutan: l.urutan, tindakan, ...tambahan }),
         });
     }
 }
