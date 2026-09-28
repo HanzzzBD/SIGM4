@@ -214,6 +214,16 @@ FOR each step aktif WHERE sla_deadline < now():
         auto_reject    -> instance.status = Ditolak + NT-03
 ```
 
+**Semantik yang mengikat** (keputusan 70/73 log phase-02, pemilik produk 28 September 2026):
+
+| Keadaan langkah aktif saat tenggat lewat | Tindakan |
+|---|---|
+| `remind` (termasuk langkah fallback `SDD-APR-13`) | `NT-06` bila belum diingatkan pada hari WIB yang sama (`pengingat_terakhir_pada`); **tidak pernah** terminal — `auto_reject` tidak menolak pengajuan karena langkah `remind` telat |
+| `escalate`, belum dieskalasi, `eskalasi_ke` punya pemutus sah (`SDD-APR-16`, pemohon dikeluarkan) | Target langkah dialihkan ke `eskalasi_ke` (`dieskalasi_pada`, `eskalasi_dari_user_id`), tenggat baru = `sla_jam` langkah itu dalam jam kerja; `NT-07`; `APPROVAL_ESCALATED` |
+| `escalate` yang sudah dieskalasi, **atau** `eskalasi_ke` tidak dapat memutus (nonaktif / pemohon) | Eskalasi habis → `terminal_on_exhausted_escalation`, sekali (`alarm_terminal_pada`): `hold_and_alert` → tetap `Menunggu` + `NT-47`; `auto_reject` → instance `Ditolak` (langkahnya tetap tanpa keputusan manusia), `penangan.setelahDitutup`, `NT-03`; `APPROVAL_ESCALATION_EXHAUSTED` |
+
+Sebelum tenggat diperiksa, langkah aktif yang tidak lagi punya pemutus sah (`RE-13`) dilewati lalu `activate` dijalankan; langkah fallback dan langkah yang sudah dieskalasi dikecualikan (keduanya jalur terakhir). Setiap langkah diproses dalam transaksinya sendiri, mengunci baris langkah **lebih dulu** lalu instance — urutan yang sama dengan `decide` — sehingga keputusan yang masuk bersamaan menang atau membuat job melewatinya. Pelaku `SYSTEM` (`SystemAuthContext`, `PR-02-32`); event `ApprovalSlaBreached` (`SDD-07 §4.3`).
+
 `BR-039a` melarang persetujuan otomatis akibat kelalaian; karena itu `auto_approve` **tidak** termasuk nilai yang sah pada `terminal_on_exhausted_escalation`, dan JSON Schema menolaknya.
 
 ### 4.6 Indeks pendukung

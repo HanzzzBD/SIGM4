@@ -605,6 +605,11 @@ export interface ApprovalStepsTable {
     alasan_dilewati: string | null;
     /** RE-12 (0032): approver asli bila diputus penerima delegasi. */
     atas_nama_user_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    /** SLA & eskalasi (0033, PR-02-22; SDD-02 §4.5). */
+    dieskalasi_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    eskalasi_dari_user_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    pengingat_terakhir_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    alarm_terminal_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
 }
 
 /** Delegasi approver (0032, PR-02-20; FR-10.2 A3, SDD-APR-16) — rentang tanggal WIB inklusif. */

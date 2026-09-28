@@ -102,6 +102,7 @@ export class DecisionService {
             oleh: scope.ctx.userId,
             atasNama: saya.atasNamaUserId,
             pada,
+            target,
         });
         if (!menang) {
             // RE-09: yang kalah menerima identitas pemutus + waktunya (keputusan 69: lewat details).
@@ -164,6 +165,30 @@ export class DecisionService {
             payload: { instance_id: instanceId, urutan: input.urutan, keputusan: input.keputusan, status, langkah_aktif: langkahAktif },
         });
         return hasil;
+    }
+
+    /**
+     * Lampiran D.5 `auto_reject` (keputusan 73): eskalasi habis → instance `Ditolak` oleh
+     * SYSTEM. Langkahnya tetap tanpa keputusan manusia (`approval_steps_pemutus_ada`);
+     * objek dilepas lewat penangan yang sama dengan penolakan manusia (SDD-APR-17), dan
+     * pemohon dinotifikasi lewat `ApprovalDecided` (NT-03). Dijalankan di transaksi job.
+     */
+    async tolakOtomatis(scope: TransactionScope, instanceId: number, urutan: number): Promise<void> {
+        const repo = createDecisionRepository(scope.tx);
+        const inst = await repo.instance(scope.ctx, instanceId);
+        if (inst === undefined) throw new Error(`Instance persetujuan ${String(instanceId)} tidak ada.`);
+        await repo.tutup(scope.ctx, instanceId, "DITOLAK", this.clock.now());
+        await this.penangan.get(inst.jenis)?.setelahDitutup(scope, inst.referensiId, "DITOLAK");
+        const hasil = { instance_id: instanceId, urutan, keputusan: "DITOLAK", status: "DITOLAK", langkah_aktif: null } as const;
+        await this.audit.write(scope, {
+            modul: MODUL,
+            aksi: "APPROVAL_DECIDED",
+            entitas: "approval_instances",
+            entitasId: instanceId,
+            nilaiSesudah: { ...hasil, otomatis: true },
+            keterangan: "Eskalasi SLA habis tanpa keputusan — ditolak otomatis (Lampiran D.5 auto_reject).",
+        });
+        await publish(scope, { name: "ApprovalDecided", aggregateType: "approval_instance", aggregateId: instanceId, payload: hasil });
     }
 
     /**

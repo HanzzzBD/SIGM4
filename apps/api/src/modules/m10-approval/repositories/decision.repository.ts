@@ -26,6 +26,8 @@ export interface Putusan {
     readonly oleh: number;
     readonly atasNama: number | null;
     readonly pada: Date;
+    /** Target yang menjadi dasar pemeriksaan pemutus sah — harus belum dialihkan eskalasi (PR-02-22). */
+    readonly target: Target;
 }
 
 export interface KandidatPending extends Target {
@@ -87,6 +89,11 @@ export class DecisionRepository extends BaseRepository {
             .where("instance_id", "=", String(p.instanceId))
             .where("urutan", "=", p.urutan)
             .where("keputusan", "is", null)
+            // Keputusan 73: job SLA dapat mengalihkan target di antara pemeriksaan pemutus
+            // dan pernyataan ini — approver lama lalu kalah (409), bukan memutus langkah orang lain.
+            .where("approver_type", "=", p.target.approverType)
+            .where(sql<boolean>`approver_role_id IS NOT DISTINCT FROM ${p.target.roleId}::bigint`)
+            .where(sql<boolean>`approver_user_id IS NOT DISTINCT FROM ${p.target.userId}::bigint`)
             .where(({ exists, selectFrom }) =>
                 exists(
                     selectFrom("approval_instances")

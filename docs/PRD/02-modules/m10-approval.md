@@ -163,7 +163,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 | **approval_rules** | Aturan persetujuan | id, jenis_pengajuan, kondisi (JSON), prioritas, status_aktif, versi, fallback_approver_type, fallback_role_id, fallback_user_id, terminal_on_exhausted_escalation (Lampiran D.5) | Administrator |
 | **approval_rule_steps** | Langkah dalam aturan | id, rule_id, urutan, approver_type, approver_role_id, approver_user_id, sla_jam, on_sla_breach (Lampiran D.5), eskalasi_ke | Administrator |
 | **approval_instances** | Instance persetujuan berjalan | id, jenis_pengajuan, referensi_id, pemohon_id (BR-039 dinilai ulang saat tiap langkah aktif), rule_id, rule_snapshot (JSON), langkah_aktif, status, created_at, diselesaikan_pada | ± 3.500 |
-| **approval_steps** | Keputusan per langkah | id, instance_id, urutan, approver_type, approver_role_id, approver_user_id (target — dapat dialihkan eskalasi), keputusan, catatan, diputuskan_oleh, diputuskan_pada, sla_deadline, dilewati, alasan_dilewati, atas_nama_user_id (approver asli bila diputus penerima delegasi, RE-12) | ± 5.000 |
+| **approval_steps** | Keputusan per langkah | id, instance_id, urutan, approver_type, approver_role_id, approver_user_id (target — dapat dialihkan eskalasi), keputusan, catatan, diputuskan_oleh, diputuskan_pada, sla_deadline, dilewati, alasan_dilewati, atas_nama_user_id (approver asli bila diputus penerima delegasi, RE-12), dieskalasi_pada, eskalasi_dari_user_id (target pengguna sebelum dialihkan eskalasi; target role asli tetap di `rule_snapshot`), pengingat_terakhir_pada (NT-06 maks 1×/hari), alarm_terminal_pada (eskalasi habis — NT-47 sekali / ditolak otomatis) | ± 5.000 |
 | **approval_delegations** | Delegasi approver (FR-10.2 A3) | id, pemberi_id, penerima_id, mulai, selesai (tanggal, inklusif); satu delegasi per pemberi per tanggal | Approver |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
@@ -210,6 +210,8 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | `APPROVAL_DECIDED` | Keputusan beserta approver, catatan, dan level |
 | `APPROVAL_STEP_SKIPPED` | Termasuk alasan (mis. konflik kepentingan) |
 | `APPROVAL_ESCALATED` | Eskalasi akibat SLA terlampaui |
+| `APPROVAL_SLA_REMINDED` | Pengingat SLA terlampaui terkirim (NT-06, maks 1×/hari per langkah); pelaku `SYSTEM` |
+| `APPROVAL_ESCALATION_EXHAUSTED` | Eskalasi habis tanpa keputusan (Lampiran D.5): ditahan & dialarmi (NT-47) atau ditolak otomatis; pelaku `SYSTEM` |
 | `APPROVAL_DELEGATED` | Penetapan approver pengganti |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
