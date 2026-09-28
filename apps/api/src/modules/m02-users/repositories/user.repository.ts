@@ -3,6 +3,7 @@
 
 import { sql } from "kysely";
 import type { AuthContext } from "../../../shared/auth/index.js";
+import { pelakuId } from "../../../shared/auth/index.js";
 import { BaseRepository, defineRepository } from "../../../shared/db/index.js";
 import type { QueryExecutor } from "../../../shared/db/index.js";
 
@@ -247,7 +248,8 @@ export class UserRepository extends BaseRepository {
     ): Promise<UserRow> {
         return this.query(ctx)
             .updateTable("users")
-            .set({ status, updated_by: ctx.userId })
+            // Pelaku SYSTEM (student-graduation, SL-03) → updated_by NULL.
+            .set({ status, updated_by: pelakuId(ctx) })
             .where("id", "=", String(id))
             .returning(KOLOM_USER)
             .executeTakeFirstOrThrow();

@@ -26,6 +26,11 @@ const zonaAntarModul = modul.map((nama) => ({
   message: 'Modul lain hanya boleh disentuh lewat index.ts-nya (SDD-SYS-03); repositories/ dan controllers/ privat (SDD-00 §4.2).',
 }));
 
+/** Folder shared/* selain auth — dibaca dari disk dengan alasan yang sama dengan `modul`. */
+const sharedSelainAuth = readdirSync(new URL('./src/shared/', import.meta.url), { withFileTypes: true })
+  .filter((entri) => entri.isDirectory() && entri.name !== 'auth')
+  .map((entri) => `./apps/api/src/shared/${entri.name}`);
+
 /** Batas lapisan di dalam pohon backend — tabel SDD-00 §4.2. */
 const zonaLapisan = [
   // shared kernel tidak boleh tahu tentang modul — jika tidak, ia berubah
@@ -37,6 +42,14 @@ const zonaLapisan = [
   // `except` sebagai pola glob bila `from` pun glob.
   { target: './apps/api/src/api', from: './apps/api/src/modules/**', except: ['**/modules/*/index.ts'] },
   { target: './apps/api/src/worker', from: './apps/api/src/modules/**', except: ['**/modules/*/index.ts'] },
+  // SDD-03 §6: `SystemAuthContext` (scope `all`) hanya dibentuk dari luar siklus
+  // HTTP. Pabriknya tidak diekspor index.ts shared/auth; berkasnya sendiri tertutup
+  // bagi seluruh src kecuali worker dan shared/auth.
+  {
+    target: ['./apps/api/src/api', './apps/api/src/modules', ...sharedSelainAuth],
+    from: './apps/api/src/shared/auth/system-context.ts',
+    message: 'SystemAuthContext hanya boleh dibentuk src/worker (SDD-03 §6); pakai isSystemAuthContext/pelakuId dari shared/auth/index.ts.',
+  },
 ];
 
 // Basis akar di-*spread* lebih dulu: sejak ESLint 10 konfigurasi dicari mulai dari

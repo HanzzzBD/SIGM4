@@ -5,6 +5,10 @@ export type { AuthenticateDeps } from "./authenticate.js";
 export { authenticate, gerbangGantiPassword } from "./authenticate.js";
 export type { AuthContext, AuthContextInput, Scope } from "./context.js";
 export { assertAuthContext, createAuthContext } from "./context.js";
+// Pengenal pelaku SYSTEM saja — pabriknya (`createSystemAuthContext`) sengaja TIDAK
+// diekspor di sini: hanya src/worker/** yang boleh membentuknya (SDD-03 §6).
+export type { SystemAuthContext } from "./system-context.js";
+export { PERAN_SISTEM, isSystemAuthContext, pelakuId } from "./system-context.js";
 export type { FieldPolicy } from "./fields.js";
 export { allowedFields } from "./fields.js";
 export type { OpsiAutentikasi } from "./middleware.js";

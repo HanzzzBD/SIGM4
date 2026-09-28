@@ -8,6 +8,7 @@
 // yang ternyata di-rollback.
 
 import type { TransactionScope } from "../db/index.js";
+import { pelakuId } from "../auth/index.js";
 import { konteksSaatIni } from "../observability/index.js";
 
 /**
@@ -67,7 +68,8 @@ export async function publish(
             aggregate_type: event.aggregateType,
             aggregate_id: event.aggregateId,
             payload: JSON.stringify(event.payload),
-            actor_id: String(scope.ctx.userId),
+            // Pelaku SYSTEM (pekerjaan terjadwal) tidak punya baris users (AL-06).
+            actor_id: pelakuId(scope.ctx)?.toString() ?? null,
             request_id: konteksSaatIni()?.requestId ?? null,
         })
         .execute();

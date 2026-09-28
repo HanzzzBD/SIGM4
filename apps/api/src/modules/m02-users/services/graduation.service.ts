@@ -4,9 +4,9 @@
 // Idempoten (`JOB-03`): siswa yang sudah nonaktif tidak dipilih lagi, sehingga
 // menjalankannya ulang atas hari yang sama tidak menghasilkan apa pun.
 //
-// BELUM dipasang sebagai pekerjaan worker: pelaku job adalah `SYSTEM`
-// (`SDD-03`, `AL-06`) dan `SystemAuthContext` belum ada — butir terbuka log
-// phase-01 §10. Service ini menerima `AuthContext` dari pemanggil.
+// Dipasang sebagai pekerjaan worker `student-graduation` berpelaku SYSTEM
+// (`SDD-03`, `AL-06`, PR-02-32) — src/worker/student-graduation.ts. Service ini
+// menerima `AuthContext` dari pemanggil.
 
 import type { Kysely } from "kysely";
 import type { AuthContext } from "../../../shared/auth/index.js";
