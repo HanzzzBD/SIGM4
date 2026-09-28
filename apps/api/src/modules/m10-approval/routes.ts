@@ -10,11 +10,14 @@ import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
 import { decideHandler, listPendingHandler } from "./controllers/decision.controller.js";
 import { delegateHandler } from "./controllers/delegation.controller.js";
+import { historyHandler } from "./controllers/history.controller.js";
 import { DecideBodySchema, DecideResponseSchema, InstanceIdParamSchema, ListPendingResponseSchema } from "./schemas/decision.schema.js";
 import { DelegateBodySchema, DelegateResponseSchema } from "./schemas/delegation.schema.js";
+import { HistoryResponseSchema } from "./schemas/history.schema.js";
 import { ApprovalService } from "./services/approval.service.js";
 import type { PenanganHasil } from "./services/decision.service.js";
 import { DecisionService } from "./services/decision.service.js";
+import { HistoryService } from "./services/history.service.js";
 
 /** Pemilik katalog endpoint M-10 (m10-approval.md §7). */
 const MODUL = "m10-approval";
@@ -40,6 +43,18 @@ export const listPendingRoute = defineRoute({
     module: MODUL,
     summary: "Pengajuan yang menunggu keputusan saya (FR-10.2)",
     response: ListPendingResponseSchema,
+});
+
+/** FR-10.3: linimasa; scope `own` dievaluasi layanan (A1, keputusan 76). */
+export const historyRoute = defineRoute({
+    method: "GET",
+    path: "/approvals/:id/history",
+    permission: "approval.view",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Linimasa persetujuan sebuah pengajuan (FR-10.3)",
+    params: InstanceIdParamSchema,
+    response: HistoryResponseSchema,
 });
 
 /** FR-10.2 langkah 4-7, A1, A5, A6; RE-09 first-responder-wins; ID-01 (keputusan 69). */
@@ -77,5 +92,6 @@ export function approvalRouter(
     router.get(listPendingRoute.path, batasi(listPendingRoute), otorisasi(listPendingRoute.permission), listPendingHandler(keputusan));
     router.post(decideRoute.path, batasi(decideRoute), otorisasi(decideRoute.permission), decideHandler(deps.db, keputusan));
     router.post(delegateRoute.path, batasi(delegateRoute), otorisasi(delegateRoute.permission), delegateHandler(service));
+    router.get(historyRoute.path, batasi(historyRoute), otorisasi(historyRoute.permission), historyHandler(new HistoryService(deps.db, deps.clock, service)));
     return router;
 }

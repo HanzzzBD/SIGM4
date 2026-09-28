@@ -226,6 +226,12 @@ Sebelum tenggat diperiksa, langkah aktif yang tidak lagi punya pemutus sah (`RE-
 
 `BR-039a` melarang persetujuan otomatis akibat kelalaian; karena itu `auto_approve` **tidak** termasuk nilai yang sah pada `terminal_on_exhausted_escalation`, dan JSON Schema menolaknya.
 
+### 4.5a Linimasa (`FR-10.3`, keputusan 76)
+
+`GET /approvals/{id}/history` dibaca dari `approval_instances` + `approval_steps` + `rule_snapshot` — bukan dari activity log. Tiap langkah memuat target, keputusan & catatan, pemutus dan `atas_nama` (delegasi, `RE-12`), `dilewati` + alasan, penanda fallback (urutan di luar snapshot), penanda eskalasi (`dieskalasi_pada`, target asal) dan eskalasi habis (`alarm_terminal_pada`). Status langkah turunan: keputusannya bila ada; `AKTIF` bila langkah aktif instance yang menunggu; `BELUM_AKTIF` bila instance masih menunggu; selain itu `TIDAK_DIJALANKAN` (alur berhenti sebelumnya).
+
+Satuan waktu seluruhnya **menit kerja** lewat `BusinessCalendarService` (`SDD-APR-06`): langkah aktif memuat `sisa_menit_kerja` (0 bila lewat) dan `terlambat`; langkah yang selesai memuat `durasi_menit_kerja` sejak ia mulai menunggu (keputusan langkah sebelumnya, atau lahirnya instance) sampai diputus. Scope `own` dievaluasi di layanan; instance di luar hak dijawab `403` sama dengan yang tidak ada (`SDD-AUTH-08`).
+
 ### 4.6 Indeks pendukung
 
 ```sql
