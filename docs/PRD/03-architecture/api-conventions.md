@@ -89,6 +89,8 @@
 | 503 | Layanan eksternal tidak tersedia | `LLM_UNAVAILABLE`, `STORAGE_UNAVAILABLE` |
 | 503 | Instance belum siap menerima trafik (probe *readiness*) | `SERVICE_NOT_READY` |
 
+`409 APPROVAL_ALREADY_DECIDED` (RE-09) menyampaikan identitas pemutus dan waktunya lewat `error.details`: `{ "field": "diputuskan_oleh", "message": "<nama pemutus>" }` dan `{ "field": "diputuskan_pada", "message": "<ISO-8601>" }`; `error.message` tetap generik. Keduanya tidak ada bila langkah itu tidak diputus manusia (dilewati, atau instance ditutup sebab lain).
+
 ## 17.4 Daftar Endpoint Utama
 
 > **Dipindahkan.** Seluruh baris endpoint kini dimiliki modulnya masing-masing (bagian 7 pada tiap berkas di [`../02-modules/`](../02-modules/)). Daftar menyeluruh digenerate di [`api-index.md`](../_generated/api-index.md).

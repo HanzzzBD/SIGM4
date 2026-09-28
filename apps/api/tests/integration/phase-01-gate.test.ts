@@ -131,11 +131,11 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
         await closeRedis();
     });
 
-    async function panggil(mode: string, metode: string, path: string, body?: unknown): Promise<Balasan> {
+    async function panggil(mode: string, metode: string, path: string, body?: unknown, headers: Record<string, string> = {}): Promise<Balasan> {
         modeAktif = mode;
         const res = await fetch(`${url}/api/v1${path}`, {
             method: metode,
-            headers: { "content-type": "application/json" },
+            headers: { "content-type": "application/json", ...headers },
             ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         });
         // Ekspor berkas (XLSX) bukan JSON: hanya statusnya yang dipakai.
@@ -338,10 +338,10 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 Number((await kueri<{ n: string }>(`SELECT count(*)::text AS n FROM activity_logs WHERE user_id = ${admin} AND aksi = '${aksi}' AND hasil = 'SUKSES'`))[0]?.n);
 
             /** Satu langkah: panggil route, harapkan 2xx, lalu setiap aksi yang disebut bertambah tepat satu. */
-            async function langkah(pola: string, path: string, body: unknown, aksi: readonly string[]): Promise<Balasan> {
+            async function langkah(pola: string, path: string, body: unknown, aksi: readonly string[], headers: Record<string, string> = {}): Promise<Balasan> {
                 const [metode] = pola.split(" ") as [string];
                 const sebelum = await Promise.all(aksi.map(jumlah));
-                const hasil = await panggil(mode, metode, path, body);
+                const hasil = await panggil(mode, metode, path, body, headers);
                 expect(hasil.status, `${pola} -> ${JSON.stringify(hasil.json)}`).toBeLessThan(300);
                 const sesudah = await Promise.all(aksi.map(jumlah));
                 aksi.forEach((a, i) => expect(sesudah[i]! - sebelum[i]!, `${pola} harus mencatat ${a}`).toBe(1));
@@ -477,6 +477,15 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
 
                 // --- M-10: delegasi approver (PR-02-20) — penerima wajib aktif & memegang approval.decide (SDD-APR-16).
                 const penerimaDelegasi = await seedPengguna("R-02");
+                // PR-02-21: keputusan atas langkah aktif ber-role Administrator (pemohon orang lain); Idempotency-Key wajib (ID-01).
+                // SEBELUM delegasi di bawah: selama delegasinya berlaku admin digantikan penerimanya (SDD-APR-16).
+                const pemohonUji = await seedPengguna("R-06");
+                const [instansiUji] = await kueri<{ id: string }>(`
+                    INSERT INTO approval_instances (jenis_pengajuan, referensi_id, pemohon_id, rule_snapshot, langkah_aktif)
+                    VALUES ('PENGADAAN_BARANG', 424242, ${pemohonUji}, '{}', 1) RETURNING id::text`);
+                await kueri(`INSERT INTO approval_steps (instance_id, urutan, approver_type, approver_role_id)
+                             SELECT ${instansiUji?.id}, 1, 'role', id FROM roles WHERE kode = 'R-01'`);
+                await langkah("POST /approvals/:id/decide", `/approvals/${instansiUji?.id}/decide`, { urutan: 1, keputusan: "DISETUJUI" }, ["APPROVAL_DECIDED"], { "idempotency-key": randomUUID() });
                 await langkah("POST /approvals/delegate", "/approvals/delegate", { penerima_id: penerimaDelegasi, mulai: "2026-09-19", selesai: "2026-09-20" }, ["APPROVAL_DELEGATED"]);
 
                 // --- M-18: dua pembacaan yang WAJIB tercatat
@@ -524,6 +533,11 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await kueri("DELETE FROM totp_activation_codes"); // PR-02-33: kode aktivasi menunjuk users
                 await kueri("DELETE FROM totp_backup_codes");
                 await kueri("DELETE FROM approval_delegations"); // PR-02-20: pemberi/penerima menunjuk users
+                // PR-02-21: langkah (diputuskan_oleh) dan instance (pemohon_id) menunjuk users.
+                await kueri("DELETE FROM approval_steps");
+                await kueri("DELETE FROM approval_instances");
+                await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'approval_instance'");
+                await kueri("DELETE FROM idempotency_keys WHERE endpoint LIKE 'POST /approvals/%'");
                 await kueri("DELETE FROM users");
             }
         }, 120_000);

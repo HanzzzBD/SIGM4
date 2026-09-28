@@ -39,6 +39,7 @@ Satu mesin melayani **lima** jenis pengajuan. Tidak boleh ada cabang khusus per 
 | **SDD-APR-14** | Ketersediaan approver bertipe `user` diperiksa **saat langkah hendak diaktifkan**, bukan saat instance lahir. Approver nonaktif menyebabkan langkah ditandai `Dilewati` beralasan `approver nonaktif` (`RE-13`) dan pemrosesan lanjut; bila seluruh langkah habis, berlaku jalur fallback `SDD-APR-13` yang sama. Menutup `TBD-APR-C` (keputusan pemilik produk, 25 Agustus 2026). |
 | **SDD-APR-15** | Kalender SLA memakai **jam operasional terkonfigurasi** (`conventions.md`, bawaan Senin–Sabtu 06.00–18.00 WIB) persis seperti `CAL-01` menetapkannya. **Tidak ada** rentang jam kerja administratif kedua. Menutup `TBD-APR-B` (keputusan pemilik produk, 25 Agustus 2026). |
 | **SDD-APR-16** | **Delegasi** (`FR-10.2 A3`, `RE-12`) disimpan di `approval_delegations` per rentang **tanggal WIB inklusif**, paling banyak satu per pemberi per tanggal (exclusion constraint). Pemutus sah sebuah langkah dihitung **saat dibutuhkan** (aktivasi, keputusan) dari pemegang yang `AKTIF` — role: seluruh pemegang role; user: pengguna itu — lalu setiap pemegang yang sedang mendelegasikan **digantikan** penerimanya bila penerima `AKTIF` (satu lompatan, tidak berantai). Pemohon dikeluarkan, termasuk sebagai pemberi (`BR-039`). Himpunan kosong karena pemohon → `konflik kepentingan` (`RE-10`); kosong karena sebab lain → `approver nonaktif` (`RE-13`, berlaku juga bagi langkah role). Keputusan penerima menyimpan approver asli di `approval_steps.atas_nama_user_id`. Penerima wajib memegang `approval.decide`. |
+| **SDD-APR-17** | Efek keputusan atas **objek pengajuan** — verifikasi ketersediaan `BR-043` (mengunci, `SDD-APR-11`), promosi slot `Tentative → Confirmed`, pelepasan slot saat ditolak/revisi — dijalankan **penangan hasil per jenis pengajuan** (`PenanganHasil`: `sebelumDisetujui`, `setelahDitutup`) yang didaftarkan modul pengajuan, pola `FactAdapter` (`SDD-APR-09`), di dalam transaksi keputusan. Penangan boleh melempar galat domain untuk membatalkan persetujuan (`FR-10.2 A5`). Jenis tanpa penangan tidak punya objek untuk diperiksa. Kontrak `POST /approvals/{id}/decide`: body `{ urutan, keputusan, catatan }` + header `Idempotency-Key` (`ID-01`); `urutan` = langkah yang dilihat approver, sehingga layar basi atau klik ganda setelah langkah maju berakhir `409`, tidak memutus langkah berikutnya (keputusan 69). |
 
 ---
 
@@ -91,6 +92,9 @@ Keberatan itu tetap tidak cukup untuk membangun kalender kedua. `SDD-APR-06 §3`
 Bila 24 jam terasa terlalu longgar, pengaturnya sudah tersedia dan berada di tempat yang benar: `sla_hours` dapat diatur per langkah pada setiap aturan. Menurunkan angkanya menyelesaikan keluhan tanpa menambah konsep.
 
 **SDD-APR-16 — delegasi dihitung, tidak dicetak ke langkah.** Alternatif menulis ulang target langkah (`approver_user_id`) ke penerima saat delegasi dibuat ditolak: langkah berbasis role tidak punya satu target untuk ditulis ulang, delegasi yang berakhir atau dibatalkan harus "menulis kembali" langkah yang sudah diubah, dan target asli hilang dari linimasa. Menghitung pemutus dari pemegang + delegasi yang berlaku pada tanggal itu membuat keduanya — langkah user maupun role, termasuk kasus umum pemegang tunggal R-03 yang cuti — mengikuti satu aturan, dan jejak `RE-12` tetap utuh karena yang tercatat adalah keputusan (`atas_nama_user_id`), bukan pengalihan. Delegasi tidak berantai agar resolusi tetap satu kueri dan tidak dapat berputar.
+
+
+**SDD-APR-17 — penangan hasil, bukan mesin yang tahu pengajuan.** Verifikasi `BR-043` dan promosi slot wajib atomik dengan keputusan (`SDD-EVT-02`), sehingga tidak dapat diserahkan ke event outbox. Mesin memanggil `SlotService` sendiri akan membuatnya tahu bahwa `referensi_id` sebuah reservasi adalah `booking_slots.reservation_id` dan bahwa pengadaan tidak punya slot — pengetahuan yang `SDD-APR-09` letakkan di modul pengajuan. Penangan per jenis memakai jalur yang sama dengan `FactAdapter`: satu pendaftaran per jenis, nol cabang di mesin.
 
 ---
 
@@ -165,14 +169,13 @@ decide(instanceId, stepOrder, actor, decision, note):
     affected := UPDATE approval_steps SET ... WHERE keputusan IS NULL ...   -- SDD-APR-05
     IF affected = 0 -> 409 APPROVAL_ALREADY_DECIDED
 
-    IF decision = Ditolak        -> instance.status = Ditolak; release slot; NT-03; END  -- BR-038
-    IF decision = Perlu Revisi   -> instance.status = PerluRevisi; NT-04; END            -- FR-10.2 A1
+    IF decision = Ditolak        -> instance.status = Ditolak; penangan.setelahDitutup; NT-03; END  -- BR-038
+    IF decision = Perlu Revisi   -> instance.status = PerluRevisi; penangan.setelahDitutup; NT-04; END  -- FR-10.2 A1
 
     next := nextActiveStep()                         -- lihat activate() di bawah
     IF next EXISTS -> langkah_aktif = next; set sla_deadline; NT-05
     ELSE
-       assertObjectStillAvailable(FOR UPDATE)   -- BR-043, SDD-APR-11
-       promote slots Tentative -> Confirmed     -- lihat SDD-01 §4.3
+       penangan.sebelumDisetujui(referensi)     -- BR-043 (kunci, SDD-APR-11) + promosi slot; SDD-APR-17
        instance.status = Disetujui; NT-02
   COMMIT
 ```
