@@ -88,7 +88,7 @@ function snapshotDari(aturan: AturanAktif): SnapshotAturan {
 }
 
 /** Tanggal kalender WIB 'YYYY-MM-DD' — rentang delegasi dibaca dalam zona sekolah. */
-function tanggalWib(instan: Date): string {
+export function tanggalWib(instan: Date): string {
     return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(instan);
 }
 
@@ -207,6 +207,14 @@ export class ApprovalService {
             },
             this.db,
         );
+    }
+
+    /**
+     * Pemutus sah sebuah target langkah HARI INI (SDD-APR-16) — satu sumber bagi aktivasi,
+     * keputusan, dan kotak masuk (PR-02-21): pemegang aktif, delegasi, pemohon dikeluarkan.
+     */
+    async pemutusSah(scope: TransactionScope, target: Target, pemohonId: number): Promise<HasilResolusi> {
+        return this.resolusi(createApprovalRepository(scope.tx), scope.ctx, target, pemohonId, tanggalWib(this.clock.now()));
     }
 
     private async snapshotBawaan(repo: ApprovalRepository, ctx: AuthContext): Promise<SnapshotAturan> {

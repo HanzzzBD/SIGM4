@@ -9,6 +9,7 @@ export { ATURAN_BAWAAN, selectRule } from "./services/rule-selector.js";
 export type { PelanggaranAturan } from "./services/rule-validator.js";
 export { validateCondition } from "./services/rule-validator.js";
 export type { ApprovalModuleDeps } from "./routes.js";
-export { approvalRouter, delegateRoute } from "./routes.js";
+export { approvalRouter, decideRoute, delegateRoute, listPendingRoute } from "./routes.js";
+export type { HasilKeputusan, PenanganHasil } from "./services/decision.service.js";
 export type { InstanceBaru, PengajuanBaru, SnapshotAturan } from "./services/approval.service.js";
 export { ApprovalService } from "./services/approval.service.js";

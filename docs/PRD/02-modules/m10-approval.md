@@ -74,13 +74,13 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 1. Approver menerima notifikasi in-app dan push.
 2. Approver membuka menu "Persetujuan Saya" dan melihat daftar pengajuan menunggu, terurut berdasarkan waktu pengajuan dan urgensi.
 3. Approver membuka detail pengajuan: pemohon, objek yang diminta, jadwal, keperluan, riwayat pemohon (keterlambatan sebelumnya, denda tertunggak), dan ketersediaan objek.
-4. Approver memilih **Setujui** atau **Tolak**, mengisi catatan (wajib bila menolak).
+4. Approver memilih **Setujui** atau **Tolak**, mengisi catatan (wajib bila menolak atau meminta revisi).
 5. Bila disetujui dan masih ada langkah berikutnya, sistem meneruskan ke approver berikutnya dan menotifikasinya.
 6. Bila disetujui pada langkah terakhir, sistem menetapkan pengajuan berstatus `Disetujui` dan menotifikasi pemohon.
 7. Bila ditolak pada langkah mana pun, sistem menghentikan alur, menetapkan status `Ditolak`, dan menotifikasi pemohon beserta alasannya.
 
 **Alternative Flow**
-- **A1 — Approver meminta revisi:** Status berubah menjadi `Perlu Revisi`; pemohon dapat menyunting dan mengirim ulang, dan alur persetujuan dimulai kembali dari langkah pertama.
+- **A1 — Approver meminta revisi:** Status berubah menjadi `Perlu Revisi`; pemohon dapat menyunting dan mengirim ulang, dan alur persetujuan dimulai kembali dari langkah pertama. Catatan revisi wajib diisi — pemohon tidak dapat menindaklanjuti revisi tanpa penjelasan (NT-04).
 - **A2 — SLA terlampaui:** Sistem mengirim pengingat kepada approver; bila aturan mengaktifkan eskalasi, pengajuan diteruskan ke approver eskalasi setelah tenggat. SLA dihitung dalam **jam kerja**, bukan jam kalender (CAL-01).
 - **A2a — Seluruh jalur eskalasi habis tanpa keputusan:** Berlaku `terminal_on_exhausted_escalation` pada definisi aturan (Lampiran D.5). Nilai bawaan `hold_and_alert`: pengajuan tetap menunggu, namun Administrator dan Petugas Sarpras dialarmi (NT-47) untuk tindakan manual. Pengajuan **tidak pernah** disetujui otomatis karena kelalaian approver.
 - **A3 — Approver mendelegasikan:** Approver menetapkan pengganti untuk rentang tanggal tertentu (mis. cuti); pengajuan diarahkan ke pengganti dan tercatat sebagai delegasi. Linimasa tetap mencatat approver asli (RE-12).

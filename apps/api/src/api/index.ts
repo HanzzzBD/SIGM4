@@ -108,7 +108,7 @@ import {
     moveAssetsRoute,
     updateAssetConditionRoute,
 } from "../modules/m04-assets/index.js";
-import { approvalRouter, delegateRoute } from "../modules/m10-approval/index.js";
+import { approvalRouter, decideRoute, delegateRoute, listPendingRoute } from "../modules/m10-approval/index.js";
 import {
     activityLogRouter,
     exportActivityLogsRoute,
@@ -202,6 +202,8 @@ export const registry = new RouteRegistry().register(
     updateCategoryRoute,
     deleteCategoryRoute,
     delegateRoute,
+    listPendingRoute,
+    decideRoute,
     listActivityLogsRoute,
     exportActivityLogsRoute,
     getSettingsRoute,
