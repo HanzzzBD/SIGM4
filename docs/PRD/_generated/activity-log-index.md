@@ -5,7 +5,7 @@
 # Indeks Aksi Activity Log
 
 > Setiap aksi dimiliki modul penerbitnya. Prinsip pencatatan di `../03-architecture/activity-log.md`.
-> Total: **76** baris, dikumpulkan dari 22 berkas modul.
+> Total: **78** baris, dikumpulkan dari 22 berkas modul.
 
 | Aksi | Keterangan | Pemilik |
 |---|---|---|
@@ -17,8 +17,10 @@
 | `APPROVAL_DECIDED` | Keputusan beserta approver, catatan, dan level | [M-10](../02-modules/m10-approval.md) |
 | `APPROVAL_DELEGATED` | Penetapan approver pengganti | [M-10](../02-modules/m10-approval.md) |
 | `APPROVAL_ESCALATED` | Eskalasi akibat SLA terlampaui | [M-10](../02-modules/m10-approval.md) |
+| `APPROVAL_ESCALATION_EXHAUSTED` | Eskalasi habis tanpa keputusan (Lampiran D.5): ditahan & dialarmi (NT-47) atau ditolak otomatis; pelaku `SYSTEM` | [M-10](../02-modules/m10-approval.md) |
 | `APPROVAL_INSTANCE_CREATED` | Termasuk aturan yang dipakai | [M-10](../02-modules/m10-approval.md) |
 | `APPROVAL_RULE_CREATED` / `APPROVAL_RULE_UPDATED` / `APPROVAL_RULE_DEACTIVATED` | Perubahan konfigurasi | [M-10](../02-modules/m10-approval.md) |
+| `APPROVAL_SLA_REMINDED` | Pengingat SLA terlampaui terkirim (NT-06, maks 1×/hari per langkah); pelaku `SYSTEM` | [M-10](../02-modules/m10-approval.md) |
 | `APPROVAL_STEP_SKIPPED` | Termasuk alasan (mis. konflik kepentingan) | [M-10](../02-modules/m10-approval.md) |
 | `ASSET_CONDITION_CHANGED` | Wajib menyertakan alasan | [M-04](../02-modules/m04-assets.md) |
 | `ASSET_CREATED` / `ASSET_UPDATED` / `ASSET_DEACTIVATED` | Termasuk pembuatan massal N unit | [M-04](../02-modules/m04-assets.md) |

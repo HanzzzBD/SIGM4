@@ -166,6 +166,20 @@ export class ApprovalService {
         return this.aktifkan(scope, repo, instanceId, fallback, SLA_FALLBACK_JAM);
     }
 
+    /**
+     * SDD-02 §4.4 (dipanggil job `approval-sla-check`): langkah AKTIF yang tidak lagi punya
+     * pemutus sah — approver dinonaktifkan sesudah langkah aktif (RE-13) — dilewati beralasan
+     * lalu `activate` lanjut ke langkah berikutnya/fallback. `true` bila langkah dilewati.
+     */
+    async aktifkanUlang(scope: TransactionScope, instanceId: number, langkah: LangkahInstance, pemohonId: number): Promise<boolean> {
+        const repo = createApprovalRepository(scope.tx);
+        const hasil = await this.resolusi(repo, scope.ctx, langkah, pemohonId, tanggalWib(this.clock.now()));
+        if (hasil.pemutus.length > 0) return false;
+        await this.lewati(scope, repo, instanceId, langkah, hasil);
+        await this.aktifkanBerikutnya(scope, instanceId);
+        return true;
+    }
+
     /** `POST /approvals/delegate` (FR-10.2 A3, SDD-APR-16): pemberi = pemanggil. */
     async delegasikan(ctx: AuthContext, input: DelegasiBaru): Promise<DelegasiRow> {
         if (input.penerimaId === ctx.userId) {

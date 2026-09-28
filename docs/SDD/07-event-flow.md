@@ -135,7 +135,7 @@ Konsekuensinya, event yang gagal **menahan** event sesudahnya pada agregat yang 
 |---|---|---|
 | `ReservationSubmitted` | M-07 / M-08 | Notifikasi `NT-01` |
 | `ApprovalDecided` | M-10 | Notifikasi `NT-02`/`NT-03`/`NT-04`/`NT-05`; payload `instance_id`, `urutan`, `keputusan`, `status` (instance sesudahnya), `langkah_aktif`; agregat `approval_instance`. Hanya terbit di jalur pemenang (`RE-09`) |
-| `ApprovalSlaBreached` | M-10 (job) | Notifikasi `NT-06`/`NT-07`/`NT-47` |
+| `ApprovalSlaBreached` | M-10 (job) | Notifikasi `NT-06`/`NT-07`/`NT-47` menurut `tindakan`; payload `instance_id`, `urutan`, `tindakan` (`REMIND` \| `ESCALATE` \| `EXHAUSTED`), `eskalasi_ke` (ESCALATE); agregat `approval_instance`. Penolakan otomatis (`auto_reject`) tidak menerbitkan event ini melainkan `ApprovalDecided` (`NT-03`) |
 | `ApprovalFallbackRouted` | M-10 | Notifikasi `NT-47` (Administrator + Petugas Sarpras) — seluruh langkah terlewati, pengajuan dialihkan ke *fallback approver* (`RE-11`, `RE-13`); payload `instance_id`, `urutan_fallback`; agregat `approval_instance` |
 | `LoanCheckedOut` | M-09 | Notifikasi `NT-10` |
 | `LoanReturned` | M-09 | Notifikasi `NT-14`, metrik utilisasi |

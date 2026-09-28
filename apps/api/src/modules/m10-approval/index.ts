@@ -11,5 +11,8 @@ export { validateCondition } from "./services/rule-validator.js";
 export type { ApprovalModuleDeps } from "./routes.js";
 export { approvalRouter, decideRoute, delegateRoute, listPendingRoute } from "./routes.js";
 export type { HasilKeputusan, PenanganHasil } from "./services/decision.service.js";
+export { DecisionService } from "./services/decision.service.js";
+export type { RingkasanSla, TindakanSla } from "./services/sla-tracker.js";
+export { SlaTracker } from "./services/sla-tracker.js";
 export type { InstanceBaru, PengajuanBaru, SnapshotAturan } from "./services/approval.service.js";
 export { ApprovalService } from "./services/approval.service.js";

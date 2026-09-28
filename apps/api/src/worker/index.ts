@@ -44,6 +44,7 @@ import {
 } from "../modules/m02-users/index.js";
 import type { Queue } from "bullmq";
 import { createHealthServer } from "./health-server.js";
+import { CRON_SLA, PEKERJAAN_SLA, jalankanPemeriksaanSla } from "./approval-sla-check.js";
 import { startOutboxPoller } from "./outbox-poller.js";
 import { PEKERJAAN_KELULUSAN, jalankanKelulusan } from "./student-graduation.js";
 import { BATAS_DRAIN_WORKER_MS, langkahHentiWorker } from "./shutdown.js";
@@ -103,6 +104,14 @@ export const registry = new JobRegistry().register(
         cron: wibCronToUtc(10, 0),
         handler: async () => {
             await jalankanKelulusan(getDb(), new SystemClock());
+        },
+    },
+    {
+        // SDD-02 §4.5: SLA, pengingat, eskalasi persetujuan. Pelaku SYSTEM (AL-06).
+        name: PEKERJAAN_SLA,
+        cron: CRON_SLA,
+        handler: async () => {
+            await jalankanPemeriksaanSla(getDb(), new SystemClock());
         },
     },
     {
