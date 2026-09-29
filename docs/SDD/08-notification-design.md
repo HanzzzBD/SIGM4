@@ -133,6 +133,18 @@ GET /notifications/stream          (Accept: text/event-stream)
 
 Klien menangani `Last-Event-ID` dengan memuat ulang daftar notifikasi lewat `GET /notifications` — bukan memutar ulang aliran, karena kebenaran ada di basis data.
 
+### 4.3a Siaran in-app & batas koneksi (`PR-02-26`, keputusan 79)
+
+| Aspek | Ketentuan |
+|---|---|
+| Kapan disiarkan | Konsumen §4.2a menyiarkan `PUBLISH ntf:user:{id}` **setelah** transaksinya commit, hanya untuk notifikasi yang benar-benar baru — klien yang memuat ulang `GET /notifications` pasti melihat barisnya. Gagal siar hanya dicatat; kebenaran tetap di basis data (`SDD-NTF-02`) |
+| Isi siaran | `{ jenis: "notifikasi", notifikasi: { id, kode, judul, isi, deep_link, created_at }, unread_count }`; tandai baca / baca-semua menyiarkan `{ jenis: "hitungan", unread_count }` ke seluruh koneksi pengguna itu (`NTF-05`) |
+| Batas 2 koneksi (`NTF-03`) | **Global** lintas instance: sorted set Redis `ntf:conn:{user}` (skor = waktu sambung; kedaluwarsa disegarkan heartbeat). Koneksi ke-3 menyiarkan `{ jenis: "putus", koneksi }` bagi yang terlama pada kanal pengguna; instance pemiliknya menutupnya |
+| Pelanggan | Satu koneksi Redis pelanggan per instance API; berlangganan kanal pengguna saat koneksi SSE pertamanya dibuka dan berhenti saat yang terakhir ditutup |
+| Permission | `notification.manage_own` untuk daftar, aliran, tandai baca, baca-semua (`SDD-NTF-10`, keputusan 79a); scope pemilik ditegakkan repository |
+| `notification_deliveries` | Lahir bersama FCM di `PR-02-27` (status per kanal bermakna di sana; enum statusnya dinaikkan ke Bab 11.3 lebih dulu) |
+| Arsip | Job `notification-archive` harian 01:30 WIB, batch 5.000 baris (`FR-17.1 A2`, §4.6) |
+
 ### 4.4 Push FCM
 
 | Aspek | Ketentuan |

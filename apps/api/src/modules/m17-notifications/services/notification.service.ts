@@ -5,6 +5,7 @@
 
 import type { Clock } from "../../../shared/clock/index.js";
 import type { TransactionScope } from "../../../shared/db/index.js";
+import type { NotifikasiBaru } from "../repositories/notification.repository.js";
 import { createNotificationRepository } from "../repositories/notification.repository.js";
 import { templatUntuk } from "./templates.js";
 
@@ -24,8 +25,8 @@ export interface Terbitan {
 export class NotificationService {
     constructor(private readonly clock: Clock) {}
 
-    /** Mengembalikan jumlah notifikasi yang BENAR-BENAR baru (duplikat ditelan). */
-    async emit(scope: TransactionScope, t: Terbitan): Promise<number> {
+    /** Mengembalikan notifikasi yang BENAR-BENAR baru (duplikat ditelan) — bahan siaran setelah commit. */
+    async emit(scope: TransactionScope, t: Terbitan): Promise<readonly NotifikasiBaru[]> {
         const templat = templatUntuk(t.kode);
         const isi = templat.render(t.params);
         const sekarang = this.clock.now();

@@ -54,8 +54,8 @@
 | GET | `/materials/{id}` | `material.view` | Detail bahan beserta saldo per lokasi | [M-22](../02-modules/m22-materials.md) |
 | GET | `/materials` | `material.view` | Daftar bahan + saldo (filter kategori, lokasi, status stok) | [M-22](../02-modules/m22-materials.md) |
 | GET | `/me` | Bearer | Profil & permission pengguna | 200 `{user, permissions}` | 401 | [M-01](../02-modules/m01-auth.md) |
-| GET | `/notifications/stream` | Bearer | Aliran notifikasi real-time via SSE (NTF-01) | [M-17](../02-modules/m17-notifications.md) |
-| GET | `/notifications` | Bearer | Daftar notifikasi pengguna | [M-17](../02-modules/m17-notifications.md) |
+| GET | `/notifications/stream` | `notification.manage_own` | Aliran notifikasi real-time via SSE (NTF-01) | [M-17](../02-modules/m17-notifications.md) |
+| GET | `/notifications` | `notification.manage_own` | Daftar notifikasi pengguna | [M-17](../02-modules/m17-notifications.md) |
 | GET | `/procurements` | `procurement.view` | Daftar usulan | [M-14](../02-modules/m14-procurement.md) |
 | GET | `/public/assets/{uuid}` | Publik | Info dasar aset untuk scan kamera bawaan | [M-05](../02-modules/m05-qr.md) |
 | GET | `/reservations/{id}` | `reservation.view` | Detail reservasi + riwayat approval | [M-07](../02-modules/m07-reservation-room.md) |
@@ -78,8 +78,8 @@
 | PATCH | `/fines/{id}/waive-compensation` | `fine.waive_compensation` | Bebaskan ganti rugi penuh/sebagian + alasan | [M-09](../02-modules/m09-loans.md) |
 | PATCH | `/fines/{id}/waive` | `fine.waive` | Bebaskan denda keterlambatan + alasan | [M-09](../02-modules/m09-loans.md) |
 | PATCH | `/materials/{id}` | `material.manage` | Ubah data bahan | [M-22](../02-modules/m22-materials.md) |
-| PATCH | `/notifications/read-all` | Bearer | Tandai semua terbaca | [M-17](../02-modules/m17-notifications.md) |
-| PATCH | `/notifications/{id}/read` | Bearer | Tandai terbaca | [M-17](../02-modules/m17-notifications.md) |
+| PATCH | `/notifications/read-all` | `notification.manage_own` | Tandai semua terbaca | [M-17](../02-modules/m17-notifications.md) |
+| PATCH | `/notifications/{id}/read` | `notification.manage_own` | Tandai terbaca | [M-17](../02-modules/m17-notifications.md) |
 | PATCH | `/users/{id}/status` | `user.update` | Aktifkan/nonaktifkan | [M-02](../02-modules/m02-users.md) |
 | PATCH | `/work-orders/{id}/progress` | `workorder.execute` | Perbarui progres, biaya, foto | [M-12](../02-modules/m12-maintenance.md) |
 | PATCH | `/work-orders/{id}/start` | `workorder.execute` | Mulai kerjakan | [M-12](../02-modules/m12-maintenance.md) |

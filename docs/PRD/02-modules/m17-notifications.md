@@ -133,10 +133,10 @@ _Tidak ada aturan bisnis yang dimiliki modul ini._
 
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
-| GET | `/notifications` | Bearer | Daftar notifikasi pengguna |
-| GET | `/notifications/stream` | Bearer | Aliran notifikasi real-time via SSE (NTF-01) |
-| PATCH | `/notifications/{id}/read` | Bearer | Tandai terbaca |
-| PATCH | `/notifications/read-all` | Bearer | Tandai semua terbaca |
+| GET | `/notifications` | `notification.manage_own` | Daftar notifikasi pengguna |
+| GET | `/notifications/stream` | `notification.manage_own` | Aliran notifikasi real-time via SSE (NTF-01) |
+| PATCH | `/notifications/{id}/read` | `notification.manage_own` | Tandai terbaca |
+| PATCH | `/notifications/read-all` | `notification.manage_own` | Tandai semua terbaca |
 | PUT | `/notifications/preferences` | Bearer | Atur preferensi notifikasi |
 | POST | `/device-tokens` | Bearer | Daftarkan token perangkat FCM |
 | DELETE | `/device-tokens/{token}` | Bearer | Cabut token perangkat |
