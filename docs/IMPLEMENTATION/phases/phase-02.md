@@ -130,7 +130,7 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | `PR-02-21` | Eksekusi persetujuan + *first-responder-wins* | L | L | 20 | `FR-10.2`, `BR-035` … `BR-039a`, `SDD-APR-07` | Dua approver serentak → satu 200, satu 409 |
 | `PR-02-22` | SLA, pengingat, eskalasi (job terjadwal) | M | M | 21, 32, Ph00 | `BR-040` … `BR-043`, `SDD-APR-06`, `SDD-APR-15` | Perhitungan memakai jam operasional terkonfigurasi (`CAL-01`); tenggat di luar jam itu tidak bertambah |
 | `PR-02-23` | Riwayat & pelacakan persetujuan | S | S | 21 | `FR-10.3` | Linimasa menampilkan seluruh langkah + alasan |
-| `PR-02-24` | Antarmuka konfigurasi approval rule + pratinjau | M | M | 19 | `FR-10.1`, `RE-01` | Pratinjau menunjukkan jalur yang akan terpilih |
+| `PR-02-24` | Antarmuka konfigurasi approval rule + pratinjau | M | M | 19 | `FR-10.1`, `RE-01`, `RE-07` | Pratinjau menunjukkan jalur yang akan terpilih — **API** (keputusan 77): layar P-68/P-69 milik `PR-02-34` |
 | `PR-02-25` | Skema notifikasi + penerbitan dari event domain | M | M | Ph00 | `FR-17.1`, `SDD-NTF-01/02` | Notifikasi terbit hanya setelah transaksi commit; konsumen `ApprovalSlaBreached` (`NT-06`/`NT-07`/`NT-47`) dan `ApprovalFallbackRouted` (`NT-47`) terpasang dan idempoten di bawah pengulangan outbox (keputusan 75) |
 | `PR-02-26` | SSE + Redis Pub/Sub fanout multi-instance | L | L | 25 | `FR-17.1`, `SDD-NTF-03/04/05` | Dua instance API → satu notifikasi, satu kali tampil |
 | `PR-02-27` | Push FCM + registrasi token + penanganan token mati | M | M | 25 | `FR-17.2`, `SDD-NTF-06/07` | Token tidak valid dibersihkan otomatis; pemeriksaan `fcm` terdaftar di `/health` tanpa memengaruhi `ready` (`OBS-06`); `FCM_CREDENTIALS` masuk skema `shared/config` (`SDD-SYS-14`) |
@@ -140,6 +140,7 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | `PR-02-31` | Daftar password bocor + riwayat 3 password terakhir | M | M | 06 | `NFR-S-03a`, `FR-01.4` | Password yang cocok daftar bocor ditolak; tiga password terakhir tidak dapat dipakai ulang; sumber daftar bocor ditetapkan di PR ini |
 | `PR-02-32` | `SystemAuthContext` + memasang pekerjaan `student-graduation` *(baru, keputusan 31 log phase-01)* | M | M | 02, Ph01 | `SDD-AUTH-05`, `AL-06`, `JOB-01` … `JOB-06`, `SL-03`, `DP-10` | Pelaku `SYSTEM` hanya dapat dibentuk dari luar siklus HTTP; lulusan dinonaktifkan otomatis setelah tahun ajaran berakhir dan tercatat sebagai `SYSTEM`; menyentuh lapisan `AuthContext` — tinjauan arsitek |
 | `PR-02-33` | Kode aktivasi 2FA + reset 2FA oleh Administrator di M-02 *(baru, keputusan 46–48 log phase-02)* | L | L | 05, 07, Ph01 | `FR-01.5 A3`, `A5`, `A7`, `BR-070d`, `SDD-SESS-17`, `SDD-AUTH-05` | Akun role wajib 2FA tidak dapat menyelesaikan `enroll` tanpa kode aktivasi; kode sekali pakai, hash, 72 jam, hangus setelah 5 salah tanpa mengunci akun; reset 2FA mencabut seluruh sesi target dan menghapus kode cadangan — **tinjauan arsitek** (migration + lapisan permission) |
+| `PR-02-34` | Layar Approval Rules (P-68) + Editor Approval Rule dengan pratinjau (P-69) *(baru, keputusan 77 log phase-02)* | M | M | 24, 30 | `FR-10.1`, `RE-07`, P-68, P-69 | Administrator menyusun aturan multi-level, melihat pratinjau jalur sebelum menyimpan, dan menonaktifkan aturan — tanpa pengembang (FR-10.1 AC 1–3) |
 
 ## 8. Task Breakdown
 

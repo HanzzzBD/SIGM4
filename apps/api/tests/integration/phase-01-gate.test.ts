@@ -488,6 +488,15 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await langkah("POST /approvals/:id/decide", `/approvals/${instansiUji?.id}/decide`, { urutan: 1, keputusan: "DISETUJUI" }, ["APPROVAL_DECIDED"], { "idempotency-key": randomUUID() });
                 await langkah("POST /approvals/delegate", "/approvals/delegate", { penerima_id: penerimaDelegasi, mulai: "2026-09-19", selesai: "2026-09-20" }, ["APPROVAL_DELEGATED"]);
 
+                // PR-02-24: konfigurasi approval rule (FR-10.1, keputusan 77). Dinonaktifkan di akhir agar
+                // tidak ikut terpilih pada uji mesin persetujuan lain (RE-04).
+                const aturanUji = { jenis_pengajuan: "PENGADAAN_BARANG", prioritas: 7, kondisi: {}, steps: [{ order: 1, approver_type: "role", approver_role: "R-02", sla_hours: 24, on_sla_breach: "remind" }] };
+                const aturanBaru = await langkah("POST /approval-rules", "/approval-rules", aturanUji, ["APPROVAL_RULE_CREATED"]);
+                const idAturan = String((aturanBaru.json.data as { id: number }).id);
+                await langkah("PUT /approval-rules/:id", `/approval-rules/${idAturan}`, { ...aturanUji, prioritas: 8 }, ["APPROVAL_RULE_UPDATED"]);
+                await langkah("POST /approval-rules/preview", "/approval-rules/preview", { jenis_pengajuan: "PENGADAAN_BARANG", fakta: {} }, []);
+                await langkah("PATCH /approval-rules/:id/status", `/approval-rules/${idAturan}/status`, { status_aktif: false }, ["APPROVAL_RULE_DEACTIVATED"]);
+
                 // --- M-18: dua pembacaan yang WAJIB tercatat
                 await langkah("GET /activity-logs", "/activity-logs?per_page=5", undefined, ["ACTIVITY_LOG_VIEWED"]);
                 await langkah("GET /activity-logs/export", "/activity-logs/export?filter[modul]=m20-settings", undefined, ["ACTIVITY_LOG_EXPORTED"]);
@@ -536,6 +545,7 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 // PR-02-21: langkah (diputuskan_oleh) dan instance (pemohon_id) menunjuk users.
                 await kueri("DELETE FROM approval_steps");
                 await kueri("DELETE FROM approval_instances");
+                await kueri("DELETE FROM approval_rules"); // PR-02-24: created_by/updated_by menunjuk users (langkah ikut CASCADE)
                 await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'approval_instance'");
                 await kueri("DELETE FROM idempotency_keys WHERE endpoint LIKE 'POST /approvals/%'");
                 await kueri("DELETE FROM users");

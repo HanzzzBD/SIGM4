@@ -232,6 +232,17 @@ Sebelum tenggat diperiksa, langkah aktif yang tidak lagi punya pemutus sah (`RE-
 
 Satuan waktu seluruhnya **menit kerja** lewat `BusinessCalendarService` (`SDD-APR-06`): langkah aktif memuat `sisa_menit_kerja` (0 bila lewat) dan `terlambat`; langkah yang selesai memuat `durasi_menit_kerja` sejak ia mulai menunggu (keputusan langkah sebelumnya, atau lahirnya instance) sampai diputus. Scope `own` dievaluasi di layanan; instance di luar hak dijawab `403` sama dengan yang tidak ada (`SDD-AUTH-08`).
 
+### 4.5b Konfigurasi aturan & pratinjau (`FR-10.1`, `RE-07`, keputusan 77)
+
+| Endpoint | Kontrak |
+|---|---|
+| `GET /approval-rules` | Seluruh aturan (aktif & nonaktif) beserta definisi utuhnya dalam bentuk D.5 — cukup bagi P-68 dan P-69 |
+| `POST /approval-rules` · `PUT /approval-rules/{id}` | Body berbentuk **Lampiran D.5 persis**: `jenis_pengajuan`, `prioritas`, `kondisi`, `steps[{order, approver_type, approver_role` (kode, mis. `R-02`) `\| approver_user_id, sla_hours, on_sla_breach, escalate_to_user_id}]`, `fallback_approver`, `terminal_on_exhausted_escalation`. Server memetakan kode role → `roles.id`. `PUT` mengganti definisi utuh dan menaikkan `versi`; instance berjalan tidak tersentuh (`SDD-APR-03`). Tidak ada `DELETE` — `approval_instances.rule_id` merujuknya |
+| `PATCH /approval-rules/{id}/status` | `{ status_aktif }`; nonaktif → `APPROVAL_RULE_DEACTIVATED`, aktif kembali → `APPROVAL_RULE_UPDATED` |
+| `POST /approval-rules/preview` | `{ jenis_pengajuan, fakta, pemohon_id?, aturan_draf? }` — dievaluasi terhadap aturan aktif sejenis **ditambah draf** (draf ber-`id` menggantikan versi tersimpannya; draf baru berperingkat setelah seluruh aturan berprioritas sama, sebab `id`-nya akan terbesar — `RE-04`), dengan evaluator dan pemilih yang sama (`SDD-APR-10`). Respons: aturan terpilih (atau bawaan `RE-06`), seluruh yang cocok + prioritas, dan langkah yang akan terbentuk; bila `pemohon_id` diisi, langkah yang akan dilewati (`RE-10`/`RE-13`, `SDD-APR-16`) dan fallback (`RE-11`) ikut ditunjukkan. Tanpa efek samping — tidak menulis apa pun |
+
+**Validasi saat simpan** (`SDD-APR-02`, `RE-08`) dua lapis, seluruh pelanggaran dikembalikan sekaligus sebagai `422 INVALID_RULE_DEFINITION`: struktur (Zod — `order` 1..n berurutan unik, `sla_hours ≥ 1`, `escalate` wajib `escalate_to_user_id`, `terminal` hanya `hold_and_alert`/`auto_reject`) lalu makna (kondisi D.2/D.3 lewat `validateCondition`; kode role ada; pengguna langkah/eskalasi/fallback ada, `AKTIF`, dan memegang `approval.decide`). Draf pratinjau divalidasi sama.
+
 ### 4.6 Indeks pendukung
 
 ```sql
