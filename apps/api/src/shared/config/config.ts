@@ -142,6 +142,32 @@ function periksaKunciTotp(env: NodeJS.ProcessEnv): { masalah: string[]; kotak?: 
     }
 }
 
+/** Kredensial service account FCM yang sudah tervalidasi (`FCM_CREDENTIALS`, SDD-08 §4.4a). */
+export interface KredensialFcm {
+    readonly projectId: string;
+    readonly clientEmail: string;
+    readonly privateKey: string;
+}
+
+/**
+ * `FCM_CREDENTIALS` OPSIONAL (keputusan 80a): JSON service account ber-base64. Tanpa itu push
+ * dilewati dan /health melaporkan `fcm` tidak dikonfigurasi — tanpa memengaruhi `ready` (OBS-06).
+ * Galat hanya menyebut NAMA variabel, tidak pernah isinya.
+ */
+function periksaKredensialFcm(env: NodeJS.ProcessEnv): { masalah: string[]; kredensial?: KredensialFcm } {
+    if (kosong(env["FCM_CREDENTIALS"])) return { masalah: [] };
+    try {
+        const j = JSON.parse(Buffer.from(env["FCM_CREDENTIALS"]!.trim(), "base64").toString("utf8")) as Record<string, unknown>;
+        const { project_id: projectId, client_email: clientEmail, private_key: privateKey } = j;
+        if (typeof projectId !== "string" || typeof clientEmail !== "string" || typeof privateKey !== "string" || projectId === "" || clientEmail === "" || privateKey === "") {
+            return { masalah: [pesan("FCM_CREDENTIALS", "tidak sah: wajib memuat project_id, client_email, private_key")] };
+        }
+        return { masalah: [], kredensial: { projectId, clientEmail, privateKey } };
+    } catch {
+        return { masalah: [pesan("FCM_CREDENTIALS", "tidak sah: bukan JSON ber-base64")] };
+    }
+}
+
 /** Memeriksa PEM dan pasangannya; galatnya menyebut NAMA variabel saja, tidak pernah isinya. */
 function periksaKunciJwt(env: NodeJS.ProcessEnv): { masalah: string[]; kunci?: JwtKeys } {
     if (kosong(env["JWT_PRIVATE_KEY"]) || kosong(env["JWT_PUBLIC_KEY"])) return { masalah: [] };
@@ -235,6 +261,8 @@ export function readProcessConfig(
 }
 
 export interface ApiConfig extends ProcessConfig {
+    /** `null` = push tidak dikonfigurasi (keputusan 80a). */
+    readonly fcm: KredensialFcm | null;
     readonly objectStoragePublicOrigin: string;
     /** Pasangan kunci Ed25519 penandatangan access token; sudah tervalidasi. */
     readonly jwtKeys: JwtKeys;
@@ -243,6 +271,8 @@ export interface ApiConfig extends ProcessConfig {
 }
 
 export interface WorkerConfig extends ProcessConfig {
+    /** `null` = push tidak dikonfigurasi (keputusan 80a). */
+    readonly fcm: KredensialFcm | null;
     /** Kotak enkripsi secret TOTP (`TOTP_ENCRYPTION_KEY`); sudah tervalidasi. */
     readonly totpKey: KotakRahasia;
 }
@@ -260,6 +290,7 @@ export function readWorkerConfig(
     zona: string = zonaProses(),
 ): WorkerConfig {
     const totp = periksaKunciTotp(env);
+    const fcm = periksaKredensialFcm(env);
     const d = urai(
         z.object({
             ...bentukDatabase,
@@ -269,7 +300,7 @@ export function readWorkerConfig(
             ...bentukTotp,
         }),
         env,
-        [...periksaZona(zona), ...totp.masalah],
+        [...periksaZona(zona), ...totp.masalah, ...fcm.masalah],
     );
     return {
         database: {
@@ -280,6 +311,7 @@ export function readWorkerConfig(
         logLevel: d.LOG_LEVEL,
         // `periksaKunciTotp` hanya diam bila variabelnya sah.
         totpKey: totp.kotak!,
+        fcm: fcm.kredensial ?? null,
     };
 }
 
@@ -290,6 +322,7 @@ export function readApiConfig(
 ): ApiConfig {
     const jwt = periksaKunciJwt(env);
     const totp = periksaKunciTotp(env);
+    const fcm = periksaKredensialFcm(env);
     const d = urai(
         z.object({
             ...bentukDatabase,
@@ -301,7 +334,7 @@ export function readApiConfig(
             ...bentukTotp,
         }),
         env,
-        [...periksaZona(zona), ...jwt.masalah, ...totp.masalah],
+        [...periksaZona(zona), ...jwt.masalah, ...totp.masalah, ...fcm.masalah],
     );
     return {
         database: {
@@ -315,5 +348,6 @@ export function readApiConfig(
         jwtKeys: jwt.kunci!,
         // Sama: `periksaKunciTotp` hanya diam bila variabelnya sah.
         totpKey: totp.kotak!,
+        fcm: fcm.kredensial ?? null,
     };
 }
