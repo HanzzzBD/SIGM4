@@ -111,6 +111,7 @@ Data acuan bernilai tetap yang digunakan sebagai enumerasi dan dropdown.
 | **Status Slot Pemesanan** | Tentative, Confirmed, Active, Released |
 | **Jenis Pengajuan (Approval)** | Reservasi Ruangan, Reservasi Aset, Perpanjangan Peminjaman, Pengadaan Barang, Penghapusan Aset, Permintaan Bahan |
 | **Kanal Notifikasi** | In-App, Push |
+| **Kelompok Notifikasi** | Persetujuan, Reservasi & Peminjaman, Denda & Kewajiban, Kerusakan & Perawatan, Opname & Pengadaan, Akun & Sistem |
 | **Prioritas** | Rendah, Sedang, Tinggi, Mendesak |
 | **Jenis Hari Libur** | Nasional, Sekolah, Cuti Bersama |
 | **Hasil Aktivitas** | Sukses, Gagal |

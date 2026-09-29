@@ -79,6 +79,7 @@ export const NAMA_TIPE: ReadonlyMap<string, string> = new Map([
     ["Tindak Lanjut Fisik Penghapusan", "disposal_physical_action"],
     ["Status Slot Pemesanan", "booking_status"],
     ["Status Instance Approval", "approval_instance_status"],
+    ["Kelompok Notifikasi", "notification_group"],
     ["Jenis Pengajuan (Approval)", "approval_request_type"],
     ["Kanal Notifikasi", "notification_channel"],
     ["Prioritas", "priority_level"],

@@ -29,3 +29,11 @@ export type { ApprovalSlaBreachedPayload } from "./schemas/sla-event.schema.js";
 export { ApprovalSlaBreachedPayloadSchema, NOTIFIKASI_TINDAKAN_SLA } from "./schemas/sla-event.schema.js";
 export type { InstanceBaru, PengajuanBaru, SnapshotAturan } from "./services/approval.service.js";
 export { ApprovalService } from "./services/approval.service.js";
+export type { PenyediaRincian, RincianPengajuan, SumberNotifikasiApproval } from "./services/notification-sources.js";
+export {
+    RegistriPenyediaRincian,
+    catatanLangkah,
+    pemutusLangkah,
+    penyediaRincian,
+    sumberNotifikasiApproval,
+} from "./services/notification-sources.js";
