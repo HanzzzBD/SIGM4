@@ -123,6 +123,9 @@ import {
 import type { HubSse } from "../modules/m17-notifications/index.js";
 import {
     buatHubSse,
+    deleteDeviceTokenRoute,
+    fcmCheck,
+    registerDeviceTokenRoute,
     listNotificationsRoute,
     markAllReadRoute,
     markReadRoute,
@@ -234,6 +237,8 @@ export const registry = new RouteRegistry().register(
     streamNotificationsRoute,
     markAllReadRoute,
     markReadRoute,
+    registerDeviceTokenRoute,
+    deleteDeviceTokenRoute,
     listActivityLogsRoute,
     exportActivityLogsRoute,
     getSettingsRoute,
@@ -508,6 +513,8 @@ export async function start(
     const health = new HealthRegistry().register(
         databaseCheck(getDb()),
         redisCheck(getRedis()),
+        // OBS-06: dilaporkan, tidak menentukan `ready` (SDD-15 §4.5, keputusan 80a).
+        fcmCheck(config.fcm),
     );
     const logger = new Logger({
         clock,

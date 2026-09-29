@@ -11,7 +11,7 @@
 |---|---|---|---|---|
 | DELETE | `/asset-categories/{id}` | `category.manage` | Hapus kategori yang tidak dipakai | [M-04](../02-modules/m04-assets.md) |
 | DELETE | `/auth/sessions/{id}` | Bearer | Mencabut satu sesi milik pengguna sendiri | 204 | 400, 401, 403 | [M-01](../02-modules/m01-auth.md) |
-| DELETE | `/device-tokens/{token}` | Bearer | Cabut token perangkat | [M-17](../02-modules/m17-notifications.md) |
+| DELETE | `/device-tokens/{token}` | `notification.manage_own` | Cabut token perangkat | [M-17](../02-modules/m17-notifications.md) |
 | DELETE | `/holidays/{id}` | `setting.manage` | Hapus hari libur | [M-20](../02-modules/m20-settings.md) |
 | GET | `/academic-years` | `setting.view` | Daftar tahun ajaran beserta semesternya (Lampiran E.2) | [M-20](../02-modules/m20-settings.md) |
 | GET | `/activity-logs/export` | `activity_log.export` | Ekspor log | [M-18](../02-modules/m18-activity-log.md) |
@@ -124,7 +124,7 @@
 | POST | `/class-promotions` | `user.update` | Kenaikan kelas massal: tetapkan kelas atau tandai lulus per siswa pada satu tahun ajaran (`SL-02`) | [M-02](../02-modules/m02-users.md) |
 | POST | `/damage-reports/{id}/verify` | `damage.verify` | Verifikasi / tolak tiket | [M-11](../02-modules/m11-damage-reports.md) |
 | POST | `/damage-reports` | `damage.create` | Buat tiket kerusakan | [M-11](../02-modules/m11-damage-reports.md) |
-| POST | `/device-tokens` | Bearer | Daftarkan token perangkat FCM | [M-17](../02-modules/m17-notifications.md) |
+| POST | `/device-tokens` | `notification.manage_own` | Daftarkan token perangkat FCM | [M-17](../02-modules/m17-notifications.md) |
 | POST | `/files/confirm` | Bearer | Daftarkan berkas terunggah & antrekan pemindaian AV | [M-06](../02-modules/m06-documents.md) |
 | POST | `/files/presign` | Bearer | Minta URL unggah bertanda tangan ke object storage | [M-06](../02-modules/m06-documents.md) |
 | POST | `/holidays` | `setting.manage` | Tambah hari libur | [M-20](../02-modules/m20-settings.md) |

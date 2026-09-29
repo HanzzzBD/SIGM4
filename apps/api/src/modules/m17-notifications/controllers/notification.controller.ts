@@ -3,8 +3,9 @@
 
 import { randomUUID } from "node:crypto";
 import type { RequestHandler } from "express";
-import { requireAuthContext } from "../../../shared/auth/index.js";
-import { ListNotificationsQuerySchema, NotificationIdParamSchema } from "../schemas/notification.schema.js";
+import { getSesiId, requireAuthContext } from "../../../shared/auth/index.js";
+import { DeviceTokenParamSchema, ListNotificationsQuerySchema, NotificationIdParamSchema, RegisterDeviceTokenBodySchema } from "../schemas/notification.schema.js";
+import type { DeviceTokenService } from "../services/device-token.service.js";
 import type { HubSse } from "../services/fanout.js";
 import { RETRY_MS } from "../services/fanout.js";
 import type { InboxService } from "../services/inbox.service.js";
@@ -33,6 +34,25 @@ export function markReadHandler(service: InboxService): RequestHandler {
 export function markAllReadHandler(service: InboxService): RequestHandler {
     return async (_req, res) => {
         res.status(200).json({ success: true, data: await service.tandaiSemua(requireAuthContext(res)), meta: null });
+    };
+}
+
+/** FR-17.2 langkah 1 — keluarga sesi dari klaim `sid`, tidak pernah dari klien (MOB-SEC-05). */
+export function registerDeviceTokenHandler(service: DeviceTokenService): RequestHandler {
+    return async (req, res) => {
+        const ctx = requireAuthContext(res);
+        const b = RegisterDeviceTokenBodySchema.parse(req.body);
+        res.status(201).json({ success: true, data: await service.daftarkan(ctx, getSesiId(res), b.token, b.platform), meta: null });
+    };
+}
+
+/** Pencabutan eksplisit oleh aplikasi (mis. izin notifikasi dicabut); logout mencabut lewat SessionRevoked. */
+export function deleteDeviceTokenHandler(service: DeviceTokenService): RequestHandler {
+    return async (req, res) => {
+        const ctx = requireAuthContext(res);
+        const { token } = DeviceTokenParamSchema.parse(req.params);
+        await service.cabut(ctx, token);
+        res.status(204).end();
     };
 }
 

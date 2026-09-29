@@ -49,6 +49,20 @@ export const MarkAllReadResponseSchema = z.object({
     meta: z.null(),
 });
 
+/** FR-17.2 langkah 1: FID perangkat (keputusan 80e) — hanya platform mobile. */
+export const RegisterDeviceTokenBodySchema = z.strictObject({
+    token: z.string().trim().min(1).max(512),
+    platform: z.enum(["ANDROID", "IOS"]),
+});
+
+export const DeviceTokenParamSchema = z.object({ token: z.string().min(1).max(512) });
+
+export const RegisterDeviceTokenResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.object({ token: z.string(), platform: z.enum(["ANDROID", "IOS"]), terakhir_aktif: z.string() }),
+    meta: z.null(),
+});
+
 /** `text/event-stream` — badan bukan JSON; skema ini mendokumentasikan isi tiap `data:` (SDD-08 §4.3a). */
 export const StreamEventSchema = z.union([
     z.object({ jenis: z.literal("notifikasi"), notifikasi: z.object({ id: z.number(), kode: z.string(), judul: z.string(), isi: z.string(), deep_link: z.string().nullable(), created_at: z.string() }), unread_count: z.number() }),

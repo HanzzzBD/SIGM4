@@ -158,6 +158,18 @@ Klien menangani `Last-Event-ID` dengan memuat ulang daftar notifikasi lewat `GET
 
 Payload push tidak memuat nilai finansial maupun identitas pengguna lain — konsisten dengan `BR-073` karena notifikasi tampil di layar terkunci.
 
+### 4.4a Pelaksanaan push (`PR-02-27`, keputusan 80)
+
+| Aspek | Ketentuan |
+|---|---|
+| Pemicu | Konsumen §4.2a, **setelah commit**, memasukkan job BullMQ `notification-push` per notifikasi baru (`jobId` = id notifikasi → tidak ganda) — kegagalan FCM tidak menahan antrean event outbox |
+| Percobaan ulang | 3× *exponential backoff* bawaan antrean (`JOB-06`, `FR-17.2 A3`); percobaan terakhir yang gagal mencatat `GAGAL` |
+| Pencatatan | `notification_deliveries` kanal `PUSH`, status Bab 11.3 "Status Pengiriman Notifikasi": `MENUNGGU` saat galat sementara akan diulang, `TERKIRIM` bila ≥ 1 perangkat menerima, `DILEWATI` bila pengguna tanpa token aktif, FCM tak dikonfigurasi, atau seluruh token mati, `GAGAL` setelah percobaan habis; `attempts` tidak pernah mundur. Kanal `IN_APP` tidak dicatat — siaran SSE *best-effort*, kebenarannya baris `notifications` |
+| Token | `device_tokens.token` unik; didaftarkan ulang dari sesi lain → dipindah ke pengguna & keluarga sesi terbaru. `family_id` = keluarga refresh token sesi pendaftar (klaim `sid`); konsumen `SessionRevoked` menghapus token keluarga itu (`MOB-SEC-05`) |
+| Target | **Firebase Installation ID (FID)** — `sendEachForMulticast({ fids })`; jalur registration token deprecated di `firebase-admin` 14 (keputusan 80e). Kolom `device_tokens.token` (istilah PRD "token perangkat") menyimpan FID; FID mati = `messaging/installation-id-not-registered` → dihapus (`FR-17.2 A2`) |
+| Pustaka | `firebase-admin` (`sendEachForMulticast`); `FCM_CREDENTIALS` = JSON service account ber-base64 di skema config API & worker, **opsional** — tanpa itu push dilewati dan pemeriksaan `fcm` di `/health` melaporkan tidak dikonfigurasi tanpa memengaruhi `ready` (`OBS-06`) |
+| Preferensi | `SDD-NTF-06` diperiksa saat kirim sejak `PR-02-28`; sebelum itu seluruh notifikasi dikirim (ketiadaan baris = aktif) |
+
 ### 4.5 Preferensi
 
 ```sql

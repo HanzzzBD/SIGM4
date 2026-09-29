@@ -1,5 +1,5 @@
 // Permukaan publik shared/db (SDD-SYS-06): koneksi, transaksi, tipe repository.
-export type { Database, KelompokNotifikasi } from "./schema.js";
+export type { Database, KelompokNotifikasi, StatusPengiriman } from "./schema.js";
 export type { DatabaseConfig } from "./connection.js";
 export { closeDb, createDb, getDb, readDatabaseConfig } from "./connection.js";
 export { OPSI_SESI_UTC, assertDatabaseTimeZoneUtc } from "./timezone.js";
