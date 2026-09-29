@@ -14,3 +14,5 @@ export {
     moveAssetsRoute,
     updateAssetConditionRoute,
 } from "./routes.js";
+export type { RingkasanAset } from "./services/dashboard-source.js";
+export { ringkasanAset } from "./services/dashboard-source.js";

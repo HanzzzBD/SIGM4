@@ -21,3 +21,5 @@ export {
     updateWorkUnitRoute,
     updateWorkUnitStatusRoute,
 } from "./routes.js";
+export type { Periode } from "./services/dashboard-source.js";
+export { kelengkapanKonfigurasi, periodeAkademikAktif } from "./services/dashboard-source.js";
