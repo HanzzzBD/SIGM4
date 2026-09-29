@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **154** baris, dikumpulkan dari 22 berkas modul.
+> Total: **156** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -71,6 +71,7 @@
 | GET | `/work-orders/mine` | `workorder.execute` | Work order yang ditugaskan kepada saya | [M-12](../02-modules/m12-maintenance.md) |
 | GET | `/work-units` | `setting.view` | Daftar unit kerja (filter jenis, status) — Lampiran E.3 | [M-20](../02-modules/m20-settings.md) |
 | PATCH | `/academic-years/{id}/activate` | `setting.manage` | Jadikan tahun ajaran aktif; tepat satu yang aktif (`AC-YR-02`) | [M-20](../02-modules/m20-settings.md) |
+| PATCH | `/approval-rules/{id}/status` | `approval_rule.manage` | Aktifkan / nonaktifkan aturan (FR-10.1 A4) | [M-10](../02-modules/m10-approval.md) |
 | PATCH | `/assets/{id}/condition` | `asset.update` | Ubah kondisi + alasan | [M-04](../02-modules/m04-assets.md) |
 | PATCH | `/buildings/{id}/status` · `/rooms/{id}/status` | `location.manage` | Aktifkan/nonaktifkan berjenjang (`BR-015`) | [M-03](../02-modules/m03-locations.md) |
 | PATCH | `/fines/{id}/pay` | `fine.manage` | Tandai lunas | [M-09](../02-modules/m09-loans.md) |
@@ -152,6 +153,7 @@
 | POST | `/work-orders` | `workorder.create` | Buat work order | [M-12](../02-modules/m12-maintenance.md) |
 | POST | `/work-units` | `setting.manage` | Buat unit kerja | [M-20](../02-modules/m20-settings.md) |
 | PUT | `/academic-years/{id}` | `setting.manage` | Sunting nama, rentang tanggal, dan semester tahun ajaran | [M-20](../02-modules/m20-settings.md) |
+| PUT | `/approval-rules/{id}` | `approval_rule.manage` | Ganti definisi aturan utuh; `versi` naik, instance berjalan tetap memakai snapshot (FR-10.1 A4, BR-040) | [M-10](../02-modules/m10-approval.md) |
 | PUT | `/asset-categories/{id}` | `category.manage` | Perbarui kategori | [M-04](../02-modules/m04-assets.md) |
 | PUT | `/assets/{id}` | `asset.update` | Perbarui aset | [M-04](../02-modules/m04-assets.md) |
 | PUT | `/holidays/{id}` | `setting.manage` | Sunting hari libur | [M-20](../02-modules/m20-settings.md) |
