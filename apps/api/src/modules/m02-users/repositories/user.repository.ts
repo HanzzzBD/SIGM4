@@ -120,6 +120,25 @@ export class UserRepository extends BaseRepository {
         return baris?.kode;
     }
 
+    /** Pengguna AKTIF pemegang salah satu kode role — penerima notifikasi berbasis role (keputusan 78). */
+    async idAktifBerperan(ctx: AuthContext, kodeRole: readonly string[]): Promise<readonly number[]> {
+        if (kodeRole.length === 0) return [];
+        const baris = await this.query(ctx)
+            .selectFrom("users as u")
+            .innerJoin("roles as r", "r.id", "u.role_id")
+            .select("u.id")
+            .where("u.status", "=", "AKTIF")
+            .where("r.kode", "in", kodeRole)
+            .orderBy("u.id")
+            .execute();
+        return baris.map((b) => Number(b.id));
+    }
+
+    async namaRoleByKode(ctx: AuthContext, kode: string): Promise<string | undefined> {
+        const baris = await this.query(ctx).selectFrom("roles").select("nama").where("kode", "=", kode).executeTakeFirst();
+        return baris?.nama;
+    }
+
     /** Kode sebuah role menurut `role_id` — dipakai gerbang persetujuan wali (DP-02). */
     async findRoleKodeById(ctx: AuthContext, roleId: number): Promise<string | undefined> {
         const baris = await this.query(ctx)

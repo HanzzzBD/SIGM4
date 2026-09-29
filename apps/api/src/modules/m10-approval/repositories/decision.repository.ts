@@ -107,6 +107,17 @@ export class DecisionRepository extends BaseRepository {
         return hasil.numUpdatedRows === 1n;
     }
 
+    /** Catatan keputusan sebuah langkah — isi `{alasan}`/`{catatan}` NT-03/NT-04 (keputusan 78). */
+    async catatan(ctx: AuthContext, instanceId: number, urutan: number): Promise<string | null> {
+        const b = await this.query(ctx)
+            .selectFrom("approval_steps")
+            .select("catatan")
+            .where("instance_id", "=", String(instanceId))
+            .where("urutan", "=", urutan)
+            .executeTakeFirst();
+        return b?.catatan ?? null;
+    }
+
     /** RE-09: identitas & waktu pemutus manusia langkah itu; `undefined` bila tidak ada. */
     async pemutus(ctx: AuthContext, instanceId: number, urutan: number): Promise<{ nama: string; pada: Date } | undefined> {
         const b = await this.query(ctx)

@@ -1,6 +1,6 @@
 // UserService (FR-02.1). Batas transaksi SDD-07: tulis + AuditLogger.write()
-// sinkron di dalam satu transaksi (SDD-EVT-02, AL-01) — tidak ada outbox di sini,
-// sebab tidak ada efek yang boleh tertunda pada CRUD pengguna itu sendiri.
+// sinkron di dalam satu transaksi (SDD-EVT-02, AL-01). Efek tertunda satu-satunya —
+// notifikasi `NT-40`/`NT-48` — lewat outbox (SDD-EVT-03, keputusan 78).
 
 import type { Kysely } from "kysely";
 import type { AuthContext } from "../../../shared/auth/index.js";
@@ -10,6 +10,7 @@ import { SystemClock } from "../../../shared/clock/index.js";
 import type { Database } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
 import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
+import { publish } from "../../../shared/events/index.js";
 import { generateTemporaryPassword, hashPassword } from "../../../shared/security/index.js";
 import type {
     ListUsersFilter,
@@ -23,6 +24,7 @@ import {
 import { KODE_ROLE_SISWA } from "../repositories/student-enrollment.repository.js";
 import type { StudentObligationRegistry } from "./student-obligation-registry.js";
 import { studentObligations } from "./student-obligation-registry.js";
+import { EVENT_AKUN_BERUBAH, EVENT_KONSEN_WALI_HILANG } from "./notification-sources.js";
 
 const MODUL = "m02-users";
 
@@ -114,7 +116,7 @@ export class UserService {
 
     /** FR-02.1 langkah 1-5: akun lahir `AKTIF` berpassword sementara (BR-067). */
     async create(ctx: AuthContext, input: CreateUserInput): Promise<CreatedUser> {
-        return withTransaction(
+        return this.laporTolakanWali(ctx, null, input.nama, () => withTransaction(
             ctx,
             async (scope) => {
                 const repo = createUserRepository(scope.tx);
@@ -164,7 +166,7 @@ export class UserService {
                 return { user, passwordSementara };
             },
             this.db,
-        );
+        ));
     }
 
     /** FR-02.1 langkah 6. */
@@ -173,7 +175,7 @@ export class UserService {
         id: number,
         input: UpdateUserInput,
     ): Promise<UserRow> {
-        return withTransaction(
+        return this.laporTolakanWali(ctx, id, input.nama, () => withTransaction(
             ctx,
             async (scope) => {
                 const repo = createUserRepository(scope.tx);
@@ -226,11 +228,20 @@ export class UserService {
                     nilaiSebelum: before,
                     nilaiSesudah: after,
                 });
+                // NT-40: hanya bila role benar-benar berubah (SDD-07 §4.3).
+                if (after.role_id !== before.role_id) {
+                    await publish(scope, {
+                        name: EVENT_AKUN_BERUBAH,
+                        aggregateType: "user",
+                        aggregateId: id,
+                        payload: { user_id: id, role_baru: (await repo.findRoleKodeById(scope.ctx, input.roleId)) ?? null, status_baru: null },
+                    });
+                }
 
                 return after;
             },
             this.db,
-        );
+        ));
     }
 
     /** FR-02.1 langkah 7, BR-067 (soft delete), BR-068 + BR-070a (admin terakhir). */
@@ -239,7 +250,7 @@ export class UserService {
         id: number,
         input: UpdateStatusInput,
     ): Promise<UserRow> {
-        return withTransaction(
+        return this.laporTolakanWali(ctx, id, null, () => withTransaction(
             ctx,
             async (scope) => {
                 const repo = createUserRepository(scope.tx);
@@ -300,10 +311,41 @@ export class UserService {
                     nilaiSesudah: after,
                     ...(input.alasan === undefined ? {} : { keterangan: input.alasan }),
                 });
+                // NT-40: status berubah (SDD-07 §4.3).
+                if (after.status !== before.status) {
+                    await publish(scope, {
+                        name: EVENT_AKUN_BERUBAH,
+                        aggregateType: "user",
+                        aggregateId: id,
+                        payload: { user_id: id, role_baru: null, status_baru: after.status },
+                    });
+                }
 
                 return after;
             },
             this.db,
-        );
+        ));
+    }
+
+    /**
+     * NT-48 (DP-02, SDD-07 §4.3): penolakan me-rollback transaksinya — termasuk outbox —
+     * jadi alarmnya terbit pada transaksi TERPISAH sesudahnya, lalu galat dilempar ulang.
+     */
+    private async laporTolakanWali<T>(ctx: AuthContext, userId: number | null, nama: string | null, kerja: () => Promise<T>): Promise<T> {
+        try {
+            return await kerja();
+        } catch (galat) {
+            if (galat instanceof DomainError && galat.detail?.["rule"] === "DP-02") {
+                await withTransaction(
+                    ctx,
+                    async (scope) => {
+                        const n = nama ?? (userId === null ? null : ((await createUserRepository(scope.tx).findById(scope.ctx, userId))?.nama ?? null));
+                        await publish(scope, { name: EVENT_KONSEN_WALI_HILANG, aggregateType: "user", aggregateId: userId ?? 0, payload: { user_id: userId, nama: n } });
+                    },
+                    this.db,
+                );
+            }
+            throw galat;
+        }
     }
 }

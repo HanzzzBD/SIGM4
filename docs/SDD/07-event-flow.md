@@ -157,6 +157,8 @@ Konsekuensinya, event yang gagal **menahan** event sesudahnya pada agregat yang 
 | `ExportRequested` | M-16 | Pembuatan berkas, notifikasi `NT-42` |
 | `UserImportRequested` | M-02 | Memasukkan pekerjaan `user-import` ke antrean (`IMPT-04`) |
 | `UserImportCompleted` | M-02 (job) | Notifikasi `NT-52` |
+| `UserAccountChanged` | M-02 | Notifikasi `NT-40` ke pengguna terkait; payload `user_id`, `role_baru` (kode) \| null, `status_baru` \| null — hanya bila role atau status benar-benar berubah; agregat `user` (keputusan 78) |
+| `GuardianConsentMissing` | M-02 | Notifikasi `NT-48` ke Administrator; diterbitkan pada transaksi **terpisah** setelah penolakan `DP-02` di-rollback (`SDD-EVT-04`); payload `user_id` \| null, `nama`; agregat `user` (keputusan 78) |
 | `AccountLocked` | M-01 | Notifikasi `NT-39` (pemilik akun + Administrator); payload `user_id`, `terkunci_sampai`; agregat `user` |
 | `TwoFactorEnabled` | M-01 | Notifikasi `NT-39a` (Administrator); payload `user_id`, `sesi_dicabut`; agregat `user`. Terbit dalam transaksi `enroll/confirm` (`BR-070e`, `SDD-SESS-17`) |
 | `PasswordResetRequested` | M-01 | Notifikasi `NT-37` (Administrator, in-app + push); payload `permintaan_id`, `user_id`; agregat `user` |

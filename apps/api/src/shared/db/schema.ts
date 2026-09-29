@@ -622,6 +622,27 @@ export interface ApprovalDelegationsTable extends KolomBaku {
 }
 
 /** Peta nama tabel -> bentuk barisnya. Diisi bersama migration pemiliknya. */
+/** SDD-08 §4.5 (UXD-05): kelompok preferensi notifikasi. */
+export type KelompokNotifikasi = "PERSETUJUAN" | "RESERVASI_PEMINJAMAN" | "DENDA_KEWAJIBAN" | "KERUSAKAN_PERAWATAN" | "OPNAME_PENGADAAN" | "AKUN_SISTEM";
+
+/** Notifikasi pengguna (0034, PR-02-25; SDD-08 §4.1). Arsip berskema identik (§4.6). */
+export interface NotificationsTable {
+    id: Generated<string>;
+    user_id: ColumnType<string, string | number, string | number>;
+    kode: string;
+    jenis: KelompokNotifikasi;
+    judul: string;
+    isi: string;
+    params: ColumnType<unknown, string | undefined, string>;
+    referensi_jenis: string | null;
+    referensi_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    deep_link: string | null;
+    wajib: Generated<boolean>;
+    dibaca_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    created_at: ColumnType<Date, Date, Date>;
+    dedupe_key: string | null;
+}
+
 export interface Database {
     document_counters: DocumentCountersTable;
     work_days: WorkDaysTable;
@@ -657,4 +678,6 @@ export interface Database {
     approval_instances: ApprovalInstancesTable;
     approval_steps: ApprovalStepsTable;
     approval_delegations: ApprovalDelegationsTable;
+    notifications: NotificationsTable;
+    notifications_archive: NotificationsTable;
 }

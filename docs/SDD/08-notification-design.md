@@ -106,6 +106,17 @@ worker: outbox dispatcher menerima event  →  NotificationService.emit(kode, ta
    5. catat notification_deliveries
 ```
 
+### 4.2a Konsumen penerbit (`PR-02-25`, keputusan 78)
+
+| Aspek | Ketentuan |
+|---|---|
+| Tempat | Handler outbox di **worker**, satu per event, didaftarkan ke `EventHandlerRegistry`; pelaku `SYSTEM` (`SystemAuthContext`). Tiap handler menulis dalam transaksinya sendiri — notifikasi lahir hanya dari event yang sudah commit (`SDD-EVT-04`) |
+| Idempotensi | `dedupe_key` kejadian tunggal = `{kode}:{user_id}:evt:{event_id}` (§4.1); handler yang diulang dispatcher (*at-least-once*, `SDD-EVT-07`) tidak menambah baris |
+| Penerima | Dihitung **modul pemilik** lewat fungsi baca di `index.ts`-nya, dipanggil konsumen setelah commit — mis. M-10 `penerimaNotifikasi` memakai aturan pemutus sah `SDD-APR-16` yang sama dengan kotak masuk; M-17 tidak mengimpor internal modul lain (`SDD-SYS-03`) |
+| Rincian pengajuan | `{nomor}`/`{objek}`/`{tanggal}`/`deep_link` notifikasi approval disediakan registri `penyediaRincian` per jenis pengajuan (m10, pola `penanganHasil`); jenis tanpa penyedia dirender generik `"{jenis} #{referensi_id}"` dengan `deep_link` ke linimasa (`FR-10.3`) |
+| Templat | Konstanta per kode `NT-xx` (`SDD-NTF-04`) memuat `jenis` (§4.5), `wajib`, `judul`, dan fungsi render; kode yang dipakai konsumen tetapi tanpa templat gagal saat worker menyala |
+| Di luar `PR-02-25` | Kanal SSE + daftar/tandai baca + arsip harian → `PR-02-26`; FCM + `device_tokens` + konsumen `SessionRevoked` → `PR-02-27`; preferensi → `PR-02-28`; konsumen M-01 (`NT-37`/`38`/`38a`/`39`/`39a`/`53`) + notifikasi pemakaian ulang refresh token → `PR-02-35` |
+
 ### 4.3 SSE
 
 ```
@@ -173,7 +184,7 @@ Seluruh **52** kode `NT-xx` terpetakan; tidak boleh ada kode tanpa kelompok, seb
 
 Templat `SDD-NTF-04` membawa `jenis` sebagai bagian definisi tiap kode `NT-xx`, sehingga pemetaan di atas hidup di kode bersama templatnya — bukan sebagai tabel terpisah yang dapat menyimpang.
 
-> **Catatan lapisan.** Daftar kelompok ini bersifat kebijakan produk dan idealnya bermukim di PRD `M-17`. Selama belum dinaikkan ke sana, berkas inilah pemiliknya; bila kemudian ditambahkan ke `m17-notifications.md`, baris di atas wajib diganti rujukan ID.
+> **Catatan lapisan.** Daftar enam kelompok kini dimiliki PRD Bab 11.3 "Kelompok Notifikasi" (`data-model.md`, keputusan 78 log phase-02); tabel di atas hanya memetakan kode `NT-xx` ke kelompok.
 
 ### 4.6 Arsip
 

@@ -42,6 +42,8 @@ import {
     UserService,
     idJobAntreanImpor,
 } from "../modules/m02-users/index.js";
+import { pasangKonsumenNotifikasi } from "../modules/m17-notifications/index.js";
+import { createSystemAuthContext } from "../shared/auth/system-context.js";
 import type { Queue } from "bullmq";
 import { createHealthServer } from "./health-server.js";
 import { CRON_SLA, PEKERJAAN_SLA, jalankanPemeriksaanSla } from "./approval-sla-check.js";
@@ -163,6 +165,11 @@ export function pasangHandlerAntrean(handlers: EventHandlerRegistry, queue: Queu
  * `SDD-07 §4.3` menempatkan hampir seluruhnya pada notifikasi (Phase 02+).
  */
 export const eventHandlers = new EventHandlerRegistry();
+
+// SDD-08 §4.2a (keputusan 78): konsumen penerbit notifikasi, pelaku SYSTEM (SDD-03 §5).
+// Dipasang saat modul dimuat — koneksi basis data baru dibuka saat event diproses.
+const pelakuNotifikasi = createSystemAuthContext("outbox-notifikasi");
+pasangKonsumenNotifikasi(eventHandlers, { db: getDb, clock: new SystemClock(), ctx: () => pelakuNotifikasi });
 
 /**
  * Menyalakan worker: memasang seluruh jadwal lalu mulai memungut pekerjaan.
