@@ -303,6 +303,7 @@ Hal yang sengaja ditinggalkan terbuka, beserta di mana ia akan ditutup.
 | Ringkasan `JOB-05` (`SCHEDULED_JOB_EXECUTED`) bagi job infrastruktur `activity-log-partition` dan `activity-log-verify` | **Belum ada PR pemilik** | Keputusan 72: pembungkus `jalankanPekerjaanSistem` lahir di `PR-02-32`; membungkus job lama di luar scope. |
 | Penangan hasil yang melepas slot saat `auto_reject` — registri proses sudah dibaca API dan worker (keputusan 75a) | **`PR-03-10`** (`RESERVASI_RUANGAN`) · **`PR-04-02`** (`RESERVASI_ASET`) — acceptance eksplisit | Tabel `reservations` dan pengaju belum ada; belum ada slot yang dapat tertinggal. |
 | **[SELESAI — `PR-02-25`, keputusan 78]** Konsumen `ApprovalSlaBreached` (`NT-06`/`NT-07`/`NT-47`) dan `ApprovalFallbackRouted`, `dedupe_key` kejadian tunggal | **`PR-02-25`** — tugas & acceptance eksplisit (keputusan 75b/c) | Tabel `notifications` milik `PR-02-25`; kontrak payload sudah dibekukan & diuji di `PR-02-22`. |
+| `NT-48` dari impor massal (baris siswa tanpa `consent_wali`, E.5.2) — `PR-02-25` hanya menerbitkan `GuardianConsentMissing` dari `UserService` (create/update/status) | **Belum ada PR pemilik** | Baris impor yang gagal sudah dilaporkan per baris (`IMPT-02`); alarm terpisah per baris belum diputuskan (keputusan 78). |
 
 ---
 
