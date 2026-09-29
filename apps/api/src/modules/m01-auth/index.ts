@@ -7,6 +7,7 @@ export type {
     PenerbitPasswordSementara,
     PengelolaDuaFaktor,
 } from "./routes.js";
+export { EVENT_SESI_DICABUT } from "./services/sesi-event.js";
 export type { PenyimpanTantangan } from "./services/tantangan-dua-faktor.js";
 export { PenyimpanTantanganRedis } from "./services/tantangan-dua-faktor.js";
 export type { HasilKodeAktivasiCli, HasilPemulihan } from "./services/break-glass.service.js";

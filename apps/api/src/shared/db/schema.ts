@@ -643,6 +643,31 @@ export interface NotificationsTable {
     dedupe_key: string | null;
 }
 
+/** Bab 11.3 "Status Pengiriman Notifikasi" (0035, keputusan 80c). */
+export type StatusPengiriman = "MENUNGGU" | "TERKIRIM" | "GAGAL" | "DILEWATI";
+
+/** Token perangkat FCM (0035, PR-02-27; MOB-SEC-05). */
+export interface DeviceTokensTable {
+    id: Generated<string>;
+    user_id: ColumnType<string, string | number, string | number>;
+    token: string;
+    platform: "ANDROID" | "IOS";
+    family_id: string;
+    terakhir_aktif: ColumnType<Date, Date, Date>;
+    created_at: ColumnType<Date, Date, Date>;
+}
+
+/** Hasil pengiriman per kanal (0035; SDD-08 §4.1/§4.4a). */
+export interface NotificationDeliveriesTable {
+    id: Generated<string>;
+    notification_id: ColumnType<string, string | number, string | number>;
+    kanal: "IN_APP" | "PUSH";
+    status: StatusPengiriman;
+    attempts: ColumnType<number, number | undefined, number>;
+    last_error: string | null;
+    sent_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+}
+
 export interface Database {
     document_counters: DocumentCountersTable;
     work_days: WorkDaysTable;
@@ -680,4 +705,6 @@ export interface Database {
     approval_delegations: ApprovalDelegationsTable;
     notifications: NotificationsTable;
     notifications_archive: NotificationsTable;
+    device_tokens: DeviceTokensTable;
+    notification_deliveries: NotificationDeliveriesTable;
 }

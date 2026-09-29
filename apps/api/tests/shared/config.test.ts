@@ -288,3 +288,29 @@ describe("entrypoint menolak menyala dengan konfigurasi tidak valid", () => {
         );
     });
 });
+
+describe("FCM_CREDENTIALS — opsional, tervalidasi saat startup (SDD-08 §4.4a, keputusan 80a)", () => {
+    const SAH_WORKER = { ...SAH, TOTP_ENCRYPTION_KEY: KUNCI_TOTP };
+    const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64");
+    const AKUN = { project_id: "sigm4-uji", client_email: "push@sigm4-uji.iam.gserviceaccount.com", private_key: "-----BEGIN PRIVATE KEY-----\nrahasia\n-----END PRIVATE KEY-----\n" };
+
+    it("tanpa variabel → fcm null (push dilewati), proses tetap menyala", () => {
+        expect(readApiConfig(SAH_API, "UTC").fcm).toBeNull();
+        expect(readWorkerConfig(SAH_WORKER, "UTC").fcm).toBeNull();
+    });
+
+    it("JSON service account ber-base64 → kredensial terurai di API dan worker", () => {
+        const harap = { projectId: "sigm4-uji", clientEmail: AKUN.client_email, privateKey: AKUN.private_key };
+        expect(readApiConfig({ ...SAH_API, FCM_CREDENTIALS: b64(AKUN) }, "UTC").fcm).toEqual(harap);
+        expect(readWorkerConfig({ ...SAH_WORKER, FCM_CREDENTIALS: b64(AKUN) }, "UTC").fcm).toEqual(harap);
+    });
+
+    it("bukan base64 JSON, atau medan wajib kosong → ditolak tanpa membocorkan isinya", () => {
+        const bukanJson = masalahDari(() => readWorkerConfig({ ...SAH_WORKER, FCM_CREDENTIALS: "rahasia-bukan-json" }, "UTC")).join("\n");
+        expect(bukanJson).toMatch(/FCM_CREDENTIALS tidak sah: bukan JSON ber-base64/);
+        expect(bukanJson).not.toContain("rahasia-bukan-json");
+        const kurang = masalahDari(() => readApiConfig({ ...SAH_API, FCM_CREDENTIALS: b64({ ...AKUN, private_key: "" }) }, "UTC")).join("\n");
+        expect(kurang).toMatch(/wajib memuat project_id, client_email, private_key/);
+        expect(kurang).not.toContain("sigm4-uji");
+    });
+});

@@ -28,6 +28,7 @@ import { UserImportService } from "../../src/modules/m02-users/services/user-imp
 import { UserService } from "../../src/modules/m02-users/services/user.service.js";
 import { AuditLogger, ensurePartitions } from "../../src/shared/audit/index.js";
 import { AMR_OTP, PermissionCache, createAuthContext, setAmr, setAuthContext } from "../../src/shared/auth/index.js";
+import { setSesiId } from "../../src/shared/auth/middleware.js";
 import { closeRedis, createRedis, readRedisConfig } from "../../src/shared/cache/index.js";
 import { FixedClock } from "../../src/shared/clock/index.js";
 import { getDb } from "../../src/shared/db/index.js";
@@ -38,6 +39,8 @@ import { dbmate, kueri } from "../helpers/db.js";
 const ADA = process.env["DATABASE_URL"] !== undefined && process.env["REDIS_URL"] !== undefined;
 const T1 = new Date("2026-09-19T03:00:00Z");
 const ID_GAIB = "999999999";
+/** Klaim `sid` sesi uji gerbang (MOB-SEC-05). */
+const SID_GERBANG = "0b0e1d2c-0000-4000-8000-000000000027";
 
 const emailUnik = () => `gerbang-${randomUUID().slice(0, 8)}@sekolah.sch.id`;
 const nipUnik = () => `NIPGERBANG${randomUUID().replace(/-/g, "").slice(0, 12)}`;
@@ -114,6 +117,8 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                         // Pengganti `authenticate` juga meniru klaim `amr`-nya: sesi uji ini sesi ber-2FA (BR-070); 2FA sendiri
                         // dibuktikan `auth-two-factor.test.ts`, bukan gerbang Phase 01.
                         setAmr(res, ["pwd", AMR_OTP]);
+                        // …dan klaim `sid`-nya: pendaftaran token perangkat mengikat keluarga sesi (MOB-SEC-05).
+                        setSesiId(res, SID_GERBANG);
                     }
                     selesai();
                 })
@@ -508,6 +513,11 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await langkah("PATCH /notifications/:id/read", `/notifications/${String(ntf?.id)}/read`, undefined, []);
                 await langkah("PATCH /notifications/read-all", "/notifications/read-all", undefined, []);
 
+                // PR-02-27: token perangkat push — M-17 §11 tanpa aksi log khusus (keputusan 80).
+                const fid = `fid-gerbang-${sfx}`;
+                await langkah("POST /device-tokens", "/device-tokens", { token: fid, platform: "ANDROID" }, []);
+                await langkah("DELETE /device-tokens/:token", `/device-tokens/${fid}`, undefined, []);
+
                 // --- M-18: dua pembacaan yang WAJIB tercatat
                 await langkah("GET /activity-logs", "/activity-logs?per_page=5", undefined, ["ACTIVITY_LOG_VIEWED"]);
                 await langkah("GET /activity-logs/export", "/activity-logs/export?filter[modul]=m20-settings", undefined, ["ACTIVITY_LOG_EXPORTED"]);
@@ -557,6 +567,7 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await kueri("DELETE FROM approval_steps");
                 await kueri("DELETE FROM approval_instances");
                 await kueri("DELETE FROM notifications"); // PR-02-26: user_id menunjuk users
+                await kueri("DELETE FROM device_tokens"); // PR-02-27: user_id menunjuk users
                 await kueri("DELETE FROM approval_rules"); // PR-02-24: created_by/updated_by menunjuk users (langkah ikut CASCADE)
                 await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'approval_instance'");
                 await kueri("DELETE FROM idempotency_keys WHERE endpoint LIKE 'POST /approvals/%'");

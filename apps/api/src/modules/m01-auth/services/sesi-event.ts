@@ -1,6 +1,6 @@
 // Event outbox pencabutan sesi (SDD-07 §4.3). Dipakai `SessionService` (logout, cabut perangkat) dan
 // `PasswordResetService` (reset administratif mencabut seluruh sesi pengguna) agar bentuk payload-nya satu.
-// Konsumennya — menonaktifkan device token FCM (`MOB-SEC-05`) — dipasang `PR-02-25`.
+// Konsumennya — mencabut token perangkat FCM keluarga sesi itu (`MOB-SEC-05`) — dipasang `PR-02-27`.
 
 import type { DomainEvent } from "../../../shared/events/index.js";
 import type { SesiDicabut } from "../repositories/session.repository.js";

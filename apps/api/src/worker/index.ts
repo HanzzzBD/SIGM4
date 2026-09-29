@@ -42,7 +42,8 @@ import {
     UserService,
     idJobAntreanImpor,
 } from "../modules/m02-users/index.js";
-import { PenyiarNotifikasi, pasangKonsumenNotifikasi } from "../modules/m17-notifications/index.js";
+import { PenyiarNotifikasi, buatPengirimPush, fcmCheck, kirimPushNotifikasi, pasangKonsumenNotifikasi } from "../modules/m17-notifications/index.js";
+import type { PengirimPush } from "../modules/m17-notifications/index.js";
 import { createSystemAuthContext } from "../shared/auth/system-context.js";
 import type { Queue } from "bullmq";
 import { createHealthServer } from "./health-server.js";
@@ -54,6 +55,11 @@ import { BATAS_DRAIN_WORKER_MS, langkahHentiWorker } from "./shutdown.js";
 
 /** Port container — `EXPOSE 3000` pada image bersama (SDD-16 §4.1, SDD-INF-01). */
 const HEALTH_PORT = 3000;
+
+/** Job push per notifikasi (FR-17.2, SDD-08 §4.4a, keputusan 80c). */
+export const NAMA_PEKERJAAN_PUSH = "notification-push";
+/** `jobId` tetap per notifikasi — event yang diulang tidak menggandakan push. */
+export const idJobPush = (notifikasiId: number): string => `push-${String(notifikasiId)}`;
 
 /**
  * Registri pekerjaan milik proses ini (`SDD-01 §4.6`).
@@ -126,6 +132,19 @@ export const registry = new JobRegistry().register(
         },
     },
     {
+        // Tanpa cron: dijadwalkan konsumen notifikasi setelah commit (FR-17.2, keputusan 80c).
+        name: NAMA_PEKERJAAN_PUSH,
+        handler: async (job) => {
+            const percobaan = job.attemptsMade + 1;
+            await kirimPushNotifikasi(
+                { db: getDb(), clock: new SystemClock(), ctx: pelakuNotifikasi, pengirim: pengirimPush ?? buatPengirimPush(null) },
+                Number((job.data as { notification_id: number }).notification_id),
+                percobaan,
+                percobaan >= (job.opts.attempts ?? 1),
+            );
+        },
+    },
+    {
         // Tanpa cron: dimasukkan ke antrean oleh handler `UserImportRequested` (IMPT-04).
         name: NAMA_PEKERJAAN_IMPOR,
         handler: async (job) => {
@@ -179,10 +198,17 @@ export const eventHandlers = new EventHandlerRegistry();
 // Dipasang saat modul dimuat — koneksi basis data baru dibuka saat event diproses.
 const pelakuNotifikasi = createSystemAuthContext("outbox-notifikasi");
 let penyiarNotifikasi: PenyiarNotifikasi | undefined;
+/** Antrean & pengirim push dipasang `bootstrap` (keputusan 80c); sebelum itu push tidak dijadwalkan. */
+let antreanPush: Queue | undefined;
+let pengirimPush: PengirimPush | undefined;
 pasangKonsumenNotifikasi(eventHandlers, {
     db: getDb,
     clock: new SystemClock(),
     ctx: () => pelakuNotifikasi,
+    jadwalkanPush: async (ids) => {
+        if (antreanPush === undefined) return;
+        for (const id of ids) await antreanPush.add(NAMA_PEKERJAAN_PUSH, { notification_id: id }, { ...RETRY_OPTIONS, jobId: idJobPush(id) });
+    },
     // SDD-08 §4.3a: siaran ke `ntf:user:{id}` setelah commit — dibuat saat pertama dipakai.
     penyiar: () => (penyiarNotifikasi ??= new PenyiarNotifikasi(getRedis(), new Logger({ clock: new SystemClock(), modulBawaan: "notifikasi" }))),
 });
@@ -206,10 +232,14 @@ export async function bootstrap(
     const health = new HealthRegistry().register(
         databaseCheck(getDb()),
         redisCheck(connection),
+        // OBS-06: dilaporkan, tidak menentukan `ready` (keputusan 80a).
+        fcmCheck(config.fcm),
     );
     const healthServer = createHealthServer(health).listen(HEALTH_PORT);
     const queue = createQueue(connection);
     pasangHandlerAntrean(eventHandlers, queue);
+    antreanPush = queue;
+    pengirimPush = buatPengirimPush(config.fcm);
     await scheduleAll(queue, registry);
     const worker = createWorker(connection, registry);
     // Dispatcher outbox berjalan di proses yang sama, tetapi bukan sebagai job —

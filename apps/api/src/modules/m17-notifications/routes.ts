@@ -1,6 +1,7 @@
 // Route M-17 (SDD-AUTH-01, PM-01; keputusan 79a: `notification.manage_own`) + perakit router.
 
 import express from "express";
+import { z } from "zod";
 import type { RequestHandler, Router } from "express";
 import type { Kysely } from "kysely";
 import { createRedis, getRedis, readRedisConfig } from "../../shared/cache/index.js";
@@ -9,8 +10,18 @@ import type { Database } from "../../shared/db/index.js";
 import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
 import type { Logger } from "../../shared/observability/index.js";
-import { listNotificationsHandler, markAllReadHandler, markReadHandler, streamHandler } from "./controllers/notification.controller.js";
 import {
+    deleteDeviceTokenHandler,
+    listNotificationsHandler,
+    markAllReadHandler,
+    markReadHandler,
+    registerDeviceTokenHandler,
+    streamHandler,
+} from "./controllers/notification.controller.js";
+import {
+    DeviceTokenParamSchema,
+    RegisterDeviceTokenBodySchema,
+    RegisterDeviceTokenResponseSchema,
     ListNotificationsQuerySchema,
     ListNotificationsResponseSchema,
     MarkAllReadResponseSchema,
@@ -19,6 +30,7 @@ import {
     StreamEventSchema,
 } from "./schemas/notification.schema.js";
 import { HubSse, PenyiarNotifikasi } from "./services/fanout.js";
+import { DeviceTokenService } from "./services/device-token.service.js";
 import { InboxService } from "./services/inbox.service.js";
 
 const MODUL = "m17-notifications";
@@ -71,6 +83,31 @@ export const markReadRoute = defineRoute({
     response: MarkReadResponseSchema,
 });
 
+/** FR-17.2 langkah 1 (keputusan 80d: `notification.manage_own`). */
+export const registerDeviceTokenRoute = defineRoute({
+    method: "POST",
+    path: "/device-tokens",
+    permission: PERMISSION,
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Daftarkan token perangkat (FID) untuk push",
+    body: RegisterDeviceTokenBodySchema,
+    response: RegisterDeviceTokenResponseSchema,
+});
+
+/** FR-17.2 A1 / MOB-SEC-05. */
+export const deleteDeviceTokenRoute = defineRoute({
+    method: "DELETE",
+    path: "/device-tokens/:token",
+    permission: PERMISSION,
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Cabut token perangkat milik sendiri",
+    successStatus: 204,
+    params: DeviceTokenParamSchema,
+    response: z.null(),
+});
+
 export interface NotificationsModuleDeps {
     readonly db: Kysely<Database>;
     readonly clock: Clock;
@@ -99,5 +136,8 @@ export function notificationsRouter(
     router.get(streamNotificationsRoute.path, batasi(streamNotificationsRoute), otorisasi(PERMISSION), streamHandler(service, ambilHub));
     router.patch(markAllReadRoute.path, batasi(markAllReadRoute), otorisasi(PERMISSION), markAllReadHandler(service));
     router.patch(markReadRoute.path, batasi(markReadRoute), otorisasi(PERMISSION), markReadHandler(service));
+    const token = new DeviceTokenService(deps.db, deps.clock);
+    router.post(registerDeviceTokenRoute.path, batasi(registerDeviceTokenRoute), otorisasi(PERMISSION), registerDeviceTokenHandler(token));
+    router.delete(deleteDeviceTokenRoute.path, batasi(deleteDeviceTokenRoute), otorisasi(PERMISSION), deleteDeviceTokenHandler(token));
     return router;
 }

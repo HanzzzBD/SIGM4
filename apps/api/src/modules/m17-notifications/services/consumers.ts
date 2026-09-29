@@ -18,6 +18,7 @@ import {
     ringkasanImpor,
     tanggalWib,
 } from "../../m02-users/index.js";
+import { EVENT_SESI_DICABUT } from "../../m01-auth/index.js";
 import {
     ApprovalSlaBreachedPayloadSchema,
     NOTIFIKASI_TINDAKAN_SLA,
@@ -27,6 +28,7 @@ import {
 } from "../../m10-approval/index.js";
 import type { RegistriPenyediaRincian } from "../../m10-approval/index.js";
 import type { NotifikasiBaru } from "../repositories/notification.repository.js";
+import { createDeviceTokenRepository } from "../repositories/device-token.repository.js";
 import { createNotificationRepository } from "../repositories/notification.repository.js";
 import type { PenyiarNotifikasi } from "./fanout.js";
 import type { Terbitan } from "./notification.service.js";
@@ -50,6 +52,8 @@ export interface KonsumenDeps {
     /** Pelaku SYSTEM — dibentuk worker (SDD-03 §6), bukan modul ini. */
     readonly ctx: () => AuthContext;
     readonly rincian?: RegistriPenyediaRincian | undefined;
+    /** SDD-08 §4.4a (keputusan 80c): antrekan job push per notifikasi baru SETELAH commit. */
+    readonly jadwalkanPush?: ((notifikasiIds: readonly number[]) => Promise<void>) | undefined;
     /** SDD-08 §4.3a: siaran SETELAH commit; tanpa penyiar (uji) notifikasi tetap tersimpan. */
     readonly penyiar?: (() => PenyiarNotifikasi) | undefined;
 }
@@ -68,6 +72,7 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
         };
         await withTransaction(deps.ctx(), (scope) => kerja(scope, e, (e.payload ?? {}) as Payload, emit), deps.db());
         await siarkanSetelahCommit(baru);
+        if (deps.jadwalkanPush !== undefined && baru.length > 0) await deps.jadwalkanPush(baru.map((n) => n.id));
     };
 
     /** NTF-05: tiap notifikasi baru disiarkan bersama hitungan belum-dibaca penerimanya. */
@@ -182,6 +187,14 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
                 deepLink: "/profil",
                 dedupe: { event: e.id },
             });
+        }),
+    );
+
+    // MOB-SEC-05 / FR-17.2 AC 3 (keputusan 78a, 80b): sesi dicabut → token perangkat keluarganya dicabut.
+    registry.on(
+        EVENT_SESI_DICABUT,
+        jalankan(async (scope, _e, p) => {
+            if (typeof p["family_id"] === "string") await createDeviceTokenRepository(scope.tx).cabutKeluarga(scope.ctx, p["family_id"]);
         }),
     );
 
