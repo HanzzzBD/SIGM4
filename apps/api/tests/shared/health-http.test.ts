@@ -151,7 +151,7 @@ describe("sigm4-api — /api/v1/health/*", () => {
         });
     });
 
-    it("registri proses: probe publik, ringkasan, CRUD pengguna (PR-01-02), impor massal (PR-01-03), matriks permission (PR-01-04), skema lokasi (PR-01-05), pohon+penonaktifan (PR-01-06), daftar aset per lokasi (PR-01-07), penelusuran (PR-01-08), ekspor activity log (PR-01-09), parameter sistem (PR-01-10), kenaikan kelas massal (PR-01-13), pengambilan pekerjaan impor pengguna (PR-01-17), serta master data Lampiran E — tahun ajaran, hari libur, hari kerja, unit kerja (PR-01-18) berpermission, serta login/refresh publik (PR-02-02), logout + sesi berautentikasi saja (PR-02-04), reset password administratif (PR-02-05), serta ganti password + profil sendiri (PR-02-06), serta 2FA TOTP (PR-02-07), serta reset 2FA + kode aktivasi (PR-02-33), serta pendaftaran aset (PR-02-11), serta katalog aset (PR-02-12), serta perubahan kondisi aset (PR-02-13), serta mutasi lokasi aset (PR-02-14), serta kategori aset (PR-02-15), serta delegasi approver (PR-02-20), serta eksekusi persetujuan (PR-02-21), serta linimasa persetujuan (PR-02-23), serta konfigurasi approval rule + pratinjau (PR-02-24)", () => {
+    it("registri proses: probe publik, ringkasan, CRUD pengguna (PR-01-02), impor massal (PR-01-03), matriks permission (PR-01-04), skema lokasi (PR-01-05), pohon+penonaktifan (PR-01-06), daftar aset per lokasi (PR-01-07), penelusuran (PR-01-08), ekspor activity log (PR-01-09), parameter sistem (PR-01-10), kenaikan kelas massal (PR-01-13), pengambilan pekerjaan impor pengguna (PR-01-17), serta master data Lampiran E — tahun ajaran, hari libur, hari kerja, unit kerja (PR-01-18) berpermission, serta login/refresh publik (PR-02-02), logout + sesi berautentikasi saja (PR-02-04), reset password administratif (PR-02-05), serta ganti password + profil sendiri (PR-02-06), serta 2FA TOTP (PR-02-07), serta reset 2FA + kode aktivasi (PR-02-33), serta pendaftaran aset (PR-02-11), serta katalog aset (PR-02-12), serta perubahan kondisi aset (PR-02-13), serta mutasi lokasi aset (PR-02-14), serta kategori aset (PR-02-15), serta delegasi approver (PR-02-20), serta eksekusi persetujuan (PR-02-21), serta linimasa persetujuan (PR-02-23), serta konfigurasi approval rule + pratinjau (PR-02-24), serta notifikasi: daftar, aliran SSE, tandai baca (PR-02-26)", () => {
         expect(registry.all().map((r) => `${r.method} ${r.path}`)).toEqual([
             "GET /health/live",
             "GET /health/ready",
@@ -210,6 +210,10 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "PUT /approval-rules/:id",
             "PATCH /approval-rules/:id/status",
             "POST /approval-rules/preview",
+            "GET /notifications",
+            "GET /notifications/stream",
+            "PATCH /notifications/read-all",
+            "PATCH /notifications/:id/read",
             "GET /activity-logs",
             "GET /activity-logs/export",
             "GET /settings",
@@ -301,6 +305,10 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "approval_rule.manage",
             "approval_rule.manage",
             "approval_rule.manage",
+            "notification.manage_own",
+            "notification.manage_own",
+            "notification.manage_own",
+            "notification.manage_own",
             "activity_log.view",
             "activity_log.export",
             "setting.view",
@@ -373,6 +381,10 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "/api/v1/approval-rules/{id}",
             "/api/v1/approval-rules/{id}/status",
             "/api/v1/approval-rules/preview",
+            "/api/v1/notifications",
+            "/api/v1/notifications/stream",
+            "/api/v1/notifications/read-all",
+            "/api/v1/notifications/{id}/read",
             "/api/v1/activity-logs",
             "/api/v1/activity-logs/export",
             "/api/v1/settings",

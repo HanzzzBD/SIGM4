@@ -120,6 +120,15 @@ import {
     ruleStatusRoute,
     updateRuleRoute,
 } from "../modules/m10-approval/index.js";
+import type { HubSse } from "../modules/m17-notifications/index.js";
+import {
+    buatHubSse,
+    listNotificationsRoute,
+    markAllReadRoute,
+    markReadRoute,
+    notificationsRouter,
+    streamNotificationsRoute,
+} from "../modules/m17-notifications/index.js";
 import {
     activityLogRouter,
     exportActivityLogsRoute,
@@ -221,6 +230,10 @@ export const registry = new RouteRegistry().register(
     updateRuleRoute,
     ruleStatusRoute,
     previewRuleRoute,
+    listNotificationsRoute,
+    streamNotificationsRoute,
+    markAllReadRoute,
+    markReadRoute,
     listActivityLogsRoute,
     exportActivityLogsRoute,
     getSettingsRoute,
@@ -272,6 +285,8 @@ export interface AppDeps {
             readonly tantangan: PenyimpanTantangan;
         };
     };
+    /** Hub SSE proses ini (SDD-08 §4.3a) — ditutup saat berhenti; tanpa ini dibuat malas saat aliran pertama. */
+    readonly notifikasi?: { readonly hub: HubSse } | undefined;
 }
 
 /** Merakit aplikasi tanpa membuka port — dipakai proses dan uji. */
@@ -394,6 +409,14 @@ export function createApp(deps: AppDeps): Express {
     );
     app.use(
         BASE_PATH,
+        notificationsRouter(
+            { db: deps.db, clock: deps.clock, logger: deps.logger, hub: deps.notifikasi?.hub },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
         activityLogRouter(
             {
                 db: deps.db,
@@ -439,6 +462,7 @@ export const BATAS_HENTI_API_MS = 25_000;
 export function langkahHentiApi(
     health: HealthRegistry,
     server: Server,
+    hub?: HubSse,
 ): LangkahHenti[] {
     return [
         {
@@ -448,6 +472,9 @@ export function langkahHentiApi(
                 return Promise.resolve();
             },
         },
+        // Aliran SSE tak pernah selesai sendiri: tanpa ditutup lebih dulu, `server.close`
+        // menunggu sampai tenggat (SDD-INF-05, SDD-08 §4.3a).
+        ...(hub === undefined ? [] : [{ nama: "tutup-sse", jalankan: () => hub.tutup() }]),
         {
             nama: "tutup-server",
             jalankan: () => tutupServer(server),
@@ -487,7 +514,9 @@ export async function start(
         modulBawaan: "api",
         level: config.logLevel,
     });
+    const hub = buatHubSse(clock, logger);
     const server = createApp({
+        notifikasi: { hub },
         health,
         limiter: new RedisRateLimiter(getRedis(), clock),
         security: { objectStorageOrigin: config.objectStoragePublicOrigin },
@@ -501,7 +530,7 @@ export async function start(
             twoFactor: { kotak: config.totpKey, tantangan: new PenyimpanTantanganRedis(getRedis()) },
         },
     }).listen(PORT);
-    return new Penghenti(langkahHentiApi(health, server), {
+    return new Penghenti(langkahHentiApi(health, server, hub), {
         batasMs: BATAS_HENTI_API_MS,
         logger,
     });

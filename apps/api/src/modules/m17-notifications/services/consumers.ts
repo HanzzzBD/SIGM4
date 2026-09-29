@@ -26,6 +26,10 @@ import {
     sumberNotifikasiApproval,
 } from "../../m10-approval/index.js";
 import type { RegistriPenyediaRincian } from "../../m10-approval/index.js";
+import type { NotifikasiBaru } from "../repositories/notification.repository.js";
+import { createNotificationRepository } from "../repositories/notification.repository.js";
+import type { PenyiarNotifikasi } from "./fanout.js";
+import type { Terbitan } from "./notification.service.js";
 import { NotificationService } from "./notification.service.js";
 import { templatUntuk } from "./templates.js";
 
@@ -46,6 +50,8 @@ export interface KonsumenDeps {
     /** Pelaku SYSTEM — dibentuk worker (SDD-03 §6), bukan modul ini. */
     readonly ctx: () => AuthContext;
     readonly rincian?: RegistriPenyediaRincian | undefined;
+    /** SDD-08 §4.3a: siaran SETELAH commit; tanpa penyiar (uji) notifikasi tetap tersimpan. */
+    readonly penyiar?: (() => PenyiarNotifikasi) | undefined;
 }
 
 type Payload = Readonly<Record<string, unknown>>;
@@ -54,8 +60,29 @@ const angka = (v: unknown): number => Number(v);
 export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: KonsumenDeps): void {
     for (const kode of KODE_DIPAKAI) templatUntuk(kode);
     const notifikasi = new NotificationService(deps.clock);
-    const jalankan = (kerja: (scope: TransactionScope, e: OutboxEvent, p: Payload) => Promise<void>) => (e: OutboxEvent) =>
-        withTransaction(deps.ctx(), (scope) => kerja(scope, e, (e.payload ?? {}) as Payload), deps.db());
+    type Emit = (scope: TransactionScope, t: Terbitan) => Promise<void>;
+    const jalankan = (kerja: (scope: TransactionScope, e: OutboxEvent, p: Payload, emit: Emit) => Promise<void>) => async (e: OutboxEvent) => {
+        const baru: NotifikasiBaru[] = [];
+        const emit: Emit = async (scope, t) => {
+            baru.push(...(await notifikasi.emit(scope, t)));
+        };
+        await withTransaction(deps.ctx(), (scope) => kerja(scope, e, (e.payload ?? {}) as Payload, emit), deps.db());
+        await siarkanSetelahCommit(baru);
+    };
+
+    /** NTF-05: tiap notifikasi baru disiarkan bersama hitungan belum-dibaca penerimanya. */
+    const siarkanSetelahCommit = async (baru: readonly NotifikasiBaru[]): Promise<void> => {
+        if (deps.penyiar === undefined || baru.length === 0) return;
+        const penyiar = deps.penyiar();
+        for (const n of baru) {
+            const unread = await withTransaction(deps.ctx(), (scope) => createNotificationRepository(scope.tx).belumDibaca(scope.ctx, n.userId), deps.db());
+            await penyiar.siarkan(n.userId, {
+                jenis: "notifikasi",
+                notifikasi: { id: n.id, kode: n.kode, judul: n.judul, isi: n.isi, deep_link: n.deepLink, created_at: n.createdAt.toISOString() },
+                unread_count: unread,
+            });
+        }
+    };
 
     /** Rincian pengajuan + referensi + deep link bersama NT-02…07, NT-47. */
     const approval = async (scope: TransactionScope, instanceId: number) => {
@@ -68,23 +95,23 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
     // FR-10.2 langkah 5–7, A1 (m10 §9): hasil keputusan → pemohon, atau approver langkah berikutnya.
     registry.on(
         "ApprovalDecided",
-        jalankan(async (scope, e, p) => {
+        jalankan(async (scope, e, p, emit) => {
             const id = angka(p["instance_id"]);
             const a = await approval(scope, id);
             if (a === undefined) return;
             const dedupe = { event: e.id };
             const status = p["status"];
             if (status === "DISETUJUI") {
-                await notifikasi.emit(scope, { kode: "NT-02", penerima: [a.sumber.pemohonId], params: a.params, referensi: a.referensi, deepLink: a.deepLink, dedupe });
+                await emit(scope, { kode: "NT-02", penerima: [a.sumber.pemohonId], params: a.params, referensi: a.referensi, deepLink: a.deepLink, dedupe });
             } else if (status === "DITOLAK") {
                 const alasan = (await catatanLangkah(scope, id, angka(p["urutan"]))) ?? ALASAN_TOLAK_OTOMATIS;
-                await notifikasi.emit(scope, { kode: "NT-03", penerima: [a.sumber.pemohonId], params: { ...a.params, alasan }, referensi: a.referensi, deepLink: a.deepLink, dedupe });
+                await emit(scope, { kode: "NT-03", penerima: [a.sumber.pemohonId], params: { ...a.params, alasan }, referensi: a.referensi, deepLink: a.deepLink, dedupe });
             } else if (status === "PERLU_REVISI") {
                 const catatan = (await catatanLangkah(scope, id, angka(p["urutan"]))) ?? "";
-                await notifikasi.emit(scope, { kode: "NT-04", penerima: [a.sumber.pemohonId], params: { ...a.params, catatan }, referensi: a.referensi, deepLink: a.deepLink, dedupe });
+                await emit(scope, { kode: "NT-04", penerima: [a.sumber.pemohonId], params: { ...a.params, catatan }, referensi: a.referensi, deepLink: a.deepLink, dedupe });
             } else if (status === "MENUNGGU" && p["langkah_aktif"] != null) {
                 const penerima = await pemutusLangkah(scope, deps.clock, id, angka(p["langkah_aktif"]));
-                await notifikasi.emit(scope, { kode: "NT-05", penerima, params: a.params, referensi: a.referensi, deepLink: a.deepLink, dedupe });
+                await emit(scope, { kode: "NT-05", penerima, params: a.params, referensi: a.referensi, deepLink: a.deepLink, dedupe });
             }
         }),
     );
@@ -92,18 +119,18 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
     // RE-11 / RE-13: seluruh langkah terlewati → fallback; Administrator + Petugas Sarpras dialarmi.
     registry.on(
         "ApprovalFallbackRouted",
-        jalankan(async (scope, e, p) => {
+        jalankan(async (scope, e, p, emit) => {
             const a = await approval(scope, angka(p["instance_id"]));
             if (a === undefined) return;
             const penerima = await penggunaAktifBerperan(scope, [ADMINISTRATOR, PETUGAS_SARPRAS]);
-            await notifikasi.emit(scope, { kode: "NT-47", penerima, params: a.params, referensi: a.referensi, deepLink: a.deepLink, dedupe: { event: e.id } });
+            await emit(scope, { kode: "NT-47", penerima, params: a.params, referensi: a.referensi, deepLink: a.deepLink, dedupe: { event: e.id } });
         }),
     );
 
     // FR-10.2 A2/A2a (keputusan 73d, 75): kontrak payload divalidasi — menyimpang = galat → dead letter + alarm.
     registry.on(
         "ApprovalSlaBreached",
-        jalankan(async (scope, e, mentah) => {
+        jalankan(async (scope, e, mentah, emit) => {
             const p = ApprovalSlaBreachedPayloadSchema.parse(mentah);
             const a = await approval(scope, p.instance_id);
             if (a === undefined) return;
@@ -118,18 +145,18 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
             }
             // NT-06 berulang harian (anti-spam 1×/hari per objek, SDD-NTF-07); lainnya kejadian tunggal.
             const dedupe = p.tindakan === "REMIND" ? { harian: tanggalWib(deps.clock.now()) } : { event: e.id };
-            await notifikasi.emit(scope, { kode, penerima, params: a.params, referensi: a.referensi, deepLink: a.deepLink, dedupe });
+            await emit(scope, { kode, penerima, params: a.params, referensi: a.referensi, deepLink: a.deepLink, dedupe });
         }),
     );
 
     // IMPT-04: impor > 200 baris selesai → pengunggah.
     registry.on(
         EVENT_IMPOR_SELESAI,
-        jalankan(async (scope, e, p) => {
+        jalankan(async (scope, e, p, emit) => {
             const jobId = angka(p["job_id"]);
             const r = await ringkasanImpor(scope, jobId);
             if (r === undefined) return;
-            await notifikasi.emit(scope, {
+            await emit(scope, {
                 kode: "NT-52",
                 penerima: [angka(p["oleh"])],
                 params: r,
@@ -143,11 +170,11 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
     // FR-02.2 / m02 §9: role atau status akun berubah → pengguna itu.
     registry.on(
         EVENT_AKUN_BERUBAH,
-        jalankan(async (scope, e, p) => {
+        jalankan(async (scope, e, p, emit) => {
             const userId = angka(p["user_id"]);
             const role = typeof p["role_baru"] === "string" ? await namaRole(scope, p["role_baru"]) : null;
             const status = p["status_baru"] === "AKTIF" ? "Aktif" : p["status_baru"] === "NONAKTIF" ? "Nonaktif" : null;
-            await notifikasi.emit(scope, {
+            await emit(scope, {
                 kode: "NT-40",
                 penerima: [userId],
                 params: { role, status },
@@ -161,9 +188,9 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
     // DP-02 / SL-06: akun siswa ditolak tanpa persetujuan wali → Administrator.
     registry.on(
         EVENT_KONSEN_WALI_HILANG,
-        jalankan(async (scope, e, p) => {
+        jalankan(async (scope, e, p, emit) => {
             const userId = p["user_id"] == null ? null : angka(p["user_id"]);
-            await notifikasi.emit(scope, {
+            await emit(scope, {
                 kode: "NT-48",
                 penerima: await penggunaAktifBerperan(scope, [ADMINISTRATOR]),
                 params: { nama: typeof p["nama"] === "string" ? p["nama"] : "" },

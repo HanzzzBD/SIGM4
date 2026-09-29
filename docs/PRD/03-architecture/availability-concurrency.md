@@ -159,6 +159,7 @@ NFR-SC-01 mewajibkan API *stateless* multi-instance, sementara Bab 12.4 mendefin
 | Setiap 5 menit | `slot-activation` | Menetapkan `assets.status = Direservasi` saat slot `Confirmed` mulai berlaku, dan mengembalikannya ke `Tersedia` saat slot berakhir tanpa serah terima |
 | Setiap 15 menit | `tentative-slot-expiry` | Membebaskan slot `Tentative` yang melewati `expires_at` (BR-023b) |
 | Setiap 30 menit | `approval-sla-check` | Mengirim pengingat SLA dan menjalankan eskalasi (FR-10.2 A2) |
+| Setiap hari 01:30 | `notification-archive` | Memindahkan notifikasi berusia > 90 hari ke `notifications_archive` per batch 5.000 baris (FR-17.1 A2); idempoten (JOB-03) |
 | Setiap hari 00:10 | `student-graduation` | Menonaktifkan akun siswa yang ditandai lulus setelah tahun ajarannya berakhir (SL-03, DP-10); ditolak bila siswa masih berkewajiban (SL-04) |
 
 ---

@@ -138,6 +138,11 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
             headers: { "content-type": "application/json", ...headers },
             ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         });
+        // Aliran SSE (PR-02-26) tidak pernah selesai: cukup statusnya, badan dibatalkan.
+        if ((res.headers.get("content-type") ?? "").includes("text/event-stream")) {
+            await res.body?.cancel();
+            return { status: res.status, json: {} };
+        }
         // Ekspor berkas (XLSX) bukan JSON: hanya statusnya yang dipakai.
         if (!(res.headers.get("content-type") ?? "").includes("json")) {
             await res.arrayBuffer();
@@ -497,6 +502,12 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await langkah("POST /approval-rules/preview", "/approval-rules/preview", { jenis_pengajuan: "PENGADAAN_BARANG", fakta: {} }, []);
                 await langkah("PATCH /approval-rules/:id/status", `/approval-rules/${idAturan}/status`, { status_aktif: false }, ["APPROVAL_RULE_DEACTIVATED"]);
 
+                // PR-02-26: tandai baca — M-17 §11 tanpa aksi log khusus (keputusan 79).
+                const [ntf] = await kueri<{ id: string }>(`INSERT INTO notifications (user_id, kode, jenis, judul, isi, created_at, dedupe_key)
+                    VALUES (${admin}, 'NT-40', 'AKUN_SISTEM', 'Uji', 'Uji gerbang', now(), '${randomUUID()}') RETURNING id::text`);
+                await langkah("PATCH /notifications/:id/read", `/notifications/${String(ntf?.id)}/read`, undefined, []);
+                await langkah("PATCH /notifications/read-all", "/notifications/read-all", undefined, []);
+
                 // --- M-18: dua pembacaan yang WAJIB tercatat
                 await langkah("GET /activity-logs", "/activity-logs?per_page=5", undefined, ["ACTIVITY_LOG_VIEWED"]);
                 await langkah("GET /activity-logs/export", "/activity-logs/export?filter[modul]=m20-settings", undefined, ["ACTIVITY_LOG_EXPORTED"]);
@@ -545,6 +556,7 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 // PR-02-21: langkah (diputuskan_oleh) dan instance (pemohon_id) menunjuk users.
                 await kueri("DELETE FROM approval_steps");
                 await kueri("DELETE FROM approval_instances");
+                await kueri("DELETE FROM notifications"); // PR-02-26: user_id menunjuk users
                 await kueri("DELETE FROM approval_rules"); // PR-02-24: created_by/updated_by menunjuk users (langkah ikut CASCADE)
                 await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'approval_instance'");
                 await kueri("DELETE FROM idempotency_keys WHERE endpoint LIKE 'POST /approvals/%'");

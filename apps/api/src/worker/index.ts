@@ -42,11 +42,12 @@ import {
     UserService,
     idJobAntreanImpor,
 } from "../modules/m02-users/index.js";
-import { pasangKonsumenNotifikasi } from "../modules/m17-notifications/index.js";
+import { PenyiarNotifikasi, pasangKonsumenNotifikasi } from "../modules/m17-notifications/index.js";
 import { createSystemAuthContext } from "../shared/auth/system-context.js";
 import type { Queue } from "bullmq";
 import { createHealthServer } from "./health-server.js";
 import { CRON_SLA, PEKERJAAN_SLA, jalankanPemeriksaanSla } from "./approval-sla-check.js";
+import { PEKERJAAN_ARSIP_NOTIFIKASI, jalankanArsipNotifikasi } from "./notification-archive.js";
 import { startOutboxPoller } from "./outbox-poller.js";
 import { PEKERJAAN_KELULUSAN, jalankanKelulusan } from "./student-graduation.js";
 import { BATAS_DRAIN_WORKER_MS, langkahHentiWorker } from "./shutdown.js";
@@ -117,6 +118,14 @@ export const registry = new JobRegistry().register(
         },
     },
     {
+        // Bab 26: setiap hari 01:30 WIB (FR-17.1 A2, keputusan 79d). Pelaku SYSTEM (AL-06).
+        name: PEKERJAAN_ARSIP_NOTIFIKASI,
+        cron: wibCronToUtc(30, 1),
+        handler: async () => {
+            await jalankanArsipNotifikasi(getDb(), new SystemClock());
+        },
+    },
+    {
         // Tanpa cron: dimasukkan ke antrean oleh handler `UserImportRequested` (IMPT-04).
         name: NAMA_PEKERJAAN_IMPOR,
         handler: async (job) => {
@@ -169,7 +178,14 @@ export const eventHandlers = new EventHandlerRegistry();
 // SDD-08 §4.2a (keputusan 78): konsumen penerbit notifikasi, pelaku SYSTEM (SDD-03 §5).
 // Dipasang saat modul dimuat — koneksi basis data baru dibuka saat event diproses.
 const pelakuNotifikasi = createSystemAuthContext("outbox-notifikasi");
-pasangKonsumenNotifikasi(eventHandlers, { db: getDb, clock: new SystemClock(), ctx: () => pelakuNotifikasi });
+let penyiarNotifikasi: PenyiarNotifikasi | undefined;
+pasangKonsumenNotifikasi(eventHandlers, {
+    db: getDb,
+    clock: new SystemClock(),
+    ctx: () => pelakuNotifikasi,
+    // SDD-08 §4.3a: siaran ke `ntf:user:{id}` setelah commit — dibuat saat pertama dipakai.
+    penyiar: () => (penyiarNotifikasi ??= new PenyiarNotifikasi(getRedis(), new Logger({ clock: new SystemClock(), modulBawaan: "notifikasi" }))),
+});
 
 /**
  * Menyalakan worker: memasang seluruh jadwal lalu mulai memungut pekerjaan.
