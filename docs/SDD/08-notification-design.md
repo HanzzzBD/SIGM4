@@ -97,7 +97,9 @@ CREATE TABLE notification_deliveries (
 worker: outbox dispatcher menerima event  →  NotificationService.emit(kode, target, params)
    1. tentukan penerima (pengguna, atau seluruh pemegang role bila approver by-role)
    2. render templat[kode](params)                       SDD-NTF-04
-   3. INSERT notifications (dedupe_key)  → konflik = lewati diam-diam
+   3. wajib? atau preferensi in_app aktif?  → INSERT notifications (dedupe_key)
+      in_app dimatikan (bukan wajib)        → tidak disimpan bagi penerima itu  SDD-NTF-06
+      konflik dedupe_key                     → lewati diam-diam
    4. untuk tiap kanal:
         wajib?  → selalu kirim
         selain itu → periksa preferensi pengguna         SDD-NTF-06
@@ -168,7 +170,7 @@ Payload push tidak memuat nilai finansial maupun identitas pengguna lain — kon
 | Token | `device_tokens.token` unik; didaftarkan ulang dari sesi lain → dipindah ke pengguna & keluarga sesi terbaru. `family_id` = keluarga refresh token sesi pendaftar (klaim `sid`); konsumen `SessionRevoked` menghapus token keluarga itu (`MOB-SEC-05`) |
 | Target | **Firebase Installation ID (FID)** — `sendEachForMulticast({ fids })`; jalur registration token deprecated di `firebase-admin` 14 (keputusan 80e). Kolom `device_tokens.token` (istilah PRD "token perangkat") menyimpan FID; FID mati = `messaging/installation-id-not-registered` → dihapus (`FR-17.2 A2`) |
 | Pustaka | `firebase-admin` (`sendEachForMulticast`); `FCM_CREDENTIALS` = JSON service account ber-base64 di skema config API & worker, **opsional** — tanpa itu push dilewati dan pemeriksaan `fcm` di `/health` melaporkan tidak dikonfigurasi tanpa memengaruhi `ready` (`OBS-06`) |
-| Preferensi | `SDD-NTF-06` diperiksa saat kirim sejak `PR-02-28`; sebelum itu seluruh notifikasi dikirim (ketiadaan baris = aktif) |
+| Preferensi | `SDD-NTF-06` diperiksa job saat kirim (sejak `PR-02-28`, keputusan 81b): `push` dimatikan pada kelompok notifikasi non-wajib → `DILEWATI` "dimatikan preferensi pengguna"; ketiadaan baris = aktif |
 
 ### 4.5 Preferensi
 
@@ -187,7 +189,8 @@ CREATE TABLE notification_preferences (
     jenis   notification_group NOT NULL,
     in_app  boolean NOT NULL DEFAULT true,
     push    boolean NOT NULL DEFAULT true,
-    PRIMARY KEY (user_id, jenis)
+    PRIMARY KEY (user_id, jenis),
+    CHECK (in_app OR NOT push)          -- push bergantung in-app (keputusan 81c)
 );
 ```
 
@@ -209,6 +212,16 @@ Seluruh **52** kode `NT-xx` terpetakan; tidak boleh ada kode tanpa kelompok, seb
 Templat `SDD-NTF-04` membawa `jenis` sebagai bagian definisi tiap kode `NT-xx`, sehingga pemetaan di atas hidup di kode bersama templatnya — bukan sebagai tabel terpisah yang dapat menyimpang.
 
 > **Catatan lapisan.** Daftar enam kelompok kini dimiliki PRD Bab 11.3 "Kelompok Notifikasi" (`data-model.md`, keputusan 78 log phase-02); tabel di atas hanya memetakan kode `NT-xx` ke kelompok.
+
+**Pelaksanaan (`PR-02-28`, keputusan 81).**
+
+| Aspek | Ketentuan |
+|---|---|
+| Kanal `in_app` | Dimatikan → notifikasi **non-wajib** kelompok itu tidak disimpan bagi penerima tersebut (tak muncul di daftar, hitungan, maupun SSE). Diperiksa konsumen worker saat event diproses — setelah commit, jadi perubahan preferensi berlaku pula bagi event yang masih antre (`SDD-NTF-06`) |
+| Kanal `push` | Diperiksa job `notification-push` saat kirim (§4.4a). Push **bergantung** pada in-app: tanpa baris tidak ada push, sehingga kombinasi `in_app=false` + `push=true` ditolak `VALIDATION_ERROR` |
+| Kelompok terkunci | Kelompok yang **seluruh** kodenya wajib (kolom "Ya — seluruhnya" di atas: `PERSETUJUAN`) tidak dapat dimatikan — `PUT` yang mematikannya ditolak `VALIDATION_ERROR`. Kelompok "Sebagian" boleh dimatikan; kode wajib di dalamnya tetap terkirim (`FR-17.3 A1`) |
+| Kontrak | `GET /notifications/preferences` mengembalikan keenam kelompok (urutan Bab 11.3) dengan `in_app`, `push`, `terkunci`; `PUT` menerima 1–6 kelompok unik, menyimpan (*upsert*) seketika, lalu mengembalikan keenamnya. Permission `notification.manage_own`, scope pemilik (`SDD-NTF-10`). Relevansi per role (UX P-78 "kelompok tidak relevan tidak dirender") disaring klien web, bukan API |
+| Activity log | Tidak ada aksi khusus (M-17 §11) |
 
 ### 4.6 Arsip
 

@@ -3,11 +3,12 @@
 import { sql } from "kysely";
 import type { AuthContext } from "../../../shared/auth/index.js";
 import { BaseRepository, defineRepository } from "../../../shared/db/index.js";
-import type { QueryExecutor, StatusPengiriman } from "../../../shared/db/index.js";
+import type { KelompokNotifikasi, QueryExecutor, StatusPengiriman } from "../../../shared/db/index.js";
 
 export interface NotifikasiPush {
     readonly userId: number;
     readonly kode: string;
+    readonly jenis: KelompokNotifikasi;
     readonly judul: string;
     readonly isi: string;
     readonly deepLink: string | null;
@@ -22,10 +23,10 @@ export class DeliveryRepository extends BaseRepository {
     async notifikasi(ctx: AuthContext, id: number): Promise<NotifikasiPush | undefined> {
         const b = await this.query(ctx)
             .selectFrom("notifications")
-            .select(["user_id", "kode", "judul", "isi", "deep_link", "wajib"])
+            .select(["user_id", "kode", "jenis", "judul", "isi", "deep_link", "wajib"])
             .where("id", "=", String(id))
             .executeTakeFirst();
-        return b === undefined ? undefined : { userId: Number(b.user_id), kode: b.kode, judul: b.judul, isi: b.isi, deepLink: b.deep_link, wajib: b.wajib };
+        return b === undefined ? undefined : { userId: Number(b.user_id), kode: b.kode, jenis: b.jenis, judul: b.judul, isi: b.isi, deepLink: b.deep_link, wajib: b.wajib };
     }
 
     /** Satu baris per (notifikasi, kanal); percobaan berikutnya memperbaruinya (job diulang). */

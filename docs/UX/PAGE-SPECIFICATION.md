@@ -559,6 +559,7 @@ Enam kelompok (**UXD-05**), dua kanal per kelompok.
 | Kelompok tidak relevan | Kelompok yang tidak menghasilkan notifikasi apa pun bagi role pengguna **tidak dirender** | `FR-17.3` langkah 2 |
 | Notifikasi wajib | Ditampilkan terkunci beserta penjelasan singkat mengapa tidak dapat dimatikan — bukan sekadar dinonaktifkan tanpa alasan | `FR-17.3 A1` · `UX-05` |
 | Berlaku | Seketika setelah disimpan | `FR-17.3 AC` |
+| Push bergantung in-app | Mematikan in-app suatu kelompok ikut mematikan dan menonaktifkan pengalih push-nya — tanpa notifikasi tersimpan tidak ada push | `SDD-08 §4.5` (keputusan 81) |
 | Izin push ditolak | Blok penjelasan + tautan ke pengaturan sistem perangkat; kanal in-app tetap berjalan | `FR-17.2 A1` |
 | Arsip > 90 hari | Pusat Notifikasi (**P-13**) mendapat filter **Arsip**; pengguna membaca notifikasi lamanya sendiri. Arsip saling meniadakan dengan daftar aktif — bukan tambahan pada gulir tak berujung — dan tidak menampilkan penanda belum dibaca, karena status itu tidak lagi bermakna di arsip | `FR-17.1 A2` · `SDD-NTF-10` · **UXD-10** |
 

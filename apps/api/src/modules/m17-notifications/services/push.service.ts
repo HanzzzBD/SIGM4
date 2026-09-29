@@ -10,6 +10,7 @@ import type { Database } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
 import { createDeliveryRepository } from "../repositories/delivery.repository.js";
 import { createDeviceTokenRepository } from "../repositories/device-token.repository.js";
+import { createPreferenceRepository } from "../repositories/preference.repository.js";
 import type { PengirimPush } from "./push-sender.js";
 
 export interface PushDeps {
@@ -41,6 +42,12 @@ export async function kirimPushNotifikasi(deps: PushDeps, notifikasiId: number, 
 
     const catat = (status: "TERKIRIM" | "DILEWATI" | "GAGAL" | "MENUNGGU", galat: string | null) =>
         jalankan((s) => createDeliveryRepository(s.tx).catat(s.ctx, notifikasiId, status, percobaan, galat, status === "TERKIRIM" ? deps.clock.now() : null));
+
+    // SDD-NTF-06 (keputusan 81b): push non-wajib yang dimatikan pengguna — diperiksa saat kirim.
+    if (!n.wajib && (await jalankan((s) => createPreferenceRepository(s.tx).pushDimatikan(s.ctx, n.userId, n.jenis)))) {
+        await catat("DILEWATI", "dimatikan preferensi pengguna");
+        return "DILEWATI";
+    }
 
     // FR-17.2 A1: tanpa perangkat (atau FCM tak dikonfigurasi) notifikasi tetap ada in-app.
     if (!deps.pengirim.aktif || tokens.length === 0) {

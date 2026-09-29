@@ -668,6 +668,14 @@ export interface NotificationDeliveriesTable {
     sent_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
 }
 
+/** Preferensi kanal per kelompok (0036; SDD-08 §4.5, keputusan 81). Ketiadaan baris = aktif. */
+export interface NotificationPreferencesTable {
+    user_id: ColumnType<string, string | number, string | number>;
+    jenis: KelompokNotifikasi;
+    in_app: ColumnType<boolean, boolean | undefined, boolean>;
+    push: ColumnType<boolean, boolean | undefined, boolean>;
+}
+
 export interface Database {
     document_counters: DocumentCountersTable;
     work_days: WorkDaysTable;
@@ -707,4 +715,5 @@ export interface Database {
     notifications_archive: NotificationsTable;
     device_tokens: DeviceTokensTable;
     notification_deliveries: NotificationDeliveriesTable;
+    notification_preferences: NotificationPreferencesTable;
 }

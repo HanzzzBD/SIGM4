@@ -63,6 +63,19 @@ export const RegisterDeviceTokenResponseSchema = z.object({
     meta: z.null(),
 });
 
+const Preferensi = z.object({ jenis: z.enum(KELOMPOK), in_app: z.boolean(), push: z.boolean(), terkunci: z.boolean() });
+
+/** FR-17.3 langkah 3 (keputusan 81): 1–6 kelompok unik; yang tak disebut tidak berubah. */
+export const UpdatePreferencesBodySchema = z.strictObject({
+    preferensi: z
+        .array(z.strictObject({ jenis: z.enum(KELOMPOK), in_app: z.boolean(), push: z.boolean() }))
+        .min(1)
+        .max(KELOMPOK.length)
+        .refine((d) => new Set(d.map((p) => p.jenis)).size === d.length, { message: "Setiap kelompok hanya boleh disebut sekali." }),
+});
+
+export const PreferencesResponseSchema = z.object({ success: z.literal(true), data: z.array(Preferensi), meta: z.null() });
+
 /** `text/event-stream` — badan bukan JSON; skema ini mendokumentasikan isi tiap `data:` (SDD-08 §4.3a). */
 export const StreamEventSchema = z.union([
     z.object({ jenis: z.literal("notifikasi"), notifikasi: z.object({ id: z.number(), kode: z.string(), judul: z.string(), isi: z.string(), deep_link: z.string().nullable(), created_at: z.string() }), unread_count: z.number() }),
