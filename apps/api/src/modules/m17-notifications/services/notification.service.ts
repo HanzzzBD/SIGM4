@@ -7,6 +7,8 @@ import type { Clock } from "../../../shared/clock/index.js";
 import type { TransactionScope } from "../../../shared/db/index.js";
 import type { NotifikasiBaru } from "../repositories/notification.repository.js";
 import { createNotificationRepository } from "../repositories/notification.repository.js";
+import { createPreferenceRepository } from "../repositories/preference.repository.js";
+import type { Templat } from "./templates.js";
 import { templatUntuk } from "./templates.js";
 
 export interface Terbitan {
@@ -23,20 +25,28 @@ export interface Terbitan {
 }
 
 export class NotificationService {
-    constructor(private readonly clock: Clock) {}
+    constructor(
+        private readonly clock: Clock,
+        /** Pencari templat — bawaan konstanta kode (SDD-NTF-04); uji menyuntik templat non-wajib. */
+        private readonly cariTemplat: (kode: string) => Templat = templatUntuk,
+    ) {}
 
     /** Mengembalikan notifikasi yang BENAR-BENAR baru (duplikat ditelan) — bahan siaran setelah commit. */
     async emit(scope: TransactionScope, t: Terbitan): Promise<readonly NotifikasiBaru[]> {
-        const templat = templatUntuk(t.kode);
+        const templat = this.cariTemplat(t.kode);
         const isi = templat.render(t.params);
         const sekarang = this.clock.now();
         const kunci = (userId: number): string =>
             "event" in t.dedupe
                 ? `${t.kode}:${String(userId)}:evt:${t.dedupe.event}`
                 : `${t.kode}:${String(userId)}:${t.referensi?.jenis ?? "-"}:${String(t.referensi?.id ?? "-")}:${t.dedupe.harian}`;
+        const unik = [...new Set(t.penerima)];
+        // SDD-NTF-06 / FR-17.3 A1 (keputusan 81a): wajib mengabaikan preferensi; selainnya
+        // penerima yang mematikan in-app kelompok ini tidak menerima baris (dan karenanya push).
+        const dimatikan = templat.wajib ? new Set<number>() : await createPreferenceRepository(scope.tx).inAppDimatikan(scope.ctx, unik, templat.jenis);
         return createNotificationRepository(scope.tx).sisip(
             scope.ctx,
-            [...new Set(t.penerima)].map((userId) => ({
+            unik.filter((userId) => !dimatikan.has(userId)).map((userId) => ({
                 userId,
                 kode: t.kode,
                 jenis: templat.jenis,

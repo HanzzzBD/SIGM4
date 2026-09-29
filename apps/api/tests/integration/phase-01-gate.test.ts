@@ -513,6 +513,9 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await langkah("PATCH /notifications/:id/read", `/notifications/${String(ntf?.id)}/read`, undefined, []);
                 await langkah("PATCH /notifications/read-all", "/notifications/read-all", undefined, []);
 
+                // PR-02-28: preferensi notifikasi — M-17 §11 tanpa aksi log khusus (keputusan 81).
+                await langkah("PUT /notifications/preferences", "/notifications/preferences", { preferensi: [{ jenis: "AKUN_SISTEM", in_app: true, push: false }] }, []);
+
                 // PR-02-27: token perangkat push — M-17 §11 tanpa aksi log khusus (keputusan 80).
                 const fid = `fid-gerbang-${sfx}`;
                 await langkah("POST /device-tokens", "/device-tokens", { token: fid, platform: "ANDROID" }, []);
@@ -568,6 +571,7 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await kueri("DELETE FROM approval_instances");
                 await kueri("DELETE FROM notifications"); // PR-02-26: user_id menunjuk users
                 await kueri("DELETE FROM device_tokens"); // PR-02-27: user_id menunjuk users
+                await kueri("DELETE FROM notification_preferences"); // PR-02-28: user_id menunjuk users
                 await kueri("DELETE FROM approval_rules"); // PR-02-24: created_by/updated_by menunjuk users (langkah ikut CASCADE)
                 await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'approval_instance'");
                 await kueri("DELETE FROM idempotency_keys WHERE endpoint LIKE 'POST /approvals/%'");

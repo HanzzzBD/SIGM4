@@ -137,7 +137,8 @@ _Tidak ada aturan bisnis yang dimiliki modul ini._
 | GET | `/notifications/stream` | `notification.manage_own` | Aliran notifikasi real-time via SSE (NTF-01) |
 | PATCH | `/notifications/{id}/read` | `notification.manage_own` | Tandai terbaca |
 | PATCH | `/notifications/read-all` | `notification.manage_own` | Tandai semua terbaca |
-| PUT | `/notifications/preferences` | Bearer | Atur preferensi notifikasi |
+| GET | `/notifications/preferences` | `notification.manage_own` | Baca preferensi notifikasi sendiri (enam kelompok × dua kanal) |
+| PUT | `/notifications/preferences` | `notification.manage_own` | Atur preferensi notifikasi |
 | POST | `/device-tokens` | `notification.manage_own` | Daftarkan token perangkat FCM |
 | DELETE | `/device-tokens/{token}` | `notification.manage_own` | Cabut token perangkat |
 
@@ -152,6 +153,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 |---|---|---|---|
 | **notifications** | Notifikasi pengguna | id, user_id, jenis, judul, isi, referensi_jenis, referensi_id, dibaca_pada, created_at | ± 40.000 |
 | **notification_deliveries** | Hasil pengiriman **per kanal** untuk satu notifikasi — satu notifikasi dapat dikirim in-app dan push dengan nasib berbeda (`FR-17.2 A3`, `A4`) | id, notification_id, kanal, status, attempts, sent_at | ± 70.000 |
+| **notification_preferences** | Preferensi kanal per kelompok notifikasi (`FR-17.3`, UXD-05); ketiadaan baris = aktif | user_id, jenis (Kelompok Notifikasi), in_app, push | ± 3.000 |
 | **device_tokens** | Token perangkat untuk push | id, user_id, token (unik), platform, family_id (keluarga sesi yang mendaftarkannya — dicabut bersama sesi itu, MOB-SEC-05), terakhir_aktif | ± 1.500 |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).

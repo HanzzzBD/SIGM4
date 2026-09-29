@@ -4,8 +4,9 @@
 import { randomUUID } from "node:crypto";
 import type { RequestHandler } from "express";
 import { getSesiId, requireAuthContext } from "../../../shared/auth/index.js";
-import { DeviceTokenParamSchema, ListNotificationsQuerySchema, NotificationIdParamSchema, RegisterDeviceTokenBodySchema } from "../schemas/notification.schema.js";
+import { DeviceTokenParamSchema, ListNotificationsQuerySchema, NotificationIdParamSchema, RegisterDeviceTokenBodySchema, UpdatePreferencesBodySchema } from "../schemas/notification.schema.js";
 import type { DeviceTokenService } from "../services/device-token.service.js";
+import type { PreferenceService } from "../services/preference.service.js";
 import type { HubSse } from "../services/fanout.js";
 import { RETRY_MS } from "../services/fanout.js";
 import type { InboxService } from "../services/inbox.service.js";
@@ -34,6 +35,23 @@ export function markReadHandler(service: InboxService): RequestHandler {
 export function markAllReadHandler(service: InboxService): RequestHandler {
     return async (_req, res) => {
         res.status(200).json({ success: true, data: await service.tandaiSemua(requireAuthContext(res)), meta: null });
+    };
+}
+
+/** FR-17.3 langkah 2. */
+export function getPreferencesHandler(service: PreferenceService): RequestHandler {
+    return async (_req, res) => {
+        res.json({ success: true, data: await service.baca(requireAuthContext(res)), meta: null });
+    };
+}
+
+/** FR-17.3 langkah 3. */
+export function updatePreferencesHandler(service: PreferenceService): RequestHandler {
+    return async (req, res) => {
+        const ctx = requireAuthContext(res);
+        const b = UpdatePreferencesBodySchema.parse(req.body);
+        const data = await service.simpan(ctx, b.preferensi.map((p) => ({ jenis: p.jenis, inApp: p.in_app, push: p.push })));
+        res.json({ success: true, data, meta: null });
     };
 }
 

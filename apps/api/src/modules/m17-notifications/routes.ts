@@ -12,11 +12,13 @@ import type { RouteDefinition } from "../../shared/http/index.js";
 import type { Logger } from "../../shared/observability/index.js";
 import {
     deleteDeviceTokenHandler,
+    getPreferencesHandler,
     listNotificationsHandler,
     markAllReadHandler,
     markReadHandler,
     registerDeviceTokenHandler,
     streamHandler,
+    updatePreferencesHandler,
 } from "./controllers/notification.controller.js";
 import {
     DeviceTokenParamSchema,
@@ -27,11 +29,14 @@ import {
     MarkAllReadResponseSchema,
     MarkReadResponseSchema,
     NotificationIdParamSchema,
+    PreferencesResponseSchema,
     StreamEventSchema,
+    UpdatePreferencesBodySchema,
 } from "./schemas/notification.schema.js";
 import { HubSse, PenyiarNotifikasi } from "./services/fanout.js";
 import { DeviceTokenService } from "./services/device-token.service.js";
 import { InboxService } from "./services/inbox.service.js";
+import { PreferenceService } from "./services/preference.service.js";
 
 const MODUL = "m17-notifications";
 const PERMISSION = "notification.manage_own";
@@ -58,6 +63,29 @@ export const streamNotificationsRoute = defineRoute({
     summary: "Aliran notifikasi real-time (SSE)",
     contentType: "text/event-stream",
     response: StreamEventSchema,
+});
+
+/** FR-17.3 langkah 2 (keputusan 81d). Didaftarkan SEBELUM `/:id/...`. */
+export const getPreferencesRoute = defineRoute({
+    method: "GET",
+    path: "/notifications/preferences",
+    permission: PERMISSION,
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Preferensi notifikasi saya (enam kelompok × dua kanal)",
+    response: PreferencesResponseSchema,
+});
+
+/** FR-17.3 langkah 3, A1 (keputusan 81). */
+export const updatePreferencesRoute = defineRoute({
+    method: "PUT",
+    path: "/notifications/preferences",
+    permission: PERMISSION,
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Atur preferensi notifikasi saya",
+    body: UpdatePreferencesBodySchema,
+    response: PreferencesResponseSchema,
 });
 
 /** FR-17.1 langkah 5. `read-all` SEBELUM `/:id/read` agar tidak tertangkap sebagai id. */
@@ -134,6 +162,9 @@ export function notificationsRouter(
     const router = express.Router();
     router.get(listNotificationsRoute.path, batasi(listNotificationsRoute), otorisasi(PERMISSION), listNotificationsHandler(service));
     router.get(streamNotificationsRoute.path, batasi(streamNotificationsRoute), otorisasi(PERMISSION), streamHandler(service, ambilHub));
+    const preferensi = new PreferenceService(deps.db);
+    router.get(getPreferencesRoute.path, batasi(getPreferencesRoute), otorisasi(PERMISSION), getPreferencesHandler(preferensi));
+    router.put(updatePreferencesRoute.path, batasi(updatePreferencesRoute), otorisasi(PERMISSION), updatePreferencesHandler(preferensi));
     router.patch(markAllReadRoute.path, batasi(markAllReadRoute), otorisasi(PERMISSION), markAllReadHandler(service));
     router.patch(markReadRoute.path, batasi(markReadRoute), otorisasi(PERMISSION), markReadHandler(service));
     const token = new DeviceTokenService(deps.db, deps.clock);

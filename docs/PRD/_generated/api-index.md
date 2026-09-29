@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **156** baris, dikumpulkan dari 22 berkas modul.
+> Total: **157** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -54,6 +54,7 @@
 | GET | `/materials/{id}` | `material.view` | Detail bahan beserta saldo per lokasi | [M-22](../02-modules/m22-materials.md) |
 | GET | `/materials` | `material.view` | Daftar bahan + saldo (filter kategori, lokasi, status stok) | [M-22](../02-modules/m22-materials.md) |
 | GET | `/me` | Bearer | Profil & permission pengguna | 200 `{user, permissions}` | 401 | [M-01](../02-modules/m01-auth.md) |
+| GET | `/notifications/preferences` | `notification.manage_own` | Baca preferensi notifikasi sendiri (enam kelompok × dua kanal) | [M-17](../02-modules/m17-notifications.md) |
 | GET | `/notifications/stream` | `notification.manage_own` | Aliran notifikasi real-time via SSE (NTF-01) | [M-17](../02-modules/m17-notifications.md) |
 | GET | `/notifications` | `notification.manage_own` | Daftar notifikasi pengguna | [M-17](../02-modules/m17-notifications.md) |
 | GET | `/procurements` | `procurement.view` | Daftar usulan | [M-14](../02-modules/m14-procurement.md) |
@@ -158,7 +159,7 @@
 | PUT | `/assets/{id}` | `asset.update` | Perbarui aset | [M-04](../02-modules/m04-assets.md) |
 | PUT | `/holidays/{id}` | `setting.manage` | Sunting hari libur | [M-20](../02-modules/m20-settings.md) |
 | PUT | `/me` | Bearer | Perbarui profil sendiri | 200 | 401, 422 | [M-01](../02-modules/m01-auth.md) |
-| PUT | `/notifications/preferences` | Bearer | Atur preferensi notifikasi | [M-17](../02-modules/m17-notifications.md) |
+| PUT | `/notifications/preferences` | `notification.manage_own` | Atur preferensi notifikasi | [M-17](../02-modules/m17-notifications.md) |
 | PUT | `/roles/{id}/permissions` | `role.update` | Perbarui matriks permission | [M-02](../02-modules/m02-users.md) |
 | PUT | `/rooms/{id}` | `location.manage` | Perbarui ruangan | [M-03](../02-modules/m03-locations.md) |
 | PUT | `/settings` | `setting.manage` | Perbarui parameter sistem | [M-20](../02-modules/m20-settings.md) |

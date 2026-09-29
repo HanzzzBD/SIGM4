@@ -68,6 +68,7 @@ Data yang tumbuh seiring operasional harian.
 | **asset_condition_history** | Riwayat perubahan kondisi | id, asset_id, kondisi_lama, kondisi_baru, alasan, referensi_jenis, referensi_id, diubah_oleh, diubah_pada | ± 1.500 |
 | **notifications** | Notifikasi pengguna | id, user_id, jenis, judul, isi, referensi_jenis, referensi_id, dibaca_pada, created_at | ± 40.000 |
 | **notification_deliveries** | Hasil pengiriman **per kanal** untuk satu notifikasi — satu notifikasi dapat dikirim in-app dan push dengan nasib berbeda (`FR-17.2 A3`, `A4`) | id, notification_id, kanal, status, attempts, sent_at | ± 70.000 |
+| **notification_preferences** | Preferensi kanal per kelompok notifikasi (`FR-17.3`, UXD-05); ketiadaan baris = aktif | user_id, jenis (Kelompok Notifikasi), in_app, push | ± 3.000 |
 | **device_tokens** | Token perangkat untuk push | id, user_id, token (unik), platform, family_id (keluarga sesi yang mendaftarkannya — dicabut bersama sesi itu, MOB-SEC-05), terakhir_aktif | ± 1.500 |
 | **activity_logs** | Jejak audit seluruh aktivitas | id, user_id, role, ip, user_agent, modul, aksi, entitas, entitas_id, nilai_sebelum (JSON), nilai_sesudah (JSON), hasil, waktu | ± 150.000 |
 | **chat_sessions** | Sesi percakapan chatbot | id, user_id, judul, dimulai_pada, terakhir_aktif | ± 5.000 |
