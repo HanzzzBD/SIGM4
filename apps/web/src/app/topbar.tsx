@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { logout, logoutSemua } from "../modules/m01-auth";
 import { useSesi } from "../shared/auth";
 import { Ikon } from "../shared/ui/icon";
+import { Logo } from "../shared/ui/logo";
 
 /** Jam dinding WIB (CAL-UI-09, NFR-C-10) — tidak mengikuti zona waktu perangkat. */
 function JamWib() {
@@ -43,7 +44,7 @@ export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; rea
             <button type="button" onClick={onMenu} aria-label={menuLabel} className="flex size-touch items-center justify-center rounded-md text-icon-default hover:bg-neutral-50">
                 <Ikon nama="menu" />
             </button>
-            <span className="text-lg font-semibold text-text-heading md:hidden">SIGM4</span>
+            <Logo ukuran="sm" className="md:hidden" />
             <div className="ml-auto flex items-center gap-4">
                 <JamWib />
                 <Menu.Root>

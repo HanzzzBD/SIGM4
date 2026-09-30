@@ -6,6 +6,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useCan } from "../shared/auth";
 import { HALAMAN_TERDAFTAR, navigasiTerlihat } from "../shared/navigasi";
 import { Ikon } from "../shared/ui/icon";
+import { Logo } from "../shared/ui/logo";
 import { gabung } from "../shared/ui/primitives";
 
 /** `null` = bawaan per titik henti; `true`/`false` = pilihan pengguna (preferensi tampilan, SDD-FE-03). */
@@ -13,6 +14,9 @@ export type PreferensiCiut = boolean | null;
 
 const LEBAR = { null: "md:w-sidebar-ciut lg:w-sidebar", true: "md:w-sidebar-ciut lg:w-sidebar-ciut", false: "md:w-sidebar lg:w-sidebar" } as const;
 const TEKS = { null: "md:sr-only lg:not-sr-only", true: "md:sr-only", false: "" } as const;
+/** Wordmark saat terbuka, ikon saat ciut — mengikuti lebar sidebar per titik henti. */
+const WORDMARK = { null: "md:hidden lg:block", true: "md:hidden", false: "" } as const;
+const IKON = { null: "hidden md:block lg:hidden", true: "hidden md:block", false: "hidden" } as const;
 
 export function Sidebar({ ciut, drawerTerbuka, onTutupDrawer }: { readonly ciut: PreferensiCiut; readonly drawerTerbuka: boolean; readonly onTutupDrawer: () => void }) {
     const can = useCan();
@@ -30,7 +34,8 @@ export function Sidebar({ ciut, drawerTerbuka, onTutupDrawer }: { readonly ciut:
                 )}
             >
                 <div className="flex min-h-topbar items-center border-b border-border-subtle px-4">
-                    <span className={gabung("text-lg font-semibold text-text-heading", teks)}>SIGM4</span>
+                    <Logo className={drawerTerbuka ? "" : WORDMARK[kunci]} />
+                    {!drawerTerbuka && <Logo varian="ikon" className={IKON[kunci]} />}
                 </div>
                 <nav aria-label="Navigasi utama" className="flex flex-col gap-4 py-4">
                     {navigasiTerlihat(can).map((grup) => (

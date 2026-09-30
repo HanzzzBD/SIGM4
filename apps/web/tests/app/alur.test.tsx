@@ -114,6 +114,15 @@ describe("P-01 Login", () => {
         await waitFor(() => expect(router.state.location.pathname).toBe(tujuan));
     });
 
+    it("identitas: logo SIGM4 ber-alt di halaman masuk; favicon ikon SIGM4 terpasang", async () => {
+        server();
+        await renderAplikasi("/login");
+        expect(screen.getByRole("img", { name: "SIGM4" }).getAttribute("src")).toMatch(/logo-sigm4/);
+        const { readFileSync } = await import("node:fs");
+        expect(readFileSync("index.html", "utf8")).toContain("<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\" />");
+        expect(readFileSync("public/favicon.svg", "utf8")).toContain("viewBox=\"150 120 530 530\"");
+    });
+
     it("tujuan hanya path internal (mencegah open redirect)", async () => {
         const { tujuanAman } = await import("../../src/modules/m01-auth");
         expect([tujuanAman("//evil.com"), tujuanAman("https://evil.com"), tujuanAman("/login"), tujuanAman(undefined), tujuanAman("/aset?x=1")]).toEqual(["/", "/", "/", "/", "/aset?x=1"]);
@@ -159,6 +168,13 @@ describe("P-12 Dashboard + shell", () => {
         await renderAplikasi("/");
         expect(await screen.findByText("req-kartu-9")).toBeTruthy();
         expect(screen.getByText("Siti Guru")).toBeTruthy();
+    });
+
+    it("shell menampilkan identitas SIGM4 (wordmark & ikon untuk sidebar ciut)", async () => {
+        await renderAplikasi("/");
+        const logo = (await screen.findAllByRole("img", { name: "SIGM4" })).map((i) => i.getAttribute("src") ?? "");
+        expect(logo.some((x) => x.includes("logo-sigm4"))).toBe(true);
+        expect(logo.some((x) => x.includes("ikon-sigm4"))).toBe(true);
     });
 
     it("sidebar hanya berisi entri yang halamannya ada dan permission-nya dipegang (PM-04)", async () => {

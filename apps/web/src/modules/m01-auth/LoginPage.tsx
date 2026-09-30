@@ -9,6 +9,7 @@ import type { FormEvent } from "react";
 import { ApiError, GalatJaringan } from "../../shared/api";
 import { KUNCI_ME } from "../../shared/auth";
 import { HALAMAN_TERDAFTAR } from "../../shared/navigasi";
+import { Logo } from "../../shared/ui/logo";
 import { Isian, Kartu, Peringatan, Tombol } from "../../shared/ui/primitives";
 import { login, perluDuaFaktor, simpanTantangan } from "./api";
 
@@ -63,6 +64,7 @@ export function LoginPage({ tujuan }: { readonly tujuan?: string | undefined }) 
     return (
         <main className="flex min-h-full items-center justify-center bg-bg-page px-4 py-12">
             <div className="flex w-full max-w-sm flex-col gap-6">
+                <Logo ukuran="lg" className="self-start" />
                 <h1 className="text-2xl font-semibold text-text-heading">Masuk ke SIGM4</h1>
                 <Kartu>
                     <form className="flex flex-col gap-5" onSubmit={(ev) => void kirim(ev)} noValidate>
