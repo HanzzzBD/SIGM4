@@ -146,7 +146,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | GET | `/approval-rules` | `approval_rule.view` | Daftar aturan |
 | POST | `/approval-rules` | `approval_rule.manage` | Buat aturan + langkah |
 | PUT | `/approval-rules/{id}` | `approval_rule.manage` | Ganti definisi aturan utuh; `versi` naik, instance berjalan tetap memakai snapshot (FR-10.1 A4, BR-040) |
-| PATCH | `/approval-rules/{id}/status` | `approval_rule.manage` | Aktifkan / nonaktifkan aturan (FR-10.1 A4) |
+| PATCH | `/approval-rules/{id}/status` | `approval_rule.manage` | Aktifkan / nonaktifkan aturan (FR-10.1 A4); menonaktifkan wajib menyertakan `alasan` (UX-04), tercatat pada entri log |
 | POST | `/approval-rules/preview` | `approval_rule.manage` | Pratinjau aturan yang akan berlaku |
 | GET | `/approvals/pending` | `approval.decide` | Pengajuan menunggu keputusan saya |
 | POST | `/approvals/{id}/decide` | `approval.decide` | Setujui/tolak/minta revisi |

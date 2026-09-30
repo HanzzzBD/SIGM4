@@ -112,13 +112,14 @@ export class RuleConfigService {
     }
 
     /** `PATCH /approval-rules/{id}/status` — nonaktif: DEACTIVATED; aktif kembali: UPDATED. */
-    async ubahStatus(ctx: AuthContext, id: number, aktif: boolean): Promise<AturanRespons> {
+    async ubahStatus(ctx: AuthContext, id: number, aktif: boolean, alasan?: string): Promise<AturanRespons> {
         return withTransaction(ctx, async (scope) => {
             const repo = createRuleRepository(scope.tx);
             const sebelum = await this.muat(scope, repo, id);
             if (sebelum.status_aktif === aktif) return sebelum; // idempoten, tanpa entri log
             await repo.setStatus(scope.ctx, id, aktif);
-            return this.catat(scope, repo, id, aktif ? "APPROVAL_RULE_UPDATED" : "APPROVAL_RULE_DEACTIVATED", sebelum);
+            // UX-04: alasan penonaktifan tercatat pada entri log (PR-02-34).
+            return this.catat(scope, repo, id, aktif ? "APPROVAL_RULE_UPDATED" : "APPROVAL_RULE_DEACTIVATED", sebelum, alasan);
         }, this.db);
     }
 
@@ -211,9 +212,9 @@ export class RuleConfigService {
         return keRespons(a, await repo.roles(scope.ctx));
     }
 
-    private async catat(scope: TransactionScope, repo: RuleRepository, id: number, aksi: string, sebelum: AturanRespons | undefined): Promise<AturanRespons> {
+    private async catat(scope: TransactionScope, repo: RuleRepository, id: number, aksi: string, sebelum: AturanRespons | undefined, keterangan?: string): Promise<AturanRespons> {
         const sesudah = await this.muat(scope, repo, id);
-        await this.audit.write(scope, { modul: MODUL, aksi, entitas: "approval_rules", entitasId: id, nilaiSebelum: sebelum, nilaiSesudah: sesudah });
+        await this.audit.write(scope, { modul: MODUL, aksi, entitas: "approval_rules", entitasId: id, nilaiSebelum: sebelum, nilaiSesudah: sesudah, ...(keterangan === undefined ? {} : { keterangan }) });
         return sesudah;
     }
 

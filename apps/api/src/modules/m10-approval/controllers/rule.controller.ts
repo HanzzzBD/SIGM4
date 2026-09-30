@@ -43,8 +43,8 @@ export function ruleStatusHandler(service: RuleConfigService): RequestHandler {
     return async (req, res) => {
         const ctx = requireAuthContext(res);
         const { id } = RuleIdParamSchema.parse(req.params);
-        const { status_aktif } = StatusAturanBodySchema.parse(req.body);
-        res.status(200).json(kirim(await service.ubahStatus(ctx, id, status_aktif)));
+        const { status_aktif, alasan } = StatusAturanBodySchema.parse(req.body);
+        res.status(200).json(kirim(await service.ubahStatus(ctx, id, status_aktif, alasan)));
     };
 }
 

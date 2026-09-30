@@ -2,7 +2,7 @@
 // UX §8.3 (drill-down), keputusan 83.
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { LABEL_JENIS_PENGAJUAN, LABEL_KONDISI_ASET, LABEL_STATUS_ASET, LABEL_STATUS_INSTANCE_APPROVAL, labelEnum } from "@sigm4/schemas";
+import { FIELD_DSL, LABEL_ALASAN_PENGHAPUSAN, LABEL_JENIS_PENGAJUAN, LABEL_JENIS_RUANGAN, LABEL_KONDISI_ASET, LABEL_PRIORITAS, LABEL_STATUS_ASET, LABEL_STATUS_INSTANCE_APPROVAL, labelEnum } from "@sigm4/schemas";
 import { describe, expect, it } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
 import { buatRouter } from "../../src/app/router";
@@ -20,8 +20,17 @@ describe("peta label enum (SDD-FE-08) = PRD Bab 11.3 kata per kata", () => {
         ["Status Aset", LABEL_STATUS_ASET],
         ["Status Instance Approval", LABEL_STATUS_INSTANCE_APPROVAL],
         ["Jenis Pengajuan (Approval)", LABEL_JENIS_PENGAJUAN],
+        ["Jenis Ruangan", LABEL_JENIS_RUANGAN],
+        ["Alasan Penghapusan", LABEL_ALASAN_PENGHAPUSAN],
+        ["Prioritas", LABEL_PRIORITAS],
     ] as const)("%s", (kelompok, peta) => {
         expect(Object.values(peta)).toEqual(nilaiBab(kelompok));
+    });
+
+    it("kode tertutup kamus D.2 bersama (PR-02-34) = kunci peta label Bab 11.3 — tidak ada nilai kondisi tanpa label", () => {
+        expect(FIELD_DSL["room_type"]?.nilaiSah).toEqual(Object.keys(LABEL_JENIS_RUANGAN));
+        expect(FIELD_DSL["disposal_reason"]?.nilaiSah).toEqual(Object.keys(LABEL_ALASAN_PENGHAPUSAN));
+        expect(FIELD_DSL["priority"]?.nilaiSah).toEqual(Object.keys(LABEL_PRIORITAS));
     });
 
     it("kode tak dikenal tidak pernah dirender mentah", () => {

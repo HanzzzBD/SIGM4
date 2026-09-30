@@ -505,7 +505,7 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 const idAturan = String((aturanBaru.json.data as { id: number }).id);
                 await langkah("PUT /approval-rules/:id", `/approval-rules/${idAturan}`, { ...aturanUji, prioritas: 8 }, ["APPROVAL_RULE_UPDATED"]);
                 await langkah("POST /approval-rules/preview", "/approval-rules/preview", { jenis_pengajuan: "PENGADAAN_BARANG", fakta: {} }, []);
-                await langkah("PATCH /approval-rules/:id/status", `/approval-rules/${idAturan}/status`, { status_aktif: false }, ["APPROVAL_RULE_DEACTIVATED"]);
+                await langkah("PATCH /approval-rules/:id/status", `/approval-rules/${idAturan}/status`, { status_aktif: false, alasan: "Uji gerbang" }, ["APPROVAL_RULE_DEACTIVATED"]);
 
                 // PR-02-26: tandai baca — M-17 §11 tanpa aksi log khusus (keputusan 79).
                 const [ntf] = await kueri<{ id: string }>(`INSERT INTO notifications (user_id, kode, jenis, judul, isi, created_at, dedupe_key)

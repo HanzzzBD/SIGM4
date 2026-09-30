@@ -56,7 +56,12 @@ export const DefinisiAturanSchema = z
 
 export type DefinisiAturan = z.infer<typeof DefinisiAturanSchema>;
 
-export const StatusAturanBodySchema = z.strictObject({ status_aktif: z.boolean() });
+/** UX-04: menonaktifkan aturan wajib beralasan (PR-02-34); mengaktifkan kembali tidak — pola `PATCH /users/{id}/status`. */
+export const StatusAturanBodySchema = z
+    .strictObject({ status_aktif: z.boolean(), alasan: z.string().trim().min(1).max(500).optional() })
+    .superRefine((b, ctx) => {
+        if (!b.status_aktif && b.alasan === undefined) ctx.addIssue({ code: "custom", path: ["alasan"], message: "Alasan wajib diisi saat menonaktifkan aturan." });
+    });
 
 const FaktaSchema = z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null(), z.array(z.union([z.string(), z.number()]))]));
 
