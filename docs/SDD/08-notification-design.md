@@ -207,7 +207,7 @@ Ketiadaan baris berarti "aktif" — sehingga pengguna baru menerima segalanya ta
 | `DENDA_KEWAJIBAN` | `NT-15`…`NT-18` | Sebagian |
 | `KERUSAKAN_PERAWATAN` | `NT-19`…`NT-26`, `NT-28`, `NT-29` | Sebagian |
 | `OPNAME_PENGADAAN` | `NT-30`…`NT-36`, `NT-43`…`NT-45`, `NT-49`…`NT-51` | Sebagian |
-| `AKUN_SISTEM` | `NT-37`…`NT-42`, `NT-38a`, `NT-39a`, `NT-48`, `NT-53`, `NT-54` | Sebagian |
+| `AKUN_SISTEM` | `NT-37`…`NT-42`, `NT-38a`, `NT-39a`, `NT-48`, `NT-52`…`NT-54` | Sebagian |
 
 Seluruh **52** kode `NT-xx` terpetakan; tidak boleh ada kode tanpa kelompok, sebab `SDD-NTF-06` memeriksa preferensi per kelompok saat pengiriman dan notifikasi tanpa kelompok tidak punya perilaku yang terdefinisi. `NT-49`…`NT-51` (bahan habis pakai, M-22) masuk `OPNAME_PENGADAAN` yang memang sudah memuat alur logistik — mengikuti `UXD-16` yang menolak Bahan menjadi grup tersendiri.
 

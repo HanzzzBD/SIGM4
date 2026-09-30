@@ -551,8 +551,8 @@ Enam kelompok (**UXD-05**), dua kanal per kelompok.
 | **Reservasi & Peminjaman** | `NT-08`…`NT-14`, `NT-27`, `NT-46` | Sebagian (`NT-08`, `NT-11`, `NT-12`, `NT-27`, `NT-46`) |
 | **Denda & Kewajiban** | `NT-15`…`NT-18` | Sebagian (`NT-15`, `NT-18`) |
 | **Kerusakan & Perawatan** | `NT-19`…`NT-26`, `NT-28`, `NT-29` | Sebagian (`NT-19`, `NT-20`, `NT-22`, `NT-23`, `NT-25`) |
-| **Opname & Pengadaan** | `NT-30`…`NT-36`, `NT-43`…`NT-45` | Sebagian (`NT-31`, `NT-33`, `NT-34`, `NT-35`, `NT-43`, `NT-44`) |
-| **Akun & Sistem** | `NT-37`…`NT-42`, `NT-38a`, `NT-39a`, `NT-48`, `NT-53`, `NT-54` | Sebagian (`NT-37`, `NT-38`, `NT-38a`, `NT-39`, `NT-39a`, `NT-40`, `NT-48`, `NT-53`, `NT-54`) |
+| **Opname & Pengadaan** | `NT-30`…`NT-36`, `NT-43`…`NT-45`, `NT-49`…`NT-51` | Sebagian (`NT-31`, `NT-33`, `NT-34`, `NT-35`, `NT-43`, `NT-44`, `NT-49`) |
+| **Akun & Sistem** | `NT-37`…`NT-42`, `NT-38a`, `NT-39a`, `NT-48`, `NT-52`…`NT-54` | Sebagian (`NT-37`, `NT-38`, `NT-38a`, `NT-39`, `NT-39a`, `NT-40`, `NT-48`, `NT-52`, `NT-53`, `NT-54`) |
 
 | Aspek | Ketentuan | Rujukan |
 |---|---|---|
