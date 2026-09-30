@@ -65,7 +65,7 @@ describe("gerbang sesi (F-01, SDD-AUTH-09)", () => {
     });
 
     it.each([
-        ["TWO_FACTOR_REQUIRED", "/login/2fa"],
+        ["TWO_FACTOR_REQUIRED", "/login/2fa/aktivasi"],
         ["PASSWORD_CHANGE_REQUIRED", "/ganti-password"],
     ])("/me %s → %s (urutan gerbang server)", async (kode, tujuan) => {
         server((p) => (p.url === "/me" ? gagal(403, kode, "Gerbang.") : undefined));

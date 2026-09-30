@@ -1,6 +1,6 @@
 // Topbar C-04 (UX §5.2; keputusan 83): ciutkan sidebar, identitas, penanda WIB, menu
 // pengguna (Keluar · Keluar dari semua perangkat, FR-01.2/A1). Pencarian global lahir
-// bersama P-15, lonceng bersama P-13, banner sesi berakhir bersama PR-02-36.
+// bersama P-15, lonceng bersama P-13; banner sesi berakhir ada di shell (FR-01.2 A2).
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
