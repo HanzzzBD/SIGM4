@@ -201,16 +201,32 @@ describe.skipIf(!ADA)("PR-02-27 — push FCM + token perangkat (acceptance)", ()
         expect(eventHandlers.handlersFor(EVENT_SESI_DICABUT).length).toBeGreaterThan(0); // terpasang di worker
     });
 
-    it("keputusan 80c: job push dijadwalkan per notifikasi baru SETELAH commit — tidak untuk event yang gagal", async () => {
+    it("keputusan 80c/87b: job push dijadwalkan per notifikasi baru SETELAH commit — hanya kode \"In-app + Push\" katalog", async () => {
+        const pemohon = await pengguna("R-05");
         await pengguna("R-01");
         const dijadwalkan: number[] = [];
         const registry = new EventHandlerRegistry();
         pasangKonsumenNotifikasi(registry, { db: getDb, clock, ctx: () => pelaku, jadwalkanPush: (ids) => (dijadwalkan.push(...ids), Promise.resolve()) });
+        // NT-48 (m02 §9: In-app) dan NT-37 (m01 §9: In-app + Push) dari dua event yang sudah commit.
         await withTransaction(pelaku, (s) => publish(s, { name: "GuardianConsentMissing", aggregateType: "user", aggregateId: 1, payload: { user_id: null, nama: "Siswa Uji" } }), getDb());
+        await withTransaction(pelaku, (s) => publish(s, { name: "PasswordResetRequested", aggregateType: "user", aggregateId: pemohon, payload: { permintaan_id: 77, user_id: String(pemohon) } }), getDb());
         await new OutboxDispatcher({ registry, clock, db: getDb(), logger }).drain();
-        const lahir = (await kueri<{ id: string }>("SELECT id::text FROM notifications WHERE kode = 'NT-48' ORDER BY id")).map((b) => Number(b.id));
-        expect(lahir.length).toBeGreaterThan(0);
-        expect(dijadwalkan.sort((x, y) => x - y)).toEqual(lahir);
+        const lahir = async (kode: string) => (await kueri<{ id: string }>(`SELECT id::text FROM notifications WHERE kode = '${kode}' ORDER BY id`)).map((b) => Number(b.id));
+        expect((await lahir("NT-48")).length).toBeGreaterThan(0);
+        expect((await lahir("NT-37")).length).toBeGreaterThan(0);
+        expect(dijadwalkan.sort((x, y) => x - y)).toEqual(await lahir("NT-37"));
+    });
+
+    it("keputusan 87c: isi push NT-37 generik — nama pemohon hanya di in-app (layar terkunci, SDD-08 §4.2)", async () => {
+        const u = await pengguna();
+        await tokenLangsung(u, "fid-37");
+        const [b] = await kueri<{ id: string }>(`
+            INSERT INTO notifications (user_id, kode, jenis, judul, isi, deep_link, wajib, created_at, dedupe_key)
+            VALUES (${String(u)}, 'NT-37', 'AKUN_SISTEM', 'Permintaan reset password', 'Budi Siswa mengajukan reset password.', '/permintaan-reset-password', true, now(), '${randomUUID()}') RETURNING id::text`);
+        const p = pengirimTiruan((t) => ({ terkirim: t.length, tokenMati: [], galatSementara: null }));
+        await kirimPushNotifikasi(deps(p), Number(b?.id), 1, false);
+        expect(p.panggilan[0]?.pesan.isi).toBe("Ada permintaan reset password baru.");
+        expect(JSON.stringify(p.panggilan)).not.toContain("Budi");
     });
 
     it("worker: pekerjaan `notification-push` terdaftar (tanpa cron) dan jobId tetap per notifikasi", () => {

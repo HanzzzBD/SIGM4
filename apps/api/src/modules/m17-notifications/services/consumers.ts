@@ -1,7 +1,7 @@
 // Konsumen outbox penerbit notifikasi (SDD-08 §4.2a, keputusan 75, 78): satu handler
 // per event, dijalankan WORKER setelah commit, masing-masing di transaksinya sendiri
 // dengan pelaku SYSTEM. Penerima & rincian dihitung modul pemiliknya lewat index.ts-nya
-// (SDD-SYS-03). Konsumen M-01 milik PR-02-35; SessionRevoked milik PR-02-27.
+// (SDD-SYS-03). Konsumen M-01 (PR-02-35, keputusan 87); SessionRevoked milik PR-02-27.
 
 import type { Kysely } from "kysely";
 import type { AuthContext } from "../../../shared/auth/index.js";
@@ -13,12 +13,22 @@ import {
     EVENT_AKUN_BERUBAH,
     EVENT_IMPOR_SELESAI,
     EVENT_KONSEN_WALI_HILANG,
+    identitasPengguna,
     namaRole,
     penggunaAktifBerperan,
     ringkasanImpor,
     tanggalWib,
 } from "../../m02-users/index.js";
-import { EVENT_SESI_DICABUT } from "../../m01-auth/index.js";
+import {
+    EVENT_AKUN_TERKUNCI,
+    EVENT_BREAK_GLASS_RECOVERY,
+    EVENT_DUA_FAKTOR_AKTIF,
+    EVENT_PASSWORD_DIGANTI_SETELAH_RESET,
+    EVENT_REFRESH_DIPAKAI_ULANG,
+    EVENT_RESET_DIMINTA,
+    EVENT_RESET_DITERBITKAN,
+    EVENT_SESI_DICABUT,
+} from "../../m01-auth/index.js";
 import {
     ApprovalSlaBreachedPayloadSchema,
     NOTIFIKASI_TINDAKAN_SLA,
@@ -35,12 +45,20 @@ import type { Terbitan } from "./notification.service.js";
 import { NotificationService } from "./notification.service.js";
 import { templatUntuk } from "./templates.js";
 
-/** Kode role penerima tetap (seed 0010): Administrator, Petugas Sarana Prasarana. */
+/** Kode role penerima tetap (seed 0010): Administrator, Petugas Sarana Prasarana, Pimpinan Sekolah. */
 const ADMINISTRATOR = "R-01";
 const PETUGAS_SARPRAS = "R-02";
+const PIMPINAN = "R-03";
 
 /** Seluruh kode yang dapat diterbitkan konsumen di sini — diperiksa saat dipasang (SDD-08 §5). */
-const KODE_DIPAKAI = ["NT-02", "NT-03", "NT-04", "NT-05", "NT-06", "NT-07", "NT-47", "NT-40", "NT-48", "NT-52"] as const;
+const KODE_DIPAKAI = [
+    ...["NT-02", "NT-03", "NT-04", "NT-05", "NT-06", "NT-07", "NT-47", "NT-40", "NT-48", "NT-52"],
+    ...["NT-37", "NT-38", "NT-38a", "NT-39", "NT-39a", "NT-53", "NT-54"],
+] as const;
+
+/** Deep link M-01: P-67 antrean reset, P-63 detail pengguna (UX §6), profil sendiri. */
+const P67 = "/permintaan-reset-password";
+const detailPengguna = (id: number): string => `/pengguna/${String(id)}`;
 
 /** Alasan NT-03 bila penolakan tanpa catatan manusia — Lampiran D.5 `auto_reject`. */
 const ALASAN_TOLAK_OTOMATIS = "batas waktu persetujuan habis tanpa keputusan";
@@ -72,7 +90,9 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
         };
         await withTransaction(deps.ctx(), (scope) => kerja(scope, e, (e.payload ?? {}) as Payload, emit), deps.db());
         await siarkanSetelahCommit(baru);
-        if (deps.jadwalkanPush !== undefined && baru.length > 0) await deps.jadwalkanPush(baru.map((n) => n.id));
+        // Keputusan 87b: hanya kode "In-app + Push" katalog yang menghasilkan job push.
+        const dipush = baru.filter((n) => templatUntuk(n.kode).push);
+        if (deps.jadwalkanPush !== undefined && dipush.length > 0) await deps.jadwalkanPush(dipush.map((n) => n.id));
     };
 
     /** NTF-05: tiap notifikasi baru disiarkan bersama hitungan belum-dibaca penerimanya. */
@@ -209,6 +229,112 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
                 params: { nama: typeof p["nama"] === "string" ? p["nama"] : "" },
                 referensi: userId === null ? null : { jenis: "user", id: userId },
                 deepLink: userId === null ? "/pengguna" : `/pengguna/${String(userId)}`,
+                dedupe: { event: e.id },
+            });
+        }),
+    );
+
+    // ---- M-01 (m01-auth.md §9; PR-02-35, keputusan 87). `{waktu}` = saat kejadian (occurredAt), bukan saat diproses.
+    const nama = async (scope: TransactionScope, id: number): Promise<string> => (await identitasPengguna(scope, id))?.nama ?? "Pengguna";
+    const waktu = (e: OutboxEvent): string => e.occurredAt.toISOString();
+
+    // FR-01.3 langkah 2: permintaan reset masuk → Administrator (NT-37).
+    registry.on(
+        EVENT_RESET_DIMINTA,
+        jalankan(async (scope, e, p, emit) => {
+            const userId = angka(p["user_id"]);
+            await emit(scope, {
+                kode: "NT-37",
+                penerima: await penggunaAktifBerperan(scope, [ADMINISTRATOR]),
+                params: { pengguna: await nama(scope, userId) },
+                referensi: { jenis: "password_reset_request", id: angka(p["permintaan_id"]) },
+                deepLink: P67,
+                dedupe: { event: e.id },
+            });
+        }),
+    );
+
+    // FR-01.3 langkah 5: password sementara diterbitkan → Administrator PENERBIT saja (NT-38).
+    registry.on(
+        EVENT_RESET_DITERBITKAN,
+        jalankan(async (scope, e, p, emit) => {
+            await emit(scope, {
+                kode: "NT-38",
+                penerima: [angka(p["oleh"])],
+                params: { pengguna: await nama(scope, angka(p["user_id"])), waktu: waktu(e) },
+                referensi: { jenis: "password_reset_request", id: angka(p["permintaan_id"]) },
+                deepLink: P67,
+                dedupe: { event: e.id },
+            });
+        }),
+    );
+
+    // FR-01.3 langkah 7: password diganti setelah reset → pengguna itu (NT-38a).
+    registry.on(
+        EVENT_PASSWORD_DIGANTI_SETELAH_RESET,
+        jalankan(async (scope, e, p, emit) => {
+            const userId = angka(p["user_id"]);
+            await emit(scope, { kode: "NT-38a", penerima: [userId], params: { waktu: waktu(e) }, referensi: { jenis: "user", id: userId }, deepLink: "/profil", dedupe: { event: e.id } });
+        }),
+    );
+
+    // FR-01.1 A2: akun terkunci → pemilik akun + Administrator (NT-39); tautan berbeda per penerima.
+    registry.on(
+        EVENT_AKUN_TERKUNCI,
+        jalankan(async (scope, e, p, emit) => {
+            const userId = angka(p["user_id"]);
+            const params = { pengguna: await nama(scope, userId) };
+            const dasar = { kode: "NT-39", params, referensi: { jenis: "user", id: userId }, dedupe: { event: e.id } } as const;
+            // Pemilik lebih dulu: Administrator yang akunnya sendiri terkunci tidak menerima baris kedua —
+            // `dedupe_key` kejadian tunggal sama per penerima (SDD-08 §4.1), jadi tautan profilnya yang bertahan.
+            await emit(scope, { ...dasar, penerima: [userId], deepLink: "/profil" });
+            await emit(scope, { ...dasar, penerima: await penggunaAktifBerperan(scope, [ADMINISTRATOR]), deepLink: detailPengguna(userId) });
+        }),
+    );
+
+    // BR-070e: 2FA diaktifkan → Administrator (NT-39a), dengan platform sesi pengonfirmasi (keputusan 87d).
+    registry.on(
+        EVENT_DUA_FAKTOR_AKTIF,
+        jalankan(async (scope, e, p, emit) => {
+            const userId = angka(p["user_id"]);
+            await emit(scope, {
+                kode: "NT-39a",
+                penerima: await penggunaAktifBerperan(scope, [ADMINISTRATOR]),
+                params: { pengguna: await nama(scope, userId), waktu: waktu(e), platform: typeof p["platform"] === "string" ? p["platform"] : null },
+                referensi: { jenis: "user", id: userId },
+                deepLink: detailPengguna(userId),
+                dedupe: { event: e.id },
+            });
+        }),
+    );
+
+    // FR-01.6 langkah 6: break-glass → seluruh Pimpinan Sekolah (NT-53).
+    registry.on(
+        EVENT_BREAK_GLASS_RECOVERY,
+        jalankan(async (scope, e, p, emit) => {
+            const userId = angka(p["user_id"]);
+            await emit(scope, {
+                kode: "NT-53",
+                penerima: await penggunaAktifBerperan(scope, [PIMPINAN]),
+                params: { email: typeof p["email"] === "string" ? p["email"] : "", waktu: waktu(e) },
+                referensi: { jenis: "user", id: userId },
+                deepLink: detailPengguna(userId),
+                dedupe: { event: e.id },
+            });
+        }),
+    );
+
+    // SDD-SESS-04: pemakaian ulang refresh token → Administrator (NT-54, keputusan 87a).
+    registry.on(
+        EVENT_REFRESH_DIPAKAI_ULANG,
+        jalankan(async (scope, e, p, emit) => {
+            const userId = angka(p["user_id"]);
+            await emit(scope, {
+                kode: "NT-54",
+                penerima: await penggunaAktifBerperan(scope, [ADMINISTRATOR]),
+                params: { pengguna: await nama(scope, userId), waktu: waktu(e) },
+                referensi: { jenis: "user", id: userId },
+                deepLink: detailPengguna(userId),
                 dedupe: { event: e.id },
             });
         }),

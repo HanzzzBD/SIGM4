@@ -5,7 +5,7 @@
 # Indeks Notifikasi
 
 > Setiap notifikasi dimiliki modul yang menerbitkan event-nya.
-> Total: **55** baris, dikumpulkan dari 22 berkas modul.
+> Total: **56** baris, dikumpulkan dari 22 berkas modul.
 
 | Kode | Event | Penerima | Kanal | Wajib | Contoh | Pemilik |
 |---|---|---|---|:---:|---|---|
@@ -64,3 +64,4 @@
 | **NT-51** | Bahan diserahkan | Pemohon | In-app | ❌ | "{jumlah} {satuan} {bahan} telah diserahkan pada {tanggal}." | [M-22](../02-modules/m22-materials.md) |
 | **NT-52** | Impor massal pengguna selesai diproses (`IMPT-04`) | Administrator pengunggah | In-app | ✅ | "Impor pengguna selesai: {sukses} berhasil, {gagal} gagal dari {total} baris." | [M-02](../02-modules/m02-users.md) |
 | **NT-53** | Pemulihan darurat Administrator dijalankan (break-glass, `FR-01.6`) | Seluruh Pimpinan Sekolah | In-app + Push | ✅ | "Pemulihan darurat dijalankan untuk akun Administrator {email} pada {waktu}. Seluruh sesi di sistem telah dikeluarkan; pastikan ini sah." | [M-01](../02-modules/m01-auth.md) |
+| **NT-54** | Pemakaian ulang refresh token terdeteksi (`SDD-SESS-04`, `NFR-S-03`) | Administrator | In-app + Push | ✅ | "Pemakaian ulang token sesi terdeteksi pada akun {pengguna} pada {waktu}. Seluruh sesi turunannya telah dicabut; bila berulang, periksa akun ini." | [M-01](../02-modules/m01-auth.md) |

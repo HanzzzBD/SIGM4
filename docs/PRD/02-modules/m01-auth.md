@@ -332,6 +332,7 @@ Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-archit
 | **NT-39** | Akun terkunci karena percobaan login gagal | Pengguna + Administrator | In-app | ✅ | "Akun terkunci sementara akibat 5 percobaan login gagal." |
 | **NT-39a** | 2FA diaktifkan pada sebuah akun | Administrator | In-app | ✅ | "{pengguna} mengaktifkan 2FA pada {waktu} dari {perangkat}. Bila pengguna tidak mengenalinya, reset 2FA dari detail pengguna." |
 | **NT-53** | Pemulihan darurat Administrator dijalankan (break-glass, `FR-01.6`) | Seluruh Pimpinan Sekolah | In-app + Push | ✅ | "Pemulihan darurat dijalankan untuk akun Administrator {email} pada {waktu}. Seluruh sesi di sistem telah dikeluarkan; pastikan ini sah." |
+| **NT-54** | Pemakaian ulang refresh token terdeteksi (`SDD-SESS-04`, `NFR-S-03`) | Administrator | In-app + Push | ✅ | "Pemakaian ulang token sesi terdeteksi pada akun {pengguna} pada {waktu}. Seluruh sesi turunannya telah dicabut; bila berulang, periksa akun ini." |
 
 Ketentuan umum kanal, latensi, dan preferensi: [`m17-notifications.md`](m17-notifications.md).
 

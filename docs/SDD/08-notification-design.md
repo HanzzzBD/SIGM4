@@ -165,6 +165,8 @@ Payload push tidak memuat nilai finansial maupun identitas pengguna lain — kon
 | Aspek | Ketentuan |
 |---|---|
 | Pemicu | Konsumen §4.2a, **setelah commit**, memasukkan job BullMQ `notification-push` per notifikasi baru (`jobId` = id notifikasi → tidak ganda) — kegagalan FCM tidak menahan antrean event outbox |
+| Kanal per kode (`PR-02-35`, keputusan 87b) | Templat membawa `push` sesuai kolom **Kanal** katalog modul pemilik: job push hanya dimasukkan untuk kode "In-app + Push". Kode "In-app" (mis. `NT-38`, `NT-39`, `NT-39a`, `NT-40`, `NT-48`, `NT-52`) tidak pernah menghasilkan job push maupun baris `notification_deliveries` |
+| Isi push (keputusan 87c) | Kode push yang isinya menyebut identitas pengguna lain memakai **isi push generik** yang aman di layar terkunci (§4.2 — mis. `NT-37` "Ada permintaan reset password baru.", `NT-53`, `NT-54`); isi lengkap tetap pada notifikasi in-app. Kode yang isinya hanya tentang penerimanya sendiri (mis. `NT-38a`) memakai isi yang sama |
 | Percobaan ulang | 3× *exponential backoff* bawaan antrean (`JOB-06`, `FR-17.2 A3`); percobaan terakhir yang gagal mencatat `GAGAL` |
 | Pencatatan | `notification_deliveries` kanal `PUSH`, status Bab 11.3 "Status Pengiriman Notifikasi": `MENUNGGU` saat galat sementara akan diulang, `TERKIRIM` bila ≥ 1 perangkat menerima, `DILEWATI` bila pengguna tanpa token aktif, FCM tak dikonfigurasi, atau seluruh token mati, `GAGAL` setelah percobaan habis; `attempts` tidak pernah mundur. Kanal `IN_APP` tidak dicatat — siaran SSE *best-effort*, kebenarannya baris `notifications` |
 | Token | `device_tokens.token` unik; didaftarkan ulang dari sesi lain → dipindah ke pengguna & keluarga sesi terbaru. `family_id` = keluarga refresh token sesi pendaftar (klaim `sid`); konsumen `SessionRevoked` menghapus token keluarga itu (`MOB-SEC-05`) |
@@ -205,7 +207,7 @@ Ketiadaan baris berarti "aktif" — sehingga pengguna baru menerima segalanya ta
 | `DENDA_KEWAJIBAN` | `NT-15`…`NT-18` | Sebagian |
 | `KERUSAKAN_PERAWATAN` | `NT-19`…`NT-26`, `NT-28`, `NT-29` | Sebagian |
 | `OPNAME_PENGADAAN` | `NT-30`…`NT-36`, `NT-43`…`NT-45`, `NT-49`…`NT-51` | Sebagian |
-| `AKUN_SISTEM` | `NT-37`…`NT-42`, `NT-38a`, `NT-48` | Sebagian |
+| `AKUN_SISTEM` | `NT-37`…`NT-42`, `NT-38a`, `NT-39a`, `NT-48`, `NT-53`, `NT-54` | Sebagian |
 
 Seluruh **52** kode `NT-xx` terpetakan; tidak boleh ada kode tanpa kelompok, sebab `SDD-NTF-06` memeriksa preferensi per kelompok saat pengiriman dan notifikasi tanpa kelompok tidak punya perilaku yang terdefinisi. `NT-49`…`NT-51` (bahan habis pakai, M-22) masuk `OPNAME_PENGADAAN` yang memang sudah memuat alur logistik — mengikuti `UXD-16` yang menolak Bahan menjadi grup tersendiri.
 

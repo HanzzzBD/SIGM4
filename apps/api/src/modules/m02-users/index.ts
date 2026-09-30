@@ -39,6 +39,7 @@ export { UserService } from "./services/user.service.js";
 export {
     EVENT_AKUN_BERUBAH,
     EVENT_KONSEN_WALI_HILANG,
+    identitasPengguna,
     namaRole,
     penggunaAktifBerperan,
     ringkasanImpor,

@@ -42,6 +42,8 @@ const MODUL = "m01-auth";
 
 /** Event outbox penguncian akun (SDD-07 §4.3); konsumennya — notifikasi `NT-39` — dipasang `PR-02-25`. */
 export const EVENT_AKUN_TERKUNCI = "AccountLocked";
+/** `NT-54` (keputusan 87a): pemakaian ulang refresh token — keluarga dicabut (SDD-SESS-04). */
+export const EVENT_REFRESH_DIPAKAI_ULANG = "RefreshTokenReuseDetected";
 const AGREGAT_PENGGUNA = "user";
 
 /** Alasan internal pada `LOGIN_FAILED`; TIDAK pernah sampai ke pemanggil (`SDD-SESS-12`). */
@@ -391,6 +393,16 @@ export class AuthService {
                         entitasId: baris.user_id,
                         nilaiSesudah: { family_id: baris.family_id, token_dicabut: dicabut },
                         ...jejakKlien(klien),
+                    },
+                );
+                // SDD-EVT-04: terbit di transaksi pencabutan yang sama — Administrator diberi tahu (NT-54).
+                await publish(
+                    { ctx, tx },
+                    {
+                        name: EVENT_REFRESH_DIPAKAI_ULANG,
+                        aggregateType: AGREGAT_PENGGUNA,
+                        aggregateId: baris.user_id,
+                        payload: { user_id: baris.user_id, family_id: baris.family_id, token_dicabut: dicabut },
                     },
                 );
                 return { jenis: "REUSE", userId: baris.user_id, familyId: baris.family_id, dicabut } as const;

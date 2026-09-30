@@ -173,7 +173,7 @@ POST /auth/refresh
 
 Klaim `amr` access token baru diturunkan dari `otp_verified` baris yang ditukar dan diwarisi baris baru (`SDD-SESS-16`); refresh tidak pernah dapat menaikkan sesi dari `["pwd"]` ke `["pwd","otp"]`.
 
-Pencabutan karena pemakaian ulang HARUS ter-commit meskipun permintaannya berakhir `401`: hasil transaksi dikembalikan sebagai nilai dan galat baru dilempar setelah commit. Entri `REFRESH_TOKEN_REUSE_DETECTED` ditulis dalam transaksi yang sama (`AL-01`); alarm ke pemantauan berupa log `error` (`OBS-05`). Notifikasi ke Administrator menunggu modul notifikasi (`PR-02-25`).
+Pencabutan karena pemakaian ulang HARUS ter-commit meskipun permintaannya berakhir `401`: hasil transaksi dikembalikan sebagai nilai dan galat baru dilempar setelah commit. Entri `REFRESH_TOKEN_REUSE_DETECTED` ditulis dalam transaksi yang sama (`AL-01`); alarm ke pemantauan berupa log `error` (`OBS-05`). Event `RefreshTokenReuseDetected` terbit ke outbox di transaksi yang sama dan menjadi `NT-54` bagi Administrator (`PR-02-35`, keputusan 87a).
 
 Konsekuensi yang disengaja: klien yang mengirim dua permintaan refresh bersamaan (mis. dua tab) akan memicu pencabutan keluarga. Klien wajib men-*serialisasi* refresh — pada web dilakukan lewat satu *promise* bersama, pada mobile lewat *mutex* pada interceptor.
 

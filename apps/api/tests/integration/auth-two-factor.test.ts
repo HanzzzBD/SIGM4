@@ -633,11 +633,13 @@ describe.skipIf(!ADA)("PR-02-07 — 2FA TOTP (PostgreSQL + Redis nyata)", () => 
             // audit, dan event outbox dalam transaksi yang sama (SessionRevoked per sesi + TwoFactorEnabled)
             const [log] = await baris<{ n: string }>(`SELECT nilai_sesudah->>'sesi_dicabut' AS n FROM activity_logs WHERE modul = 'm01-auth' AND aksi = 'TWO_FA_ENABLED' AND entitas_id = ${String(a.id)}`);
             expect(log?.n).toBe("2");
-            const events = await baris<{ event_name: string; alasan: string | null; sesi: string | null }>(
-                `SELECT event_name, payload->>'alasan' AS alasan, payload->>'sesi_dicabut' AS sesi FROM event_outbox WHERE aggregate_id = ${String(a.id)} AND event_name IN ('SessionRevoked', 'TwoFactorEnabled') ORDER BY id`,
+            const events = await baris<{ event_name: string; alasan: string | null; sesi: string | null; platform: string | null }>(
+                `SELECT event_name, payload->>'alasan' AS alasan, payload->>'sesi_dicabut' AS sesi, payload->>'platform' AS platform FROM event_outbox WHERE aggregate_id = ${String(a.id)} AND event_name IN ('SessionRevoked', 'TwoFactorEnabled') ORDER BY id`,
             );
             expect(events.filter((e) => e.event_name === "SessionRevoked").map((e) => e.alasan)).toEqual(["two_fa_enabled", "two_fa_enabled"]);
             expect(events.filter((e) => e.event_name === "TwoFactorEnabled").map((e) => e.sesi)).toEqual(["2"]);
+            // NT-39a {perangkat} (keputusan 87d): platform sesi YANG MENGONFIRMASI, bukan sesi lain yang dicabut.
+            expect(events.filter((e) => e.event_name === "TwoFactorEnabled").map((e) => e.platform)).toEqual(["ANDROID"]);
         });
 
         it("keadaan yang salah: konfirmasi tanpa enroll → 422; enroll atau konfirmasi saat 2FA sudah aktif → 422; kode bukan 6 digit → 400", async () => {
