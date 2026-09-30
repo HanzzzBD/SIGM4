@@ -59,6 +59,8 @@
     --color-surface-default: var(--color-white);
     --color-surface-subtle: var(--color-neutral-50);
     --color-surface-selected: var(--color-teal-50);
+    /* FOUNDATIONS §7: overlay modal/drawer (C-28). */
+    --color-overlay: rgba(17, 24, 39, 0.48);
     --color-border-subtle: var(--color-neutral-200);
     --color-border-strong: #868E9B;
     --color-border-focus: var(--color-teal-600);
@@ -138,6 +140,8 @@
     --container-lg: 64rem;
     --container-xl: 80rem;
     --container-prose: 72ch;
+    /* FOUNDATIONS §10: size.modal.sm — modal konfirmasi (C-28). */
+    --container-modal-sm: 30rem;
 
     /* §6 Radius */
     --radius-sm: 0.25rem;

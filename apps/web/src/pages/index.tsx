@@ -7,6 +7,7 @@ import { Suspense, lazy } from "react";
 import type { ReactNode } from "react";
 import { AktivasiDuaFaktorPage, GantiPasswordPage, LoginPage, VerifikasiDuaFaktorPage } from "../modules/m01-auth";
 import type { AlasanLogin } from "../modules/m01-auth";
+import { muatApprovalRulesPage, muatEditorAturanPage } from "../modules/m10-approval";
 import { muatDashboardPage } from "../modules/m15-dashboard";
 import type { Rentang } from "../modules/m15-dashboard";
 import { KeadaanKosong, KeadaanMemuat, KeadaanTanpaAkses } from "../shared/states";
@@ -36,6 +37,23 @@ const DashboardPage = lazy(muatDashboardPage);
 export const HalamanDashboard = ({ rentang, onRentang }: { readonly rentang: Rentang; readonly onRentang: (r: Rentang) => void }) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat dashboard" baris={6} />}>
         <DashboardPage rentang={rentang} onRentang={onRentang} />
+    </Suspense>
+);
+
+const ApprovalRulesPage = lazy(muatApprovalRulesPage);
+const EditorAturanPage = lazy(muatEditorAturanPage);
+
+/** P-68 Approval Rules (FR-10.1). */
+export const HalamanApprovalRules = ({ disimpan }: { readonly disimpan?: number | undefined }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat approval rule" baris={6} />}>
+        <ApprovalRulesPage disimpan={disimpan} />
+    </Suspense>
+);
+
+/** P-69 Editor Approval Rule — `id` null = aturan baru (FR-10.1, RE-07). */
+export const HalamanEditorAturan = ({ id }: { readonly id: number | null }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat editor approval rule" baris={8} />}>
+        <EditorAturanPage id={id} />
     </Suspense>
 );
 

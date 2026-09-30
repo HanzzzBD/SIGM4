@@ -182,15 +182,20 @@ describe.skipIf(!ADA_DB)("PR-02-24 — konfigurasi approval rule + pratinjau (ac
 
         it("PATCH status: nonaktif tak lagi terpilih (bawaan berlaku); ulang tanpa entri log; aktif kembali → UPDATED", async () => {
             const id = await simpan(aturan(50, {}, [langkahRole(1, "R-03")]));
-            const nonaktif = await kirim("PATCH", `/approval-rules/${String(id)}/status`, { status_aktif: false });
+            // UX-04 (PR-02-34): menonaktifkan tanpa alasan ditolak dan tidak mengubah apa pun.
+            const tanpaAlasan = await kirim("PATCH", `/approval-rules/${String(id)}/status`, { status_aktif: false });
+            expect(tanpaAlasan).toMatchObject({ status: 400, json: { error: { code: "INVALID_REQUEST" } } });
+            expect(await log("APPROVAL_RULE_DEACTIVATED")).toHaveLength(0);
+            const nonaktif = await kirim("PATCH", `/approval-rules/${String(id)}/status`, { status_aktif: false, alasan: "Diganti aturan per nilai" });
             expect(nonaktif).toMatchObject({ status: 200, json: { data: { status_aktif: false, versi: 1 } } });
             expect((await kirim("POST", "/approval-rules/preview", { jenis_pengajuan: "PENGADAAN_BARANG" })).json.data).toMatchObject({ terpilih: { bawaan: true, rule_id: null } });
 
-            await kirim("PATCH", `/approval-rules/${String(id)}/status`, { status_aktif: false });
+            await kirim("PATCH", `/approval-rules/${String(id)}/status`, { status_aktif: false, alasan: "Ulang" });
             expect(await log("APPROVAL_RULE_DEACTIVATED")).toHaveLength(1);
+            expect(await kueri<{ keterangan: string }>("SELECT keterangan FROM activity_logs WHERE aksi = 'APPROVAL_RULE_DEACTIVATED'")).toEqual([{ keterangan: "Diganti aturan per nilai" }]);
             await kirim("PATCH", `/approval-rules/${String(id)}/status`, { status_aktif: true });
             expect(await log("APPROVAL_RULE_UPDATED")).toHaveLength(1);
-            expect((await kirim("PATCH", "/approval-rules/999999999/status", { status_aktif: false })).status).toBe(404);
+            expect((await kirim("PATCH", "/approval-rules/999999999/status", { status_aktif: false, alasan: "x" })).status).toBe(404);
         });
 
         it("tanpa approval_rule.manage → 403 untuk tulis & pratinjau; view cukup untuk GET", async () => {

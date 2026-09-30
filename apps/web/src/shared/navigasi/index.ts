@@ -16,6 +16,8 @@ export const HALAMAN_TERDAFTAR: Readonly<Record<string, string>> = {
     "P-10": "/gangguan",
     "P-11": "/tidak-ditemukan",
     "P-12": "/",
+    "P-68": "/approval-rules",
+    "P-69": "/approval-rules/$id",
 };
 
 export interface EntriNav {

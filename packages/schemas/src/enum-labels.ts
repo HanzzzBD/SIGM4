@@ -39,6 +39,34 @@ export const LABEL_JENIS_PENGAJUAN = {
     PERMINTAAN_BAHAN: "Permintaan Bahan",
 } as const;
 
+/** Bab 11.3 "Jenis Ruangan" — nilai field DSL `room_type` (D.2). */
+export const LABEL_JENIS_RUANGAN = {
+    KELAS: "Kelas",
+    LABORATORIUM: "Laboratorium",
+    AULA: "Aula",
+    PERPUSTAKAAN: "Perpustakaan",
+    KANTOR: "Kantor",
+    GUDANG: "Gudang",
+    LAPANGAN: "Lapangan",
+    LAINNYA: "Lainnya",
+} as const;
+
+/** Bab 11.3 "Alasan Penghapusan" — nilai field DSL `disposal_reason` (D.2). */
+export const LABEL_ALASAN_PENGHAPUSAN = {
+    RUSAK_BERAT_TIDAK_DAPAT_DIPERBAIKI: "Rusak Berat Tidak Dapat Diperbaiki",
+    HILANG: "Hilang",
+    HABIS_UMUR_TEKNIS: "Habis Umur Teknis",
+    LAINNYA: "Lainnya",
+} as const;
+
+/** Bab 11.3 "Prioritas" — nilai field DSL `priority` (D.2). */
+export const LABEL_PRIORITAS = {
+    RENDAH: "Rendah",
+    SEDANG: "Sedang",
+    TINGGI: "Tinggi",
+    MENDESAK: "Mendesak",
+} as const;
+
 /** Label kode enum; kode tak dikenal tidak pernah dirender mentah (SDD-FE-08). */
 export function labelEnum(peta: Readonly<Record<string, string>>, kode: string): string {
     return peta[kode] ?? "Tidak diketahui";

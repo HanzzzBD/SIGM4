@@ -206,6 +206,8 @@ async function onUnauthorized() {
 | QR TOTP | `uqr` (tanpa dependensi) mengodekan `otpauth_uri`; matriksnya dirender SVG milik sendiri dengan warna token — tanpa `innerHTML` |
 | Idle web (`FR-01.2 A2`) | Aktivitas = input pengguna (tombol, klik/sentuh, gulir) di tab SIGM4 mana pun, disinkronkan antar-tab (`localStorage` + `storage` event); permintaan latar tidak dihitung. Menit ke-28: banner `info` "Lanjutkan"; menit ke-30: `POST /auth/logout` lalu Login dengan pesan sesi berakhir dan tujuan tersimpan |
 | Indikator kekuatan password (`FR-01.4` langkah 3, keputusan 85d) | Daftar aturan yang dapat diperiksa klien — ≥ 12 karakter, huruf besar, huruf kecil, angka — sebagai ikon + teks yang berubah saat mengetik, tanpa warna atau komponen baru. Daftar bocor, nama/email, dan 3 password terakhir tetap diputuskan server (`NFR-S-03a`) dan disebut sebagai "diperiksa saat disimpan"; klien tidak pernah menjadi penentu |
+| Konfigurasi approval rule (`PR-02-34`, keputusan 86) | P-68 + P-69 di `modules/m10-approval`. Kamus field D.2 & operator D.3 tinggal di `@sigm4/schemas` (satu sumber bagi validasi API dan penyusun kondisi, `SDD-FE-05`); jalur galat klien sama dengan `error.details[].field` server sehingga `422 INVALID_RULE_DEFINITION` jatuh pada node (`RE-08`). Pemilih pengguna approver: role lebih dulu, lalu pengguna AKTIF role itu (`GET /users` tanpa pencarian nama) |
+| Modal konfirmasi (C-28 `confirm`) | `@radix-ui/react-dialog` (`SDD-FE-13`) di `shared/ui/dialog.tsx`; alasan wajib bagi aksi UX §7.2 — tombol utama nonaktif sampai terisi (`UX-04`). Token `size.modal.sm` dan overlay FOUNDATIONS masuk `tokens.css` |
 
 ---
 

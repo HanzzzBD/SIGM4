@@ -13,8 +13,10 @@ import { ambilTantangan } from "../modules/m01-auth";
 import { RENTANG } from "../modules/m15-dashboard";
 import {
     HalamanAktivasiDuaFaktor,
+    HalamanApprovalRules,
     HalamanDashboard,
     HalamanDataTidakTersedia,
+    HalamanEditorAturan,
     HalamanGangguan,
     HalamanGantiPassword,
     HalamanLogin,
@@ -116,6 +118,42 @@ const dashboardRoute = createRoute({
     },
 });
 
+/**
+ * Gerbang permission halaman (PM-04, UXP-02): tanpa permission → P-08, tanpa mengonfirmasi
+ * keberadaan data (SDD-AUTH-08). Hanya kenyamanan — server tetap menolak (NFR-S-05).
+ */
+function butuhIzin(permission: string) {
+    return async ({ context }: { context: KonteksRouter }) => {
+        const sesi = await context.queryClient.ensureQueryData(kueriMe);
+        if (sesi.permissions[permission] === undefined) throw redirect({ to: "/tidak-punya-akses" });
+    };
+}
+
+/** P-68 Approval Rules; `disimpan` = umpan balik sukses setelah P-69 menyimpan. */
+const approvalRulesRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/approval-rules",
+    validateSearch: z.object({ disimpan: z.catch(z.optional(z.coerce.number()), undefined) }),
+    beforeLoad: butuhIzin("approval_rule.view"),
+    component: function RouteApprovalRules() {
+        return <HalamanApprovalRules disimpan={approvalRulesRoute.useSearch().disimpan} />;
+    },
+});
+
+/** P-69 — `/approval-rules/baru` atau `/approval-rules/{id}` (UX §6), satu route berparameter. */
+const editorAturanRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/approval-rules/$id",
+    beforeLoad: async (a) => {
+        if (a.params.id !== "baru" && !/^[1-9]d*$/.test(a.params.id)) throw redirect({ to: "/tidak-ditemukan" });
+        await butuhIzin("approval_rule.manage")(a);
+    },
+    component: function RouteEditorAturan() {
+        const { id } = editorAturanRoute.useParams();
+        return <HalamanEditorAturan id={id === "baru" ? null : Number(id)} />;
+    },
+});
+
 const tanpaAksesRoute = createRoute({ getParentRoute: () => shellRoute, path: "/tidak-punya-akses", component: HalamanTanpaAkses });
 const dataTidakTersediaRoute = createRoute({ getParentRoute: () => shellRoute, path: "/data-tidak-tersedia", component: HalamanDataTidakTersedia });
 
@@ -126,7 +164,7 @@ export const routeTree = rootRoute.addChildren([
     gantiPasswordRoute,
     gangguanRoute,
     tidakDitemukanRoute,
-    shellRoute.addChildren([dashboardRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {

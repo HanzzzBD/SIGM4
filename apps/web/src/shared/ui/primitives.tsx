@@ -1,10 +1,10 @@
-// Komponen inti kerangka (COMPONENTS.md; SDD-FE-12): Button C-01, Input C-08, Alert C-14,
+// Komponen inti kerangka (COMPONENTS.md; SDD-FE-12): Button C-01, Input C-08, Select C-09, Alert C-14,
 // Badge C-13, Card C-07, Skeleton C-20, Checkbox C-10. Hanya token (DS-P-07); status selalu warna + ikon
 // + teks (UX-03, NFR-AC-06); kontrol ≥ 44px (NFR-AC-07).
 
 import * as Centang from "@radix-ui/react-checkbox";
 import { useId } from "react";
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
 import { Ikon } from "./icon";
 import type { NamaIkon } from "./icon";
 
@@ -65,6 +65,67 @@ export function Isian({ label, galat, bantuan, ...sisa }: InputHTMLAttributes<HT
                     "disabled:bg-neutral-100 disabled:border-border-disabled disabled:text-text-disabled",
                 )}
             />
+            {galat !== undefined ? (
+                <p id={idKet} className="flex items-center gap-1 text-sm text-error-base">
+                    <Ikon nama="galat" ukuran="sm" />
+                    {galat}
+                </p>
+            ) : (
+                bantuan !== undefined && (
+                    <p id={idKet} className="text-sm text-text-secondary">
+                        {bantuan}
+                    </p>
+                )
+            )}
+        </div>
+    );
+}
+
+/**
+ * C-09 varian `select` (≤10 opsi, atau daftar yang sudah disempitkan): ukuran & state identik
+ * Input. Opsi enum wajib berlabel — kode teknis tidak pernah tampil (SDD-FE-08).
+ */
+export function Pilihan({
+    label,
+    galat,
+    bantuan,
+    opsi,
+    kosong,
+    ...sisa
+}: SelectHTMLAttributes<HTMLSelectElement> & {
+    readonly label: string;
+    readonly galat?: string | undefined;
+    readonly bantuan?: string | undefined;
+    readonly opsi: readonly { readonly nilai: string; readonly label: string }[];
+    /** Opsi tanpa nilai di urutan pertama (mis. "Pilih role"). */
+    readonly kosong?: string;
+}) {
+    const id = useId();
+    const idKet = `${id}-ket`;
+    return (
+        <div className="flex min-w-0 flex-col gap-2">
+            <label htmlFor={id} className="text-sm font-medium text-text-primary">
+                {label}
+                {sisa.required === true && <span className="font-regular text-text-secondary"> (wajib)</span>}
+            </label>
+            <select
+                id={id}
+                {...sisa}
+                aria-invalid={galat !== undefined || undefined}
+                aria-describedby={galat !== undefined || bantuan !== undefined ? idKet : undefined}
+                className={gabung(
+                    "min-h-control-md min-w-0 rounded-sm bg-surface-default px-4 text-base text-text-primary hover:border-neutral-500",
+                    galat === undefined ? "border border-border-strong" : "border-2 border-border-error",
+                    "disabled:bg-neutral-100 disabled:border-border-disabled disabled:text-text-disabled",
+                )}
+            >
+                {kosong !== undefined && <option value="">{kosong}</option>}
+                {opsi.map((o) => (
+                    <option key={o.nilai} value={o.nilai}>
+                        {o.label}
+                    </option>
+                ))}
+            </select>
             {galat !== undefined ? (
                 <p id={idKet} className="flex items-center gap-1 text-sm text-error-base">
                     <Ikon nama="galat" ukuran="sm" />
