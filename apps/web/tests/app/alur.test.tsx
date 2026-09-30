@@ -120,7 +120,10 @@ describe("P-01 Login", () => {
         expect(screen.getByRole("img", { name: "SIGM4" }).getAttribute("src")).toMatch(/logo-sigm4/);
         const { readFileSync } = await import("node:fs");
         expect(readFileSync("index.html", "utf8")).toContain("<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\" />");
-        expect(readFileSync("public/favicon.svg", "utf8")).toContain("viewBox=\"150 120 530 530\"");
+        // Ikon baru putih: tab terang wajib berisi warna gelap agar tetap terlihat, tab gelap putih.
+        const favicon = readFileSync("public/favicon.svg", "utf8");
+        expect(favicon).toContain("viewBox=\"0 0 375 375\"");
+        expect(favicon).toContain("path{fill:#4B5563}@media (prefers-color-scheme:dark){path{fill:#FFFFFF}}");
     });
 
     it("tujuan hanya path internal (mencegah open redirect)", async () => {
