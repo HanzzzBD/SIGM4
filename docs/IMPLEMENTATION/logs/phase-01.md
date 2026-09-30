@@ -258,7 +258,7 @@ Hal yang sengaja ditinggalkan terbuka, beserta di mana ia akan ditutup.
 | Yang ditinggalkan | Ditutup di | Alasan penundaan |
 |---|---|---|
 | `users.foto_file_id` → `stored_files(id)` (foto profil `FR-01.4`) | `PR-03-04` (keputusan 4) | `stored_files` belum ada (`SDD-FS-02`) |
-| Daftar password bocor + riwayat 3 password terakhir (`NFR-S-03a`) | `PR-02-31` (keputusan 9) | Menuntut sumber daftar dan tabel riwayat yang belum ditetapkan SDD mana pun |
+| **[SELESAI — `PR-02-31`, keputusan 84 log phase-02]** Daftar password bocor + riwayat 3 password terakhir (`NFR-S-03a`) | `PR-02-31` (keputusan 9) | Menuntut sumber daftar dan tabel riwayat yang belum ditetapkan SDD mana pun |
 | `failed_login_count`, `locked_until`, `totp_secret_enc`, `totp_enabled_at` pada `users` | `PR-02-03`, `PR-02-07` (`SDD-04 §4.1`) | Kolom autentikasi milik Phase 02 |
 | `BR-015` sungguhan: `PATCH /rooms/{id}/status` menolak nonaktif bila ruangan masih memuat aset | `PR-02-10` (keputusan 22) | Tabel `assets` belum ada; `PR-01-06` hanya menegakkan kerangka hierarki (gedung vs ruangan aktif di bawahnya) |
 | `FR-03.1 A2`: menonaktifkan ruangan berreservasi mendatang menampilkan daftar reservasi terdampak & meminta konfirmasi | Modul reservasi (`M-07`, Phase 02) | `booking_slots`/reservasi belum ada (keputusan 22) |

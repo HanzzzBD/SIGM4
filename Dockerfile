@@ -92,6 +92,8 @@ COPY --from=build --chown=app:app /app/packages/schemas/package.json ./packages/
 COPY --from=build --chown=app:app /app/packages/schemas/dist ./packages/schemas/dist
 COPY --from=build --chown=app:app /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build --chown=app:app /app/apps/api/dist ./apps/api/dist
+# Daftar password bocor luring (SDD-SESS-18) — dibaca runtime dari apps/api/data.
+COPY --from=build --chown=app:app /app/apps/api/data ./apps/api/data
 
 # Perkakas job migration (SDD-INF-03, keputusan 53): container sekali-jalan dari
 # image yang SAMA — `node scripts/migrate.mjs up` dengan MIGRATION_DATABASE_URL —

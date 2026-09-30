@@ -316,6 +316,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
 | **password_reset_requests** | Permintaan reset password | id, user_id, status, metode_verifikasi, diminta_pada, diproses_oleh, diproses_pada, kedaluwarsa_pada, alasan_penolakan | ± 100 |
+| **password_history** | Hash password yang pernah berlaku, untuk larangan memakai ulang (`NFR-S-03a`, `FR-01.4 A2`) — maksimal 3 terakhir per pengguna, termasuk password sementara | id, user_id, password_hash, berlaku_sejak | ± 4.500 |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
 

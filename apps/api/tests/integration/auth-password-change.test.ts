@@ -2,7 +2,7 @@
 // nyata, lewat HTTP penuh pada `createApp()`.
 //
 // Yang dibuktikan: password lama diverifikasi dan password baru diperiksa terhadap kebijakan
-// (`NFR-S-03a`, tanpa daftar bocor/riwayat 3 password — `PR-02-31`); ganti password mencabut
+// (`NFR-S-03a`, termasuk daftar bocor & riwayat 3 password sejak `PR-02-31`); ganti password mencabut
 // SELURUH sesi lain tetapi TIDAK sesi ini sendiri; sesi ini langsung mendapat access token baru
 // berklaim `pwd=false` sehingga gerbang ganti password (`SDD-AUTH-09`) terbuka seketika tanpa
 // menunggu `/auth/refresh` (UX-FLOWS P-05); password sementara hasil reset yang diselesaikan
@@ -306,6 +306,65 @@ describe.skipIf(!ADA)("PR-02-06 — ganti password + kelola profil sendiri (Post
     });
 
     // ---------------------------------------------------------------------------------------
+    describe("PR-02-31 — daftar bocor & riwayat 3 password (NFR-S-03a, FR-01.4 A2; SDD-SESS-18/19, keputusan 84)", () => {
+        const R1 = "Rahasia-Kedua2027";
+        const R2 = "Rahasia-Ketiga2028";
+        const R3 = "Rahasia-Keempat2029";
+        const R4 = "Rahasia-Kelima2030";
+        const riwayat = async (id: number) =>
+            kueri<{ password_hash: string }>(`SELECT password_hash FROM password_history WHERE user_id = ${String(id)} ORDER BY berlaku_sejak DESC, id DESC`);
+
+        it("password yang tercantum di daftar bocor → 422 dengan pesan spesifik; tidak ada yang berubah", async () => {
+            const { id, email } = await seed();
+            const { sesi } = await login(email);
+            const hashAwal = await passwordHash(id);
+            const r = await gantiPassword(auth(sesi), PASSWORD, "Qwertyuiop123");
+            expect(r.status).toBe(422);
+            expect(r.json.error?.details).toEqual([{ field: "password_baru", message: "Password ini tercantum dalam daftar password yang diketahui bocor. Pilih password lain." }]);
+            expect(await passwordHash(id)).toBe(hashAwal);
+        });
+
+        it("password baru sama dengan yang sedang berlaku → 422 REUSED (3 terakhir TERMASUK yang berlaku, 84b)", async () => {
+            const { email } = await seed();
+            const { sesi } = await login(email);
+            // PASSWORD uji memuat nama pengguna (CONTAINS_IDENTITY); ganti dulu ke password yang lolos kebijakan.
+            expect((await gantiPassword(auth(sesi), PASSWORD, R1)).status).toBe(200);
+            const r = await gantiPassword(auth(sesi), R1, R1);
+            expect(r.status).toBe(422);
+            expect(r.json.error?.details).toEqual([{ field: "password_baru", message: "Password baru tidak boleh sama dengan 3 password terakhir Anda." }]);
+        });
+
+        it("riwayat bergulir: password ditolak selama termasuk 3 terakhir, boleh lagi setelah tergeser", async () => {
+            const { id, email } = await seed();
+            const { sesi } = await login(email);
+            // Trigger mengisi riwayat sejak akun dibuat (84d).
+            expect(await riwayat(id)).toHaveLength(1);
+            expect((await gantiPassword(auth(sesi), PASSWORD, R1)).status).toBe(200);
+            expect((await gantiPassword(auth(sesi), R1, R2)).status).toBe(200);
+            expect((await gantiPassword(auth(sesi), R2, R1)).status).toBe(422); // [R2, R1, PASSWORD]
+            expect((await gantiPassword(auth(sesi), R2, R3)).status).toBe(200); // [R3, R2, R1]
+            expect((await gantiPassword(auth(sesi), R3, R1)).status).toBe(422);
+            expect((await gantiPassword(auth(sesi), R3, R4)).status).toBe(200); // [R4, R3, R2] — R1 tergeser
+            expect((await gantiPassword(auth(sesi), R4, R1)).status).toBe(200);
+            const h = await riwayat(id);
+            expect(h).toHaveLength(3);
+            expect(h.every((b) => b.password_hash.startsWith("$argon2id$"))).toBe(true);
+            expect(h[0]?.password_hash).toBe(await passwordHash(id));
+        });
+
+        it("password sementara hasil reset administratif ikut tercatat (trigger, jalur M-01 lain) — dan tak dapat dipilih ulang", async () => {
+            const admin = await siapkanAdmin();
+            const { id, email } = await seed();
+            const sementara = await terbitkanUntuk(admin, await idPermintaanBaru(email, id));
+            const h = await riwayat(id);
+            expect(h).toHaveLength(2);
+            expect(h[0]?.password_hash).toBe(await passwordHash(id));
+            const { sesi } = await login(email, sementara);
+            const r = await gantiPassword(auth(sesi), sementara, sementara);
+            expect(r.json.error?.details).toContainEqual({ field: "password_baru", message: "Password baru tidak boleh sama dengan 3 password terakhir Anda." });
+        });
+    });
+
     describe("POST /auth/password/change — sukses (FR-01.4 langkah 4, SDD-04 §4.6)", () => {
         it("mencabut sesi LAIN tetapi TIDAK sesi ini; token access LAMA sesi ini tetap hidup; password lama tak lagi berlaku", async () => {
             const { id, email } = await seed();
