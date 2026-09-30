@@ -193,7 +193,7 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 - [ ] `dedupe_key` kejadian tunggal berbasis id event (`SDD-08 §4.1`, keputusan 75): uji — handler yang diproses ulang atas event yang sama TIDAK menambah notifikasi; `NT-06` tetap berkunci harian
 - [ ] Konsumen `ApprovalDecided` (`NT-02`…`NT-05`) dengan penerima dari M-10 `penerimaNotifikasi` dan rincian dari registri `penyediaRincian` (keputusan 78)
 - [ ] `NT-40`: event `UserAccountChanged` saat role/status akun berubah (keputusan 78)
-- [ ] `NT-52` (impor pengguna > 200 baris selesai, `IMPT-04`): pasang konsumen event `UserImportCompleted` — event-nya **sudah terbit sejak `PR-01-17`** (payload `job_id`, `oleh`; isi pesan dibaca dari `user_import_jobs`), hanya konsumennya yang belum ada (keputusan 33 log phase-01)
+- [x] `NT-52` (impor pengguna > 200 baris selesai, `IMPT-04`): pasang konsumen event `UserImportCompleted` — event-nya **sudah terbit sejak `PR-01-17`** (payload `job_id`, `oleh`; isi pesan dibaca dari `user_import_jobs`), hanya konsumennya yang belum ada (keputusan 33 log phase-01)
 
 ### `PR-02-29` — Dashboard
 - [ ] Kartu dideklarasikan bersama permission yang diwajibkannya

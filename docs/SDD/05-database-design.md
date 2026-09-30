@@ -373,7 +373,7 @@ Tidak ada trigger basis data: gerbangnya bergantung pada role (lintas tabel) dan
 | Ambang | ≤ 200 baris: diproses dalam permintaan (`200`); di atasnya: baris pekerjaan `MENUNGGU` + event outbox `UserImportRequested` dalam **satu** transaksi (`202`, `SDD-EVT-04`). Handler outbox memasukkan pekerjaan `user-import` ke antrean `sigm4-jobs` dengan `jobId` tetap (`SDD-EVT-07`) |
 | Pelaku | Worker membangun ulang `AuthContext` **pengunggah** dari basis data saat berjalan — akun harus `AKTIF` dan masih memegang `user.create`, bila tidak pekerjaan `GAGAL`. Pekerjaan bukan dijalankan sebagai `SYSTEM` (`SystemAuthContext` baru lahir di `PR-02-32`); `USER_CREATED` dan `USER_IMPORTED` tercatat atas nama pengunggah |
 | Percobaan ulang (`JOB-06`) | `baris_terproses` diperbarui **per baris**; percobaan berikutnya melanjutkan dari sana sehingga pengguna yang sudah dibuat tidak dibuat dua kali. Pada percobaan terakhir yang masih gagal, pekerjaan ditutup `GAGAL` (`pesan_galat`) |
-| `NT-52` | Event `UserImportCompleted` terbit dalam transaksi penutupan pekerjaan (hanya jalur asinkron). **Konsumennya belum ada** — modul notifikasi `M-17` baru di Phase 02 (`PR-02-25`); sebelum itu hasil dipantau lewat `GET /users/import/{id}` |
+| `NT-52` | Event `UserImportCompleted` terbit dalam transaksi penutupan pekerjaan (hanya jalur asinkron). Dikonsumsi M-17 sejak `PR-02-25` (in-app saja sejak `PR-02-35`); hasil per baris tetap dapat dibaca lewat `GET /users/import/{id}` |
 | Retensi | Berkas dikosongkan saat berakhir (`DP-03`). Laporan (memuat email baris gagal) belum punya masa simpan — belum ditetapkan PRD |
 
 ### 4.7g Skema penomoran kode aset
