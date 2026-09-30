@@ -106,6 +106,17 @@ src/
 └── pages/                  # perakitan route → modul
 ```
 
+### 4.1a Batas impor di dalam pohon web (`PR-02-30`)
+
+Cermin [SDD-00 §4.2](00-system-architecture.md) sesuai `SDD-FE-01`, ditegakkan `apps/web/eslint.config.js` (`SDD-17 §4.2` menyerahkan batas di dalam pohon kepada berkas ini):
+
+| Dari | Boleh mengimpor | Dilarang |
+|---|---|---|
+| `modules/<m>/**` | `shared/**`, internal `modules/<m>`, `index.ts` modul lain | Internal modul lain · `pages/` · `app/` |
+| `shared/**` | `shared/**`, `packages/schemas` | `modules/` · `pages/` · `app/` |
+| `pages/**` | `index.ts` modul · `shared/**` | Internal modul |
+| `app/**` | seluruhnya | — |
+
 ### 4.2 Gerbang permission
 
 ```tsx
@@ -176,6 +187,21 @@ async function onUnauthorized() {
 | Dashboard ≤ 3 detik (`NFR-P-04`) | Tiap kartu memuat mandiri dengan *skeleton* (19.1 A2) |
 | Gambar | Selalu memakai turunan `thumb`/`medium` ([SDD-09 §4.5](09-file-storage-design.md)), bukan berkas asli |
 | Tabel besar | Paginasi server; tidak pernah memuat seluruh 5.000 aset ke klien |
+
+### 4.8 Pelaksanaan kerangka (`PR-02-30`, keputusan 83)
+
+| Aspek | Ketentuan |
+|---|---|
+| Cakupan | Kerangka (router, Query, klien HTTP, `/me` + `<Can>`, token, lima keadaan) + shell + halaman P-01, P-08…P-11, P-12. P-02/P-03/P-05 + banner sesi berakhir → `PR-02-36` |
+| Token | `shared/ui/tokens/`: CSS custom property + konstanta TS dari `FOUNDATIONS.md`; Tailwind v4 `@theme` **hanya** memuat token ini (skala bawaan dimatikan), dan nilai arbitrer (`[..]`) ditolak lint — `DS-P-07` |
+| Kontras (`NFR-AC-01/02`, §4.6) | Pasangan teks/latar yang ditetapkan FOUNDATIONS diperiksa skrip saat uji; di bawah 4,5:1 (teks) / 3:1 (kontrol, ikon) menggagalkan CI |
+| Sesi web | Cookie httpOnly (`SDD-SESS-05`): klien tak pernah memegang token. `401` → satu `POST /auth/refresh` bersama (`SDD-FE-07`) lalu ulang sekali; refresh gagal → Login dengan tujuan tersimpan. `403 PASSWORD_CHANGE_REQUIRED`/`TWO_FACTOR_REQUIRED` → route gerbangnya (F-01) |
+| Sidebar & drill-down | Registri navigasi memuat struktur lengkap UXD-01; entri dan tautan drill-down kartu hanya dirender bila **route-nya terdaftar di build** dan permission `/me` dipegang. Halaman baru cukup mendaftarkan route |
+| Topbar | Ciutkan sidebar (preferensi tampilan, `SDD-FE-03`), identitas, penanda WIB, menu pengguna (Keluar · Keluar dari semua perangkat), banner luring. Pencarian global lahir bersama P-15; lonceng bersama P-13 |
+| Grafik | SVG milik sendiri (batang, donat, garis) + legenda teks + tabel data alternatif (C-23); pustaka grafik diputuskan saat M-16 bila dibutuhkan (**DSD-10**) |
+| Ikon | `lucide-react` melalui satu pembungkus (`strokeWidth` 1,5) — **DSD-09** |
+| Uji | Vitest + Testing Library + jsdom + axe-core (`SDD-REPO-11`); E2E peramban menyusul saat alur kritis lengkap |
+| Pengembangan lokal | Vite *dev server* mem-*proxy* `/api` ke proses API — satu origin, cookie `SameSite=Strict` berlaku |
 
 ---
 

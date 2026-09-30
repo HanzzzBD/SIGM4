@@ -43,6 +43,7 @@ jobs:
         timeout-minutes: 5
         outputs:
             api: ${{ steps.saring.outputs.api }}
+            web: ${{ steps.saring.outputs.web }}
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
@@ -55,6 +56,7 @@ jobs:
                   # jalankan semuanya. Salah ke arah menjalankan lebih banyak, bukan kurang.
                   if [ -z "$BASE" ] || ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
                       echo "api=true" >> "$GITHUB_OUTPUT"
+                      echo "web=true" >> "$GITHUB_OUTPUT"
                       exit 0
                   fi
                   berubah=$(git diff --name-only "$BASE" HEAD)
@@ -64,6 +66,13 @@ jobs:
                       echo "api=true" >> "$GITHUB_OUTPUT"
                   else
                       echo "api=false" >> "$GITHUB_OUTPUT"
+                  fi
+                  # Pohon web (PR-02-30): uji token/kontras membaca FOUNDATIONS.md, uji label membaca Bab 11.3.
+                  pola_web='^(apps/web/|packages/|docs/DESIGN/FOUNDATIONS\.md$|docs/PRD/03-architecture/data-model\.md$|package(-lock)?\.json$|tsconfig[^/]*\.json$|eslint\.config\.js$|\.github/workflows/)'
+                  if printf '%s\n' "$berubah" | grep -qE "$pola_web"; then
+                      echo "web=true" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "web=false" >> "$GITHUB_OUTPUT"
                   fi
 
     lint:
@@ -97,6 +106,24 @@ jobs:
             - run: npm ci
             # Seluruh workspace; untuk apps/api didahului tsc atas uji negatif @ts-expect-error.
             - run: npm run test
+
+    # Pohon web (SDD-11, PR-02-30): uji (token & kontras NFR-AC-01/02, lint DS-P-07, alur aplikasi,
+    # axe) lalu build Vite. Tanpa layanan eksternal — server HTTP tiruan pada adapter axios.
+    web:
+        name: Web · uji · build
+        needs: [perubahan, lint]
+        if: needs.perubahan.outputs.web == 'true'
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: npm
+            - run: npm ci
+            - run: npm run test -w apps/web
+            - run: npm run build -w apps/web
 
     # Uji integrasi terhadap PostgreSQL dan Redis NYATA (SDD-REPO-11) sekaligus
     # gerbang cakupan gabungan CD-02 (keputusan 46). Uji berkas ikut dijalankan
@@ -261,7 +288,7 @@ jobs:
     # dianggap lulus; job yang gagal atau dibatalkan tidak.
     ci-lulus:
         name: CI lulus
-        needs: [perubahan, lint, uji-berkas, uji-integrasi, build, sast, sca, image-scan]
+        needs: [perubahan, lint, web, uji-berkas, uji-integrasi, build, sast, sca, image-scan]
         if: always()
         runs-on: ubuntu-latest
         timeout-minutes: 5

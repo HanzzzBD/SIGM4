@@ -1,0 +1,30 @@
+/* Lembar gaya akar (SDD-FE-12): Tailwind di atas token milik sendiri. */
+@import "tailwindcss";
+@import "./tokens/tokens.css";
+/* FOUNDATIONS §2.1: variable font self-host, subset Latin, font-display swap. */
+@import "@fontsource-variable/inter";
+@import "@fontsource/jetbrains-mono/latin-400.css";
+
+@layer base {
+    html {
+        font-family: var(--font-sans);
+        font-size: 100%;
+        color: var(--color-text-primary);
+        background-color: var(--color-bg-page);
+    }
+    body {
+        margin: 0;
+        font-size: var(--text-base);
+        line-height: var(--leading-normal);
+    }
+    :focus-visible {
+        outline: 2px solid var(--color-border-focus);
+        outline-offset: 2px;
+    }
+    h1,
+    h2,
+    h3 {
+        color: var(--color-text-heading);
+        font-weight: var(--font-weight-semibold);
+    }
+}

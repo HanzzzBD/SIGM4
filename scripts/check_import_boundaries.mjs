@@ -16,7 +16,7 @@ const kasus = [
   { nama: 'apps/web -> apps/api dilarang (SDD-REPO-07)', cwd: akar, tolak: true,
     file: 'apps/web/src/app/' + BERKAS, isi: "import '../../../api/src/api/index.js';\n" },
   { nama: 'apps/api -> apps/web dilarang (SDD-REPO-07)', cwd: akar, tolak: true,
-    file: 'apps/api/src/api/' + BERKAS, isi: "import '../../../web/src/app/index.js';\n" },
+    file: 'apps/api/src/api/' + BERKAS, isi: "import '../../../web/src/app/router.js';\n" },
   { nama: 'packages/schemas -> apps/* dilarang (SDD-REPO-06)', cwd: akar, tolak: true,
     file: 'packages/schemas/src/' + BERKAS, isi: "import '../../../apps/api/src/api/index.js';\n" },
   { nama: 'shared -> modules dilarang (SDD-SYS-06, SDD-00 §4.2)', cwd: apiRoot, tolak: true,

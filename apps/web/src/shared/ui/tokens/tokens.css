@@ -1,0 +1,187 @@
+/*
+ * Lapisan token SIGM4 (FOUNDATIONS.md; DS-01, DS-P-07). Tema bawaan Tailwind DIMATIKAN
+ * (`--*: initial`): satu-satunya utilitas warna, jarak, ukuran, radius, dan tipografi yang
+ * ada adalah token di bawah — nilai di luar skala tidak dapat ditulis (keputusan 83).
+ * Nilai warna identik dengan tokens.ts (diuji). Satu set tanpa mode gelap (UXD-12).
+ */
+@theme {
+    --*: initial;
+
+    /* §5 Breakpoints */
+    --breakpoint-sm: 37.5rem;
+    --breakpoint-md: 48rem;
+    --breakpoint-lg: 85.375rem;
+
+    /* §1 Warna — palet mentah hanya untuk peran di bawahnya */
+    --color-teal-50: #F2F7F8;
+    --color-teal-100: #E0ECEF;
+    --color-teal-600: #1F7A8C;
+    --color-teal-700: #196574;
+    --color-teal-800: #15525F;
+    --color-neutral-50: #F9FAFB;
+    --color-neutral-100: #F3F4F6;
+    --color-neutral-200: #E5E7EB;
+    --color-neutral-300: #D1D5DB;
+    --color-neutral-400: #9CA3AF;
+    --color-neutral-500: #6B7280;
+    --color-neutral-600: #4B5563;
+    --color-neutral-700: #374151;
+    --color-neutral-800: #1F2937;
+    --color-neutral-900: #111827;
+    --color-white: #FFFFFF;
+    --color-transparent: transparent;
+
+    /* §1.2 Accent — penanda 3px, seri grafik, latar badge kategori (DSD-07) */
+    --color-accent-blue: #00529C;
+    --color-accent-green: #028744;
+    --color-accent-yellow: #FEB003;
+    --color-accent-purple: #541F7F;
+    --color-accent-gray: #7B7B7B;
+    --color-accent-red: #D4160D;
+
+    /* §1.8 Semantic */
+    --color-success-subtle: #E6F1ED;
+    --color-success-base: #067647;
+    --color-success-strong: #075B38;
+    --color-warning-subtle: #F8EDE6;
+    --color-warning-base: #B54708;
+    --color-warning-strong: #8A3808;
+    --color-error-subtle: #F8E9E8;
+    --color-error-base: #B42318;
+    --color-error-strong: #8A1D14;
+    --color-info-subtle: #E8EFFB;
+    --color-info-base: #175CD3;
+    --color-info-strong: #1448A1;
+
+    /* §1.4–1.7 Peran */
+    --color-bg-page: var(--color-neutral-50);
+    --color-bg-subtle: var(--color-neutral-100);
+    --color-surface-default: var(--color-white);
+    --color-surface-subtle: var(--color-neutral-50);
+    --color-surface-selected: var(--color-teal-50);
+    --color-border-subtle: var(--color-neutral-200);
+    --color-border-strong: #868E9B;
+    --color-border-focus: var(--color-teal-600);
+    --color-border-error: var(--color-error-base);
+    --color-border-disabled: var(--color-neutral-300);
+    --color-text-heading: var(--color-neutral-900);
+    --color-text-primary: var(--color-neutral-600);
+    --color-text-secondary: var(--color-neutral-500);
+    --color-text-tertiary: var(--color-neutral-400);
+    --color-text-link: var(--color-teal-600);
+    --color-text-link-hover: var(--color-teal-700);
+    --color-text-inverse: var(--color-white);
+    --color-text-disabled: var(--color-neutral-400);
+    --color-icon-default: var(--color-neutral-600);
+    --color-icon-muted: var(--color-neutral-500);
+    --color-icon-interactive: var(--color-teal-600);
+    --color-icon-inverse: var(--color-white);
+    --color-icon-disabled: var(--color-neutral-400);
+
+    /* §2 Tipografi */
+    --font-sans: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+    --text-xs: 0.75rem;
+    --text-xs--line-height: 1.33;
+    --text-sm: 0.875rem;
+    --text-sm--line-height: 1.43;
+    --text-base: 1rem;
+    --text-base--line-height: 1.5;
+    --text-lg: 1.125rem;
+    --text-lg--line-height: 1.44;
+    --text-xl: 1.5rem;
+    --text-xl--line-height: 1.33;
+    --text-2xl: 1.875rem;
+    --text-2xl--line-height: 1.27;
+    --text-2xl--letter-spacing: -0.02em;
+    --text-3xl: 2.25rem;
+    --text-3xl--line-height: 1.22;
+    --text-3xl--letter-spacing: -0.02em;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --leading-tight: 1.25;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.7;
+    --tracking-wide: 0.04em;
+
+    /* §3 Spacing (kelipatan 4px) + §10 Sizing */
+    --spacing-0: 0rem;
+    --spacing-1: 0.25rem;
+    --spacing-2: 0.5rem;
+    --spacing-3: 0.75rem;
+    --spacing-4: 1rem;
+    --spacing-5: 1.25rem;
+    --spacing-6: 1.5rem;
+    --spacing-8: 2rem;
+    --spacing-10: 2.5rem;
+    --spacing-12: 3rem;
+    --spacing-16: 4rem;
+    --spacing-marker: 0.1875rem;
+    --spacing-control-sm: 2.25rem;
+    --spacing-control-md: 2.75rem;
+    --spacing-control-lg: 3.25rem;
+    --spacing-touch: 2.75rem;
+    --spacing-row: 2.75rem;
+    --spacing-topbar: 4rem;
+    --spacing-sidebar: 15rem;
+    --spacing-sidebar-ciut: 4rem;
+    --spacing-icon-sm: 1rem;
+    --spacing-icon-md: 1.25rem;
+    --spacing-icon-lg: 1.5rem;
+    --spacing-full: 100%;
+
+    /* §4.2 Container */
+    --container-sm: 40rem;
+    --container-md: 48rem;
+    --container-lg: 64rem;
+    --container-xl: 80rem;
+    --container-prose: 72ch;
+
+    /* §6 Radius */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-full: 9999px;
+
+    /* §7 Elevation — selalu disertai border 1px */
+    --shadow-1: 0 1px 2px rgba(17, 24, 39, 0.06);
+    --shadow-2: 0 4px 8px rgba(17, 24, 39, 0.08);
+}
+
+/* §9 Motion — durasi & kurva hanya lewat utilitas ini. */
+:root {
+    --motion-duration-fast: 120ms;
+    --motion-duration-base: 200ms;
+    --motion-duration-slow: 280ms;
+    --motion-easing-standard: cubic-bezier(0.2, 0, 0.2, 1);
+    --motion-easing-enter: cubic-bezier(0, 0, 0.2, 1);
+    --motion-easing-exit: cubic-bezier(0.4, 0, 1, 1);
+}
+
+@utility transisi-cepat {
+    transition-property: color, background-color, border-color, opacity;
+    transition-duration: var(--motion-duration-fast);
+    transition-timing-function: var(--motion-easing-standard);
+}
+
+@utility transisi-lebar {
+    transition-property: width;
+    transition-duration: var(--motion-duration-slow);
+    transition-timing-function: var(--motion-easing-standard);
+}
+
+/* Ring fokus seragam: 2px border.focus + offset 2px (NFR-AC-03). */
+@utility fokus {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --motion-duration-fast: 0ms;
+        --motion-duration-base: 0ms;
+        --motion-duration-slow: 0ms;
+    }
+}
