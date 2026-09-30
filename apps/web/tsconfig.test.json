@@ -1,0 +1,16 @@
+{
+  // Typecheck bagi uji (pola apps/api): rootDir diluaskan ke akar pohon agar tests/ ikut
+  // diperiksa, tanpa ikut dibangun ke dist (tidak ada data uji pada jalur produksi).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "rootDir": ".",
+    "noEmit": true,
+    "emitDeclarationOnly": false,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "types": ["vite/client", "node"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "tests/**/*.tsx"]
+}

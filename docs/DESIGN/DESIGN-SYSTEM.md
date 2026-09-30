@@ -456,6 +456,8 @@ Keputusan yang tidak dapat diturunkan dari PRD/SDD/UX, dan karena itu ditanyakan
 | **DSD-06** | Radius & elevation **geometris tegas** | `4/6/8px` dan elevation 0–2; pemisahan mengandalkan border 1px (`DS-P-05`) |
 | **DSD-07** | Accent **satu nilai, tanpa varian teks** | Accent hanya boleh menjadi fill, latar badge, dan penanda 3px. Konsekuensi turunan: `accent.gray` tidak dapat menjadi badge (§3.5) |
 | **DSD-08** | Densitas **44px desktop / 48px mobile** | Tepat pada batas `NFR-AC-07`; sekitar 13 baris tabel per layar 1366×768 |
+| **DSD-09** | Set ikon **Lucide** (`lucide-react`), `strokeWidth` 1,5 lewat satu pembungkus bersama *(keputusan 83, 30 September 2026)* | Satu set tunggal outline sesuai FOUNDATIONS §8; cakupan ikon domain sekolah cukup tanpa mencampur set |
+| **DSD-10** | Grafik dashboard = **SVG milik sendiri** (batang, donat, garis) dengan urutan seri accent tetap, legenda teks, dan tabel data alternatif *(keputusan 83)* | Tanpa dependensi grafik; bentuk rumit M-16 dapat membuka keputusan pustaka baru |
 
 **Tidak ada keputusan yang tertunda pada Design System.** Titik terbuka yang berdampak visual seluruhnya berada di [`UX/DECISIONS.md §12.3`](../UX/DECISIONS.md#123-keputusan-yang-masih-terbuka) dan menunggu pemilik produk — Design System tidak mendahuluinya.
 

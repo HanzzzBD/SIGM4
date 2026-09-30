@@ -2,4 +2,10 @@
 // Isinya: skema Zod (SDD-FE-05, SDD-API-11) dan peta kode -> label enum
 // (SDD-FE-08, SDD-MOB-01). Keduanya ditambahkan oleh modul yang membutuhkannya.
 // Berkas ini menetapkan bahwa satu-satunya jalur berbagi lintas pohon melewati sini.
-export {};
+export {
+    LABEL_JENIS_PENGAJUAN,
+    LABEL_KONDISI_ASET,
+    LABEL_STATUS_ASET,
+    LABEL_STATUS_INSTANCE_APPROVAL,
+    labelEnum,
+} from "./enum-labels.js";
