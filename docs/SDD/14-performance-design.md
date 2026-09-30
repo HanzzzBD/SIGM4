@@ -99,6 +99,20 @@ Seluruhnya diverifikasi dengan `EXPLAIN ANALYZE` pada dataset `TD-01` (5.000 ase
 | **Ketersediaan** | — | **tidak di-cache** | Mengandalkan indeks GiST (`AV-04`) |
 | Data referensi | Enum, kategori, lokasi | 10 menit | Dibatalkan saat perubahan master data |
 
+### 4.3a Kerangka dashboard (`PR-02-29`, keputusan 82)
+
+| Aspek | Ketentuan |
+|---|---|
+| Kontrak | `GET /dashboard` → **manifes**: kartu yang boleh dilihat (id, judul, zona, jenis, berperiode, drill-down), tanpa data. `GET /dashboard/cards/{id}?rentang=&segarkan=` → data satu kartu + `diperbarui_pada`. Tiap kartu dimuat mandiri — satu kartu lambat/gagal tidak menahan kartu lain (19.1 A2, UX §8.2) |
+| Seleksi | **Templat role** (kode role 19.2–19.7) memilih tata letak; tiap kartu **mendeklarasikan permission** yang diwajibkannya dan disaring server (`PM-03`): kartu terlarang tidak ada di manifes, dan permintaan langsungnya ditolak `403`. Role tanpa templat (role kustom, atau templat tanpa kartu berdata) → manifes kosong; klien menampilkan keadaan kosong UX §8.4 |
+| Sumber data | Fungsi baca di `index.ts` modul pemilik data (`SDD-SYS-03`), satu kueri ringkasan per kartu (`GROUP BY`/`COUNT`, bukan N+1 — `SDD-PERF-02`); M-15 tidak memiliki tabel |
+| Cache | Redis `dash:{kartu}:{rentang}:{lingkup}` — lingkup `g` untuk kartu global, id pengguna untuk kartu "saya"/kotak masuk; TTL 5 menit (§4.3). Permission diperiksa **sebelum** cache dibaca. `segarkan=true` menghitung ulang dan menimpa cache (tombol muat ulang 19.1) |
+| Rentang | `7_hari` · `30_hari` (bawaan) · `semester` · `tahun_ajaran` — dari `academic_terms`/`academic_years` aktif; `422` bila belum dikonfigurasi. Hanya kartu **berperiode** memakainya; kartu keadaan-kini dan "hari ini" mengabaikannya |
+| Activity log | Tanpa aksi M-15 (§11). Kartu yang menampilkan **entri** activity log (Aktivitas Terbaru) mencatat `ACTIVITY_LOG_VIEWED` (m18 §11) setiap kali disajikan — termasuk dari cache — dengan detail `sumber: dashboard`; kartu hitungan tidak |
+| Status Konfigurasi | Aturan approval aktif per jenis pengajuan + jenis tanpa aturan (jatuh ke aturan bawaan) + **kelengkapan dasar**: tahun ajaran aktif belum ada, tak satu pun hari kerja aktif, parameter `TEKS` kosong |
+| Efek Tertunda Gagal | Jumlah + lima teratas (`event_name`, waktu, galat terakhir) dari `event_outbox` ber-`attempts` ≥ ambang dead letter (`SDD-EVT-10`); isi payload tidak dikirim. Klien tidak merender kartu bila jumlahnya nol (19.2) |
+| Kartu per phase | `PR-02-29` mendaftarkan kartu yang sumbernya sudah ada (M-01/02/04/10/18/20, outbox, health). Kartu Bab 19 lainnya didaftarkan PR modul pemiliknya bersama datanya |
+
 ### 4.4 Pencegahan N+1
 
 ```ts

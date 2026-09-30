@@ -37,3 +37,5 @@ export {
     penyediaRincian,
     sumberNotifikasiApproval,
 } from "./services/notification-sources.js";
+export type { StatusPengajuan } from "./services/dashboard-source.js";
+export { pengajuanSayaPerStatus, ringkasanAturan } from "./services/dashboard-source.js";

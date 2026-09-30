@@ -7,3 +7,5 @@ export {
     exportActivityLogsRoute,
     listActivityLogsRoute,
 } from "./routes.js";
+export type { EntriTerbaru } from "./services/dashboard-source.js";
+export { aktivitasPerHari, aktivitasTerbaru, catatAksesLogDashboard, ringkasanLogin } from "./services/dashboard-source.js";

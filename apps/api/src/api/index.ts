@@ -120,6 +120,7 @@ import {
     ruleStatusRoute,
     updateRuleRoute,
 } from "../modules/m10-approval/index.js";
+import { dashboardCardRoute, dashboardManifestRoute, dashboardRouter } from "../modules/m15-dashboard/index.js";
 import type { HubSse } from "../modules/m17-notifications/index.js";
 import {
     buatHubSse,
@@ -243,6 +244,8 @@ export const registry = new RouteRegistry().register(
     updatePreferencesRoute,
     registerDeviceTokenRoute,
     deleteDeviceTokenRoute,
+    dashboardManifestRoute,
+    dashboardCardRoute,
     listActivityLogsRoute,
     exportActivityLogsRoute,
     getSettingsRoute,
@@ -420,6 +423,22 @@ export function createApp(deps: AppDeps): Express {
         BASE_PATH,
         notificationsRouter(
             { db: deps.db, clock: deps.clock, logger: deps.logger, hub: deps.notifikasi?.hub },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        dashboardRouter(
+            {
+                db: deps.db,
+                clock: deps.clock,
+                auditLogger: new AuditLogger({
+                    clock: deps.clock,
+                    logger: deps.logger,
+                }),
+                health: deps.health,
+            },
             (route) => rateLimit(route, deps.limiter, deps.logger),
             authorize,
         ),

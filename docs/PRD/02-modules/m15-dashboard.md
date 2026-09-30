@@ -69,7 +69,8 @@ _Tidak ada aturan bisnis yang dimiliki modul ini._
 
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
-| GET | `/dashboard` | Sesuai role | Data dashboard sesuai role pengguna |
+| GET | `/dashboard` | `dashboard.view` | Manifes kartu dashboard sesuai role pengguna — tanpa data; kartu di luar permission tidak tercantum |
+| GET | `/dashboard/cards/{id}` | `dashboard.view` + permission kartu | Data satu kartu (rentang, muat ulang); kartu di luar templat role atau permission ditolak |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).

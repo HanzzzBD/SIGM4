@@ -43,3 +43,5 @@ export {
     tolakResetRoute,
     verifyDuaFaktorRoute,
 } from "./routes.js";
+export type { PermintaanMenunggu } from "./services/dashboard-source.js";
+export { permintaanResetMenunggu } from "./services/dashboard-source.js";

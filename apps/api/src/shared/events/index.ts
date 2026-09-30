@@ -16,3 +16,5 @@ export {
     MAX_ATTEMPTS,
     OutboxDispatcher,
 } from "./dispatcher.js";
+export type { DeadLetter } from "./dead-letter.js";
+export { ringkasanDeadLetter } from "./dead-letter.js";

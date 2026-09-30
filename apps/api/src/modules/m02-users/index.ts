@@ -43,3 +43,5 @@ export {
     penggunaAktifBerperan,
     ringkasanImpor,
 } from "./services/notification-sources.js";
+export type { PenggunaPerRole } from "./services/dashboard-source.js";
+export { penggunaAktifPerRole } from "./services/dashboard-source.js";

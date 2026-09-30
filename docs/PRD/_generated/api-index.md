@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **157** baris, dikumpulkan dari 22 berkas modul.
+> Total: **158** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -38,7 +38,8 @@
 | GET | `/damage-reports/open` | `damage.view` | Tiket terbuka untuk aset tertentu | [M-11](../02-modules/m11-damage-reports.md) |
 | GET | `/damage-reports/{id}` | `damage.view` | Detail tiket beserta foto | [M-11](../02-modules/m11-damage-reports.md) |
 | GET | `/damage-reports` | `damage.view` | Daftar tiket (tersaring sesuai role) | [M-11](../02-modules/m11-damage-reports.md) |
-| GET | `/dashboard` | Sesuai role | Data dashboard sesuai role pengguna | [M-15](../02-modules/m15-dashboard.md) |
+| GET | `/dashboard/cards/{id}` | `dashboard.view` + permission kartu | Data satu kartu (rentang, muat ulang); kartu di luar templat role atau permission ditolak | [M-15](../02-modules/m15-dashboard.md) |
+| GET | `/dashboard` | `dashboard.view` | Manifes kartu dashboard sesuai role pengguna — tanpa data; kartu di luar permission tidak tercantum | [M-15](../02-modules/m15-dashboard.md) |
 | GET | `/fines` | `fine.view` | Daftar denda | [M-09](../02-modules/m09-loans.md) |
 | GET | `/health/live` | publik | Liveness probe — tanpa memeriksa dependensi (`OBS-04`) | [M-20](../02-modules/m20-settings.md) |
 | GET | `/health/ready` | publik | Readiness probe — DB, Redis, storage siap | [M-20](../02-modules/m20-settings.md) |
