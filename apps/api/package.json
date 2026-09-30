@@ -7,10 +7,10 @@
   "scripts": {
     "build": "tsc --build",
     "lint": "eslint src",
-    "test": "tsc -p tsconfig.test.json && vitest run",
+    "test": "tsc --build ../../packages/schemas && tsc -p tsconfig.test.json && vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:coverage": "vitest run --coverage",
-    "test:ci": "tsc -p tsconfig.test.json && vitest run --config vitest.ci.config.ts --coverage --reporter=default --reporter=json --outputFile.json=./coverage-ci/vitest-report.json"
+    "test:ci": "tsc --build ../../packages/schemas && tsc -p tsconfig.test.json && vitest run --config vitest.ci.config.ts --coverage --reporter=default --reporter=json --outputFile.json=./coverage-ci/vitest-report.json"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.1",
