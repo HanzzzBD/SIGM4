@@ -39,6 +39,8 @@ Otorisasi (siapa boleh apa) berada di [SDD-03](03-authorization.md). Berkas ini 
 | **SDD-SESS-15** | Gerbang `twoFactorVerified` (`SDD-AUTH-09` gerbang 3) menjawab **`403 TWO_FACTOR_REQUIRED`**, bukan `401`: sesinya sah, faktor keduanya belum terbukti. Bawaannya tertutup — ditegakkan di `authenticated()` dan `authorize()` — dan hanya route yang menyatakan `twoFactorExempt` (pendaftaran 2FA dan logout) yang melewatinya. |
 | **SDD-SESS-16** | Dua kolom yang tidak ada pada rancangan awal §4.1 ditambahkan (`PR-02-07`, migration `0024`; **`otp_verified` ditinjau dan disetujui pemilik produk**, opsi dan telaah di logs/phase-02.md §7, keputusan 49): `users.totp_last_step` — langkah TOTP terakhir yang diterima; tanpa itu satu kode berlaku berkali-kali di jendela ±1 langkah (RFC 6238 §5.2) — dan `refresh_tokens.otp_verified` — klaim `amr` harus bertahan ketika access token diterbitkan ulang lewat `/auth/refresh`, sedangkan refresh token tidak memuat klaim; kolom ini membawanya dan diwarisi setiap rotasi seperti `platform`. |
 | **SDD-SESS-17** | **Kode aktivasi 2FA** (`BR-070d`, `BR-070e`): nilai acak 10 karakter (alfabet kode cadangan), disimpan sebagai hash Argon2id pada `totp_activation_codes` (`user_id`, `code_hash`, `issued_by`, `metode_verifikasi`, `issued_at`, `expires_at`, `failed_attempts`, `verified_at`, `consumed_at`; migration `0025`), satu baris AKTIF per akun (indeks unik parsial; penerbitan baru menghapus yang lama), berlaku 72 jam, hangus setelah 5 kesalahan — **tanpa** mengunci akun, karena penyerang yang tahu password akan memakai penguncian sebagai DoS. Diperiksa pada `enroll` (`422` seragam untuk tidak ada/salah/kedaluwarsa/hangus; penghitung dan jejak di-commit sebelum galat dijawab) dan `verified_at` diisi; `enroll/confirm` menuntut baris yang sudah terverifikasi dan menghabiskannya (`consumed_at`), sehingga secret tertunda yang lahir tanpa kode tak dapat dikonfirmasi. Penerbit: `POST /users/{id}/2fa-activation-code` (M-02, `user.reset_2fa`) atau CLI pada artefak worker (`SDD-SESS-11`). *Diimplementasikan `PR-02-33` (tabel, `enroll`, endpoint penerbit, reset 2FA); CLI penerbit menyusul `PR-02-08`.* |
+| **SDD-SESS-18** | **Daftar password bocor** (`NFR-S-03a`, `FR-01.4` langkah 3): berkas **luring** `apps/api/data/password-bocor.txt` yang dibundel di image — tanpa layanan pihak ketiga. Sumber SecLists (MIT): gabungan `Pwdb_top-1000000`, `100k-most-used-passwords-NCSC`, dan daftar Indonesia; disaring **panjang ≥ 12** (yang lebih pendek sudah ditolak aturan panjang), huruf kecil, unik. Pencocokan **tanpa membedakan huruf besar-kecil**. Diperbarui lewat PR (commit sumber dicatat di kepala berkas). *(Keputusan 84a, `PR-02-31`.)* |
+| **SDD-SESS-19** | **Riwayat password** (`NFR-S-03a`, `FR-01.4 A2`): tabel `password_history` menyimpan hash Argon2id **tiga password terakhir yang pernah berlaku, termasuk yang sedang berlaku** — password sementara hasil reset administratif/break-glass ikut dicatat. Password baru diverifikasi terhadap ketiganya. Pencatatan oleh **trigger basis data** `AFTER INSERT OR UPDATE OF password_hash ON users` — setiap jalur yang mengganti hash (M-01 ganti password/reset/break-glass, M-02 buat akun/impor) tercakup tanpa saling mengimpor, dalam transaksi yang sama; trigger yang sama memangkas riwayat menjadi 3. Akun yang sudah ada diisi dari `users.password_hash` oleh migration. *(Keputusan 84b, 84d, 84e.)* |
 
 ---
 
@@ -305,6 +307,25 @@ issue / reset langsung (SATU transaksi; kunci: pengguna dulu, lalu permintaan):
 Siklus status: `MENUNGGU → DITERBITKAN → SELESAI` (pengguna mengganti password sementara — `PR-02-06`) atau `→ KEDALUWARSA` (72 jam, atau digantikan penerbitan baru); `MENUNGGU → DITOLAK`. Status yang dilihat pembaca dihitung dari `kedaluwarsa_pada` sehingga `DITERBITKAN` yang lewat 72 jam tampil `KEDALUWARSA` sebelum barisnya sempat ditutup; kolom `status` menyusul saat login menyentuhnya. Batas 72 jam hanya berlaku bagi password yang ditetapkan penerbitan reset — akun baru buatan Administrator (`FR-02.1`) tidak punya penerbitan dan tidak dibatasi. Migration `0023`.
 
 ---
+
+### 4.9 Kebijakan kata sandi lanjutan (`PR-02-31`, keputusan 84)
+
+```sql
+CREATE TABLE password_history (
+    id            bigserial   PRIMARY KEY,
+    user_id       bigint      NOT NULL REFERENCES users(id),
+    password_hash text        NOT NULL,          -- Argon2id (SDD-SESS-01), tak pernah nilai asli
+    berlaku_sejak timestamptz NOT NULL
+);
+CREATE INDEX ON password_history (user_id, berlaku_sejak DESC);
+```
+
+| Aspek | Ketentuan |
+|---|---|
+| Urutan pemeriksaan `POST /auth/password/change` | Password lama → kebijakan dasar (`PR-01-16`) → daftar bocor (`SDD-SESS-18`) → riwayat (`SDD-SESS-19`); seluruh pelanggaran dikumpulkan dalam satu `422 VALIDATION_ERROR` field `password_baru` |
+| Pesan | Spesifik per aturan (keputusan 84c): "Password ini tercantum dalam daftar password yang diketahui bocor. Pilih password lain." · "Password baru tidak boleh sama dengan 3 password terakhir Anda." |
+| Pencatatan riwayat | Trigger `users_catat_riwayat_password` (keputusan 84d): hash baru dicatat pada setiap INSERT/UPDATE `password_hash`, riwayat dipangkas menjadi 3 terbaru. Aplikasi hanya MEMBACA tabel ini |
+| Biaya | Verifikasi riwayat = hingga 3 verifikasi Argon2id tambahan per ganti password (±50 ms masing-masing); daftar bocor dimuat sekali per proses ke `Set` |
 
 ## 5. Konsekuensi
 

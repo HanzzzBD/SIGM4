@@ -68,6 +68,19 @@ export class ProfileRepository extends BaseRepository {
             .executeTakeFirst();
     }
 
+    /** SDD-SESS-19: hash 3 password terakhir pemanggil (diisi trigger `users_catat_riwayat_password`). */
+    async riwayatHash(ctx: AuthContext): Promise<readonly string[]> {
+        const baris = await this.query(ctx)
+            .selectFrom("password_history")
+            .select("password_hash")
+            .where("user_id", "=", String(ctx.userId))
+            .orderBy("berlaku_sejak", "desc")
+            .orderBy("id", "desc")
+            .limit(3)
+            .execute();
+        return baris.map((b) => b.password_hash);
+    }
+
     async simpanPasswordBaru(ctx: AuthContext, hash: string): Promise<void> {
         await this.query(ctx)
             .updateTable("users")

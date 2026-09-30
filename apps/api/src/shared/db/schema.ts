@@ -676,6 +676,14 @@ export interface NotificationPreferencesTable {
     push: ColumnType<boolean, boolean | undefined, boolean>;
 }
 
+/** Riwayat hash password (0037; SDD-SESS-19). Diisi trigger — aplikasi hanya membaca. */
+export interface PasswordHistoryTable {
+    id: Generated<string>;
+    user_id: ColumnType<string, string | number, never>;
+    password_hash: string;
+    berlaku_sejak: ColumnType<Date, Date, never>;
+}
+
 export interface Database {
     document_counters: DocumentCountersTable;
     work_days: WorkDaysTable;
@@ -716,4 +724,5 @@ export interface Database {
     device_tokens: DeviceTokensTable;
     notification_deliveries: NotificationDeliveriesTable;
     notification_preferences: NotificationPreferencesTable;
+    password_history: PasswordHistoryTable;
 }

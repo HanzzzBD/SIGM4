@@ -1,9 +1,8 @@
 // ProfileService — kelola profil sendiri + ganti password sendiri (FR-01.4, PR-02-06).
 //
 // Foto profil TIDAK ada di sini: `users.foto_file_id` menunggu `stored_files` (PR-03-04,
-// logs/phase-01.md §2 keputusan 4). Larangan memakai ulang 3 password terakhir dan daftar
-// password bocor (`NFR-S-03a`) juga TIDAK ada di sini: keduanya menuntut tabel riwayat yang
-// belum ada dan dimiliki `PR-02-31` (logs/phase-01.md §2 keputusan 9).
+// logs/phase-01.md §2 keputusan 4). Daftar password bocor dan larangan memakai ulang 3
+// password terakhir (`NFR-S-03a`) diperiksa sejak `PR-02-31` (SDD-SESS-18/19, keputusan 84).
 
 import type { Kysely } from "kysely";
 import type { AuditLogger } from "../../../shared/audit/index.js";
@@ -47,6 +46,8 @@ const PESAN_PELANGGARAN: Readonly<Record<PasswordViolation, string>> = {
     MISSING_LOWERCASE: "Password baru harus mengandung huruf kecil.",
     MISSING_DIGIT: "Password baru harus mengandung angka.",
     CONTAINS_IDENTITY: "Password baru tidak boleh memuat nama atau email Anda.",
+    LEAKED: "Password ini tercantum dalam daftar password yang diketahui bocor. Pilih password lain.",
+    REUSED: "Password baru tidak boleh sama dengan 3 password terakhir Anda.",
 };
 
 export class ProfileService {
@@ -124,11 +125,18 @@ export class ProfileService {
                     });
                 }
 
-                const pelanggaran = checkPasswordPolicy(input.passwordBaru, {
+                const pelanggaran: PasswordViolation[] = checkPasswordPolicy(input.passwordBaru, {
                     nama: baris.nama,
                     email: baris.email,
                     nipNis: baris.nip_nis,
                 });
+                // SDD-SESS-19 (keputusan 84b): 3 password terakhir TERMASUK yang sedang berlaku.
+                for (const lama of await repo.riwayatHash(ctx)) {
+                    if (await verifyPassword(lama, input.passwordBaru)) {
+                        pelanggaran.push("REUSED");
+                        break;
+                    }
+                }
                 if (pelanggaran.length > 0) {
                     throw new DomainError("VALIDATION_ERROR", "Password baru tidak memenuhi kebijakan.", {
                         errors: pelanggaran.map((v) => ({ field: "password_baru", message: PESAN_PELANGGARAN[v] })),

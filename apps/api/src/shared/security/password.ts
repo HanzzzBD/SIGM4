@@ -1,12 +1,12 @@
 // Hash password dan kebijakan kata sandi (SDD-SYS-15, SDD-SESS-01, NFR-S-02).
 //
-// Dua aturan `NFR-S-03a` yang lain — daftar password bocor dan larangan memakai
-// ulang 3 password terakhir — TIDAK ada di sini: keduanya menuntut sumber data
-// dan tabel riwayat yang belum ada, dan dimiliki PR tersendiri di Phase 02
-// (logs/phase-01.md §2, keputusan 9).
+// Daftar password bocor ikut diperiksa di sini (SDD-SESS-18, `PR-02-31`). Larangan memakai
+// ulang 3 password terakhir TIDAK: ia menuntut riwayat hash per akun dan verifikasi Argon2id,
+// sehingga diperiksa layanan pemanggil (SDD-SESS-19).
 
 import { hash, verify } from "@node-rs/argon2";
 import type { Options } from "@node-rs/argon2";
+import { isLeakedPassword } from "./leaked-passwords.js";
 
 /**
  * Parameter Argon2id `SDD-SESS-01`. Nilainya dibandingkan dengan SDD oleh uji,
@@ -31,7 +31,11 @@ export type PasswordViolation =
     | "MISSING_UPPERCASE"
     | "MISSING_LOWERCASE"
     | "MISSING_DIGIT"
-    | "CONTAINS_IDENTITY";
+    | "CONTAINS_IDENTITY"
+    /** SDD-SESS-18: tercantum di daftar password bocor. */
+    | "LEAKED"
+    /** SDD-SESS-19: sama dengan salah satu dari 3 password terakhir — diisi pemanggil. */
+    | "REUSED";
 
 /** Identitas yang tidak boleh muncul di dalam password (`NFR-S-03a`). */
 export interface UserIdentity {
@@ -67,6 +71,7 @@ export function checkPasswordPolicy(
     const kecil = password.toLowerCase();
     if (potonganIdentitas(identity).some((bagian) => kecil.includes(bagian)))
         pelanggaran.push("CONTAINS_IDENTITY");
+    if (isLeakedPassword(password)) pelanggaran.push("LEAKED");
 
     return pelanggaran;
 }
