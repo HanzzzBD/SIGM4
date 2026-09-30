@@ -202,6 +202,10 @@ async function onUnauthorized() {
 | Ikon | `lucide-react` melalui satu pembungkus (`strokeWidth` 1,5) — **DSD-09** |
 | Uji | Vitest + Testing Library + jsdom + axe-core (`SDD-REPO-11`); E2E peramban menyusul saat alur kritis lengkap |
 | Pengembangan lokal | Vite *dev server* mem-*proxy* `/api` ke proses API — satu origin, cookie `SameSite=Strict` berlaku |
+| Alur masuk (`PR-02-36`, keputusan 85) | `requires_2fa` dari login → P-02 (challenge hanya di memori tab). `403 TWO_FACTOR_REQUIRED` dari `/me` berarti role wajib 2FA **belum terdaftar** (yang terdaftar mendapat challenge, bukan sesi) → **P-03**. `403 PASSWORD_CHANGE_REQUIRED` → P-05; bila penggantian ditolak `TWO_FACTOR_REQUIRED` (gerbang password mendahului gerbang 2FA, `SDD-AUTH-09`), pengguna diarahkan ke P-03 lalu kembali ke P-05. Tujuan awal dibawa parameter `tujuan` sepanjang rantai |
+| QR TOTP | `uqr` (tanpa dependensi) mengodekan `otpauth_uri`; matriksnya dirender SVG milik sendiri dengan warna token — tanpa `innerHTML` |
+| Idle web (`FR-01.2 A2`) | Aktivitas = input pengguna (tombol, klik/sentuh, gulir) di tab SIGM4 mana pun, disinkronkan antar-tab (`localStorage` + `storage` event); permintaan latar tidak dihitung. Menit ke-28: banner `info` "Lanjutkan"; menit ke-30: `POST /auth/logout` lalu Login dengan pesan sesi berakhir dan tujuan tersimpan |
+| Indikator kekuatan password (`FR-01.4` langkah 3, keputusan 85d) | Daftar aturan yang dapat diperiksa klien — ≥ 12 karakter, huruf besar, huruf kecil, angka — sebagai ikon + teks yang berubah saat mengetik, tanpa warna atau komponen baru. Daftar bocor, nama/email, dan 3 password terakhir tetap diputuskan server (`NFR-S-03a`) dan disebut sebagai "diperiksa saat disimpan"; klien tidak pernah menjadi penentu |
 
 ---
 

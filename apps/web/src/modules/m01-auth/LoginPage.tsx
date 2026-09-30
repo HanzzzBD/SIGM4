@@ -5,7 +5,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import type { FormEvent } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { ApiError, GalatJaringan } from "../../shared/api";
 import { KUNCI_ME } from "../../shared/auth";
 import { HALAMAN_TERDAFTAR } from "../../shared/navigasi";
@@ -28,7 +28,23 @@ function pesanGalat(g: unknown): string {
     return "Terjadi gangguan pada sistem. Coba lagi beberapa saat lagi.";
 }
 
-export function LoginPage({ tujuan }: { readonly tujuan?: string | undefined }) {
+/** Kerangka halaman alur masuk (P-01…P-05): logo, satu judul, isi terpusat. */
+export function KerangkaMasuk({ judul, lebar = "sempit", children }: { readonly judul: string; readonly lebar?: "sempit" | "lebar"; readonly children: ReactNode }) {
+    return (
+        <main className="flex min-h-full items-center justify-center bg-bg-page px-4 py-12">
+            <div className={`flex w-full flex-col gap-6 ${lebar === "sempit" ? "max-w-sm" : "max-w-md"}`}>
+                <Logo ukuran="lg" className="self-start" />
+                <h1 className="text-2xl font-semibold text-text-heading">{judul}</h1>
+                {children}
+            </div>
+        </main>
+    );
+}
+
+/** FR-01.2 A2: alasan kembali ke Login yang perlu dijelaskan kepada pengguna. */
+export type AlasanLogin = "idle";
+
+export function LoginPage({ tujuan, alasan }: { readonly tujuan?: string | undefined; readonly alasan?: AlasanLogin | undefined }) {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [email, setEmail] = useState("");
@@ -44,11 +60,11 @@ export function LoginPage({ tujuan }: { readonly tujuan?: string | undefined }) 
             const hasil = await login(email, password);
             if (perluDuaFaktor(hasil)) {
                 simpanTantangan(hasil);
-                await navigate({ href: "/login/2fa" });
+                await navigate({ to: "/login/2fa", search: { tujuan } });
                 return;
             }
             if (hasil.user.must_change_password) {
-                await navigate({ href: "/ganti-password" });
+                await navigate({ to: "/ganti-password", search: { tujuan } });
                 return;
             }
             await queryClient.invalidateQueries({ queryKey: KUNCI_ME });
@@ -62,13 +78,14 @@ export function LoginPage({ tujuan }: { readonly tujuan?: string | undefined }) 
     };
 
     return (
-        <main className="flex min-h-full items-center justify-center bg-bg-page px-4 py-12">
-            <div className="flex w-full max-w-sm flex-col gap-6">
-                <Logo ukuran="lg" className="self-start" />
-                <h1 className="text-2xl font-semibold text-text-heading">Masuk ke SIGM4</h1>
+        <KerangkaMasuk judul="Masuk ke SIGM4">
                 <Kartu>
                     <form className="flex flex-col gap-5" onSubmit={(ev) => void kirim(ev)} noValidate>
-                        {galat !== null && <Peringatan varian="error">{galat}</Peringatan>}
+                        {galat !== null ? (
+                            <Peringatan varian="error">{galat}</Peringatan>
+                        ) : (
+                            alasan === "idle" && <Peringatan varian="info">Sesi Anda berakhir karena tidak ada aktivitas selama 30 menit. Silakan masuk kembali.</Peringatan>
+                        )}
                         <Isian label="Email" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
                         <Isian label="Password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                         <Tombol type="submit" sibuk={sibuk} disabled={email.trim() === "" || password === ""}>
@@ -88,7 +105,6 @@ export function LoginPage({ tujuan }: { readonly tujuan?: string | undefined }) 
                         </a>
                     )}
                 </nav>
-            </div>
-        </main>
+        </KerangkaMasuk>
     );
 }

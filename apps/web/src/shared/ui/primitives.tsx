@@ -1,7 +1,8 @@
 // Komponen inti kerangka (COMPONENTS.md; SDD-FE-12): Button C-01, Input C-08, Alert C-14,
-// Badge C-13, Card C-07, Skeleton C-20. Hanya token (DS-P-07); status selalu warna + ikon
+// Badge C-13, Card C-07, Skeleton C-20, Checkbox C-10. Hanya token (DS-P-07); status selalu warna + ikon
 // + teks (UX-03, NFR-AC-06); kontrol ≥ 44px (NFR-AC-07).
 
+import * as Centang from "@radix-ui/react-checkbox";
 import { useId } from "react";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
 import { Ikon } from "./icon";
@@ -142,6 +143,36 @@ export function Kerangka({ baris = 3, label }: { readonly baris?: number; readon
             {Array.from({ length: baris }, (_, i) => (
                 <span key={i} className="h-4 rounded-sm bg-neutral-100" />
             ))}
+        </div>
+    );
+}
+
+/**
+ * C-10 di atas Radix (SDD-FE-13): kotak 20px dalam area sentuh 44px; seluruh label dapat
+ * diklik. Tercentang = fill teal + centang putih; status tidak hanya warna (ikon centang).
+ */
+export function KotakCentang({ label, checked, onCheckedChange, disabled }: { readonly label: string; readonly checked: boolean; readonly onCheckedChange: (v: boolean) => void; readonly disabled?: boolean }) {
+    const id = useId();
+    return (
+        <div className="flex min-h-touch items-center gap-3">
+            <Centang.Root
+                id={id}
+                checked={checked}
+                disabled={disabled}
+                onCheckedChange={(v) => onCheckedChange(v === true)}
+                className={gabung(
+                    "flex size-icon-md shrink-0 items-center justify-center rounded-sm border transisi-cepat",
+                    checked ? "border-teal-600 bg-teal-600 text-text-inverse" : "border-border-strong bg-surface-default hover:border-neutral-500",
+                    "disabled:border-border-disabled disabled:bg-neutral-200",
+                )}
+            >
+                <Centang.Indicator>
+                    <Ikon nama="centang" ukuran="sm" />
+                </Centang.Indicator>
+            </Centang.Root>
+            <label htmlFor={id} className="cursor-pointer text-base text-text-primary">
+                {label}
+            </label>
         </div>
     );
 }

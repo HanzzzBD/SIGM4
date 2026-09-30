@@ -1,8 +1,11 @@
 // Kerangka layar web (UX §5.1): topbar, sidebar, banner, konten. Preferensi ciut sidebar
 // adalah preferensi tampilan klien (SDD-FE-03) — disimpan lokal, bukan data server.
+// Auto-logout idle web (FR-01.2 A2) hidup di sini: hanya halaman terautentikasi yang dihitung.
 
-import { Outlet } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
+import { BannerSesiIdle, logout, useSesiIdle } from "../modules/m01-auth";
 import { BannerLuring } from "../shared/states";
 import { Sidebar } from "./sidebar";
 import type { PreferensiCiut } from "./sidebar";
@@ -24,6 +27,20 @@ const lebar = (): boolean => window.matchMedia?.("(min-width: 48rem)").matches !
 export function Shell() {
     const [ciut, setCiut] = useState<PreferensiCiut>(bacaPreferensi);
     const [drawer, setDrawer] = useState(false);
+    const queryClient = useQueryClient();
+    const navigate = useNavigate();
+    const href = useRouterState({ select: (s) => s.location.href });
+    const idle = useSesiIdle(() => {
+        void (async () => {
+            try {
+                await logout();
+            } catch {
+                // Sesi mungkin sudah berakhir di tab lain; keluar lokal tetap dijalankan.
+            }
+            queryClient.clear();
+            await navigate({ to: "/login", search: { tujuan: href, alasan: "idle" } });
+        })();
+    });
     const toggle = () => {
         if (!lebar()) {
             setDrawer((d) => !d);
@@ -48,6 +65,7 @@ export function Shell() {
             <div className="flex min-w-0 flex-1 flex-col">
                 <Topbar onMenu={toggle} menuLabel={drawer ? "Tutup menu" : "Buka atau ciutkan menu"} />
                 <BannerLuring />
+                {idle.peringatan && <BannerSesiIdle onLanjutkan={idle.lanjutkan} />}
                 <main id="konten" className="mx-auto w-full max-w-xl flex-1 p-4 md:p-10 lg:p-12">
                     <Outlet />
                 </main>

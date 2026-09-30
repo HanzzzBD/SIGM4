@@ -5,7 +5,8 @@
 import { Link } from "@tanstack/react-router";
 import { Suspense, lazy } from "react";
 import type { ReactNode } from "react";
-import { LoginPage } from "../modules/m01-auth";
+import { AktivasiDuaFaktorPage, GantiPasswordPage, LoginPage, VerifikasiDuaFaktorPage } from "../modules/m01-auth";
+import type { AlasanLogin } from "../modules/m01-auth";
 import { muatDashboardPage } from "../modules/m15-dashboard";
 import type { Rentang } from "../modules/m15-dashboard";
 import { KeadaanKosong, KeadaanMemuat, KeadaanTanpaAkses } from "../shared/states";
@@ -21,7 +22,13 @@ function Tunggal({ children }: { readonly children: ReactNode }) {
     return <main className="mx-auto flex min-h-full max-w-lg flex-col justify-center px-4">{children}</main>;
 }
 
-export const HalamanLogin = ({ tujuan }: { readonly tujuan?: string | undefined }) => <LoginPage tujuan={tujuan} />;
+export const HalamanLogin = ({ tujuan, alasan }: { readonly tujuan?: string | undefined; readonly alasan?: AlasanLogin | undefined }) => <LoginPage tujuan={tujuan} alasan={alasan} />;
+
+type Tujuan = { readonly tujuan?: string | undefined };
+/** P-02, P-03, P-05 — alur masuk di luar shell (F-01, F-03). */
+export const HalamanVerifikasiDuaFaktor = ({ tujuan }: Tujuan) => <VerifikasiDuaFaktorPage tujuan={tujuan} />;
+export const HalamanAktivasiDuaFaktor = ({ tujuan }: Tujuan) => <AktivasiDuaFaktorPage tujuan={tujuan} />;
+export const HalamanGantiPassword = ({ tujuan }: Tujuan) => <GantiPasswordPage tujuan={tujuan} />;
 
 const DashboardPage = lazy(muatDashboardPage);
 

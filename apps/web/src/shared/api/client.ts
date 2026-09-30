@@ -11,7 +11,7 @@ import { ApiError, GalatJaringan, dariRespons } from "./errors";
 export const BASE_API = "/api/v1";
 
 /** Titik yang tidak boleh memicu refresh: kegagalannya bermakna sendiri (F-01). */
-const TANPA_REFRESH = ["/auth/login", "/auth/refresh", "/auth/logout", "/auth/logout-all"];
+const TANPA_REFRESH = ["/auth/login", "/auth/2fa/verify", "/auth/refresh", "/auth/logout", "/auth/logout-all"];
 
 export interface OpsiKlien {
     /** Dipanggil sekali saat sesi tak dapat dipulihkan — aplikasi mengarahkan ke Login. */

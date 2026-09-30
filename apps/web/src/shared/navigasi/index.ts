@@ -8,6 +8,9 @@ import type { NamaIkon } from "../ui/icon";
 /** Halaman yang route-nya ada di build ini: ID UX §6 → path. Dijaga sama dengan router (diuji). */
 export const HALAMAN_TERDAFTAR: Readonly<Record<string, string>> = {
     "P-01": "/login",
+    "P-02": "/login/2fa",
+    "P-03": "/login/2fa/aktivasi",
+    "P-05": "/ganti-password",
     "P-08": "/tidak-punya-akses",
     "P-09": "/data-tidak-tersedia",
     "P-10": "/gangguan",

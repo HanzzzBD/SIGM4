@@ -137,6 +137,7 @@ flowchart TD
 | Skenario | Jalur UX | Rujukan |
 |---|---|---|
 | Aktivasi pertama | P-01 → P-03: role wajib 2FA memasukkan **kode aktivasi** dari Administrator lebih dulu; lalu QR secret + 10 kode cadangan, wajib dikonfirmasi dengan 6 digit sebelum dilanjutkan. Berhasil → sesi lain pemilik akun keluar | `FR-01.5` · `BR-070d` · `BR-070e` |
+| Kode cadangan tampil sekali | Kolom 6 digit baru aktif setelah pengguna mencentang "Saya sudah menyimpan 10 kode cadangan di tempat aman"; tersedia Salin semua & Unduh .txt | `BR-070c` (keputusan 85c log phase-02) |
 | Kode cadangan menipis | Peringatan pada respons login **dan** spanduk pada P-77 saat tersisa 2 atau kurang, dengan tombol buat ulang | `FR-01.5 AC` |
 | Perangkat authenticator hilang | Pengguna memakai kode cadangan; bila habis, mengajukan reset 2FA kepada Administrator (P-63 drawer) | `FR-01.5 A2`, `A3` |
 | Reset 2FA oleh Admin | Pengguna wajib mendaftar ulang saat login berikutnya — diarahkan otomatis ke P-03; untuk role wajib, Administrator menyerahkan kode aktivasi baru yang tampil satu kali di drawer | `FR-01.5 A3` |

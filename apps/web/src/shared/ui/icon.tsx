@@ -8,15 +8,18 @@ import {
     CalendarCheck,
     CalendarClock,
     CalendarDays,
+    Check,
     ChartColumn,
     ChevronDown,
     CircleAlert,
     CircleCheck,
+    CircleDot,
     CircleDashed,
     CircleX,
     ClipboardCheck,
     ClipboardList,
     Copy,
+    Download,
     FileText,
     FileWarning,
     FlaskConical,
@@ -97,6 +100,9 @@ const PETA = {
     chatbot: MessageSquare,
     menu: Menu,
     tutup: X,
+    centang: Check,
+    unduh: Download,
+    belumTerpenuhi: CircleDot,
 } satisfies Record<string, LucideIcon>;
 
 export type NamaIkon = keyof typeof PETA;
