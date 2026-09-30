@@ -26,3 +26,9 @@ export async function namaRole(scope: TransactionScope, kode: string): Promise<s
 export async function penggunaAktifBerperan(scope: TransactionScope, kodeRole: readonly string[]): Promise<readonly number[]> {
     return createUserRepository(scope.tx).idAktifBerperan(scope.ctx, kodeRole);
 }
+
+/** `{pengguna}`/`{email}` notifikasi modul lain (mis. M-01 `NT-37`, `NT-53`) — tanpa membuka repository ini (SDD-SYS-03). */
+export async function identitasPengguna(scope: TransactionScope, id: number): Promise<{ readonly nama: string; readonly email: string } | undefined> {
+    const u = await createUserRepository(scope.tx).findById(scope.ctx, id);
+    return u === undefined ? undefined : { nama: u.nama, email: u.email };
+}

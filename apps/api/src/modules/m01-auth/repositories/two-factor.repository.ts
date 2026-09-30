@@ -68,7 +68,8 @@ export class TwoFactorRepository extends BaseRepository {
      * sesi kehilangan `otp` pada refresh berikutnya (terbukti pada PostgreSQL 15). Statement pertama menunggu
      * kunci keluarga; statement kedua mendapat snapshot baru yang sudah memuat token hasil rotasi.
      */
-    async tandaiSesiTerverifikasi(ctx: AuthContext, familyId: string): Promise<void> {
+    /** Mengembalikan platform sesi itu — `{perangkat}` NT-39a (keputusan 87d). */
+    async tandaiSesiTerverifikasi(ctx: AuthContext, familyId: string): Promise<"WEB" | "ANDROID" | "IOS" | undefined> {
         const q = this.query(ctx);
         await q
             .selectFrom("refresh_tokens")
@@ -78,13 +79,15 @@ export class TwoFactorRepository extends BaseRepository {
             .where("revoked_at", "is", null)
             .forUpdate()
             .execute();
-        await q
+        const baris = await q
             .updateTable("refresh_tokens")
             .set({ otp_verified: true })
             .where("family_id", "=", familyId)
             .where("user_id", "=", String(ctx.userId))
             .where("revoked_at", "is", null)
-            .execute();
+            .returning("platform")
+            .executeTakeFirst();
+        return baris?.platform;
     }
 }
 

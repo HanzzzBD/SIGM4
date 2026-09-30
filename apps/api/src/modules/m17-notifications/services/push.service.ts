@@ -12,6 +12,7 @@ import { createDeliveryRepository } from "../repositories/delivery.repository.js
 import { createDeviceTokenRepository } from "../repositories/device-token.repository.js";
 import { createPreferenceRepository } from "../repositories/preference.repository.js";
 import type { PengirimPush } from "./push-sender.js";
+import { TEMPLAT } from "./templates.js";
 
 export interface PushDeps {
     readonly db: Kysely<Database>;
@@ -57,7 +58,8 @@ export async function kirimPushNotifikasi(deps: PushDeps, notifikasiId: number, 
 
     let hasil;
     try {
-        hasil = await deps.pengirim.kirim(tokens, { kode: n.kode, judul: n.judul, isi: n.isi, deepLink: n.deepLink, prioritasTinggi: n.wajib });
+        // SDD-08 §4.2 (keputusan 87c): isi push tidak menyebut identitas pengguna lain — layar terkunci.
+        hasil = await deps.pengirim.kirim(tokens, { kode: n.kode, judul: n.judul, isi: TEMPLAT[n.kode]?.isiPush ?? n.isi, deepLink: n.deepLink, prioritasTinggi: n.wajib });
     } catch (galat) {
         // Kegagalan total (jaringan, kredensial) — sama dengan galat sementara.
         hasil = { terkirim: 0, tokenMati: [], galatSementara: galat instanceof Error ? galat.message : String(galat) };

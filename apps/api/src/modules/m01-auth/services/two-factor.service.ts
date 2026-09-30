@@ -174,7 +174,7 @@ export class TwoFactorService {
 
                 await repo.aktifkan(ctx, sekarang, langkah);
                 if (kodeAktivasiId !== undefined) await createActivationCodeRepository(scope.tx).habiskan(ctx, kodeAktivasiId, sekarang);
-                await repo.tandaiSesiTerverifikasi(ctx, sesiSaatIni);
+                const platform = await repo.tandaiSesiTerverifikasi(ctx, sesiSaatIni);
                 // BR-070e: sesi lain keluar dalam transaksi yang sama dengan pengaktifannya.
                 const sesiDicabut = await createSessionRepository(scope.tx).cabutSemuaKecuali(
                     ctx,
@@ -198,7 +198,7 @@ export class TwoFactorService {
                     name: EVENT_DUA_FAKTOR_AKTIF,
                     aggregateType: "user",
                     aggregateId: ctx.userId,
-                    payload: { user_id: String(ctx.userId), sesi_dicabut: sesiDicabut.length },
+                    payload: { user_id: String(ctx.userId), sesi_dicabut: sesiDicabut.length, platform: platform ?? null },
                 });
                 await publishAll(scope, events);
                 return { wajibGanti: baris.wajib_ganti };

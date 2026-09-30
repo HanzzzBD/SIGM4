@@ -160,9 +160,12 @@ Konsekuensinya, event yang gagal **menahan** event sesudahnya pada agregat yang 
 | `UserAccountChanged` | M-02 | Notifikasi `NT-40` ke pengguna terkait; payload `user_id`, `role_baru` (kode) \| null, `status_baru` \| null — hanya bila role atau status benar-benar berubah; agregat `user` (keputusan 78) |
 | `GuardianConsentMissing` | M-02 | Notifikasi `NT-48` ke Administrator; diterbitkan pada transaksi **terpisah** setelah penolakan `DP-02` di-rollback (`SDD-EVT-04`); payload `user_id` \| null, `nama`; agregat `user` (keputusan 78) |
 | `AccountLocked` | M-01 | Notifikasi `NT-39` (pemilik akun + Administrator); payload `user_id`, `terkunci_sampai`; agregat `user` |
-| `TwoFactorEnabled` | M-01 | Notifikasi `NT-39a` (Administrator); payload `user_id`, `sesi_dicabut`; agregat `user`. Terbit dalam transaksi `enroll/confirm` (`BR-070e`, `SDD-SESS-17`) |
+| `TwoFactorEnabled` | M-01 | Notifikasi `NT-39a` (Administrator); payload `user_id`, `sesi_dicabut`, `platform` (sesi yang mengonfirmasi: `WEB`/`ANDROID`/`IOS`, keputusan 87d); agregat `user`. Terbit dalam transaksi `enroll/confirm` (`BR-070e`, `SDD-SESS-17`) |
 | `PasswordResetRequested` | M-01 | Notifikasi `NT-37` (Administrator, in-app + push); payload `permintaan_id`, `user_id`; agregat `user` |
 | `PasswordResetIssued` | M-01 | Notifikasi `NT-38` (Administrator penerbit, in-app); payload `permintaan_id`, `user_id`, `oleh`, `kedaluwarsa_pada` — **tidak pernah** memuat password sementara (`FR-01.3 AC`); agregat `user` |
+| `PasswordChangedAfterReset` | M-01 | Notifikasi `NT-38a` (pengguna terkait, in-app + push); payload `user_id`, `permintaan_id`; agregat `user` |
+| `AdminBreakGlassRecovery` | M-01 | Notifikasi `NT-53` (seluruh Pimpinan Sekolah, in-app + push); payload `user_id`, `email`, `dipaksa`, `sesi_dicabut`; agregat `user`. Terbit dalam transaksi CLI break-glass (`FR-01.6`) |
+| `RefreshTokenReuseDetected` | M-01 | Notifikasi `NT-54` (Administrator, in-app + push); payload `user_id`, `family_id`, `token_dicabut`; agregat `user`. Terbit dalam transaksi pencabutan keluarga (`SDD-SESS-04`, keputusan 87a) |
 | `SessionRevoked` | M-01 | Menonaktifkan device token FCM sesi itu (`MOB-SEC-05`); payload `user_id`, `family_id`, `platform`, `alasan`; agregat `user` |
 
 Kolom "konsumen asinkron" sengaja didominasi notifikasi — karena efek yang bukan notifikasi umumnya sinkron (SDD-EVT-02).

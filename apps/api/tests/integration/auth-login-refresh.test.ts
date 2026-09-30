@@ -173,6 +173,10 @@ describe.skipIf(!ADA)("PR-02-02 — login + rotasi refresh token (PostgreSQL + R
     const refresh = (token: string | undefined, headers: Record<string, string> = {}) =>
         kirim(url, "/auth/refresh", token === undefined ? {} : { refresh_token: token }, headers);
 
+    const eventReuse = (userId: number) =>
+        kueri<{ user_id: string; token_dicabut: string }>(
+            `SELECT payload->>'user_id' AS user_id, payload->>'token_dicabut' AS token_dicabut FROM event_outbox WHERE event_name = 'RefreshTokenReuseDetected' AND aggregate_id = ${String(userId)} ORDER BY id`,
+        );
     const barisKeluarga = (userId: number) =>
         kueri<RowRefresh>(`
             SELECT id::text, parent_id::text, family_id::text, platform::text, host(ip) AS ip, issued_at::text, expires_at::text,
@@ -460,6 +464,8 @@ describe.skipIf(!ADA)("PR-02-02 — login + rotasi refresh token (PostgreSQL + R
                 expect(b.revoke_reason).toBe("reuse_detected");
             }
             expect(await jumlahAudit(id, "REFRESH_TOKEN_REUSE_DETECTED")).toBe(1);
+            // NT-54 (keputusan 87a): event terbit di transaksi pencabutan yang sama — ter-commit meski 401.
+            expect(await eventReuse(id)).toEqual([{ user_id: String(id), token_dicabut: "2" }]);
 
             // Token terbaru yang tadinya sah kini ikut mati.
             const korban = await refresh(t2);
@@ -476,6 +482,7 @@ describe.skipIf(!ADA)("PR-02-02 — login + rotasi refresh token (PostgreSQL + R
             await refresh(t1);
             await refresh(t1);
             expect(await jumlahAudit(id, "REFRESH_TOKEN_REUSE_DETECTED")).toBe(1);
+            expect(await eventReuse(id)).toHaveLength(1);
             await refresh(t1);
             await refresh(t1);
             expect(await jumlahAudit(id, "REFRESH_TOKEN_REUSE_DETECTED")).toBe(1);

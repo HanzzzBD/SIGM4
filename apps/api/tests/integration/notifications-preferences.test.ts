@@ -46,7 +46,7 @@ async function aturLangsung(userId: number, jenis: KelompokNotifikasi, inApp: bo
 }
 
 /** Templat uji disuntik lewat konstruktor — konstanta produksi tidak disentuh. */
-const templatUji = (jenis: KelompokNotifikasi, wajib: boolean): Templat => ({ jenis, wajib, judul: "Uji", render: () => "Isi uji." });
+const templatUji = (jenis: KelompokNotifikasi, wajib: boolean): Templat => ({ jenis, wajib, push: true, judul: "Uji", render: () => "Isi uji." });
 const terbitkan = (templat: Templat, penerima: readonly number[]) =>
     withTransaction(pelaku, (s) => new NotificationService(clock, () => templat).emit(s, { kode: "NT-99", penerima, params: {}, referensi: null, deepLink: null, dedupe: { event: randomUUID() } }), getDb());
 
