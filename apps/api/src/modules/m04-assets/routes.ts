@@ -168,6 +168,8 @@ export interface AssetsModuleDeps {
     readonly db: Kysely<Database>;
     readonly auditLogger: AuditLogger;
     readonly clock: Clock;
+    /** `APP_BASE_URL` tervalidasi — dasar `qr_url` (FR-05.1, PR-03-01). */
+    readonly appBaseUrl: string;
 }
 
 /** Router M-04. `batasi`/`otorisasi` datang dari perakit `api/index.ts`. */
@@ -190,25 +192,25 @@ export function assetsRouter(
         createAssetRoute.path,
         batasi(createAssetRoute),
         otorisasi(createAssetRoute.permission),
-        createAssetHandler(service),
+        createAssetHandler(service, deps.appBaseUrl),
     );
     router.get(
         listAssetsRoute.path,
         batasi(listAssetsRoute),
         otorisasi(listAssetsRoute.permission),
-        listAssetsHandler(service),
+        listAssetsHandler(service, deps.appBaseUrl),
     );
     router.patch(
         updateAssetConditionRoute.path,
         batasi(updateAssetConditionRoute),
         otorisasi(updateAssetConditionRoute.permission),
-        updateAssetConditionHandler(service),
+        updateAssetConditionHandler(service, deps.appBaseUrl),
     );
     router.post(
         moveAssetsRoute.path,
         batasi(moveAssetsRoute),
         otorisasi(moveAssetsRoute.permission),
-        moveAssetsHandler(service),
+        moveAssetsHandler(service, deps.appBaseUrl),
     );
 
     router.get(

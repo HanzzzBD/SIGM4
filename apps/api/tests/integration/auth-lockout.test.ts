@@ -65,6 +65,7 @@ describe.skipIf(!ADA)("PR-02-03 — penguncian akun + audit percobaan gagal + re
     function bangun(limiter: AppDeps["limiter"]): Server {
         return createServer(
             createApp({
+                appBaseUrl: "https://sigm4.sekolah.test",
                 health: new HealthRegistry(30).register(
                     { name: "database", probe: () => Promise.resolve({ status: "up" }) },
                     { name: "redis", probe: () => Promise.resolve({ status: "up" }) },

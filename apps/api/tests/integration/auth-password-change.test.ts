@@ -76,6 +76,7 @@ describe.skipIf(!ADA)("PR-02-06 — ganti password + kelola profil sendiri (Post
         hashSandi = await hashPassword(PASSWORD);
         server = createServer(
             createApp({
+                appBaseUrl: "https://sigm4.sekolah.test",
                 health: new HealthRegistry(30).register(
                     { name: "database", probe: () => Promise.resolve({ status: "up" }) },
                     { name: "redis", probe: () => Promise.resolve({ status: "up" }) },

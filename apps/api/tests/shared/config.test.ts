@@ -30,6 +30,7 @@ const SAH_API = {
     ...envJwtUji(PEM),
     TOTP_ENCRYPTION_KEY: KUNCI_TOTP,
     S3_PUBLIC_ENDPOINT: "https://storage.sekolah.example/sigm4/",
+    APP_BASE_URL: "https://sigm4.sekolah.example/",
 };
 
 /** Salinan `env` tanpa variabel tertentu. */
@@ -153,6 +154,22 @@ describe("readApiConfig — skema bertahap", () => {
             ).toThrow(
                 /S3_PUBLIC_ENDPOINT harus URL absolut berskema http atau https/,
             );
+        },
+    );
+});
+
+describe("readApiConfig — APP_BASE_URL (FR-05.1, SDD-SYS-14; PR-03-01)", () => {
+    it("wajib; garis miring penutup dibuang sehingga payload QR berbentuk https://{domain}/a/{uuid}", () => {
+        expect(masalahDari(() => readApiConfig(tanpa(SAH_API, "APP_BASE_URL"), "UTC"))).toEqual(["Variabel lingkungan APP_BASE_URL wajib diisi (SDD-INF-08)."]);
+        expect(readApiConfig(SAH_API, "UTC").appBaseUrl).toBe("https://sigm4.sekolah.example");
+        expect(readApiConfig({ ...SAH_API, APP_BASE_URL: "https://sekolah.example/sigm4//" }, "UTC").appBaseUrl).toBe("https://sekolah.example/sigm4");
+    });
+
+    // Label QR dicetak PERMANEN: URL tak sah = label mati selamanya, maka ditolak saat startup.
+    it.each(["http://sigm4.sekolah.example", "sigm4.sekolah.example", "https://", "https://sigm4.sekolah.example/?x=1", "https://sigm4.sekolah.example/#a", "https://u:p@sigm4.sekolah.example"])(
+        "APP_BASE_URL = %s ditolak: harus https berhost tanpa query/fragmen/kredensial",
+        (nilai) => {
+            expect(() => readApiConfig({ ...SAH_API, APP_BASE_URL: nilai }, "UTC")).toThrow(/APP_BASE_URL harus URL https berhost/);
         },
     );
 });

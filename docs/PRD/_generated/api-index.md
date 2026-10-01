@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **158** baris, dikumpulkan dari 22 berkas modul.
+> Total: **160** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -74,6 +74,7 @@
 | GET | `/work-units` | `setting.view` | Daftar unit kerja (filter jenis, status) — Lampiran E.3 | [M-20](../02-modules/m20-settings.md) |
 | PATCH | `/academic-years/{id}/activate` | `setting.manage` | Jadikan tahun ajaran aktif; tepat satu yang aktif (`AC-YR-02`) | [M-20](../02-modules/m20-settings.md) |
 | PATCH | `/approval-rules/{id}/status` | `approval_rule.manage` | Aktifkan / nonaktifkan aturan (FR-10.1 A4); menonaktifkan wajib menyertakan `alasan` (UX-04), tercatat pada entri log | [M-10](../02-modules/m10-approval.md) |
+| PATCH | `/assets/qr-terpasang` | `asset.qr_print` | Menandai label QR terpasang (atau dilepas) untuk 1–200 aset sekaligus (FR-05.1 langkah 5) | [M-05](../02-modules/m05-qr.md) |
 | PATCH | `/assets/{id}/condition` | `asset.update` | Ubah kondisi + alasan | [M-04](../02-modules/m04-assets.md) |
 | PATCH | `/buildings/{id}/status` · `/rooms/{id}/status` | `location.manage` | Aktifkan/nonaktifkan berjenjang (`BR-015`) | [M-03](../02-modules/m03-locations.md) |
 | PATCH | `/fines/{id}/pay` | `fine.manage` | Tandai lunas | [M-09](../02-modules/m09-loans.md) |
@@ -99,6 +100,7 @@
 | POST | `/assets/move` | `asset.update` | Mutasi lokasi (massal) | [M-04](../02-modules/m04-assets.md) |
 | POST | `/assets/qr/print` | `asset.update` | Hasilkan PDF label QR massal | [M-05](../02-modules/m05-qr.md) |
 | POST | `/assets/{id}/documents` | `asset_document.manage` | Tautkan dokumen aset dari berkas terdaftar | [M-06](../02-modules/m06-documents.md) |
+| POST | `/assets/{id}/qr/regenerate` | `asset.qr_regenerate` | Regenerasi UUID aset — QR lama otomatis tidak berlaku; alasan wajib (FR-05.1 A2, UX-04) | [M-05](../02-modules/m05-qr.md) |
 | POST | `/assets/{id}/reinstate` | `disposal.reinstate` | Pulihkan aset yang telah dihapuskan | [M-21](../02-modules/m21-disposal.md) |
 | POST | `/assets` | `asset.create` | Buat aset (mendukung `jumlah_unit` untuk N record) | [M-04](../02-modules/m04-assets.md) |
 | POST | `/audit-sessions/{id}/approve` | `audit.approve` | Setujui & terapkan penyesuaian | [M-13](../02-modules/m13-audit-stocktake.md) |

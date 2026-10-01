@@ -118,6 +118,24 @@ const bentukPenyimpananPublik = {
         .transform((v) => new URL(v).origin),
 };
 
+/** `APP_BASE_URL` sah: https, berhost, tanpa kredensial/query/fragmen — dasar URL permanen label QR. */
+const urlDasarAplikasi = (v: string): boolean => {
+    try {
+        const u = new URL(v);
+        return u.protocol === "https:" && u.hostname !== "" && u.username === "" && u.password === "" && u.search === "" && u.hash === "";
+    } catch {
+        return false;
+    }
+};
+
+// Domain publik aplikasi (SDD-16 §4.7): label QR mencetak `https://{domain}/a/{asset_uuid}` secara
+// PERMANEN (FR-05.1 langkah 1) — URL tak sah di sini berarti label mati, jadi ditolak saat startup.
+const bentukAplikasi = {
+    APP_BASE_URL: wajib("APP_BASE_URL")
+        .refine(urlDasarAplikasi, { error: pesan("APP_BASE_URL", "harus URL https berhost tanpa query maupun fragmen") })
+        .transform((v) => v.replace(/\/+$/, "")),
+};
+
 // Kunci penandatangan access token (SDD-SESS-02, SDD-16 §4.7). PEM: PKCS#8 privat dan SPKI
 // publik; `\n` literal diterima agar muat pada berkas env satu baris.
 const bentukJwt = {
@@ -264,6 +282,8 @@ export interface ApiConfig extends ProcessConfig {
     /** `null` = push tidak dikonfigurasi (keputusan 80a). */
     readonly fcm: KredensialFcm | null;
     readonly objectStoragePublicOrigin: string;
+    /** `APP_BASE_URL` tanpa garis miring penutup — dasar payload QR (FR-05.1, `PR-03-01`). */
+    readonly appBaseUrl: string;
     /** Pasangan kunci Ed25519 penandatangan access token; sudah tervalidasi. */
     readonly jwtKeys: JwtKeys;
     /** Kotak enkripsi secret TOTP (`TOTP_ENCRYPTION_KEY`); sudah tervalidasi. */
@@ -330,6 +350,7 @@ export function readApiConfig(
             ...bentukLog,
             ...bentukZona,
             ...bentukPenyimpananPublik,
+            ...bentukAplikasi,
             ...bentukJwt,
             ...bentukTotp,
         }),
@@ -344,6 +365,7 @@ export function readApiConfig(
         redis: { url: d.REDIS_URL },
         logLevel: d.LOG_LEVEL,
         objectStoragePublicOrigin: d.S3_PUBLIC_ENDPOINT,
+        appBaseUrl: d.APP_BASE_URL,
         // `periksaKunciJwt` tidak melaporkan masalah bila kedua variabel sah, jadi kunci ada.
         jwtKeys: jwt.kunci!,
         // Sama: `periksaKunciTotp` hanya diam bila variabelnya sah.

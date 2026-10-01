@@ -119,6 +119,7 @@ describe.skipIf(!ADA_DB)("Rate limit terhadap Redis nyata", () => {
             new FixedClock(awal),
         );
         const app = createApp({
+            appBaseUrl: "https://sigm4.sekolah.test",
             health: new HealthRegistry(),
             limiter,
             security: { objectStorageOrigin: "http://minio:9000" },

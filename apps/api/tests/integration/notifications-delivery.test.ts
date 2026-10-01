@@ -71,6 +71,7 @@ describe.skipIf(!ADA)("PR-02-26 — SSE + Redis Pub/Sub fanout multi-instance (a
         // Skor sambung naik tegas — "terlama" tidak ambigu (NTF-03).
         const hub = new HubSse({ pelanggan, redis: getRedis(), logger, sekarangMs: () => ++urutanSambung, heartbeatMs: 60_000 });
         const app = createApp({
+            appBaseUrl: "https://sigm4.sekolah.test",
             health: new HealthRegistry(30),
             limiter: { hit: () => Promise.resolve({ lolos: true, batas: 1000, sisa: 999, resetDetik: 60 }) },
             security: { objectStorageOrigin: "http://minio:9000" },

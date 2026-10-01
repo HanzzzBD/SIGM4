@@ -2,6 +2,7 @@
 
 import type { RequestHandler } from "express";
 import { requireAuthContext } from "../../../shared/auth/index.js";
+import { urlQrAset } from "../../../shared/qr/index.js";
 import {
     AssetIdParamSchema,
     CreateAssetBodySchema,
@@ -13,7 +14,10 @@ import {
 } from "../schemas/asset.schema.js";
 import type { AssetService } from "../services/asset.service.js";
 
-export function createAssetHandler(service: AssetService): RequestHandler {
+/** FR-05.1 (PR-03-01): setiap aset di respons membawa payload QR permanennya — klien tak merakit URL sendiri. */
+const denganQr = <T extends { readonly uuid?: unknown }>(dasarQr: string, rows: readonly T[]) => rows.map((r) => ({ ...r, qr_url: urlQrAset(dasarQr, String(r.uuid)) }));
+
+export function createAssetHandler(service: AssetService, dasarQr: string): RequestHandler {
     return async (req, res) => {
         const ctx = requireAuthContext(res);
         const body = CreateAssetBodySchema.parse(req.body);
@@ -36,7 +40,7 @@ export function createAssetHandler(service: AssetService): RequestHandler {
         });
         res.status(201).json({
             success: true,
-            data: dibuat,
+            data: denganQr(dasarQr, dibuat),
             meta: { jumlah_unit: dibuat.length },
         });
     };
@@ -83,7 +87,7 @@ export function listRoomAssetsHandler(service: AssetService): RequestHandler {
 }
 
 /** `GET /assets` (FR-04.2): pencarian, filter, dan paginasi katalog aset. */
-export function listAssetsHandler(service: AssetService): RequestHandler {
+export function listAssetsHandler(service: AssetService, dasarQr: string): RequestHandler {
     return async (req, res) => {
         const ctx = requireAuthContext(res);
         const query = ListAssetsQuerySchema.parse({
@@ -112,7 +116,7 @@ export function listAssetsHandler(service: AssetService): RequestHandler {
         });
         res.status(200).json({
             success: true,
-            data: hasil.rows,
+            data: denganQr(dasarQr, hasil.rows),
             meta: {
                 page: hasil.page,
                 per_page: hasil.perPage,
@@ -124,7 +128,7 @@ export function listAssetsHandler(service: AssetService): RequestHandler {
 }
 
 /** `PATCH /assets/{id}/condition` (FR-04.3): ubah kondisi + alasan, riwayat kondisi. */
-export function updateAssetConditionHandler(service: AssetService): RequestHandler {
+export function updateAssetConditionHandler(service: AssetService, dasarQr: string): RequestHandler {
     return async (req, res) => {
         const ctx = requireAuthContext(res);
         const { id } = AssetIdParamSchema.parse(req.params);
@@ -135,12 +139,12 @@ export function updateAssetConditionHandler(service: AssetService): RequestHandl
             referensiJenis: body.referensi_jenis ?? null,
             referensiId: body.referensi_id ?? null,
         });
-        res.status(200).json({ success: true, data: diperbarui, meta: null });
+        res.status(200).json({ success: true, data: denganQr(dasarQr, [diperbarui])[0], meta: null });
     };
 }
 
 /** `POST /assets/move` (FR-04.4): mutasi lokasi 1..50 aset ke satu ruangan tujuan, atomik. */
-export function moveAssetsHandler(service: AssetService): RequestHandler {
+export function moveAssetsHandler(service: AssetService, dasarQr: string): RequestHandler {
     return async (req, res) => {
         const ctx = requireAuthContext(res);
         const body = MoveAssetsBodySchema.parse(req.body);
@@ -151,6 +155,6 @@ export function moveAssetsHandler(service: AssetService): RequestHandler {
             alasan: body.alasan,
             penanggungJawabBaruId: body.penanggung_jawab_baru_id ?? null,
         });
-        res.status(200).json({ success: true, data: dipindah, meta: { jumlah_aset: dipindah.length } });
+        res.status(200).json({ success: true, data: denganQr(dasarQr, dipindah), meta: { jumlah_aset: dipindah.length } });
     };
 }

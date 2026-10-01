@@ -47,6 +47,7 @@ const KOLOM_ASSET = [
     "boleh_dipinjam_siswa",
     "penanggung_jawab_id",
     "procurement_id",
+    "qr_terpasang",
     "created_at",
 ] as const;
 
@@ -69,6 +70,8 @@ export interface AssetRow {
     readonly boleh_dipinjam_siswa: boolean;
     readonly penanggung_jawab_id: string | null;
     readonly procurement_id: string | null;
+    /** FR-05.1 langkah 5 — label QR sudah ditempel. */
+    readonly qr_terpasang: boolean;
     readonly created_at: Date;
 }
 
@@ -135,6 +138,7 @@ const KOLOM_KATALOG_BASE = [
     "status",
     "dapat_dipinjam",
     "boleh_dipinjam_siswa",
+    "qr_terpasang",
     "created_at",
 ] as const;
 

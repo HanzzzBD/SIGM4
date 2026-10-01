@@ -30,6 +30,7 @@ afterEach(async () => {
 
 async function ambil(path = "/api/v1/health/live"): Promise<Response> {
     const app = createApp({
+        appBaseUrl: "https://sigm4.sekolah.test",
         health: new HealthRegistry(),
         limiter: {
             hit: () =>

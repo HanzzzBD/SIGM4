@@ -67,6 +67,7 @@ describe.skipIf(!ADA_DB)("PR-02-24 — konfigurasi approval rule + pratinjau (ac
     beforeAll(async () => {
         dbmate("up");
         const app = createApp({
+            appBaseUrl: "https://sigm4.sekolah.test",
             health: new HealthRegistry(30),
             limiter: { hit: () => Promise.resolve({ lolos: true, batas: 1000, sisa: 999, resetDetik: 60 }) },
             security: { objectStorageOrigin: "http://minio:9000" },

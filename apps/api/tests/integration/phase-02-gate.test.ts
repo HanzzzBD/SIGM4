@@ -39,6 +39,7 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 02 — ukuran awal (PostgreSQL + Red
         if (redis.status !== "ready") await new Promise((r) => redis.once("ready", r));
         const clock = new SystemClock();
         const app = createApp({
+            appBaseUrl: "https://sigm4.sekolah.test",
             health: new HealthRegistry(30).register(fcmCheck(null)),
             limiter: { hit: () => Promise.resolve({ lolos: true, batas: 1000, sisa: 999, resetDetik: 60 }) },
             security: { objectStorageOrigin: "http://minio:9000" },

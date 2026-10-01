@@ -19,3 +19,5 @@ export { ringkasanAset } from "./services/dashboard-source.js";
 /** Job `slot-activation` (BR-005b, SDD-AVL-11) — M-04 tetap pemilik `assets.status`. */
 export type { HasilSinkronStatus } from "./services/reservation-status.js";
 export { sinkronkanStatusDireservasi } from "./services/reservation-status.js";
+/** Kolom QR `assets` atas permintaan M-05 (FR-05.1, PR-03-01). */
+export { gantiUuidAset, tandaiQrTerpasang } from "./services/qr-aset.js";
