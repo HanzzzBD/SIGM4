@@ -166,6 +166,7 @@ Konsekuensinya, event yang gagal **menahan** event sesudahnya pada agregat yang 
 | `PasswordChangedAfterReset` | M-01 | Notifikasi `NT-38a` (pengguna terkait, in-app + push); payload `user_id`, `permintaan_id`; agregat `user` |
 | `AdminBreakGlassRecovery` | M-01 | Notifikasi `NT-53` (seluruh Pimpinan Sekolah, in-app + push); payload `user_id`, `email`, `dipaksa`, `sesi_dicabut`; agregat `user`. Terbit dalam transaksi CLI break-glass (`FR-01.6`) |
 | `RefreshTokenReuseDetected` | M-01 | Notifikasi `NT-54` (Administrator, in-app + push); payload `user_id`, `family_id`, `token_dicabut`; agregat `user`. Terbit dalam transaksi pencabutan keluarga (`SDD-SESS-04`, keputusan 87a) |
+| `TentativeSlotExpired` | `shared/booking` (job `tentative-slot-expiry`) | Pengajuan pemilik slot → `Kedaluwarsa` + notifikasi pemohon & approver (`BR-023b`) — konsumen `PR-03-10` (ruangan) dan `PR-04-02` (aset); payload `slot_id`, `origin`, `resource_type`, `resource_id`, `reservation_id`, `loan_id`; agregat `booking_slot`. Terbit dalam transaksi pelepasan slot (`PR-02-37`, keputusan 88d) |
 | `SessionRevoked` | M-01 | Menonaktifkan device token FCM sesi itu (`MOB-SEC-05`); payload `user_id`, `family_id`, `platform`, `alasan`; agregat `user` |
 
 Kolom "konsumen asinkron" sengaja didominasi notifikasi — karena efek yang bukan notifikasi umumnya sinkron (SDD-EVT-02).

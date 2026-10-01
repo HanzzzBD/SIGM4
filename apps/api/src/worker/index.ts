@@ -3,8 +3,8 @@
 // Worker berbagi basis kode dengan API namun berjalan sebagai proses terpisah
 // (`JOB-01`). Ia tidak membuka port HTTP kecuali `/health` (`SDD-SYS-08`).
 //
-// Pekerjaan yang sesungguhnya lahir mulai Phase 02 — `slot-activation`,
-// `tentative-slot-expiry`, `loan-overdue`, `reservation-expiry` (`SDD-01 §4.6`).
+// Pekerjaan yang sesungguhnya lahir mulai Phase 02 — `slot-activation` dan
+// `tentative-slot-expiry` (PR-02-37), `loan-overdue`, `reservation-expiry` (`SDD-01 §4.6`).
 // Yang dibangun PR-00-11 adalah kerangkanya: antrean, kunci terdistribusi, dan
 // penjadwal.
 
@@ -51,6 +51,7 @@ import { PEKERJAAN_PARTISI_LOG, PEKERJAAN_VERIFIKASI_LOG, jalankanPartisiLog, ja
 import { CRON_SLA, PEKERJAAN_SLA, jalankanPemeriksaanSla } from "./approval-sla-check.js";
 import { PEKERJAAN_ARSIP_NOTIFIKASI, jalankanArsipNotifikasi } from "./notification-archive.js";
 import { startOutboxPoller } from "./outbox-poller.js";
+import { CRON_AKTIVASI_SLOT, CRON_KEDALUWARSA_SLOT, PEKERJAAN_AKTIVASI_SLOT, PEKERJAAN_KEDALUWARSA_SLOT, jalankanAktivasiSlot, jalankanKedaluwarsaSlot } from "./slot-jobs.js";
 import { PEKERJAAN_KELULUSAN, jalankanKelulusan } from "./student-graduation.js";
 import { BATAS_DRAIN_WORKER_MS, langkahHentiWorker } from "./shutdown.js";
 
@@ -92,6 +93,20 @@ export const registry = new JobRegistry().register(
         cron: wibCronToUtc(10, 0),
         handler: async () => {
             await jalankanKelulusan(getDb(), new SystemClock());
+        },
+    },
+    {
+        name: PEKERJAAN_AKTIVASI_SLOT,
+        cron: CRON_AKTIVASI_SLOT,
+        handler: async () => {
+            await jalankanAktivasiSlot(getDb(), new SystemClock());
+        },
+    },
+    {
+        name: PEKERJAAN_KEDALUWARSA_SLOT,
+        cron: CRON_KEDALUWARSA_SLOT,
+        handler: async () => {
+            await jalankanKedaluwarsaSlot(getDb(), new SystemClock());
         },
     },
     {

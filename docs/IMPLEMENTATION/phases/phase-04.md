@@ -89,7 +89,7 @@ M-08 ──(paralel, tanpa ketergantungan internal)
 | PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
 |---|---|:---:|:---:|---|---|---|
 | `PR-04-01` | Ketersediaan aset di atas `booking_slots` (`resource_type='asset'`) | M | L | Ph03 | `FR-08.1`, `SDD-AVL-06` | Satu constraint melayani ruangan & aset |
-| `PR-04-02` | Pengajuan reservasi aset + approval | L | L | 01, Ph02 | `FR-08.2`, `BR-017` … `BR-023c`, `SDD-APR-17` | Status aset ditetapkan saat aktivasi slot, bukan saat approval; penangan hasil `RESERVASI_ASET` terdaftar di registri `penanganHasil` (m10) sehingga `auto_reject` job melepas slot — diuji lewat jalur worker (keputusan 75 log phase-02) |
+| `PR-04-02` | Pengajuan reservasi aset + approval | L | L | 01, Ph02 | `FR-08.2`, `BR-017` … `BR-023c`, `SDD-APR-17` | Status aset ditetapkan saat aktivasi slot, bukan saat approval; penangan hasil `RESERVASI_ASET` terdaftar di registri `penanganHasil` (m10) sehingga `auto_reject` job melepas slot — diuji lewat jalur worker (keputusan 75 log phase-02); konsumen event `TentativeSlotExpired` (`PR-02-37`) bagi reservasi aset (`FR-08.2 A6`, `BR-023b`) |
 | `PR-04-03` | Pembatalan reservasi aset + pelepasan slot | M | L | 02 | `FR-08.3`, `BR-024` `BR-024a` `BR-024b` | Slot `Released`, tidak dihapus |
 | `PR-04-04` | Kalender & pencarian ketersediaan aset (UI) | M | M | 01 | `FR-08.1`, `AV-01` … `AV-05` | Menampilkan alternatif saat penuh |
 | `PR-04-05` | Skema work order + pembuatan korektif | M | M | Ph03 | `FR-12.1`, `BR-046` `BR-047` | Prioritas & tenggat sesuai tingkat kerusakan |

@@ -16,3 +16,6 @@ export {
 } from "./routes.js";
 export type { RingkasanAset } from "./services/dashboard-source.js";
 export { ringkasanAset } from "./services/dashboard-source.js";
+/** Job `slot-activation` (BR-005b, SDD-AVL-11) — M-04 tetap pemilik `assets.status`. */
+export type { HasilSinkronStatus } from "./services/reservation-status.js";
+export { sinkronkanStatusDireservasi } from "./services/reservation-status.js";
