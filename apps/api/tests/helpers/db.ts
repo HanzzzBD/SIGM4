@@ -14,13 +14,23 @@ const CWD = fileURLToPath(AKAR);
 // di-spawn tanpa shell.
 const PEMBUNGKUS = fileURLToPath(new URL("scripts/migrate.mjs", AKAR));
 
-/** Menjalankan jalur migration persis seperti npm script akar menjalankannya. */
+const PARTISI = fileURLToPath(new URL("./partisi.mjs", import.meta.url));
+
+/**
+ * Menjalankan jalur migration persis seperti npm script akar menjalankannya, lalu
+ * menyiapkan partisi `activity_logs` jendela tanggal uji — migration hanya membuat
+ * bulan berjalan + 3, sedangkan FixedClock uji bertanggal tetap (partisi.mjs).
+ */
 export function dbmate(...argumen: string[]): string {
-    return execFileSync(process.execPath, [PEMBUNGKUS, ...argumen], {
-        cwd: CWD,
-        encoding: "utf8",
-        env: process.env,
-    });
+    try {
+        return execFileSync(process.execPath, [PEMBUNGKUS, ...argumen], {
+            cwd: CWD,
+            encoding: "utf8",
+            env: process.env,
+        });
+    } finally {
+        execFileSync(process.execPath, [PARTISI], { cwd: CWD, env: process.env });
+    }
 }
 
 /** Varian asinkron — dipakai saat migration harus diamati SELAGI berjalan. */
