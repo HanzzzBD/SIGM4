@@ -65,6 +65,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 | 1 Oktober 2026 | `PR-02-35` **tergabung** (`#113`, squash `6c1d007`) — digabung PM. **Seluruh 34 PR Phase 02 tergabung**; yang tersisa gerbang keluar §9. Audit `NT-52` atas permintaan pemilik produk: konsumen sudah ada (`PR-02-25`), tetapi tabel kelompok notifikasi SDD-08 §4.5 dan UX §7.6.8 tidak mencantumkannya, dan UX §7.6.8 juga kehilangan `NT-49`…`NT-51` (M-22, ada di SDD-08). Tidak ada PR pada phase mana pun yang memilikinya → diperbaiki di `chore/status-pasca-pr-02-35` atas pilihan pemilik produk (`AskUserQuestion`), bersama catatan usang SDD-05 dan butir checklist `NT-52`. |
 | 1 Oktober 2026 | `chore/status-pasca-pr-02-35` **tergabung** (`#114`). Diminta `PR-03-01`; pemilik produk memilih melunasi utang Phase 02 lebih dulu (`AskUserQuestion`): gerbang keluar, job slot `BR-005b`/`BR-023b`, id uji dipakai ulang, utang kecil; tiga keputusan produk (nonaktifkan 2FA sendiri, pembuka kunci administratif, `NT-48` impor) dicatat untuk diputus kemudian. Saat menguji, ditemukan **bom waktu tanggal**: sejak 1 Oktober suite merah di `develop` tanpa perubahan apa pun (§7) → `chore/partisi-log-uji` didahulukan. |
 | 1 Oktober 2026 | `PR-02-37` dikerjakan (`feature/PR-02-37-job-slot`, bertumpuk di atas `chore/utang-kecil-phase-02` karena CI `develop` merah sampai `chore/partisi-log-uji` tergabung) — keputusan 88d; rencana (174 PR) dan SDD-07 §4.3 (`TentativeSlotExpired`) disunting sebelum kode. Pembagian kepemilikan: pelepasan + event di `SlotService` (`shared/booking`), transisi `assets.status` di M-04 (`sinkronkanStatusDireservasi`, predikat slot dari `shared/booking`), penjadwalan di worker. |
+| 1 Oktober 2026 | `chore/partisi-log-uji` (`#115`), `chore/utang-uji-id-pengguna` (`#116`), `chore/utang-kecil-phase-02` (`#117`), dan `PR-02-37` (`#118`, squash `6dcf345`) **tergabung** — tiap PR bertumpuk dibasiskan ulang (`rebase --onto`) setelah PR di bawahnya di-squash. **Gerbang keluar Phase 02** diisi lewat `chore/gerbang-keluar-phase-02` (§9): 35/35 PR, 59/77 AC terbukti penuh, 13 sebagian, 5 ditunda; ukuran awal baru `phase-02-gate.test.ts` (pencarian 5.000 aset, dashboard R-01/R-02/R-03, tanpa route break-glass). Phase 02 → `In Review`. |
 
 ## 2. Keputusan yang diambil
 
@@ -222,9 +223,9 @@ Kolom ketiga adalah yang paling berharga di seluruh log ini. Pola yang berulang 
 
 - [x] Bentuk akhir skema `booking_slots` dan alasan setiap kolomnya — ia mengikat Phase 03, 04, dan 05 — **`PR-02-16`**: migration `0030` (komentar per kolom) + SDD-01 §4.1 yang diselaraskan; penyimpangan dari teks semula (dua constraint, tiga kolom tanpa FK, indeks AV-02) di keputusan 63 dan §3
 - [x] Hasil uji konkurensi `PR-02-17`: berapa permintaan serentak, berapa yang berhasil — **100 `reserve` serentak → 1 berhasil, 99 ditolak 409**; `allocate` 20 serentak atas 10 unit → 10 berhasil, unit berbeda (`slot-service.test.ts`, PostgreSQL nyata)
-- [ ] Hasil uji *first-responder-wins* `PR-02-21`
-- [ ] Penerapan `SDD-APR-13/14/15`, `SDD-NTF-10`, dan `UXD-05`/`UXD-12` — seluruh TBD terkait sudah tertutup sebelum phase dimulai
-- [ ] `assets.procurement_id` dibuat nullable tanpa FK aktif — pemutus siklus M-04 ↔ M-14
+- [x] Hasil uji *first-responder-wins* `PR-02-21` — **dua approver serentak × 10 putaran → tepat satu berhasil, yang kalah `409` beserta pemutus & waktunya; satu log, satu event** (`approval-decision.test.ts`, di CI); mutasi 13/13 (§8)
+- [x] Penerapan `SDD-APR-13/14/15`, `SDD-NTF-10`, dan `UXD-05`/`UXD-12` — seluruh TBD terkait sudah tertutup sebelum phase dimulai — `SDD-APR-13` fallback & `SDD-APR-14` approver nonaktif (`PR-02-20`), `SDD-APR-15` jam kerja (`PR-02-22`; kunci `system_settings` di `PR-03-10`, keputusan 88e), `SDD-NTF-10` arsip (`PR-02-26`), `UXD-05` enam kelompok (`PR-02-28`), `UXD-12` satu set token tanpa mode gelap (`PR-02-30`)
+- [x] `assets.procurement_id` dibuat nullable tanpa FK aktif — pemutus siklus M-04 ↔ M-14 — migration `0026` (`PR-02-10`); `m04-assets-schema.test.ts` (BR-011)
 
 ## 6. TBD yang tertutup
 
@@ -324,13 +325,121 @@ Angka nyata, bukan perkiraan. Kosongkan bila belum diukur — jangan diisi tebak
 
 ## 9. Gerbang keluar
 
-Diisi saat phase dinyatakan selesai. Daftar lengkapnya ada di [`phase-02.md` §9 dan §12](../phases/phase-02.md).
+Diisi 1 Oktober 2026 lewat `chore/gerbang-keluar-phase-02` (pola `chore/gerbang-keluar-phase-01`, keputusan 36 log phase-01). Seluruh 35 PR tergabung, sehingga Phase 02 berstatus **`In Review`**: gerbang keluarnya **lulus bersyarat untuk backend**. Butir yang bergantung pada layar (`apps/web`, `apps/mobile`), modul phase berikutnya, staging, atau latihan operasional **tidak dicentang**; masing-masing tercatat di bawah dengan penutupnya. Phase 03 boleh dimulai selagi Phase 02 `In Review`, sama seperti Phase 01 → 02.
 
-- [ ] Seluruh 35 PR tergabung (`PR-02-01` dan `PR-02-09` dipensiunkan)
-- [ ] Acceptance checklist phase terpenuhi
-- [ ] Definition of Done phase terpenuhi
-- [ ] Bagian 5 log ini terisi seluruhnya
-- [ ] [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) diperbarui
+- [x] Seluruh 35 PR tergabung — `PR-02-02` … `PR-02-37` (`PR-02-01` dan `PR-02-09` dipensiunkan); `PR-02-37` tergabung sebagai [#118](https://github.com/HanzzzBD/SIGM4/pull/118) (squash `6dcf345`)
+- [ ] Acceptance checklist phase terpenuhi — lihat 9.1: tujuh dari delapan butir terbukti; satu (AC per FR) terbukti sebagian dengan sisanya ditunda (9.2)
+- [ ] Definition of Done phase terpenuhi — lihat 9.3: dua dari empat butir terbukti, dua ditunda/sebagian
+- [x] Bagian 5 log ini terisi seluruhnya
+- [x] [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) diperbarui — Phase 02 `In Review`, 35/35
+
+### 9.1 Acceptance checklist phase (`phase-02.md` §9)
+
+| Butir | Status | Bukti |
+|---|:---:|---|
+| Seluruh AC `FR-01.1`…`FR-01.6`, `FR-04.1`…`FR-04.5`, `FR-10.1`…`FR-10.3`, `FR-15.1`, `FR-17.1`…`FR-17.3` terverifikasi | **Sebagian** | 9.2: **59** dari 77 AC terbukti penuh, **13** sebagian, **5** ditunda |
+| Uji konkurensi `CI-02` lulus: 100 permintaan serentak → tepat satu slot | **Terbukti** | `slot-service.test.ts` (`PR-02-17`): 100 `reserve` serentak → 1 berhasil, 99 `409`; `allocate` 20 serentak atas 10 unit → 10 berhasil, unit berbeda — dijalankan di CI (`Uji integrasi`) |
+| Uji konkurensi approval lulus: dua approver → satu menang, satu 409 | **Terbukti** | `approval-decision.test.ts` "RE-09 — first responder wins": dua approver serentak × 10 putaran → tepat satu berhasil, yang kalah `409 APPROVAL_ALREADY_DECIDED` beserta pemutus & waktunya; satu log, satu event — di CI |
+| Uji otorisasi tergenerate mencakup **100%** route terdaftar (`SEC-T-01`) | **Terbukti** | `sec-t-01.test.ts` tergenerate dari `registry.guarded()` — tiap route ber-permission, termasuk seluruh route Phase 02, → 401 tanpa konteks dan 403 tanpa permission sebelum validasi; route publik M-01 (`login`, `refresh`, `forgot`, `2fa/verify`) diuji tersendiri |
+| 2FA tidak dapat dilewati untuk role sensitif (`FR-01.5`) | **Terbukti** | `auth-two-factor.test.ts` "BR-070 — role sensitif TIDAK dapat melewati 2FA": R-01 & R-03 ber-`pwd` saja → 403 `TWO_FACTOR_REQUIRED` di seluruh route terlindung; refresh tidak menaikkan sesi; `auth-two-factor-aktivasi.test.ts` (`BR-070d`) |
+| Break-glass menghasilkan alarm dan entri activity log setiap kali dipakai | **Terbukti** | `worker-cli-break-glass.test.ts`: `ADMIN_BREAK_GLASS_RECOVERY` + alarm `OBS-05` setelah commit, termasuk jalur `--force`; `NT-53` ke Pimpinan (`notifications-m01.test.ts`) |
+| Notifikasi tidak terkirim ganda pada dua instance API (`SDD-NTF-05`) | **Terbukti** | `notifications-delivery.test.ts` "DUA INSTANCE: notifikasi dari worker sampai tepat SEKALI ke tiap koneksi"; `dedupe_key` per kejadian (`notifications-m01` idempoten) |
+| `procurement_id` ada di `assets`, nullable, tanpa nilai | **Terbukti** | `m04-assets-schema.test.ts` "procurement_id menerima nilai bebas TANPA FK aktif ke M-14 (BR-011)"; migration `0026` |
+
+### 9.2 Acceptance criteria per FR
+
+**Terbukti** = ada uji yang gagal bila logikanya dicabut (atau ukuran yang tercatat). **Sebagian** = bagian backend terbukti, sisanya menunggu layar/klien atau lingkungan. **Ditunda** = bergantung pada modul, layar, atau lapisan yang belum ada.
+
+| FR | # | Acceptance criteria (ringkas) | Status | Bukti / penutup |
+|---|:---:|---|:---:|---|
+| `FR-01.1` | 1 | Login berhasil di web dan mobile | Terbukti | `auth-login-refresh.test.ts` jalur mobile (token di body) & web (cookie httpOnly); `alur.test.tsx` P-01 |
+| `FR-01.1` | 2 | Pesan galat tak membocorkan keberadaan email | Terbukti | `auth-login-refresh.test.ts` "respons IDENTIK (tidak membocorkan email)" |
+| `FR-01.1` | 3 | Email tak terdaftar / password salah / terkunci identik; tanpa `423` di `/auth/login` | Terbukti | `auth-lockout.test.ts` "401 IDENTIK byte demi byte"; "423 … TIDAK PERNAH keluar dari /auth/login" |
+| `FR-01.1` | 4 | Kunci 5×/15 menit, terbuka sendiri, tak diperpanjang | Terbukti | `auth-lockout.test.ts` penguncian: 5 kegagalan, berakhir otomatis, "penghitung tidak berubah" selama terkunci, jendela tetap |
+| `FR-01.1` | 5 | Password hasil reset wajib diganti sebelum melanjutkan | Terbukti | `auth-login-refresh.test.ts` `403 PASSWORD_CHANGE_REQUIRED`; `alur-masuk.test.tsx` P-05 memblokir route lain |
+| `FR-01.1` | 6 | Login sukses & gagal tercatat dengan IP dan perangkat | Terbukti | `LOGIN_SUCCESS` (`auth-login-refresh`), `LOGIN_FAILED` dengan IP & perangkat (`auth-lockout`) |
+| `FR-01.2` | 1 | Token sesi dicabut ditolak ≤ 60 detik | Terbukti | `auth-session.test.ts`: access **dan** refresh ditolak seketika (`sid` diperiksa tiap permintaan, SDD-AUTH) |
+| `FR-01.2` | 2 | Hanya sesi sendiri; sesi orang lain/tak ada dijawab sama (`403`) | Terbukti | `auth-session.test.ts` "MILIK ORANG LAIN dan TIDAK ADA dijawab sama persis (403)" |
+| `FR-01.2` | 3 | Auto-logout web 30 menit tanpa aktivitas | Terbukti | `alur-masuk.test.tsx` (`PR-02-36`): banner menit ke-28, logout menit ke-30, lintas tab |
+| `FR-01.2` | 4 | Token push dinonaktifkan saat logout mobile | Terbukti | logout menerbitkan `SessionRevoked` (`auth-session`); konsumen mencabut token keluarga sesi itu (`notifications-push.test.ts` MOB-SEC-05) |
+| `FR-01.3` | 1 | Password sementara tampil sekali, tak dapat dilihat ulang | Terbukti | `auth-password-reset.test.ts`: tampil di respons tanpa cache; "TIDAK tersimpan di mana pun: hanya hash-nya" |
+| `FR-01.3` | 2 | Tak pernah lewat kanal notifikasi | Terbukti | event `PasswordResetIssued` tanpa password (`auth-password-reset`); isi `NT-38` kata per kata tanpa password (`notifications-m01`) |
+| `FR-01.3` | 3 | Tak dapat mengakses menu sebelum mengganti | Terbukti | "menu lain diblokir" (`auth-password-reset`); gerbang `SDD-AUTH-09`; P-05 (`alur-masuk.test.tsx`) |
+| `FR-01.3` | 4 | Metode verifikasi wajib dan tersimpan | Terbukti | "metode verifikasi WAJIB dipilih sebelum penerbitan: tanpa/tak sah → 400" |
+| `FR-01.3` | 5 | Permintaan & tindakan reset tercatat tanpa nilai password | Terbukti | `PASSWORD_RESET_REQUESTED/ISSUED/REJECTED` (AL-01/AL-05) |
+| `FR-01.3` | 6 | "Lupa Password" identik untuk semua kasus | Terbukti | "202 IDENTIK byte demi byte (selain request_id)" |
+| `FR-01.3` | 7 | Penerbitan mencabut sesi & membuka kunci | Terbukti | "MENCABUT seluruh sesi …", "MEMBUKA kunci login" |
+| `FR-01.3` | 8 | Kedaluwarsa 72 jam | Terbukti | "kedaluwarsa 72 jam ditegakkan saat login (FR-01.3 A3)" |
+| `FR-01.4` | 1 | Kebijakan password divalidasi server | Terbukti | `auth-password-change.test.ts` 422 per aturan; daftar bocor & riwayat 3 (`PR-02-31`) |
+| `FR-01.4` | 2 | Email & role tak dapat diubah sendiri | Terbukti | "email serta role pada body diabaikan (BR-069)" |
+| `FR-01.4` | 3 | Perubahan tercatat tanpa nilai password | Terbukti | `PROFILE_UPDATED`/`PASSWORD_CHANGED`; `activity-log.test.ts` "AL-05 — nilai sensitif tidak pernah tersimpan" |
+| `FR-01.5` | 1 | Administrator & Pimpinan tak dapat menonaktifkan 2FA sendiri | Terbukti | tidak ada jalur menonaktifkan 2FA sendiri sama sekali (`TWO_FA_DISABLED` untuk role opsional menunggu keputusan produk, keputusan 88c); gerbang `BR-070` |
+| `FR-01.5` | 2 | Kode cadangan sekali pakai | Terbukti | `auth-two-factor.test.ts` "kode cadangan benar → sesi; SEKALI PAKAI" |
+| `FR-01.5` | 3 | Kode cadangan di-hash, tampil sekali | Terbukti | "tersimpan sebagai hash Argon2id"; enroll "SEKALI tampil" |
+| `FR-01.5` | 4 | Reset 2FA oleh Administrator tercatat | Terbukti | `auth-two-factor-aktivasi.test.ts` `POST /users/{id}/reset-2fa` (`TWO_FA_RESET`) |
+| `FR-01.5` | 5 | Peringatan kode cadangan ≤ 2 + tawaran buat ulang | Sebagian | server: `kode_cadangan_menipis` + `POST /auth/2fa/backup-codes/regenerate`; P-02 menampilkan peringatan (`alur-masuk.test.tsx`). Tombol buat ulang di P-77 → aliran Frontend web |
+| `FR-01.5` | 6 | Role wajib tak dapat mendaftar hanya dengan password | Terbukti | "tanpa kode aktivasi → 422 seragam; TIDAK ada secret tersimpan" (`BR-070d`) |
+| `FR-01.5` | 7 | Kode aktivasi: sekali pakai, sekali tampil, hash, 72 jam, hangus 5 salah tanpa kunci | Terbukti | `auth-two-factor-aktivasi.test.ts` (enam uji) |
+| `FR-01.5` | 8 | Pendaftaran mencabut sesi lain + `NT-39a` | Terbukti | "BR-070e: konfirmasi … mencabut SELURUH sesi lain"; `NT-39a` (`notifications-m01`) |
+| `FR-01.5` | 9 | Penerbitan & penolakan kode aktivasi tercatat tanpa nilai | Terbukti | "TANPA nilai kode di log"; penolakan tercatat beralasan internal |
+| `FR-01.6` | 1 | Pemulihan hanya dari shell, tak pernah lewat web/API | Terbukti | `phase-02-gate.test.ts` "tidak ada satu pun route HTTP untuk pemulihan darurat"; CLI `worker-cli-args.test.ts` |
+| `FR-01.6` | 2 | Tolak bila Administrator aktif login < 24 jam, kecuali `--force` tercatat | Terbukti | `worker-cli-break-glass.test.ts` (batas 24 jam tepat di tepi, `--force` tercatat) |
+| `FR-01.6` | 3 | Alarm `OBS-05` + `NT-53` ke seluruh Pimpinan | Terbukti | alarm setelah commit (`worker-cli-break-glass`); `NT-53` (`notifications-m01`) |
+| `FR-01.6` | 4 | Instalasi awal menolak "hanya satu Administrator" | Sebagian | penonaktifan Administrator aktif terakhir/kedua ditolak (`m02-users.test.ts`, BR-068/BR-070a). Prosedur instalasi awal belum ada → runbook instalasi Phase 08 |
+| `FR-01.6` | 5 | Entri log break-glass tak dapat dihapus/disunting | Terbukti | `activity-log.test.ts` AL-03b: akun aplikasi tanpa `UPDATE`/`DELETE` atas log dan partisinya |
+| `FR-04.1` | 1 | 20 unit → 20 record, 20 kode, 20 QR berbeda | Sebagian | `m04-assets-create.test.ts` `jumlah_unit` → N record, kode berurutan; `uuid` unik (`m04-assets-schema`). Pembuatan QR → **`PR-03-01`** |
+| `FR-04.1` | 2 | Kode aset sesuai format dan unik sistem-wide | Terbukti | pola bawaan + "nomor aset unik di bawah beban paralel"; indeks unik (`m04-assets-schema`) |
+| `FR-04.1` | 3 | Impor 500 baris ≤ 60 detik dengan laporan galat per baris | Ditunda | Impor massal aset **belum punya PR pemilik** di rencana mana pun (§10) |
+| `FR-04.1` | 4 | `dapat_dipinjam = false` tak muncul di Reservasi Aset | Sebagian | `SlotService.allocate` hanya memilih `dapat_dipinjam` (`slot-service.test.ts`); modul Reservasi Aset → **`PR-04-02`** |
+| `FR-04.1` | 5 | `boleh_dipinjam_siswa = false` tak terlihat role Siswa | Terbukti | `m04-assets-list.test.ts` scope `restricted` |
+| `FR-04.2` | 1 | Pencarian 5.000 aset ≤ 2 detik | Terbukti (ukuran awal) | `phase-02-gate.test.ts`: tiga kueri (teks bebas, teks + filter kombinasi, + urut & halaman) median **16–36 ms**. Bukan pengganti uji beban Phase 07–08 |
+| `FR-04.2` | 2 | Filter dapat dikombinasi dan tercermin di URL | Sebagian | filter kombinasi API (`m04-assets-list`); URL → layar P-15 (aliran Frontend web) |
+| `FR-04.2` | 3 | Data finansial tak pernah dikirim ke Siswa | Terbukti | "Guru (TANPA asset.view_financial) TIDAK menerima nilai_perolehan maupun sumber_perolehan"; kartu dashboard R-07 |
+| `FR-04.3` | 1 | Perubahan kondisi selalu menyimpan alasan | Terbukti | `asset_condition_history.alasan` wajib (`m04-assets-schema`); `m04-assets-condition.test.ts` |
+| `FR-04.3` | 2 | `Rusak Berat`/`Hilang` otomatis tak dapat direservasi/dipinjam | Terbukti | status turunan `TIDAK_TERSEDIA` (`m04-assets-condition`); `allocate` menolak kondisi itu (`slot-service`) |
+| `FR-04.3` | 3 | Riwayat kondisi kronologis di halaman detail | Sebagian | riwayat terbaca kronologis menurun (`m04-assets-schema`); halaman P-18 → aliran Frontend web |
+| `FR-04.4` | 1 | Riwayat mutasi: asal, tujuan, tanggal, pelaku, alasan | Sebagian | data riwayat lengkap (`m04-assets-move.test.ts`); tampilan P-18 → aliran Frontend web |
+| `FR-04.4` | 2 | Mutasi massal 50 aset atomik | Terbukti | "50 aset dalam satu operasi berhasil"; "ATOMIK … aset sebelumnya TIDAK ikut berpindah" |
+| `FR-04.4` | 3 | Berita acara mutasi PDF | Ditunda | Menunggu pembangkit PDF (`SDD-FS-12`) — **belum ada PR pemilik** (§10) |
+| `FR-04.5` | 1 | Minimal dua tingkat kategori | Terbukti | `m04-assets-schema` & `m04-asset-categories.test.ts` (induk + anak, siklus ditolak) |
+| `FR-04.5` | 2 | Interval preventif kategori diusulkan saat membuat jadwal | Ditunda | Jadwal pemeliharaan M-12 → Phase 04 |
+| `FR-10.1` | 1 | Aturan multi-level tanpa pengembang & tanpa deployment | Terbukti | `approval-rules.test.ts` (API, `PR-02-24`) + P-68/P-69 (`approval-rules.test.tsx`, `PR-02-34`) |
+| `FR-10.1` | 2 | Perubahan aturan tak mengubah instance berjalan | Terbukti | `approval-schema.test.ts` "snapshot beku"; `approval-rules` "PUT … instance berjalan TETAP memakai snapshot lama" |
+| `FR-10.1` | 3 | Pratinjau aturan untuk skenario contoh | Terbukti | `approval-rules.test.ts` "pratinjau (RE-07, FR-10.1 AC 3)"; panel P-69 |
+| `FR-10.1` | 4 | Instance menyimpan versi aturan | Terbukti | `approval-engine.test.ts` "aturan terpilih disalin UTUH ke rule_snapshot: versi …" |
+| `FR-10.2` | 1 | Keputusan menyimpan approver, waktu, keputusan, catatan | Terbukti | `approval-decision.test.ts` alur keputusan; catatan wajib saat menolak/revisi |
+| `FR-10.2` | 2 | Approver hanya melihat langkah wewenangnya | Terbukti | "GET /approvals/pending — hanya langkah wewenang pemanggil" |
+| `FR-10.2` | 3 | Penolakan mengakhiri alur | Terbukti | "BR-038: ditolak pada langkah 1 → alur berhenti" |
+| `FR-10.2` | 4 | Menyetujui dari perangkat mobile | Ditunda | API siap; layar MS-20 → `apps/mobile` (belum dibangun) |
+| `FR-10.2` | 5 | Mencegah persetujuan ganda (idempoten) | Terbukti | RE-09 serentak; `Idempotency-Key` (kontrak HTTP `approval-decision`) |
+| `FR-10.3` | 1 | Linimasa seluruh langkah termasuk yang dilewati + alasan | Terbukti | `approval-history.test.ts` |
+| `FR-10.3` | 2 | Waktu lokal + durasi antar-langkah dalam jam kerja | Sebagian | durasi & sisa SLA dalam **menit kerja** (`approval-history`, CAL-01); penyajian waktu lokal P-38 → aliran Frontend web |
+| `FR-15.1` | 1 | Dashboard ≤ 3 detik pada 5.000 aset | Terbukti (ukuran awal) | `phase-02-gate.test.ts`: manifes + seluruh kartu tanpa cache — R-01 median **58 ms**, R-02 **17 ms**, R-03 **15 ms** |
+| `FR-15.1` | 2 | Kartu KPI dapat ditelusuri ke daftar detail | Sebagian | sasaran drill-down per kartu (`dashboard.test.ts`); tautan hanya dirender bila halaman sasarannya ada (`labels-navigasi.test.ts`) — sebagian besar halaman sasaran belum dibangun |
+| `FR-15.1` | 3 | Responsif desktop, tablet, ponsel | Sebagian | grid kartu 1/2/3 kolom per titik henti di P-12 (`PR-02-30`); belum ada uji per titik henti; dashboard mobile → `apps/mobile` |
+| `FR-15.1` | 4 | Kartu terlarang tidak dirender sama sekali | Terbukti | `dashboard.test.ts` "TIDAK tercantum" + "penolakan terjadi SEBELUM cache" |
+| `FR-17.1` | 1 | Notifikasi ≤ 60 detik di web & mobile | Sebagian | siaran SSE sesaat setelah commit (`notifications-delivery`); lonceng/P-13 web dan aplikasi mobile belum dibangun |
+| `FR-17.1` | 2 | Sampai walau terhubung ke instance lain | Terbukti | "DUA INSTANCE … tepat SEKALI" (`NTF-02`) |
+| `FR-17.1` | 3 | Penghitung belum dibaca akurat & tersinkron web/mobile | Sebagian | `unread_count` dihitung server dan disiarkan ulang pada setiap perubahan (`NTF-05`); klien web/mobile belum ada |
+| `FR-17.1` | 4 | SSE gagal → polling tanpa kehilangan | Ditunda | perilaku klien (P-13/lonceng topbar) → aliran Frontend web |
+| `FR-17.1` | 5 | Setiap notifikasi ber-*deep link* | Terbukti | `deep_link` diperiksa per kode (`notifications-publish`, `notifications-m01`) |
+| `FR-17.2` | 1 | Push terkirim ≤ 60 detik | Sebagian | job push dijadwalkan per notifikasi setelah commit (`notifications-push`); pengiriman FCM nyata menunggu `FCM_CREDENTIALS` staging |
+| `FR-17.2` | 2 | Notifikasi kritis selalu dipush | Terbukti | kode wajib → prioritas tinggi; kanal per kode katalog (`push` = "In-app + Push", keputusan 87b); push wajib mengabaikan preferensi (`notifications-preferences`) |
+| `FR-17.2` | 3 | Token dihapus saat logout | Terbukti | `SessionRevoked` → token keluarga sesi dicabut (`notifications-push` MOB-SEC-05) |
+| `FR-17.2` | 4 | Kegagalan pengiriman tak menggagalkan transaksi bisnis | Terbukti | push dijadwalkan SETELAH commit lewat outbox; kegagalan FCM dicatat `MENUNGGU`/`GAGAL` per notifikasi (`notifications-push` A1–A4) |
+| `FR-17.3` | 1 | Preferensi berlaku seketika | Terbukti | "FR-17.3 AC 1: perubahan berlaku pada terbitan berikutnya" |
+| `FR-17.3` | 2 | Notifikasi wajib tetap terkirim | Terbukti | "notifikasi wajib tetap disimpan … tetap di-push" (`notifications-preferences`) |
+
+Hitungan: 77 AC — **59 terbukti penuh** (termasuk `FR-04.2` #1 dan `FR-15.1` #1 sebagai ukuran awal), **13 sebagian** (backend terbukti; layar, klien mobile, staging, atau modul phase berikutnya menyusul), **5 ditunda** (`FR-04.1` #3, `FR-04.4` #3, `FR-04.5` #2, `FR-10.2` #4, `FR-17.1` #4).
+
+### 9.3 Definition of Done tambahan (`phase-02.md` §12)
+
+| Butir | Status | Keterangan |
+|---|:---:|---|
+| Uji konkurensi ketersediaan **dan** approval berjalan di CI, bukan sekali manual | Terbukti | `slot-service.test.ts` dan `approval-decision.test.ts` termasuk suite `Uji integrasi · cakupan ≥ 70%` yang dijalankan CI pada setiap PR (`CD-01`) |
+| Prosedur break-glass sudah **dilatih**, bukan hanya ditulis (`FR-01.6`) | Ditunda | Perintahnya teruji otomatis (`worker-cli-break-glass.test.ts`), tetapi **latihan** oleh operator di lingkungan sungguhan menuntut staging — gerbang keluar Phase 00 untuk staging belum lulus. Dijadwalkan bersama DR drill (Phase 08) |
+| `TBD-APR-A`, `TBD-APR-B`, `TBD-APR-C`, `TBD-NTF-B` tertutup | Terbukti | keempatnya di bagian "Tertutup" [`TBD-REGISTER.md`](../../SDD/TBD-REGISTER.md) (UXD-09, SDD-APR-15, SDD-APR-14, UXD-10) |
+| Log phase terisi | Sebagian | Log ini; ringkasan pengukuran §8 lengkap untuk setiap PR. Butir checklist §8 `phase-02.md` sebagian masih `[ ]` meski PR-nya tergabung — dirapikan bersama pembaruan rencana berikutnya, bukan di sini |
 
 ## 10. Yang diserahkan ke phase berikutnya
 
@@ -338,6 +447,12 @@ Hal yang sengaja ditinggalkan terbuka, beserta di mana ia akan ditutup.
 
 | Yang ditinggalkan | Ditutup di | Alasan penundaan |
 |---|---|---|
+| **Gerbang Phase 02 (1 Oktober 2026)** — impor massal aset 500 baris ≤ 60 detik (`FR-04.1` AC 3) | **Belum ada PR pemilik** di rencana mana pun | Templat Lampiran E aset dan pemrosesan asinkron `IMPT-04` (pola impor pengguna `PR-01-17`) belum dijadwalkan. |
+| **Gerbang Phase 02** — berita acara mutasi PDF (`FR-04.4` AC 3) | **Belum ada PR pemilik** — menunggu pembangkit PDF `SDD-FS-12` (pemakai lain: `PR-03-02` label QR, `PR-05-13` berita acara penghapusan) | Komentar di `AssetService.mutasiLokasi` menandainya. |
+| **Gerbang Phase 02** — interval preventif kategori diusulkan saat membuat jadwal (`FR-04.5` AC 2) | M-12 jadwal pemeliharaan, Phase 04 | Kolom intervalnya sudah ada di kategori; konsumennya belum. |
+| **Gerbang Phase 02** — layar web yang menutup AC sebagian: P-13/lonceng + polling cadangan SSE (`FR-17.1` AC 1/3/4), P-15 filter di URL (`FR-04.2` AC 2), P-18 riwayat kondisi & mutasi (`FR-04.3` AC 3, `FR-04.4` AC 1), P-38 linimasa waktu lokal (`FR-10.3` AC 2), P-77 buat ulang kode cadangan (`FR-01.5` AC 5), halaman sasaran drill-down dashboard (`FR-15.1` AC 2), uji titik henti (`FR-15.1` AC 3) | Aliran **Frontend web** (`DELIVERY-PLAN` §Tim) — **tidak ada PR bernomor** per layar di rencana | Rencana memodelkan layar sebagai aliran tim, bukan PR; hanya P-01…P-12, P-02/03/05, P-68/69 yang lahir (keputusan 77a, 83, 85). Perlu keputusan pemilik produk apakah layar mendapat PR bernomor. |
+| **Gerbang Phase 02** — aplikasi mobile: setujui dari ponsel MS-20 (`FR-10.2` AC 4), dashboard & notifikasi mobile (`FR-15.1` AC 3, `FR-17.1` AC 1/3) | Aliran **Mobile** — `apps/mobile` belum dibangun | Sama dengan baris di atas. |
+| **Gerbang Phase 02** — latihan break-glass oleh operator (DoD §12) dan prosedur instalasi awal dua Administrator (`FR-01.6` AC 4) | Runbook + DR drill Phase 08 (setelah staging lulus gerbang Phase 00) | Perintah dan penjaganya teruji otomatis; yang tersisa latihan manusia. |
 | `LOGIN_FAILED`, penghitung/penguncian akun, `NT-39` | `PR-02-03` | Direncanakan terpisah; kelas rate limit `login` (sumbu IP) sudah aktif. |
 | Logout, logout semua perangkat, pencabutan saat nonaktif akun/ganti password | `PR-02-04` | Direncanakan terpisah. `cabutKeluarga` dan kolom `revoke_reason` sudah tersedia. |
 | Jalur pembuka kunci administratif dan apakah reset/ganti password (`PR-02-05`/`PR-02-06`) menghapus `locked_until` | `PR-02-05`/`PR-02-06` | Tidak ada requirement; tanpanya kunci hanya berakhir sendiri setelah 15 menit. Perlu keputusan pemilik produk. |
