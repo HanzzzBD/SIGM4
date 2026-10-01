@@ -10,7 +10,7 @@
 
 import { pathToFileURL } from "node:url";
 import { getRedis } from "../shared/cache/index.js";
-import { AuditLogger, ensurePartitions, verifyChain } from "../shared/audit/index.js";
+import { AuditLogger } from "../shared/audit/index.js";
 import { PermissionCache } from "../shared/auth/index.js";
 import { SystemClock } from "../shared/clock/index.js";
 import { readWorkerConfig, zonaProses } from "../shared/config/index.js";
@@ -47,6 +47,7 @@ import type { PengirimPush } from "../modules/m17-notifications/index.js";
 import { createSystemAuthContext } from "../shared/auth/system-context.js";
 import type { Queue } from "bullmq";
 import { createHealthServer } from "./health-server.js";
+import { PEKERJAAN_PARTISI_LOG, PEKERJAAN_VERIFIKASI_LOG, jalankanPartisiLog, jalankanVerifikasiLog } from "./activity-log-jobs.js";
 import { CRON_SLA, PEKERJAAN_SLA, jalankanPemeriksaanSla } from "./approval-sla-check.js";
 import { PEKERJAAN_ARSIP_NOTIFIKASI, jalankanArsipNotifikasi } from "./notification-archive.js";
 import { startOutboxPoller } from "./outbox-poller.js";
@@ -72,39 +73,17 @@ export const idJobPush = (notifikasiId: number): string => `push-${String(notifi
  */
 export const registry = new JobRegistry().register(
     {
-        name: "activity-log-partition",
+        name: PEKERJAAN_PARTISI_LOG,
         cron: wibCronToUtc(20, 0),
         handler: async () => {
-            await ensurePartitions(getDb(), new SystemClock());
+            await jalankanPartisiLog(getDb(), new SystemClock());
         },
     },
     {
-        name: "activity-log-verify",
+        name: PEKERJAAN_VERIFIKASI_LOG,
         cron: wibCronToUtc(40, 0),
         handler: async () => {
-            const clock = new SystemClock();
-            const sekarang = clock.now();
-            // Hanya bulan berjalan: rantai diperiksa maju setiap hari, dan bulan lama
-            // sudah diperiksa pada harinya. Rentang penuh adalah pekerjaan runbook
-            // (`SDD-OBS-07`), bukan job harian.
-            const dari = new Date(
-                Date.UTC(sekarang.getUTCFullYear(), sekarang.getUTCMonth(), 1),
-            );
-            const sampai = new Date(
-                Date.UTC(
-                    sekarang.getUTCFullYear(),
-                    sekarang.getUTCMonth() + 1,
-                    1,
-                ),
-            );
-            const hasil = await verifyChain(getDb(), dari, sampai);
-            if (hasil.kerusakan.length > 0) {
-                // Alarm OBS-05. Rantai TIDAK diperbaiki: memperbaikinya berarti menulis
-                // ulang hash atas isi yang sudah berubah — menghapus buktinya.
-                throw new Error(
-                    `Rantai activity log rusak pada ${String(hasil.kerusakan.length)} entri (AL-03a).`,
-                );
-            }
+            await jalankanVerifikasiLog(getDb(), new SystemClock());
         },
     },
     {

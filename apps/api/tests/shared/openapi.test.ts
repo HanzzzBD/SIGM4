@@ -10,6 +10,7 @@ import { z } from "zod";
 import { buildOpenApiDocument } from "../../src/api/openapi.js";
 import { RouteRegistry, defineRoute } from "../../src/shared/http/index.js";
 import type { RouteDefinition } from "../../src/shared/http/index.js";
+import { loginRoute, refreshRoute } from "../../src/modules/m01-auth/index.js";
 
 const AssetSchema = z.object({ id: z.number(), nama: z.string() });
 
@@ -210,6 +211,15 @@ describe("buildOpenApiDocument", () => {
             expect(Object.keys(galat.properties).sort(), status).toEqual(["code", "details", "message"]);
             expect(galat.required.sort(), status).toEqual(["code", "message"]);
             expect(galat.additionalProperties, status).toBe(false);
+        }
+    });
+
+    it("login & refresh sungguhan didokumentasikan 200 sesuai jawabannya, bukan 201 bawaan POST (utang §10 log phase-02)", () => {
+        const d = dokumen(loginRoute, refreshRoute);
+        for (const jalur of ["/api/v1/auth/login", "/api/v1/auth/refresh"]) {
+            const respons = d.paths[jalur]?.["post"]?.["responses"] as Record<string, unknown>;
+            expect(Object.keys(respons), jalur).toContain("200");
+            expect(Object.keys(respons), jalur).not.toContain("201");
         }
     });
 });
