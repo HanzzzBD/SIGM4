@@ -94,6 +94,8 @@ export const loginRoute = defineRoute({
     rateLimitClass: "login",
     module: MODUL,
     summary: "Login email + password; menerbitkan access token EdDSA dan refresh token",
+    // Menjawab 200 (bukan 201): sesi bukan sumber daya baru yang beralamat (utang §10 log phase-02).
+    successStatus: 200,
     body: LoginBodySchema,
     response: LoginResponseSchema,
 });
@@ -106,6 +108,7 @@ export const refreshRoute = defineRoute({
     rateLimitClass: "default",
     module: MODUL,
     summary: "Menukar refresh token dengan pasangan token baru",
+    successStatus: 200,
     body: RefreshBodySchema,
     response: RefreshResponseSchema,
 });
