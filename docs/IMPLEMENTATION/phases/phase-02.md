@@ -203,14 +203,14 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 
 ## 9. Acceptance Checklist
 
-- [ ] Seluruh AC pada `FR-01.1`…`FR-01.6`, `FR-04.1`…`FR-04.5`, `FR-10.1`…`FR-10.3`, `FR-15.1`, `FR-17.1`…`FR-17.3` terverifikasi
-- [ ] Uji konkurensi `CI-02` lulus: 100 permintaan serentak → tepat satu slot terbentuk
-- [ ] Uji konkurensi approval lulus: dua approver → satu menang, satu 409
-- [ ] Uji otorisasi tergenerate mencakup **100%** route terdaftar (`SEC-T-01`)
-- [ ] 2FA tidak dapat dilewati untuk role sensitif (`FR-01.5`)
-- [ ] Break-glass menghasilkan alarm dan entri activity log setiap kali dipakai (`BR-070c`)
-- [ ] Notifikasi tidak terkirim ganda pada dua instance API (`SDD-NTF-05`)
-- [ ] `procurement_id` ada di `assets`, nullable, tanpa nilai — sesuai keputusan pemutusan siklus
+- [ ] Seluruh AC pada `FR-01.1`…`FR-01.6`, `FR-04.1`…`FR-04.5`, `FR-10.1`…`FR-10.3`, `FR-15.1`, `FR-17.1`…`FR-17.3` terverifikasi — *59 dari 77 terbukti, 13 sebagian, 5 ditunda ([log §9.2](../logs/phase-02.md))*
+- [x] Uji konkurensi `CI-02` lulus: 100 permintaan serentak → tepat satu slot terbentuk
+- [x] Uji konkurensi approval lulus: dua approver → satu menang, satu 409
+- [x] Uji otorisasi tergenerate mencakup **100%** route terdaftar (`SEC-T-01`)
+- [x] 2FA tidak dapat dilewati untuk role sensitif (`FR-01.5`)
+- [x] Break-glass menghasilkan alarm dan entri activity log setiap kali dipakai (`BR-070c`)
+- [x] Notifikasi tidak terkirim ganda pada dua instance API (`SDD-NTF-05`)
+- [x] `procurement_id` ada di `assets`, nullable, tanpa nilai — sesuai keputusan pemutusan siklus
 
 ## 10. Risks
 
@@ -237,9 +237,9 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 
 **Tambahan khusus phase ini:**
 
-- [ ] Uji konkurensi ketersediaan **dan** approval keduanya berjalan di CI, bukan sekali manual
-- [ ] Prosedur break-glass sudah **dilatih**, bukan hanya ditulis (`FR-01.6`)
-- [ ] `TBD-APR-A`, `TBD-APR-B`, `TBD-APR-C`, `TBD-NTF-B` tertutup di [TBD-REGISTER](../../SDD/TBD-REGISTER.md)
+- [x] Uji konkurensi ketersediaan **dan** approval keduanya berjalan di CI, bukan sekali manual
+- [ ] Prosedur break-glass sudah **dilatih**, bukan hanya ditulis (`FR-01.6`) — *ditunda ke DR drill Phase 08 ([log §9.3](../logs/phase-02.md))*
+- [x] `TBD-APR-A`, `TBD-APR-B`, `TBD-APR-C`, `TBD-NTF-B` tertutup di [TBD-REGISTER](../../SDD/TBD-REGISTER.md)
 - [ ] Log phase terisi
 
 ---
