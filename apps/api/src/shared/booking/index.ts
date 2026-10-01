@@ -12,4 +12,4 @@ export type {
     StatusSlot,
     SumberDaya,
 } from "./slot-service.js";
-export { SlotService } from "./slot-service.js";
+export { BATCH_KEDALUWARSA, EVENT_SLOT_TENTATIF_KEDALUWARSA, SlotService, adaSlotAsetTerkonfirmasi } from "./slot-service.js";

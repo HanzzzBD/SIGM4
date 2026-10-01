@@ -15,6 +15,7 @@ import { sql } from "kysely";
 import type { Clock } from "../clock/index.js";
 import type { TransactionScope } from "../db/index.js";
 import { DomainError } from "../errors/index.js";
+import { publishAll } from "../events/index.js";
 
 export type JenisSumberDaya = "room" | "asset";
 export type AsalSlot = "reservation" | "loan" | "maintenance" | "fixed_schedule" | "manual_block";
@@ -71,6 +72,22 @@ export interface SlotRow {
 }
 
 const KOLOM_SLOT = ["id", "resource_type", "resource_id", "slot_range", "status", "origin", "expires_at"] as const;
+
+/**
+ * BR-005b: predikat "aset ini memiliki slot `CONFIRMED` yang mencakup `waktu`" (`[)`, SDD-AVL-02)
+ * bagi `UPDATE assets` milik M-04 (job `slot-activation`) — modul tidak menyusun kueri
+ * `booking_slots` sendiri. `kolomAsetId` = kolom id aset pada kueri pemanggil.
+ */
+export const adaSlotAsetTerkonfirmasi = (kolomAsetId: string, waktu: Date) => sql<boolean>`EXISTS (
+    SELECT 1 FROM booking_slots s
+     WHERE s.resource_type = 'asset' AND s.resource_id = ${sql.ref(kolomAsetId)}
+       AND s.status = 'CONFIRMED' AND s.slot_range @> ${waktu}::timestamptz)`;
+
+/** `BR-023b`: pengajuan pemilik slot → Kedaluwarsa; dikonsumsi M-07 (`PR-03-10`) dan M-08 (`PR-04-02`). */
+export const EVENT_SLOT_TENTATIF_KEDALUWARSA = "TentativeSlotExpired";
+
+/** Batas baris per transaksi job `tentative-slot-expiry` — job mengulang sampai habis. */
+export const BATCH_KEDALUWARSA = 500;
 
 /** SQLSTATE `lock_not_available` — kegagalan `FOR UPDATE NOWAIT`. */
 const LOCK_NOT_AVAILABLE = "55P03";
@@ -180,6 +197,41 @@ export class SlotService {
     /** Persetujuan level terakhir: `TENTATIVE` → `CONFIRMED`, TTL dihapus (SDD-01 §4.3). */
     async confirm(scope: TransactionScope, slotIds: readonly number[]): Promise<readonly SlotRow[]> {
         return this.transisi(scope, slotIds, "TENTATIVE", "CONFIRMED");
+    }
+
+    /**
+     * Job `tentative-slot-expiry` (BR-023b, SDD-01 §4.6): slot `TENTATIVE` yang melewati
+     * `expires_at` → `RELEASED`, paling banyak `batas` baris. Berpenjaga status asal —
+     * slot yang lebih dulu dikonfirmasi pada detik yang sama tidak ikut dilepas (`SKIP LOCKED`
+     * melewati baris yang sedang dipegang transaksi lain). `TentativeSlotExpired` terbit per
+     * slot di transaksi YANG SAMA (SDD-EVT-04): pengajuannya dikedaluwarsakan pemiliknya.
+     */
+    async lepasTentatifKedaluwarsa(scope: TransactionScope, batas = BATCH_KEDALUWARSA): Promise<readonly SlotRow[]> {
+        const sekarang = this.clock.now();
+        const dilepas = await sql<SlotRow & { reservation_id: string | null; loan_id: string | null }>`
+            WITH dipilih AS MATERIALIZED (
+                SELECT id FROM booking_slots
+                 WHERE status = 'TENTATIVE' AND expires_at <= ${sekarang}
+                 ORDER BY expires_at, id LIMIT ${batas}
+                 FOR UPDATE SKIP LOCKED)
+            -- CTE, bukan \`id IN (SELECT … LIMIT …)\`: subkueri IN dapat dieksekusi ulang
+            -- sebagai join sehingga LIMIT tidak membatasi baris yang diubah (terbukti di uji).
+            UPDATE booking_slots b SET status = 'RELEASED', expires_at = NULL
+              FROM dipilih
+             WHERE b.id = dipilih.id AND b.status = 'TENTATIVE'
+            RETURNING b.id::text AS id, b.resource_type, b.resource_id::text AS resource_id, b.slot_range::text AS slot_range,
+                      b.status, b.origin, b.expires_at, b.reservation_id::text AS reservation_id, b.loan_id::text AS loan_id
+        `.execute(scope.tx);
+        await publishAll(
+            scope,
+            dilepas.rows.map((b) => ({
+                name: EVENT_SLOT_TENTATIF_KEDALUWARSA,
+                aggregateType: "booking_slot",
+                aggregateId: b.id,
+                payload: { slot_id: b.id, origin: b.origin, resource_type: b.resource_type, resource_id: b.resource_id, reservation_id: b.reservation_id, loan_id: b.loan_id },
+            })),
+        );
+        return dilepas.rows;
     }
 
     /** Serah terima: `CONFIRMED` → `ACTIVE` (SDD-01 §4.3). */
