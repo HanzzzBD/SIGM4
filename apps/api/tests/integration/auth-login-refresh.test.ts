@@ -70,6 +70,7 @@ describe.skipIf(!ADA)("PR-02-02 — login + rotasi refresh token (PostgreSQL + R
 
     function bangun(limiter: AppDeps["limiter"]): Server {
         const app = createApp({
+            appBaseUrl: "https://sigm4.sekolah.test",
             health: new HealthRegistry(30).register(
                 { name: "database", probe: () => Promise.resolve({ status: "up" }) },
                 { name: "redis", probe: () => Promise.resolve({ status: "up" }) },

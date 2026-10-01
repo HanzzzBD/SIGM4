@@ -86,6 +86,7 @@ describe.skipIf(!ADA)("PR-02-29 — kerangka dashboard + kartu per role (accepta
         const redis = getRedis();
         if (redis.status !== "ready") await new Promise((r) => redis.once("ready", r));
         const app = createApp({
+            appBaseUrl: "https://sigm4.sekolah.test",
             health: new HealthRegistry(30).register(fcmCheck(null)),
             limiter: { hit: () => Promise.resolve({ lolos: true, batas: 1000, sisa: 999, resetDetik: 60 }) },
             security: { objectStorageOrigin: "http://minio:9000" },

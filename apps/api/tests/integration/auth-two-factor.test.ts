@@ -88,6 +88,7 @@ describe.skipIf(!ADA)("PR-02-07 — 2FA TOTP (PostgreSQL + Redis nyata)", () => 
         hashSandi = await hashPassword(PASSWORD);
         server = createServer(
             createApp({
+                appBaseUrl: "https://sigm4.sekolah.test",
                 health: new HealthRegistry(30).register(
                     { name: "database", probe: () => Promise.resolve({ status: "up" }) },
                     { name: "redis", probe: () => Promise.resolve({ status: "up" }) },

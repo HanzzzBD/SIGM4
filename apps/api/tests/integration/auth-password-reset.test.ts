@@ -91,6 +91,7 @@ describe.skipIf(!ADA)("PR-02-05 — reset password administratif (PostgreSQL + R
         hashSandi = await hashPassword(PASSWORD);
         server = createServer(
             createApp({
+                appBaseUrl: "https://sigm4.sekolah.test",
                 health: new HealthRegistry(30).register(
                     { name: "database", probe: () => Promise.resolve({ status: "up" }) },
                     { name: "redis", probe: () => Promise.resolve({ status: "up" }) },

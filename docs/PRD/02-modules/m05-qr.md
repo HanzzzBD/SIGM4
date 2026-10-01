@@ -117,6 +117,8 @@ _Tidak ada aturan bisnis yang dimiliki modul ini._
 | GET | `/assets/by-uuid/{uuid}` | `asset.view` | Detail aset dari hasil scan QR |
 | GET | `/public/assets/{uuid}` | Publik | Info dasar aset untuk scan kamera bawaan |
 | POST | `/assets/qr/print` | `asset.update` | Hasilkan PDF label QR massal |
+| POST | `/assets/{id}/qr/regenerate` | `asset.qr_regenerate` | Regenerasi UUID aset — QR lama otomatis tidak berlaku; alasan wajib (FR-05.1 A2, UX-04) |
+| PATCH | `/assets/qr-terpasang` | `asset.qr_print` | Menandai label QR terpasang (atau dilepas) untuk 1–200 aset sekaligus (FR-05.1 langkah 5) |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).

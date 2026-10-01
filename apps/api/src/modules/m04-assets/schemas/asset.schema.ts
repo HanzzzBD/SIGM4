@@ -66,6 +66,9 @@ export const AssetSchema = z.object({
     boleh_dipinjam_siswa: z.boolean(),
     penanggung_jawab_id: z.string().nullable(),
     procurement_id: z.string().nullable(),
+    /** FR-05.1: payload QR permanen `https://{domain}/a/{uuid}` (PR-03-01). */
+    qr_url: z.string(),
+    qr_terpasang: z.boolean(),
     created_at: z.string(),
 });
 
@@ -212,6 +215,8 @@ const AssetCatalogItemSchema = z.object({
     status: AssetStatusSchema,
     dapat_dipinjam: z.boolean(),
     boleh_dipinjam_siswa: z.boolean(),
+    qr_url: z.string(),
+    qr_terpasang: z.boolean(),
     created_at: z.string(),
     sumber_perolehan: SumberPerolehanSchema.optional(),
     nilai_perolehan: z.string().nullable().optional(),

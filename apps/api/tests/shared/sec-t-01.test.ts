@@ -93,6 +93,7 @@ describe("SEC-T-01 — route \"Bearer\" (authenticated) pada aplikasi terakit", 
     const bearer = registry.authenticatedRoutes();
     const jam = new FixedClock(new Date("2026-09-19T03:00:00Z"));
     const app = createApp({
+        appBaseUrl: "https://sigm4.sekolah.test",
         health: new HealthRegistry(),
         limiter: { hit: () => Promise.resolve({ lolos: true, batas: 100, sisa: 99, resetDetik: 60 }) },
         security: { objectStorageOrigin: "http://minio:9000" },

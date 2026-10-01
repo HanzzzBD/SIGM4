@@ -108,6 +108,7 @@ import {
     moveAssetsRoute,
     updateAssetConditionRoute,
 } from "../modules/m04-assets/index.js";
+import { qrRouter, qrTerpasangRoute, regenerateQrRoute } from "../modules/m05-qr/index.js";
 import {
     approvalRouter,
     createRuleRoute,
@@ -223,6 +224,8 @@ export const registry = new RouteRegistry().register(
     listAssetsRoute,
     updateAssetConditionRoute,
     moveAssetsRoute,
+    regenerateQrRoute,
+    qrTerpasangRoute,
     listCategoriesRoute,
     createCategoryRoute,
     updateCategoryRoute,
@@ -283,6 +286,8 @@ export interface AppDeps {
     readonly logger: Logger;
     /** AuditLogger (AL-01) dan `withTransaction` butuh Clock — SDD-SYS-07. */
     readonly clock: Clock;
+    /** `APP_BASE_URL` tervalidasi — dasar payload QR permanen (FR-05.1, PR-03-01). */
+    readonly appBaseUrl: string;
     /** Pool Kysely bagi modul yang menulis basis data — m02-users sejak PR-01-02. */
     readonly db: Kysely<Database>;
     /** Penandatangan/pemverifikasi access token (SDD-SESS-02) dan permission efektif (PM-05). */
@@ -399,6 +404,19 @@ export function createApp(deps: AppDeps): Express {
                     logger: deps.logger,
                 }),
                 clock: deps.clock,
+                appBaseUrl: deps.appBaseUrl,
+            },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        qrRouter(
+            {
+                db: deps.db,
+                auditLogger: new AuditLogger({ clock: deps.clock, logger: deps.logger }),
+                appBaseUrl: deps.appBaseUrl,
             },
             (route) => rateLimit(route, deps.limiter, deps.logger),
             authorize,
@@ -550,6 +568,7 @@ export async function start(
         health,
         limiter: new RedisRateLimiter(getRedis(), clock),
         security: { objectStorageOrigin: config.objectStoragePublicOrigin },
+        appBaseUrl: config.appBaseUrl,
         logger,
         clock,
         db: getDb(),
