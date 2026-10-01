@@ -1,6 +1,9 @@
 // Perkakas uji integrasi: menjalankan dbmate dan membuka koneksi ke PostgreSQL nyata.
 
 import { execFile, execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { AKAR } from "./bab113.js";
@@ -14,14 +17,23 @@ const CWD = fileURLToPath(AKAR);
 // di-spawn tanpa shell.
 const PEMBUNGKUS = fileURLToPath(new URL("scripts/migrate.mjs", AKAR));
 
+const URUTAN = fileURLToPath(new URL("./urutan.mjs", import.meta.url));
+/** Satu catatan per basis data — dua lingkungan (dev, CI) tidak saling menaikkan. */
+const BERKAS_URUTAN = join(tmpdir(), `sigm4-uji-urutan-${createHash("sha256").update(process.env["DATABASE_URL"] ?? "").digest("hex").slice(0, 16)}.json`);
+const urutan = (perintah: "simpan" | "pulihkan"): void => {
+    execFileSync(process.execPath, [URUTAN, perintah, BERKAS_URUTAN], { cwd: CWD, env: process.env });
+};
+
 const PARTISI = fileURLToPath(new URL("./partisi.mjs", import.meta.url));
 
 /**
- * Menjalankan jalur migration persis seperti npm script akar menjalankannya, lalu
- * menyiapkan partisi `activity_logs` jendela tanggal uji — migration hanya membuat
- * bulan berjalan + 3, sedangkan FixedClock uji bertanggal tetap (partisi.mjs).
+ * Menjalankan jalur migration persis seperti npm script akar menjalankannya. Sesudahnya:
+ * sequence yang lahir ulang karena `down` dinaikkan kembali ke nilai sebelumnya (id tidak
+ * dipakai ulang untuk orang berbeda, utang §10 log phase-02), dan partisi `activity_logs`
+ * jendela tanggal uji disiapkan (partisi.mjs).
  */
 export function dbmate(...argumen: string[]): string {
+    urutan("simpan");
     try {
         return execFileSync(process.execPath, [PEMBUNGKUS, ...argumen], {
             cwd: CWD,
@@ -29,9 +41,13 @@ export function dbmate(...argumen: string[]): string {
             env: process.env,
         });
     } finally {
+        urutan("pulihkan");
         execFileSync(process.execPath, [PARTISI], { cwd: CWD, env: process.env });
     }
 }
+
+/** Untuk uji penjaga ini sendiri. */
+export const penjagaUrutan = { simpan: () => urutan("simpan"), pulihkan: () => urutan("pulihkan") };
 
 /** Varian asinkron — dipakai saat migration harus diamati SELAGI berjalan. */
 export function dbmateAsync(...argumen: string[]): Promise<void> {
