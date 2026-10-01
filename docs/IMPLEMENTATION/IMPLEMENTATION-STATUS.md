@@ -163,7 +163,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
-| `PR-03-01` | `In Review` | — | Pembuatan QR + payload + penyimpanan (`FR-05.1`, `FR-05.1 A2`, keputusan 1 log phase-03), cabang `feature/PR-03-01-pembuatan-qr`: `APP_BASE_URL` di skema `shared/config` (https berhost); `shared/qr` — payload `https://{domain}/a/{asset_uuid}` + matriks QR koreksi galat M ke SVG (tanpa berkas gambar; hanya `assets.uuid` yang disimpan); `qr_url` + `qr_terpasang` pada respons aset; modul `m05-qr`: `POST /assets/{id}/qr/regenerate` (`asset.qr_regenerate`, alasan wajib, `ASSET_QR_REGENERATED`) dan `PATCH /assets/qr-terpasang` (`asset.qr_print`, 1–200 aset atomik, `ASSET_UPDATED`). Tanpa migration. Kompleksitas `L` (+392/−12, rencana `M`) |
+| `PR-03-01` | `In Review` | [#120](https://github.com/HanzzzBD/SIGM4/pull/120) | Pembuatan QR + payload + penyimpanan (`FR-05.1`, `FR-05.1 A2`, keputusan 1 log phase-03), cabang `feature/PR-03-01-pembuatan-qr`: `APP_BASE_URL` di skema `shared/config` (https berhost); `shared/qr` — payload `https://{domain}/a/{asset_uuid}` + matriks QR koreksi galat M ke SVG (tanpa berkas gambar; hanya `assets.uuid` yang disimpan); `qr_url` + `qr_terpasang` pada respons aset; modul `m05-qr`: `POST /assets/{id}/qr/regenerate` (`asset.qr_regenerate`, alasan wajib, `ASSET_QR_REGENERATED`) dan `PATCH /assets/qr-terpasang` (`asset.qr_print`, 1–200 aset atomik, `ASSET_UPDATED`). Tanpa migration. Kompleksitas `L` (+392/−12, rencana `M`) |
 | `PR-03-02` … `PR-03-23` | `Not Started` | — | Rincian: [`phases/phase-03.md` §7](phases/phase-03.md) |
 
 ### Phase 04 — Siklus Hidup Aset · `Not Started`
