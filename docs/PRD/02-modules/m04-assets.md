@@ -192,7 +192,8 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | GET | `/rooms/{id}/assets` | `asset.view` | Aset dalam satu ruangan |
 | GET | `/assets` | `asset.view` | Daftar aset (filter & pencarian) |
 | POST | `/assets` | `asset.create` | Buat aset (mendukung `jumlah_unit` untuk N record) |
-| GET | `/assets/{id}` | `asset.view` | Detail aset |
+| GET | `/assets/{id}` | `asset.view` | Detail aset — identitas lengkap, QR, kategori & lokasi (FR-04.2 langkah 5) |
+| GET | `/assets/{id}/timeline` | `asset.view` | Linimasa riwayat aset terpaginasi: kondisi, mutasi, dan riwayat yang diisi modul lain (peminjaman, pemeliharaan, kerusakan, dokumen) — jenis sensitif disembunyikan bagi scope `restricted` (FR-04.2 langkah 5, A1) |
 | PUT | `/assets/{id}` | `asset.update` | Perbarui aset |
 | PATCH | `/assets/{id}/condition` | `asset.update` | Ubah kondisi + alasan |
 | POST | `/assets/move` | `asset.update` | Mutasi lokasi (massal) |
