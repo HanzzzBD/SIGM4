@@ -22,7 +22,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 | 1 Oktober 2026 | `#120` (`PR-03-01`) digabung PM ke `develop` (merge `ae6d7e0`). | `PR-03-01` |
 | 2 Oktober 2026 | `PR-03-02` dikerjakan (`feature/PR-03-02-cetak-qr-massal`, dari `develop` pasca `#120`) — keputusan 2 (lima keputusan pemilik produk via `AskUserQuestion` sebelum kode); PRD m05 §7 (permission cetak), SDD-16 §4.7 (`CHROMIUM_EXECUTABLE_PATH`), dan rencana `phase-03.md` §7 disunting. | `PR-03-02` |
 | 2 Oktober 2026 | `#121` (`PR-03-02`) digabung PM ke `develop` (merge `a39bbec`). `PR-03-03` dikerjakan (`feature/PR-03-03-pemindaian-qr`) — keputusan 3; SDD-03 (pengecualian `SDD-AUTH-02`) dan rencana `phase-03.md` §7 disunting sebelum PR dibuka. | `PR-03-02`, `PR-03-03` |
-| 2 Oktober 2026 | Keputusan 4: `GET /assets/{id}` + linimasa → `PR-03-24` baru (rencana 175 PR). Disunting di cabang `PR-03-03` (temuannya lahir di sana). Sekaligus dikoreksi: total selesai di `IMPLEMENTATION-STATUS.md` tertinggal 71 → 73 (`PR-03-01`/`PR-03-02` `Done` tanpa memperbarui baris total). | `PR-03-03`, `PR-03-24` |
+| 2 Oktober 2026 | Keputusan 4: `GET /assets/{id}` + linimasa → `PR-03-24` baru (rencana 175 PR). `#122` (`PR-03-03`) sudah digabung PM (merge `c8ce86a`) sebelum suntingan ini ter-push, sehingga keputusan masuk lewat cabang `chore/keputusan-detail-aset`. Sekaligus dikoreksi: total selesai di `IMPLEMENTATION-STATUS.md` tertinggal 71 → 73 (`PR-03-01`/`PR-03-02` `Done` tanpa memperbarui baris total); `PR-03-03` → `Done` (74/175). | `PR-03-03`, `PR-03-24` |
 
 ## 2. Keputusan yang diambil
 
