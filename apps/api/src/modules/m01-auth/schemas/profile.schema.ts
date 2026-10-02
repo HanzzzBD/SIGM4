@@ -22,6 +22,10 @@ const ProfilSchema = z.object({
     telepon: z.string().nullable(),
     role_kode: z.string(),
     must_change_password: z.boolean(),
+    // Keputusan 7c log phase-03: `foto_url` hanya bila `CLEAN` (SDD-FS-03); status agar UI dapat
+    // menampilkan "sedang diperiksa" (SDD-09 §5). Keduanya null bila tanpa foto.
+    foto_status: z.enum(["PENDING", "CLEAN", "INFECTED", "FAILED"]).nullable(),
+    foto_url: z.string().nullable(),
 });
 
 export const MeResponseSchema = z.object({
@@ -30,13 +34,15 @@ export const MeResponseSchema = z.object({
     meta: z.null(),
 });
 
-/** FR-01.4 langkah 5: email dan role tidak diterima di sini (BR-069) — hanya nama/telepon. */
+/** FR-01.4 langkah 5: email dan role tidak diterima di sini (BR-069) — nama/telepon/foto. */
 export const UpdateProfilBodySchema = z
     .object({
         nama: z.string().trim().min(1).max(200).optional(),
         telepon: z.string().trim().min(1).max(30).nullable().optional(),
+        // Berkas `USER_PHOTO` yang sudah dikonfirmasi (`POST /files/confirm`); null = hapus foto.
+        foto_file_id: z.coerce.number().int().positive().nullable().optional(),
     })
-    .refine((data) => data.nama !== undefined || data.telepon !== undefined, {
+    .refine((data) => data.nama !== undefined || data.telepon !== undefined || data.foto_file_id !== undefined, {
         message: "Tidak ada perubahan yang dikirim.",
     });
 

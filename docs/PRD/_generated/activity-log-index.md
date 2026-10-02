@@ -63,7 +63,7 @@
 | `PROCUREMENT_ASSETS_GENERATED` | Pembentukan aset dari penerimaan | [M-14](../02-modules/m14-procurement.md) |
 | `PROCUREMENT_CREATED` / `SUBMITTED` / `DECIDED` | Siklus usulan | [M-14](../02-modules/m14-procurement.md) |
 | `PROCUREMENT_RECEIVED` | Penerimaan barang beserta jumlah | [M-14](../02-modules/m14-procurement.md) |
-| `PROFILE_UPDATED` | Perubahan nama/telepon profil sendiri (`FR-01.4` langkah 5, `PUT /me`); foto menunggu `PR-03-04` | [M-01](../02-modules/m01-auth.md) |
+| `PROFILE_UPDATED` | Perubahan nama/telepon/foto profil sendiri (`FR-01.4` langkah 5, `PUT /me`); foto dicatat sebagai `foto_file_id` | [M-01](../02-modules/m01-auth.md) |
 | `REFRESH_TOKEN_REUSE_DETECTED` | Refresh token yang sudah dirotasi dipakai ulang; seluruh rantai dicabut. Termasuk IP dan perangkat | [M-01](../02-modules/m01-auth.md) |
 | `REPORT_EXPORTED` | Ekspor laporan beserta jenis dan filter | [M-16](../02-modules/m16-analytics.md) |
 | `RESERVATION_CREATED` / `RESERVATION_UPDATED` / `RESERVATION_CANCELLED` / `RESERVATION_EXPIRED` | Termasuk alasan pembatalan | [M-07](../02-modules/m07-reservation-room.md) |

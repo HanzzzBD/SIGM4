@@ -15,7 +15,8 @@ import { AuthError } from "../../../shared/errors/index.js";
 import { ACCESS_TOKEN_TTL_DETIK } from "../../../shared/security/index.js";
 import { PasswordChangeBodySchema, UpdateProfilBodySchema } from "../schemas/profile.schema.js";
 import type { KlienPermintaan } from "../services/klien.js";
-import type { ProfileService } from "../services/profile.service.js";
+import type { FotoProfil, ProfileService } from "../services/profile.service.js";
+import type { ProfilRow } from "../repositories/profile.repository.js";
 
 function klienDari(req: Request): KlienPermintaan {
     return { ip: req.ip, userAgent: req.get("user-agent") };
@@ -32,6 +33,20 @@ function viaCookie(req: Request): boolean {
     return req.get("authorization") === undefined && bacaCookie(req.get("cookie"), COOKIE_ACCESS) !== undefined;
 }
 
+/** Bentuk `user` pada `GET /me` dan `PUT /me`: `foto_file_id` tidak dibocorkan, hanya keadaannya. */
+function tampilkan(user: ProfilRow, foto: FotoProfil | null) {
+    return {
+        id: user.id,
+        nama: user.nama,
+        email: user.email,
+        telepon: user.telepon,
+        role_kode: user.role_kode,
+        must_change_password: user.must_change_password,
+        foto_status: foto?.status ?? null,
+        foto_url: foto?.url ?? null,
+    };
+}
+
 export function lihatProfilHandler(service: ProfileService): RequestHandler {
     return async (_req, res) => {
         const hasil = await service.lihat(requireAuthContext(res));
@@ -39,14 +54,7 @@ export function lihatProfilHandler(service: ProfileService): RequestHandler {
         res.status(200).json({
             success: true,
             data: {
-                user: {
-                    id: hasil.user.id,
-                    nama: hasil.user.nama,
-                    email: hasil.user.email,
-                    telepon: hasil.user.telepon,
-                    role_kode: hasil.user.role_kode,
-                    must_change_password: hasil.user.must_change_password,
-                },
+                user: tampilkan(hasil.user, hasil.foto),
                 permissions: hasil.permissions,
             },
             meta: null,
@@ -57,19 +65,15 @@ export function lihatProfilHandler(service: ProfileService): RequestHandler {
 export function perbaruiProfilHandler(service: ProfileService): RequestHandler {
     return async (req, res) => {
         const body = UpdateProfilBodySchema.parse(req.body);
-        const user = await service.perbarui(requireAuthContext(res), body);
+        const hasil = await service.perbarui(requireAuthContext(res), {
+            nama: body.nama,
+            telepon: body.telepon,
+            fotoFileId: body.foto_file_id,
+        });
+        res.setHeader("Cache-Control", "no-store");
         res.status(200).json({
             success: true,
-            data: {
-                user: {
-                    id: user.id,
-                    nama: user.nama,
-                    email: user.email,
-                    telepon: user.telepon,
-                    role_kode: user.role_kode,
-                    must_change_password: user.must_change_password,
-                },
-            },
+            data: { user: tampilkan(hasil.user, hasil.foto) },
             meta: null,
         });
     };

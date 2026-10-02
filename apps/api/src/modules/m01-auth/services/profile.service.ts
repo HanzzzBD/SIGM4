@@ -1,7 +1,7 @@
 // ProfileService — kelola profil sendiri + ganti password sendiri (FR-01.4, PR-02-06).
 //
-// Foto profil TIDAK ada di sini: `users.foto_file_id` menunggu `stored_files` (PR-03-04,
-// logs/phase-01.md §2 keputusan 4). Daftar password bocor dan larangan memakai ulang 3
+// Foto profil (`users.foto_file_id`, PR-03-25): berkasnya milik M-06 — dijangkau lewat
+// `PengelolaFotoProfil`, bukan kueri `stored_files` dari sini (SDD-SYS-03). Daftar password bocor dan larangan memakai ulang 3
 // password terakhir (`NFR-S-03a`) diperiksa sejak `PR-02-31` (SDD-SESS-18/19, keputusan 84).
 
 import type { Kysely } from "kysely";
@@ -9,7 +9,7 @@ import type { AuditLogger } from "../../../shared/audit/index.js";
 import type { AuthContext, PermissionCache } from "../../../shared/auth/index.js";
 import type { Clock } from "../../../shared/clock/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
-import type { Database } from "../../../shared/db/index.js";
+import type { Database, TransactionScope } from "../../../shared/db/index.js";
 import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
 import { publishAll } from "../../../shared/events/index.js";
 import type { DomainEvent } from "../../../shared/events/index.js";
@@ -35,8 +35,25 @@ const ALASAN_GANTI_PASSWORD = "password_changed";
 export const EVENT_PASSWORD_DIGANTI_SETELAH_RESET = "PasswordChangedAfterReset";
 const AGREGAT_PENGGUNA = "user";
 
+/** Keadaan foto bagi klien (keputusan 7c log phase-03): URL hanya bila `CLEAN`. */
+export interface FotoProfil {
+    readonly status: "PENDING" | "CLEAN" | "INFECTED" | "FAILED";
+    readonly url: string | null;
+}
+
+/**
+ * Pintu foto profil — bentuknya didefinisikan pemakai (M-01) dan dipenuhi M-06 secara
+ * struktural di composition root, sama seperti `PenerbitPasswordSementara`.
+ */
+export interface PengelolaFotoProfil {
+    /** Dalam transaksi `PUT /me`; berkas yang tidak sah → 422 `foto_file_id`. */
+    ganti(scope: TransactionScope, baru: number | null, lama: string | null): Promise<void>;
+    tampil(ctx: AuthContext, fileId: string | null): Promise<FotoProfil | null>;
+}
+
 export interface ProfilTampil {
     readonly user: ProfilRow;
+    readonly foto: FotoProfil | null;
     readonly permissions: Readonly<Record<string, string>>;
 }
 
@@ -57,6 +74,7 @@ export class ProfileService {
         private readonly permissions: PermissionCache,
         private readonly audit: AuditLogger,
         private readonly clock: Clock,
+        private readonly fotoProfil: PengelolaFotoProfil,
     ) {}
 
     /** `GET /me`. */
@@ -66,17 +84,19 @@ export class ProfileService {
             this.permissions.load(ctx.userId),
         ]);
         if (user === undefined || efektif === undefined) throw new NotFoundError();
-        return { user, permissions: Object.fromEntries(efektif.scopes) };
+        return { user, foto: await this.fotoProfil.tampil(ctx, user.foto_file_id), permissions: Object.fromEntries(efektif.scopes) };
     }
 
     /** `PUT /me` (FR-01.4 langkah 5). Email dan role tidak diterima di sini (BR-069). */
-    async perbarui(ctx: AuthContext, input: PembaruanProfil): Promise<ProfilRow> {
-        return withTransaction(
+    async perbarui(ctx: AuthContext, input: PembaruanProfil): Promise<Omit<ProfilTampil, "permissions">> {
+        const user = await withTransaction(
             ctx,
             async (scope) => {
                 const repo = createProfileRepository(scope.tx);
                 const sebelum = await repo.ambil(ctx);
                 if (sebelum === undefined) throw new NotFoundError();
+                // FR-01.4 A3: berkas ditolak di sini bila bukan foto profil sah milik pemanggil.
+                if (input.fotoFileId !== undefined) await this.fotoProfil.ganti(scope, input.fotoFileId, sebelum.foto_file_id);
                 const sesudah = await repo.perbarui(ctx, input);
                 // AL-01: dalam transaksi yang sama dengan pembaruannya.
                 await this.audit.write(scope, {
@@ -84,13 +104,14 @@ export class ProfileService {
                     aksi: "PROFILE_UPDATED",
                     entitas: "users",
                     entitasId: ctx.userId,
-                    nilaiSebelum: { nama: sebelum.nama, telepon: sebelum.telepon },
-                    nilaiSesudah: { nama: sesudah.nama, telepon: sesudah.telepon },
+                    nilaiSebelum: { nama: sebelum.nama, telepon: sebelum.telepon, foto_file_id: sebelum.foto_file_id },
+                    nilaiSesudah: { nama: sesudah.nama, telepon: sesudah.telepon, foto_file_id: sesudah.foto_file_id },
                 });
                 return sesudah;
             },
             this.db,
         );
+        return { user, foto: await this.fotoProfil.tampil(ctx, user.foto_file_id) };
     }
 
     /**

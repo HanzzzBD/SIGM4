@@ -14,6 +14,8 @@ export interface ProfilRow {
     readonly telepon: string | null;
     readonly role_kode: string;
     readonly must_change_password: boolean;
+    /** `stored_files(id)` (FR-01.4, PR-03-25); keadaan berkasnya milik M-06. */
+    readonly foto_file_id: string | null;
 }
 
 /** Bahan verifikasi password lama dan kebijakan password baru (`NFR-S-03a`). */
@@ -27,6 +29,8 @@ export interface KredensialRow {
 export interface PembaruanProfil {
     readonly nama?: string | undefined;
     readonly telepon?: string | null | undefined;
+    /** `null` = hapus foto. Kepemilikan & jenis berkas sudah diperiksa M-06 dalam transaksi yang sama. */
+    readonly fotoFileId?: number | null | undefined;
 }
 
 export class ProfileRepository extends BaseRepository {
@@ -38,18 +42,19 @@ export class ProfileRepository extends BaseRepository {
         return this.query(ctx)
             .selectFrom("users as u")
             .innerJoin("roles as r", "r.id", "u.role_id")
-            .select(["u.id", "u.nama", "u.email", "u.telepon", "r.kode as role_kode", "u.must_change_password"])
+            .select(["u.id", "u.nama", "u.email", "u.telepon", "r.kode as role_kode", "u.must_change_password", "u.foto_file_id"])
             .where("u.id", "=", String(ctx.userId))
             .executeTakeFirst();
     }
 
-    /** FR-01.4 langkah 5: nama/telepon saja — email dan role tidak diterima di sini (BR-069). */
+    /** FR-01.4 langkah 5: nama/telepon/foto — email dan role tidak diterima di sini (BR-069). */
     async perbarui(ctx: AuthContext, input: PembaruanProfil): Promise<ProfilRow> {
         await this.query(ctx)
             .updateTable("users")
             .set({
                 ...(input.nama === undefined ? {} : { nama: input.nama }),
                 ...(input.telepon === undefined ? {} : { telepon: input.telepon }),
+                ...(input.fotoFileId === undefined ? {} : { foto_file_id: input.fotoFileId }),
             })
             .where("id", "=", String(ctx.userId))
             .execute();

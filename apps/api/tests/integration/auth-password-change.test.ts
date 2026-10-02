@@ -235,7 +235,7 @@ describe.skipIf(!ADA)("PR-02-06 — ganti password + kelola profil sendiri (Post
 
             const r = await ubahProfil(auth(sesi), { nama: "Nama Baru", telepon: "082222222222", email: "lain@sekolah.sch.id", role_kode: "R-01" });
             expect(r.status).toBe(200);
-            expect(r.json.data).toEqual({ user: { id: String(id), nama: "Nama Baru", email, telepon: "082222222222", role_kode: "R-05", must_change_password: false } });
+            expect(r.json.data).toEqual({ user: { id: String(id), nama: "Nama Baru", email, telepon: "082222222222", role_kode: "R-05", must_change_password: false, foto_status: null, foto_url: null } });
 
             const [baris] = await kueri<{ nama: string; email: string; role_kode: string }>(
                 `SELECT u.nama, u.email, r.kode AS role_kode FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = ${String(id)}`,
@@ -247,8 +247,8 @@ describe.skipIf(!ADA)("PR-02-06 — ganti password + kelola profil sendiri (Post
             const [log] = await kueri<{ sebelum: string; sesudah: string }>(`
                 SELECT nilai_sebelum::text AS sebelum, nilai_sesudah::text AS sesudah
                 FROM activity_logs WHERE modul = 'm01-auth' AND aksi = 'PROFILE_UPDATED' AND entitas_id = ${String(id)}`);
-            expect(JSON.parse(log?.sebelum ?? "{}")).toEqual({ nama: NAMA, telepon: "[REDACTED]" });
-            expect(JSON.parse(log?.sesudah ?? "{}")).toEqual({ nama: "Nama Baru", telepon: "[REDACTED]" });
+            expect(JSON.parse(log?.sebelum ?? "{}")).toEqual({ nama: NAMA, telepon: "[REDACTED]", foto_file_id: null });
+            expect(JSON.parse(log?.sesudah ?? "{}")).toEqual({ nama: "Nama Baru", telepon: "[REDACTED]", foto_file_id: null });
         });
 
         it("tanpa satu pun field yang berubah → 400 INVALID_REQUEST", async () => {

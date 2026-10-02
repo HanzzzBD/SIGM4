@@ -21,6 +21,8 @@ import { SystemClock } from "../shared/clock/index.js";
 import { readApiConfig, zonaProses } from "../shared/config/index.js";
 import type { PembangkitPdf } from "../shared/pdf/index.js";
 import { objectStorageCheck, PenyimpananS3 } from "../shared/storage/index.js";
+import type { PenyimpananObjek } from "../shared/storage/index.js";
+import { DomainError } from "../shared/errors/index.js";
 import { PembangkitPdfChromium } from "../shared/pdf/index.js";
 import {
     assertDatabaseTimeZoneUtc,
@@ -124,6 +126,7 @@ import {
     ruleStatusRoute,
     updateRuleRoute,
 } from "../modules/m10-approval/index.js";
+import { buatPengelolaFotoProfil, confirmRoute, filesRouter, presignRoute } from "../modules/m06-documents/index.js";
 import { dashboardCardRoute, dashboardManifestRoute, dashboardRouter } from "../modules/m15-dashboard/index.js";
 import type { HubSse } from "../modules/m17-notifications/index.js";
 import {
@@ -232,6 +235,8 @@ export const registry = new RouteRegistry().register(
     printQrRoute,
     regenerateQrRoute,
     qrTerpasangRoute,
+    presignRoute,
+    confirmRoute,
     listCategoriesRoute,
     createCategoryRoute,
     updateCategoryRoute,
@@ -312,7 +317,17 @@ export interface AppDeps {
     readonly notifikasi?: { readonly hub: HubSse } | undefined;
     /** Pembangkit PDF label QR (SDD-FS-12, `PR-03-02`); tanpa ini dipakai Chrome terpasang. */
     readonly pdf?: PembangkitPdf | undefined;
+    /** Object storage (SDD-09, `PR-03-25`); tanpa ini unggah/unduh menjawab `503 STORAGE_UNAVAILABLE`. */
+    readonly penyimpanan?: PenyimpananObjek | undefined;
 }
+
+/** Penyimpanan yang tidak terpasang: setiap operasi gagal sebagai layanan eksternal tak tersedia (Bab 17.3). */
+const TANPA_PENYIMPANAN: PenyimpananObjek = {
+    urlUnggah: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
+    urlUnduh: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
+    info: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
+    periksa: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
+};
 
 /** Merakit aplikasi tanpa membuka port — dipakai proses dan uji. */
 export function createApp(deps: AppDeps): Express {
@@ -332,6 +347,7 @@ export function createApp(deps: AppDeps): Express {
         }),
     );
     app.use(gerbangGantiPassword(`${BASE_PATH}/auth/`));
+    const penyimpanan = deps.penyimpanan ?? TANPA_PENYIMPANAN;
     // M-01 dipakai dua tempat: routernya sendiri dan pintu reset password langsung milik M-02
     // (`POST /users/{id}/reset-password`) — satu deps, tanpa m02 mengimpor internal m01.
     const authDeps: AuthModuleDeps = {
@@ -346,6 +362,7 @@ export function createApp(deps: AppDeps): Express {
         logger: deps.logger,
         kotakTotp: deps.auth.twoFactor.kotak,
         penyimpanTantangan: deps.auth.twoFactor.tantangan,
+        fotoProfil: buatPengelolaFotoProfil(deps.db, penyimpanan, deps.clock),
     };
     app.use(
         BASE_PATH,
@@ -429,6 +446,14 @@ export function createApp(deps: AppDeps): Express {
             },
             (route) => rateLimit(route, deps.limiter, deps.logger),
             authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        filesRouter(
+            { db: deps.db, penyimpanan, auditLogger: new AuditLogger({ clock: deps.clock, logger: deps.logger }), clock: deps.clock },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authenticated,
         ),
     );
     app.use(
@@ -560,11 +585,12 @@ export async function start(
     // paksaannya bekerja pada basis data yang sebenarnya (SDD-INF-09).
     await assertDatabaseTimeZoneUtc(getDb());
     const clock = new SystemClock();
+    const penyimpanan = new PenyimpananS3(config.objectStorage, clock);
     const health = new HealthRegistry().register(
         databaseCheck(getDb()),
         redisCheck(getRedis()),
         // OBS-06: menentukan `ready` (SDD-15 §4.5) — tanpa object storage, unggah/unduh gagal.
-        objectStorageCheck(new PenyimpananS3(config.objectStorage, clock)),
+        objectStorageCheck(penyimpanan),
         // OBS-06: dilaporkan, tidak menentukan `ready` (SDD-15 §4.5, keputusan 80a).
         fcmCheck(config.fcm),
     );
@@ -581,6 +607,7 @@ export async function start(
         security: { objectStorageOrigin: config.objectStoragePublicOrigin },
         appBaseUrl: config.appBaseUrl,
         pdf: new PembangkitPdfChromium(config.chromiumExecutablePath),
+        penyimpanan,
         logger,
         clock,
         db: getDb(),
