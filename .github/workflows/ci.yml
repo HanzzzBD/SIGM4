@@ -161,6 +161,13 @@ jobs:
             # migration, lalu acceptance terhubung sebagai akun itu.
             APP_DB_PASSWORD: sigm4_app_ci
             APP_DATABASE_URL: postgres://sigm4_app:sigm4_app_ci@localhost:5432/sigm4?sslmode=disable
+            # Object storage NYATA (PR-03-04, keputusan 5 log phase-03): MinIO, pengganti lokal Backblaze B2.
+            S3_ENDPOINT: http://localhost:9000
+            S3_PUBLIC_ENDPOINT: http://localhost:9000
+            S3_REGION: us-east-1
+            S3_BUCKET: sigm4-ci
+            S3_ACCESS_KEY: sigm4ci
+            S3_SECRET_KEY: sigm4_ci_secret
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
             - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -168,6 +175,16 @@ jobs:
                   node-version: ${{ env.NODE_VERSION }}
                   cache: npm
             - run: npm ci
+            # Service container tidak dapat meneruskan argumen `server /data` milik image MinIO,
+            # jadi dinyalakan sebagai langkah. Image dipatok sama dengan docker-compose.yml.
+            - name: Nyalakan MinIO + bucket uji
+              run: |
+                  docker run -d --name minio -p 9000:9000 \
+                    -e MINIO_ROOT_USER="$S3_ACCESS_KEY" -e MINIO_ROOT_PASSWORD="$S3_SECRET_KEY" \
+                    minio/minio:RELEASE.2025-04-22T22-12-26Z server /data
+                  for i in $(seq 1 30); do curl -sf http://localhost:9000/minio/health/ready && break; sleep 2; done
+                  docker exec minio mc alias set lokal http://localhost:9000 "$S3_ACCESS_KEY" "$S3_SECRET_KEY"
+                  docker exec minio mc mb --ignore-existing "lokal/$S3_BUCKET"
             - name: Uji berkas + integrasi, gerbang cakupan statements & lines ≥ 70%
               run: npm run test:ci -w apps/api
             # Suite yang ter-skip = lingkungan tidak lengkap = FAILED, bukan hijau.

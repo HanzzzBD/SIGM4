@@ -116,7 +116,7 @@ describe.skipIf(!ADA_DB)("0012 — users + kolom baku roles", () => {
         });
     });
 
-    it("kolomnya persis milik PR ini — tanpa deleted_at maupun foto", async () => {
+    it("kolomnya persis milik PR ini — tanpa deleted_at; foto hanya lewat foto_file_id (PR-03-04)", async () => {
         const kolom = await kueri<{ column_name: string }>(`
             SELECT column_name FROM information_schema.columns
              WHERE table_schema = 'public' AND table_name = 'users'
@@ -147,6 +147,8 @@ describe.skipIf(!ADA_DB)("0012 — users + kolom baku roles", () => {
             "totp_secret_enc",
             "totp_enabled_at",
             "totp_last_step",
+            // 0038 (PR-03-04): foto profil FR-01.4 → stored_files(id) (keputusan 4 log phase-01).
+            "foto_file_id",
         ]);
     });
 

@@ -20,6 +20,7 @@ import type { Clock } from "../shared/clock/index.js";
 import { SystemClock } from "../shared/clock/index.js";
 import { readApiConfig, zonaProses } from "../shared/config/index.js";
 import type { PembangkitPdf } from "../shared/pdf/index.js";
+import { objectStorageCheck, PenyimpananS3 } from "../shared/storage/index.js";
 import { PembangkitPdfChromium } from "../shared/pdf/index.js";
 import {
     assertDatabaseTimeZoneUtc,
@@ -562,6 +563,8 @@ export async function start(
     const health = new HealthRegistry().register(
         databaseCheck(getDb()),
         redisCheck(getRedis()),
+        // OBS-06: menentukan `ready` (SDD-15 §4.5) — tanpa object storage, unggah/unduh gagal.
+        objectStorageCheck(new PenyimpananS3(config.objectStorage, clock)),
         // OBS-06: dilaporkan, tidak menentukan `ready` (SDD-15 §4.5, keputusan 80a).
         fcmCheck(config.fcm),
     );

@@ -22,6 +22,8 @@ export const KODE_GALAT = {
     APPROVAL_ALREADY_DECIDED: 409,
     IDEMPOTENCY_KEY_REUSED: 409,
     REQUEST_IN_PROGRESS: 409,
+    // Berkas belum CLEAN — URL unduhan tidak diterbitkan (SDD-FS-03, NFR-S-18; keputusan 5 log phase-03).
+    FILE_NOT_SCANNED: 409,
     VALIDATION_ERROR: 422,
     BORROWER_BLOCKED: 422,
     DURATION_EXCEEDED: 422,

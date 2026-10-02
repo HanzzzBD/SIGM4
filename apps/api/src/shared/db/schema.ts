@@ -187,6 +187,8 @@ export interface UsersTable extends KolomBaku {
     totp_last_step: ColumnType<number | null, number | null | undefined, number | null>;
     /** DP-02, SL-06 (0019, PR-01-14): NULL = persetujuan wali belum terekam. Hanya akun Siswa/OSIS. */
     consent_guardian_at: ColumnType<Date | null, Date | null | undefined, Date | null | undefined>;
+    /** Foto profil FR-01.4 (0038, PR-03-04) → `stored_files(id)` (SDD-FS-02). */
+    foto_file_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
 }
 
 /** `permissions` (0009, PR-00-16). Katalog Lampiran C; `inti` = 🔒 (`SDD-AUTH-10`). */
@@ -684,8 +686,28 @@ export interface PasswordHistoryTable {
     berlaku_sejak: ColumnType<Date, Date, never>;
 }
 
+export type FileScanStatus = "PENDING" | "CLEAN" | "INFECTED" | "FAILED";
+export type FileOwnerType = "ASSET_DOCUMENT" | "ASSET_PHOTO" | "USER_PHOTO" | "HANDOVER_PHOTO" | "DAMAGE_PHOTO" | "WORK_ORDER_PHOTO" | "STOCKTAKE_PHOTO";
+
+/** Registri berkas (0038, PR-03-04; SDD-FS-02). Infrastruktur — tanpa kolom baku. */
+export interface StoredFilesTable {
+    id: Generated<string>;
+    object_key: string;
+    mime: string;
+    ukuran: ColumnType<string, string | number, never>;
+    /** SHA-256; NULL = belum dikonfirmasi (SDD-09 §4.2 langkah 3). */
+    checksum: ColumnType<string | null, string | null | undefined, string | null>;
+    scan_status: ColumnType<FileScanStatus, FileScanStatus | undefined, FileScanStatus>;
+    scanned_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    owner_type: ColumnType<FileOwnerType, FileOwnerType, never>;
+    owner_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    uploaded_by: ColumnType<string, string | number, never>;
+    created_at: ColumnType<Date, Date | undefined, never>;
+}
+
 export interface Database {
     document_counters: DocumentCountersTable;
+    stored_files: StoredFilesTable;
     work_days: WorkDaysTable;
     holidays: HolidaysTable;
     idempotency_keys: IdempotencyKeysTable;

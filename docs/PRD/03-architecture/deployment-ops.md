@@ -9,7 +9,7 @@ Menggantikan AS-14 dan AS-16 yang sebelumnya berstatus asumsi terbuka.
 | Kode | Keputusan |
 |---|---|
 | INF-01 | **Basis data: PostgreSQL 15+.** Dipilih karena PRD mensyaratkan kolom JSON terindeks, `tstzrange` + *exclusion constraint* (Bab 26.3), *partial unique index* (`nomor_seri` unik bila diisi), dan partisi tabel bervolume tinggi. MySQL tidak mendukung *exclusion constraint*. |
-| INF-02 | **Penyimpanan objek: S3-compatible** (AWS S3, atau MinIO bila di-*hosting* mandiri). Tidak diizinkan menyimpan berkas pada *filesystem* server aplikasi. |
+| INF-02 | **Penyimpanan objek: S3-compatible** — produksi memakai **Backblaze B2** lewat API S3-compatible-nya (keputusan pemilik produk, 2 Oktober 2026); MinIO untuk dev/CI atau bila di-*hosting* mandiri; AWS S3 tetap kompatibel. Tidak diizinkan menyimpan berkas pada *filesystem* server aplikasi. |
 | INF-03 | **Cache & antrean: Redis 7+**, dipakai untuk cache agregat dashboard, *distributed lock* (JOB-02), *rate limiting*, dan antrean pekerjaan. |
 | INF-04 | **Runtime: Node.js LTS**, dikemas sebagai container OCI. |
 | INF-05 | **Model hosting: VPS terkelola dengan container orchestration sederhana** (Docker Compose untuk instalasi tunggal sekolah; Kubernetes hanya bila sekolah sudah memilikinya). |

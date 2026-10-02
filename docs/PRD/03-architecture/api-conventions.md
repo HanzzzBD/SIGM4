@@ -79,7 +79,7 @@
 | 401 | Belum terautentikasi / token kedaluwarsa | `UNAUTHENTICATED`, `TOKEN_EXPIRED` |
 | 403 | Tidak memiliki hak akses | `FORBIDDEN`, `INSUFFICIENT_PERMISSION`, `CORE_PERMISSION_LOCKED`, `PASSWORD_CHANGE_REQUIRED`, `TWO_FACTOR_REQUIRED` |
 | 404 | Sumber daya tidak ditemukan | `NOT_FOUND` |
-| 409 | Konflik status data | `RESERVATION_CONFLICT`, `ASSET_NOT_AVAILABLE`, `DUPLICATE_CODE`, `APPROVAL_ALREADY_DECIDED`, `IDEMPOTENCY_KEY_REUSED`, `REQUEST_IN_PROGRESS` |
+| 409 | Konflik status data | `RESERVATION_CONFLICT`, `ASSET_NOT_AVAILABLE`, `DUPLICATE_CODE`, `APPROVAL_ALREADY_DECIDED`, `IDEMPOTENCY_KEY_REUSED`, `REQUEST_IN_PROGRESS`, `FILE_NOT_SCANNED` (berkas belum lolos pemindaian AV — NFR-S-18, SDD-FS-03) |
 | 422 | Validasi bisnis gagal | `VALIDATION_ERROR`, `BORROWER_BLOCKED`, `DURATION_EXCEEDED`, `INSUFFICIENT_BALANCE`, `EXCEEDS_APPROVED_QTY` |
 | 422 | Validasi aturan approval gagal | `INVALID_RULE_DEFINITION` |
 | 423 | Akun terkunci — TIDAK pernah dikirim `/auth/login` (respons login seragam, `SDD-SESS-12`); hanya untuk langkah sesudah password terbukti benar, mis. `/auth/2fa/verify` | `ACCOUNT_LOCKED` |

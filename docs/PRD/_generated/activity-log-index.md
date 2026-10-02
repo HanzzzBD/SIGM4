@@ -5,7 +5,7 @@
 # Indeks Aksi Activity Log
 
 > Setiap aksi dimiliki modul penerbitnya. Prinsip pencatatan di `../03-architecture/activity-log.md`.
-> Total: **78** baris, dikumpulkan dari 22 berkas modul.
+> Total: **79** baris, dikumpulkan dari 22 berkas modul.
 
 | Aksi | Keterangan | Pemilik |
 |---|---|---|
@@ -40,6 +40,7 @@
 | `COMPENSATION_WAIVED` | Pembebasan ganti rugi oleh Pimpinan beserta alasan dan nilai yang dibebaskan (BR-028e) | [M-09](../02-modules/m09-loans.md) |
 | `DAMAGE_REPORTED` / `DAMAGE_VERIFIED` / `DAMAGE_REJECTED` / `DAMAGE_CLOSED` | Siklus tiket | [M-11](../02-modules/m11-damage-reports.md) |
 | `DOCUMENT_UPLOADED` / `DOCUMENT_DOWNLOADED` / `DOCUMENT_DELETED` | Termasuk pencatatan siapa mengunduh | [M-06](../02-modules/m06-documents.md) |
+| `FILE_UPLOADED` | Berkas terunggah dikonfirmasi (`POST /files/confirm`): jenis, MIME, ukuran, `file_id` — tanpa nama asli berkas (`SDD-FS-06`) | [M-06](../02-modules/m06-documents.md) |
 | `FINE_ISSUED` / `FINE_PAID` / `FINE_WAIVED` | Termasuk alasan pembebasan | [M-09](../02-modules/m09-loans.md) |
 | `HOLIDAY_CREATED` / `HOLIDAY_UPDATED` / `HOLIDAY_DELETED` | Perubahan daftar hari libur | [M-20](../02-modules/m20-settings.md) |
 | `LOAN_CHECKIN` | Pengembalian beserta kondisi akhir | [M-09](../02-modules/m09-loans.md) |

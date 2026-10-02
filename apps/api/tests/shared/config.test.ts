@@ -30,6 +30,11 @@ const SAH_API = {
     ...envJwtUji(PEM),
     TOTP_ENCRYPTION_KEY: KUNCI_TOTP,
     S3_PUBLIC_ENDPOINT: "https://storage.sekolah.example/sigm4/",
+    S3_ENDPOINT: "http://minio:9000/",
+    S3_REGION: "us-west-004",
+    S3_BUCKET: "sigm4",
+    S3_ACCESS_KEY: "kunci-akses",
+    S3_SECRET_KEY: "kunci-rahasia",
     APP_BASE_URL: "https://sigm4.sekolah.example/",
 };
 
@@ -172,6 +177,28 @@ describe("readApiConfig — APP_BASE_URL (FR-05.1, SDD-SYS-14; PR-03-01)", () =>
             expect(() => readApiConfig({ ...SAH_API, APP_BASE_URL: nilai }, "UTC")).toThrow(/APP_BASE_URL harus URL https berhost/);
         },
     );
+});
+
+describe("readApiConfig — object storage sisi server (SDD-FS-13; PR-03-04)", () => {
+    const S3 = ["S3_ENDPOINT", "S3_REGION", "S3_BUCKET", "S3_ACCESS_KEY", "S3_SECRET_KEY"];
+
+    it("kelima variabel wajib; seluruh yang hilang dilaporkan sekaligus, tanpa mencetak nilai", () => {
+        expect(masalahDari(() => readApiConfig(tanpa(SAH_API, ...S3), "UTC"))).toEqual(S3.map((n) => `Variabel lingkungan ${n} wajib diisi (SDD-INF-08).`));
+        const pesan = masalahDari(() => readApiConfig({ ...SAH_API, S3_ENDPOINT: "minio:9000" }, "UTC")).join(" ");
+        expect(pesan).toMatch(/S3_ENDPOINT harus URL absolut/);
+        expect(pesan).not.toContain("kunci-rahasia");
+    });
+
+    it("endpoint menjadi origin; endpoint penandatangan = origin S3_PUBLIC_ENDPOINT; region B2 diteruskan apa adanya", () => {
+        expect(readApiConfig(SAH_API, "UTC").objectStorage).toEqual({
+            endpoint: "http://minio:9000",
+            publicEndpoint: "https://storage.sekolah.example",
+            region: "us-west-004",
+            bucket: "sigm4",
+            accessKey: "kunci-akses",
+            secretKey: "kunci-rahasia",
+        });
+    });
 });
 
 describe("readApiConfig — CHROMIUM_EXECUTABLE_PATH (SDD-FS-12; PR-03-02)", () => {
