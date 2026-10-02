@@ -176,13 +176,15 @@ jobs:
                   cache: npm
             - run: npm ci
             # Service container tidak dapat meneruskan argumen `server /data` milik image MinIO,
-            # jadi dinyalakan sebagai langkah. Image dipatok sama dengan docker-compose.yml.
+            # jadi dinyalakan sebagai langkah. Image dipatok sama dengan docker-compose.yml (digest
+            # Chainguard — minio/minio tak lagi dapat ditarik, keputusan 6 log phase-03).
             - name: Nyalakan MinIO + bucket uji
               run: |
                   docker run -d --name minio -p 9000:9000 \
                     -e MINIO_ROOT_USER="$S3_ACCESS_KEY" -e MINIO_ROOT_PASSWORD="$S3_SECRET_KEY" \
-                    minio/minio:RELEASE.2025-04-22T22-12-26Z server /data
+                    chainguard/minio@sha256:0f95aa412a12351a95bb43c3b54b66440eb0aa022bb3f3458942678a489e915b server /data
                   for i in $(seq 1 30); do curl -sf http://localhost:9000/minio/health/ready && break; sleep 2; done
+                  docker exec minio mc ready local
                   docker exec minio mc alias set lokal http://localhost:9000 "$S3_ACCESS_KEY" "$S3_SECRET_KEY"
                   docker exec minio mc mb --ignore-existing "lokal/$S3_BUCKET"
             - name: Uji berkas + integrasi, gerbang cakupan statements & lines ≥ 70%
