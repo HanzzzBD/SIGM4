@@ -118,6 +118,31 @@ const bentukPenyimpananPublik = {
         .transform((v) => new URL(v).origin),
 };
 
+/** Object storage S3-compatible tervalidasi (SDD-FS-13). Kunci rahasia tidak pernah dicetak. */
+export interface KonfigurasiPenyimpanan {
+    /** Origin operasi sisi server (HEAD, cek kesiapan). */
+    readonly endpoint: string;
+    /** Origin yang dijangkau peramban/mobile — host presigned URL (`S3_PUBLIC_ENDPOINT`). */
+    readonly publicEndpoint: string;
+    readonly region: string;
+    readonly bucket: string;
+    readonly accessKey: string;
+    readonly secretKey: string;
+}
+
+// Operasi sisi server ke object storage (SDD-FS-13, PR-03-04; keputusan 5 log phase-03): MinIO di
+// dev/CI, Backblaze B2 lewat API S3-compatible di produksi. Region wajib: SigV4 B2 menandatangani
+// dengan region bucket (mis. `us-west-004`); MinIO menerima nilai apa pun.
+const bentukPenyimpanan = {
+    S3_ENDPOINT: wajib("S3_ENDPOINT")
+        .refine(urlAbsolut, { error: pesan("S3_ENDPOINT", "harus URL absolut berskema http atau https") })
+        .transform((v) => new URL(v).origin),
+    S3_REGION: wajib("S3_REGION"),
+    S3_BUCKET: wajib("S3_BUCKET"),
+    S3_ACCESS_KEY: wajib("S3_ACCESS_KEY"),
+    S3_SECRET_KEY: wajib("S3_SECRET_KEY"),
+};
+
 /** `APP_BASE_URL` sah: https, berhost, tanpa kredensial/query/fragmen — dasar URL permanen label QR. */
 const urlDasarAplikasi = (v: string): boolean => {
     try {
@@ -291,6 +316,8 @@ export interface ApiConfig extends ProcessConfig {
     /** `null` = push tidak dikonfigurasi (keputusan 80a). */
     readonly fcm: KredensialFcm | null;
     readonly objectStoragePublicOrigin: string;
+    /** Akses object storage sisi server (SDD-FS-13, `PR-03-04`); penandatangan memakai origin publik. */
+    readonly objectStorage: KonfigurasiPenyimpanan;
     /** `APP_BASE_URL` tanpa garis miring penutup — dasar payload QR (FR-05.1, `PR-03-01`). */
     readonly appBaseUrl: string;
     /** `CHROMIUM_EXECUTABLE_PATH`; `null` = Chrome terpasang (SDD-FS-12, `PR-03-02`). */
@@ -361,6 +388,7 @@ export function readApiConfig(
             ...bentukLog,
             ...bentukZona,
             ...bentukPenyimpananPublik,
+            ...bentukPenyimpanan,
             ...bentukAplikasi,
             ...bentukPdf,
             ...bentukJwt,
@@ -377,6 +405,14 @@ export function readApiConfig(
         redis: { url: d.REDIS_URL },
         logLevel: d.LOG_LEVEL,
         objectStoragePublicOrigin: d.S3_PUBLIC_ENDPOINT,
+        objectStorage: {
+            endpoint: d.S3_ENDPOINT,
+            publicEndpoint: d.S3_PUBLIC_ENDPOINT,
+            region: d.S3_REGION,
+            bucket: d.S3_BUCKET,
+            accessKey: d.S3_ACCESS_KEY,
+            secretKey: d.S3_SECRET_KEY,
+        },
         appBaseUrl: d.APP_BASE_URL,
         chromiumExecutablePath: d.CHROMIUM_EXECUTABLE_PATH,
         // `periksaKunciJwt` tidak melaporkan masalah bila kedua variabel sah, jadi kunci ada.

@@ -128,6 +128,8 @@ Data acuan bernilai tetap yang digunakan sebagai enumerasi dan dropdown.
 | **Kelompok Parameter Sistem** | Identitas Sekolah, Kode Aset, Peminjaman, Denda, Reservasi, Maintenance, Bahan, Notifikasi, Keamanan, Chatbot AI |
 | **Tipe Parameter Sistem** | Bilangan Bulat, Desimal, Boolean, Teks |
 | **Nama Semester** | Ganjil, Genap |
+| **Status Pemindaian Berkas** | PENDING, CLEAN, INFECTED, FAILED (`SDD-FS-03`) |
+| **Jenis Pemilik Berkas** | ASSET_DOCUMENT, ASSET_PHOTO, USER_PHOTO, HANDOVER_PHOTO, DAMAGE_PHOTO, WORK_ORDER_PHOTO, STOCKTAKE_PHOTO (`SDD-09 §4.3`) |
 | **Jenis Unit Kerja** | Manajemen, Mata Pelajaran, Tata Usaha, Ekstrakurikuler, Kelas |
 | **Status Unit Kerja** | Aktif, Nonaktif |
 
