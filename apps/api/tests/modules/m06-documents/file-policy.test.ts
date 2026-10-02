@@ -41,6 +41,8 @@ describe("urlUnduhBerkas — penjaga SDD-FS-03", () => {
             return Promise.resolve(`https://storage.test/${kunci}`);
         },
         info: () => Promise.resolve(null),
+        ambil: () => Promise.resolve(null),
+        hapus: () => Promise.resolve(),
         periksa: () => Promise.resolve(),
     };
     const clock = new FixedClock(new Date("2026-10-02T03:00:00Z"));

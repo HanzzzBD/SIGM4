@@ -67,6 +67,12 @@ export class StoredFileRepository extends BaseRepository {
         await this.query(ctx).updateTable("stored_files").set({ owner_id: null }).where("id", "=", id).where("owner_type", "=", "USER_PHOTO").where("owner_id", "=", String(ctx.userId)).execute();
     }
 
+/** Putusan pemindaian (SDD-09 §4.2 langkah 4): hanya dari `PENDING` — pengulangan event tidak menimpa. */
+    async tetapkanHasilPindai(ctx: AuthContext, id: string, hasil: Exclude<FileScanStatus, "PENDING">, waktu: Date): Promise<boolean> {
+        const r = await this.query(ctx).updateTable("stored_files").set({ scan_status: hasil, scanned_at: waktu }).where("id", "=", id).where("scan_status", "=", "PENDING").executeTakeFirst();
+        return r.numUpdatedRows > 0n;
+    }
+
     async ambil(ctx: AuthContext, id: string): Promise<BerkasRow | undefined> {
         return this.query(ctx).selectFrom("stored_files").select(KOLOM).where("id", "=", id).executeTakeFirst();
     }

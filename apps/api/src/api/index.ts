@@ -126,7 +126,7 @@ import {
     ruleStatusRoute,
     updateRuleRoute,
 } from "../modules/m10-approval/index.js";
-import { buatPengelolaFotoProfil, confirmRoute, filesRouter, presignRoute } from "../modules/m06-documents/index.js";
+import { KlienClamd, avScannerCheck, buatPengelolaFotoProfil, confirmRoute, filesRouter, presignRoute } from "../modules/m06-documents/index.js";
 import { dashboardCardRoute, dashboardManifestRoute, dashboardRouter } from "../modules/m15-dashboard/index.js";
 import type { HubSse } from "../modules/m17-notifications/index.js";
 import {
@@ -326,6 +326,8 @@ const TANPA_PENYIMPANAN: PenyimpananObjek = {
     urlUnggah: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
     urlUnduh: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
     info: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
+    ambil: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
+    hapus: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
     periksa: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
 };
 
@@ -591,6 +593,8 @@ export async function start(
         redisCheck(getRedis()),
         // OBS-06: menentukan `ready` (SDD-15 §4.5) — tanpa object storage, unggah/unduh gagal.
         objectStorageCheck(penyimpanan),
+        // OBS-06: clamd + kedalaman antrean pindai; tidak menentukan `ready` (SDD-15 §4.5, PR-03-05).
+        avScannerCheck(new KlienClamd(config.antivirus), getDb()),
         // OBS-06: dilaporkan, tidak menentukan `ready` (SDD-15 §4.5, keputusan 80a).
         fcmCheck(config.fcm),
     );

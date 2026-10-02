@@ -42,6 +42,9 @@ import {
     UserService,
     idJobAntreanImpor,
 } from "../modules/m02-users/index.js";
+import { EVENT_BERKAS_TERUNGGAH, FileScanService, KlienClamd, NAMA_PEKERJAAN_PINDAI, idJobPindai } from "../modules/m06-documents/index.js";
+import { PenyimpananS3 } from "../shared/storage/index.js";
+import type { KonfigurasiAntivirus, KonfigurasiPenyimpanan } from "../shared/config/index.js";
 import { PenyiarNotifikasi, buatPengirimPush, fcmCheck, kirimPushNotifikasi, pasangKonsumenNotifikasi } from "../modules/m17-notifications/index.js";
 import type { PengirimPush } from "../modules/m17-notifications/index.js";
 import { createSystemAuthContext } from "../shared/auth/system-context.js";
@@ -139,6 +142,19 @@ export const registry = new JobRegistry().register(
         },
     },
     {
+        // Tanpa cron: dijadwalkan handler `FileUploaded` (SDD-FS-04, PR-03-05). Pelaku SYSTEM (AL-06).
+        name: NAMA_PEKERJAAN_PINDAI,
+        handler: async (job) => {
+            if (pemindaian === undefined) throw new Error("Pemindai berkas belum dipasang bootstrap.");
+            const clock = new SystemClock();
+            const logger = new Logger({ clock, modulBawaan: NAMA_PEKERJAAN_PINDAI });
+            const service = new FileScanService(getDb(), new PenyimpananS3(pemindaian.penyimpanan, clock), new KlienClamd(pemindaian.antivirus), new AuditLogger({ clock, logger }), logger, clock);
+            // Maks. 3 percobaan (RETRY_OPTIONS, SDD-09 §4.2); yang terakhir menutup berkas FAILED.
+            const akhir = job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
+            await service.pindai(pelakuPindai, String((job.data as { file_id: string | number }).file_id), akhir);
+        },
+    },
+    {
         // Tanpa cron: dimasukkan ke antrean oleh handler `UserImportRequested` (IMPT-04).
         name: NAMA_PEKERJAAN_IMPOR,
         handler: async (job) => {
@@ -171,6 +187,10 @@ export const registry = new JobRegistry().register(
  * setelah antrean ada — antrean tidak dapat dibuat pada saat modul dimuat.
  */
 export function pasangHandlerAntrean(handlers: EventHandlerRegistry, queue: Queue): void {
+    handlers.on(EVENT_BERKAS_TERUNGGAH, async (event) => {
+        const fileId = String((event.payload as { file_id: string | number }).file_id);
+        await queue.add(NAMA_PEKERJAAN_PINDAI, { file_id: fileId }, { ...RETRY_OPTIONS, jobId: idJobPindai(fileId) });
+    });
     handlers.on(EVENT_IMPOR_DIMINTA, async (event) => {
         const payload = event.payload as { job_id: string | number; oleh: number };
         // `jobId` tetap: event outbox at-least-once (SDD-EVT-07) tidak melipatgandakan pekerjaan.
@@ -195,6 +215,13 @@ let penyiarNotifikasi: PenyiarNotifikasi | undefined;
 /** Antrean & pengirim push dipasang `bootstrap` (keputusan 80c); sebelum itu push tidak dijadwalkan. */
 let antreanPush: Queue | undefined;
 let pengirimPush: PengirimPush | undefined;
+/** Pemindai AV (SDD-FS-04): alamat storage & clamd dari konfigurasi tervalidasi, dipasang `bootstrap`. */
+const pelakuPindai = createSystemAuthContext(NAMA_PEKERJAAN_PINDAI);
+let pemindaian: { readonly penyimpanan: KonfigurasiPenyimpanan; readonly antivirus: KonfigurasiAntivirus } | undefined;
+/** Uji worker memasang alamat tanpa `bootstrap` penuh. */
+export function pasangPemindaian(penyimpanan: KonfigurasiPenyimpanan, antivirus: KonfigurasiAntivirus): void {
+    pemindaian = { penyimpanan, antivirus };
+}
 pasangKonsumenNotifikasi(eventHandlers, {
     db: getDb,
     clock: new SystemClock(),
@@ -233,6 +260,7 @@ export async function bootstrap(
     const queue = createQueue(connection);
     pasangHandlerAntrean(eventHandlers, queue);
     antreanPush = queue;
+    pasangPemindaian(config.objectStorage, config.antivirus);
     pengirimPush = buatPengirimPush(config.fcm);
     await scheduleAll(queue, registry);
     const worker = createWorker(connection, registry);

@@ -36,6 +36,17 @@ const SAH_API = {
     S3_ACCESS_KEY: "kunci-akses",
     S3_SECRET_KEY: "kunci-rahasia",
     APP_BASE_URL: "https://sigm4.sekolah.example/",
+    CLAMAV_URL: "tcp://clamav:3310",
+};
+
+/** Worker: S3 sisi server + clamd (PR-03-05) — tanpa JWT maupun S3_PUBLIC_ENDPOINT. */
+const S3_DAN_AV = {
+    S3_ENDPOINT: "http://minio:9000/",
+    S3_REGION: "us-west-004",
+    S3_BUCKET: "sigm4",
+    S3_ACCESS_KEY: "kunci-akses",
+    S3_SECRET_KEY: "kunci-rahasia",
+    CLAMAV_URL: "tcp://clamav:3310",
 };
 
 /** Salinan `env` tanpa variabel tertentu. */
@@ -277,7 +288,7 @@ describe("readApiConfig — kunci enkripsi TOTP (SDD-SESS-08, SDD-SYS-14)", () =
 });
 
 describe("readWorkerConfig — TOTP_ENCRYPTION_KEY masuk skema worker (SDD-SESS-11, PR-02-08)", () => {
-    const SAH_WORKER = { ...SAH, TOTP_ENCRYPTION_KEY: KUNCI_TOTP };
+    const SAH_WORKER = { ...SAH, ...S3_DAN_AV, TOTP_ENCRYPTION_KEY: KUNCI_TOTP };
 
     it("TOTP_ENCRYPTION_KEY wajib, dengan pesan yang sama dengan skema API", () => {
         expect(masalahDari(() => readWorkerConfig(tanpa(SAH_WORKER, "TOTP_ENCRYPTION_KEY"), "UTC"))).toEqual([
@@ -300,6 +311,30 @@ describe("readWorkerConfig — TOTP_ENCRYPTION_KEY masuk skema worker (SDD-SESS-
 
     it("TIDAK menuntut JWT_PRIVATE_KEY/JWT_PUBLIC_KEY maupun S3_PUBLIC_ENDPOINT — worker tidak menandatangani token maupun menyajikan presigned URL", () => {
         expect(() => readWorkerConfig(SAH_WORKER, "UTC")).not.toThrow();
+    });
+});
+
+describe("CLAMAV_URL — wajib bagi API dan worker (SDD-FS-04; PR-03-05, keputusan 8a)", () => {
+    const SAH_WORKER = { ...SAH, ...S3_DAN_AV, TOTP_ENCRYPTION_KEY: KUNCI_TOTP };
+
+    it("hilang → startup gagal di kedua proses, dengan pesan yang sama", () => {
+        const pesanWajib = ["Variabel lingkungan CLAMAV_URL wajib diisi (SDD-INF-08)."];
+        expect(masalahDari(() => readApiConfig(tanpa(SAH_API, "CLAMAV_URL"), "UTC"))).toEqual(pesanWajib);
+        expect(masalahDari(() => readWorkerConfig(tanpa(SAH_WORKER, "CLAMAV_URL"), "UTC"))).toEqual(pesanWajib);
+    });
+
+    it.each(["clamav:3310", "http://clamav:3310", "tcp://clamav", "tcp://u:p@clamav:3310", "tcp://clamav:3310/x"])("%s ditolak: harus tcp://host:port", (nilai) => {
+        expect(() => readApiConfig({ ...SAH_API, CLAMAV_URL: nilai }, "UTC")).toThrow("CLAMAV_URL harus berbentuk tcp://host:port");
+    });
+
+    it("terurai menjadi host + port", () => {
+        expect(readApiConfig(SAH_API, "UTC").antivirus).toEqual({ host: "clamav", port: 3310 });
+        expect(readWorkerConfig(SAH_WORKER, "UTC").antivirus).toEqual({ host: "clamav", port: 3310 });
+    });
+
+    it("worker menuntut S3 sisi server untuk membaca & menghapus objek; endpoint penandatangannya = S3_ENDPOINT", () => {
+        expect(masalahDari(() => readWorkerConfig(tanpa(SAH_WORKER, "S3_BUCKET"), "UTC"))).toEqual(["Variabel lingkungan S3_BUCKET wajib diisi (SDD-INF-08)."]);
+        expect(readWorkerConfig(SAH_WORKER, "UTC").objectStorage).toMatchObject({ endpoint: "http://minio:9000", publicEndpoint: "http://minio:9000", bucket: "sigm4" });
     });
 });
 
@@ -342,7 +377,7 @@ describe("entrypoint menolak menyala dengan konfigurasi tidak valid", () => {
 });
 
 describe("FCM_CREDENTIALS — opsional, tervalidasi saat startup (SDD-08 §4.4a, keputusan 80a)", () => {
-    const SAH_WORKER = { ...SAH, TOTP_ENCRYPTION_KEY: KUNCI_TOTP };
+    const SAH_WORKER = { ...SAH, ...S3_DAN_AV, TOTP_ENCRYPTION_KEY: KUNCI_TOTP };
     const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64");
     const AKUN = { project_id: "sigm4-uji", client_email: "push@sigm4-uji.iam.gserviceaccount.com", private_key: "-----BEGIN PRIVATE KEY-----\nrahasia\n-----END PRIVATE KEY-----\n" };
 

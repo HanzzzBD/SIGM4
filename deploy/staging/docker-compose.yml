@@ -17,8 +17,8 @@
 #                                  APP_DB_PASSWORD. API dan worker tidak pernah
 #                                  menerimanya (SDD-16 §4.7, SEC-CFG-03).
 #
-# ClamAV (av-scanner §4.2) belum ada: belum ada adapter yang memanggilnya; ia masuk
-# bersama adapter AV Phase 03 (SDD-FS-04).
+# ClamAV (av-scanner §4.2, SDD-FS-04) masuk bersama adapter pemindaiannya (PR-03-05):
+# worker memindai, API hanya mem-PING-nya untuk `av_scanner` di /health.
 
 name: sigm4-staging
 
@@ -30,6 +30,8 @@ x-app: &app
     environment:
         TZ: UTC # SDD-INF-09 — divalidasi lagi saat startup
         REDIS_URL: redis://redis:6379
+        # Bukan rahasia; WAJIB bagi api & worker (SDD-16 §4.7, keputusan 8a log phase-03).
+        CLAMAV_URL: tcp://clamav:3310
     restart: unless-stopped
     depends_on:
         redis:
@@ -121,8 +123,27 @@ services:
             retries: 12
         restart: unless-stopped
 
+    # SDD-FS-04 — ClamAV sebagai proses terpisah. Tidak menjadi `depends_on` api/worker:
+    # `av_scanner` tidak menentukan `ready` (SDD-15 §4.5), dan pemindaian yang gagal
+    # selama clamd memuat basis data dicoba ulang antrean (maks. 3×, SDD-09 §4.2).
+    # start_period panjang: freshclam memuat/memperbarui basis data saat menyala.
+    clamav:
+        image: clamav/clamav:1.4
+        environment:
+            TZ: UTC
+        volumes:
+            - clamav-db:/var/lib/clamav
+        healthcheck:
+            test: ["CMD", "clamdcheck.sh"]
+            interval: 15s
+            timeout: 10s
+            retries: 20
+            start_period: 300s
+        restart: unless-stopped
+
 volumes:
     letsencrypt:
     certbot-webroot:
     web:
     redis-data:
+    clamav-db:

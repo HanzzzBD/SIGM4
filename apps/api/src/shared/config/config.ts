@@ -143,6 +143,30 @@ const bentukPenyimpanan = {
     S3_SECRET_KEY: wajib("S3_SECRET_KEY"),
 };
 
+/** Alamat clamd (SDD-FS-04): `tcp://host:port`. */
+export interface KonfigurasiAntivirus {
+    readonly host: string;
+    readonly port: number;
+}
+
+/** `tcp://host:port` tanpa jalur, kredensial, query, maupun fragmen. */
+function urlClamd(v: string): KonfigurasiAntivirus | null {
+    try {
+        const u = new URL(v);
+        if (u.protocol !== "tcp:" || u.hostname === "" || u.port === "" || u.username !== "" || u.password !== "" || u.search !== "" || u.hash !== "" || (u.pathname !== "" && u.pathname !== "/")) return null;
+        return { host: u.hostname, port: Number(u.port) };
+    } catch {
+        return null;
+    }
+}
+
+// ClamAV sebagai proses terpisah (SDD-FS-04; PR-03-05, keputusan 8a log phase-03). WAJIB bagi API
+// (`av_scanner` di /health) dan worker (pemindaian): tanpanya berkas menumpuk PENDING dan tak
+// pernah dapat diunduh — lebih baik ketahuan saat deploy.
+const bentukAntivirus = {
+    CLAMAV_URL: wajib("CLAMAV_URL").refine((v) => urlClamd(v) !== null, { error: pesan("CLAMAV_URL", "harus berbentuk tcp://host:port") }),
+};
+
 /** `APP_BASE_URL` sah: https, berhost, tanpa kredensial/query/fragmen — dasar URL permanen label QR. */
 const urlDasarAplikasi = (v: string): boolean => {
     try {
@@ -320,6 +344,8 @@ export interface ApiConfig extends ProcessConfig {
     readonly objectStorage: KonfigurasiPenyimpanan;
     /** `APP_BASE_URL` tanpa garis miring penutup — dasar payload QR (FR-05.1, `PR-03-01`). */
     readonly appBaseUrl: string;
+    /** clamd (`CLAMAV_URL`, SDD-FS-04, `PR-03-05`). */
+    readonly antivirus: KonfigurasiAntivirus;
     /** `CHROMIUM_EXECUTABLE_PATH`; `null` = Chrome terpasang (SDD-FS-12, `PR-03-02`). */
     readonly chromiumExecutablePath: string | null;
     /** Pasangan kunci Ed25519 penandatangan access token; sudah tervalidasi. */
@@ -331,6 +357,12 @@ export interface ApiConfig extends ProcessConfig {
 export interface WorkerConfig extends ProcessConfig {
     /** `null` = push tidak dikonfigurasi (keputusan 80a). */
     readonly fcm: KredensialFcm | null;
+    /**
+     * Pemindai membaca isi objek dan menghapus yang terinfeksi (SDD-FS-04, `PR-03-05`). Worker
+     * tidak pernah menandatangani URL untuk peramban, jadi `publicEndpoint` = `S3_ENDPOINT`.
+     */
+    readonly objectStorage: KonfigurasiPenyimpanan;
+    readonly antivirus: KonfigurasiAntivirus;
     /** Kotak enkripsi secret TOTP (`TOTP_ENCRYPTION_KEY`); sudah tervalidasi. */
     readonly totpKey: KotakRahasia;
 }
@@ -356,6 +388,8 @@ export function readWorkerConfig(
             ...bentukLog,
             ...bentukZona,
             ...bentukTotp,
+            ...bentukPenyimpanan,
+            ...bentukAntivirus,
         }),
         env,
         [...periksaZona(zona), ...totp.masalah, ...fcm.masalah],
@@ -370,6 +404,16 @@ export function readWorkerConfig(
         // `periksaKunciTotp` hanya diam bila variabelnya sah.
         totpKey: totp.kotak!,
         fcm: fcm.kredensial ?? null,
+        objectStorage: {
+            endpoint: d.S3_ENDPOINT,
+            publicEndpoint: d.S3_ENDPOINT,
+            region: d.S3_REGION,
+            bucket: d.S3_BUCKET,
+            accessKey: d.S3_ACCESS_KEY,
+            secretKey: d.S3_SECRET_KEY,
+        },
+        // `bentukAntivirus` sudah menolak bentuk yang tak terurai.
+        antivirus: urlClamd(d.CLAMAV_URL)!,
     };
 }
 
@@ -391,6 +435,7 @@ export function readApiConfig(
             ...bentukPenyimpanan,
             ...bentukAplikasi,
             ...bentukPdf,
+            ...bentukAntivirus,
             ...bentukJwt,
             ...bentukTotp,
         }),
@@ -415,6 +460,7 @@ export function readApiConfig(
         },
         appBaseUrl: d.APP_BASE_URL,
         chromiumExecutablePath: d.CHROMIUM_EXECUTABLE_PATH,
+        antivirus: urlClamd(d.CLAMAV_URL)!,
         // `periksaKunciJwt` tidak melaporkan masalah bila kedua variabel sah, jadi kunci ada.
         jwtKeys: jwt.kunci!,
         // Sama: `periksaKunciTotp` hanya diam bila variabelnya sah.

@@ -106,7 +106,8 @@ CREATE INDEX stored_files_pending_scan
      stored_files.scan_status = PENDING
      terbitkan event FileUploaded                  -> SDD-07
 
-4. Worker: ClamAV memindai
+4. Worker: magic bytes vs MIME (§4.3), lalu ClamAV memindai   antrean file-scan
+     setiap putusan akhir dicatat FILE_SCANNED (pelaku SYSTEM)
      bersih    -> CLEAN
      terinfeksi-> INFECTED + hapus objek + alarm keamanan
      gagal     -> FAILED, coba ulang maksimum 3x

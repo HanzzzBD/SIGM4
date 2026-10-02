@@ -215,6 +215,7 @@ Setiap langkah memiliki penanggung jawab bernama dan cara verifikasi. Runbook wa
 ```
 # Wajib — startup gagal bila kosong (SDD-INF-08)
 DATABASE_URL, REDIS_URL, S3_ENDPOINT, S3_PUBLIC_ENDPOINT, S3_REGION, S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY
+CLAMAV_URL        (tcp://host:port — api: av_scanner di /health; worker: pemindaian, SDD-FS-04)
 JWT_PRIVATE_KEY, JWT_PUBLIC_KEY, TOTP_ENCRYPTION_KEY
 GEMINI_API_KEY
 APP_BASE_URL, TZ=UTC
@@ -231,7 +232,7 @@ CHROMIUM_EXECUTABLE_PATH   (SDD-FS-12, PR-03-02: kosong = Chrome terpasang; imag
 
 **Kunci TOTP** (`PR-02-07`). `TOTP_ENCRYPTION_KEY` berformat base64 dari tepat **32 byte** (`openssl rand -base64 32`); ia mengenkripsi secret TOTP (AES-256-GCM, `SDD-SESS-08`) dan **terpisah** dari kunci JWT karena siklus rotasinya berbeda. Startup menolak nilai yang bukan base64 sah atau bukan 32 byte tanpa mencetak isinya. Kehilangan kunci ini berarti seluruh 2FA harus didaftarkan ulang (SDD-04 §6): cadangkan terpisah dari basis data. API memvalidasinya sejak `PR-02-07`; worker (termasuk CLI break-glass, `SDD-SESS-11`) memvalidasinya sejak `PR-02-08` — meski logikanya sendiri tidak mendekripsi apa pun, validasi menutup celah startup diam-diam (`SDD-INF-08`).
 
-**Validasi bertahap.** Daftar di atas adalah keadaan akhir. Skema `shared/config` (`SDD-SYS-14`) memuat sebuah variabel sejak PR pertama yang memakainya; sebelum itu variabel tersebut tidak dituntut. `S3_ENDPOINT` dipakai operasi sisi server, sedangkan `S3_PUBLIC_ENDPOINT` — origin yang dapat dijangkau peramban dan aplikasi mobile — dipakai presigned URL dan `img-src` (`SDD-FS-13`). `APP_BASE_URL` adalah origin halaman publik QR (`https://{domain}/a/{asset_uuid}`, `FR-05.1`) dan masuk skema bersama `PR-03-01`.
+**Validasi bertahap.** Daftar di atas adalah keadaan akhir. Skema `shared/config` (`SDD-SYS-14`) memuat sebuah variabel sejak PR pertama yang memakainya; sebelum itu variabel tersebut tidak dituntut. `S3_ENDPOINT` dipakai operasi sisi server, sedangkan `S3_PUBLIC_ENDPOINT` — origin yang dapat dijangkau peramban dan aplikasi mobile — dipakai presigned URL dan `img-src` (`SDD-FS-13`). `CLAMAV_URL` (`PR-03-05`, keputusan 8a log phase-03) wajib bagi API dan worker; worker sejak PR yang sama juga menuntut `S3_ENDPOINT`/`S3_REGION`/`S3_BUCKET`/`S3_ACCESS_KEY`/`S3_SECRET_KEY` karena pemindai membaca dan menghapus objek, tetapi tidak `S3_PUBLIC_ENDPOINT`. `APP_BASE_URL` adalah origin halaman publik QR (`https://{domain}/a/{asset_uuid}`, `FR-05.1`) dan masuk skema bersama `PR-03-01`.
 
 **Dua akun basis data, dua variabel.** `DATABASE_URL` memuat akun **aplikasi** — `sigm4_app`, tanpa hak DDL dan tanpa `UPDATE`/`DELETE` atas `activity_logs` (`SEC-CFG-03`, `AL-03b`, `SDD-DB-11`). `MIGRATION_DATABASE_URL` memuat akun **migration** ber-DDL yang memiliki skema, dan **hanya** job migration (`SDD-INF-03`) yang membacanya; proses API dan worker tidak pernah menerimanya. Bila ia tidak diisi, jalur migration jatuh kembali ke `DATABASE_URL` — kemudahan pengembangan yang di production ditutup oleh kenyataan bahwa akun aplikasi memang tidak dapat menjalankan DDL.
 

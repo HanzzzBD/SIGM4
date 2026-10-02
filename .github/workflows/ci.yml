@@ -153,6 +153,14 @@ jobs:
                 options: >-
                     --health-cmd "redis-cli ping"
                     --health-interval 5s --health-timeout 3s --health-retries 12
+            # ClamAV NYATA (PR-03-05, keputusan 8d log phase-03) — image sama dengan docker-compose.yml;
+            # basis data virus ikut di dalam image, jadi yang ditunggu hanya pemuatannya (±1 menit).
+            clamav:
+                image: clamav/clamav:1.4
+                ports: ["3310:3310"]
+                options: >-
+                    --health-cmd "clamdcheck.sh"
+                    --health-interval 10s --health-timeout 10s --health-retries 30
         env:
             # Kredensial container sekali-pakai milik job ini, bukan rahasia.
             DATABASE_URL: postgres://sigm4:sigm4_ci@localhost:5432/sigm4?sslmode=disable
@@ -168,6 +176,7 @@ jobs:
             S3_BUCKET: sigm4-ci
             S3_ACCESS_KEY: sigm4ci
             S3_SECRET_KEY: sigm4_ci_secret
+            CLAMAV_URL: tcp://localhost:3310
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
             - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
