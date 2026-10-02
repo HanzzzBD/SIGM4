@@ -75,7 +75,12 @@ FROM node:22-alpine
 # temuan High/Critical Trivy pada PR-00-17 seluruhnya berasal dari sana, bukan
 # dari dependensi proyek. Paket OS diperbarui agar perbaikan Alpine yang sudah
 # terbit (mis. OpenSSL) tidak menunggu base image berikutnya (keputusan 47, CD-01).
+#
+# Chromium dari apk (SDD-FS-12, PR-03-02): unduhan browser Playwright tidak berjalan di musl, jadi
+# `playwright-core` memakai Chromium Alpine lewat CHROMIUM_EXECUTABLE_PATH. Font ttf-freefont agar
+# teks label punya glif — Alpine tanpa font apa pun merender kotak kosong.
 RUN apk upgrade --no-cache \
+    && apk add --no-cache chromium ttf-freefont \
     && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
               /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
               /opt/yarn-* /usr/local/bin/yarn /usr/local/bin/yarnpkg \
@@ -109,7 +114,7 @@ USER app
 
 # TZ=UTC dipaksa di sini dan diverifikasi lagi saat startup (SDD-INF-09, INF-07).
 # Konversi ke WIB adalah urusan lapisan penyajian (NFR-C-10).
-ENV NODE_ENV=production TZ=UTC
+ENV NODE_ENV=production TZ=UTC CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 EXPOSE 3000
 CMD ["node", "apps/api/dist/api/index.js"]

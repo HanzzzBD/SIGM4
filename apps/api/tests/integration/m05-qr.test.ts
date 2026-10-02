@@ -15,6 +15,7 @@ import type { Scope } from "../../src/shared/auth/index.js";
 import { FixedClock } from "../../src/shared/clock/index.js";
 import { getDb } from "../../src/shared/db/index.js";
 import { HealthRegistry, Logger } from "../../src/shared/observability/index.js";
+import { PembangkitPdfChromium } from "../../src/shared/pdf/index.js";
 import { authPalsu } from "../helpers/auth.js";
 import { dbmate, kueri } from "../helpers/db.js";
 
@@ -25,6 +26,10 @@ const UUIDV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
 
 const ADMIN = ["asset.view", "asset.create", "asset.qr_print", "asset.qr_regenerate"];
 const PETUGAS = ["asset.view", "asset.create", "asset.qr_print"];
+
+// Chromium SUNGGUHAN (Chrome terpasang — dev & runner CI); satu uji menggantinya dengan yang gagal.
+const chromium = new PembangkitPdfChromium(process.env["CHROMIUM_EXECUTABLE_PATH"] ?? null);
+let pembangkit = (html: string) => chromium.render(html);
 
 let urut = 0;
 const kode = (a: string) => `${a}${String(++urut)}${randomUUID().slice(0, 6)}`;
@@ -48,6 +53,7 @@ describe.skipIf(!ADA)("PR-03-01 — payload QR + siklus hidup label (acceptance)
             clock,
             db: getDb(),
             auth: authPalsu(),
+            pdf: { render: (html) => pembangkit(html) },
         });
         const luar = express();
         luar.use((req, res, next) => {
@@ -185,6 +191,72 @@ describe.skipIf(!ADA)("PR-03-01 — payload QR + siklus hidup label (acceptance)
             expect((await minta("PATCH", "/assets/qr-terpasang", ["asset.view"], { asset_ids: [Number(a!.id)], qr_terpasang: true })).status).toBe(403);
             expect((await minta("PATCH", "/assets/qr-terpasang", PETUGAS, { asset_ids: [], qr_terpasang: true })).status).toBe(400);
             expect((await minta("PATCH", "/assets/qr-terpasang", PETUGAS, { asset_ids: Array.from({ length: 201 }, (_, i) => i + 1), qr_terpasang: true })).status).toBe(400);
+        });
+    });
+
+    describe("POST /assets/qr/print (FR-05.1 langkah 2–4, PR-03-02)", () => {
+        const cetak = async (perms: readonly string[], body: unknown) => {
+            const mulai = performance.now();
+            const res = await fetch(`${url}/assets/qr/print`, { method: "POST", headers: { "x-uji-perms": perms.join(","), "content-type": "application/json" }, body: JSON.stringify(body) });
+            const isi = Buffer.from(await res.arrayBuffer());
+            return { status: res.status, jenis: res.headers.get("content-type") ?? "", unduhan: res.headers.get("content-disposition") ?? "", isi, ms: performance.now() - mulai };
+        };
+        const ELEMEN = { kode_aset: true, nama: true };
+        // Skia menulis tiap halaman sebagai `/Type /Page` dan MediaBox dalam poin (A4 = 595,28 × 841,89).
+        const halaman = (pdf: Buffer) => pdf.toString("latin1").match(/\/Type\s*\/Page\b/g)?.length ?? 0;
+        const mediaBox = (pdf: Buffer) => /\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/.exec(pdf.toString("latin1"))?.slice(1).map(Number) ?? [];
+
+        it("200 label (batas AC) → satu PDF 1.7 A4, 9 lembar 3×8, ≤ 30 detik (AC FR-05.1, NFR-P-07); ASSET_QR_PRINTED + jumlah", async () => {
+            const aset = await buat(200);
+            const r = await cetak(PETUGAS, { asset_ids: aset.map((a) => Number(a.id)), tata_letak: "A4_3X8", elemen: ELEMEN });
+            expect(r.status).toBe(200);
+            expect(r.jenis).toBe("application/pdf");
+            expect(r.unduhan).toBe('attachment; filename="label-qr.pdf"');
+            expect(r.isi.subarray(0, 8).toString("latin1")).toBe("%PDF-1.7"); // NFR-C-07
+            expect(halaman(r.isi)).toBe(9);
+            const [lebar, tinggi] = mediaBox(r.isi);
+            expect(lebar).toBeCloseTo(595.28, -1);
+            expect(tinggi).toBeCloseTo(841.89, -1);
+            // AC FR-05.1/NFR-P-07: ≤ 30 detik. Anggaran sinkron SDD-PERF-06 (≤ 5 detik) TIDAK ditegakkan di sini:
+            // runner CI berbagi CPU dengan cakupan v8 + suite paralel (terukur 9,7 dtk) — ia dibuktikan pada image
+            // produksi dan uji beban staging (SDD-FS-12; keputusan 2g log phase-03).
+            console.info(`[PR-03-02] 200 label A4_3X8: ${r.ms.toFixed(0)} ms, ${String(r.isi.length)} byte`);
+            expect(r.ms).toBeLessThan(30_000);
+            const [entri] = await log("ASSET_QR_PRINTED");
+            expect(entri?.nilai_sesudah).toEqual({ jumlah: 200, tata_letak: "A4_3X8", asset_ids: aset.map((a) => a.id) });
+            // A1 — cetak ulang tidak mengubah UUID: label lama tetap sah.
+            const uuid = await kueri<{ uuid: string }>(`SELECT uuid::text FROM assets WHERE id IN (${aset.map((a) => a.id).join(",")}) ORDER BY id`);
+            expect(uuid.map((u) => u.uuid)).toEqual(aset.map((a) => a.uuid));
+        });
+
+        it("tanpa asset.qr_print → 403, tanpa PDF dan tanpa log (PM-02)", async () => {
+            const [a] = await buat();
+            const r = await cetak(["asset.view", "asset.update"], { asset_ids: [Number(a!.id)], tata_letak: "A4_3X8", elemen: ELEMEN });
+            expect(r.status).toBe(403);
+            expect(await log("ASSET_QR_PRINTED")).toEqual([]);
+        });
+
+        it("bentuk: kosong, > 200 aset, preset tak dikenal → 400; satu id tak ada → 422 tanpa log", async () => {
+            const [a] = await buat();
+            expect((await cetak(PETUGAS, { asset_ids: [], tata_letak: "A4_3X8", elemen: ELEMEN })).status).toBe(400);
+            expect((await cetak(PETUGAS, { asset_ids: Array.from({ length: 201 }, (_, i) => i + 1), tata_letak: "A4_3X8", elemen: ELEMEN })).status).toBe(400);
+            expect((await cetak(PETUGAS, { asset_ids: [Number(a!.id)], tata_letak: "A4_9X9", elemen: ELEMEN })).status).toBe(400);
+            const hilang = await cetak(PETUGAS, { asset_ids: [Number(a!.id), 999999999], tata_letak: "A4_3X8", elemen: ELEMEN });
+            expect(hilang.status).toBe(422);
+            expect(JSON.parse(hilang.isi.toString("utf8"))).toMatchObject({ error: { code: "VALIDATION_ERROR" } });
+            expect(await log("ASSET_QR_PRINTED")).toEqual([]);
+        });
+
+        it("render gagal → 500 dan ASSET_QR_PRINTED TIDAK dicatat (log hanya untuk PDF yang benar-benar jadi)", async () => {
+            const [a] = await buat();
+            const asli = pembangkit;
+            pembangkit = () => Promise.reject(new Error("Chromium mati"));
+            try {
+                expect((await cetak(PETUGAS, { asset_ids: [Number(a!.id)], tata_letak: "A4_2X5", elemen: ELEMEN })).status).toBe(500);
+            } finally {
+                pembangkit = asli;
+            }
+            expect(await log("ASSET_QR_PRINTED")).toEqual([]);
         });
     });
 });

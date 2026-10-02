@@ -174,6 +174,14 @@ describe("readApiConfig — APP_BASE_URL (FR-05.1, SDD-SYS-14; PR-03-01)", () =>
     );
 });
 
+describe("readApiConfig — CHROMIUM_EXECUTABLE_PATH (SDD-FS-12; PR-03-02)", () => {
+    it("opsional: kosong/tak ada → null (Chrome terpasang); terisi → path dipangkas", () => {
+        expect(readApiConfig(SAH_API, "UTC").chromiumExecutablePath).toBeNull();
+        expect(readApiConfig({ ...SAH_API, CHROMIUM_EXECUTABLE_PATH: "  " }, "UTC").chromiumExecutablePath).toBeNull();
+        expect(readApiConfig({ ...SAH_API, CHROMIUM_EXECUTABLE_PATH: " /usr/bin/chromium-browser " }, "UTC").chromiumExecutablePath).toBe("/usr/bin/chromium-browser");
+    });
+});
+
 describe("readApiConfig — kunci JWT (SDD-SESS-02, SDD-SYS-14)", () => {
     it("JWT_PRIVATE_KEY dan JWT_PUBLIC_KEY wajib", () => {
         const tanpaJwt = tanpa(SAH_API, "JWT_PRIVATE_KEY", "JWT_PUBLIC_KEY");

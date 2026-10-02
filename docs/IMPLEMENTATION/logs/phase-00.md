@@ -171,7 +171,7 @@ Kolom ketiga adalah yang paling berharga di seluruh log ini. Pola yang berulang 
 - [x] Tipe tabel Kysely (`SDD-DB-15`) disegarkan pada PR yang sama dengan migration yang mengubah bentuk tabel — **berlaku pertama kali di `PR-00-07`**: `0003` membuat `document_counters`, dan `Database` pada `shared/db/schema.ts` ikut terisi pada PR yang sama. Butir ini tetap berlaku bagi setiap migration berikutnya
 - [ ] Perpanjangan sertifikat certbot (`SDD-INF-13`, `INF-06`) terpantau alarm — kegagalannya tidak boleh baru diketahui saat sertifikat kedaluwarsa
 - [ ] *Readiness gate* `SDD-INF-04` dibuktikan di staging: Nginx OSS hanya memeriksa upstream secara **pasif**, sehingga gerbangnya sepenuhnya bersandar pada skrip deploy `SDD-INF-10`
-- [ ] Ukuran image setelah Chromium masuk (`SDD-FS-12`) diukur dan dicatat di §8 — bila menjadi persoalan, jalannya memisahkan image (`SDD-INF-01`), bukan mengganti pembangkit PDF
+- [x] Ukuran image setelah Chromium masuk (`SDD-FS-12`) diukur dan dicatat di §8 (`PR-03-02`: 1,78 GB) — bila menjadi persoalan, jalannya memisahkan image (`SDD-INF-01`), bukan mengganti pembangkit PDF
 - [ ] `CODEOWNERS` diganti tim arsitek, lalu *required approvals* dan *Code Owners review* dinyalakan bersamaan (`GITHUB-CI-STATE §4`) — keduanya sengaja mati selama pemiliknya satu orang
 - [ ] Nomor surat persetujuan lintas yurisdiksi (`SDD-AI-16`) dilengkapi sebelum `GL-07` diperiksa — pelacakannya sudah ada di `phase-08.md` §8/§9 dan `RELEASE-PLAN.md` §2
 - [ ] Pembangkitan OpenAPI dari skema Zod berjalan (`SDD-API-11`, `SDD-API-02`) dan `/api/docs` tidak aktif di produksi (`SDD-API-12`)
@@ -305,6 +305,7 @@ Angka nyata, bukan perkiraan. Kosongkan bila belum diukur — jangan diisi tebak
 | Ejaan kolom waktu-dibuat di tabel SDD | 1 | 3 → **1** (`created_at`; `activity_logs.waktu` dikecualikan tertulis) | `SDD-05 §4.2` |
 | ID dirujuk tetapi tak pernah didefinisikan | 0 | **0** dari 786 ID | `audit_docs.py` |
 | Endpoint pada indeks tergenerate | — | 119 → **124** | `gen_indexes.py` |
+| Ukuran image setelah Chromium masuk (`SDD-FS-12`; diukur di `PR-03-02`, 2 Oktober 2026) | dicatat (`SDD-16 §5`) | **1,78 GB** tak terkompresi (`docker images`, build lokal) — lapisan `apk add chromium ttf-freefont` **810 MB** (Chromium 308 MB, `libLLVM` 182 MB tarikan Mesa); `playwright-core` 13 MB. Pembanding terdekat: image 15 September 373 MB. Trivy atas paket Chromium belum dijalankan lokal — gerbangnya CI `PR-03-02` | `SDD-INF-01`, log phase-03 keputusan 2 |
 
 ## 9. Gerbang keluar
 

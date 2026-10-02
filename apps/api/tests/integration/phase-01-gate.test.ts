@@ -442,6 +442,8 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 // PR-03-01 (M-05): label terpasang, lalu regenerasi UUID — dua route tulis M-05.
                 await langkah("PATCH /assets/qr-terpasang", "/assets/qr-terpasang", { asset_ids: [Number(asetId)], qr_terpasang: true }, ["ASSET_UPDATED"]);
                 await langkah("POST /assets/:id/qr/regenerate", `/assets/${asetId}/qr/regenerate`, { alasan: "Uji gerbang AL-01" }, ["ASSET_QR_REGENERATED"]);
+                // PR-03-02 (M-05): cetak label — PDF, bukan JSON; log ASSET_QR_PRINTED.
+                await langkah("POST /assets/qr/print", "/assets/qr/print", { asset_ids: [Number(asetId)], tata_letak: "A4_3X8", elemen: { kode_aset: true, nama: true } }, ["ASSET_QR_PRINTED"]);
                 await langkah(
                     "PATCH /assets/:id/condition",
                     `/assets/${asetId}/condition`,

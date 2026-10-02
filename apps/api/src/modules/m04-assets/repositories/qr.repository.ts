@@ -12,6 +12,13 @@ export interface QrAsetRow {
     readonly qr_terpasang: boolean;
 }
 
+export interface LabelAsetRow {
+    readonly id: string;
+    readonly uuid: string;
+    readonly kode_barang: string;
+    readonly nama: string;
+}
+
 export class QrRepository extends BaseRepository {
     constructor(executor: QueryExecutor) {
         super(executor);
@@ -38,6 +45,12 @@ export class QrRepository extends BaseRepository {
             .returning("uuid")
             .executeTakeFirstOrThrow();
         return baris.uuid;
+    }
+
+    /** FR-05.1 langkah 3 (PR-03-02): isi label — tanpa kunci; label tidak mengubah baris. */
+    async untukLabel(ctx: AuthContext, ids: readonly number[]): Promise<readonly LabelAsetRow[]> {
+        if (ids.length === 0) return [];
+        return this.query(ctx).selectFrom("assets").select(["id", "uuid", "kode_barang", "nama"]).where("id", "in", ids.map(String)).execute();
     }
 
     async setQrTerpasang(ctx: AuthContext, ids: readonly number[], nilai: boolean): Promise<void> {

@@ -3,12 +3,15 @@
 // (AL-01, SDD-SYS-03). Pembuatan payload & matriks QR: `shared/qr`.
 
 import type { Kysely } from "kysely";
-import { gantiUuidAset, tandaiQrTerpasang } from "../../m04-assets/index.js";
+import { asetUntukLabel, gantiUuidAset, tandaiQrTerpasang } from "../../m04-assets/index.js";
 import type { AuditLogger } from "../../../shared/audit/index.js";
 import type { AuthContext } from "../../../shared/auth/index.js";
 import type { Database } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
+import type { PembangkitPdf } from "../../../shared/pdf/index.js";
 import { urlQrAset } from "../../../shared/qr/index.js";
+import type { ElemenLabel, KodeTataLetak } from "./label-html.js";
+import { htmlLabel } from "./label-html.js";
 
 const MODUL = "m05-qr";
 
@@ -18,6 +21,7 @@ export class QrService {
         private readonly audit: AuditLogger,
         /** `APP_BASE_URL` tervalidasi (`shared/config`). */
         private readonly dasarQr: string,
+        private readonly pdf: PembangkitPdf,
     ) {}
 
     /**
@@ -43,6 +47,28 @@ export class QrService {
             },
             this.db,
         );
+    }
+
+    /**
+     * FR-05.1 langkah 2–4 dan A1 (cetak ulang — UUID tidak berubah, jadi label lama tetap sah).
+     * Render terjadi DI LUAR transaksi agar koneksi basis data tidak tertahan selama Chromium
+     * bekerja; `ASSET_QR_PRINTED` (m05 §11, beserta jumlah) dicatat setelah PDF benar-benar jadi.
+     */
+    async cetakLabel(ctx: AuthContext, input: { readonly assetIds: readonly number[]; readonly tataLetak: KodeTataLetak; readonly elemen: ElemenLabel }): Promise<Buffer> {
+        const label = await withTransaction(ctx, (scope) => asetUntukLabel(scope, input.assetIds), this.db);
+        const pdf = await this.pdf.render(htmlLabel(this.dasarQr, label, input.tataLetak, input.elemen));
+        await withTransaction(
+            ctx,
+            (scope) =>
+                this.audit.write(scope, {
+                    modul: MODUL,
+                    aksi: "ASSET_QR_PRINTED",
+                    entitas: "assets",
+                    nilaiSesudah: { jumlah: label.length, tata_letak: input.tataLetak, asset_ids: label.map((l) => String(l.id)) },
+                }),
+            this.db,
+        );
+        return pdf;
     }
 
     /** FR-05.1 langkah 5 (dan A1 — label dilepas): atomik; `ASSET_UPDATED` per aset yang berubah. */
