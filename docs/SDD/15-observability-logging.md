@@ -191,6 +191,7 @@ Sejak proses menerima `SIGTERM`, `/health/ready` menjawab tidak siap **tanpa mem
 | Disk | > 80% | Tinggi | Partisi log? berkas? |
 | Cadangan gagal | Sekali | Kritis | RPO terancam (`NFR-R-01`) |
 | Sertifikat TLS | < 14 hari | Tinggi | Perbarui |
+| Berkas terinfeksi terdeteksi (log `error`, `alarm: FILE_INFECTED`) | Sekali | Kritis | Siapa pengunggahnya? berkas sejenis lain? objek sudah terhapus (SDD-09 §4.6, keputusan 8c log phase-03) |
 | Kegagalan tulis activity log | Sekali | Kritis | `AL-08` — transaksi lanjut tapi jejak hilang |
 | Rantai hash log terputus | Sekali | Kritis | Dugaan manipulasi; eskalasi ke Kepala Sekolah |
 | Konsumsi kuota / batas laju Gemini API | > ambang (**TBD-AI-C**) | Sedang | Kuota harian tier gratis mendekati habis atau 429 berulang; tinjau pemakaian, pertimbangkan pengalih (`AI-CTL-09`) |
