@@ -15,7 +15,7 @@
 
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { performance } from "node:perf_hooks";
 import express from "express";
 import type { Server } from "node:http";
@@ -30,9 +30,10 @@ import { AuditLogger, ensurePartitions } from "../../src/shared/audit/index.js";
 import { AMR_OTP, PermissionCache, createAuthContext, setAmr, setAuthContext } from "../../src/shared/auth/index.js";
 import { setSesiId } from "../../src/shared/auth/middleware.js";
 import { closeRedis, createRedis, readRedisConfig } from "../../src/shared/cache/index.js";
-import { FixedClock } from "../../src/shared/clock/index.js";
+import { FixedClock, SystemClock } from "../../src/shared/clock/index.js";
 import { getDb } from "../../src/shared/db/index.js";
 import { HealthRegistry, Logger } from "../../src/shared/observability/index.js";
+import { PenyimpananS3 } from "../../src/shared/storage/index.js";
 import { authPalsu, daftarkanTotpUji } from "../helpers/auth.js";
 import { dbmate, kueri } from "../helpers/db.js";
 
@@ -93,6 +94,19 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
             clock,
             db: getDb(),
             auth: authPalsu(),
+            // PR-03-25: route unggah M-06 ikut disapu AL-01 — MinIO nyata (dev & job integrasi CI).
+            penyimpanan: new PenyimpananS3(
+                {
+                    endpoint: process.env["S3_ENDPOINT"] ?? "",
+                    publicEndpoint: process.env["S3_ENDPOINT"] ?? "",
+                    region: process.env["S3_REGION"] ?? "",
+                    bucket: process.env["S3_BUCKET"] ?? "",
+                    accessKey: process.env["S3_ACCESS_KEY"] ?? "",
+                    secretKey: process.env["S3_SECRET_KEY"] ?? "",
+                },
+                // Tanda tangan SigV4 diperiksa MinIO terhadap jam nyata — bukan jam beku T1.
+                new SystemClock(),
+            ),
         });
         // Pengganti `authenticate` (PR-02-02): mode dipilih uji lewat `modeAktif`.
         const luar = express();
@@ -446,6 +460,11 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await langkah("POST /assets/:id/qr/regenerate", `/assets/${asetId}/qr/regenerate`, { alasan: "Uji gerbang AL-01" }, ["ASSET_QR_REGENERATED"]);
                 // PR-03-02 (M-05): cetak label — PDF, bukan JSON; log ASSET_QR_PRINTED.
                 await langkah("POST /assets/qr/print", "/assets/qr/print", { asset_ids: [Number(asetId)], tata_letak: "A4_3X8", elemen: { kode_aset: true, nama: true } }, ["ASSET_QR_PRINTED"]);
+                // PR-03-25 (M-06): presign tanpa log (keputusan 5c log phase-03); confirm mencatat FILE_UPLOADED.
+                const isiBerkas = Buffer.from("berkas uji gerbang AL-01");
+                const pesanan = (await langkah("POST /files/presign", "/files/presign", { jenis: "USER_PHOTO", mime: "image/png", ukuran: isiBerkas.length }, [])).json.data as { upload_url: string; file_id: string };
+                expect((await fetch(pesanan.upload_url, { method: "PUT", headers: { "content-type": "image/png" }, body: new Uint8Array(isiBerkas) })).status).toBe(200);
+                await langkah("POST /files/confirm", "/files/confirm", { file_id: pesanan.file_id, checksum: createHash("sha256").update(isiBerkas).digest("hex") }, ["FILE_UPLOADED"]);
                 await langkah(
                     "PATCH /assets/:id/condition",
                     `/assets/${asetId}/condition`,
@@ -583,6 +602,10 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await kueri("DELETE FROM approval_rules"); // PR-02-24: created_by/updated_by menunjuk users (langkah ikut CASCADE)
                 await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'approval_instance'");
                 await kueri("DELETE FROM idempotency_keys WHERE endpoint LIKE 'POST /approvals/%'");
+                // PR-03-25: stored_files.uploaded_by menunjuk users; event FileUploaded dari confirm.
+                await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'stored_file'");
+                await kueri("UPDATE users SET foto_file_id = NULL");
+                await kueri("DELETE FROM stored_files");
                 await kueri("DELETE FROM users");
             }
         }, 120_000);

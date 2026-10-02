@@ -301,8 +301,8 @@ sequenceDiagram
 | POST | `/auth/password/requests/{id}/issue` | `user.reset_password` | Terbitkan password sementara; `metode_verifikasi` wajib; password tampil **satu kali** pada respons | 200 `{permintaan, password_sementara}` | 400, 401, 403, 404, 422 |
 | POST | `/auth/password/requests/{id}/reject` | `user.reset_password` | Tolak permintaan; `alasan` wajib (`FR-01.3 A2`) | 200 `{permintaan}` | 400, 401, 403, 404, 422 |
 | POST | `/auth/password/change` | Bearer | Ganti password sendiri | 200 | 401, 422 |
-| GET | `/me` | Bearer | Profil & permission pengguna | 200 `{user, permissions}` | 401 |
-| PUT | `/me` | Bearer | Perbarui profil sendiri | 200 | 401, 422 |
+| GET | `/me` | Bearer | Profil & permission pengguna; foto profil sebagai `foto_status` + `foto_url` (URL hanya bila berkas `CLEAN`, `SDD-FS-03`) | 200 `{user, permissions}` | 401 |
+| PUT | `/me` | Bearer | Perbarui profil sendiri — nama, telepon, `foto_file_id` (berkas `USER_PHOTO` milik pemanggil yang sudah dikonfirmasi; `null` menghapus foto) | 200 | 401, 422 |
 
 **Gerbang 2FA (`BR-070`).** Role Administrator dan Pimpinan Sekolah yang sesinya baru membuktikan password ditolak `403 TWO_FACTOR_REQUIRED` pada seluruh endpoint terlindung, termasuk yang permission-nya mereka pegang. Yang terjangkau hanya `POST /auth/2fa/enroll`, `POST /auth/2fa/enroll/confirm`, dan `POST /auth/logout`. Role lain tidak terpengaruh, dengan atau tanpa 2FA.
 
@@ -356,7 +356,7 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | `ACCOUNT_LOCKED` / `ACCOUNT_UNLOCKED` | Penguncian akibat percobaan gagal (kegagalan ke-5 dalam jendela 15 menit). Kunci yang berakhir sendiri tidak menulis entri |
 | `PASSWORD_CHANGED` | Ganti password sendiri (`FR-01.4`); memuat jumlah sesi lain yang dicabut, tanpa merekam nilai password |
 | `PASSWORD_RESET_REQUESTED` / `PASSWORD_RESET_ISSUED` / `PASSWORD_RESET_REJECTED` | Alur reset administratif. `PASSWORD_RESET_REQUESTED` dicatat tanpa pelaku (pemohon belum login; akun sasaran pada entitas), juga untuk percobaan yang tidak menghasilkan permintaan — email tak terdaftar, akun nonaktif, melebihi batas — dengan hasil `Gagal` dan tanpa menyimpan email yang dicoba. `PASSWORD_RESET_ISSUED` memuat metode verifikasi dan jumlah sesi yang dicabut. Tidak satu pun memuat password |
-| `PROFILE_UPDATED` | Perubahan nama/telepon profil sendiri (`FR-01.4` langkah 5, `PUT /me`); foto menunggu `PR-03-04` |
+| `PROFILE_UPDATED` | Perubahan nama/telepon/foto profil sendiri (`FR-01.4` langkah 5, `PUT /me`); foto dicatat sebagai `foto_file_id` |
 | `TWO_FA_ENABLED` / `TWO_FA_DISABLED` / `TWO_FA_RESET` | Perubahan 2FA. `TWO_FA_ENABLED` memuat jumlah sesi lain yang dicabut (`BR-070e`) |
 | `TWO_FA_ENROLLMENT_STARTED` | Pendaftaran 2FA dimulai (secret dan kode cadangan dibangkitkan). Secret dan kode tidak pernah dicatat |
 | `TWO_FA_BACKUP_CODES_REGENERATED` | Seluruh kode cadangan diganti (`FR-01.5` AC); nilainya tidak dicatat |

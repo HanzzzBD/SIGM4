@@ -76,6 +76,7 @@ import type { HasilKodeAktivasiCli, HasilPemulihan } from "./services/break-glas
 import { PasswordResetService } from "./services/password-reset.service.js";
 import { PengelolaDuaFaktorService } from "./services/pengelola-dua-faktor.service.js";
 import { ProfileService } from "./services/profile.service.js";
+import type { PengelolaFotoProfil } from "./services/profile.service.js";
 import { SessionService } from "./services/session.service.js";
 import type { PenyimpanTantangan } from "./services/tantangan-dua-faktor.js";
 import { TwoFactorService } from "./services/two-factor.service.js";
@@ -292,14 +293,14 @@ export const lihatProfilRoute = defineRoute({
     response: MeResponseSchema,
 });
 
-/** Email dan role tidak diterima di sini (`BR-069`); foto menunggu `PR-03-04` (keputusan 4). */
+/** Email dan role tidak diterima di sini (`BR-069`); foto lewat `foto_file_id` (`PR-03-25`). */
 export const perbaruiProfilRoute = defineRoute({
     method: "PUT",
     path: "/me",
     authenticated: true,
     rateLimitClass: "default",
     module: MODUL,
-    summary: "Perbarui nama/telepon profil sendiri",
+    summary: "Perbarui nama/telepon/foto profil sendiri",
     body: UpdateProfilBodySchema,
     response: UpdateProfilResponseSchema,
 });
@@ -328,6 +329,8 @@ export interface AuthModuleDeps {
     readonly kotakTotp: KotakRahasia;
     /** Penyimpan challenge 2FA (`SDD-SESS-10`): Redis pada produksi. */
     readonly penyimpanTantangan: PenyimpanTantangan;
+    /** Foto profil (FR-01.4, `PR-03-25`) — dipenuhi M-06 di composition root. */
+    readonly fotoProfil: PengelolaFotoProfil;
 }
 
 /** Opsi `authenticated()` dari deklarasi route: pengecualian 2FA hidup di SATU tempat, deklarasinya. */
@@ -354,7 +357,7 @@ export function authRouter(
     const duaFaktor = new TwoFactorService(deps.db, deps.jwtKeys, deps.auditLogger, deps.clock, deps.kotakTotp);
     const sesi = new SessionService(deps.db, deps.auditLogger, deps.clock);
     const reset = new PasswordResetService(deps.db, deps.auditLogger, deps.clock, deps.logger);
-    const profil = new ProfileService(deps.db, deps.jwtKeys, deps.permissionCache, deps.auditLogger, deps.clock);
+    const profil = new ProfileService(deps.db, deps.jwtKeys, deps.permissionCache, deps.auditLogger, deps.clock, deps.fotoProfil);
     const router = express.Router();
     router.post(loginRoute.path, batasi(loginRoute), loginHandler(service));
     router.post(refreshRoute.path, batasi(refreshRoute), refreshHandler(service));

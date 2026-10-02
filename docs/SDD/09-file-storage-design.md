@@ -128,6 +128,7 @@ Langkah 3 dan 5 sengaja terpisah: berkas dapat diunggah lebih dulu (mis. antrean
 | Foto hasil work order | JPG, PNG | 2 MB | `FR-12.3` |
 | Foto opname | JPG, PNG | 2 MB | `FR-13.2` |
 | Foto profil | JPG, PNG | 2 MB | `FR-01.4` |
+| Foto aset (`asset_photos`) | JPG, PNG | 2 MB | `MOB-MED-01` — disamakan dengan foto lain (`PR-03-25`, keputusan 7a log phase-03) |
 | Berita acara PDF (dihasilkan sistem) | PDF | — | `FR-13.3`, `FR-21.2` |
 
 Validasi MIME dilakukan **dua kali**: saat presign (berdasarkan deklarasi klien) dan saat pemindaian (berdasarkan *magic bytes* isi berkas). Ketidakcocokan menandai berkas `INFECTED`.
@@ -162,6 +163,7 @@ Dibuat worker saat `FileUploaded` untuk MIME gambar. Kegagalan pembuatan turunan
 | Berkas yatim > 24 jam | Objek dan baris dihapus (`SDD-FS-09`) |
 | Entitas induk dihapuskan | Berkas **tetap** disimpan — Bab 11.4 mengikat masa hidup berkas pada entitas induk yang sendiri tidak pernah dihapus permanen (`BR-008`) |
 | Dokumen dihapus pengguna | `stored_files` ditandai, objek dipertahankan, penghapusan tercatat (`FR-06.1 A2`) |
+| Foto profil diganti atau dihapus pemiliknya (`PUT /me`) | Foto lama dilepas (`owner_id` NULL) menjadi yatim dan dibersihkan `SDD-FS-09`; pergantiannya tercatat `PROFILE_UPDATED` (`PR-03-25`, keputusan 7b log phase-03) |
 | Berkas `INFECTED` | Objek dihapus segera; baris dipertahankan sebagai jejak |
 | Pseudonimisasi subjek data (`DP-04`) | Foto **tidak disentuh** — tidak dikaburkan, tidak dihapus (`DP-05a`, `SDD-FS-11`). Yang dipseudonimkan adalah kolom identitas pada `users`; foto tetap menjadi bukti, dilindungi `DP-05` |
 

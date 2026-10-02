@@ -55,7 +55,7 @@
 | GET | `/materials/{id}/transactions` | `material.view` | Kartu stok — riwayat transaksi | [M-22](../02-modules/m22-materials.md) |
 | GET | `/materials/{id}` | `material.view` | Detail bahan beserta saldo per lokasi | [M-22](../02-modules/m22-materials.md) |
 | GET | `/materials` | `material.view` | Daftar bahan + saldo (filter kategori, lokasi, status stok) | [M-22](../02-modules/m22-materials.md) |
-| GET | `/me` | Bearer | Profil & permission pengguna | 200 `{user, permissions}` | 401 | [M-01](../02-modules/m01-auth.md) |
+| GET | `/me` | Bearer | Profil & permission pengguna; foto profil sebagai `foto_status` + `foto_url` (URL hanya bila berkas `CLEAN`, `SDD-FS-03`) | 200 `{user, permissions}` | 401 | [M-01](../02-modules/m01-auth.md) |
 | GET | `/notifications/preferences` | `notification.manage_own` | Baca preferensi notifikasi sendiri (enam kelompok × dua kanal) | [M-17](../02-modules/m17-notifications.md) |
 | GET | `/notifications/stream` | `notification.manage_own` | Aliran notifikasi real-time via SSE (NTF-01) | [M-17](../02-modules/m17-notifications.md) |
 | GET | `/notifications` | `notification.manage_own` | Daftar notifikasi pengguna | [M-17](../02-modules/m17-notifications.md) |
@@ -162,7 +162,7 @@
 | PUT | `/asset-categories/{id}` | `category.manage` | Perbarui kategori | [M-04](../02-modules/m04-assets.md) |
 | PUT | `/assets/{id}` | `asset.update` | Perbarui aset | [M-04](../02-modules/m04-assets.md) |
 | PUT | `/holidays/{id}` | `setting.manage` | Sunting hari libur | [M-20](../02-modules/m20-settings.md) |
-| PUT | `/me` | Bearer | Perbarui profil sendiri | 200 | 401, 422 | [M-01](../02-modules/m01-auth.md) |
+| PUT | `/me` | Bearer | Perbarui profil sendiri — nama, telepon, `foto_file_id` (berkas `USER_PHOTO` milik pemanggil yang sudah dikonfirmasi; `null` menghapus foto) | 200 | 401, 422 | [M-01](../02-modules/m01-auth.md) |
 | PUT | `/notifications/preferences` | `notification.manage_own` | Atur preferensi notifikasi | [M-17](../02-modules/m17-notifications.md) |
 | PUT | `/roles/{id}/permissions` | `role.update` | Perbarui matriks permission | [M-02](../02-modules/m02-users.md) |
 | PUT | `/rooms/{id}` | `location.manage` | Perbarui ruangan | [M-03](../02-modules/m03-locations.md) |
