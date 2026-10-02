@@ -110,7 +110,7 @@ import {
     moveAssetsRoute,
     updateAssetConditionRoute,
 } from "../modules/m04-assets/index.js";
-import { printQrRoute, qrRouter, qrTerpasangRoute, regenerateQrRoute } from "../modules/m05-qr/index.js";
+import { assetByUuidRoute, printQrRoute, publicAssetRoute, qrRouter, qrTerpasangRoute, regenerateQrRoute } from "../modules/m05-qr/index.js";
 import {
     approvalRouter,
     createRuleRoute,
@@ -226,6 +226,8 @@ export const registry = new RouteRegistry().register(
     listAssetsRoute,
     updateAssetConditionRoute,
     moveAssetsRoute,
+    assetByUuidRoute,
+    publicAssetRoute,
     printQrRoute,
     regenerateQrRoute,
     qrTerpasangRoute,

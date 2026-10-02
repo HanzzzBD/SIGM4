@@ -3,7 +3,7 @@
 // (AL-01, SDD-SYS-03). Pembuatan payload & matriks QR: `shared/qr`.
 
 import type { Kysely } from "kysely";
-import { asetUntukLabel, gantiUuidAset, tandaiQrTerpasang } from "../../m04-assets/index.js";
+import { asetByUuid, asetUntukLabel, gantiUuidAset, profilPublikAset, tandaiQrTerpasang } from "../../m04-assets/index.js";
 import type { AuditLogger } from "../../../shared/audit/index.js";
 import type { AuthContext } from "../../../shared/auth/index.js";
 import type { Database } from "../../../shared/db/index.js";
@@ -47,6 +47,17 @@ export class QrService {
             },
             this.db,
         );
+    }
+
+    /** FR-05.2 langkah 3 (PR-03-03): baca saja — tanpa entri log (bukan operasi tulis, AL-01). */
+    async pindai(ctx: AuthContext, uuid: string) {
+        const aset = await withTransaction(ctx, (scope) => asetByUuid(scope, uuid), this.db);
+        return { ...aset.baris, qr_url: urlQrAset(this.dasarQr, String(aset.baris["uuid"])), kategori_nama: aset.kategoriNama, lokasi: aset.lokasi };
+    }
+
+    /** FR-05.2 A3 (PR-03-03): tanpa pengguna — lihat pengecualian `PublicAssetRepository`. */
+    async profilPublik(uuid: string) {
+        return profilPublikAset(this.db, uuid);
     }
 
     /**

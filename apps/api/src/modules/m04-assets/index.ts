@@ -22,3 +22,8 @@ export { sinkronkanStatusDireservasi } from "./services/reservation-status.js";
 /** Kolom QR `assets` atas permintaan M-05 (FR-05.1, PR-03-01). */
 export type { LabelAset } from "./services/qr-aset.js";
 export { asetUntukLabel, gantiUuidAset, tandaiQrTerpasang } from "./services/qr-aset.js";
+/** Resolusi pindaian QR atas permintaan M-05 (FR-05.2, PR-03-03). */
+export type { AsetPindaian, LokasiAset, ProfilPublikAset } from "./services/scan-aset.js";
+export { asetByUuid, profilPublikAset } from "./services/scan-aset.js";
+/** Bentuk item katalog — dipakai ulang respons pemindaian M-05 (keputusan 3a log phase-03). */
+export { AssetCatalogItemSchema } from "./schemas/asset.schema.js";
