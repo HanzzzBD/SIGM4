@@ -97,7 +97,7 @@ M-08 ──(paralel, tanpa ketergantungan internal)
 | `PR-04-07` | Jadwal pemeliharaan preventif + job pembangkit | L | L | 05 | `FR-12.2`, `BR-048` `BR-049`, `CAL-01` … `CAL-03` | Jadwal melompati hari libur |
 | `PR-04-08` | Eksekusi work order oleh teknisi (mobile, luring) | L | L | 05 | `FR-12.3`, `BR-050` `BR-051`, `SDD-MOB-05` | Antrean unggah bertahan saat aplikasi ditutup |
 | `PR-04-09` | Verifikasi & penutupan work order | M | M | 08 | `FR-12.4`, `BR-053` | Penutupan memutakhirkan kondisi aset (`BR-005b`) |
-| `PR-04-10` | Riwayat servis aset | S | S | 09 | `FR-12.5` | Riwayat menyatu dengan linimasa aset |
+| `PR-04-10` | Riwayat servis aset | S | S | 09 | `FR-12.5` | Riwayat menyatu dengan linimasa aset — jenis entri pemeliharaan pada `GET /assets/{id}/timeline` (`PR-03-24`, keputusan 4 log phase-03) |
 | `PR-04-11` | Skema sesi opname + pembuatan sesi | M | M | Ph03 | `FR-13.1`, `BR-054` `BR-055` | Satu sesi aktif per cakupan |
 | `PR-04-12` | Pelaksanaan opname via pemindaian (mobile, luring, massal) | L | L | 11, Ph03 | `FR-13.2`, `BR-056` `BR-057`, `SDD-MOB-03` | 200 pemindaian luring tersinkron tanpa duplikat |
 | `PR-04-13` | Rekonsiliasi & penyelesaian sesi opname | L | L | 12 | `FR-13.3`, `BR-058` `BR-059`, `BR-012` | Selisih menghasilkan tindak lanjut, bukan sekadar laporan |
