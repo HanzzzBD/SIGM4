@@ -1,5 +1,4 @@
 // Route M-05 (SDD-AUTH-01, PM-01) + perakit router modul. Katalog: m05-qr.md §7.
-// `GET /assets/by-uuid/{uuid}`, `GET /public/assets/{uuid}` → PR-03-03.
 
 import express from "express";
 import type { RequestHandler, Router } from "express";
@@ -9,12 +8,39 @@ import type { Database } from "../../shared/db/index.js";
 import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
 import type { PembangkitPdf } from "../../shared/pdf/index.js";
-import { printQrHandler, qrTerpasangHandler, regenerateQrHandler } from "./controllers/qr.controller.js";
-import { AssetIdParamSchema, PrintQrBodySchema, PrintQrResponseSchema, QrTerpasangBodySchema, QrTerpasangResponseSchema, RegenerateQrBodySchema, RegenerateQrResponseSchema } from "./schemas/qr.schema.js";
+import { assetByUuidHandler, printQrHandler, publicAssetHandler, qrTerpasangHandler, regenerateQrHandler } from "./controllers/qr.controller.js";
+import { AssetByUuidResponseSchema, AssetIdParamSchema, AssetUuidParamSchema, PrintQrBodySchema, PublicAssetResponseSchema, PrintQrResponseSchema, QrTerpasangBodySchema, QrTerpasangResponseSchema, RegenerateQrBodySchema, RegenerateQrResponseSchema } from "./schemas/qr.schema.js";
 import { QrService } from "./services/qr.service.js";
 
 /** Pemilik katalog endpoint M-05 (m05-qr.md §7). */
 const MODUL = "m05-qr";
+
+/** FR-05.2 langkah 3 — `asset.view` (seluruh role; aksi lanjutan klien menyesuaikan permission). */
+export const assetByUuidRoute = defineRoute({
+    method: "GET",
+    path: "/assets/by-uuid/:uuid",
+    permission: "asset.view",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Detail aset dari hasil pindai QR; QR tak dikenal → 404 (FR-05.2 langkah 3, A1, A2)",
+    params: AssetUuidParamSchema,
+    response: AssetByUuidResponseSchema,
+});
+
+/**
+ * FR-05.2 A3 — PUBLIK (17.5 butir 1–2): atribut non-sensitif, `public-asset` 20/menit per IP,
+ * `X-Robots-Tag: noindex, nofollow`.
+ */
+export const publicAssetRoute = defineRoute({
+    method: "GET",
+    path: "/public/assets/:uuid",
+    public: true,
+    rateLimitClass: "public-asset",
+    module: MODUL,
+    summary: "Info dasar aset untuk pindai kamera bawaan — tanpa login (FR-05.2 A3)",
+    params: AssetUuidParamSchema,
+    response: PublicAssetResponseSchema,
+});
 
 /**
  * FR-05.1 langkah 2–4 — `asset.qr_print` (Administrator, Petugas Sarana Prasarana; keputusan 2 log
@@ -75,6 +101,8 @@ export interface QrModuleDeps {
 export function qrRouter(deps: QrModuleDeps, batasi: (route: RouteDefinition) => RequestHandler, otorisasi: (permission: string) => RequestHandler): Router {
     const service = new QrService(deps.db, deps.auditLogger, deps.appBaseUrl, deps.pdf);
     const router = express.Router();
+    router.get(assetByUuidRoute.path, batasi(assetByUuidRoute), otorisasi(assetByUuidRoute.permission), assetByUuidHandler(service));
+    router.get(publicAssetRoute.path, batasi(publicAssetRoute), publicAssetHandler(service));
     router.post(printQrRoute.path, batasi(printQrRoute), otorisasi(printQrRoute.permission), printQrHandler(service));
     router.post(regenerateQrRoute.path, batasi(regenerateQrRoute), otorisasi(regenerateQrRoute.permission), regenerateQrHandler(service));
     router.patch(qrTerpasangRoute.path, batasi(qrTerpasangRoute), otorisasi(qrTerpasangRoute.permission), qrTerpasangHandler(service));

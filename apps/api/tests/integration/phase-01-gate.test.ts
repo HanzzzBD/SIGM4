@@ -203,11 +203,13 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
             expect(gagal).toEqual([]);
         });
 
-        it("route publik hanya probe kesehatan, login/refresh (PR-02-02), dan forgot password (PR-02-05), dan dapat dijangkau tanpa AuthContext", async () => {
+        it("route publik hanya probe kesehatan, login/refresh (PR-02-02), dan forgot password (PR-02-05), halaman publik aset (PR-03-03), dan dapat dijangkau tanpa AuthContext", async () => {
             const publik = registry.publicRoutes().map((r) => `${r.method} ${r.path}`).sort();
-            expect(publik).toEqual(["GET /health/live", "GET /health/ready", "POST /auth/2fa/verify", "POST /auth/login", "POST /auth/password/forgot", "POST /auth/refresh"]);
+            expect(publik).toEqual(["GET /health/live", "GET /health/ready", "GET /public/assets/:uuid", "POST /auth/2fa/verify", "POST /auth/login", "POST /auth/password/forgot", "POST /auth/refresh"]);
             expect((await panggil("tanpa", "GET", "/health/live")).status).toBe(200);
             expect((await panggil("tanpa", "GET", "/health/ready")).status).toBe(200);
+            // FR-05.2 A3: tanpa AuthContext dijawab layanan (404 QR tak dikenal), bukan 401.
+            expect((await panggil("tanpa", "GET", `/public/assets/${randomUUID()}`)).status).toBe(404);
         });
     });
 

@@ -52,6 +52,8 @@ Kegagalan memisahkan keduanya adalah penyebab paling umum kebocoran lintas hak a
 
 **SDD-AUTH-02 — `AuthContext` wajib, bukan opsional.** Bila parameter scope bersifat opsional, suatu hari akan ada pemanggil yang lupa mengirimnya dan kueri mengembalikan seluruh baris. Menjadikannya parameter wajib memindahkan kesalahan itu ke waktu kompilasi/uji, bukan ke produksi.
 
+**Pengecualian tertulis `SDD-AUTH-02`** — hanya di tempat yang memang tidak mungkin memiliki `AuthContext`, masing-masing tanpa `BaseRepository`, satu kueri berkunci pasti, dan tidak pernah mengembalikan daftar: `AuthRepository` (pra-autentikasi, [SDD-04 §4.2](04-authentication-session.md)), `CliRepository` (CLI break-glass, SDD-04), dan **`PublicAssetRepository`** (`GET /public/assets/{uuid}`, `FR-05.2 A3`; `PR-03-03`, keputusan 3 log phase-03) — pengunjung halaman publik tidak login. Pagar penggantinya: kunci UUIDv4 yang tak dapat ditebak, daftar kolom tetap non-sensitif (17.5 butir 2) yang dikunci uji, dan pemanggil tunggal di `m04-assets`. Menambah pengecualian berikutnya menuntut tinjauan arsitek (`BRANCHING-STRATEGY §3.1`).
+
 **SDD-AUTH-03 — menolak Row-Level Security.** RLS terlihat menggoda karena menegakkan scope di lapisan terdalam. Ditolak dengan tiga alasan:
 
 1. **Connection pooling.** Aplikasi memakai satu akun basis data dengan pool bersama (`INF-04`, `SEC-CFG-03`). RLS memerlukan identitas per-sesi (`SET LOCAL`), yang harus disetel dan dibersihkan pada setiap peminjaman koneksi. Satu kebocoran `SET LOCAL` = satu permintaan berjalan dengan identitas pengguna sebelumnya. Risikonya justru lebih besar daripada yang dihilangkan.

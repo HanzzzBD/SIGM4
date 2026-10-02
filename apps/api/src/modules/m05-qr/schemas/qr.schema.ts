@@ -1,6 +1,7 @@
 // Skema Zod M-05 (SDD-API-01, SDD-API-11; PR-03-01, keputusan 1 log phase-03).
 
 import { z } from "zod";
+import { AssetCatalogItemSchema } from "../../m04-assets/index.js";
 
 export const AssetIdParamSchema = z.object({ id: z.coerce.number().int().positive() });
 
@@ -26,6 +27,36 @@ export const PrintQrBodySchema = z.strictObject({
 });
 
 export const PrintQrResponseSchema = z.string().describe("Berkas PDF (biner) label QR siap cetak — lihat header Content-Disposition.");
+
+/**
+ * FR-05.2 (PR-03-03): string bebas, BUKAN `z.uuid()` — QR asing/rusak dijawab 404 "tidak dikenali"
+ * (A1) oleh layanan, bukan 400, sehingga klien punya satu jalur cadangan (input kode manual).
+ */
+export const AssetUuidParamSchema = z.object({ uuid: z.string().max(100) });
+
+const LokasiSchema = z.object({ gedung: z.string(), area: z.string(), ruang: z.string() });
+
+/** Item katalog `GET /assets` + nama kategori/lokasi + penanda terhapuskan (A2; keputusan 3a). */
+export const AssetByUuidResponseSchema = z.object({
+    success: z.literal(true),
+    data: AssetCatalogItemSchema.extend({ kategori_nama: z.string(), lokasi: LokasiSchema, dihapuskan: z.boolean() }),
+    meta: z.null(),
+});
+
+/** FR-05.2 A3, 17.5 butir 2: atribut non-sensitif SAJA — tanpa id internal, nilai, biaya, maupun orang. */
+export const PublicAssetResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.strictObject({
+        kode_barang: z.string(),
+        nama: z.string(),
+        kategori: z.string(),
+        lokasi: LokasiSchema,
+        kondisi: AssetCatalogItemSchema.shape.kondisi,
+        status: AssetCatalogItemSchema.shape.status,
+        aktif: z.boolean(),
+    }),
+    meta: z.null(),
+});
 
 export const RegenerateQrResponseSchema = z.object({
     success: z.literal(true),

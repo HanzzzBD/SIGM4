@@ -200,7 +200,7 @@ export const ListAssetsQuerySchema = z.object({
  * tidak pernah ter-SELECT bagi pemanggil tanpa `asset.view_financial`
  * (BR-073, SDD-AUTH-06) — bukan `null`, melainkan TIDAK ADA pada respons.
  */
-const AssetCatalogItemSchema = z.object({
+export const AssetCatalogItemSchema = z.object({
     id: z.string(),
     uuid: z.string(),
     kode_barang: z.string(),

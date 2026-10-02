@@ -9,6 +9,7 @@ import type { AddressInfo } from "node:net";
 import express from "express";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../../src/api/index.js";
+import { publicAssetRoute } from "../../src/modules/m05-qr/index.js";
 import { fcmCheck } from "../../src/modules/m17-notifications/index.js";
 import { AMR_OTP, createAuthContext, setAmr, setAuthContext } from "../../src/shared/auth/index.js";
 import type { Scope } from "../../src/shared/auth/index.js";
@@ -57,8 +58,11 @@ describe.skipIf(!ADA)("PR-03-01 — payload QR + siklus hidup label (acceptance)
         });
         const luar = express();
         luar.use((req, res, next) => {
+            // `x-uji-anonim`: tanpa AuthContext sama sekali — pengunjung halaman publik (FR-05.2 A3).
+            if (req.header("x-uji-anonim") !== undefined) return next();
+            // `perm:scope` (mis. `asset.view:restricted`) — bawaan `all`.
             const perms = (req.header("x-uji-perms") ?? "").split(",").filter((p) => p !== "");
-            setAuthContext(res, createAuthContext({ userId: pengguna, roleCode: "R-01", scopes: new Map<string, Scope>(perms.map((p) => [p, "all"])) }));
+            setAuthContext(res, createAuthContext({ userId: pengguna, roleCode: "R-01", scopes: new Map<string, Scope>(perms.map((p) => [p.split(":")[0]!, (p.split(":")[1] ?? "all") as Scope])) }));
             setAmr(res, ["pwd", AMR_OTP]);
             next();
         });
@@ -191,6 +195,71 @@ describe.skipIf(!ADA)("PR-03-01 — payload QR + siklus hidup label (acceptance)
             expect((await minta("PATCH", "/assets/qr-terpasang", ["asset.view"], { asset_ids: [Number(a!.id)], qr_terpasang: true })).status).toBe(403);
             expect((await minta("PATCH", "/assets/qr-terpasang", PETUGAS, { asset_ids: [], qr_terpasang: true })).status).toBe(400);
             expect((await minta("PATCH", "/assets/qr-terpasang", PETUGAS, { asset_ids: Array.from({ length: 201 }, (_, i) => i + 1), qr_terpasang: true })).status).toBe(400);
+        });
+    });
+
+    describe("pemindaian QR (FR-05.2, PR-03-03)", () => {
+        const ambil = async (path: string, headers: Record<string, string>) => {
+            const res = await fetch(`${url}${path}`, { headers });
+            return { status: res.status, robots: res.headers.get("x-robots-tag"), json: (await res.json()) as { data?: Record<string, unknown>; error?: { code: string; message: string } } };
+        };
+        const pindai = (uuid: string, perms: readonly string[]) => ambil(`/assets/by-uuid/${uuid}`, { "x-uji-perms": perms.join(",") });
+        const publik = (uuid: string) => ambil(`/public/assets/${uuid}`, { "x-uji-anonim": "1" });
+        const TAK_DIKENAL = { code: "NOT_FOUND", message: "QR tidak dikenali. Masukkan kode aset secara manual." };
+
+        it("langkah 3: UUID → profil setara item katalog + nama kategori & lokasi; tanpa field finansial (BR-073)", async () => {
+            const [a] = await buat();
+            await kueri(`UPDATE assets SET nilai_perolehan = 4500000 WHERE id = ${a!.id}`);
+            const r = await pindai(a!.uuid.toUpperCase(), ["asset.view"]);
+            expect(r.status).toBe(200);
+            expect(r.json.data).toMatchObject({ id: a!.id, uuid: a!.uuid, qr_url: `${DASAR}/a/${a!.uuid}`, kategori_nama: "Proyektor QR", lokasi: { gedung: "G", area: "A", ruang: "R" }, dihapuskan: false, kondisi: "BAIK" });
+            expect(r.json.data).not.toHaveProperty("nilai_perolehan");
+            expect(r.json.data).not.toHaveProperty("sumber_perolehan");
+            const keuangan = await pindai(a!.uuid, ["asset.view", "asset.view_financial"]);
+            expect(keuangan.json.data).toMatchObject({ nilai_perolehan: "4500000.00", sumber_perolehan: "PEMBELIAN" });
+        });
+
+        it("A1: QR tak dikenal — UUID asing, bukan UUIDv4, injeksi, UUID lama pasca regenerasi → 404 jelas, bukan 500", async () => {
+            const [a] = await buat();
+            await minta("POST", `/assets/${a!.id}/qr/regenerate`, ADMIN, { alasan: "Uji A1" });
+            for (const uuid of [randomUUID(), "bukan-uuid", "00000000-0000-1000-8000-000000000000", "x'%3B%20DROP%20TABLE%20assets--", a!.uuid]) {
+                const r = await pindai(uuid, ["asset.view"]);
+                expect(r.status, uuid).toBe(404);
+                expect(r.json.error).toMatchObject(TAK_DIKENAL);
+                const p = await publik(uuid);
+                expect(p.status, uuid).toBe(404);
+                expect(p.json.error).toMatchObject(TAK_DIKENAL);
+            }
+        });
+
+        it("A2: aset terhapuskan tetap ditemukan, bertanda tidak aktif (by-uuid dihapuskan=true, publik aktif=false)", async () => {
+            const [a] = await buat();
+            await kueri(`UPDATE assets SET dihapuskan = true, tanggal_penghapusan = now() WHERE id = ${a!.id}`);
+            expect((await pindai(a!.uuid, ["asset.view"])).json.data).toMatchObject({ dihapuskan: true });
+            expect((await publik(a!.uuid)).json.data).toMatchObject({ aktif: false });
+        });
+
+        it("otorisasi: tanpa asset.view → 403; scope restricted (Siswa/OSIS) hanya aset boleh_dipinjam_siswa, selainnya 404", async () => {
+            const [a, b] = await buat(2);
+            await kueri(`UPDATE assets SET boleh_dipinjam_siswa = true WHERE id = ${b!.id}`);
+            await kueri(`UPDATE assets SET boleh_dipinjam_siswa = false WHERE id = ${a!.id}`);
+            expect((await pindai(a!.uuid, ["asset.create"])).status).toBe(403);
+            expect((await pindai(a!.uuid, ["asset.view:restricted"])).json.error).toMatchObject(TAK_DIKENAL);
+            expect((await pindai(b!.uuid, ["asset.view:restricted"])).status).toBe(200);
+            // Tanpa login sama sekali: jalur terlindungi tetap 401, bukan bocor ke publik.
+            expect((await ambil(`/assets/by-uuid/${a!.uuid}`, { "x-uji-anonim": "1" })).status).toBe(401);
+        });
+
+        it("A3 publik tanpa login: HANYA kode, nama, kategori, lokasi, kondisi, status, aktif; noindex; kelas public-asset", async () => {
+            const [a] = await buat();
+            await kueri(`UPDATE assets SET nilai_perolehan = 4500000, nomor_seri = 'SN-RAHASIA', penanggung_jawab_id = ${String(pengguna)} WHERE id = ${a!.id}`);
+            const r = await publik(a!.uuid);
+            expect(r.status).toBe(200);
+            expect(r.robots).toBe("noindex, nofollow");
+            expect(r.json.data).toEqual({ kode_barang: expect.any(String), nama: "Proyektor", kategori: "Proyektor QR", lokasi: { gedung: "G", area: "A", ruang: "R" }, kondisi: "BAIK", status: "TERSEDIA", aktif: true });
+            expect(JSON.stringify(r.json)).not.toMatch(/4500000|SN-RAHASIA|Admin QR|"id"|uuid/);
+            expect(publicAssetRoute.rateLimitClass).toBe("public-asset");
+            expect(publicAssetRoute.public).toBe(true);
         });
     });
 
