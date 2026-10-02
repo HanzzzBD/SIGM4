@@ -98,7 +98,7 @@
 | POST | `/asset-disposals` | `disposal.create` | Buat usulan penghapusan aset | [M-21](../02-modules/m21-disposal.md) |
 | POST | `/assets/import` | `asset.create` | Impor massal | [M-04](../02-modules/m04-assets.md) |
 | POST | `/assets/move` | `asset.update` | Mutasi lokasi (massal) | [M-04](../02-modules/m04-assets.md) |
-| POST | `/assets/qr/print` | `asset.update` | Hasilkan PDF label QR massal | [M-05](../02-modules/m05-qr.md) |
+| POST | `/assets/qr/print` | `asset.qr_print` | Hasilkan PDF label QR massal (1–200 aset; FR-05.1 langkah 2–4, A1) | [M-05](../02-modules/m05-qr.md) |
 | POST | `/assets/{id}/documents` | `asset_document.manage` | Tautkan dokumen aset dari berkas terdaftar | [M-06](../02-modules/m06-documents.md) |
 | POST | `/assets/{id}/qr/regenerate` | `asset.qr_regenerate` | Regenerasi UUID aset — QR lama otomatis tidak berlaku; alasan wajib (FR-05.1 A2, UX-04) | [M-05](../02-modules/m05-qr.md) |
 | POST | `/assets/{id}/reinstate` | `disposal.reinstate` | Pulihkan aset yang telah dihapuskan | [M-21](../02-modules/m21-disposal.md) |

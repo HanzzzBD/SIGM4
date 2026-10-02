@@ -17,6 +17,28 @@ export async function gantiUuidAset(scope: TransactionScope, assetId: number): P
     return { uuidLama: baris.uuid, uuidBaru: await repo.gantiUuid(scope.ctx, assetId) };
 }
 
+export interface LabelAset {
+    readonly id: number;
+    readonly uuid: string;
+    readonly kodeAset: string;
+    readonly nama: string;
+}
+
+/**
+ * FR-05.1 langkah 2–3 (PR-03-02): isi label untuk aset terpilih, URUT sesuai pilihan pengguna
+ * (duplikat dibuang). Seluruh id wajib ada — PDF tidak dicetak dengan label yang diam-diam hilang.
+ */
+export async function asetUntukLabel(scope: TransactionScope, assetIds: readonly number[]): Promise<readonly LabelAset[]> {
+    const unik = [...new Set(assetIds)];
+    const baris = new Map((await createQrRepository(scope.tx).untukLabel(scope.ctx, unik)).map((b) => [Number(b.id), b]));
+    const hilang = unik.filter((id) => !baris.has(id));
+    if (hilang.length > 0) throw new DomainError("VALIDATION_ERROR", `Aset tidak ditemukan: ${hilang.join(", ")}.`, { field: "asset_ids" });
+    return unik.map((id) => {
+        const b = baris.get(id)!;
+        return { id, uuid: b.uuid, kodeAset: b.kode_barang, nama: b.nama };
+    });
+}
+
 /**
  * FR-05.1 langkah 5: tandai label QR terpasang (atau dilepas, mis. label rusak — A1). Seluruh id
  * wajib ada (atomik, pola mutasi FR-04.4); hanya aset yang nilainya BENAR berubah yang ditulis

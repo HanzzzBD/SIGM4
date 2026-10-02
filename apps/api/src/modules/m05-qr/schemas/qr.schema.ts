@@ -15,6 +15,18 @@ export const QrTerpasangBodySchema = z.strictObject({
     qr_terpasang: z.boolean(),
 });
 
+/**
+ * FR-05.1 langkah 2–4 (PR-03-02): 1–200 aset (AC FR-05.1 "hingga 200 label"); tiga preset A4 dan
+ * elemen opsional (keputusan 2 log phase-03). Urutan `asset_ids` = urutan label di lembar.
+ */
+export const PrintQrBodySchema = z.strictObject({
+    asset_ids: z.array(z.number().int().positive()).min(1).max(200),
+    tata_letak: z.enum(["A4_3X8", "A4_4X10", "A4_2X5"]),
+    elemen: z.strictObject({ kode_aset: z.boolean(), nama: z.boolean() }),
+});
+
+export const PrintQrResponseSchema = z.string().describe("Berkas PDF (biner) label QR siap cetak — lihat header Content-Disposition.");
+
 export const RegenerateQrResponseSchema = z.object({
     success: z.literal(true),
     data: z.object({ id: z.string(), uuid: z.string(), qr_url: z.string() }),

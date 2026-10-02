@@ -136,6 +136,15 @@ const bentukAplikasi = {
         .transform((v) => v.replace(/\/+$/, "")),
 };
 
+// Chromium pembangkit PDF (SDD-FS-12; PR-03-02, keputusan 2 log phase-03). OPSIONAL: kosong →
+// Chrome terpasang (dev, runner CI); image Alpine mengisinya dengan Chromium dari apk.
+const bentukPdf = {
+    CHROMIUM_EXECUTABLE_PATH: z
+        .string()
+        .optional()
+        .transform((v) => (kosong(v) ? null : v!.trim())),
+};
+
 // Kunci penandatangan access token (SDD-SESS-02, SDD-16 §4.7). PEM: PKCS#8 privat dan SPKI
 // publik; `\n` literal diterima agar muat pada berkas env satu baris.
 const bentukJwt = {
@@ -284,6 +293,8 @@ export interface ApiConfig extends ProcessConfig {
     readonly objectStoragePublicOrigin: string;
     /** `APP_BASE_URL` tanpa garis miring penutup — dasar payload QR (FR-05.1, `PR-03-01`). */
     readonly appBaseUrl: string;
+    /** `CHROMIUM_EXECUTABLE_PATH`; `null` = Chrome terpasang (SDD-FS-12, `PR-03-02`). */
+    readonly chromiumExecutablePath: string | null;
     /** Pasangan kunci Ed25519 penandatangan access token; sudah tervalidasi. */
     readonly jwtKeys: JwtKeys;
     /** Kotak enkripsi secret TOTP (`TOTP_ENCRYPTION_KEY`); sudah tervalidasi. */
@@ -351,6 +362,7 @@ export function readApiConfig(
             ...bentukZona,
             ...bentukPenyimpananPublik,
             ...bentukAplikasi,
+            ...bentukPdf,
             ...bentukJwt,
             ...bentukTotp,
         }),
@@ -366,6 +378,7 @@ export function readApiConfig(
         logLevel: d.LOG_LEVEL,
         objectStoragePublicOrigin: d.S3_PUBLIC_ENDPOINT,
         appBaseUrl: d.APP_BASE_URL,
+        chromiumExecutablePath: d.CHROMIUM_EXECUTABLE_PATH,
         // `periksaKunciJwt` tidak melaporkan masalah bila kedua variabel sah, jadi kunci ada.
         jwtKeys: jwt.kunci!,
         // Sama: `periksaKunciTotp` hanya diam bila variabelnya sah.

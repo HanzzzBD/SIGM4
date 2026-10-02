@@ -19,6 +19,8 @@ import { closeRedis, getRedis } from "../shared/cache/index.js";
 import type { Clock } from "../shared/clock/index.js";
 import { SystemClock } from "../shared/clock/index.js";
 import { readApiConfig, zonaProses } from "../shared/config/index.js";
+import type { PembangkitPdf } from "../shared/pdf/index.js";
+import { PembangkitPdfChromium } from "../shared/pdf/index.js";
 import {
     assertDatabaseTimeZoneUtc,
     closeDb,
@@ -108,7 +110,7 @@ import {
     moveAssetsRoute,
     updateAssetConditionRoute,
 } from "../modules/m04-assets/index.js";
-import { qrRouter, qrTerpasangRoute, regenerateQrRoute } from "../modules/m05-qr/index.js";
+import { printQrRoute, qrRouter, qrTerpasangRoute, regenerateQrRoute } from "../modules/m05-qr/index.js";
 import {
     approvalRouter,
     createRuleRoute,
@@ -224,6 +226,7 @@ export const registry = new RouteRegistry().register(
     listAssetsRoute,
     updateAssetConditionRoute,
     moveAssetsRoute,
+    printQrRoute,
     regenerateQrRoute,
     qrTerpasangRoute,
     listCategoriesRoute,
@@ -304,6 +307,8 @@ export interface AppDeps {
     };
     /** Hub SSE proses ini (SDD-08 §4.3a) — ditutup saat berhenti; tanpa ini dibuat malas saat aliran pertama. */
     readonly notifikasi?: { readonly hub: HubSse } | undefined;
+    /** Pembangkit PDF label QR (SDD-FS-12, `PR-03-02`); tanpa ini dipakai Chrome terpasang. */
+    readonly pdf?: PembangkitPdf | undefined;
 }
 
 /** Merakit aplikasi tanpa membuka port — dipakai proses dan uji. */
@@ -417,6 +422,7 @@ export function createApp(deps: AppDeps): Express {
                 db: deps.db,
                 auditLogger: new AuditLogger({ clock: deps.clock, logger: deps.logger }),
                 appBaseUrl: deps.appBaseUrl,
+                pdf: deps.pdf ?? new PembangkitPdfChromium(null),
             },
             (route) => rateLimit(route, deps.limiter, deps.logger),
             authorize,
@@ -569,6 +575,7 @@ export async function start(
         limiter: new RedisRateLimiter(getRedis(), clock),
         security: { objectStorageOrigin: config.objectStoragePublicOrigin },
         appBaseUrl: config.appBaseUrl,
+        pdf: new PembangkitPdfChromium(config.chromiumExecutablePath),
         logger,
         clock,
         db: getDb(),

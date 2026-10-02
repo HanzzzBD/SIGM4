@@ -224,6 +224,7 @@ LOG_LEVEL=info, DB_POOL_SIZE=<TBD-AVL-C>, CHAT_ENABLED=true
 
 # Opsional tanpa bawaan — kosong berarti fitur dilewati, bukan startup gagal
 FCM_CREDENTIALS   (keputusan 80a, SDD-08 §4.4a: push dilewati, `fcm` di /health tidak memengaruhi `ready`)
+CHROMIUM_EXECUTABLE_PATH   (SDD-FS-12, PR-03-02: kosong = Chrome terpasang; image runtime mengisinya dengan Chromium dari apk)
 ```
 
 **Kunci JWT** (`PR-02-02`). `JWT_PRIVATE_KEY` dan `JWT_PUBLIC_KEY` berformat PEM Ed25519 (PKCS#8 dan SPKI; `\n` literal diterima untuk berkas env satu baris). Membangkitkan pasangan: `openssl genpkey -algorithm ed25519 -out jwt-private.pem && openssl pkey -in jwt-private.pem -pubout -out jwt-public.pem`. Startup menolak pasangan yang tak cocok tanpa mencetak isinya. Kunci publik cukup bagi komponen yang hanya memverifikasi (`SDD-SESS-02`).
