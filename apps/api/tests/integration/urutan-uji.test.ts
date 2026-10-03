@@ -28,6 +28,8 @@ describe.skipIf(!ADA_DB)("penjaga urutan id uji (dbmate down/up)", () => {
 
     it("jalur sungguhan: `dbmate rollback` men-DROP tabel + sequence-nya, `up` membuatnya ulang — id tetap naik", async () => {
         const sebelum = await nextval("asset_documents_id_seq");
+        // 0040 (PR-03-07) hanya menambah kolom; langkah kedua melepas 0039 yang men-DROP tabelnya.
+        dbmate("rollback");
         dbmate("rollback");
         try {
             expect(await kueri("SELECT 1 FROM pg_sequences WHERE sequencename = 'asset_documents_id_seq'")).toEqual([]);

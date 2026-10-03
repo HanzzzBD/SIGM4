@@ -42,7 +42,18 @@ import {
     UserService,
     idJobAntreanImpor,
 } from "../modules/m02-users/index.js";
-import { EVENT_BERKAS_TERUNGGAH, FileScanService, KlienClamd, NAMA_PEKERJAAN_PINDAI, idJobPindai } from "../modules/m06-documents/index.js";
+import {
+    DerivativeService,
+    EVENT_BERKAS_TERPINDAI,
+    EVENT_BERKAS_TERUNGGAH,
+    FileScanService,
+    KlienClamd,
+    NAMA_PEKERJAAN_PINDAI,
+    NAMA_PEKERJAAN_TURUNAN,
+    idJobPindai,
+    idJobTurunan,
+} from "../modules/m06-documents/index.js";
+import { PEKERJAAN_BERSIH_YATIM, jalankanBersihYatim } from "./file-lifecycle.js";
 import { PenyimpananS3 } from "../shared/storage/index.js";
 import type { KonfigurasiAntivirus, KonfigurasiPenyimpanan } from "../shared/config/index.js";
 import { PenyiarNotifikasi, buatPengirimPush, fcmCheck, kirimPushNotifikasi, pasangKonsumenNotifikasi } from "../modules/m17-notifications/index.js";
@@ -142,6 +153,27 @@ export const registry = new JobRegistry().register(
         },
     },
     {
+        // SDD-FS-09: setiap hari 02:00 WIB. Pelaku SYSTEM (AL-06).
+        name: PEKERJAAN_BERSIH_YATIM,
+        cron: wibCronToUtc(0, 2),
+        handler: async () => {
+            if (pemindaian === undefined) throw new Error("Penyimpanan berkas belum dipasang bootstrap.");
+            const clock = new SystemClock();
+            await jalankanBersihYatim(getDb(), new PenyimpananS3(pemindaian.penyimpanan, clock), clock);
+        },
+    },
+    {
+        // Tanpa cron: dijadwalkan handler `FileScanned` bila CLEAN (SDD-FS-07, keputusan 10b).
+        name: NAMA_PEKERJAAN_TURUNAN,
+        handler: async (job) => {
+            if (pemindaian === undefined) throw new Error("Penyimpanan berkas belum dipasang bootstrap.");
+            const clock = new SystemClock();
+            const service = new DerivativeService(getDb(), new PenyimpananS3(pemindaian.penyimpanan, clock), new Logger({ clock, modulBawaan: NAMA_PEKERJAAN_TURUNAN }));
+            const akhir = job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
+            await service.buat(pelakuTurunan, String((job.data as { file_id: string | number }).file_id), akhir);
+        },
+    },
+    {
         // Tanpa cron: dijadwalkan handler `FileUploaded` (SDD-FS-04, PR-03-05). Pelaku SYSTEM (AL-06).
         name: NAMA_PEKERJAAN_PINDAI,
         handler: async (job) => {
@@ -191,6 +223,13 @@ export function pasangHandlerAntrean(handlers: EventHandlerRegistry, queue: Queu
         const fileId = String((event.payload as { file_id: string | number }).file_id);
         await queue.add(NAMA_PEKERJAAN_PINDAI, { file_id: fileId }, { ...RETRY_OPTIONS, jobId: idJobPindai(fileId) });
     });
+    // Turunan hanya bagi berkas yang lolos pemindaian (keputusan 10b); MIME diperiksa pekerjaannya.
+    handlers.on(EVENT_BERKAS_TERPINDAI, async (event) => {
+        const payload = event.payload as { file_id: string | number; hasil: string };
+        if (payload.hasil !== "CLEAN") return;
+        const fileId = String(payload.file_id);
+        await queue.add(NAMA_PEKERJAAN_TURUNAN, { file_id: fileId }, { ...RETRY_OPTIONS, jobId: idJobTurunan(fileId) });
+    });
     handlers.on(EVENT_IMPOR_DIMINTA, async (event) => {
         const payload = event.payload as { job_id: string | number; oleh: number };
         // `jobId` tetap: event outbox at-least-once (SDD-EVT-07) tidak melipatgandakan pekerjaan.
@@ -217,6 +256,7 @@ let antreanPush: Queue | undefined;
 let pengirimPush: PengirimPush | undefined;
 /** Pemindai AV (SDD-FS-04): alamat storage & clamd dari konfigurasi tervalidasi, dipasang `bootstrap`. */
 const pelakuPindai = createSystemAuthContext(NAMA_PEKERJAAN_PINDAI);
+const pelakuTurunan = createSystemAuthContext(NAMA_PEKERJAAN_TURUNAN);
 let pemindaian: { readonly penyimpanan: KonfigurasiPenyimpanan; readonly antivirus: KonfigurasiAntivirus } | undefined;
 /** Uji worker memasang alamat tanpa `bootstrap` penuh. */
 export function pasangPemindaian(penyimpanan: KonfigurasiPenyimpanan, antivirus: KonfigurasiAntivirus): void {

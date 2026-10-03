@@ -703,6 +703,9 @@ export interface StoredFilesTable {
     owner_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
     uploaded_by: ColumnType<string, string | number, never>;
     created_at: ColumnType<Date, Date | undefined, never>;
+    /** Turunan WebP (0040, PR-03-07; SDD-FS-07); NULL = jatuh ke berkas asli. */
+    thumb_key: ColumnType<string | null, string | null | undefined, string | null>;
+    medium_key: ColumnType<string | null, string | null | undefined, string | null>;
 }
 
 /** Bab 11.3 "Jenis Dokumen Aset" (0002). */

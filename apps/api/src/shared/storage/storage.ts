@@ -22,6 +22,8 @@ export interface PenyimpananObjek {
     info(kunci: string): Promise<InfoObjek | null>;
     /** Isi objek bagi pemindai AV (SDD-FS-04); `null` bila tidak ada. Hanya dipakai worker. */
     ambil(kunci: string): Promise<Buffer | null>;
+    /** Menulis objek dari sisi server — turunan gambar buatan worker (SDD-FS-07, PR-03-07). */
+    simpan(kunci: string, isi: Buffer, mime: string): Promise<void>;
     /** Menghapus objek — berkas `INFECTED` (SDD-09 §4.6). Idempoten: objek yang tak ada bukan galat. */
     hapus(kunci: string): Promise<void>;
     /** Bucket terjangkau dengan kredensial ini — `object_storage` di `/health` (OBS-06). */
@@ -83,6 +85,10 @@ export class PenyimpananS3 implements PenyimpananObjek {
             if (galat instanceof S3ServiceException && galat.$metadata.httpStatusCode === 404) return null;
             throw galat;
         }
+    }
+
+    async simpan(kunci: string, isi: Buffer, mime: string): Promise<void> {
+        await this.server.send(new PutObjectCommand({ Bucket: this.konfigurasi.bucket, Key: kunci, Body: isi, ContentType: mime, ContentLength: isi.length }));
     }
 
     async hapus(kunci: string): Promise<void> {

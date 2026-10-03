@@ -9,6 +9,7 @@ import type { AuditLogger } from "../../../shared/audit/index.js";
 import type { AuthContext } from "../../../shared/auth/index.js";
 import type { Clock } from "../../../shared/clock/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
+import { publish } from "../../../shared/events/index.js";
 import type { Database, FileScanStatus } from "../../../shared/db/index.js";
 import type { HealthCheck, Logger } from "../../../shared/observability/index.js";
 import type { PenyimpananObjek } from "../../../shared/storage/index.js";
@@ -22,6 +23,9 @@ const MODUL = "m06-documents";
 export const NAMA_PEKERJAAN_PINDAI = "file-scan";
 /** `jobId` tetap per berkas: event outbox at-least-once (SDD-EVT-07) tidak menggandakan pemindaian. */
 export const idJobPindai = (fileId: string | number): string => `${NAMA_PEKERJAAN_PINDAI}-${String(fileId)}`;
+
+/** Event outbox (SDD-07 §4.3, PR-03-07): putusan akhir pindai — konsumen menjadwalkan turunan gambar bila `CLEAN`. */
+export const EVENT_BERKAS_TERPINDAI = "FileScanned";
 
 /** Tanda tangan awal isi per MIME (SDD-09 §4.3). DOCX/XLSX adalah arsip ZIP (OOXML). */
 const MAGIC: Readonly<Record<string, readonly number[]>> = {
@@ -92,6 +96,8 @@ export class FileScanService {
                     entitasId: fileId,
                     nilaiSesudah: { file_id: fileId, hasil: hasil.status, alasan: hasil.alasan },
                 });
+                // SDD-EVT-03: turunan gambar (SDD-FS-07) hanya setelah CLEAN (keputusan 10b) — lewat outbox.
+                await publish(scope, { name: EVENT_BERKAS_TERPINDAI, aggregateType: "stored_file", aggregateId: fileId, payload: { file_id: fileId, hasil: hasil.status } });
                 return true;
             },
             this.db,

@@ -83,7 +83,9 @@ CREATE TABLE stored_files (
     owner_type   file_owner_type NOT NULL,      -- Bab 11.3 "Jenis Pemilik Berkas"; jenis ditetapkan sejak presign (§4.3)
     owner_id     bigint,                        -- NULL = yatim (SDD-FS-09)
     uploaded_by  bigint NOT NULL REFERENCES users(id),
-    created_at   timestamptz NOT NULL DEFAULT now()
+    created_at   timestamptz NOT NULL DEFAULT now(),
+    thumb_key    text UNIQUE,                   -- turunan §4.5 (PR-03-07); NULL = jatuh ke asli
+    medium_key   text UNIQUE
 );
 
 CREATE INDEX stored_files_orphan
@@ -155,13 +157,13 @@ Respons berupa URL, bukan redirect, agar klien dapat menampilkan pratinjau tanpa
 | `medium` | 800 px | Pratinjau detail |
 | asli | ≤1600 px (dari `MOB-MED-01`) | Unduhan, bukti |
 
-Dibuat worker saat `FileUploaded` untuk MIME gambar. Kegagalan pembuatan turunan tidak menggagalkan apa pun; klien jatuh kembali ke berkas asli.
+Dibuat worker untuk MIME gambar (JPG/PNG) **setelah berkas diputus `CLEAN`** — konsumen event `FileScanned` menjadwalkan pekerjaan `file-derivatives`, sehingga pengolah gambar tidak pernah membuka berkas yang belum lolos ClamAV dan magic bytes (`PR-03-07`, keputusan 10b log phase-03). Pustaka **sharp** (libvips); keluaran **WebP**, sisi terpanjang tanpa pembesaran, orientasi EXIF diterapkan lalu seluruh metadata dibuang (lokasi GPS foto ponsel tidak ikut). Kuncinya `{kunci asli tanpa ekstensi}-{thumb|medium}.webp` dan dicatat `stored_files.thumb_key`/`medium_key`; penerbit URL memilih varian dan jatuh ke asli bila kolomnya NULL. Kegagalan pembuatan turunan tidak menggagalkan apa pun; klien jatuh kembali ke berkas asli. Turunan adalah cache teknis yang dapat dibuat ulang, tidak dicatat activity log.
 
 ### 4.6 Retensi & penghapusan
 
 | Kondisi | Tindakan |
 |---|---|
-| Berkas yatim > 24 jam | Objek dan baris dihapus (`SDD-FS-09`) |
+| Berkas yatim > 24 jam | Baris lalu objek beserta turunannya dihapus (`SDD-FS-09`) oleh job harian `orphan-file-cleanup` 02:00 WIB, berpelaku SYSTEM dengan ringkasan `JOB-05`; baris dihapus lebih dulu dengan syarat masih yatim, sehingga berkas yang ditautkan tepat saat itu tidak kehilangan objeknya. Baris `INFECTED` dilewati — jejaknya dipertahankan (keputusan 10d log phase-03) |
 | Entitas induk dihapuskan | Berkas **tetap** disimpan — Bab 11.4 mengikat masa hidup berkas pada entitas induk yang sendiri tidak pernah dihapus permanen (`BR-008`) |
 | Dokumen dihapus pengguna | `stored_files` ditandai, objek dipertahankan, penghapusan tercatat (`FR-06.1 A2`) |
 | Foto profil diganti atau dihapus pemiliknya (`PUT /me`) | Foto lama dilepas (`owner_id` NULL) menjadi yatim dan dibersihkan `SDD-FS-09`; pergantiannya tercatat `PROFILE_UPDATED` (`PR-03-25`, keputusan 7b log phase-03) |

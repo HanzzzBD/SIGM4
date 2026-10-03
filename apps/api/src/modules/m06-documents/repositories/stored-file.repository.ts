@@ -15,9 +15,19 @@ export interface BerkasRow {
     readonly checksum: string | null;
     readonly scan_status: FileScanStatus;
     readonly owner_type: FileOwnerType;
+    readonly thumb_key: string | null;
+    readonly medium_key: string | null;
 }
 
-const KOLOM = ["id", "object_key", "mime", "ukuran", "checksum", "scan_status", "owner_type"] as const;
+const KOLOM = ["id", "object_key", "mime", "ukuran", "checksum", "scan_status", "owner_type", "thumb_key", "medium_key"] as const;
+
+/** Kunci-kunci objek milik satu baris (asli + turunan) — yang dihapus pembersih yatim. */
+export interface KunciBerkasRow {
+    readonly id: string;
+    readonly object_key: string;
+    readonly thumb_key: string | null;
+    readonly medium_key: string | null;
+}
 
 export class StoredFileRepository extends BaseRepository {
     constructor(executor: QueryExecutor) {
@@ -94,6 +104,38 @@ export class StoredFileRepository extends BaseRepository {
     async tetapkanHasilPindai(ctx: AuthContext, id: string, hasil: Exclude<FileScanStatus, "PENDING">, waktu: Date): Promise<boolean> {
         const r = await this.query(ctx).updateTable("stored_files").set({ scan_status: hasil, scanned_at: waktu }).where("id", "=", id).where("scan_status", "=", "PENDING").executeTakeFirst();
         return r.numUpdatedRows > 0n;
+    }
+
+    /** Turunan WebP (SDD-FS-07): hanya berkas CLEAN yang belum punya turunan — pengulangan tidak menimpa. */
+    async tetapkanTurunan(ctx: AuthContext, id: string, thumbKey: string, mediumKey: string): Promise<boolean> {
+        const r = await this.query(ctx).updateTable("stored_files").set({ thumb_key: thumbKey, medium_key: mediumKey }).where("id", "=", id).where("scan_status", "=", "CLEAN").where("thumb_key", "is", null).executeTakeFirst();
+        return r.numUpdatedRows > 0n;
+    }
+
+    /**
+     * Berkas yatim lewat batas (SDD-FS-09): tanpa pemilik, dibuat sebelum `batas`. Baris `INFECTED`
+     * dipertahankan sebagai jejak karantina (SDD-09 §4.6, keputusan 10d). Paling lama dahulu.
+     */
+    async yatimSebelum(ctx: AuthContext, batas: Date, jumlah: number): Promise<readonly KunciBerkasRow[]> {
+        return this.query(ctx)
+            .selectFrom("stored_files")
+            .select(["id", "object_key", "thumb_key", "medium_key"])
+            .where("owner_id", "is", null)
+            .where("created_at", "<", batas)
+            .where("scan_status", "<>", "INFECTED")
+            .orderBy("created_at")
+            .orderBy("id")
+            .limit(jumlah)
+            .execute();
+    }
+
+    /**
+     * Menghapus baris yatim; `false` bila sementara itu sudah ditautkan atau hilang. Syarat `owner_id`
+     * diulang di sini DENGAN SENGAJA: penautan serentak sesudah `yatimSebelum` tidak boleh kehilangan berkasnya.
+     */
+    async hapusYatim(ctx: AuthContext, id: string): Promise<boolean> {
+        const r = await this.query(ctx).deleteFrom("stored_files").where("id", "=", id).where("owner_id", "is", null).executeTakeFirst();
+        return r.numDeletedRows > 0n;
     }
 
     async ambil(ctx: AuthContext, id: string): Promise<BerkasRow | undefined> {
