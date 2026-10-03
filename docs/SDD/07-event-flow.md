@@ -154,6 +154,7 @@ Konsekuensinya, event yang gagal **menahan** event sesudahnya pada agregat yang 
 | `MaterialStockLow` | M-22 | Notifikasi `NT-49` |
 | `MaterialRequestReady` | M-22 | Notifikasi `NT-50` |
 | `FileUploaded` | M-06 | Pemindaian AV, pembuatan thumbnail; payload `file_id`; agregat `stored_file`. Terbit dalam transaksi `POST /files/confirm` (`PR-03-25`); konsumen memasukkan pekerjaan `file-scan` (`jobId` per berkas) ke antrean (`PR-03-05`) |
+| `FileScanned` | M-06 | Turunan gambar (`SDD-FS-07`) — konsumen menjadwalkan pekerjaan `file-derivatives` hanya bila `hasil = CLEAN`; payload `file_id`, `hasil`; agregat `stored_file`. Terbit dalam transaksi putusan pindai (`PR-03-07`) |
 | `ExportRequested` | M-16 | Pembuatan berkas, notifikasi `NT-42` |
 | `UserImportRequested` | M-02 | Memasukkan pekerjaan `user-import` ke antrean (`IMPT-04`) |
 | `UserImportCompleted` | M-02 (job) | Notifikasi `NT-52` |

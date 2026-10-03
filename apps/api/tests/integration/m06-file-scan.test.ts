@@ -88,6 +88,7 @@ describe.skipIf(!ADA)("PR-03-05 — pemindaian antivirus + karantina (acceptance
         sejakLog = Number((await kueri<{ n: string }>("SELECT coalesce(max(id), 0)::text AS n FROM activity_logs"))[0]?.n);
     });
     afterAll(async () => {
+        await kueri(`DELETE FROM event_outbox WHERE aggregate_type = 'stored_file' AND aggregate_id IN (SELECT id FROM stored_files WHERE uploaded_by = ${String(pengguna)})`);
         await kueri(`DELETE FROM stored_files WHERE uploaded_by = ${String(pengguna)}`);
         await kueri(`DELETE FROM users WHERE id = ${String(pengguna)}`);
         for (const key of kunciDibuat) await s3.send(new DeleteObjectCommand({ Bucket: k.bucket, Key: key }));
@@ -113,6 +114,9 @@ describe.skipIf(!ADA)("PR-03-05 — pemindaian antivirus + karantina (acceptance
         expect(await layanan().pindai(ctx, f.id, false)).toEqual({ status: "CLEAN", alasan: null });
         expect(await status(f.id)).toMatchObject({ scan_status: "CLEAN", scanned_at: expect.any(Date) as Date });
         expect(await logPindai()).toEqual([{ entitas_id: f.id, user_id: null, nilai_sesudah: { file_id: f.id, hasil: "CLEAN", alasan: null } }]);
+        // PR-03-07: putusan terbit ke outbox dalam transaksi yang sama — konsumen menjadwalkan turunan gambar.
+        const terbit = await kueri<{ payload: unknown }>(`SELECT payload FROM event_outbox WHERE event_name = 'FileScanned' AND aggregate_id = '${f.id}'`);
+        expect(terbit.map((r) => r.payload)).toEqual([{ file_id: f.id, hasil: "CLEAN" }]);
         expect(await adaObjek(f.key)).toBe(true);
         const r = await fetch((await urlUnduhBerkas(penyimpanan, clock, { object_key: f.key, scan_status: "CLEAN" })).url);
         expect(Buffer.from(await r.arrayBuffer()).equals(PNG)).toBe(true);

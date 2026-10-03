@@ -9,5 +9,9 @@ export { buatPengelolaFotoProfil, urlUnduhBerkas } from "./services/file.service
 export type { PemindaiVirus, PutusanClamd } from "./services/clamd.js";
 export { KlienClamd } from "./services/clamd.js";
 export type { HasilPindai } from "./services/scan.service.js";
-export { FileScanService, NAMA_PEKERJAAN_PINDAI, avScannerCheck, idJobPindai } from "./services/scan.service.js";
+export { EVENT_BERKAS_TERPINDAI, FileScanService, NAMA_PEKERJAAN_PINDAI, avScannerCheck, idJobPindai } from "./services/scan.service.js";
+/** Turunan gambar & pembersihan berkas yatim (SDD-FS-07/09, PR-03-07) — dipasang entrypoint worker. */
+export { DerivativeService, NAMA_PEKERJAAN_TURUNAN, idJobTurunan } from "./services/derivative.service.js";
+export type { HasilBersih } from "./services/lifecycle.service.js";
+export { FileLifecycleService, PEKERJAAN_BERSIH_YATIM } from "./services/lifecycle.service.js";
 export { EVENT_BERKAS_TERUNGGAH } from "./services/file.service.js";

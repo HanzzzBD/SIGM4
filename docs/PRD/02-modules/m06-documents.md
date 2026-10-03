@@ -89,7 +89,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 |---|---|---|---|
 | **asset_documents** | Dokumen pendukung aset — satu berkas terdaftar, berlaku untuk satu atau banyak aset (FR-06.1 A3) | id, file_id (→ stored_files: nama objek, ukuran, mime, status pindai), jenis, nama_berkas, keterangan, garansi_mulai, garansi_selesai, dihapus, dihapus_pada, dihapus_oleh, created_by (pengunggah) | ± 2.000 |
 | **asset_document_links** | Tautan dokumen ↔ aset (FR-06.1 A3); dilepas, tidak dihapus | id, document_id, asset_id, aktif, dilepas_pada, dilepas_oleh | ± 4.000 |
-| **stored_files** | Registri berkas terpusat & status pemindaian AV | id, object_key, mime, ukuran, checksum, scan_status (`PENDING`/`CLEAN`/`INFECTED`/`FAILED`), scanned_at, owner_type, owner_id | ± 12.000 |
+| **stored_files** | Registri berkas terpusat & status pemindaian AV | id, object_key, mime, ukuran, checksum, scan_status (`PENDING`/`CLEAN`/`INFECTED`/`FAILED`), scanned_at, owner_type, owner_id, thumb_key, medium_key (turunan gambar) | ± 12.000 |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
 

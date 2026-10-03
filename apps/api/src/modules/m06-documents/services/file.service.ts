@@ -44,9 +44,16 @@ function galatValidasi(field: string, message: string): DomainError {
  * SDD-FS-03: satu-satunya jalan menuju presigned GET. Berkas yang belum `CLEAN` → `409
  * FILE_NOT_SCANNED`; pemeriksaan permission tetap milik pemanggil, SEBELUM fungsi ini.
  */
-export async function urlUnduhBerkas(penyimpanan: PenyimpananObjek, clock: Clock, berkas: { readonly object_key: string; readonly scan_status: FileScanStatus }): Promise<{ url: string; expiresAt: Date }> {
+export async function urlUnduhBerkas(
+    penyimpanan: PenyimpananObjek,
+    clock: Clock,
+    berkas: { readonly object_key: string; readonly scan_status: FileScanStatus; readonly thumb_key?: string | null; readonly medium_key?: string | null },
+    /** Turunan SDD-FS-07 (PR-03-07); bila belum ada, jatuh ke berkas asli (§4.5). */
+    varian?: "thumb" | "medium",
+): Promise<{ url: string; expiresAt: Date }> {
     if (berkas.scan_status !== "CLEAN") throw new DomainError("FILE_NOT_SCANNED", "Berkas masih diperiksa atau tidak lolos pemindaian, belum dapat diunduh.");
-    const url = await penyimpanan.urlUnduh(berkas.object_key, BERLAKU_UNDUH_DETIK);
+    const turunan = varian === "thumb" ? berkas.thumb_key : varian === "medium" ? berkas.medium_key : null;
+    const url = await penyimpanan.urlUnduh(turunan ?? berkas.object_key, BERLAKU_UNDUH_DETIK);
     return { url, expiresAt: new Date(clock.now().getTime() + BERLAKU_UNDUH_DETIK * 1000) };
 }
 

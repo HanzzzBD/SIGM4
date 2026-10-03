@@ -343,6 +343,7 @@ const TANPA_PENYIMPANAN: PenyimpananObjek = {
     info: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
     ambil: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
     hapus: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
+    simpan: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
     periksa: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
 };
 
