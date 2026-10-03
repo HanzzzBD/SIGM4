@@ -27,14 +27,14 @@ describe.skipIf(!ADA_DB)("penjaga urutan id uji (dbmate down/up)", () => {
     });
 
     it("jalur sungguhan: `dbmate rollback` men-DROP tabel + sequence-nya, `up` membuatnya ulang — id tetap naik", async () => {
-        const sebelum = await nextval("stored_files_id_seq");
+        const sebelum = await nextval("asset_documents_id_seq");
         dbmate("rollback");
         try {
-            expect(await kueri("SELECT 1 FROM pg_sequences WHERE sequencename = 'stored_files_id_seq'")).toEqual([]);
+            expect(await kueri("SELECT 1 FROM pg_sequences WHERE sequencename = 'asset_documents_id_seq'")).toEqual([]);
         } finally {
             // Basis data uji dibagi seluruh berkas: skema SELALU dipulihkan, apa pun hasil pemeriksaannya.
             dbmate("up");
         }
-        expect(await nextval("stored_files_id_seq")).toBeGreaterThan(sebelum);
+        expect(await nextval("asset_documents_id_seq")).toBeGreaterThan(sebelum);
     }, 120_000);
 });

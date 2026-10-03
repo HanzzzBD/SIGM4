@@ -126,7 +126,18 @@ import {
     ruleStatusRoute,
     updateRuleRoute,
 } from "../modules/m10-approval/index.js";
-import { KlienClamd, avScannerCheck, buatPengelolaFotoProfil, confirmRoute, filesRouter, presignRoute } from "../modules/m06-documents/index.js";
+import {
+    KlienClamd,
+    avScannerCheck,
+    buatPengelolaFotoProfil,
+    confirmRoute,
+    createDocumentRoute,
+    deleteDocumentRoute,
+    downloadDocumentRoute,
+    filesRouter,
+    listDocumentsRoute,
+    presignRoute,
+} from "../modules/m06-documents/index.js";
 import { dashboardCardRoute, dashboardManifestRoute, dashboardRouter } from "../modules/m15-dashboard/index.js";
 import type { HubSse } from "../modules/m17-notifications/index.js";
 import {
@@ -237,6 +248,10 @@ export const registry = new RouteRegistry().register(
     qrTerpasangRoute,
     presignRoute,
     confirmRoute,
+    listDocumentsRoute,
+    createDocumentRoute,
+    deleteDocumentRoute,
+    downloadDocumentRoute,
     listCategoriesRoute,
     createCategoryRoute,
     updateCategoryRoute,
@@ -456,6 +471,7 @@ export function createApp(deps: AppDeps): Express {
             { db: deps.db, penyimpanan, auditLogger: new AuditLogger({ clock: deps.clock, logger: deps.logger }), clock: deps.clock },
             (route) => rateLimit(route, deps.limiter, deps.logger),
             authenticated,
+            authorize,
         ),
     );
     app.use(

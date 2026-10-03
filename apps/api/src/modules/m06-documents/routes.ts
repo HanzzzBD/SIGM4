@@ -9,7 +9,10 @@ import type { Database } from "../../shared/db/index.js";
 import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
 import type { PenyimpananObjek } from "../../shared/storage/index.js";
+import { createDocumentHandler, deleteDocumentHandler, downloadDocumentHandler, listDocumentsHandler } from "./controllers/document.controller.js";
 import { confirmHandler, presignHandler } from "./controllers/file.controller.js";
+import { AssetIdParamSchema, CreateDocumentBodySchema, DeleteDocumentResponseSchema, DocumentParamSchema, DocumentResponseSchema, DownloadResponseSchema, ListDocumentsResponseSchema } from "./schemas/document.schema.js";
+import { DocumentService } from "./services/document.service.js";
 import { ConfirmBodySchema, ConfirmResponseSchema, PresignBodySchema, PresignResponseSchema } from "./schemas/file.schema.js";
 import { FileService } from "./services/file.service.js";
 
@@ -42,6 +45,56 @@ export const confirmRoute = defineRoute({
     successStatus: 200,
 });
 
+/** FR-06.1 langkah 1 — tab Dokumen pada detail aset (keputusan 9a). */
+export const listDocumentsRoute = defineRoute({
+    method: "GET",
+    path: "/assets/:id/documents",
+    permission: "asset_document.view",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Daftar dokumen aset beserta status pemindaian (FR-06.1)",
+    params: AssetIdParamSchema,
+    response: ListDocumentsResponseSchema,
+});
+
+/** SDD-09 §4.2 langkah 5: tautkan berkas terdaftar; A3 — satu dokumen untuk banyak aset. */
+export const createDocumentRoute = defineRoute({
+    method: "POST",
+    path: "/assets/:id/documents",
+    permission: "asset_document.manage",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Tautkan dokumen aset dari berkas terdaftar (FR-06.1 langkah 2–5, A3)",
+    params: AssetIdParamSchema,
+    body: CreateDocumentBodySchema,
+    response: DocumentResponseSchema,
+    successStatus: 201,
+});
+
+/** FR-06.1 A2 (keputusan 9a/9b): lepas dari aset ini; tautan terakhir → dokumen dihapus (soft). */
+export const deleteDocumentRoute = defineRoute({
+    method: "DELETE",
+    path: "/assets/:id/documents/:docId",
+    permission: "asset_document.manage",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Hapus dokumen dari aset (FR-06.1 A2)",
+    params: DocumentParamSchema,
+    response: DeleteDocumentResponseSchema,
+});
+
+/** SDD-09 §4.4: URL 15 menit, hanya berkas CLEAN (409 FILE_NOT_SCANNED); unduhan tercatat. */
+export const downloadDocumentRoute = defineRoute({
+    method: "GET",
+    path: "/assets/:id/documents/:docId/download",
+    permission: "asset_document.view",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "URL unduhan dokumen bertanda tangan 15 menit (FR-06.1)",
+    params: DocumentParamSchema,
+    response: DownloadResponseSchema,
+});
+
 export interface FilesModuleDeps {
     readonly db: Kysely<Database>;
     readonly penyimpanan: PenyimpananObjek;
@@ -49,10 +102,20 @@ export interface FilesModuleDeps {
     readonly clock: Clock;
 }
 
-/** Router M-06. `batasi`/`terautentikasi` datang dari perakit `api/index.ts`. */
-export function filesRouter(deps: FilesModuleDeps, batasi: (route: RouteDefinition) => RequestHandler, terautentikasi: () => RequestHandler): Router {
+/** Router M-06. `batasi`/`terautentikasi`/`otorisasi` datang dari perakit `api/index.ts`. */
+export function filesRouter(
+    deps: FilesModuleDeps,
+    batasi: (route: RouteDefinition) => RequestHandler,
+    terautentikasi: () => RequestHandler,
+    otorisasi: (permission: string) => RequestHandler,
+): Router {
     const service = new FileService(deps.db, deps.penyimpanan, deps.auditLogger, deps.clock);
+    const dokumen = new DocumentService(deps.db, deps.penyimpanan, deps.auditLogger, deps.clock);
     const router = express.Router();
+    router.get(listDocumentsRoute.path, batasi(listDocumentsRoute), otorisasi(listDocumentsRoute.permission), listDocumentsHandler(dokumen));
+    router.post(createDocumentRoute.path, batasi(createDocumentRoute), otorisasi(createDocumentRoute.permission), createDocumentHandler(dokumen));
+    router.delete(deleteDocumentRoute.path, batasi(deleteDocumentRoute), otorisasi(deleteDocumentRoute.permission), deleteDocumentHandler(dokumen));
+    router.get(downloadDocumentRoute.path, batasi(downloadDocumentRoute), otorisasi(downloadDocumentRoute.permission), downloadDocumentHandler(dokumen));
     router.post(presignRoute.path, batasi(presignRoute), terautentikasi(), presignHandler(service));
     router.post(confirmRoute.path, batasi(confirmRoute), terautentikasi(), confirmHandler(service));
     return router;

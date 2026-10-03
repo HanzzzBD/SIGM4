@@ -27,3 +27,5 @@ export type { AsetPindaian, LokasiAset, ProfilPublikAset } from "./services/scan
 export { asetByUuid, profilPublikAset } from "./services/scan-aset.js";
 /** Bentuk item katalog — dipakai ulang respons pemindaian M-05 (keputusan 3a log phase-03). */
 export { AssetCatalogItemSchema } from "./schemas/asset.schema.js";
+/** Keberadaan aset bagi tautan dokumen M-06 (FR-06.1 A3, PR-03-06). */
+export { asetTidakTerdaftar } from "./services/aset-terdaftar.js";

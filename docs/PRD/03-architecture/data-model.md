@@ -63,7 +63,8 @@ Data yang tumbuh seiring operasional harian.
 | **approval_instances** | Instance persetujuan berjalan | id, jenis_pengajuan, referensi_id, pemohon_id (BR-039 dinilai ulang saat tiap langkah aktif), rule_id, rule_snapshot (JSON), langkah_aktif, status, created_at, diselesaikan_pada | ± 3.500 |
 | **approval_steps** | Keputusan per langkah | id, instance_id, urutan, approver_type, approver_role_id, approver_user_id (target — dapat dialihkan eskalasi), keputusan, catatan, diputuskan_oleh, diputuskan_pada, sla_deadline, dilewati, alasan_dilewati, atas_nama_user_id (approver asli bila diputus penerima delegasi, RE-12), dieskalasi_pada, eskalasi_dari_user_id (target pengguna sebelum dialihkan eskalasi; target role asli tetap di `rule_snapshot`), pengingat_terakhir_pada (NT-06 maks 1×/hari), alarm_terminal_pada (eskalasi habis — NT-47 sekali / ditolak otomatis) | ± 5.000 |
 | **approval_delegations** | Delegasi approver (FR-10.2 A3) | id, pemberi_id, penerima_id, mulai, selesai (tanggal, inklusif); satu delegasi per pemberi per tanggal | Approver |
-| **asset_documents** | Dokumen pendukung aset | id, asset_id, jenis, nama_berkas, path, ukuran, mime, garansi_mulai, garansi_selesai, diunggah_oleh | ± 2.000 |
+| **asset_documents** | Dokumen pendukung aset — satu berkas terdaftar, berlaku untuk satu atau banyak aset (FR-06.1 A3) | id, file_id (→ stored_files: nama objek, ukuran, mime, status pindai), jenis, nama_berkas, keterangan, garansi_mulai, garansi_selesai, dihapus, dihapus_pada, dihapus_oleh, created_by (pengunggah) | ± 2.000 |
+| **asset_document_links** | Tautan dokumen ↔ aset (FR-06.1 A3); dilepas, tidak dihapus | id, document_id, asset_id, aktif, dilepas_pada, dilepas_oleh | ± 4.000 |
 | **asset_movements** | Riwayat mutasi lokasi | id, asset_id, room_asal_id, room_tujuan_id, tanggal, alasan, dilakukan_oleh | ± 1.000 |
 | **asset_condition_history** | Riwayat perubahan kondisi | id, asset_id, kondisi_lama, kondisi_baru, alasan, referensi_jenis, referensi_id, diubah_oleh, diubah_pada | ± 1.500 |
 | **notifications** | Notifikasi pengguna | id, user_id, jenis, judul, isi, referensi_jenis, referensi_id, dibaca_pada, created_at | ± 40.000 |
@@ -191,7 +192,8 @@ erDiagram
     ASSET_CATEGORIES ||--o{ ASSET_CATEGORIES : "subkategori"
     ASSET_CATEGORIES ||--o{ ASSETS : "mengelompokkan"
 
-    ASSETS ||--o{ ASSET_DOCUMENTS : "memiliki"
+    ASSETS ||--o{ ASSET_DOCUMENT_LINKS : "ditautkan"
+    ASSET_DOCUMENTS ||--o{ ASSET_DOCUMENT_LINKS : "berlaku untuk"
     ASSETS ||--o{ ASSET_MOVEMENTS : "riwayat mutasi"
     ASSETS ||--o{ ASSET_CONDITION_HISTORY : "riwayat kondisi"
 

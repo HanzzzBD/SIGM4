@@ -705,7 +705,39 @@ export interface StoredFilesTable {
     created_at: ColumnType<Date, Date | undefined, never>;
 }
 
+/** Bab 11.3 "Jenis Dokumen Aset" (0002). */
+export type AssetDocumentType = "FAKTUR" | "GARANSI" | "SERTIFIKAT" | "MANUAL" | "BERITA_ACARA" | "LAINNYA";
+
+/** Dokumen aset (0039, PR-03-06; FR-06.1). Soft delete `dihapus` (SDD-DB-04). */
+export interface AssetDocumentsTable extends KolomBaku {
+    id: Generated<string>;
+    file_id: ColumnType<string, string | number, never>;
+    jenis: AssetDocumentType;
+    nama_berkas: string;
+    keterangan: string | null;
+    /** `date`: dibaca lewat `to_char(..., YYYY-MM-DD)`, ditulis sebagai string (pola `academic_years`). */
+    garansi_mulai: ColumnType<string | null, string | null | undefined, string | null>;
+    garansi_selesai: ColumnType<string | null, string | null | undefined, string | null>;
+    dihapus: ColumnType<boolean, boolean | undefined, boolean>;
+    dihapus_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    dihapus_oleh: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+}
+
+/** Tautan dokumen ↔ aset (0039, FR-06.1 A3). Dilepas, tidak dihapus. */
+export interface AssetDocumentLinksTable {
+    id: Generated<string>;
+    document_id: ColumnType<string, string | number, never>;
+    asset_id: ColumnType<string, string | number, never>;
+    aktif: ColumnType<boolean, boolean | undefined, boolean>;
+    dilepas_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    dilepas_oleh: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    created_at: ColumnType<Date, Date | undefined, never>;
+    created_by: ColumnType<string | null, string | number | null | undefined, never>;
+}
+
 export interface Database {
+    asset_documents: AssetDocumentsTable;
+    asset_document_links: AssetDocumentLinksTable;
     document_counters: DocumentCountersTable;
     stored_files: StoredFilesTable;
     work_days: WorkDaysTable;

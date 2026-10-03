@@ -5,11 +5,12 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **161** baris, dikumpulkan dari 22 berkas modul.
+> Total: **163** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
 | DELETE | `/asset-categories/{id}` | `category.manage` | Hapus kategori yang tidak dipakai | [M-04](../02-modules/m04-assets.md) |
+| DELETE | `/assets/{id}/documents/{docId}` | `asset_document.manage` | Hapus dokumen dari aset (A2): melepas tautan aset ini; tautan terakhir → dokumen dihapus, berkas dipertahankan | [M-06](../02-modules/m06-documents.md) |
 | DELETE | `/auth/sessions/{id}` | Bearer | Mencabut satu sesi milik pengguna sendiri | 204 | 400, 401, 403 | [M-01](../02-modules/m01-auth.md) |
 | DELETE | `/device-tokens/{token}` | `notification.manage_own` | Cabut token perangkat | [M-17](../02-modules/m17-notifications.md) |
 | DELETE | `/holidays/{id}` | `setting.manage` | Hapus hari libur | [M-20](../02-modules/m20-settings.md) |
@@ -27,6 +28,7 @@
 | GET | `/assets/by-uuid/{uuid}` | `asset.view` | Detail aset dari hasil scan QR | [M-05](../02-modules/m05-qr.md) |
 | GET | `/assets/export` | `asset.export` | Ekspor XLSX/PDF | [M-04](../02-modules/m04-assets.md) |
 | GET | `/assets/{id}/documents/{docId}/download` | `asset_document.view` | URL unduhan bertanda tangan | [M-06](../02-modules/m06-documents.md) |
+| GET | `/assets/{id}/documents` | `asset_document.view` | Daftar dokumen aset beserta status pemindaian (tab Dokumen, langkah 1) | [M-06](../02-modules/m06-documents.md) |
 | GET | `/assets/{id}/service-history` | `asset.view` | Riwayat servis aset | [M-12](../02-modules/m12-maintenance.md) |
 | GET | `/assets/{id}/timeline` | `asset.view` | Linimasa riwayat aset terpaginasi: kondisi, mutasi, dan riwayat yang diisi modul lain (peminjaman, pemeliharaan, kerusakan, dokumen) — jenis sensitif disembunyikan bagi scope `restricted` (FR-04.2 langkah 5, A1) | [M-04](../02-modules/m04-assets.md) |
 | GET | `/assets/{id}` | `asset.view` | Detail aset — identitas lengkap, QR, kategori & lokasi (FR-04.2 langkah 5) | [M-04](../02-modules/m04-assets.md) |
@@ -100,7 +102,7 @@
 | POST | `/assets/import` | `asset.create` | Impor massal | [M-04](../02-modules/m04-assets.md) |
 | POST | `/assets/move` | `asset.update` | Mutasi lokasi (massal) | [M-04](../02-modules/m04-assets.md) |
 | POST | `/assets/qr/print` | `asset.qr_print` | Hasilkan PDF label QR massal (1–200 aset; FR-05.1 langkah 2–4, A1) | [M-05](../02-modules/m05-qr.md) |
-| POST | `/assets/{id}/documents` | `asset_document.manage` | Tautkan dokumen aset dari berkas terdaftar | [M-06](../02-modules/m06-documents.md) |
+| POST | `/assets/{id}/documents` | `asset_document.manage` | Tautkan dokumen aset dari berkas terdaftar; `asset_ids_tambahan` untuk A3 | [M-06](../02-modules/m06-documents.md) |
 | POST | `/assets/{id}/qr/regenerate` | `asset.qr_regenerate` | Regenerasi UUID aset — QR lama otomatis tidak berlaku; alasan wajib (FR-05.1 A2, UX-04) | [M-05](../02-modules/m05-qr.md) |
 | POST | `/assets/{id}/reinstate` | `disposal.reinstate` | Pulihkan aset yang telah dihapuskan | [M-21](../02-modules/m21-disposal.md) |
 | POST | `/assets` | `asset.create` | Buat aset (mendukung `jumlah_unit` untuk N record) | [M-04](../02-modules/m04-assets.md) |
