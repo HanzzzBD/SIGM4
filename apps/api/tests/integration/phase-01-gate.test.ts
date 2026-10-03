@@ -465,6 +465,14 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 const pesanan = (await langkah("POST /files/presign", "/files/presign", { jenis: "USER_PHOTO", mime: "image/png", ukuran: isiBerkas.length }, [])).json.data as { upload_url: string; file_id: string };
                 expect((await fetch(pesanan.upload_url, { method: "PUT", headers: { "content-type": "image/png" }, body: new Uint8Array(isiBerkas) })).status).toBe(200);
                 await langkah("POST /files/confirm", "/files/confirm", { file_id: pesanan.file_id, checksum: createHash("sha256").update(isiBerkas).digest("hex") }, ["FILE_UPLOADED"]);
+                // PR-03-06 (M-06): dokumen aset — berkas ASSET_DOCUMENT disiapkan lewat panggilan biasa
+                // (presign/confirm sudah disentuh di atas), lalu tautkan dan hapus.
+                const pdf = Buffer.from("%PDF-1.7 gerbang AL-01");
+                const pesananDok = (await panggil(mode, "POST", "/files/presign", { jenis: "ASSET_DOCUMENT", mime: "application/pdf", ukuran: pdf.length })).json.data as { upload_url: string; file_id: string };
+                await fetch(pesananDok.upload_url, { method: "PUT", headers: { "content-type": "application/pdf" }, body: new Uint8Array(pdf) });
+                await panggil(mode, "POST", "/files/confirm", { file_id: pesananDok.file_id, checksum: createHash("sha256").update(pdf).digest("hex") });
+                const dok = await langkah("POST /assets/:id/documents", `/assets/${asetId}/documents`, { file_id: Number(pesananDok.file_id), jenis: "FAKTUR", nama_berkas: "faktur.pdf" }, ["DOCUMENT_UPLOADED"]);
+                await langkah("DELETE /assets/:id/documents/:docId", `/assets/${asetId}/documents/${id(dok)}`, undefined, ["DOCUMENT_DELETED"]);
                 await langkah(
                     "PATCH /assets/:id/condition",
                     `/assets/${asetId}/condition`,
@@ -475,6 +483,7 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 // di atas hanya untuk membuktikan AL-01 POST/PATCH /assets, bukan untuk diuji di
                 // sini — disingkirkan sebelum langkah PATCH .../status di bawah (riwayat
                 // kondisi PR-02-13 lebih dulu — FK asset_condition_history.asset_id).
+                await kueri(`DELETE FROM asset_document_links WHERE asset_id = ${asetId}`); // PR-03-06: menunjuk assets
                 await kueri(`DELETE FROM asset_condition_history WHERE asset_id = ${asetId}`);
                 await kueri(`DELETE FROM asset_movements WHERE asset_id = ${asetId}`);
                 await kueri(`DELETE FROM assets WHERE room_id = ${id(ruang)}`);
@@ -605,6 +614,8 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 // PR-03-25: stored_files.uploaded_by menunjuk users; event FileUploaded dari confirm.
                 await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'stored_file'");
                 await kueri("UPDATE users SET foto_file_id = NULL");
+                await kueri("DELETE FROM asset_document_links"); // PR-03-06: dokumen menunjuk stored_files
+                await kueri("DELETE FROM asset_documents");
                 await kueri("DELETE FROM stored_files");
                 await kueri("DELETE FROM users");
             }

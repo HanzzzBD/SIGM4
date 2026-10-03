@@ -62,6 +62,29 @@ export class StoredFileRepository extends BaseRepository {
         return hasil.numUpdatedRows > 0n;
     }
 
+    /**
+     * Berkas yang boleh menjadi dokumen aset (FR-06.1, PR-03-06): unggahan pemanggil, jenis
+     * `ASSET_DOCUMENT`, sudah dikonfirmasi, tidak `INFECTED`, belum dimiliki — dikunci.
+     */
+    async kunciBerkasDokumen(ctx: AuthContext, id: number): Promise<{ readonly id: string } | undefined> {
+        return this.query(ctx)
+            .selectFrom("stored_files")
+            .select("id")
+            .where("id", "=", String(id))
+            .where("uploaded_by", "=", String(ctx.userId))
+            .where("owner_type", "=", "ASSET_DOCUMENT")
+            .where("checksum", "is not", null)
+            .where("scan_status", "<>", "INFECTED")
+            .where("owner_id", "is", null)
+            .forUpdate()
+            .executeTakeFirst();
+    }
+
+    /** Pemilik berkas = dokumen (SDD-FS-02) — berkas tak lagi yatim (SDD-FS-09). */
+    async tetapkanPemilik(ctx: AuthContext, id: string, ownerId: string): Promise<void> {
+        await this.query(ctx).updateTable("stored_files").set({ owner_id: ownerId }).where("id", "=", id).execute();
+    }
+
     /** Foto lama dilepas menjadi yatim — dibersihkan job SDD-FS-09 (keputusan 7b log phase-03). */
     async lepasFotoProfil(ctx: AuthContext, id: string): Promise<void> {
         await this.query(ctx).updateTable("stored_files").set({ owner_id: null }).where("id", "=", id).where("owner_type", "=", "USER_PHOTO").where("owner_id", "=", String(ctx.userId)).execute();

@@ -359,6 +359,13 @@ export class AssetRepository extends BaseRepository {
             .executeTakeFirstOrThrow();
     }
 
+    /** Id yang benar-benar ada di antara `ids` — tautan dokumen M-06 (FR-06.1 A3, PR-03-06). */
+    async idTerdaftar(ctx: AuthContext, ids: readonly number[]): Promise<readonly number[]> {
+        if (ids.length === 0) return [];
+        const baris = await this.query(ctx).selectFrom("assets").select("id").where("id", "in", ids.map(String)).execute();
+        return baris.map((b) => Number(b.id));
+    }
+
     /** `PATCH /assets/{id}/condition` (FR-04.3 langkah 1): baris lengkap, termasuk `status` saat ini. */
     async findById(ctx: AuthContext, id: number): Promise<AssetRow | undefined> {
         return this.query(ctx)
