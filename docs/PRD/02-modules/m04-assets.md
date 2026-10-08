@@ -197,7 +197,9 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | PUT | `/assets/{id}` | `asset.update` | Perbarui aset |
 | PATCH | `/assets/{id}/condition` | `asset.update` | Ubah kondisi + alasan |
 | POST | `/assets/move` | `asset.update` | Mutasi lokasi (massal) |
-| POST | `/assets/import` | `asset.create` | Impor massal |
+| POST | `/assets/import` | `asset.create` | Impor CSV/XLSX (`filename`, `content_base64`): ≤200 baris sinkron, >200 asinkron; replay hash 24 jam per pengunggah (`IMPT-03/04`) |
+| GET | `/assets/import/template` | `asset.create` | Unduh template XLSX E.5.1 beserta contoh (`IMPT-05`) |
+| GET | `/assets/import/{id}` | `asset.create` | Status, hitungan baris sukses/gagal, unit dibuat, alasan dan isian asli baris gagal untuk koreksi (`IMPT-02`); hanya pengunggah |
 | GET | `/assets/export` | `asset.export` | Ekspor XLSX/PDF |
 | GET | `/asset-categories` | `asset.view` | Daftar kategori |
 | POST | `/asset-categories` | `category.manage` | Buat kategori |
@@ -218,14 +220,21 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 | **asset_movements** | Riwayat mutasi lokasi | id, asset_id, room_asal_id, room_tujuan_id, tanggal, alasan, dilakukan_oleh | ± 1.000 |
 | **asset_condition_history** | Riwayat perubahan kondisi | id, asset_id, kondisi_lama, kondisi_baru, alasan, referensi_jenis, referensi_id, diubah_oleh, diubah_pada | ± 1.500 |
 | **asset_photos** | Foto aset (menggantikan field tunggal `assets.foto`) | id, asset_id, path, urutan, is_primary, diunggah_oleh | ± 6.000 |
+| **asset_import_jobs** | Pekerjaan impor aset sinkron/asinkron (`IMPT-02/03/04`) | id, file_hash, nama_berkas, status, total_baris, baris_terproses, sukses, gagal, unit_dibuat, laporan_gagal, pesan_galat, selesai_pada | Pengunggah; `assets.import_job_id` menautkan hasil |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
+
+**Kontrak impor aset (keputusan produk 8 Oktober 2026, PR-02-38).** Setiap impor yang dapat dibaca mempunyai satu `asset_import_jobs`. Header wajib mengikuti kolom wajib E.5.1; header hilang/duplikat, berkas rusak atau tanpa baris ditolak sebelum job dibuat. Nomor baris laporan mengikuti baris fisik berkas (header baris 1). Kolom opsional kosong menjadi NULL; nomor seri tetap teks dan hanya sah untuk `jumlah_unit = 1` (`BR-003`). Enum menerima label Indonesia maupun kode teknis; boolean menerima `true`/`false`. Tahun memakai tahun berjalan WIB. `penanggung_jawab_id` dan `procurement_id` tidak ada pada E.5.1 dan tetap NULL. Semua unit satu baris beserta progresnya atomik; baris lain tetap diproses (`IMPT-01`). Laporan dan replay hanya milik pengunggah, termasuk pemegang scope `all`; pemanggil lain memperoleh 404. Kolom `assets.import_job_id` menghubungkan hasil dengan job untuk filter katalog (`filter[import_job_id]`). Berkas mentah dikosongkan saat job berakhir; laporan tetap dapat ditinjau melalui ID job (`UXD-06`).
 
 ## 9. Notification
 
 ### Notifikasi diterbitkan modul ini
 
-_Modul ini tidak menerbitkan notifikasi._
+| Kode | Pemicu | Penerima | Kanal | Wajib | Pesan |
+|---|---|---|---|---|---|
+| **NT-55** | Impor aset >200 baris berakhir, termasuk pekerjaan gagal (`IMPT-04`) | Pengunggah | In-app + Push | ✅ | "Impor aset {status}: {sukses} berhasil, {gagal} gagal dari {total} baris; {unit} unit dibuat." |
+
+Tautan hasil menuju P-17 `/aset/impor?job={id}`. Worker mengecek akun aktif dan permission `asset.create` terbaru sebelum memproses; pencabutan izin menutup pekerjaan GAGAL dan mempertahankan unit yang sudah tersimpan.
 
 Ketentuan umum kanal, latensi, dan preferensi: [`m17-notifications.md`](m17-notifications.md).
 
@@ -257,6 +266,8 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | `ASSET_STATUS_CHANGED` | Perubahan status termasuk yang otomatis oleh sistem |
 | `ASSET_MOVED` | Mutasi lokasi beserta asal dan tujuan |
 | `ASSET_IMPORTED` | Impor massal |
+| `ASSET_IMPORT_REQUESTED` | Penerimaan pekerjaan sinkron/asinkron beserta outbox dalam satu transaksi |
+| `ASSET_IMPORT_ROW_PROCESSED` | Progres satu baris, jumlah unit atau alasan gagal; atomik dengan aset yang dibuat |
 | `CATEGORY_CREATED` / `CATEGORY_UPDATED` / `CATEGORY_DELETED` | Perubahan kategori |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).

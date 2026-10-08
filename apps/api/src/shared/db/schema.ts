@@ -382,6 +382,29 @@ export interface PasswordResetRequestsTable {
     alasan_penolakan: ColumnType<string | null, string | null | undefined, string | null>;
 }
 
+/** Pendahulu PR-02-38, SDD-DB-24; laporan menyimpan isian untuk berkas koreksi F-05. */
+export interface AssetImportJobsTable extends Omit<KolomBaku, "created_at" | "updated_at"> {
+    created_at: ColumnType<Date, Date | undefined, never>;
+    updated_at: ColumnType<Date, Date | undefined, never>;
+    id: Generated<string>;
+    file_hash: string;
+    nama_berkas: string;
+    status: "MENUNGGU" | "BERJALAN" | "SELESAI" | "GAGAL";
+    total_baris: number;
+    baris_terproses: Generated<number>;
+    sukses: Generated<number>;
+    gagal: Generated<number>;
+    unit_dibuat: Generated<number>;
+    laporan_gagal: ColumnType<
+        readonly { baris: number; nama_barang: string | null; pesan: string; data: Readonly<Record<string, string>> }[],
+        string | undefined,
+        string | RawBuilder<unknown>
+    >;
+    berkas: ColumnType<Buffer | null, Buffer | null | undefined, Buffer | null>;
+    pesan_galat: ColumnType<string | null, string | null | undefined, string | null>;
+    selesai_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+}
+
 /**
  * `user_import_jobs` (0020, PR-01-17). Setiap impor pengguna — jangkar idempotensi
  * hash-berkas (IMPT-03) dan sumber laporan per baris (IMPT-02). `berkas` hanya
@@ -471,6 +494,7 @@ export interface AssetsTable extends KolomBaku {
     penanggung_jawab_id: ColumnType<string | null, string | number | null, string | number | null>;
     qr_terpasang: Generated<boolean>;
     procurement_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    import_job_id: ColumnType<string | null, string | null | undefined, string | null>;
     dihapuskan: Generated<boolean>;
     tanggal_penghapusan: ColumnType<Date | null, Date | null | undefined, Date | null>;
 }
@@ -761,6 +785,7 @@ export interface Database {
     work_units: WorkUnitsTable;
     student_enrollments: StudentEnrollmentsTable;
     user_import_jobs: UserImportJobsTable;
+    asset_import_jobs: AssetImportJobsTable;
     refresh_tokens: RefreshTokensTable;
     password_reset_requests: PasswordResetRequestsTable;
     totp_backup_codes: TotpBackupCodesTable;

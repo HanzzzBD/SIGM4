@@ -5,7 +5,7 @@
 # Indeks Aksi Activity Log
 
 > Setiap aksi dimiliki modul penerbitnya. Prinsip pencatatan di `../03-architecture/activity-log.md`.
-> Total: **80** baris, dikumpulkan dari 22 berkas modul.
+> Total: **82** baris, dikumpulkan dari 22 berkas modul.
 
 | Aksi | Keterangan | Pemilik |
 |---|---|---|
@@ -26,6 +26,8 @@
 | `ASSET_CREATED` / `ASSET_UPDATED` / `ASSET_DEACTIVATED` | Termasuk pembuatan massal N unit | [M-04](../02-modules/m04-assets.md) |
 | `ASSET_DISPOSAL_PROPOSED` / `DECIDED` / `EXECUTED` / `CANCELLED` | Siklus penghapusan aset (M-21) | [M-21](../02-modules/m21-disposal.md) |
 | `ASSET_IMPORTED` | Impor massal | [M-04](../02-modules/m04-assets.md) |
+| `ASSET_IMPORT_REQUESTED` | Penerimaan pekerjaan sinkron/asinkron beserta outbox dalam satu transaksi | [M-04](../02-modules/m04-assets.md) |
+| `ASSET_IMPORT_ROW_PROCESSED` | Progres satu baris, jumlah unit atau alasan gagal; atomik dengan aset yang dibuat | [M-04](../02-modules/m04-assets.md) |
 | `ASSET_MOVED` | Mutasi lokasi beserta asal dan tujuan | [M-04](../02-modules/m04-assets.md) |
 | `ASSET_QR_PRINTED` | Pencetakan label beserta jumlah | [M-05](../02-modules/m05-qr.md) |
 | `ASSET_QR_REGENERATED` | Regenerasi UUID QR | [M-05](../02-modules/m05-qr.md) |
