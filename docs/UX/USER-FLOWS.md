@@ -197,7 +197,7 @@ flowchart TD
     C --> D{"Berkas sama diunggah ulang<br/>dalam 24 jam?"}
     D -->|Ya| E(["Dikenali idempoten, hasil sebelumnya<br/>ditampilkan · IMPT-03"])
     D -->|Tidak| F{Jumlah baris}
-    F -->|"Lebih dari 200"| G["Diproses asinkron<br/>NT-42 saat selesai · IMPT-04"]
+    F -->|"Lebih dari 200"| G["Diproses asinkron<br/>notifikasi modul pemilik saat selesai · IMPT-04"]
     F -->|"200 atau kurang"| H["Diproses langsung"]
     G --> I
     H --> I["Validasi baris per baris<br/>baris gagal tidak menggagalkan berkas · IMPT-01"]
@@ -208,6 +208,8 @@ flowchart TD
 ```
 
 **Keadaan sukses impor bukan toast** — ia halaman ringkasan yang dapat ditinjau ulang (**UXD-06**), karena `IMPT-02` mewajibkan alasan galat per nomor baris.
+
+P-17 memakai kontrak M-04 §7–11 dan `NT-55`; parameter `job` pada URL memulihkan laporan saat halaman dibuka ulang atau lewat notifikasi. Unduh koreksi menggunakan isian baris gagal; tautan katalog memakai `filter[import_job_id]`. P-15 dan notifikasi mengikuti ketersediaan halaman pada registri navigasi build.
 
 ### F-06 Perubahan kondisi & mutasi lokasi
 

@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **163** baris, dikumpulkan dari 22 berkas modul.
+> Total: **165** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -27,6 +27,8 @@
 | GET | `/assets/availability` | `reservation.view` | Ketersediaan unit aset pada rentang waktu | [M-08](../02-modules/m08-reservation-item.md) |
 | GET | `/assets/by-uuid/{uuid}` | `asset.view` | Detail aset dari hasil scan QR | [M-05](../02-modules/m05-qr.md) |
 | GET | `/assets/export` | `asset.export` | Ekspor XLSX/PDF | [M-04](../02-modules/m04-assets.md) |
+| GET | `/assets/import/template` | `asset.create` | Unduh template XLSX E.5.1 beserta contoh (`IMPT-05`) | [M-04](../02-modules/m04-assets.md) |
+| GET | `/assets/import/{id}` | `asset.create` | Status, hitungan baris sukses/gagal, unit dibuat, alasan dan isian asli baris gagal untuk koreksi (`IMPT-02`); hanya pengunggah | [M-04](../02-modules/m04-assets.md) |
 | GET | `/assets/{id}/documents/{docId}/download` | `asset_document.view` | URL unduhan bertanda tangan | [M-06](../02-modules/m06-documents.md) |
 | GET | `/assets/{id}/documents` | `asset_document.view` | Daftar dokumen aset beserta status pemindaian (tab Dokumen, langkah 1) | [M-06](../02-modules/m06-documents.md) |
 | GET | `/assets/{id}/service-history` | `asset.view` | Riwayat servis aset | [M-12](../02-modules/m12-maintenance.md) |
@@ -99,7 +101,7 @@
 | POST | `/asset-categories` | `category.manage` | Buat kategori | [M-04](../02-modules/m04-assets.md) |
 | POST | `/asset-disposals/{id}/execute` | `disposal.execute` | Catat pelaksanaan fisik & hapuskan aset | [M-21](../02-modules/m21-disposal.md) |
 | POST | `/asset-disposals` | `disposal.create` | Buat usulan penghapusan aset | [M-21](../02-modules/m21-disposal.md) |
-| POST | `/assets/import` | `asset.create` | Impor massal | [M-04](../02-modules/m04-assets.md) |
+| POST | `/assets/import` | `asset.create` | Impor CSV/XLSX (`filename`, `content_base64`): ≤200 baris sinkron, >200 asinkron; replay hash 24 jam per pengunggah (`IMPT-03/04`) | [M-04](../02-modules/m04-assets.md) |
 | POST | `/assets/move` | `asset.update` | Mutasi lokasi (massal) | [M-04](../02-modules/m04-assets.md) |
 | POST | `/assets/qr/print` | `asset.qr_print` | Hasilkan PDF label QR massal (1–200 aset; FR-05.1 langkah 2–4, A1) | [M-05](../02-modules/m05-qr.md) |
 | POST | `/assets/{id}/documents` | `asset_document.manage` | Tautkan dokumen aset dari berkas terdaftar; `asset_ids_tambahan` untuk A3 | [M-06](../02-modules/m06-documents.md) |
