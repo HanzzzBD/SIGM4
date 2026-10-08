@@ -3,7 +3,7 @@
 `PR-02-39` — kontrak dan skema pendahulu impor aset
 Phase: [phase-02.md](../phases/phase-02.md) · Kompleksitas: `S`
 
-Cabang lokal: `chore/PR-02-39-skema-berita-acara-mutasi`. Digabung lebih dahulu; fitur berada di cabang bertumpuk `feature/PR-02-39-berita-acara-mutasi`. Belum dipublikasikan sebagai PR GitHub.
+Cabang: `chore/PR-02-39-skema-berita-acara-mutasi`, basis `feature/PR-02-38-impor-aset` ([PR #133](https://github.com/HanzzzBD/SIGM4/pull/133)). Fitur berada di cabang bertumpuk `feature/PR-02-39-berita-acara-mutasi`; sesuaikan basis ke develop setelah pendahulu merge.
 
 ## Yang dikerjakan
 
@@ -36,6 +36,7 @@ Menetapkan kontrak satu PDF per operasi mutasi dan persistensi snapshot transaks
 |---|---|
 | Unit | Pemetaan enum Bab 11.3 dan konsistensi SQL migration melalui invariant suite API |
 | Integrasi | `m04-movement-schema.test.ts`: 4 uji termasuk penjaga lingkungan, constraint snapshot/terminal/immutabilitas, down/up mempertahankan aset dan riwayat |
+| Regresi migration | Empat uji skema dan tiga uji urutan ID lulus pada DB PostgreSQL 18 baru; rollback kini menghitung seluruh migration sampai 0039, termasuk 0042, lalu memulihkan skema |
 | Otorisasi (termasuk kasus penolakan) | —; route berada pada PR fitur |
 | Konkurensi | —; advisory lock operasi diuji pada PR fitur |
 
@@ -64,4 +65,4 @@ Menetapkan kontrak satu PDF per operasi mutasi dan persistensi snapshot transaks
 Revert fitur konsumen dahulu, kemudian down migration 0042. Aset dan riwayat mutasi tetap ada; snapshot/relasi dokumen hilang dan file keluaran menjadi yatim untuk lifecycle. Pilihan rollout utama adalah mempertahankan expand sambil mengembalikan kode konsumen.
 ## Catatan untuk peninjau
 
-Pemisahan skema dipilih pemilik produk. Koreksi keputusan akses: permission khusus asset_movement_document.view diberi hanya R-01/R-02/R-03; permission dokumen M-06 tetap. Cache role diinvalidasi lewat role_version. Basis lokal bertumpuk di atas fitur PR-02-38 (3ce5c75); integrasi remote mengikuti urutan merge. Tidak ada backfill berita acara lama. Snapshot tidak mempunyai jalur update pada tipe Kysely. Jenis berkas sistem ditolak layanan presign dan tidak ditambahkan ke allowlist unggah HTTP. Perubahan audit closure yang sudah ada tetap di working tree dan tidak termasuk commit ini.
+Pemisahan skema dipilih pemilik produk. Koreksi keputusan akses: permission khusus asset_movement_document.view diberi hanya R-01/R-02/R-03; permission dokumen M-06 tetap. Cache role diinvalidasi lewat role_version. Basis bertumpuk di atas fitur PR-02-38 terbaru (95163df), yang meneruskan kode impor ke develop sesudah merge ke cabang pendahulu. Patch High/Critical yang dipilih produk sudah tergabung melalui #131; tidak dibuat PR dependency duplikat. Tidak ada backfill berita acara lama. Snapshot tidak mempunyai jalur update pada tipe Kysely. Jenis berkas sistem ditolak layanan presign dan tidak ditambahkan ke allowlist unggah HTTP. Perubahan audit closure yang sudah ada tetap di working tree dan tidak termasuk commit ini.
