@@ -21,6 +21,7 @@ import {
     HalamanGantiPassword,
     HalamanLogin,
     HalamanImporAset,
+    HalamanMutasiAset,
     HalamanTanpaAkses,
     HalamanTidakDitemukan,
     HalamanVerifikasiDuaFaktor,
@@ -166,6 +167,19 @@ const assetImportRoute = createRoute({
     },
 });
 const dataTidakTersediaRoute = createRoute({ getParentRoute: () => shellRoute, path: "/data-tidak-tersedia", component: HalamanDataTidakTersedia });
+const assetMovementRoute = createRoute({
+    getParentRoute: () => shellRoute, path: "/aset/mutasi",
+    beforeLoad: async ({ context }) => {
+        const sesi = await context.queryClient.ensureQueryData(kueriMe);
+        if (sesi.permissions["asset.update"] === undefined && sesi.permissions["asset_movement_document.view"] === undefined) throw redirect({ to: "/tidak-punya-akses" });
+    },
+    validateSearch: z.object({ document: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1))), undefined) }),
+    component: function MovementRoute() {
+        const { document } = assetMovementRoute.useSearch();
+        const navigate = useNavigate({ from: assetMovementRoute.fullPath });
+        return <HalamanMutasiAset documentId={document ?? null} onDocument={(id) => void navigate({ search: { document: id ?? undefined } })} />;
+    },
+});
 
 export const routeTree = rootRoute.addChildren([
     loginRoute,
@@ -174,7 +188,7 @@ export const routeTree = rootRoute.addChildren([
     gantiPasswordRoute,
     gangguanRoute,
     tidakDitemukanRoute,
-    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {

@@ -9,12 +9,18 @@
 // notifikasi (A1/A2) TIDAK ada di sini, lihat docstring `ubahKondisi`.
 
 import type { Kysely } from "kysely";
+import { randomUUID } from "node:crypto";
+import { MoveAssetsBodySchema } from "@sigm4/schemas";
+import type { AssetMovementSnapshot } from "@sigm4/schemas";
 import type { AuthContext } from "../../../shared/auth/index.js";
 import type { AuditLogger } from "../../../shared/audit/index.js";
 import type { Clock } from "../../../shared/clock/index.js";
 import type { Database, TransactionScope } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
-import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
+import { DomainError, ForbiddenError, NotFoundError } from "../../../shared/errors/index.js";
+import { publish } from "../../../shared/events/index.js";
+import { movementDocumentRepository } from "../repositories/movement-document.repository.js";
+import { EVENT_MOVEMENT_DOCUMENT_REQUESTED } from "./movement-document.service.js";
 import type {
     AssetFields,
     AssetRow,
@@ -415,19 +421,28 @@ export class AssetService {
      * BR-010 `Dipinjam` dan A1 `Direservasi`).
      *
      * **TERBUKA:** A1 memeriksa pinjaman/reservasi PADA `tanggal` mutasi — itu
-     * `booking_slots` (BR-005a, `PR-02-16`/`PR-02-17`), belum ada; yang diperiksa
-     * di sini hanya `status` SAAT INI. Validasi kapasitas lokasi tujuan (langkah 3)
+     * Pemeriksaan `booking_slots` pada tanggal mutasi masih GAP-02-MOVE-SLOT;
+     * yang diperiksa di sini hanya `status` SAAT INI. Validasi kapasitas lokasi tujuan (langkah 3)
      * ditunda — tidak ada konsep kapasitas aset di skema (`rooms.kapasitas` adalah
-     * kapasitas orang); dikonfirmasi pemilik produk. Berita acara PDF (AC) menunggu
-     * pembangkit PDF (`SDD-FS-12`) yang belum dibangun.
+     * kapasitas orang); dikonfirmasi pemilik produk. PDF dijadwalkan melalui
+     * outbox dalam transaksi yang sama (PR-02-39, SDD-FS-12).
      */
     async mutasiLokasi(ctx: AuthContext, input: MutasiLokasiInput): Promise<readonly AssetRow[]> {
+        return (await this.moveWithDocument(ctx, input)).assets;
+    }
+
+    async moveWithDocument(ctx: AuthContext, input: MutasiLokasiInput): Promise<{ readonly assets: readonly AssetRow[]; readonly documentId: string }> {
+        if (!ctx.can("asset.update")) throw new ForbiddenError();
+        MoveAssetsBodySchema.parse({ asset_ids: input.assetIds, room_tujuan_id: input.roomTujuanId,
+            tanggal_mutasi: input.tanggal, alasan: input.alasan, penanggung_jawab_baru_id: input.penanggungJawabBaruId });
         const assetIds = [...new Set(input.assetIds)];
 
         return withTransaction(
             ctx,
             async (scope) => {
                 const repo = createAssetRepository(scope.tx);
+                const documents = movementDocumentRepository(scope.tx);
+                await documents.lockAssets(ctx, assetIds);
                 const ruangan = await repo.findRuanganAktifById(scope.ctx, input.roomTujuanId);
                 if (ruangan === undefined) {
                     throw new DomainError(
@@ -437,7 +452,17 @@ export class AssetService {
                     );
                 }
 
-                const dipindah: AssetRow[] = [];
+                const pelaku = await documents.person(ctx, ctx.userId);
+                if (pelaku === undefined) throw new ForbiddenError();
+                const responsable = input.penanggungJawabBaruId === null ? null : await documents.person(ctx, input.penanggungJawabBaruId);
+                if (responsable === undefined || (responsable !== null && responsable.status !== "AKTIF")) {
+                    throw new DomainError("VALIDATION_ERROR", "Penanggung jawab baru harus pengguna aktif.", { field: "penanggung_jawab_baru_id" });
+                }
+                const now = this.clock.now();
+                const snapshot: AssetMovementSnapshot = { versi: 1, tanggal_mutasi: input.tanggal, dicatat_pada: now.toISOString(),
+                    pelaku: { id: pelaku.id, nama: pelaku.nama }, alasan: input.alasan.trim(),
+                    tujuan: await documents.location(ctx, input.roomTujuanId), aset: [] };
+                const sumber: AssetRow[] = [];
                 for (const id of assetIds) {
                     const aset = await repo.findById(scope.ctx, id);
                     if (aset === undefined) {
@@ -453,11 +478,26 @@ export class AssetService {
                         );
                     }
 
+                    const lama = aset.penanggung_jawab_id === null ? null : await documents.person(ctx, Number(aset.penanggung_jawab_id)) ?? null;
+                    const baru = responsable ?? lama;
+                    snapshot.aset.push({ id: aset.id, kode_barang: aset.kode_barang, nama: aset.nama, nomor_seri: aset.nomor_seri,
+                        asal: await documents.location(ctx, Number(aset.room_id)),
+                        penanggung_jawab_lama: lama === null ? null : { id: lama.id, nama: lama.nama },
+                        penanggung_jawab_baru: baru === null ? null : { id: baru.id, nama: baru.nama } });
+                    sumber.push(aset);
+                }
+                const key = `asset-movement-document/${String(now.getUTCFullYear())}/${String(now.getUTCMonth() + 1).padStart(2, "0")}/${randomUUID()}.pdf`;
+                const documentId = await documents.create(ctx, snapshot, key);
+                const dipindah: AssetRow[] = [];
+                for (const aset of sumber) {
+                    const id = Number(aset.id);
+
                     const diperbarui = await repo.updateLokasi(scope.ctx, id, {
                         roomId: input.roomTujuanId,
                         ...(input.penanggungJawabBaruId === null ? {} : { penanggungJawabId: input.penanggungJawabBaruId }),
                     });
                     await repo.insertMutasi(scope.ctx, {
+                        documentId,
                         assetId: id,
                         roomAsalId: aset.room_id,
                         roomTujuanId: input.roomTujuanId,
@@ -476,7 +516,11 @@ export class AssetService {
                     });
                     dipindah.push(diperbarui);
                 }
-                return dipindah;
+                await this.audit.write(scope, { modul: MODUL, aksi: "ASSET_MOVEMENT_DOCUMENT_REQUESTED", entitas: "asset_movement_documents",
+                    entitasId: documentId, nilaiSesudah: { jumlah_aset: sumber.length, tanggal_mutasi: input.tanggal } });
+                await publish(scope, { name: EVENT_MOVEMENT_DOCUMENT_REQUESTED, aggregateType: "asset_movement_document",
+                    aggregateId: documentId, payload: { document_id: documentId } });
+                return { assets: dipindah, documentId };
             },
             this.db,
         );

@@ -1,6 +1,6 @@
 ## PR
 
-`PR-02-39` — kontrak dan skema pendahulu impor aset
+`PR-02-39` — kontrak dan skema pendahulu berita acara mutasi
 Phase: [phase-02.md](../phases/phase-02.md) · Kompleksitas: `S`
 
 Cabang lokal: `chore/PR-02-39-skema-berita-acara-mutasi`. Digabung lebih dahulu; fitur berada di cabang bertumpuk `feature/PR-02-39-berita-acara-mutasi`. Belum dipublikasikan sebagai PR GitHub.
@@ -56,7 +56,7 @@ Menetapkan kontrak satu PDF per operasi mutasi dan persistensi snapshot transaks
 ## Tinjauan arsitek
 
 - [ ] Tidak diperlukan
-- [x] Diperlukan — menyentuh: `migration`
+- [x] Diperlukan — menyentuh: `migration` dan katalog permission/default role
   Peninjau: belum ditetapkan; wajib sebelum merge sesuai BRANCHING §3.1.
 
 ## Rollback

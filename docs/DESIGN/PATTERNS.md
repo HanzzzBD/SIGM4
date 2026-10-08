@@ -471,6 +471,8 @@ Perubahan belum tersimpan saat meninggalkan formulir memakai dialog **tanpa** fi
 
 # 11. CTA Hierarchy
 
+**P-20 mutasi (`FR-04.4`, PR-02-39).** Form memakai C-08/C-09, pemilihan unit C-10 dan penghitung permanen maksimal 50; pilihan lintas halaman dipertahankan. Aset terhalang tetap terlihat dengan status dan alasan. Container `max-w-3xl`, satu kolom pada mobile; ringkasan hasil dua kolom mulai `sm`. Setelah sukses, URL membuka hasil dan form diganti status PDF. Aksi utama form "Simpan mutasi", aksi utama hasil SIAP "Unduh PDF"; "Mutasi baru" sekunder. MENUNGGU/BERJALAN berupa status live, GAGAL berupa C-14 yang menjelaskan mutasi tersimpan, tanpa tombol proses ulang worker. Semua warna/ruang/kontrol menggunakan token yang sama dengan form aplikasi lainnya.
+
 ## 11.1 Tiga tingkat pada setiap layar
 
 | Tingkat | Varian tombol | Jumlah | Contoh pada P-15 |

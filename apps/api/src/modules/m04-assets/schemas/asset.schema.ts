@@ -1,6 +1,8 @@
 // Skema Zod M-04 (SDD-API-01, SDD-API-11, `m04-assets.md` §7).
 
 import { z } from "zod";
+import { MoveAssetsBodySchema, AssetMovementReceiptSchema } from "@sigm4/schemas";
+export { MoveAssetsBodySchema };
 
 /** Katalog `asset_condition`/`asset_status` (0002, Phase 00) — tabel `assets` belum ada. */
 const AssetConditionSchema = z.enum(["BAIK", "RUSAK_RINGAN", "RUSAK_BERAT", "HILANG"]);
@@ -107,19 +109,12 @@ export const UpdateAssetConditionResponseSchema = z.object({
  * massal); satu ruangan tujuan untuk seluruhnya. `alasan` pola `max(500)` sama
  * dengan `alasan` di skema lain; `tanggal_mutasi` pola `z.iso.date()` (M-20).
  */
-export const MoveAssetsBodySchema = z.object({
-    asset_ids: z.array(z.coerce.number().int().positive()).min(1).max(50),
-    room_tujuan_id: z.coerce.number().int().positive(),
-    tanggal_mutasi: z.iso.date(),
-    alasan: z.string().trim().min(1).max(500),
-    penanggung_jawab_baru_id: z.coerce.number().int().positive().nullable().optional(),
-});
 
 /** FR-04.4 langkah 4: seluruh aset yang dipindahkan, pasca-mutasi. */
 export const MoveAssetsResponseSchema = z.object({
     success: z.literal(true),
     data: z.array(AssetSchema),
-    meta: z.object({ jumlah_aset: z.number() }),
+    meta: z.object({ jumlah_aset: z.number(), berita_acara: AssetMovementReceiptSchema }),
 });
 
 /** `GET /rooms/{id}/assets` (FR-03.2 langkah 4). */

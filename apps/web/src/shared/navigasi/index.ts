@@ -17,6 +17,7 @@ export const HALAMAN_TERDAFTAR: Readonly<Record<string, string>> = {
     "P-11": "/tidak-ditemukan",
     "P-12": "/",
     "P-17": "/aset/impor",
+    "P-20": "/aset/mutasi",
     "P-68": "/approval-rules",
     "P-69": "/approval-rules/$id",
 };
