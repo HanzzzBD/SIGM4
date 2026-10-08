@@ -56,4 +56,12 @@ describe.skipIf(!process.env["DATABASE_URL"])("SDD-DB-25 migration berita acara"
             ROLLBACK;`);
         expect(await kueri("SELECT to_regclass('asset_movement_documents')::text name")).toEqual([{ name: "asset_movement_documents" }]);
     });
+    it("snapshot dan kunci objek tidak dapat disunting setelah transaksi", async () => {
+        const id = (await kueri<{ id: string }>(`INSERT INTO asset_movement_documents(snapshot,object_key,created_by)
+            VALUES ('{"aset":[{}]}'::jsonb,'immutable-${tag}',${owner}) RETURNING id::text`))[0]!.id;
+        try {
+            await expect(kueri(`UPDATE asset_movement_documents SET snapshot='{"aset":[{},{}]}'::jsonb WHERE id=${id}`)).rejects.toMatchObject({ code: "23514" });
+            await expect(kueri(`UPDATE asset_movement_documents SET object_key='changed' WHERE id=${id}`)).rejects.toMatchObject({ code: "23514" });
+        } finally { await kueri(`DELETE FROM asset_movement_documents WHERE id=${id}`); }
+    });
 });

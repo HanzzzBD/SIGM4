@@ -171,6 +171,7 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 | `asset.export` | Aset | Mengekspor daftar aset | Admin, Petugas, Pimpinan |
 | `asset.qr_print` | Aset | Mencetak label QR | Admin, Petugas |
 | `asset.qr_regenerate` 🔒 | Aset | Meregenerasi UUID QR | Admin |
+| `asset_movement_document.view` | Aset | Melihat & mengunduh berita acara mutasi (M-04) | Admin, Petugas, Pimpinan |
 | `asset_document.view` | Dokumen | Melihat & mengunduh dokumen aset | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf |
 | `asset_document.manage` | Dokumen | Unggah & hapus dokumen aset | Admin, Petugas |
 | `reservation.view` | Reservasi | Melihat kalender & daftar reservasi | Semua (scope berbeda) |

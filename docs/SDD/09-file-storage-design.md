@@ -140,7 +140,7 @@ Validasi MIME dilakukan **dua kali**: saat presign (berdasarkan deklarasi klien)
 
 ```
 GET /assets/{id}/documents/{docId}/download
-   1. permission asset_document.view + scope         PM-03
+   1. permission asset_movement_document.view + scope         PM-03
    2. stored_files.scan_status = CLEAN?  bila tidak -> 409 FILE_NOT_SCANNED
    3. terbitkan presigned GET, 15 menit               FR-06.1
    4. catat DOCUMENT_DOWNLOADED                       AL-* (FR-06.1 AC)

@@ -197,8 +197,8 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | PUT | `/assets/{id}` | `asset.update` | Perbarui aset |
 | PATCH | `/assets/{id}/condition` | `asset.update` | Ubah kondisi + alasan |
 | POST | `/assets/move` | `asset.update` | Mutasi lokasi (massal) |
-| GET | `/assets/movements/{id}/document` | `asset_document.view` | Status dan data tetap berita acara satu operasi mutasi |
-| GET | `/assets/movements/{id}/document/download` | `asset_document.view` | URL privat PDF siap, berlaku 15 menit; setiap penerbitan diaudit |
+| GET | `/assets/movements/{id}/document` | `asset_movement_document.view` | Status dan data tetap berita acara satu operasi mutasi |
+| GET | `/assets/movements/{id}/document/download` | `asset_movement_document.view` | URL privat PDF siap, berlaku 15 menit; setiap penerbitan diaudit |
 | POST | `/assets/import` | `asset.create` | Impor CSV/XLSX (`filename`, `content_base64`): ≤200 baris sinkron, >200 asinkron; replay hash 24 jam per pengunggah (`IMPT-03/04`) |
 | GET | `/assets/import/template` | `asset.create` | Unduh template XLSX E.5.1 beserta contoh (`IMPT-05`) |
 | GET | `/assets/import/{id}` | `asset.create` | Status, hitungan baris sukses/gagal, unit dibuat, alasan dan isian asli baris gagal untuk koreksi (`IMPT-02`); hanya pengunggah |
@@ -233,7 +233,7 @@ Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-archit
 
 **Kontrak berita acara mutasi (keputusan produk 8 Oktober 2026, PR-02-39).** `POST /assets/move` mempertahankan array aset pada `data` dan menambah `meta.berita_acara = {id,status:MENUNGGU}`. Satu operasi (1–50 unit) mempunyai satu ID berita acara dan satu snapshot tetap: kode/nama/nomor seri aset, asal/tujuan beserta hierarki lokasi, tanggal mutasi, waktu transaksi, nama/ID pelaku, alasan serta penanggung jawab lama/baru. Nilai finansial tidak dimuat. Snapshot, perubahan lokasi, riwayat, audit dan event outbox `AssetMovementDocumentRequested` atomik; mutasi gagal tidak menghasilkan dokumen/job. Worker setelah commit membuat PDF A4/1.7; kegagalan render/storage tidak membatalkan mutasi. Status `MENUNGGU → BERJALAN → SIAP/GAGAL` ditampilkan pada P-20 `/aset/mutasi?document={id}`; percobaan worker maksimum tiga, tanpa tombol proses ulang bisnis. Riwayat lama tanpa snapshot tidak dibuatkan PDF retrospektif.
 
-Pembaca bawaan: Administrator, Petugas, Pimpinan melalui permission milik M-06 `asset_document.view`; scope `all` membaca semua, `own` hanya operasi pelaku sendiri, scope lain tidak membaca operasi. Pembaca di luar scope/ID hilang memperoleh 404; tanpa permission 403. Status mengembalikan snapshot dan pesan kegagalan aman, tanpa object key/URL privat. Unduhan sebelum SIAP/CLEAN memperoleh `409 FILE_NOT_SCANNED`; setelah siap mengembalikan `{url,expires_at,nama_berkas}` tanpa byte melalui API. Setiap URL yang berhasil diterbitkan dicatat `ASSET_MOVEMENT_DOCUMENT_DOWNLOADED` sebelum respons. Penomoran formal/tanda tangan tidak ditetapkan; dokumen memakai ID operasi. Perubahan nama master setelah transaksi tidak mengubah isi PDF.
+Pembaca bawaan: Administrator, Petugas, Pimpinan melalui permission khusus M-04 `asset_movement_document.view`; scope `all` membaca semua, `own` hanya operasi pelaku sendiri, scope lain tidak membaca operasi. Pembaca di luar scope/ID hilang memperoleh 404; tanpa permission 403. Status mengembalikan snapshot dan pesan kegagalan aman, tanpa object key/URL privat. Unduhan sebelum SIAP/CLEAN memperoleh `409 FILE_NOT_SCANNED`; setelah siap mengembalikan `{url,expires_at,nama_berkas}` tanpa byte melalui API. Setiap URL yang berhasil diterbitkan dicatat `ASSET_MOVEMENT_DOCUMENT_DOWNLOADED` sebelum respons. Penomoran formal/tanda tangan tidak ditetapkan; dokumen memakai ID operasi. Perubahan nama master setelah transaksi tidak mengubah isi PDF.
 
 ### Notifikasi diterbitkan modul ini
 
@@ -256,6 +256,7 @@ Ketentuan umum kanal, latensi, dan preferensi: [`m17-notifications.md`](m17-noti
 | `asset.view_financial` | Aset | Melihat nilai & sumber perolehan | Admin, Petugas, Pimpinan |
 | `asset.create` | Aset | Membuat & mengimpor aset | Admin, Petugas |
 | `asset.update` | Aset | Menyunting aset & mutasi lokasi | Admin, Petugas |
+| `asset_movement_document.view` | Aset | Melihat & mengunduh berita acara mutasi | Admin, Petugas, Pimpinan |
 | `asset.update_condition` | Aset | Mengubah kondisi aset | Admin, Petugas, Teknisi(`assigned`) |
 | `asset.deactivate` | Aset | Menonaktifkan aset (bukan penghapusan formal) | Admin, Petugas |
 | `asset.export` | Aset | Mengekspor daftar aset | Admin, Petugas, Pimpinan |

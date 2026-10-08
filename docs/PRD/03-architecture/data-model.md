@@ -65,7 +65,8 @@ Data yang tumbuh seiring operasional harian.
 | **approval_delegations** | Delegasi approver (FR-10.2 A3) | id, pemberi_id, penerima_id, mulai, selesai (tanggal, inklusif); satu delegasi per pemberi per tanggal | Approver |
 | **asset_documents** | Dokumen pendukung aset — satu berkas terdaftar, berlaku untuk satu atau banyak aset (FR-06.1 A3) | id, file_id (→ stored_files: nama objek, ukuran, mime, status pindai), jenis, nama_berkas, keterangan, garansi_mulai, garansi_selesai, dihapus, dihapus_pada, dihapus_oleh, created_by (pengunggah) | ± 2.000 |
 | **asset_document_links** | Tautan dokumen ↔ aset (FR-06.1 A3); dilepas, tidak dihapus | id, document_id, asset_id, aktif, dilepas_pada, dilepas_oleh | ± 4.000 |
-| **asset_movements** | Riwayat mutasi lokasi | id, asset_id, room_asal_id, room_tujuan_id, tanggal, alasan, dilakukan_oleh | ± 1.000 |
+| **asset_movements** | Riwayat mutasi lokasi | id, document_id, asset_id, room_asal_id, room_tujuan_id, tanggal, alasan, dilakukan_oleh | ± 1.000 |
+| **asset_movement_documents** | Berita acara satu operasi mutasi | id, snapshot tetap, object_key, status, file_id, pesan_galat, selesai_pada, kolom baku | 1–50 unit/operasi (`SDD-DB-25`) |
 | **asset_condition_history** | Riwayat perubahan kondisi | id, asset_id, kondisi_lama, kondisi_baru, alasan, referensi_jenis, referensi_id, diubah_oleh, diubah_pada | ± 1.500 |
 | **notifications** | Notifikasi pengguna | id, user_id, jenis, judul, isi, referensi_jenis, referensi_id, dibaca_pada, created_at | ± 40.000 |
 | **notification_deliveries** | Hasil pengiriman **per kanal** untuk satu notifikasi — satu notifikasi dapat dikirim in-app dan push dengan nasib berbeda (`FR-17.2 A3`, `A4`) | id, notification_id, kanal, status, attempts, sent_at | ± 70.000 |

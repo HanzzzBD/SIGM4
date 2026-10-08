@@ -243,7 +243,7 @@ flowchart TD
 
 **Mutasi massal via scan QR** (`FR-04.4 A2`): pemindai mobile mode beruntun mengumpulkan hingga 50 unit, lalu satu lokasi tujuan diterapkan secara atomik — bila satu unit gagal, seluruh operasi dibatalkan (`FR-04.4 AC`).
 
-P-20 web memilih 1–50 aset melalui pencarian/paginasi, lokasi aktif, tanggal dan alasan wajib, penanggung jawab baru opsional. Setelah sukses, ID hasil tersimpan pada `?document={id}`. MENUNGGU/BERJALAN dipantau otomatis; SIAP menyediakan Unduh PDF, GAGAL menjelaskan mutasi tetap tersimpan. Tombol muat ulang hanya membaca status. Pengguna ber-`asset_document.view` dapat membaca hasil tanpa form mutasi; tanpa permission hasil menampilkan keadaan tanpa akses. Mutasi gagal mempertahankan isian dan tidak menampilkan ID PDF baru.
+P-20 web memilih 1–50 aset melalui pencarian/paginasi, lokasi aktif, tanggal dan alasan wajib, penanggung jawab baru opsional. Setelah sukses, ID hasil tersimpan pada `?document={id}`. MENUNGGU/BERJALAN dipantau otomatis; SIAP menyediakan Unduh PDF, GAGAL menjelaskan mutasi tetap tersimpan. Tombol muat ulang hanya membaca status. Pengguna ber-`asset_movement_document.view` dapat membaca hasil tanpa form mutasi; tanpa permission hasil menampilkan keadaan tanpa akses. Mutasi gagal mempertahankan isian dan tidak menampilkan ID PDF baru.
 
 ## 9.3 Persetujuan
 

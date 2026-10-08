@@ -12,7 +12,7 @@ Menetapkan kontrak satu PDF per operasi mutasi dan persistensi snapshot transaks
 
 | ID | Berkas | Bagian yang dipenuhi |
 |---|---|---|
-| FR-04.4 AC 3 | [M-04](../../PRD/02-modules/m04-assets.md) | Snapshot tetap, akses asset_document.view, URL privat 15 menit, audit unduhan |
+| FR-04.4 AC 3 | [M-04](../../PRD/02-modules/m04-assets.md) | Snapshot tetap, akses asset_movement_document.view, URL privat 15 menit, audit unduhan |
 | CD-04, CD-05 | [Delivery plan PRD](../../PRD/01-product/delivery-plan.md) | Expand dan rollback skema |
 
 ## Keputusan desain yang diterapkan
@@ -35,7 +35,7 @@ Menetapkan kontrak satu PDF per operasi mutasi dan persistensi snapshot transaks
 | Jenis | Yang diuji |
 |---|---|
 | Unit | Pemetaan enum Bab 11.3 dan konsistensi SQL migration melalui invariant suite API |
-| Integrasi | `m04-movement-schema.test.ts`: 3 uji termasuk penjaga lingkungan, constraint snapshot/terminal, down/up mempertahankan aset dan riwayat |
+| Integrasi | `m04-movement-schema.test.ts`: 4 uji termasuk penjaga lingkungan, constraint snapshot/terminal/immutabilitas, down/up mempertahankan aset dan riwayat |
 | Otorisasi (termasuk kasus penolakan) | —; route berada pada PR fitur |
 | Konkurensi | —; advisory lock operasi diuji pada PR fitur |
 
@@ -64,4 +64,4 @@ Menetapkan kontrak satu PDF per operasi mutasi dan persistensi snapshot transaks
 Revert fitur konsumen dahulu, kemudian down migration 0042. Aset dan riwayat mutasi tetap ada; snapshot/relasi dokumen hilang dan file keluaran menjadi yatim untuk lifecycle. Pilihan rollout utama adalah mempertahankan expand sambil mengembalikan kode konsumen.
 ## Catatan untuk peninjau
 
-Pemisahan skema dipilih pemilik produk. Basis lokal bertumpuk di atas fitur PR-02-38 (3ce5c75); integrasi remote mengikuti urutan merge. Tidak ada backfill berita acara lama. Snapshot tidak mempunyai jalur update pada tipe Kysely. Jenis berkas sistem ditolak layanan presign dan tidak ditambahkan ke allowlist unggah HTTP. Perubahan audit closure yang sudah ada tetap di working tree dan tidak termasuk commit ini.
+Pemisahan skema dipilih pemilik produk. Koreksi keputusan akses: permission khusus asset_movement_document.view diberi hanya R-01/R-02/R-03; permission dokumen M-06 tetap. Cache role diinvalidasi lewat role_version. Basis lokal bertumpuk di atas fitur PR-02-38 (3ce5c75); integrasi remote mengikuti urutan merge. Tidak ada backfill berita acara lama. Snapshot tidak mempunyai jalur update pada tipe Kysely. Jenis berkas sistem ditolak layanan presign dan tidak ditambahkan ke allowlist unggah HTTP. Perubahan audit closure yang sudah ada tetap di working tree dan tidak termasuk commit ini.

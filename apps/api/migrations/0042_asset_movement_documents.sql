@@ -1,5 +1,11 @@
 -- Pendahulu PR-02-39: expand, FR-04.4 AC 3, SDD-DB-25, SDD-FS-12.
 -- migrate:up
+INSERT INTO permissions (kode, modul, aksi, deskripsi, inti) VALUES
+    ('asset_movement_document.view', 'Aset', 'view', 'Melihat & mengunduh berita acara mutasi (M-04)', false);
+INSERT INTO role_permissions (role_id, permission_id, scope)
+    SELECT r.id, p.id, 'ALL'::permission_scope FROM roles r CROSS JOIN permissions p
+    WHERE r.kode IN ('R-01','R-02','R-03') AND p.kode = 'asset_movement_document.view';
+UPDATE roles SET role_version = role_version + 1 WHERE kode IN ('R-01','R-02','R-03');
 ALTER TYPE file_owner_type ADD VALUE 'ASSET_MOVEMENT_DOCUMENT';
 CREATE TYPE asset_movement_document_status AS ENUM ('MENUNGGU', 'BERJALAN', 'SIAP', 'GAGAL');
 CREATE TABLE asset_movement_documents (
@@ -29,6 +35,16 @@ CREATE INDEX asset_movement_documents_owner_idx ON asset_movement_documents (cre
 CREATE INDEX asset_movement_documents_updated_by_idx ON asset_movement_documents (updated_by);
 CREATE TRIGGER asset_movement_documents_set_updated_at BEFORE UPDATE ON asset_movement_documents
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE FUNCTION preserve_movement_document_snapshot() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    IF NEW.snapshot IS DISTINCT FROM OLD.snapshot OR NEW.object_key IS DISTINCT FROM OLD.object_key
+        OR NEW.created_by IS DISTINCT FROM OLD.created_by THEN
+        RAISE EXCEPTION 'Snapshot berita acara mutasi tidak dapat diubah' USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+END $$;
+CREATE TRIGGER asset_movement_documents_preserve_snapshot BEFORE UPDATE ON asset_movement_documents
+    FOR EACH ROW EXECUTE FUNCTION preserve_movement_document_snapshot();
 ALTER TABLE asset_movements ADD COLUMN document_id bigint REFERENCES asset_movement_documents(id);
 CREATE INDEX asset_movements_document_id_idx ON asset_movements (document_id) WHERE document_id IS NOT NULL;
 
@@ -36,6 +52,7 @@ CREATE INDEX asset_movements_document_id_idx ON asset_movements (document_id) WH
 -- Kembalikan kode konsumen dahulu. Aset dan riwayat mutasi dipertahankan.
 ALTER TABLE asset_movements DROP COLUMN IF EXISTS document_id;
 DROP TABLE IF EXISTS asset_movement_documents;
+DROP FUNCTION IF EXISTS preserve_movement_document_snapshot();
 DROP TYPE IF EXISTS asset_movement_document_status;
 -- Berkas keluaran menjadi yatim, bukan dokumen aset yang dapat ditautkan pengguna.
 UPDATE stored_files SET owner_id = NULL WHERE owner_type::text = 'ASSET_MOVEMENT_DOCUMENT';
@@ -44,3 +61,8 @@ UPDATE stored_files SET owner_type = 'ASSET_DOCUMENT' WHERE owner_type = 'ASSET_
 DROP TYPE IF EXISTS file_owner_type;
 CREATE TYPE file_owner_type AS ENUM ('ASSET_DOCUMENT','ASSET_PHOTO','USER_PHOTO','HANDOVER_PHOTO','DAMAGE_PHOTO','WORK_ORDER_PHOTO','STOCKTAKE_PHOTO');
 ALTER TABLE stored_files ALTER COLUMN owner_type TYPE file_owner_type USING owner_type::file_owner_type;
+UPDATE roles SET role_version = role_version + 1 WHERE id IN (
+    SELECT role_id FROM role_permissions WHERE permission_id IN (SELECT id FROM permissions WHERE kode='asset_movement_document.view')
+);
+DELETE FROM role_permissions WHERE permission_id IN (SELECT id FROM permissions WHERE kode='asset_movement_document.view');
+DELETE FROM permissions WHERE kode='asset_movement_document.view';
