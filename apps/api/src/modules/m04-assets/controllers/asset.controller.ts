@@ -91,6 +91,7 @@ export function listAssetsHandler(service: AssetService, dasarQr: string): Reque
     return async (req, res) => {
         const ctx = requireAuthContext(res);
         const query = ListAssetsQuerySchema.parse({
+            import_job_id: req.query["filter[import_job_id]"],
             page: req.query["page"],
             per_page: req.query["per_page"],
             q: req.query["q"],
@@ -103,6 +104,7 @@ export function listAssetsHandler(service: AssetService, dasarQr: string): Reque
             dapat_dipinjam: req.query["filter[dapat_dipinjam]"],
         });
         const hasil = await service.list(ctx, {
+            ...(query.import_job_id === undefined ? {} : { importJobId: query.import_job_id }),
             page: query.page,
             perPage: query.per_page,
             sort: query.sort,

@@ -44,6 +44,7 @@ import type { PenyiarNotifikasi } from "./fanout.js";
 import type { Terbitan } from "./notification.service.js";
 import { NotificationService } from "./notification.service.js";
 import { templatUntuk } from "./templates.js";
+import { EVENT_ASSET_IMPORT_COMPLETED } from "../../m04-assets/index.js";
 
 /** Kode role penerima tetap (seed 0010): Administrator, Petugas Sarana Prasarana, Pimpinan Sekolah. */
 const ADMINISTRATOR = "R-01";
@@ -52,7 +53,7 @@ const PIMPINAN = "R-03";
 
 /** Seluruh kode yang dapat diterbitkan konsumen di sini — diperiksa saat dipasang (SDD-08 §5). */
 const KODE_DIPAKAI = [
-    ...["NT-02", "NT-03", "NT-04", "NT-05", "NT-06", "NT-07", "NT-47", "NT-40", "NT-48", "NT-52"],
+    ...["NT-02", "NT-03", "NT-04", "NT-05", "NT-06", "NT-07", "NT-47", "NT-40", "NT-48", "NT-52", "NT-55"],
     ...["NT-37", "NT-38", "NT-38a", "NT-39", "NT-39a", "NT-53", "NT-54"],
 ] as const;
 
@@ -173,6 +174,12 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
             await emit(scope, { kode, penerima, params: a.params, referensi: a.referensi, deepLink: a.deepLink, dedupe });
         }),
     );
+
+    // NT-55: hasil impor aset langsung menunjuk laporan yang dapat ditinjau ulang (P-17).
+    registry.on(EVENT_ASSET_IMPORT_COMPLETED, jalankan(async (scope, e, p, emit) => {
+        const jobId = angka(p["job_id"]);
+        await emit(scope, { kode: "NT-55", penerima: [angka(p["oleh"])], params: { ...p, status: p["status"] === "GAGAL" ? "gagal" : "selesai" }, referensi: { jenis: "asset_import_job", id: jobId }, deepLink: `/aset/impor?job=${jobId}`, dedupe: { event: e.id } });
+    }));
 
     // IMPT-04: impor > 200 baris selesai → pengunggah.
     registry.on(

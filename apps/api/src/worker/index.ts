@@ -60,6 +60,7 @@ import { PenyiarNotifikasi, buatPengirimPush, fcmCheck, kirimPushNotifikasi, pas
 import type { PengirimPush } from "../modules/m17-notifications/index.js";
 import { createSystemAuthContext } from "../shared/auth/system-context.js";
 import type { Queue } from "bullmq";
+import { AssetImportRunner, AssetImportService, ASSET_IMPORT_JOB_NAME, EVENT_ASSET_IMPORT_REQUESTED, assetImportQueueId } from "../modules/m04-assets/index.js";
 import { createHealthServer } from "./health-server.js";
 import { PEKERJAAN_PARTISI_LOG, PEKERJAAN_VERIFIKASI_LOG, jalankanPartisiLog, jalankanVerifikasiLog } from "./activity-log-jobs.js";
 import { CRON_SLA, PEKERJAAN_SLA, jalankanPemeriksaanSla } from "./approval-sla-check.js";
@@ -187,6 +188,15 @@ export const registry = new JobRegistry().register(
         },
     },
     {
+        name: ASSET_IMPORT_JOB_NAME,
+        handler: async (job) => {
+            const clock = new SystemClock();
+            const db = getDb();
+            const runner = new AssetImportRunner(db, new PermissionCache(db, getRedis()), new AssetImportService(db, new AuditLogger({ clock }), clock));
+            await runner.run(job.data, job.attemptsMade + 1 >= (job.opts.attempts ?? 1));
+        },
+    },
+    {
         // Tanpa cron: dimasukkan ke antrean oleh handler `UserImportRequested` (IMPT-04).
         name: NAMA_PEKERJAAN_IMPOR,
         handler: async (job) => {
@@ -219,6 +229,10 @@ export const registry = new JobRegistry().register(
  * setelah antrean ada — antrean tidak dapat dibuat pada saat modul dimuat.
  */
 export function pasangHandlerAntrean(handlers: EventHandlerRegistry, queue: Queue): void {
+    handlers.on(EVENT_ASSET_IMPORT_REQUESTED, async (event) => {
+        const payload = event.payload as { job_id: string | number; oleh: number };
+        await queue.add(ASSET_IMPORT_JOB_NAME, payload, { ...RETRY_OPTIONS, jobId: assetImportQueueId(payload.job_id) });
+    });
     handlers.on(EVENT_BERKAS_TERUNGGAH, async (event) => {
         const fileId = String((event.payload as { file_id: string | number }).file_id);
         await queue.add(NAMA_PEKERJAAN_PINDAI, { file_id: fileId }, { ...RETRY_OPTIONS, jobId: idJobPindai(fileId) });

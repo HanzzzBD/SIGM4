@@ -90,6 +90,7 @@ export function buildOpenApiDocument(
                           }),
                 },
                 ...errorResponses(route),
+                ...Object.fromEntries((route.additionalSuccessStatuses ?? []).map((status) => [String(status), { description: "Diterima untuk diproses", content: { [route.contentType ?? "application/json"]: { schema: route.response } } }])),
             },
         };
         if (route.params !== undefined)

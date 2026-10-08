@@ -73,6 +73,8 @@ interface RouteBase {
     readonly response: ZodType;
     /** Status HTTP sukses bila BUKAN bawaan (POST → 201, lainnya → 200); `204` tanpa badan. */
     readonly successStatus?: 200 | 201 | 202 | 204;
+    /** Mis. impor: hasil langsung 200, pekerjaan asinkron 202, skema sama (IMPT-04). */
+    readonly additionalSuccessStatuses?: readonly (200 | 201 | 202)[];
     /** Tipe media respons sukses bila BUKAN `application/json` (mis. ekspor berkas biner). */
     readonly contentType?: string;
     /** `ID-01`: route tulis yang menuntut `Idempotency-Key`. Middleware-nya `PR-00-10`. */

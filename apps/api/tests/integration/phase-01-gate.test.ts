@@ -21,6 +21,7 @@ import express from "express";
 import type { Server } from "node:http";
 import type { Redis } from "ioredis";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { ASSET_IMPORT_COLUMNS } from "@sigm4/schemas";
 import { createApp, registry } from "../../src/api/index.js";
 import { UserImportRunner } from "../../src/modules/m02-users/index.js";
 import { StudentObligationRegistry } from "../../src/modules/m02-users/services/student-obligation-registry.js";
@@ -446,6 +447,13 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 // PR-02-13: kondisi -> RUSAK_BERAT sekaligus membuktikan status turunan
                 // (BR-006) tercatat sebagai aksi TERPISAH (§11: "termasuk yang otomatis").
                 const asetId = (aset.json.data as ReadonlyArray<{ id: string }>)[0]?.id;
+                // PR-02-38: audit impor melalui endpoint dan parser produksi.
+                const barisImpor: Record<string, string> = { nama_barang: `Impor Gerbang ${sfx}`, kode_kategori: `KAT${sfx}`, kode_ruangan: `R${sfx}`,
+                    tahun_perolehan: "2026", sumber_perolehan: "Pembelian", kondisi: "Baik", dapat_dipinjam: "true", boleh_dipinjam_siswa: "false", jumlah_unit: "1" };
+                const csvImpor = `${ASSET_IMPORT_COLUMNS.join(",")}\n${ASSET_IMPORT_COLUMNS.map((kolom) => barisImpor[kolom] ?? "").join(",")}`;
+                const imporAset = await langkah("POST /assets/import", "/assets/import", { filename: "gerbang.csv", content_base64: Buffer.from(csvImpor).toString("base64") },
+                    ["ASSET_IMPORT_REQUESTED", "ASSET_CREATED", "ASSET_IMPORT_ROW_PROCESSED", "ASSET_IMPORTED"]);
+                expect(imporAset.json.data).toMatchObject({ status: "SELESAI", sukses: 1, gagal: 0, unit_dibuat: 1 });
                 // PR-02-14: mutasi SEBELUM kondisi memburuk — aset TIDAK_TERSEDIA tak dapat
                 // dimutasi. Tujuan = ruangan yang sama: cukup membuktikan AL-01, dan gedung
                 // tetap dapat dinonaktifkan di bawah (tak ada ruangan aktif lain).
@@ -588,6 +596,8 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await kueri("DELETE FROM asset_movements");
                 // PR-02-11: assets/asset_code_counters menunjuk rooms DAN asset_categories — sebelum keduanya.
                 await kueri("DELETE FROM assets");
+                await kueri("DELETE FROM asset_import_jobs");
+                await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'AssetImportJob'");
                 await kueri("DELETE FROM asset_code_counters");
                 await kueri("DELETE FROM asset_categories");
                 await kueri("DELETE FROM rooms");
@@ -631,10 +641,11 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
             await ensurePartitions(getDb(), new FixedClock(new Date()));
             const admin = await seedPengguna("R-01");
             // Data sintetis LANGSUNG ke tabel (akun uji berhak DML; akun aplikasi tidak — AL-03b): waktu tersebar
-            // dari awal bulan berjalan sampai sekarang, ~1% milik pengguna dan aksi yang dicari.
+            // dari awal bulan UTC (sama dengan filter API di bawah), ~1% milik pengguna dan aksi yang dicari.
             await kueri(`
                 INSERT INTO activity_logs (waktu, user_id, user_nama, role, modul, aksi, entitas, entitas_id, hasil, row_hash)
-                SELECT date_trunc('month', now()) + random() * (now() - date_trunc('month', now())),
+                SELECT (date_trunc('month', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')
+                       + random() * (now() - (date_trunc('month', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')),
                        CASE WHEN g % 100 = 0 THEN ${admin} ELSE 1000000 + (g % 50) END,
                        'Pengguna Uji', 'Guru',
                        CASE WHEN g % 4 = 0 THEN '${MODUL_UJI}' ELSE 'm-lain-' || (g % 3) END,
