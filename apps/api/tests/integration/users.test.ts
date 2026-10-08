@@ -224,23 +224,31 @@ describe.skipIf(!ADA_DB)("0012 — users + kolom baku roles", () => {
             )[0];
         const sebelum = await bentuk();
 
-        // Migration sesudah 0012 ikut diturunkan lebih dulu, agar uji ini tetap
-        // menguji 0012 saat PR berikutnya menambah berkas.
+        // Bandingkan seed tepat sebelum/sesudah 0012: migration yang lebih baru
+        // dapat menambah grant sendiri (misalnya tiga izin PDF mutasi di 0042).
         const [sisa] = await kueri<{ n: string }>(
-            "SELECT count(*)::text AS n FROM schema_migrations WHERE version >= '0012'",
+            "SELECT count(*)::text AS n FROM schema_migrations WHERE version::bigint > 12",
         );
-        for (let n = Number(sisa?.n ?? 0); n > 0; n -= 1) dbmate("down");
+        try {
+            for (let n = Number(sisa?.n ?? 0); n > 0; n -= 1) dbmate("down");
+            const sebelum0012 = await bentuk();
+            expect(sebelum0012?.["users"]).toBe("users");
+            dbmate("down");
 
-        expect(await bentuk()).toEqual({
-            users: null,
-            kolom_baku: "0",
-            fungsi: "0",
-            tipe: "0",
-            role: sebelum?.["role"],
-            grant_seed: sebelum?.["grant_seed"],
-        });
+            expect(await bentuk()).toEqual({
+                users: null,
+                kolom_baku: "0",
+                fungsi: "0",
+                tipe: "0",
+                role: sebelum0012?.["role"],
+                grant_seed: sebelum0012?.["grant_seed"],
+            });
+        } finally {
+            // Pulihkan seluruh migration juga saat assertion gagal, agar suite
+            // berikutnya tidak mewarisi skema yang sudah diturunkan.
+            dbmate("up");
+        }
 
-        dbmate("up");
         expect(await bentuk()).toEqual({
             ...sebelum,
             users: "users",
