@@ -355,6 +355,7 @@ export interface ApiConfig extends ProcessConfig {
 }
 
 export interface WorkerConfig extends ProcessConfig {
+    readonly chromiumExecutablePath: string | null;
     /** `null` = push tidak dikonfigurasi (keputusan 80a). */
     readonly fcm: KredensialFcm | null;
     /**
@@ -390,6 +391,7 @@ export function readWorkerConfig(
             ...bentukTotp,
             ...bentukPenyimpanan,
             ...bentukAntivirus,
+            ...bentukPdf,
         }),
         env,
         [...periksaZona(zona), ...totp.masalah, ...fcm.masalah],
@@ -414,6 +416,7 @@ export function readWorkerConfig(
         },
         // `bentukAntivirus` sudah menolak bentuk yang tak terurai.
         antivirus: urlClamd(d.CLAMAV_URL)!,
+        chromiumExecutablePath: d.CHROMIUM_EXECUTABLE_PATH,
     };
 }
 

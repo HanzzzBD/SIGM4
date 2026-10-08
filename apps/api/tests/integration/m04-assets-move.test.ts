@@ -106,6 +106,9 @@ async function jumlahLogMoved(): Promise<number> {
 
 async function bersihkan(): Promise<void> {
     await kueri("DELETE FROM asset_movements");
+    await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'asset_movement_document'");
+    await kueri("DELETE FROM activity_logs WHERE entitas = 'asset_movement_documents'");
+    await kueri("DELETE FROM asset_movement_documents");
     await kueri("DELETE FROM asset_condition_history");
     await kueri("DELETE FROM activity_logs WHERE entitas = 'assets'");
     await kueri("DELETE FROM assets");

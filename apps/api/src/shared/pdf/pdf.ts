@@ -1,8 +1,8 @@
 // Pembangkit PDF sistem (SDD-FS-12): HTML+CSS cetak dirender Playwright (Chromium). Dipakai label
-// QR (`PR-03-02`, NFR-P-07) dan kelak berita acara (FR-13.3, FR-21.2).
+// QR (`PR-03-02`, NFR-P-07) dan berita acara mutasi (`PR-02-39`, FR-04.4).
 //
-// Dirender SINKRON di proses API (keputusan 2 log phase-03): jalur worker + `stored_files` menunggu
-// `PR-03-04`. Batasnya SDD-PERF-06 (≤ 5 detik) — diukur, bukan diasumsikan.
+// Label QR dirender sinkron di API (keputusan 2 log phase-03); berita acara mutasi
+// dirender worker setelah commit melalui outbox, didaftarkan di stored_files.
 
 import { chromium } from "playwright-core";
 

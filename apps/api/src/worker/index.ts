@@ -61,6 +61,8 @@ import type { PengirimPush } from "../modules/m17-notifications/index.js";
 import { createSystemAuthContext } from "../shared/auth/system-context.js";
 import type { Queue } from "bullmq";
 import { AssetImportRunner, AssetImportService, ASSET_IMPORT_JOB_NAME, EVENT_ASSET_IMPORT_REQUESTED, assetImportQueueId } from "../modules/m04-assets/index.js";
+import { MovementDocumentService, MOVEMENT_DOCUMENT_JOB_NAME, EVENT_MOVEMENT_DOCUMENT_REQUESTED, movementDocumentQueueId } from "../modules/m04-assets/index.js";
+import { PembangkitPdfChromium } from "../shared/pdf/index.js";
 import { createHealthServer } from "./health-server.js";
 import { PEKERJAAN_PARTISI_LOG, PEKERJAAN_VERIFIKASI_LOG, jalankanPartisiLog, jalankanVerifikasiLog } from "./activity-log-jobs.js";
 import { CRON_SLA, PEKERJAAN_SLA, jalankanPemeriksaanSla } from "./approval-sla-check.js";
@@ -88,6 +90,15 @@ export const idJobPush = (notifikasiId: number): string => `push-${String(notifi
  * menyusul Phase 02.
  */
 export const registry = new JobRegistry().register(
+    {
+        name: MOVEMENT_DOCUMENT_JOB_NAME,
+        handler: async (job) => {
+            if (pemindaian === undefined) throw new Error("Penyimpanan berkas belum dipasang bootstrap.");
+            const clock = new SystemClock();
+            const service = new MovementDocumentService(getDb(), new AuditLogger({ clock }), clock, new PenyimpananS3(pemindaian.penyimpanan, clock));
+            await service.run(pelakuDokumenMutasi, job.data, new PembangkitPdfChromium(chromiumExecutablePath), job.attemptsMade + 1 >= (job.opts.attempts ?? 1));
+        },
+    },
     {
         name: PEKERJAAN_PARTISI_LOG,
         cron: wibCronToUtc(20, 0),
@@ -229,6 +240,10 @@ export const registry = new JobRegistry().register(
  * setelah antrean ada — antrean tidak dapat dibuat pada saat modul dimuat.
  */
 export function pasangHandlerAntrean(handlers: EventHandlerRegistry, queue: Queue): void {
+    handlers.on(EVENT_MOVEMENT_DOCUMENT_REQUESTED, async (event) => {
+        const id = String((event.payload as { document_id: string }).document_id);
+        await queue.add(MOVEMENT_DOCUMENT_JOB_NAME, { document_id: id }, { ...RETRY_OPTIONS, jobId: movementDocumentQueueId(id) });
+    });
     handlers.on(EVENT_ASSET_IMPORT_REQUESTED, async (event) => {
         const payload = event.payload as { job_id: string | number; oleh: number };
         await queue.add(ASSET_IMPORT_JOB_NAME, payload, { ...RETRY_OPTIONS, jobId: assetImportQueueId(payload.job_id) });
@@ -271,6 +286,9 @@ let pengirimPush: PengirimPush | undefined;
 /** Pemindai AV (SDD-FS-04): alamat storage & clamd dari konfigurasi tervalidasi, dipasang `bootstrap`. */
 const pelakuPindai = createSystemAuthContext(NAMA_PEKERJAAN_PINDAI);
 const pelakuTurunan = createSystemAuthContext(NAMA_PEKERJAAN_TURUNAN);
+const pelakuDokumenMutasi = createSystemAuthContext(MOVEMENT_DOCUMENT_JOB_NAME);
+let chromiumExecutablePath: string | null = null;
+export function pasangPembangkitDokumenMutasi(path: string | null): void { chromiumExecutablePath = path; }
 let pemindaian: { readonly penyimpanan: KonfigurasiPenyimpanan; readonly antivirus: KonfigurasiAntivirus } | undefined;
 /** Uji worker memasang alamat tanpa `bootstrap` penuh. */
 export function pasangPemindaian(penyimpanan: KonfigurasiPenyimpanan, antivirus: KonfigurasiAntivirus): void {
@@ -315,6 +333,7 @@ export async function bootstrap(
     pasangHandlerAntrean(eventHandlers, queue);
     antreanPush = queue;
     pasangPemindaian(config.objectStorage, config.antivirus);
+    pasangPembangkitDokumenMutasi(config.chromiumExecutablePath);
     pengirimPush = buatPengirimPush(config.fcm);
     await scheduleAll(queue, registry);
     const worker = createWorker(connection, registry);

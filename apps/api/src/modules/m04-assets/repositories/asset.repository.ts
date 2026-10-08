@@ -432,6 +432,7 @@ export class AssetRepository extends BaseRepository {
     async insertMutasi(
         ctx: AuthContext,
         data: {
+            readonly documentId: string;
             readonly assetId: number;
             readonly roomAsalId: string;
             readonly roomTujuanId: number;
@@ -443,6 +444,7 @@ export class AssetRepository extends BaseRepository {
         await this.query(ctx)
             .insertInto("asset_movements")
             .values({
+                document_id: data.documentId,
                 asset_id: data.assetId,
                 room_asal_id: data.roomAsalId,
                 room_tujuan_id: data.roomTujuanId,

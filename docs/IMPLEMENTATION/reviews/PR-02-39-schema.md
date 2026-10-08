@@ -57,7 +57,7 @@ Menetapkan kontrak satu PDF per operasi mutasi dan persistensi snapshot transaks
 ## Tinjauan arsitek
 
 - [ ] Tidak diperlukan
-- [x] Diperlukan — menyentuh: `migration`
+- [x] Diperlukan — menyentuh: `migration` dan katalog permission/default role
   Peninjau: belum ditetapkan; wajib sebelum merge sesuai BRANCHING §3.1.
 
 ## Rollback

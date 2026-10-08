@@ -112,7 +112,7 @@ import {
     listRoomAssetsRoute,
     moveAssetsRoute,
     updateAssetConditionRoute,
-    importAssetsRoute, getAssetImportRoute, assetImportTemplateRoute,
+    importAssetsRoute, getAssetImportRoute, assetImportTemplateRoute, movementDocumentRoute, movementDocumentDownloadRoute,
 } from "../modules/m04-assets/index.js";
 import { assetByUuidRoute, printQrRoute, publicAssetRoute, qrRouter, qrTerpasangRoute, regenerateQrRoute } from "../modules/m05-qr/index.js";
 import {
@@ -239,7 +239,7 @@ export const registry = new RouteRegistry().register(
     updateRoomStatusRoute,
     listRoomAssetsRoute,
     createAssetRoute,
-    importAssetsRoute, getAssetImportRoute, assetImportTemplateRoute,
+    importAssetsRoute, getAssetImportRoute, assetImportTemplateRoute, movementDocumentRoute, movementDocumentDownloadRoute,
     listAssetsRoute,
     updateAssetConditionRoute,
     moveAssetsRoute,
@@ -443,6 +443,7 @@ export function createApp(deps: AppDeps): Express {
         BASE_PATH,
         assetsRouter(
             {
+                penyimpanan,
                 db: deps.db,
                 auditLogger: new AuditLogger({
                     clock: deps.clock,

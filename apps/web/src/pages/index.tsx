@@ -9,7 +9,7 @@ import { AktivasiDuaFaktorPage, GantiPasswordPage, LoginPage, VerifikasiDuaFakto
 import type { AlasanLogin } from "../modules/m01-auth";
 import { muatApprovalRulesPage, muatEditorAturanPage } from "../modules/m10-approval";
 import { muatDashboardPage } from "../modules/m15-dashboard";
-import { loadAssetImportPage } from "../modules/m04-assets";
+import { loadAssetImportPage, loadAssetMovementPage } from "../modules/m04-assets";
 import type { Rentang } from "../modules/m15-dashboard";
 import { KeadaanKosong, KeadaanMemuat, KeadaanTanpaAkses } from "../shared/states";
 import { Ikon } from "../shared/ui/icon";
@@ -34,6 +34,8 @@ export const HalamanGantiPassword = ({ tujuan }: Tujuan) => <GantiPasswordPage t
 
 const DashboardPage = lazy(muatDashboardPage);
 const AssetImportPage = lazy(loadAssetImportPage);
+const AssetMovementPage = lazy(loadAssetMovementPage);
+export const HalamanMutasiAset = (props: { readonly documentId: number | null; readonly onDocument: (id: number | null) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat mutasi aset" baris={4} />}><AssetMovementPage {...props} /></Suspense>;
 export const HalamanImporAset = (props: { readonly jobId: number | null; readonly onJob: (id: number) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat impor aset" baris={4} />}><AssetImportPage {...props} /></Suspense>;
 
 /** Dimuat malas (SDD-11 §4.7): skeleton seketika selama bundel halaman diunduh. */

@@ -594,6 +594,9 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 // PR-02-13/14: asset_condition_history dan asset_movements menunjuk assets — sebelum dihapus.
                 await kueri("DELETE FROM asset_condition_history");
                 await kueri("DELETE FROM asset_movements");
+                // PR-02-39: operasi menyimpan creator; bersihkan setelah FK riwayat, sebelum users.
+                await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'asset_movement_document'");
+                await kueri("DELETE FROM asset_movement_documents");
                 // PR-02-11: assets/asset_code_counters menunjuk rooms DAN asset_categories — sebelum keduanya.
                 await kueri("DELETE FROM assets");
                 await kueri("DELETE FROM asset_import_jobs");
