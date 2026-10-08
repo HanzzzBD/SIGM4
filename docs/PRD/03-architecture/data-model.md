@@ -123,6 +123,7 @@ Data acuan bernilai tetap yang digunakan sebagai enumerasi dan dropdown.
 | **Status Pengguna** | Aktif, Nonaktif |
 | **Status Impor Pengguna** | Menunggu, Berjalan, Selesai, Gagal |
 | **Status Impor Aset** | Menunggu, Berjalan, Selesai, Gagal |
+| **Status Berita Acara Mutasi** | Menunggu, Berjalan, Siap, Gagal |
 | **Platform Perangkat** | Web, Android, iOS |
 | **Status Permintaan Reset Password** | Menunggu, Diterbitkan, Ditolak, Selesai, Kedaluwarsa |
 | **Metode Verifikasi Identitas** | Kartu Identitas Tatap Muka, Konfirmasi Atasan atau Wali Kelas |
@@ -131,7 +132,7 @@ Data acuan bernilai tetap yang digunakan sebagai enumerasi dan dropdown.
 | **Tipe Parameter Sistem** | Bilangan Bulat, Desimal, Boolean, Teks |
 | **Nama Semester** | Ganjil, Genap |
 | **Status Pemindaian Berkas** | PENDING, CLEAN, INFECTED, FAILED (`SDD-FS-03`) |
-| **Jenis Pemilik Berkas** | ASSET_DOCUMENT, ASSET_PHOTO, USER_PHOTO, HANDOVER_PHOTO, DAMAGE_PHOTO, WORK_ORDER_PHOTO, STOCKTAKE_PHOTO (`SDD-09 §4.3`) |
+| **Jenis Pemilik Berkas** | ASSET_DOCUMENT, ASSET_PHOTO, USER_PHOTO, HANDOVER_PHOTO, DAMAGE_PHOTO, WORK_ORDER_PHOTO, STOCKTAKE_PHOTO, ASSET_MOVEMENT_DOCUMENT (`SDD-09 §4.3`) |
 | **Jenis Unit Kerja** | Manajemen, Mata Pelajaran, Tata Usaha, Ekstrakurikuler, Kelas |
 | **Status Unit Kerja** | Aktif, Nonaktif |
 

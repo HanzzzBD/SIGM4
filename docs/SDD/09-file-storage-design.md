@@ -32,7 +32,7 @@
 | **SDD-FS-08** | Bucket bersifat **privat sepenuhnya**. Tidak ada objek yang dapat diakses tanpa tanda tangan, termasuk foto pada halaman publik QR — karena halaman itu memang tidak menampilkan foto (`DP-05`). |
 | **SDD-FS-09** | Berkas yatim (terunggah tetapi tidak pernah ditautkan ke entitas) dibersihkan job harian setelah **24 jam**. |
 | **SDD-FS-11** | Foto berwajah **tidak ikut dipseudonimkan maupun dihapus** saat `DP-04` dilayani (`DP-05a`). Tidak ada pipeline pengaburan wajah di sistem ini. Perlindungan foto tetap bersandar sepenuhnya pada `DP-05`: permission eksplisit, URL bertanda tangan berbatas waktu, dan larangan mutlak muncul di halaman publik QR (`SDD-FS-08`). Menutup `TBD-FS-A` (keputusan pemilik produk, 25 Agustus 2026; `UXD-14`). |
-| **SDD-FS-12** | PDF yang dihasilkan sistem (§4.5 — berita acara `FR-13.3`/`FR-21.2`, label QR `NFR-P-07`) dirender **worker** dari HTML+CSS cetak memakai **Playwright (Chromium)**, mesin yang sama dengan E2E Web (`SDD-REPO-11`). Kepatuhan `NFR-C-07` (PDF 1.7, A4) diverifikasi uji, bukan diasumsikan. Chromium ikut ke dalam image bersama (`SDD-INF-01`) — konsekuensinya dicatat [SDD-16 §5](16-infrastructure-deployment.md). |
+| **SDD-FS-12** | PDF yang dihasilkan sistem (§4.6 — berita acara `FR-04.4`/`FR-13.3`/`FR-21.2`, label QR `NFR-P-07`) dirender **worker** dari HTML+CSS cetak memakai **Playwright (Chromium)**, mesin yang sama dengan E2E Web (`SDD-REPO-11`). Kepatuhan `NFR-C-07` (PDF 1.7, A4) diverifikasi uji, bukan diasumsikan. Chromium ikut ke dalam image bersama (`SDD-INF-01`) — konsekuensinya dicatat [SDD-16 §5](16-infrastructure-deployment.md). |
 | **SDD-FS-13** | URL object storage memakai gaya **path-style** (`{endpoint}/{bucket}/{key}`), didukung AWS S3 maupun MinIO tanpa DNS wildcard, sehingga seluruh berkas berbagi satu origin bagi CSP `img-src`. Dua endpoint dibedakan: `S3_ENDPOINT` untuk operasi sisi server (worker, API), dan `S3_PUBLIC_ENDPOINT` — origin yang dapat dijangkau peramban dan aplikasi mobile — untuk menandatangani presigned URL dan menyusun `img-src` ([SDD-13 §4.2](13-security-design.md)). SDK: **AWS SDK v3** (`@aws-sdk/client-s3` + `s3-request-presigner`), penyedia produksi **Backblaze B2** lewat API S3-compatible; `S3_REGION` wajib karena SigV4 B2 mengikat region bucket. `Content-Type` dan `Content-Length` ikut ditandatangani pada presigned PUT sehingga kebijakan §4.3 tidak dapat ditukar klien; waktu tanda tangan dari `Clock` (`SDD-SYS-07`) (`PR-03-04`, keputusan 5 log phase-03). |
 
 ---
@@ -132,7 +132,7 @@ Langkah 3 dan 5 sengaja terpisah: berkas dapat diunggah lebih dulu (mis. antrean
 | Foto opname | JPG, PNG | 2 MB | `FR-13.2` |
 | Foto profil | JPG, PNG | 2 MB | `FR-01.4` |
 | Foto aset (`asset_photos`) | JPG, PNG | 2 MB | `MOB-MED-01` — disamakan dengan foto lain (`PR-03-25`, keputusan 7a log phase-03) |
-| Berita acara PDF (dihasilkan sistem) | PDF | — | `FR-13.3`, `FR-21.2` |
+| Berita acara PDF (dihasilkan sistem) | PDF | — | `FR-04.4`, `FR-13.3`, `FR-21.2` |
 
 Validasi MIME dilakukan **dua kali**: saat presign (berdasarkan deklarasi klien) dan saat pemindaian (berdasarkan *magic bytes* isi berkas). Ketidakcocokan menandai berkas `INFECTED`.
 
@@ -160,6 +160,8 @@ Respons berupa URL, bukan redirect, agar klien dapat menampilkan pratinjau tanpa
 Dibuat worker untuk MIME gambar (JPG/PNG) **setelah berkas diputus `CLEAN`** — konsumen event `FileScanned` menjadwalkan pekerjaan `file-derivatives`, sehingga pengolah gambar tidak pernah membuka berkas yang belum lolos ClamAV dan magic bytes (`PR-03-07`, keputusan 10b log phase-03). Pustaka **sharp** (libvips); keluaran **WebP**, sisi terpanjang tanpa pembesaran, orientasi EXIF diterapkan lalu seluruh metadata dibuang (lokasi GPS foto ponsel tidak ikut). Kuncinya `{kunci asli tanpa ekstensi}-{thumb|medium}.webp` dan dicatat `stored_files.thumb_key`/`medium_key`; penerbit URL memilih varian dan jatuh ke asli bila kolomnya NULL. Kegagalan pembuatan turunan tidak menggagalkan apa pun; klien jatuh kembali ke berkas asli. Turunan adalah cache teknis yang dapat dibuat ulang, tidak dicatat activity log.
 
 ### 4.6 Retensi & penghapusan
+
+**PDF mutasi sistem (`FR-04.4`, PR-02-39, SDD-FS-12).** Worker merender HTML cetak A4 dari snapshot tetap. Seluruh teks pengguna di-escape; JavaScript dan jaringan Chromium dimatikan. Worker memverifikasi header PDF 1.7, menyimpan pada bucket privat memakai kunci UUID yang telah dicatat operasi, lalu permukaan publik M-06 mendaftarkan `stored_files` dengan SHA-256, MIME PDF, ukuran aktual, owner_type `ASSET_MOVEMENT_DOCUMENT` dan owner_id operasi. Keluaran renderer terpercaya ini menjadi CLEAN langsung (bukan unggahan klien; ClamAV unggahan tetap wajib). Registrasi + status SIAP + audit atomik; hanya pelaku SYSTEM dapat mendaftarkan keluaran ini. Jenisnya tidak tersedia pada `/files/presign`. Pengulangan memakai advisory lock dan kunci tetap; setelah SIAP tidak merender/menulis lagi. Objek yang sempat terunggah sebelum transaksi registrasi gagal dihapus pada kegagalan percobaan; mutasi tidak diulang. Status GAGAL dapat dibaca, tidak menyediakan tombol eksekusi ulang (`SDD-EVT-10`). URL unduh melewati penjaga CLEAN M-06, 15 menit, diaudit oleh M-04.
 
 | Kondisi | Tindakan |
 |---|---|

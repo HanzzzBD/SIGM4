@@ -34,6 +34,7 @@ function foto(label: string): KebijakanJenis {
 }
 
 export const KEBIJAKAN: Readonly<Record<FileOwnerType, KebijakanJenis>> = {
+    ASSET_MOVEMENT_DOCUMENT: { label: "Berita acara mutasi", mime: [], format: "keluaran sistem", maksByte: 0 },
     // FR-06.1
     ASSET_DOCUMENT: { label: "Dokumen aset", mime: [MIME_PDF, MIME_JPG, MIME_PNG, MIME_DOCX, MIME_XLSX], format: "PDF, JPG, PNG, DOCX, atau XLSX", maksByte: 10 * MB },
     // Keputusan 7a log phase-03: disamakan dengan foto lain.
@@ -51,6 +52,7 @@ export const KEBIJAKAN: Readonly<Record<FileOwnerType, KebijakanJenis>> = {
 
 /** Pesan pelanggaran kebijakan — spesifik per jenis (FR-01.4 A3); `null` bila lolos. */
 export function periksaKebijakan(jenis: FileOwnerType, mime: string, ukuran: number): { field: string; message: string } | null {
+    if (jenis === "ASSET_MOVEMENT_DOCUMENT") return { field: "jenis", message: "Berita acara mutasi hanya dapat dibuat sistem." };
     const k = KEBIJAKAN[jenis];
     if (!k.mime.includes(mime)) return { field: "mime", message: `${k.label} harus berformat ${k.format}.` };
     if (ukuran > k.maksByte) return { field: "ukuran", message: `${k.label} maksimal ${String(k.maksByte / MB)} MB.` };
