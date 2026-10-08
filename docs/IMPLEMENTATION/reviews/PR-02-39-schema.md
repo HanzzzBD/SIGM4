@@ -1,6 +1,6 @@
 ## PR
 
-`PR-02-39` — kontrak dan skema pendahulu berita acara mutasi
+`PR-02-39` — kontrak dan skema pendahulu berita acara mutasi aset
 Phase: [phase-02.md](../phases/phase-02.md) · Kompleksitas: `S`
 
 Cabang: `chore/PR-02-39-skema-berita-acara-mutasi`, basis `feature/PR-02-38-impor-aset` ([PR #133](https://github.com/HanzzzBD/SIGM4/pull/133)). Fitur berada di cabang bertumpuk `feature/PR-02-39-berita-acara-mutasi`; sesuaikan basis ke develop setelah pendahulu merge.
@@ -36,7 +36,7 @@ Menetapkan kontrak satu PDF per operasi mutasi dan persistensi snapshot transaks
 |---|---|
 | Unit | Pemetaan enum Bab 11.3 dan konsistensi SQL migration melalui invariant suite API |
 | Integrasi | `m04-movement-schema.test.ts`: 4 uji termasuk penjaga lingkungan, constraint snapshot/terminal/immutabilitas, down/up mempertahankan aset dan riwayat |
-| Regresi migration | Empat uji skema dan tiga uji urutan ID lulus pada DB PostgreSQL 18 baru; rollback kini menghitung seluruh migration sampai 0039, termasuk 0042, lalu memulihkan skema |
+| Regresi migration | 21/21 uji pengguna, skema dan urutan ID lulus tanpa skip pada DB PostgreSQL 18 baru. Rollback menghitung seluruh migration sampai 0039, termasuk 0042, lalu memulihkan skema. Tes pengguna membandingkan seed sebelum/sesudah 0012 saja; grant dari migration berikutnya dipulihkan lewat up seluruhnya, termasuk saat assertion gagal |
 | Otorisasi (termasuk kasus penolakan) | —; route berada pada PR fitur |
 | Konkurensi | —; advisory lock operasi diuji pada PR fitur |
 
@@ -44,7 +44,7 @@ Menetapkan kontrak satu PDF per operasi mutasi dan persistensi snapshot transaks
 
 ## Definition of Done
 
-- [ ] Pipeline hijau (`CD-01`); cakupan logika inti ≥70% (`CD-02`) — belum CI remote; SQL diuji integrasi.
+- [ ] Pipeline hijau (`CD-01`); cakupan logika inti ≥70% (`CD-02`) — CI pertama menemukan asumsi seed pada tes rollback 0012; perbaikan menunggu CI ulang. SQL diuji integrasi.
 - [x] Unit test logika bisnis + integration test endpoint (29.5) — invariant dan integrasi skema; endpoint pada PR fitur.
 - [x] Otorisasi diuji termasuk kasus penolakan (29.5) — tidak ada endpoint pada pendahulu.
 - [x] Uji acceptance & keamanan mengeksekusi kondisi; penjaga DATABASE_URL membuat suite gagal bila prasyarat hilang.
