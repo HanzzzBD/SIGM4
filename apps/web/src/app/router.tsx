@@ -20,6 +20,7 @@ import {
     HalamanGangguan,
     HalamanGantiPassword,
     HalamanLogin,
+    HalamanImporAset,
     HalamanTanpaAkses,
     HalamanTidakDitemukan,
     HalamanVerifikasiDuaFaktor,
@@ -155,6 +156,15 @@ const editorAturanRoute = createRoute({
 });
 
 const tanpaAksesRoute = createRoute({ getParentRoute: () => shellRoute, path: "/tidak-punya-akses", component: HalamanTanpaAkses });
+const assetImportRoute = createRoute({
+    getParentRoute: () => shellRoute, path: "/aset/impor", beforeLoad: butuhIzin("asset.create"),
+    validateSearch: z.object({ job: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1))), undefined) }),
+    component: function ImportRoute() {
+        const { job } = assetImportRoute.useSearch();
+        const navigate = useNavigate({ from: assetImportRoute.fullPath });
+        return <HalamanImporAset jobId={job ?? null} onJob={(id) => void navigate({ search: { job: id } })} />;
+    },
+});
 const dataTidakTersediaRoute = createRoute({ getParentRoute: () => shellRoute, path: "/data-tidak-tersedia", component: HalamanDataTidakTersedia });
 
 export const routeTree = rootRoute.addChildren([
@@ -164,7 +174,7 @@ export const routeTree = rootRoute.addChildren([
     gantiPasswordRoute,
     gangguanRoute,
     tidakDitemukanRoute,
-    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {

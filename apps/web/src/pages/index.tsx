@@ -9,6 +9,7 @@ import { AktivasiDuaFaktorPage, GantiPasswordPage, LoginPage, VerifikasiDuaFakto
 import type { AlasanLogin } from "../modules/m01-auth";
 import { muatApprovalRulesPage, muatEditorAturanPage } from "../modules/m10-approval";
 import { muatDashboardPage } from "../modules/m15-dashboard";
+import { loadAssetImportPage } from "../modules/m04-assets";
 import type { Rentang } from "../modules/m15-dashboard";
 import { KeadaanKosong, KeadaanMemuat, KeadaanTanpaAkses } from "../shared/states";
 import { Ikon } from "../shared/ui/icon";
@@ -32,6 +33,8 @@ export const HalamanAktivasiDuaFaktor = ({ tujuan }: Tujuan) => <AktivasiDuaFakt
 export const HalamanGantiPassword = ({ tujuan }: Tujuan) => <GantiPasswordPage tujuan={tujuan} />;
 
 const DashboardPage = lazy(muatDashboardPage);
+const AssetImportPage = lazy(loadAssetImportPage);
+export const HalamanImporAset = (props: { readonly jobId: number | null; readonly onJob: (id: number) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat impor aset" baris={4} />}><AssetImportPage {...props} /></Suspense>;
 
 /** Dimuat malas (SDD-11 §4.7): skeleton seketika selama bundel halaman diunduh. */
 export const HalamanDashboard = ({ rentang, onRentang }: { readonly rentang: Rentang; readonly onRentang: (r: Rentang) => void }) => (

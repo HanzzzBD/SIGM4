@@ -183,6 +183,7 @@ const FilterBooleanSchema = z
  * lokasi, kondisi, status, tahun perolehan, dan kelayakan pinjam (langkah 4).
  */
 export const ListAssetsQuerySchema = z.object({
+    import_job_id: z.coerce.number().int().positive().optional(),
     page: z.coerce.number().int().positive().default(1),
     per_page: z.coerce.number().int().positive().max(100).default(25),
     q: z.string().trim().min(1).max(150).optional(),

@@ -12,7 +12,7 @@ import type { Kysely } from "kysely";
 import type { AuthContext } from "../../../shared/auth/index.js";
 import type { AuditLogger } from "../../../shared/audit/index.js";
 import type { Clock } from "../../../shared/clock/index.js";
-import type { Database } from "../../../shared/db/index.js";
+import type { Database, TransactionScope } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
 import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
 import type {
@@ -48,6 +48,8 @@ export interface DaftarkanAsetInput {
     readonly procurementId: number | null;
     /** FR-04.1 langkah 3: N record identik sekaligus (BR-001). */
     readonly jumlahUnit: number;
+    /** SDD-DB-24: hanya diisi jalur impor; NULL untuk pendaftaran manual. */
+    readonly importJobId?: string;
 }
 
 /**
@@ -157,7 +159,7 @@ export class AssetService {
      * tetap `TERBUKA`) dan ruangan AKTIF wajib ada (BR-009); nomor seri, bila
      * diisi, wajib unik dan HANYA untuk satu unit (BR-003).
      */
-    async daftarkan(ctx: AuthContext, input: DaftarkanAsetInput): Promise<readonly AssetRow[]> {
+    async daftarkan(ctx: AuthContext, input: DaftarkanAsetInput, importScope?: TransactionScope): Promise<readonly AssetRow[]> {
         if (input.jumlahUnit < 1 || input.jumlahUnit > JUMLAH_UNIT_MAKS) {
             throw new DomainError(
                 "VALIDATION_ERROR",
@@ -183,69 +185,68 @@ export class AssetService {
             );
         }
 
-        return withTransaction(
-            ctx,
-            async (scope) => {
-                const repo = createAssetRepository(scope.tx);
-                const kategori = await repo.findKategoriById(scope.ctx, input.categoryId);
-                if (kategori === undefined) {
-                    throw new DomainError("VALIDATION_ERROR", "Kategori aset tidak ditemukan.", {
-                        field: "category_id",
-                    });
-                }
-                const ruangan = await repo.findRuanganAktifById(scope.ctx, input.roomId);
-                if (ruangan === undefined) {
-                    throw new DomainError(
-                        "VALIDATION_ERROR",
-                        "Ruangan tidak ditemukan atau berstatus nonaktif.",
-                        { field: "room_id" },
-                    );
-                }
-                if (input.nomorSeri !== null && (await repo.existsNomorSeri(scope.ctx, input.nomorSeri))) {
-                    throw new DomainError("DUPLICATE_CODE", "Nomor seri sudah digunakan.", {
-                        field: "nomor_seri",
-                    });
-                }
+        const create = async (scope: TransactionScope) => {
+            const repo = createAssetRepository(scope.tx);
+            const kategori = await repo.findKategoriById(scope.ctx, input.categoryId);
+            if (kategori === undefined) {
+                throw new DomainError("VALIDATION_ERROR", "Kategori aset tidak ditemukan.", {
+                    field: "category_id",
+                });
+            }
+            const ruangan = await repo.findRuanganAktifById(scope.ctx, input.roomId);
+            if (ruangan === undefined) {
+                throw new DomainError(
+                    "VALIDATION_ERROR",
+                    "Ruangan tidak ditemukan atau berstatus nonaktif.",
+                    { field: "room_id" },
+                );
+            }
+            if (input.nomorSeri !== null && (await repo.existsNomorSeri(scope.ctx, input.nomorSeri))) {
+                throw new DomainError("DUPLICATE_CODE", "Nomor seri sudah digunakan.", {
+                    field: "nomor_seri",
+                });
+            }
 
-                const pengaturan = await repo.ambilPengaturanKodeAset(scope.ctx);
-                const dibuat: AssetRow[] = [];
-                for (let i = 0; i < input.jumlahUnit; i += 1) {
-                    const urut = await repo.nomorUrutBerikutnya(scope.ctx, input.categoryId, input.roomId);
-                    const kodeBarang = rakitKodeBarang(pengaturan, kategori.kode, ruangan.kode, urut);
-                    const fields: AssetFields = {
-                        kodeBarang,
-                        nama: input.nama,
-                        categoryId: input.categoryId,
-                        merek: input.merek,
-                        model: input.model,
-                        nomorSeri: input.nomorSeri,
-                        tahunPerolehan: input.tahunPerolehan,
-                        sumberPerolehan: input.sumberPerolehan,
-                        nilaiPerolehan: input.nilaiPerolehan,
-                        roomId: input.roomId,
-                        kondisi: input.kondisi,
-                        dapatDipinjam: input.dapatDipinjam,
-                        bolehDipinjamSiswa: input.bolehDipinjamSiswa,
-                        penanggungJawabId: input.penanggungJawabId,
-                        procurementId: input.procurementId,
-                    };
-                    const asset = await repo.insertAsset(scope.ctx, fields);
+            const pengaturan = await repo.ambilPengaturanKodeAset(scope.ctx);
+            const dibuat: AssetRow[] = [];
+            for (let i = 0; i < input.jumlahUnit; i += 1) {
+                const urut = await repo.nomorUrutBerikutnya(scope.ctx, input.categoryId, input.roomId);
+                const kodeBarang = rakitKodeBarang(pengaturan, kategori.kode, ruangan.kode, urut);
+                const fields: AssetFields = {
+                    kodeBarang,
+                    nama: input.nama,
+                    categoryId: input.categoryId,
+                    merek: input.merek,
+                    model: input.model,
+                    nomorSeri: input.nomorSeri,
+                    tahunPerolehan: input.tahunPerolehan,
+                    sumberPerolehan: input.sumberPerolehan,
+                    nilaiPerolehan: input.nilaiPerolehan,
+                    roomId: input.roomId,
+                    kondisi: input.kondisi,
+                    dapatDipinjam: input.dapatDipinjam,
+                    bolehDipinjamSiswa: input.bolehDipinjamSiswa,
+                    penanggungJawabId: input.penanggungJawabId,
+                    procurementId: input.procurementId,
+                    ...(input.importJobId === undefined ? {} : { importJobId: input.importJobId }),
+                };
+                const asset = await repo.insertAsset(scope.ctx, fields);
 
-                    // AL-01: satu entri per unit — "termasuk pembuatan massal N unit" (m04-assets.md §11).
-                    await this.audit.write(scope, {
-                        modul: MODUL,
-                        aksi: "ASSET_CREATED",
-                        entitas: "assets",
-                        entitasId: asset.id,
-                        nilaiSesudah: asset,
-                    });
+                // AL-01: satu entri per unit — "termasuk pembuatan massal N unit" (m04-assets.md §11).
+                await this.audit.write(scope, {
+                    modul: MODUL,
+                    aksi: "ASSET_CREATED",
+                    entitas: "assets",
+                    entitasId: asset.id,
+                    nilaiSesudah: asset,
+                });
 
-                    dibuat.push(asset);
-                }
-                return dibuat;
-            },
-            this.db,
-        );
+                dibuat.push(asset);
+            }
+            return dibuat;
+        };
+        // SDD-DB-24: progres impor wajib commit bersama unit, tanpa transaksi bersarang.
+        return importScope === undefined ? withTransaction(ctx, create, this.db) : create(importScope);
     }
 
     /**

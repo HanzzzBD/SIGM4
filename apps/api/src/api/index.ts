@@ -112,6 +112,7 @@ import {
     listRoomAssetsRoute,
     moveAssetsRoute,
     updateAssetConditionRoute,
+    importAssetsRoute, getAssetImportRoute, assetImportTemplateRoute,
 } from "../modules/m04-assets/index.js";
 import { assetByUuidRoute, printQrRoute, publicAssetRoute, qrRouter, qrTerpasangRoute, regenerateQrRoute } from "../modules/m05-qr/index.js";
 import {
@@ -238,6 +239,7 @@ export const registry = new RouteRegistry().register(
     updateRoomStatusRoute,
     listRoomAssetsRoute,
     createAssetRoute,
+    importAssetsRoute, getAssetImportRoute, assetImportTemplateRoute,
     listAssetsRoute,
     updateAssetConditionRoute,
     moveAssetsRoute,

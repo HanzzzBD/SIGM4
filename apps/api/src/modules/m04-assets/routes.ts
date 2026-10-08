@@ -42,6 +42,14 @@ import {
     ListCategoriesResponseSchema,
 } from "./schemas/category.schema.js";
 import { CategoryService } from "./services/category.service.js";
+import { z } from "zod";
+import { AssetImportResponseSchema, ImportAssetsBodySchema } from "@sigm4/schemas";
+import { assetImportTemplateHandler, getAssetImportHandler, importAssetsHandler } from "./controllers/asset-import.controller.js";
+import { AssetImportService } from "./services/asset-import.service.js";
+
+export const importAssetsRoute = defineRoute({ method: "POST", path: "/assets/import", permission: "asset.create", rateLimitClass: "upload", module: "m04-assets", summary: "Impor aset CSV/XLSX; >200 baris asinkron, replay 24 jam (PR-02-38)", body: ImportAssetsBodySchema, response: AssetImportResponseSchema, successStatus: 200, additionalSuccessStatuses: [202] });
+export const getAssetImportRoute = defineRoute({ method: "GET", path: "/assets/import/:id", permission: "asset.create", rateLimitClass: "default", module: "m04-assets", summary: "Status dan laporan impor aset milik pengunggah", params: AssetIdParamSchema, response: AssetImportResponseSchema });
+export const assetImportTemplateRoute = defineRoute({ method: "GET", path: "/assets/import/template", permission: "asset.create", rateLimitClass: "default", module: "m04-assets", summary: "Template XLSX impor aset E.5.1", response: z.string(), contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 
 /** Pemilik katalog endpoint M-04 (m04-assets.md §7). */
 const MODUL = "m04-assets";
@@ -181,6 +189,10 @@ export function assetsRouter(
     const service = new AssetService(deps.db, deps.auditLogger, deps.clock);
     const kategori = new CategoryService(deps.db, deps.auditLogger);
     const router = express.Router();
+    const importer = new AssetImportService(deps.db, deps.auditLogger, deps.clock);
+    router.get(assetImportTemplateRoute.path, batasi(assetImportTemplateRoute), otorisasi(assetImportTemplateRoute.permission), assetImportTemplateHandler(importer));
+    router.get(getAssetImportRoute.path, batasi(getAssetImportRoute), otorisasi(getAssetImportRoute.permission), getAssetImportHandler(importer));
+    router.post(importAssetsRoute.path, batasi(importAssetsRoute), otorisasi(importAssetsRoute.permission), importAssetsHandler(importer));
 
     router.get(
         listRoomAssetsRoute.path,

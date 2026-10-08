@@ -10,6 +10,7 @@ import { sql } from "kysely";
 import type { AuthContext } from "../../../shared/auth/index.js";
 import { BaseRepository, defineRepository } from "../../../shared/db/index.js";
 import type { QueryExecutor } from "../../../shared/db/index.js";
+import { NotFoundError } from "../../../shared/errors/index.js";
 
 export interface KategoriRow {
     readonly id: string;
@@ -76,6 +77,7 @@ export interface AssetRow {
 }
 
 export interface AssetFields {
+    readonly importJobId?: string;
     readonly kodeBarang: string;
     readonly nama: string;
     readonly categoryId: number;
@@ -157,6 +159,7 @@ export interface AssetCatalogFilter {
 }
 
 export interface ListAssetsFilter extends AssetCatalogFilter {
+    readonly importJobId?: number;
     readonly page: number;
     readonly perPage: number;
     readonly sort: AssetSortField;
@@ -218,7 +221,12 @@ export class AssetRepository extends BaseRepository {
      * (`SDD-API-05 §4.5`), bukan kueri kedua.
      */
     async list(ctx: AuthContext, filter: ListAssetsFilter): Promise<ListAssetsResult> {
+        if (filter.importJobId !== undefined) {
+            const job = await this.query(ctx).selectFrom("asset_import_jobs").select("id").where("id", "=", String(filter.importJobId)).where("created_by", "=", String(ctx.userId)).executeTakeFirst();
+            if (job === undefined) throw new NotFoundError("Pekerjaan impor aset tidak ditemukan.");
+        }
         const dasar = this.dasarKatalog(ctx, filter)
+            .$if(filter.importJobId !== undefined, (query) => query.where("import_job_id", "=", String(filter.importJobId)))
             .orderBy(KOLOM_URUT[filter.sort], arahUrut(filter.sort))
             .orderBy("id", arahUrut(filter.sort))
             .limit(filter.perPage)
@@ -352,6 +360,7 @@ export class AssetRepository extends BaseRepository {
                 boleh_dipinjam_siswa: data.bolehDipinjamSiswa,
                 penanggung_jawab_id: data.penanggungJawabId,
                 procurement_id: data.procurementId,
+                import_job_id: data.importJobId ?? null,
                 created_by: ctx.userId,
                 updated_by: ctx.userId,
             })

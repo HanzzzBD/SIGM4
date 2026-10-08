@@ -120,6 +120,11 @@ export const TEMPLAT: Readonly<Record<string, Templat>> = {
         judul: "Impor pengguna selesai",
         render: (p) => `Impor pengguna selesai: ${teks(p["sukses"])} berhasil, ${teks(p["gagal"])} gagal dari ${teks(p["total"])} baris.`,
     },
+    "NT-55": {
+        jenis: "AKUN_SISTEM", wajib: true, push: true,
+        judul: "Hasil impor aset",
+        render: (p) => `Impor aset ${teks(p["status"])}: ${teks(p["sukses"])} berhasil, ${teks(p["gagal"])} gagal dari ${teks(p["total"])} baris; ${teks(p["unit"])} unit dibuat.`,
+    },
 };
 
 /** SDD-08 §5: kode tanpa templat gagal saat worker menyala, bukan saat notifikasi pertama. */
