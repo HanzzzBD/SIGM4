@@ -356,7 +356,7 @@ Lima bentuk sukses ditetapkan **UXD-06** ([`UX §7.3`](../UX/PAGE-SPECIFICATION.
 | Operasi | Pola |
 |---|---|
 | Impor massal maksimum 200 baris | Bar progres + halaman ringkasan hasil (`IMPT-02`) |
-| Impor massal lebih dari 200 baris | Asinkron; notifikasi `NT-42` saat selesai (`IMPT-04`) |
+| Impor massal lebih dari 200 baris | Asinkron; notifikasi dari modul pemilik (`IMPT-04`; aset `NT-55`, pengguna `NT-52`) |
 | Ekspor lebih dari 5 detik | Asinkron; pengguna boleh meninggalkan halaman (`NFR-P-08`) |
 | Unggah foto | Bar progres per berkas + pembatalan (`MOB-MED-04`) |
 | Pemindaian opname | Progres per lokasi & keseluruhan, real-time (`FR-13.1 AC`) |

@@ -5,7 +5,7 @@
 # Indeks Notifikasi
 
 > Setiap notifikasi dimiliki modul yang menerbitkan event-nya.
-> Total: **56** baris, dikumpulkan dari 22 berkas modul.
+> Total: **57** baris, dikumpulkan dari 22 berkas modul.
 
 | Kode | Event | Penerima | Kanal | Wajib | Contoh | Pemilik |
 |---|---|---|---|:---:|---|---|
@@ -65,3 +65,4 @@
 | **NT-52** | Impor massal pengguna selesai diproses (`IMPT-04`) | Administrator pengunggah | In-app | ✅ | "Impor pengguna selesai: {sukses} berhasil, {gagal} gagal dari {total} baris." | [M-02](../02-modules/m02-users.md) |
 | **NT-53** | Pemulihan darurat Administrator dijalankan (break-glass, `FR-01.6`) | Seluruh Pimpinan Sekolah | In-app + Push | ✅ | "Pemulihan darurat dijalankan untuk akun Administrator {email} pada {waktu}. Seluruh sesi di sistem telah dikeluarkan; pastikan ini sah." | [M-01](../02-modules/m01-auth.md) |
 | **NT-54** | Pemakaian ulang refresh token terdeteksi (`SDD-SESS-04`, `NFR-S-03`) | Administrator | In-app + Push | ✅ | "Pemakaian ulang token sesi terdeteksi pada akun {pengguna} pada {waktu}. Seluruh sesi turunannya telah dicabut; bila berulang, periksa akun ini." | [M-01](../02-modules/m01-auth.md) |
+| **NT-55** | Impor aset >200 baris berakhir, termasuk pekerjaan gagal (`IMPT-04`) | Pengunggah | In-app + Push | ✅ | "Impor aset {status}: {sukses} berhasil, {gagal} gagal dari {total} baris; {unit} unit dibuat." | [M-04](../02-modules/m04-assets.md) |
