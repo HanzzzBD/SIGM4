@@ -223,7 +223,10 @@ describe.skipIf(required.some((name) => !process.env[name]))("PR-02-39 — berit
         const worker = createWorker(connections[1]!, workerRegistry);
         try {
             const handlers = new EventHandlerRegistry(); pasangHandlerAntrean(handlers, queue);
-            expect(await new OutboxDispatcher({ registry: handlers, clock }).drain()).toMatchObject({ processed: 1, failed: 0 });
+            const drained = await new OutboxDispatcher({ registry: handlers, clock }).drain();
+            expect(drained.failed).toBe(0);
+            expect(drained.processed).toBeGreaterThanOrEqual(1);
+            expect(await kueri(`SELECT id FROM event_outbox WHERE aggregate_type='asset_movement_document' AND aggregate_id=${id} AND event_name='${EVENT_MOVEMENT_DOCUMENT_REQUESTED}' AND processed_at IS NOT NULL`)).toHaveLength(1);
             const deadline = performance.now() + 30000;
             while ((await documents().status(ctx(), id)).status !== "SIAP" && performance.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 100));
             expect((await documents().status(ctx(), id)).status).toBe("SIAP");

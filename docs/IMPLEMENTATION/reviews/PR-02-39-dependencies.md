@@ -3,7 +3,7 @@
 `PR-02-39` — patch pendahulu dependency untuk gerbang SCA
 Phase: [phase-02.md](../phases/phase-02.md) · Kompleksitas: `S`
 
-Cabang lokal: `chore/PR-02-39-dependency-security`, setelah [pendahulu skema](PR-02-39-schema.md). Perubahan terpisah dipilih pemilik produk pada 8 Oktober 2026; belum PR GitHub.
+Catatan patch yang dipilih pemilik produk pada 8 Oktober 2026. Implementasi semula disiapkan di `chore/PR-02-39-dependency-security`, kemudian dipublikasikan lebih dahulu melalui [PR-02-38 #131](https://github.com/HanzzzBD/SIGM4/pull/131) untuk menutup CI impor. Patch sudah masuk develop; cabang historis ini tidak dipush sebagai PR duplikat.
 
 ## Yang dikerjakan
 
@@ -43,7 +43,7 @@ Lockfile awal mematok proxy-addr 2.0.7 (Critical: pemalsuan IP lewat IPv4-mapped
 
 ## Definition of Done
 
-- [ ] Pipeline hijau (CD-01); CI remote belum dijalankan.
+- [x] Pipeline patch hijau (CD-01): [CI #131 f26d8bd](https://github.com/HanzzzBD/SIGM4/actions/runs/37733289339) lulus; CI fitur PDF tetap diperiksa terpisah pada head-nya.
 - [x] Unit test logika bisnis + integration test endpoint — tidak ada kode bisnis; regresi stack fitur.
 - [x] Otorisasi diuji termasuk penolakan — tidak mengubah kontrak; regresi stack fitur.
 - [x] Activity log — tidak ada operasi domain.
