@@ -95,13 +95,13 @@ Total: **87 halaman web** · **23 layar mobile**.
 | P-17 | Impor Aset | `/aset/impor` | Impor massal CSV/XLSX dengan laporan galat per baris (`FR-04.1 A2`, `E.5.1`) | `asset.create` | Tombol pada Inventaris | Laporan hasil impor → Inventaris terfilter pada aset baru · unduh templat |
 | P-18 | Detail Aset | `/aset/{id}` | Profil unit beserta seluruh riwayatnya (`FR-04.2` langkah 5) | `asset.view` | Baris Inventaris · scan QR · Detail Ruangan · notifikasi · chatbot | Ubah · Mutasi · Ubah Kondisi · Lapor Kerusakan · Cetak QR · Usulkan Penghapusan · Riwayat Perubahan |
 | P-19 | Ubah Aset | `/aset/{id}/ubah` | Memperbarui atribut aset (`FR-04.3`) | `asset.update` | Tombol pada Detail Aset | Detail Aset (simpan atau batal) |
-| P-20 | Mutasi Lokasi | `/aset/mutasi` | Memindahkan hingga 50 unit secara atomik + berita acara (`FR-04.4`) | `asset.update` | Pemilihan massal pada Inventaris · tombol pada Detail Aset | Berita acara PDF · Inventaris terfilter lokasi tujuan |
+| P-20 | Mutasi Lokasi | `/aset/mutasi` | Form 1–50 unit + status/unduh berita acara tetap (`FR-04.4`); `?document={id}` membuka hasil | `asset.update` untuk form; `asset_movement_document.view` untuk hasil | Pemilihan massal pada Inventaris · tombol pada Detail Aset · tautan hasil | Berita acara PDF · Inventaris terfilter lokasi tujuan |
 | P-21 | Kategori Aset | `/kategori-aset` | CRUD kategori dua tingkat + interval preventif (`FR-04.5`) | `category.manage` | Sidebar · tautan "Kategori belum ada" pada form aset (`FR-04.1 A4`) | Kembali ke form aset · Jadwal Pemeliharaan |
 | P-22 | Lokasi | `/lokasi` | Pohon Gedung → Area → Ruangan yang dapat diperluas (`FR-03.1`) | `location.view` | Sidebar | Detail Ruangan · tambah Gedung/Area/Ruangan |
 | P-23 | Detail Ruangan | `/lokasi/ruangan/{id}` | Aset di dalam ruangan + ringkasan kondisi + jadwal tetap (`FR-03.2`, `FR-07.5`) | `location.view` | Pohon Lokasi · scan QR ruangan · Detail Aset | Detail Aset · Tambah Aset ke Lokasi Ini · tab Jadwal Tetap · Ekspor berita acara lokasi |
 | P-24 | Label QR | `/label-qr` | Menyusun & mengunduh PDF label massal (`FR-05.1`) | `asset.qr_print` | Sidebar · Detail Aset · setelah Tambah Aset · setelah Penerimaan Pengadaan · kartu "Aset Belum Berlabel QR" | Unduh PDF · tandai `qr_terpasang` · Inventaris |
 | P-25 | Scan QR (web) | `/scan` | Memindai lewat kamera peramban + input kode manual (`FR-05.2`, `NFR-C-05`) | `asset.view` | Sidebar | Detail Aset · aksi kontekstual sesuai role & status · input manual bila izin kamera ditolak |
-| P-26 | Dokumen Aset | `/dokumen-aset` | Daftar lintas-aset: faktur, garansi, sertifikat, manual, berita acara (`FR-06.1`) | `asset_document.view` | Sidebar · drill-down kartu "Garansi Akan Berakhir" (19.3) | Detail Aset pemilik dokumen · unduh berkas (URL bertanda tangan 15 menit) |
+| P-26 | Dokumen Aset | `/dokumen-aset` | Daftar lintas-aset: faktur, garansi, sertifikat, manual, berita acara (`FR-06.1`) | `asset_movement_document.view` | Sidebar · drill-down kartu "Garansi Akan Berakhir" (19.3) | Detail Aset pemilik dokumen · unduh berkas (URL bertanda tangan 15 menit) |
 
 | P-80 | Bahan | `/bahan` | Daftar bahan + saldo total + penanda stok menipis (`FR-22.2`) | `material.view` | Sidebar · drill-down kartu "Stok Bahan Menipis" | Detail Bahan · Tambah Bahan |
 | P-81 | Tambah / Ubah Bahan | `/bahan/baru` · `/bahan/{id}/ubah` | Master jenis bahan: kategori, satuan, stok minimum (`FR-22.1`) | `material.manage` | Tombol pada P-80 | Detail Bahan (simpan atau batal) |
@@ -465,7 +465,7 @@ Tiga langkah (**UXD-04**). Langkah 3 wajib ada — ia satu-satunya tempat konsek
 |---|---|---|---|
 | Informasi | Identitas, kategori, merek, model, nomor seri, lokasi, kondisi, status, penanggung jawab, penanda `dapat_dipinjam` & `boleh_dipinjam_siswa`, **nilai & sumber perolehan** | Blok finansial hanya bila `asset.view_financial` — **tidak dirender** bila tidak, karena server tidak mengirimkannya | `FR-04.2` · `BR-073` · `SDD-AUTH-06` |
 | Foto | Galeri `asset_photos` dengan foto utama; memakai turunan `thumb`/`medium` | `asset.view` | `SDD-FS-07` |
-| Dokumen | Faktur, garansi, sertifikat, manual, berita acara + masa garansi | `asset_document.view`; **tidak dirender** bagi Siswa/OSIS | `FR-06.1` · `BR-073` |
+| Dokumen | Faktur, garansi, sertifikat, manual, berita acara + masa garansi | `asset_movement_document.view`; **tidak dirender** bagi Siswa/OSIS | `FR-06.1` · `BR-073` |
 | Peminjaman | Riwayat peminjaman unit ini | `loan.view` (scope berlaku) | `FR-04.2` langkah 5 |
 | Pemeliharaan | Work order kronologis + **akumulasi biaya** + rata-rata interval antar-kerusakan + rekomendasi penggantian bila ambang terlampaui | Blok biaya hanya bila `maintenance.view_cost` | `FR-12.5` · `BR-053` |
 | Riwayat | Riwayat kondisi (nilai lama → baru, alasan, pelaku) + riwayat mutasi lokasi | `asset.view` | `BR-007` · `FR-04.4 AC` |

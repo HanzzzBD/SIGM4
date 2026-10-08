@@ -537,6 +537,7 @@ export interface AssetCodeCountersTable {
  */
 export interface AssetMovementsTable {
     id: Generated<string>;
+    document_id: ColumnType<string | null, string | number | null | undefined, never>;
     asset_id: ColumnType<string, string | number, string | number>;
     room_asal_id: ColumnType<string, string | number, string | number>;
     room_tujuan_id: ColumnType<string, string | number, string | number>;
@@ -711,7 +712,18 @@ export interface PasswordHistoryTable {
 }
 
 export type FileScanStatus = "PENDING" | "CLEAN" | "INFECTED" | "FAILED";
-export type FileOwnerType = "ASSET_DOCUMENT" | "ASSET_PHOTO" | "USER_PHOTO" | "HANDOVER_PHOTO" | "DAMAGE_PHOTO" | "WORK_ORDER_PHOTO" | "STOCKTAKE_PHOTO";
+export type FileOwnerType = "ASSET_DOCUMENT" | "ASSET_PHOTO" | "USER_PHOTO" | "HANDOVER_PHOTO" | "DAMAGE_PHOTO" | "WORK_ORDER_PHOTO" | "STOCKTAKE_PHOTO" | "ASSET_MOVEMENT_DOCUMENT";
+
+/** Satu berita acara per operasi; snapshot hanya ditulis saat penerimaan (0042). */
+export interface AssetMovementDocumentsTable extends KolomBaku {
+    id: Generated<string>;
+    snapshot: ColumnType<unknown, string, never>;
+    object_key: ColumnType<string, string, never>;
+    status: ColumnType<"MENUNGGU" | "BERJALAN" | "SIAP" | "GAGAL", "MENUNGGU" | undefined, "BERJALAN" | "SIAP" | "GAGAL">;
+    file_id: ColumnType<string | null, undefined, string>;
+    pesan_galat: ColumnType<string | null, undefined, string>;
+    selesai_pada: ColumnType<Date | null, undefined, Date>;
+}
 
 /** Registri berkas (0038, PR-03-04; SDD-FS-02). Infrastruktur — tanpa kolom baku. */
 export interface StoredFilesTable {
@@ -795,6 +807,7 @@ export interface Database {
     asset_condition_history: AssetConditionHistoryTable;
     asset_code_counters: AssetCodeCountersTable;
     asset_movements: AssetMovementsTable;
+    asset_movement_documents: AssetMovementDocumentsTable;
     booking_slots: BookingSlotsTable;
     approval_rules: ApprovalRulesTable;
     approval_rule_steps: ApprovalRuleStepsTable;

@@ -34,9 +34,9 @@ function intiSdd03(): string[] {
 }
 
 describe("Lampiran C.2", () => {
-    it("memuat 79 kode unik (phase-00 §7, SDD-05 §4.6)", () => {
-        expect(katalog).toHaveLength(79);
-        expect(new Set(katalog.map((p) => p.kode)).size).toBe(79);
+    it("memuat 80 kode unik (79 seed awal + permission PDF mutasi PR-02-39)", () => {
+        expect(katalog).toHaveLength(80);
+        expect(new Set(katalog.map((p) => p.kode)).size).toBe(80);
     });
 
     it("permission 🔒 identik dengan CORE_PERMISSIONS SDD-03 §4.7", () => {

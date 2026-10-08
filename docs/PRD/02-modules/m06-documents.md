@@ -119,6 +119,7 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | Aksi | Keterangan |
 |---|---|
 | `FILE_UPLOADED` | Berkas terunggah dikonfirmasi (`POST /files/confirm`): jenis, MIME, ukuran, `file_id` — tanpa nama asli berkas (`SDD-FS-06`) |
+| `FILE_GENERATED` | PDF mutasi keluaran worker terpercaya didaftarkan CLEAN; file_id, owner_id, MIME, ukuran dan checksum, atomik dengan status SIAP M-04 (`SDD-09 §4.6`) |
 | `FILE_SCANNED` | Putusan akhir pemindaian anti-malware oleh worker (pelaku SYSTEM): `file_id`, hasil (`CLEAN`/`INFECTED`/`FAILED`), alasan (nama tanda tangan, ketidakcocokan MIME, atau kegagalan pemindaian) |
 | `DOCUMENT_UPLOADED` / `DOCUMENT_DOWNLOADED` / `DOCUMENT_DELETED` | Termasuk pencatatan siapa mengunduh |
 

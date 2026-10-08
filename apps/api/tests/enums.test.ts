@@ -43,6 +43,10 @@ function bacaMigration(): ReadonlyMap<string, readonly string[]> {
                 [...isi.matchAll(/'([^']*)'/g)].map((m) => m[1] ?? ""),
             );
         }
+        for (const cocok of naik.matchAll(/ALTER TYPE\s+(\w+)\s+ADD VALUE\s+'([^']+)'/g)) {
+            const [, nama, nilai] = cocok;
+            if (nama !== undefined && nilai !== undefined) tipe.set(nama, [...(tipe.get(nama) ?? []), nilai]);
+        }
     }
     return tipe;
 }

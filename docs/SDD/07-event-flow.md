@@ -133,6 +133,7 @@ Konsekuensinya, event yang gagal **menahan** event sesudahnya pada agregat yang 
 
 | Event | Diterbitkan oleh | Konsumen asinkron |
 |---|---|---|
+| `AssetMovementDocumentRequested` | M-04 | Worker `asset-movement-document`, payload `{document_id}`; job ID tetap `movement-document-{id}`, membaca snapshot transaksi, maksimum 3 percobaan; tidak mengulang mutasi |
 | `ReservationSubmitted` | M-07 / M-08 | Notifikasi `NT-01` |
 | `ApprovalDecided` | M-10 | Notifikasi `NT-02`/`NT-03`/`NT-04`/`NT-05`; payload `instance_id`, `urutan`, `keputusan`, `status` (instance sesudahnya), `langkah_aktif`; agregat `approval_instance`. Hanya terbit di jalur pemenang (`RE-09`) |
 | `ApprovalSlaBreached` | M-10 (job) | Notifikasi `NT-06`/`NT-07`/`NT-47` menurut `tindakan`; payload `instance_id`, `urutan`, `tindakan` (`REMIND` \| `ESCALATE` \| `EXHAUSTED`), `eskalasi_ke` (ESCALATE); agregat `approval_instance`. Penolakan otomatis (`auto_reject`) tidak menerbitkan event ini melainkan `ApprovalDecided` (`NT-03`). Kontrak = skema Zod `ApprovalSlaBreachedPayloadSchema` (m10 `index.ts`, *strict*), divalidasi penerbit sebelum publish; konsumen `PR-02-25` |
