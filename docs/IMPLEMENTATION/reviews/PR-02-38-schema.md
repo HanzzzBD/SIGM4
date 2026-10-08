@@ -1,9 +1,9 @@
 ## PR
 
 `PR-02-38` — kontrak dan skema pendahulu impor aset
-Phase: [phase-02.md](../phases/phase-02.md) · Kompleksitas: `S`
+Phase: [phase-02.md](../phases/phase-02.md) · Kompleksitas: `M`
 
-Cabang lokal: `chore/PR-02-38-skema-impor-aset`. Digabung lebih dahulu; fitur berada di cabang bertumpuk `feature/PR-02-38-impor-aset`. Belum dipublikasikan sebagai PR GitHub.
+Cabang: `chore/PR-02-38-skema-impor-aset`, [PR #129](https://github.com/HanzzzBD/SIGM4/pull/129). Basis patch dependency terpisah `chore/PR-02-38-dependency-security`; fitur [PR #130](https://github.com/HanzzzBD/SIGM4/pull/130) digabung sesudah migration ini.
 
 ## Yang dikerjakan
 
@@ -37,6 +37,7 @@ Menyiapkan persistensi pekerjaan impor agar worker dapat melanjutkan baris tanpa
 |---|---|
 | Unit | Pemetaan enum Bab 11.3 dan konsistensi SQL migration melalui invariant suite API |
 | Integrasi | `m04-import-schema.test.ts`: 3 uji termasuk penjaga lingkungan, constraint hitungan/terminal, down/up mempertahankan aset |
+| Regresi rollback | `urutan-uji.test.ts`: 3 uji; jumlah rollback mengikuti migration yang diterapkan sejak 0039, lalu skema dipulihkan dalam finally. Bersama uji skema: 6/6 lulus pada database PostgreSQL 18 baru dengan 0041 |
 | Otorisasi (termasuk kasus penolakan) | —; route berada pada PR fitur |
 | Konkurensi | —; penguncian hash/cursor diuji pada PR fitur |
 
@@ -44,7 +45,7 @@ Menyiapkan persistensi pekerjaan impor agar worker dapat melanjutkan baris tanpa
 
 ## Definition of Done
 
-- [ ] Pipeline hijau (`CD-01`); cakupan logika inti ≥70% (`CD-02`) — belum CI remote; SQL diuji integrasi.
+- [ ] Pipeline hijau (`CD-01`); cakupan logika inti ≥70% (`CD-02`) — CI remote diulang setelah perbaikan rollback; SQL diuji integrasi.
 - [x] Unit test logika bisnis + integration test endpoint (29.5) — invariant dan integrasi skema; endpoint pada PR fitur.
 - [x] Otorisasi diuji termasuk kasus penolakan (29.5) — tidak ada endpoint pada pendahulu.
 - [x] Uji acceptance & keamanan mengeksekusi kondisi; penjaga DATABASE_URL membuat suite gagal bila prasyarat hilang.
@@ -67,3 +68,5 @@ Revert fitur konsumen terlebih dahulu, kemudian jalankan down migration 0041. Re
 ## Catatan untuk peninjau
 
 Pemisahan skema dipilih pemilik produk. Indeks replay diawali pengunggah; tidak ada unique hash permanen karena replay hanya berlaku 24 jam. Constraint mempertahankan jumlah baris terproses sebagai sukses + gagal, terpisah dari jumlah unit. Status terminal membersihkan binary unggahan. Perubahan audit closure yang sudah ada di working tree tidak dimasukkan ke commit pendahulu.
+
+[CI pertama](https://github.com/HanzzzBD/SIGM4/actions/runs/37730094972) gagal pada satu uji rollback yang mengasumsikan dua migration terakhir menghapus asset_documents. Migration 0041 mengubah jumlah itu; perbaikan menghitung migration terpasang hingga 0039 dan tetap memulihkan skema bila pemeriksaan gagal. Patch dependency pendahulu menutup temuan proxy-addr Critical dan source-map-js High yang sudah ada pada basis. Karena basis PR bertumpuk bukan develop, workflow CI lengkap dijalankan melalui workflow_dispatch pada head terbaru.

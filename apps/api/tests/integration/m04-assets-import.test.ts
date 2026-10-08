@@ -32,7 +32,7 @@ const time = new Date("2026-10-08T03:00:00Z");
 const clock = new FixedClock(time);
 const audit = new AuditLogger({ clock });
 const service = () => new AssetImportService(getDb(), audit, clock);
-let admin: number, other: number, room: string, category: string;
+let admin: number, other: number, room: string;
 const tag = randomUUID().slice(0, 8);
 const catCode = `IC${tag}`, roomCode = `IR${tag}`;
 const ctx = (id = admin, permissions = ["asset.create", "asset.view"]) => createAuthContext({ userId: id, roleCode: "R-01", scopes: new Map(permissions.map((p) => [p, "all"] as const)) });
@@ -51,7 +51,7 @@ describe.skipIf(!process.env["DATABASE_URL"])("PR-02-38 — impor aset", () => {
         const users = await kueri<{ id: string }>(`INSERT INTO users(nama,email,password_hash,nip_nis,role_id,status,must_change_password)
             SELECT 'Pengunggah', 'impor-${tag}-'||n||'@sekolah.sch.id','x','IMP${tag}'||n,id,'AKTIF',false FROM roles CROSS JOIN generate_series(1,2) n WHERE kode='R-01' RETURNING id::text`);
         admin = Number(users[0]?.id); other = Number(users[1]?.id);
-        category = (await kueri<{ id: string }>(`INSERT INTO asset_categories(nama,kode) VALUES ('Kategori impor','${catCode}') RETURNING id::text`))[0]?.id ?? "";
+        await kueri(`INSERT INTO asset_categories(nama,kode) VALUES ('Kategori impor','${catCode}')`);
         const building = (await kueri<{ id: string }>(`INSERT INTO buildings(nama,kode) VALUES ('Gedung impor','IB${tag}') RETURNING id::text`))[0]?.id;
         const area = (await kueri<{ id: string }>(`INSERT INTO areas(building_id,nama,kode) VALUES (${building},'Area impor','IA${tag}') RETURNING id::text`))[0]?.id;
         room = (await kueri<{ id: string }>(`INSERT INTO rooms(area_id,nama,kode,jenis,status) VALUES (${area},'Ruang impor','${roomCode}','GUDANG','AKTIF') RETURNING id::text`))[0]?.id ?? "";
@@ -64,7 +64,15 @@ describe.skipIf(!process.env["DATABASE_URL"])("PR-02-38 — impor aset", () => {
         await kueri(`DELETE FROM event_outbox WHERE aggregate_type='AssetImportJob'`);
     }
     beforeEach(clean);
-    afterAll(clean);
+    afterAll(async () => {
+        await clean();
+        await kueri(`DELETE FROM asset_code_counters WHERE category_id IN (SELECT id FROM asset_categories WHERE kode='${catCode}')`);
+        await kueri(`DELETE FROM rooms WHERE id=${room}`);
+        await kueri(`DELETE FROM areas WHERE kode='IA${tag}'`);
+        await kueri(`DELETE FROM buildings WHERE kode='IB${tag}'`);
+        await kueri(`DELETE FROM asset_categories WHERE kode='${catCode}'`);
+        await kueri(`DELETE FROM users WHERE id IN (${admin},${other})`);
+    });
     it("IMPT-01/02: laporan per baris fisik, unit berbeda, nomor seri tetap teks, audit dan buffer dibersihkan", async () => {
         const { job } = await service().submit(ctx(), input([row({ jumlah_unit: "3" }), row({ nomor_seri: "00001234567890123456" }), row({ nomor_seri: "00001234567890123456" }), row({ kode_ruangan: "TIDAK_ADA" })], true));
         expect(job).toMatchObject({ status: "SELESAI", total_baris: 4, sukses: 2, gagal: 2, unit_dibuat: 4 });
@@ -183,7 +191,10 @@ describe.skipIf(!process.env["DATABASE_URL"])("PR-02-38 — impor aset", () => {
             const handlers = new EventHandlerRegistry();
             pasangHandlerAntrean(handlers, queue);
             const dispatcher = new OutboxDispatcher({ registry: handlers, clock });
-            expect(await dispatcher.drain()).toMatchObject({ processed: 1, failed: 0 });
+            const drained = await dispatcher.drain();
+            expect(drained.failed).toBe(0);
+            expect(drained.processed).toBeGreaterThanOrEqual(1);
+            expect(await kueri(`SELECT id FROM event_outbox WHERE aggregate_type='AssetImportJob' AND aggregate_id=${job.id} AND event_name='AssetImportRequested' AND processed_at IS NOT NULL`)).toHaveLength(1);
             expect(await wait(async () => (await service().get(ctx(), Number(job.id))).status === "SELESAI")).toBe(true);
             const elapsed = performance.now() - start;
             expect(elapsed).toBeLessThanOrEqual(60_000);
@@ -270,6 +281,7 @@ describe.skipIf(!process.env["DATABASE_URL"])("PR-02-38 — impor aset", () => {
         } finally {
             await kueri(`DELETE FROM assets WHERE import_job_id IN (SELECT id FROM asset_import_jobs WHERE created_by IN (${ids}))`);
             await kueri(`DELETE FROM asset_import_jobs WHERE created_by IN (${ids})`);
+            await kueri(`DELETE FROM users WHERE id IN (${ids})`);
             await closeRedis();
         }
     });
