@@ -1,6 +1,6 @@
 # Implementation Documentation — SIGM4
 
-**Status:** rencana lengkap: 9 phase · 177 pull request · 22 modul. Kemajuan aktual per phase dan PR hanya dicatat di [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md).
+**Status:** rencana lengkap: 9 phase · 179 pull request · 22 modul. Kemajuan aktual per phase dan PR hanya dicatat di [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md).
 
 ---
 
@@ -63,11 +63,11 @@ Aturan yang paling sering tergoda dilanggar: **IMPLEMENTATION menurunkan, tidak 
 | Phase | Nama | Modul | PR | Milestone PRD |
 |:---:|---|:---:|:---:|---|
 | [00](phases/phase-00.md) | Foundation | — | 18 | `M0` — **menutup** |
-| [01](phases/phase-01.md) | Master Data Independen | M-02 · M-03 · M-18 · M-20 | 14 | `M1` · `M5` (sebagian) |
-| [02](phases/phase-02.md) | Inti Sistem | M-01 · M-04 · M-10 · M-15 · M-17 | 35 | `M1` · `M2` · `M5` (sebagian) |
-| [03](phases/phase-03.md) | Layanan Aset & Reservasi Ruangan | M-05 · M-06 · M-07 · M-11 · M-14 · M-19 | 25 | `M1` — **menutup** |
+| [01](phases/phase-01.md) | Master Data Independen | M-02 · M-03 · M-18 · M-20 | 18 | `M1` · `M5` (sebagian) |
+| [02](phases/phase-02.md) | Inti Sistem | M-01 · M-04 · M-10 · M-15 · M-17 | 37 | `M1` · `M2` · `M5` (sebagian) |
+| [03](phases/phase-03.md) | Layanan Aset & Reservasi Ruangan | M-05 · M-06 · M-07 · M-11 · M-14 · M-19 | 26 | `M1` — **menutup** |
 | [04](phases/phase-04.md) | Siklus Hidup Aset | M-08 · M-12 · M-13 | 14 | `M2` — **menutup** |
-| [05](phases/phase-05.md) | Penutupan Siklus | M-09 · M-21 | 14 | `M3` & `M4` — **menutup** |
+| [05](phases/phase-05.md) | Penutupan Siklus | M-09 · M-21 | 26 | `M3` & `M4` — **menutup** |
 | [06](phases/phase-06.md) | Analitik | M-16 | 10 | `M5` — **menutup** |
 | [07](phases/phase-07.md) | Integrasi Lintas Modul & UAT | — | 14 | `M6` (sebagian) |
 | [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 16 | `M6` — **menutup** |
@@ -77,6 +77,8 @@ Aturan yang paling sering tergoda dilanggar: **IMPLEMENTATION menurunkan, tidak 
 Akibat praktisnya: sebuah milestone dinyatakan tercapai pada phase yang **menutupnya**, bukan pada phase pertama yang menyentuhnya. `M1` selesai setelah Phase 03, bukan setelah Phase 01.
 
 ---
+
+Audit closure terbaru: [Phase 00–02, 7 Oktober 2026](audits/closure-phase-00-02-2026-10-07.md), termasuk gap task/owner dan dependency lintas phase.
 
 ## Cara memakai dokumen ini
 

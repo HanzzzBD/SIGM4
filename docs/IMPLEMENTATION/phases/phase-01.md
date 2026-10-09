@@ -116,38 +116,40 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 ## 8. Task Breakdown
 
 ### `PR-01-18` — Endpoint master data Lampiran E
-- [ ] Layanan tahun ajaran: buat (tahun pertama otomatis aktif), sunting, `PATCH .../activate` menukar tahun aktif dalam **satu** transaksi (`SDD-DB-18`); validasi semester berada di dalam rentang tahun ajarannya (`SDD-05 §4.7b` — belum ditegakkan basis data)
-- [ ] Hari libur (CRUD) dan hari kerja (`PUT /work-days`); `academic_year_id` opsional pada hari libur
-- [ ] Unit kerja: buat, sunting, `PATCH .../status` (tidak ada hapus — `WU-02`); kode/nama unik tanpa memandang huruf
-- [ ] Setiap operasi tulis memuat aksi activity log di `m20-settings.md` §11 (`AL-01`)
-- [ ] Aktivasi tahun ajaran **tidak** menjalankan kenaikan kelas — pemicu `AC-YR-02` disambungkan `PR-01-13`
-- [ ] **Skala:** ±14 endpoint pada empat entitas; jelaskan di deskripsi PR mengapa tidak dipecah (kalender | unit kerja) bila tetap `L`
+- [x] Layanan tahun ajaran: buat (tahun pertama otomatis aktif), sunting, `PATCH .../activate` menukar tahun aktif dalam **satu** transaksi (`SDD-DB-18`); validasi semester berada di dalam rentang tahun ajarannya (`SDD-05 §4.7b` — belum ditegakkan basis data)
+- [x] Hari libur (CRUD) dan hari kerja (`PUT /work-days`); `academic_year_id` opsional pada hari libur
+- [x] Unit kerja: buat, sunting, `PATCH .../status` (tidak ada hapus — `WU-02`); kode/nama unik tanpa memandang huruf
+- [x] Setiap operasi tulis memuat aksi activity log di `m20-settings.md` §11 (`AL-01`)
+- [x] Aktivasi tahun ajaran **tidak** menjalankan kenaikan kelas — pemicu `AC-YR-02` disambungkan `PR-01-13`
+- [x] **Skala:** ±14 endpoint pada empat entitas; jelaskan di deskripsi PR mengapa tidak dipecah (kalender | unit kerja) bila tetap `L`
 
 ### `PR-01-04` — Matriks permission
-- [ ] Endpoint `PUT /roles/{id}/permissions`
-- [ ] Naikkan `role_version` pada setiap perubahan (`SDD-AUTH-04`)
-- [ ] Cache permission berkunci `perm:{user_id}:{role_version}`, TTL 60 detik
-- [ ] Tolak pencabutan permission inti 🔒 di lapisan domain, bukan UI (`SDD-AUTH-10`)
-- [ ] Uji: perubahan matriks berlaku pada permintaan berikutnya tanpa restart
+- [x] Endpoint `PUT /roles/{id}/permissions`
+- [x] Naikkan `role_version` pada setiap perubahan (`SDD-AUTH-04`)
+- [x] Cache permission berkunci `perm:{user_id}:{role_id}:{role_version}` (fix #66), TTL 60 detik
+- [x] Tolak pencabutan permission inti 🔒 di lapisan domain, bukan UI (`SDD-AUTH-10`)
+- [x] Uji: perubahan matriks berlaku pada permintaan berikutnya tanpa restart
 
 ### `PR-01-12` — Migrasi `unit_kerja`
-- [ ] **Expand**: tambah `users.work_unit_id` nullable; kolom `unit_kerja` lama tetap ada
-- [ ] **Migrate**: skrip pemetaan teks bebas → `work_units`; baris tak terpetakan dilaporkan
-- [ ] Kode beralih membaca `work_unit_id`
-- [ ] **Contract** (hapus `unit_kerja`) dijadwalkan **Phase 08**, bukan phase ini (`SDD-DB-08`)
+- [x] **Expand**: tambah `users.work_unit_id` nullable; kolom `unit_kerja` lama tetap ada
+- [x] **Migrate**: fungsi pemetaan teks bebas → `work_units` tersedia; pengisian/pemetaan data riil oleh operator masih GAP-01-SCHOOL-DATA
+- [x] Kode beralih membaca `work_unit_id`
+- [ ] **Deferred `PR-08-11` / operator:** contract `unit_kerja` setelah backup; tidak dianggap pekerjaan Phase 01 yang sudah selesai (`SDD-DB-08`)
 
 ### `PR-01-13` — Siklus akun siswa
-- [ ] Simpan `academic_year_id` + `kelas` per tahun ajaran (`SL-01`)
-- [ ] Operasi kenaikan kelas massal (`SL-02`)
-- [ ] Penandaan lulus → penonaktifan otomatis akhir tahun ajaran (`SL-03`)
-- [ ] Blokir penonaktifan bila masih ada kewajiban (`SL-04`) — *pemeriksaan peminjaman/denda menjadi tanggung jawab Phase 05; sediakan titik ekstensi, jangan hardcode "tidak ada kewajiban"*
+- [x] Simpan `academic_year_id` + `kelas` per tahun ajaran (`SL-01`)
+- [x] Operasi kenaikan kelas massal (`SL-02`)
+- [x] Penandaan lulus → penonaktifan otomatis akhir tahun ajaran (`SL-03`)
+- [x] Titik ekstensi kewajiban tersedia; pemasangan job student-graduation ditutup PR-02-32 (#96).
+- [ ] **Deferred `PR-05-09` / Backend siswa:** daftar pemeriksa kewajiban SL-04 di API dan worker setelah peminjaman/denda hidup; pseudonimisasi mengikuti PR-05-26.
 
 ## 9. Acceptance Checklist
 
-- [ ] Seluruh AC pada `FR-02.1`, `FR-02.2`, `FR-03.1`, `FR-03.2`, `FR-18.1`, `FR-18.2`, `FR-20.1` terverifikasi — *17 dari 25 terbukti, 3 sebagian, 5 ditunda ([log §9.2](../logs/phase-01.md))*
+- [ ] Seluruh AC pada `FR-02.1`, `FR-02.2`, `FR-03.1`, `FR-03.2`, `FR-18.1`, `FR-18.2`, `FR-20.1` terverifikasi — *audit 7 Oktober: 16 terbukti teknis, 7 sebagian, 1 gap, 1 deferred; gap scope/QA tetap menahan closure ([log §9.2](../logs/phase-01.md))*
 - [x] Uji otorisasi tergenerate lulus untuk keempat modul (`SEC-T-01`)
 - [x] Impor 500 pengguna dengan laporan galat per baris (`IMPT-02`)
-- [x] Perubahan matriks permission berlaku ≤ 60 detik tanpa restart (`PM-05`)
+- [x] Perubahan matriks permission berlaku ≤ 60 detik tanpa restart melalui PermissionCache (`PM-05`); gerbang memakai authPalsu
+- [ ] Bukti PM-05 melalui JWT/sesi nyata — GAP-01-AUTH-E2E, QA/Backend auth; auth sudah tersedia #62/#66
 - [x] Setiap operasi tulis menghasilkan entri activity log (`AL-01`)
 - [x] Akun siswa tanpa `consent_guardian_at` tidak dapat diaktifkan (`DP-02`)
 
@@ -171,6 +173,8 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 Mulai phase ini, aturan **expand→migrate→contract** berlaku penuh: tidak ada PR yang boleh memuat *expand* dan *contract* untuk kolom yang sama.
 
 ## 12. Definition of Done
+
+**Audit closure:** [bukti per syarat dan gap task](../audits/closure-phase-00-02-2026-10-07.md#4-closure-phase-01); BR-015/daftar ruangan/job lulusan/notifikasi/password/foto tidak lagi menunggu modul belum ada. QA staging, UI/demo dan data riil tetap terbuka.
 
 **DoD dasar** — [PRD 29.5](../../PRD/01-product/delivery-plan.md).
 

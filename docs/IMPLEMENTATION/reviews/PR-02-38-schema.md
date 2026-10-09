@@ -59,7 +59,7 @@ Menyiapkan persistensi pekerjaan impor agar worker dapat melanjutkan baris tanpa
 
 - [ ] Tidak diperlukan
 - [x] Diperlukan — menyentuh: `migration`
-  Peninjau: belum ditetapkan; wajib sebelum merge sesuai BRANCHING §3.1.
+  Peninjau: PM-Codexpert — approve #131 pada head `f26d8bd` sebelum merge, diterima sebagai tinjauan arsitek (keputusan 64 log phase-02).
 
 ## Rollback
 

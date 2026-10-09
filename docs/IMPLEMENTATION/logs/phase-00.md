@@ -172,9 +172,11 @@ Kolom ketiga adalah yang paling berharga di seluruh log ini. Pola yang berulang 
 - [ ] Perpanjangan sertifikat certbot (`SDD-INF-13`, `INF-06`) terpantau alarm — kegagalannya tidak boleh baru diketahui saat sertifikat kedaluwarsa
 - [ ] *Readiness gate* `SDD-INF-04` dibuktikan di staging: Nginx OSS hanya memeriksa upstream secara **pasif**, sehingga gerbangnya sepenuhnya bersandar pada skrip deploy `SDD-INF-10`
 - [x] Ukuran image setelah Chromium masuk (`SDD-FS-12`) diukur dan dicatat di §8 (`PR-03-02`: 1,78 GB) — bila menjadi persoalan, jalannya memisahkan image (`SDD-INF-01`), bukan mengganti pembangkit PDF
-- [ ] `CODEOWNERS` diganti tim arsitek, lalu *required approvals* dan *Code Owners review* dinyalakan bersamaan (`GITHUB-CI-STATE §4`) — keduanya sengaja mati selama pemiliknya satu orang
-- [ ] Nomor surat persetujuan lintas yurisdiksi (`SDD-AI-16`) dilengkapi sebelum `GL-07` diperiksa — pelacakannya sudah ada di `phase-08.md` §8/§9 dan `RELEASE-PLAN.md` §2
-- [ ] Pembangkitan OpenAPI dari skema Zod berjalan (`SDD-API-11`, `SDD-API-02`) dan `/api/docs` tidak aktif di produksi (`SDD-API-12`)
+- [x] **Audit 7 Oktober:** CODEOWNERS dua pemilik dan proteksi develop satu approval + Code Owners review aktif; blocker satu pemilik sudah tertutup.
+- [ ] Proteksi main belum mewajibkan check/approval/Code Owner (snapshot GitHub 7 Oktober); **GAP-00-REVIEW**, owner pemilik repo/arsitek
+- [ ] **Deferred PR-08-12 / produk-sekolah; bukan blocker Phase 00:** nomor surat persetujuan lintas yurisdiksi (`SDD-AI-16`) dilengkapi sebelum `GL-07` diperiksa — pelacakannya sudah ada di `phase-08.md` §8/§9 dan `RELEASE-PLAN.md` §2
+- [x] Generator OpenAPI dari registry/skema tersedia: src/api/openapi.ts + tests/shared/openapi.test.ts; tidak ada route docs pada composition root.
+- [ ] Publikasi OpenAPI dev/staging dan bukti docs nonaktif produksi: **GAP-00-OPENAPI**, owner Backend fondasi/DevOps
 - [ ] Perkakas observability terpasang sesuai `SDD-OBS-09`, dan penyedianya **ber-region Indonesia** (`SDD-OBS-10`, `SDD-SEC-10`) — region diverifikasi sebelum kontrak, bukan sesudahnya. Seleksi bersama penyediaan staging nyata (keputusan 65)
 - [ ] Koreografi deploy `SDD-INF-10` teruji di staging — **sebagian**: penggantian api satu per satu, readiness gate, drain worker `SDD-INF-05`, dan penghentian API terbukti pada staging tiruan (`PR-00-18` + tindak lanjut graceful shutdown: 41/41 permintaan 200 selama deploy bergulir); **staging nyata belum**. Butir asli: koreografi deploy teruji di staging — penggantian instance API satu per satu dan drain worker
 - [ ] Penyediaan mengikuti `SDD-INF-11` — VPS ber-region Indonesia + PostgreSQL terkelola; ketersediaan `btree_gist` diverifikasi sebelum langganan dibuka (§10 `phases/phase-00.md`)
@@ -309,13 +311,15 @@ Angka nyata, bukan perkiraan. Kosongkan bila belum diukur — jangan diisi tebak
 
 ## 9. Gerbang keluar
 
-Diisi saat phase dinyatakan selesai. Daftar lengkapnya ada di [`phase-00.md` §9 dan §12](../phases/phase-00.md).
+**Re-audit 7 Oktober 2026:** [matriks seluruh syarat, bukti PR/commit/test dan gap task](../audits/closure-phase-00-02-2026-10-07.md#3-closure-phase-00). CI develop terbaru lulus pada tree identik checkout; staging GitHub belum ada, deploy skipped. Seluruh blocker lama tidak diasumsikan masih valid.
 
-- [x] Seluruh 18 PR tergabung — diverifikasi dari GitHub 15 September 2026 (#6–#40, tanpa PR terbuka)
-- [ ] Acceptance checklist phase terpenuhi
-- [ ] Definition of Done phase terpenuhi
-- [ ] Bagian 5 log ini terisi seluruhnya
-- [ ] [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) diperbarui
+- [x] Seluruh 18 PR tergabung (#6–#40), kode tercakup tree develop terbaru
+- [ ] Acceptance checklist lengkap: deploy nyata/tiga lingkungan masih GAP-00-INFRA; pembuktian operasional masih terbuka
+- [ ] DoD lengkap: QA staging, observability/renewal alarm, publikasi kontrak dan tata kelola main belum lengkap
+- [x] Bagian 5 dicatat dan dipetakan ke gap/deferred; pencatatan lengkap tidak menyatakan semua pekerjaan operasional selesai
+- [x] IMPLEMENTATION-STATUS dan checklist phase diperbarui; Phase 00 tetap In Review
+
+**Tertutup:** health/worker/seed/registri/lock/redaksi/hash terbukti; proteksi develop sudah satu approval + Code Owners review; storage/AV/FCM sudah terpasang pada API; seluruh 18 PR dan audit_docs terbukti. **Deferred:** LLM/kelengkapan health lintas proses PR-03-20/GAP-03-WORKER-HEALTH; smoke alur reservasi/tiket GAP-03-SMOKE; surat/DAST/CSP produksi Phase 08. Owner/bukti penutup ada di audit §6.
 
 ## 10. Yang diserahkan ke phase berikutnya
 
@@ -328,25 +332,25 @@ Hal yang sengaja ditinggalkan terbuka, beserta di mana ia akan ditutup.
 | Seleksi vendor observability ber-region Indonesia (`SDD-OBS-09`, `SDD-OBS-10`) | Bersama penyediaan staging nyata — bagian gerbang keluar Phase 00 (keputusan 65) | `PR-00-06` tergabung tanpa seleksi |
 | DAST OWASP ZAP `ST-03` | `PR-08-16` (keputusan 54) | Menuntut staging nyata yang hidup dan berlaku per kandidat rilis |
 | ~~Drain worker `SDD-INF-05`~~ | **Ditutup** tindak lanjut `PR-00-18` (keputusan 57–60) | — |
-| Alur kritis `CD-07` (login, cari aset, reservasi, scan QR, tiket kerusakan) di `smoke-test.sh`; ClamAV pada topologi staging | PR yang membangun endpoint/adapternya (Phase 02–03) | Endpoint dan adapternya belum ada |
-| Tahap uji otorisasi tergenerate `SEC-T-01` pada pipeline | `PR-01-15` (keputusan 63); diperiksa gerbang keluar [`phase-01.md`](../phases/phase-01.md)/[`phase-02.md`](../phases/phase-02.md) §9 | Belum ada endpoint berpermission untuk digenerate |
+| Alur kritis CD-07 pada smoke-test.sh | **GAP-03-SMOKE**, owner QA/Backend/DevOps; login/search/QR sudah tersedia #62/#84/#122, reservasi/tiket menunggu PR-03-10/14 | Smoke saat ini masih health/header; tidak lagi benar bahwa semua endpoint belum ada. Deferred Phase 03, bukan blocker kode fondasi |
+| **SELESAI** tahap SEC-T-01 pipeline | PR-01-15 (#45), tests/shared/sec-t-01.test.ts, CI 37092178689 tanpa skip | Tidak lagi menunggu endpoint/otorisasi |
 | ~~Runtime image tidak lagi memuat npm — job migration `CD-04` tidak dapat memanggil `npm run db:migrate` di dalamnya~~ | **Ditutup** `PR-00-18` (keputusan 53) | — |
-| Required status check `CI lulus` di `main` dan `staging` | `main`: setelah `CODEOWNERS` dua-pemilik dipromosikan · `staging`: saat cabangnya dibuat, setelah infrastruktur staging siap (keputusan 55) | `GITHUB-CI-STATE §4` |
-| Kolom baku `SDD-05 §4.2` + trigger `updated_at` pada `roles`; `users.role_id` → `roles(id)` | `PR-01-01` (keputusan 39) | `created_by`/`updated_by` merujuk `users(id)` yang belum ada |
-| `role_version` (`SDD-AUTH-04`); `CORE_PERMISSIONS` di `SDD-03 §4.7` kini berpadanan dengan kolom `permissions.inti` — sumber mana yang dibaca validator ditetapkan bersama validatornya | `PR-01-04` | Keduanya milik matriks permission; uji berkas `PR-00-16` sudah menjaga keduanya tetap identik |
-| Seed parameter sistem + katalog kunci & nilai bawaan `FR-20.1` di SDD | `PR-01-10` (keputusan 40) | Tabel dan validasi rentangnya milik PR itu; nilai bawaannya belum tertulis |
-| Pemeriksaan `object_storage` dan `av_scanner` — tanpanya `ready` belum menilai storage sebagaimana `SDD-15 §4.5` | Adapter storage & AV Phase 03 (`SDD-FS-01` … `SDD-FS-09`) | Keputusan 22: klien dan SDK-nya belum ada |
-| Pemeriksaan `fcm` | `PR-02-27` | Keputusan 22 |
-| Pemeriksaan `llm` | `PR-03-20` | Keputusan 22; paruh `AI-CTL-10` yang lain memang milik PR itu |
-| Memasang `/health` ringkasan (`setting.view`) dan mendaftarkannya ke registri | `PR-01-15` (semula `PR-02-09`, keputusan 63) | Keputusan 21: tanpa middleware permission ia endpoint tanpa penjaga |
+| Required checks/reviews | develop selesai (CI lulus + satu Code Owner); main masih GAP-00-REVIEW; staging GAP-00-INFRA | Snapshot GitHub 7 Oktober 2026 |
+| **SELESAI** kolom baku roles + FK users.role_id | PR-01-01 (#42), migration 0012_users.sql, shared/db/schema.ts | Tidak lagi menunggu users |
+| **SELESAI** role_version/core permission/cache | PR-01-04 (#48) + fix #66; migration 0013; permission-cache.test.ts | Kunci sekarang memuat user_id, role_id, role_version |
+| **SELESAI** seed parameter/katalog settings | PR-01-10 (#54), migration 0015, m20-settings.test.ts | Tabel dan default tersedia |
+| **SELESAI di API** object_storage/av_scanner | #124/#126, src/api/index.ts, object-storage.test.ts/m06-file-scan.test.ts; worker GAP-03-WORKER-HEALTH | Adapter tersedia; jangan menyatakan seluruh probe worker lengkap |
+| **SELESAI** pemeriksaan fcm | PR-02-27 (#103), health API/worker, notifications-push.test.ts | Pengiriman nyata masih GAP-02-FCM |
+| **Deferred** pemeriksaan llm | PR-03-20 / Backend chatbot | Bukan blocker Phase 00; health enam dependensi diperiksa Phase 03 |
+| **SELESAI** /health ringkasan dengan setting.view | PR-01-15 (#45), registry/composition root + health tests | Tidak lagi menunggu middleware |
 | Butir §9 dan kriteria keluar `M0` "`/health` melaporkan status DB, Redis, object storage, AV, FCM, LLM" | **Tidak wajib di Phase 00** (keputusan 24) — kelengkapannya diperiksa di [`phase-03.md` §9](../phases/phase-03.md); §9 dan §12 phase ini serta `M0` di PRD 29.2 sudah dinyatakan ulang | Pemeriksaan didaftarkan bersama adapternya: `PR-02-27`, `PR-03-04`, `PR-03-05`, `PR-03-20` |
 | **Ditutup `PR-00-18`** — entrypoint worker belum menyala saat dijalankan sebagai proses; server kesehatannya lahir di `bootstrap()` yang belum dipanggil siapa pun. Server kesehatan worker tidak dinyatakan tervalidasi runtime sampai butir ini tertutup | `PR-00-18` (keputusan 24) — acceptance-nya sudah memuat butir ini | Keadaan ini ada sejak `PR-00-11` dan di luar scope `PR-00-14` |
-| Sumbu **akun** kelas `login` (penghitung di PostgreSQL, `SDD-SESS-07`) — `PR-00-15` hanya memasang sumbu IP | `PR-02-03` (keputusan 29) — rujukan dan acceptance-nya sudah memuat butir ini | Tabel akun belum ada |
-| Pemakaian mode hitung-gagal pada `POST /auth/login` | `PR-02-02` (keputusan 30) | Route login belum ada |
-| CSP halaman web: `'self'` + hash sha256 build-time | `PR-08-04` (keputusan 28) | `apps/web` belum punya build Vite |
-| Variabel `SDD-16 §4.7` yang belum masuk skema `shared/config` | Bersama PR pemakainya (keputusan 32): `PR-02-02` (JWT), `PR-02-07` (TOTP), `PR-02-27` (FCM), `PR-03-04` (S3), `PR-03-20` (Gemini, `CHAT_ENABLED`), `PR-03-01` (`APP_BASE_URL`, keputusan 37) | Skema bertahap |
-| Topologi origin web/API dan perlu tidaknya `cors` | `PR-00-18` (keputusan 38) | Topologi Nginx/CDN belum diputuskan |
-| Keputusan `409 FILE_NOT_SCANNED` terhadap Bab 17.3 | `PR-03-04` (keputusan 35) | Endpoint unduh belum ada |
+| **SELESAI** sumbu akun login | PR-02-03 (#63), migration 0022, auth-lockout.test.ts | Tidak lagi menunggu tabel users |
+| **SELESAI** mode hitung-gagal login | PR-02-02 (#62), auth-login-refresh/rate-limit-login tests | Route login tersedia |
+| CSP halaman web: `'self'` + hash sha256 build-time | Deferred `PR-08-04`, owner DevOps/Frontend (keputusan 28) | Build Vite sudah ada #107; hash/CSP produksi diverifikasi saat hardening, bukan menunggu fondasi web |
+| Konfigurasi bertahap | JWT/TOTP/FCM/S3/APP_BASE_URL tersedia (#62/#68/#103/#124/#120); Gemini/CHAT_ENABLED deferred PR-03-20 | Tidak menganggap semua variabel masih hilang |
+| **SELESAI untuk rancangan** topologi origin web/API | PR-00-18 (#39), deploy/staging/nginx/sigm4.conf.template; keputusan 50–56 | Pembuktian origin publik nyata masih GAP-00-INFRA |
+| **SELESAI** FILE_NOT_SCANNED | #125/#126/#127; m06-files.test.ts, m06-documents.test.ts | Endpoint unduh tersedia; tidak lagi menunggu layanan berkas |
 
 ---
 
