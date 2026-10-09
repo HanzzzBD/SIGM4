@@ -45,7 +45,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | **Kode Aset** | Pola format kode (mis. `{KATEGORI}-{LOKASI}-{URUT}`), panjang nomor urut, penanda pemisah |
 | **Peminjaman** | Durasi maksimum per role, batas jumlah unit per pengajuan, tenggat minimum pengajuan (H-n), batas jumlah perpanjangan per peminjaman (bawaan 1) |
 | **Denda** | Tarif denda per hari keterlambatan, **batas maksimum (cap) denda sebagai persentase nilai perolehan** (bawaan 30%), ambang nominal pemblokiran pemohon, kebijakan pembulatan hari, pengalih "kecualikan hari libur dari perhitungan denda", kebijakan penetapan nilai ganti rugi |
-| **Reservasi** | Jam operasional sekolah, hari kerja, jarak minimum pengajuan, durasi maksimum per reservasi, **horizon pemesanan** (bawaan 90 hari), **TTL slot tentative** (bawaan 48 jam), **kuota pengajuan tertunda per role** (bawaan Guru/Staf 5, Siswa 2) |
+| **Reservasi** | Jam operasional sekolah, hari kerja, jarak minimum pengajuan, durasi maksimum per reservasi, **horizon pemesanan** (bawaan 90 hari), **TTL slot tentative** (bawaan 48 jam), **kuota pengajuan tertunda per role** (bawaan Guru/Staf 5, Siswa 2), **granularitas slot kalender** (bawaan 30 menit; 15, 30, atau 60 — CAL-UI-02) |
 | **Kalender Akademik** | Tahun ajaran aktif, tanggal mulai & selesai semester, daftar hari libur, hari kerja sekolah (Lampiran E) |
 | **Maintenance** | Ambang biaya pemeliharaan kumulatif untuk rekomendasi penggantian, SLA tindak lanjut per tingkat urgensi |
 | **Satuan Bahan** | Daftar satuan yang boleh dipakai bahan (rim, pcs, botol, liter, dus, dan seterusnya) — dapat ditambah dan dinonaktifkan, **tidak dapat diketik bebas** oleh pengguna (`BR-084`) |

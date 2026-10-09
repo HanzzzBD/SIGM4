@@ -302,9 +302,12 @@ Bukan entitas domain: tidak memakai `created_*`, dan tidak memakai `id` — `key
 | `reservasi.ttl_tentative_jam` | `RESERVASI` | `BILANGAN_BULAT` | 48 | 1 – 168 | `BR-023b` |
 | `reservasi.kuota_tertunda_guru_staf` | `RESERVASI` | `BILANGAN_BULAT` | 5 | 1 – 50 | `BR-023a` |
 | `reservasi.kuota_tertunda_siswa_osis` | `RESERVASI` | `BILANGAN_BULAT` | 2 | 1 – 50 | `BR-023a` |
+| `reservasi.granularitas_menit` | `RESERVASI` | `BILANGAN_BULAT` | 30 | 15 – 60, hanya 15/30/60 | `CAL-UI-02` (`PR-03-09`, `0044`) |
 | `kode_aset.pola` | `KODE_ASET` | `TEKS` | `"KATEGORI,LOKASI"` | — | `FR-20.1` |
 | `kode_aset.pemisah` | `KODE_ASET` | `TEKS` | `"-"` | — | `FR-20.1` |
 | `kode_aset.panjang_urut` | `KODE_ASET` | `BILANGAN_BULAT` | 4 | 1 – 10 | `FR-20.1` |
+
+**Himpunan tertutup.** `reservasi.granularitas_menit` hanya sah bernilai 15, 30, atau 60 — kelipatan yang membagi satu jam habis agar kolom kalender sejajar batas jam. Rentang 15 – 60 di baris seed adalah pagar luarnya; himpunannya ditegakkan validator m20 (`NILAI_TERBATAS`), karena kolom `nilai_min`/`nilai_maks` tidak dapat menyatakannya.
 
 Parameter kelompok lain (jam operasional, tarif denda, durasi sesi, dst.) **tidak dikarang di sini**: nilai bawaannya belum ditetapkan PRD, dan masing-masing ditambahkan PR yang mengonsumsinya (`SDD-DB-17`).
 

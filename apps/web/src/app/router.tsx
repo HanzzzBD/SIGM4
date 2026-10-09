@@ -10,6 +10,7 @@ import { Outlet, createRootRouteWithContext, createRoute, createRouter, redirect
 // zod/mini: API skema yang sama dengan bundel jauh lebih kecil (NFR-P-03, SDD-11 §4.7).
 import { z } from "zod/mini";
 import { ambilTantangan } from "../modules/m01-auth";
+import { TAMPILAN, hariIniWib } from "../modules/m07-reservation-room";
 import { RENTANG } from "../modules/m15-dashboard";
 import {
     HalamanAktivasiDuaFaktor,
@@ -21,6 +22,7 @@ import {
     HalamanGantiPassword,
     HalamanLogin,
     HalamanImporAset,
+    HalamanKalenderRuangan,
     HalamanMutasiAset,
     HalamanTanpaAkses,
     HalamanTidakDitemukan,
@@ -181,6 +183,30 @@ const assetMovementRoute = createRoute({
     },
 });
 
+/** P-27 Kalender Ruangan (FR-07.1, UX §7.6.1): tampilan, tanggal WIB, dan filter tersimpan di URL. */
+const kalenderRuanganRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/kalender-ruangan",
+    beforeLoad: butuhIzin("reservation.view"),
+    validateSearch: z.object({
+        tampilan: z.catch(z.optional(z.enum(TAMPILAN)), undefined),
+        tanggal: z.catch(z.optional(z.string().check(z.regex(/^\d{4}-\d{2}-\d{2}$/))), undefined),
+        gedung: z.catch(z.optional(z.string().check(z.regex(/^[1-9]\d*$/))), undefined),
+        jenis: z.catch(z.optional(z.string()), undefined),
+        kapasitas: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1))), undefined),
+    }),
+    component: function RouteKalenderRuangan() {
+        const cari = kalenderRuanganRoute.useSearch();
+        const navigate = useNavigate({ from: kalenderRuanganRoute.fullPath });
+        return (
+            <HalamanKalenderRuangan
+                pencarian={{ ...cari, tampilan: cari.tampilan ?? "harian", tanggal: cari.tanggal ?? hariIniWib() }}
+                onPencarian={(p) => void navigate({ search: (lama) => ({ ...lama, ...p }) })}
+            />
+        );
+    },
+});
+
 export const routeTree = rootRoute.addChildren([
     loginRoute,
     verifikasiDuaFaktorRoute,
@@ -188,7 +214,7 @@ export const routeTree = rootRoute.addChildren([
     gantiPasswordRoute,
     gangguanRoute,
     tidakDitemukanRoute,
-    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {

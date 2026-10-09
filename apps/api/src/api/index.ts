@@ -139,6 +139,7 @@ import {
     listDocumentsRoute,
     presignRoute,
 } from "../modules/m06-documents/index.js";
+import { reservationsRouter, roomAvailabilityRoute } from "../modules/m07-reservation-room/index.js";
 import { dashboardCardRoute, dashboardManifestRoute, dashboardRouter } from "../modules/m15-dashboard/index.js";
 import type { HubSse } from "../modules/m17-notifications/index.js";
 import {
@@ -254,6 +255,7 @@ export const registry = new RouteRegistry().register(
     createDocumentRoute,
     deleteDocumentRoute,
     downloadDocumentRoute,
+    roomAvailabilityRoute,
     listCategoriesRoute,
     createCategoryRoute,
     updateCategoryRoute,
@@ -477,6 +479,10 @@ export function createApp(deps: AppDeps): Express {
             authenticated,
             authorize,
         ),
+    );
+    app.use(
+        BASE_PATH,
+        reservationsRouter({ db: deps.db }, (route) => rateLimit(route, deps.limiter, deps.logger), authorize),
     );
     app.use(
         BASE_PATH,

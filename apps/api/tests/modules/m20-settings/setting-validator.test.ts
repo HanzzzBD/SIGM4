@@ -45,6 +45,15 @@ describe("validasiNilai — angka dan rentang (FR-20.1 A1)", () => {
     });
 });
 
+describe("validasiNilai — himpunan tertutup (CAL-UI-02, keputusan 12c)", () => {
+    const granularitas = { key: "reservasi.granularitas_menit", tipe: "BILANGAN_BULAT", nilai_min: "15", nilai_maks: "60" } as const;
+    it("hanya 15, 30, atau 60 — nilai dalam rentang yang tak membagi satu jam ditolak", () => {
+        for (const n of [15, 30, 60]) expect(validasiNilai(granularitas, n)).toBeUndefined();
+        expect(validasiNilai(granularitas, 45)).toBe("Nilai harus salah satu dari 15, 30, 60.");
+        expect(validasiNilai(granularitas, 10)).toBe("Nilai harus antara 15 dan 60.");
+    });
+});
+
 describe("validasiNilai — boolean dan teks", () => {
     const bool = { tipe: "BOOLEAN", nilai_min: null, nilai_maks: null } as const;
     const teks = { tipe: "TEKS", nilai_min: null, nilai_maks: null } as const;
