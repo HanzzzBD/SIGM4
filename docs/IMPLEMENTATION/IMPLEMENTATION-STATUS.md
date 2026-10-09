@@ -36,13 +36,13 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 | [00](phases/phase-00.md) | Foundation | — | 18 | `In Review` | 18/18 | CI/health/worker/seed terverifikasi; deploy staging nyata, isolasi lingkungan dan bukti operasional masih GAP-00-INFRA/OBS/OPENAPI + QA. Storage/AV/FCM sudah terpasang; LLM deferred PR-03-20. [Audit §3](audits/closure-phase-00-02-2026-10-07.md#3-closure-phase-00) |
 | [01](phases/phase-01.md) | Master Data Independen | 4 | 18 | `In Review` | 18/18 | BR-015, daftar/summary aset ruangan, student-graduation dan NT-40/48/52 sudah tertutup. UI/demo/template unduh, kalender riil, count/pencarian/ekspor lokasi dan QA masih gap scope. [Audit §4](audits/closure-phase-00-02-2026-10-07.md#4-closure-phase-01) |
 | [02](phases/phase-02.md) | Inti Sistem | 5 | 37 | `In Review` | 37/37 | PR-02-38/39 tergabung (#133, #136, #138), termasuk P-17 dan P-20; QA staging pending; QR unik dan backend foto sudah terbukti. Ekspor katalog, layar lain, mutasi berbasis tanggal/slot, invariant status, FCM/peramban/QA belum lengkap. Preventif/drill deferred PR-04-07/PR-08-08. [Audit §5](audits/closure-phase-00-02-2026-10-07.md#5-closure-phase-02) |
-| [03](phases/phase-03.md) | Layanan Aset & Reservasi | 6 | 26 | `In Progress` | 8/26 | Menutup `M1`. Dimulai selagi Phase 02 `In Review` (pola Phase 01 → 02) |
+| [03](phases/phase-03.md) | Layanan Aset & Reservasi | 6 | 27 | `In Progress` | 9/27 | Menutup `M1`. Dimulai selagi Phase 02 `In Review` (pola Phase 01 → 02) |
 | [04](phases/phase-04.md) | Siklus Hidup Aset | 3 | 14 | `Not Started` | 0/14 | Menutup `M2` |
 | [05](phases/phase-05.md) | Penutupan Siklus | 3 | 26 | `Not Started` | 0/26 | Menutup `M3` & `M4` |
 | [06](phases/phase-06.md) | Analitik | 1 | 10 | `Not Started` | 0/10 | Menutup `M5` |
 | [07](phases/phase-07.md) | Integrasi & UAT | — | 14 | `Not Started` | 0/14 | |
 | [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 16 | `Not Started` | 0/16 | Menutup `M6` |
-| | **Total** | **22** | **179** | | **81/179** | |
+| | **Total** | **22** | **180** | | **82/180** | |
 
 ## Ringkasan milestone PRD
 
@@ -179,6 +179,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-03-10` … `PR-03-24` | `Not Started` | — | Rincian: [`phases/phase-03.md` §7](phases/phase-03.md) |
 | `PR-03-25` | `Done` | [#125](https://github.com/HanzzzBD/SIGM4/pull/125) | Layanan berkas — unggah/konfirmasi + foto profil (`FR-06.1`, `FR-01.4` A3, `SDD-FS-01/02/03/06/09`, Bab 17.5 poin 6; keputusan 7 log phase-03), cabang `feature/PR-03-25-unggah-berkas`: modul `m06-documents` lahir — `POST /files/presign` (Bearer; kebijakan MIME/ukuran per jenis SDD-09 §4.3, foto aset JPG/PNG 2 MB; kunci buram; URL 300 detik; tanpa log) dan `POST /files/confirm` (HEAD objek + ukuran, idempoten per checksum, `FILE_UPLOADED` + `FileUploaded` ke outbox); penjaga `409 FILE_NOT_SCANNED` `urlUnduhBerkas`; `PUT /me` menerima `foto_file_id` (foto lama dilepas jadi yatim), `GET /me`/`PUT /me` memuat `foto_status` + `foto_url` (URL hanya bila `CLEAN`). Tanpa migration. Kompleksitas `L` (+519/−37, rencana `M` — log §3). Digabung PM ke `develop` (merge `89c6802`) |
 | `PR-03-26` | `Not Started` | — | Pemantauan garansi dokumen aset — di luar rencana awal (keputusan 9c log phase-03); rincian [`phases/phase-03.md` §7](phases/phase-03.md) |
+| `PR-03-27` | `Not Started` | — | Daftar & detail reservasi (P-30, P-31) — di luar rencana awal (keputusan 13 log phase-03); rincian [`phases/phase-03.md` §7](phases/phase-03.md) |
 
 ### Phase 04 — Siklus Hidup Aset · `Not Started`
 
