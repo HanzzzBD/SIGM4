@@ -150,13 +150,14 @@ export function moveAssetsHandler(service: AssetService, dasarQr: string): Reque
     return async (req, res) => {
         const ctx = requireAuthContext(res);
         const body = MoveAssetsBodySchema.parse(req.body);
-        const dipindah = await service.mutasiLokasi(ctx, {
+        const hasil = await service.moveWithDocument(ctx, {
             assetIds: body.asset_ids,
             roomTujuanId: body.room_tujuan_id,
             tanggal: body.tanggal_mutasi,
             alasan: body.alasan,
             penanggungJawabBaruId: body.penanggung_jawab_baru_id ?? null,
         });
-        res.status(200).json({ success: true, data: denganQr(dasarQr, dipindah), meta: { jumlah_aset: dipindah.length } });
+        res.status(200).json({ success: true, data: denganQr(dasarQr, hasil.assets),
+            meta: { jumlah_aset: hasil.assets.length, berita_acara: { id: hasil.documentId, status: "MENUNGGU" } } });
     };
 }

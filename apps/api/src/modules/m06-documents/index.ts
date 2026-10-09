@@ -1,5 +1,6 @@
 // Permukaan publik m06-documents (SDD-SYS-03). Hanya berkas ini yang boleh diimpor modul lain /
 // entrypoint `api/`.
+export { registerMovementPdf } from "./services/generated-pdf.js";
 export type { FilesModuleDeps } from "./routes.js";
 export { confirmRoute, createDocumentRoute, deleteDocumentRoute, downloadDocumentRoute, filesRouter, listDocumentsRoute, presignRoute } from "./routes.js";
 /** Penjaga unduh SDD-FS-03 — dipakai seluruh penerbit URL unduhan (PR-03-06 dst.). */

@@ -56,6 +56,8 @@ describe("SDD-SYS-07 — waktu selalu dari Clock yang di-inject", () => {
         expect(galat).not.toContain("no-restricted-syntax");
     });
 
+    // ESLint memeriksa seluruh src dengan parser TypeScript; anggaran inisialisasi
+    // terpisah dari timeout unit 5 detik dan bertambah bersama ukuran pohon source.
     it("tidak ada satu pun `new Date()` telanjang di src/ selain shared/clock", async () => {
         const eslint = new ESLint({ cwd: API, errorOnUnmatchedPattern: false });
         const hasil = await eslint.lintFiles(["src"]);
@@ -65,5 +67,5 @@ describe("SDD-SYS-07 — waktu selalu dari Clock yang di-inject", () => {
             )
             .map((r) => r.filePath);
         expect(pelanggar).toEqual([]);
-    });
+    }, 15_000);
 });

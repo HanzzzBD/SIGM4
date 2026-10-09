@@ -34,6 +34,13 @@ export class StoredFileRepository extends BaseRepository {
         super(executor);
     }
 
+    async registerMovementPdf(ctx: AuthContext, input: { objectKey: string; ownerId: string; creatorId: string; checksum: string; size: number; now: Date }): Promise<string> {
+        const row = await this.query(ctx).insertInto("stored_files").values({ object_key: input.objectKey, mime: "application/pdf", ukuran: input.size,
+            checksum: input.checksum, scan_status: "CLEAN", scanned_at: input.now, created_at: input.now,
+            owner_type: "ASSET_MOVEMENT_DOCUMENT", owner_id: input.ownerId, uploaded_by: input.creatorId }).returning("id").executeTakeFirstOrThrow();
+        return row.id;
+    }
+
     /** Langkah 1 SDD-09 §4.2: baris pesanan — `checksum` NULL, yatim sampai ditautkan (SDD-FS-09). */
     async pesan(ctx: AuthContext, input: { objectKey: string; mime: string; ukuran: number; jenis: FileOwnerType }): Promise<string> {
         const baris = await this.query(ctx)

@@ -184,6 +184,10 @@ jobs:
                   node-version: ${{ env.NODE_VERSION }}
                   cache: npm
             - run: npm ci
+            # FR-04.4 AC 3: acceptance PDF memakai renderer Chromium nyata.
+            # CLI dari lockfile memasang browser dan dependensi sistem yang cocok dengan Playwright.
+            - name: Pasang Chromium untuk uji PDF
+              run: node node_modules/playwright-core/cli.js install --with-deps chromium
             # Service container tidak dapat meneruskan argumen `server /data` milik image MinIO,
             # jadi dinyalakan sebagai langkah. Image dipatok sama dengan docker-compose.yml (digest
             # Chainguard — minio/minio tak lagi dapat ditarik, keputusan 6 log phase-03).

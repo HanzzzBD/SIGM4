@@ -5,6 +5,10 @@ import type { RequestHandler, Router } from "express";
 import type { Kysely } from "kysely";
 import type { AuditLogger } from "../../shared/audit/index.js";
 import type { Clock } from "../../shared/clock/index.js";
+import type { PenyimpananObjek } from "../../shared/storage/index.js";
+import { AssetMovementDocumentResponseSchema, AssetMovementDownloadResponseSchema } from "@sigm4/schemas";
+import { MovementDocumentService } from "./services/movement-document.service.js";
+import { movementDocumentHandler, MovementDocumentParamsSchema } from "./controllers/movement-document.controller.js";
 import type { Database } from "../../shared/db/index.js";
 import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
@@ -172,7 +176,13 @@ export const deleteCategoryRoute = defineRoute({
     response: DeleteCategoryResponseSchema,
 });
 
+export const movementDocumentRoute = defineRoute({ method: "GET", path: "/assets/movements/:id/document", permission: "asset_movement_document.view",
+    rateLimitClass: "default", module: MODUL, summary: "Status berita acara mutasi (FR-04.4)", params: MovementDocumentParamsSchema, response: AssetMovementDocumentResponseSchema });
+export const movementDocumentDownloadRoute = defineRoute({ method: "GET", path: "/assets/movements/:id/document/download", permission: "asset_movement_document.view",
+    rateLimitClass: "default", module: MODUL, summary: "URL PDF mutasi privat 15 menit; diaudit (FR-04.4)", params: MovementDocumentParamsSchema, response: AssetMovementDownloadResponseSchema });
+
 export interface AssetsModuleDeps {
+    readonly penyimpanan: PenyimpananObjek;
     readonly db: Kysely<Database>;
     readonly auditLogger: AuditLogger;
     readonly clock: Clock;
@@ -190,6 +200,9 @@ export function assetsRouter(
     const kategori = new CategoryService(deps.db, deps.auditLogger);
     const router = express.Router();
     const importer = new AssetImportService(deps.db, deps.auditLogger, deps.clock);
+    const documents = new MovementDocumentService(deps.db, deps.auditLogger, deps.clock, deps.penyimpanan);
+    router.get(movementDocumentRoute.path, batasi(movementDocumentRoute), otorisasi(movementDocumentRoute.permission), movementDocumentHandler(documents, false));
+    router.get(movementDocumentDownloadRoute.path, batasi(movementDocumentDownloadRoute), otorisasi(movementDocumentDownloadRoute.permission), movementDocumentHandler(documents, true));
     router.get(assetImportTemplateRoute.path, batasi(assetImportTemplateRoute), otorisasi(assetImportTemplateRoute.permission), assetImportTemplateHandler(importer));
     router.get(getAssetImportRoute.path, batasi(getAssetImportRoute), otorisasi(getAssetImportRoute.permission), getAssetImportHandler(importer));
     router.post(importAssetsRoute.path, batasi(importAssetsRoute), otorisasi(importAssetsRoute.permission), importAssetsHandler(importer));

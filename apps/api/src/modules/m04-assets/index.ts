@@ -2,6 +2,8 @@
 // diimpor modul lain / entrypoint `api/` — `repositories/`, `controllers/`,
 // dan `services/` privat terhadap modul ini.
 export type { AssetsModuleDeps } from "./routes.js";
+export { movementDocumentRoute, movementDocumentDownloadRoute } from "./routes.js";
+export { MovementDocumentService, MOVEMENT_DOCUMENT_JOB_NAME, EVENT_MOVEMENT_DOCUMENT_REQUESTED, movementDocumentQueueId } from "./services/movement-document.service.js";
 export { importAssetsRoute, getAssetImportRoute, assetImportTemplateRoute } from "./routes.js";
 export { AssetImportService, EVENT_ASSET_IMPORT_COMPLETED, EVENT_ASSET_IMPORT_REQUESTED } from "./services/asset-import.service.js";
 export { AssetImportRunner, ASSET_IMPORT_JOB_NAME, assetImportQueueId } from "./jobs/asset-import.job.js";

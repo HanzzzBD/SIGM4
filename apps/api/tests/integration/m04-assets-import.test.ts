@@ -22,6 +22,7 @@ import { getDb } from "../../src/shared/db/index.js";
 import { EventHandlerRegistry } from "../../src/shared/events/index.js";
 import type { OutboxEvent } from "../../src/shared/events/index.js";
 import { Logger } from "../../src/shared/observability/index.js";
+import { PenyimpananS3 } from "../../src/shared/storage/index.js";
 import { closeRedis, createRedis, getRedis, readRedisConfig } from "../../src/shared/cache/index.js";
 import { OutboxDispatcher } from "../../src/shared/events/index.js";
 import { createQueue, createWorker } from "../../src/worker/scheduler.js";
@@ -215,7 +216,8 @@ describe.skipIf(!process.env["DATABASE_URL"])("PR-02-38 — impor aset", () => {
         const app = express();
         app.use(awalRantai({ security: { objectStorageOrigin: "http://minio:9000" } }));
         app.use((_req, res, next) => { if (context !== null) setAuthContext(res, context); setAmr(res, ["pwd", "otp"]); next(); });
-        app.use("/api/v1", assetsRouter({ db: getDb(), auditLogger: audit, clock, appBaseUrl: "http://localhost" }, () => (_req, _res, next) => next(), authorize));
+        const storage = new PenyimpananS3({ endpoint: "http://127.0.0.1:9000", publicEndpoint: "http://127.0.0.1:9000", bucket: "unused-import-test", region: "us-east-1", accessKey: "test", secretKey: "test" }, clock);
+        app.use("/api/v1", assetsRouter({ db: getDb(), auditLogger: audit, clock, appBaseUrl: "http://localhost", penyimpanan: storage }, () => (_req, _res, next) => next(), authorize));
         app.use(ujungRantai({ limiter: { hit: async () => ({ lolos: true, batas: 100, sisa: 99, resetDetik: 60 }) }, logger: new Logger({ clock, tulis: () => undefined }) }));
         const server = createServer(app);
         await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
