@@ -147,7 +147,7 @@ const editorAturanRoute = createRoute({
     getParentRoute: () => shellRoute,
     path: "/approval-rules/$id",
     beforeLoad: async (a) => {
-        if (a.params.id !== "baru" && !/^[1-9]d*$/.test(a.params.id)) throw redirect({ to: "/tidak-ditemukan" });
+        if (a.params.id !== "baru" && !/^[1-9]\d*$/.test(a.params.id)) throw redirect({ to: "/tidak-ditemukan" });
         await butuhIzin("approval_rule.manage")(a);
     },
     component: function RouteEditorAturan() {
