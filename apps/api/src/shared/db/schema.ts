@@ -550,7 +550,7 @@ export interface AssetMovementsTable {
  * `booking_slots` (0030, PR-02-16; SDD-01 §4.1). `slot_range` `tstzrange` half-open
  * `[)` (SDD-AVL-02) — driver `pg` mengembalikannya sebagai string literal rentang.
  * `reservation_id`/`loan_id`/`work_order_id` NULLABLE tanpa FK sampai modul pemiliknya
- * lahir (keputusan 63).
+ * lahir (keputusan 63) — `reservation_id` ber-FK sejak 0043 (PR-03-08).
  */
 export interface BookingSlotsTable {
     id: Generated<string>;
@@ -566,6 +566,30 @@ export interface BookingSlotsTable {
     expires_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
     created_by: ColumnType<string | null, string | number | null | undefined, string | number | null>;
     created_at: Generated<Date>;
+}
+
+/**
+ * `reservations` (0043, PR-03-08; m07 §8). Induk berulang + anak ber-`parent_id` (BR-024a);
+ * nomor anak = nomor induk + `.NN`. Kolom kegiatan wajib bagi `RUANGAN` (CHECK).
+ */
+export type StatusReservasi = "DRAF" | "MENUNGGU_PERSETUJUAN" | "DISETUJUI" | "DITOLAK" | "PERLU_REVISI" | "DIBATALKAN" | "KEDALUWARSA" | "BERLANGSUNG" | "SELESAI" | "TIDAK_DIGUNAKAN";
+
+export interface ReservationsTable extends KolomBaku {
+    id: Generated<string>;
+    nomor: string;
+    jenis: "RUANGAN" | "ASET";
+    pemohon_id: ColumnType<string, string | number, string | number>;
+    room_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    parent_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    nama_kegiatan: string | null;
+    jenis_kegiatan: string | null;
+    waktu_mulai: Date;
+    waktu_selesai: Date;
+    jumlah_peserta: number | null;
+    keperluan: string | null;
+    kebutuhan_tambahan: string | null;
+    keterangan: string | null;
+    status: ColumnType<StatusReservasi, StatusReservasi | undefined, StatusReservasi>;
 }
 
 /**
@@ -809,6 +833,7 @@ export interface Database {
     asset_movements: AssetMovementsTable;
     asset_movement_documents: AssetMovementDocumentsTable;
     booking_slots: BookingSlotsTable;
+    reservations: ReservationsTable;
     approval_rules: ApprovalRulesTable;
     approval_rule_steps: ApprovalRuleStepsTable;
     approval_instances: ApprovalInstancesTable;
