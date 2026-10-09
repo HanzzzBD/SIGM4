@@ -45,7 +45,10 @@ RUN npm run build -w apps/api && npm prune --omit=dev
 #
 # Saat dbmate dinaikkan versinya, commit dan daftar modul di bawah WAJIB ditinjau
 # ulang; Dependabot tidak melacak keduanya.
-FROM golang:1.26.6-alpine AS dbmate
+#
+# Toolchain ≥ 1.26.9 menutup CVE-2026-78667 (net/http) dan CVE-2026-97031
+# (crypto/tls) pada stdlib yang ikut tertaut ke biner.
+FROM golang:1.26.9-alpine AS dbmate
 RUN apk add --no-cache git build-base
 WORKDIR /src
 # v2.35.1 — dipatok ke commit, bukan tag yang dapat dipindahkan.
