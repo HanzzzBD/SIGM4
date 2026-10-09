@@ -13,7 +13,7 @@
 
 import { sql } from "kysely";
 import type { Clock } from "../clock/index.js";
-import type { TransactionScope } from "../db/index.js";
+import type { QueryExecutor, TransactionScope } from "../db/index.js";
 import { DomainError } from "../errors/index.js";
 import { publishAll } from "../events/index.js";
 
@@ -82,6 +82,41 @@ export const adaSlotAsetTerkonfirmasi = (kolomAsetId: string, waktu: Date) => sq
     SELECT 1 FROM booking_slots s
      WHERE s.resource_type = 'asset' AND s.resource_id = ${sql.ref(kolomAsetId)}
        AND s.status = 'CONFIRMED' AND s.slot_range @> ${waktu}::timestamptz)`;
+
+/** Slot yang memegang ketersediaan (`TENTATIVE`/`CONFIRMED`/`ACTIVE`) — bahan kalender (FR-07.1, AV-01). */
+export interface SlotTerpakai {
+    readonly id: string;
+    readonly resource_id: string;
+    readonly mulai: Date;
+    readonly selesai: Date;
+    readonly status: Exclude<StatusSlot, "RELEASED">;
+    readonly origin: AsalSlot;
+    readonly reservation_id: string | null;
+}
+
+/**
+ * Pembacaan slot aktif yang beririsan `rentang` atas sumber daya `ids` — satu-satunya jalur baca
+ * `booking_slots` bagi modul (SDD-SYS-10). Memakai indeks GiST `booking_slots_lookup` (AV-01).
+ * Baris induk berulang (tanpa rentang, SDD-AVL-12) tidak pernah ikut.
+ */
+export async function daftarSlotTerpakai(
+    executor: QueryExecutor,
+    jenis: JenisSumberDaya,
+    ids: readonly number[],
+    rentang: RentangWaktu,
+): Promise<readonly SlotTerpakai[]> {
+    if (ids.length === 0) return [];
+    const hasil = await sql<SlotTerpakai>`
+        SELECT id::text AS id, resource_id::text AS resource_id, lower(slot_range) AS mulai, upper(slot_range) AS selesai,
+               status, origin, reservation_id::text AS reservation_id
+          FROM booking_slots
+         WHERE resource_type = ${jenis}::booking_resource AND resource_id = ANY(${ids.map(String)}::bigint[])
+           AND status IN ('TENTATIVE', 'CONFIRMED', 'ACTIVE')
+           AND slot_range && tstzrange(${rentang.mulai}, ${rentang.selesai}, '[)')
+         ORDER BY resource_id, lower(slot_range), id
+    `.execute(executor);
+    return hasil.rows;
+}
 
 /** `BR-023b`: pengajuan pemilik slot → Kedaluwarsa; dikonsumsi M-07 (`PR-03-10`) dan M-08 (`PR-04-02`). */
 export const EVENT_SLOT_TENTATIF_KEDALUWARSA = "TentativeSlotExpired";

@@ -28,3 +28,21 @@
         font-weight: var(--font-weight-semibold);
     }
 }
+
+/* C-24 Kalender Ketersediaan (CAL-UI-05, NFR-AC-06): keadaan dibedakan warna + POLA + teks.
+   Pola 45° dan titik mengambil bahasa serong logo (DS-P-06); hanya token. */
+@utility pola-diagonal {
+    background-color: var(--color-warning-subtle);
+    background-image: repeating-linear-gradient(45deg, transparent 0 var(--spacing-1), color-mix(in srgb, var(--color-warning-base) 25%, transparent) var(--spacing-1) var(--spacing-2));
+}
+@utility pola-titik {
+    background-color: var(--color-neutral-100);
+    background-image: radial-gradient(var(--color-neutral-400) calc(var(--spacing-1) / 4), transparent calc(var(--spacing-1) / 4));
+    background-size: var(--spacing-2) var(--spacing-2);
+}
+@utility pola-silang {
+    background-color: var(--color-neutral-200);
+    background-image:
+        repeating-linear-gradient(45deg, transparent 0 var(--spacing-1), var(--color-neutral-300) var(--spacing-1) var(--spacing-2)),
+        repeating-linear-gradient(-45deg, transparent 0 var(--spacing-1), var(--color-neutral-300) var(--spacing-1) var(--spacing-2));
+}

@@ -2,11 +2,21 @@
 // Fungsi murni: tidak menyentuh basis data, sehingga dapat diuji tanpa satu pun.
 
 export interface DefinisiSetting {
+    readonly key?: string;
     readonly tipe: "BILANGAN_BULAT" | "DESIMAL" | "BOOLEAN" | "TEKS";
     /** Batas dari kolom `numeric` — string dari driver `pg`, atau null. */
     readonly nilai_min: string | null;
     readonly nilai_maks: string | null;
 }
+
+/**
+ * Parameter yang nilainya himpunan tertutup, bukan rentang — tidak dapat dinyatakan kolom
+ * `nilai_min`/`nilai_maks`. Granularitas harus membagi satu jam habis agar kolom kalender
+ * sejajar batas jam (CAL-UI-02, keputusan 12c log phase-03).
+ */
+const NILAI_TERBATAS: Readonly<Record<string, readonly number[]>> = {
+    "reservasi.granularitas_menit": [15, 30, 60],
+};
 
 /** Panjang maksimum parameter bertipe teks — pagar kewajaran teknis, bukan business rule. */
 const PANJANG_TEKS_MAKS = 500;
@@ -36,6 +46,8 @@ export function validasiNilai(definisi: DefinisiSetting, nilai: unknown): string
             if ((min !== null && nilai < min) || (maks !== null && nilai > maks)) {
                 return penjelasanRentang(min, maks);
             }
+            const pilihan = definisi.key === undefined ? undefined : NILAI_TERBATAS[definisi.key];
+            if (pilihan !== undefined && !pilihan.includes(nilai)) return `Nilai harus salah satu dari ${pilihan.join(", ")}.`;
             return undefined;
         }
         case "BOOLEAN":

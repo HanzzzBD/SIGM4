@@ -10,6 +10,8 @@ import type { AlasanLogin } from "../modules/m01-auth";
 import { muatApprovalRulesPage, muatEditorAturanPage } from "../modules/m10-approval";
 import { muatDashboardPage } from "../modules/m15-dashboard";
 import { loadAssetImportPage, loadAssetMovementPage } from "../modules/m04-assets";
+import { loadRoomCalendarPage } from "../modules/m07-reservation-room";
+import type { PencarianKalender } from "../modules/m07-reservation-room";
 import type { Rentang } from "../modules/m15-dashboard";
 import { KeadaanKosong, KeadaanMemuat, KeadaanTanpaAkses } from "../shared/states";
 import { Ikon } from "../shared/ui/icon";
@@ -35,6 +37,9 @@ export const HalamanGantiPassword = ({ tujuan }: Tujuan) => <GantiPasswordPage t
 const DashboardPage = lazy(muatDashboardPage);
 const AssetImportPage = lazy(loadAssetImportPage);
 const AssetMovementPage = lazy(loadAssetMovementPage);
+const RoomCalendarPage = lazy(loadRoomCalendarPage);
+/** P-27 (FR-07.1). Aksi lanjut ke wizard P-29 dipasang di sini setelah halamannya terdaftar (PR-03-10). */
+export const HalamanKalenderRuangan = (props: { readonly pencarian: PencarianKalender; readonly onPencarian: (p: Partial<PencarianKalender>) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat kalender ruangan" baris={6} />}><RoomCalendarPage {...props} /></Suspense>;
 export const HalamanMutasiAset = (props: { readonly documentId: number | null; readonly onDocument: (id: number | null) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat mutasi aset" baris={4} />}><AssetMovementPage {...props} /></Suspense>;
 export const HalamanImporAset = (props: { readonly jobId: number | null; readonly onJob: (id: number) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat impor aset" baris={4} />}><AssetImportPage {...props} /></Suspense>;
 

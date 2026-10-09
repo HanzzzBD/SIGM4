@@ -141,11 +141,11 @@ describe.skipIf(!ADA_DB)("PR-01-10 — parameter sistem (acceptance)", () => {
     it("list(): terpaginasi dan dapat disaring per kelompok (SDD-PERF-04, P-70)", async () => {
         const adminId = await seedAdmin();
         const reservasi = await buatService().list(buatCtx(adminId), { page: 1, perPage: 100, kelompok: "RESERVASI" });
-        expect(reservasi.total).toBe(4);
+        expect(reservasi.total).toBe(5);
         expect(reservasi.rows.every((s) => s.kelompok === "RESERVASI")).toBe(true);
 
         const halaman2 = await buatService().list(buatCtx(adminId), { page: 2, perPage: 3, kelompok: "RESERVASI" });
-        expect(halaman2.rows).toHaveLength(1);
+        expect(halaman2.rows).toHaveLength(2);
         expect(halaman2.totalPages).toBe(2);
     });
 

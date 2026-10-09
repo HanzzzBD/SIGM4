@@ -102,6 +102,31 @@ export class BusinessCalendarService {
         };
     }
 
+    /**
+     * Hari kerja aktif (ISO 1 = Senin … 7 = Minggu) dan hari libur WIB beserta namanya pada
+     * `[dariKey, sampaiKey]` — bahan kalender ruangan (FR-07.1 A3/A5) dari sumber yang sama
+     * dengan aritmetika jam kerja, bukan kueri kedua yang dapat menyimpang.
+     */
+    async kalenderRentang(
+        executor: QueryExecutor,
+        dariKey: string,
+        sampaiKey: string,
+    ): Promise<{ readonly hariKerja: readonly number[]; readonly libur: readonly { readonly tanggal: string; readonly nama: string }[] }> {
+        const days = await sql<{ hari: number }>`SELECT hari FROM work_days WHERE aktif ORDER BY hari`.execute(executor);
+        const libur = await sql<{ tanggal: string; nama: string }>`
+      SELECT to_char(tanggal, 'YYYY-MM-DD') AS tanggal, nama
+        FROM holidays
+       WHERE tanggal BETWEEN ${dariKey}::date AND ${sampaiKey}::date
+       ORDER BY tanggal, id
+    `.execute(executor);
+        return { hariKerja: days.rows.map((r) => Number(r.hari)), libur: libur.rows };
+    }
+
+    /** Jam operasional yang dipakai layanan ini (SDD-APR-15; sumbernya diganti `PR-03-10`). */
+    get jamOperasional(): OperatingHours {
+        return this.hours;
+    }
+
     private isWorkingWibDay(wib: Date, calendar: CalendarSnapshot): boolean {
         return (
             calendar.activeWeekdays.has(isoWeekday(wib)) &&

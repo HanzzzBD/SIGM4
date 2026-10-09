@@ -2,6 +2,7 @@
 // transaksi yang sama" (FR-07.2 langkah 5, SDD-AVL-06/12, CI-01, CI-03) terhadap PostgreSQL NYATA.
 // Constraint skema diuji dengan SQL mentah; pembentukan reservasi + slot lewat ReservationService.
 
+import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { ReservationService } from "../../src/modules/m07-reservation-room/index.js";
 import { AuditLogger } from "../../src/shared/audit/index.js";
@@ -58,6 +59,7 @@ async function bersihkan(): Promise<void> {
     await kueri("DELETE FROM rooms WHERE kode LIKE 'RSVR%'");
     await kueri("DELETE FROM areas WHERE kode LIKE 'RSVA%'");
     await kueri("DELETE FROM buildings WHERE kode LIKE 'RSVG%'");
+    await kueri("DELETE FROM users WHERE email LIKE 'rsv-%@uji-m07.sch.id'");
 }
 
 /** INSERT mentah — membuktikan constraint skema, bukan validasi aplikasi. */
@@ -85,10 +87,9 @@ describe.skipIf(!ADA_DB)("PR-03-08 — skema reservasi ruangan + integrasi booki
 
     beforeEach(async () => {
         await bersihkan();
-        await kueri("DELETE FROM users");
         const [u] = await kueri<{ id: string }>(`
             INSERT INTO users (nama, email, password_hash, nip_nis, role_id, status, must_change_password)
-            VALUES ('Guru Pemohon', '${unik("rsv")}@sekolah.sch.id', 'x', '${unik("NIPRSV")}',
+            VALUES ('Guru Pemohon', 'rsv-${randomUUID()}@uji-m07.sch.id', 'x', 'NIPRSV-${randomUUID()}',
                     (SELECT id FROM roles WHERE kode = 'R-04'), 'AKTIF', false) RETURNING id::text`);
         pemohon = u?.id ?? "";
         ctx = createAuthContext({ userId: Number(pemohon), roleCode: "GURU", scopes: new Map() });
