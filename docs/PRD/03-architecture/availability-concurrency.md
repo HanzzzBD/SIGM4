@@ -137,7 +137,7 @@ Tabel ini ada karena dua celah yang saling berlawanan pernah hidup berdampingan 
 | SEQ-01 | Format nomor: `{PREFIX}-{TAHUN}-{URUT:4}` dengan urutan direset setiap tahun anggaran, contoh `RSV-RG-2026-0001` |
 | SEQ-02 | Nomor **wajib** dihasilkan dari sequence basis data per (prefix, tahun), bukan dari `MAX(nomor)+1` |
 | SEQ-03 | Nomor bersifat *gap-tolerant*: kegagalan transaksi boleh menyisakan lompatan nomor; nomor tidak pernah digunakan ulang |
-| SEQ-04 | Regex validasi: `^(RSV-RG\|RSV-BR\|PJM\|KRS\|WO\|PGD\|OPN\|HPS\|PMB)-\d{4}-\d{4,}$`. Setiap prefiks memiliki tepat satu entitas pemilik, dan setiap entitas berkolom `nomor` memiliki prefiks — daftar di bawah menutup keduanya |
+| SEQ-04 | Regex validasi: `^(RSV-RG\|RSV-BR\|PJM\|KRS\|WO\|PGD\|OPN\|HPS\|PMB)-\d{4}-\d{4,}$`. Setiap prefiks memiliki tepat satu entitas pemilik, dan setiap entitas berkolom `nomor` memiliki prefiks — daftar di bawah menutup keduanya. Tanggal turunan reservasi berulang (`BR-024a`) memakai nomor induknya ditambah sufiks `.{n}` dua digit atau lebih (`RSV-RG-2026-0001.03`, `FR-07.2`); sufiks tidak diterbitkan penghitung dan bukan bagian regex ini |
 
 ## 26.7 Eksekusi Pekerjaan Terjadwal pada Lingkungan Multi-Instance
 

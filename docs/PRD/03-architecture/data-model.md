@@ -34,7 +34,7 @@ Data yang tumbuh seiring operasional harian.
 
 | Entitas | Deskripsi | Atribut Utama | Volume Estimasi/Tahun |
 |---|---|---|---|
-| **reservations** | Pengajuan reservasi ruangan & aset | id, nomor, jenis (ruangan/aset), pemohon_id, room_id, nama_kegiatan, waktu_mulai, waktu_selesai, jumlah_peserta, keperluan, status, parent_id (untuk berulang) | ± 3.000 |
+| **reservations** | Pengajuan reservasi ruangan & aset | id, nomor, jenis (ruangan/aset), pemohon_id, room_id, nama_kegiatan, jenis_kegiatan, waktu_mulai, waktu_selesai, jumlah_peserta, keperluan, kebutuhan_tambahan, keterangan, status, parent_id (untuk berulang) | ± 3.000 |
 | **reservation_items** | Unit aset yang dialokasikan pada reservasi | id, reservation_id, asset_id, jumlah | ± 6.000 |
 | **loans** | Transaksi peminjaman | id, nomor, reservation_id, peminjam_id, petugas_serah_id, tanggal_pinjam, tanggal_jatuh_tempo, tanggal_kembali, status | ± 2.500 |
 | **loan_items** | Unit yang dipinjam & kondisinya | id, loan_id, asset_id, kondisi_awal, kondisi_akhir, foto_awal, foto_akhir, status_kembali | ± 5.000 |
@@ -92,6 +92,7 @@ Data acuan bernilai tetap yang digunakan sebagai enumerasi dan dropdown.
 | **Status Aset** | Tersedia, Direservasi, Dipinjam, Dalam Perbaikan, Tidak Tersedia |
 | **Sumber Perolehan** | Pembelian, Hibah, Bantuan Pemerintah, Sumbangan, Lainnya |
 | **Jenis Ruangan** | Kelas, Laboratorium, Aula, Perpustakaan, Kantor, Gudang, Lapangan, Lainnya |
+| **Jenis Reservasi** | Ruangan, Aset |
 | **Status Reservasi** | Draf, Menunggu Persetujuan, Disetujui, Ditolak, Perlu Revisi, Dibatalkan, Kedaluwarsa, Berlangsung, Selesai, Tidak Digunakan |
 | **Status Peminjaman** | Dipinjam, Sebagian Dikembalikan, Dikembalikan, Terlambat, Hilang |
 | **Status Denda** | Belum Dibayar, Lunas, Dibebaskan, Dibebaskan Sebagian |

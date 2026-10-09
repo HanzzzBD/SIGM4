@@ -58,6 +58,7 @@ export const NAMA_TIPE: ReadonlyMap<string, string> = new Map([
     ["Status Aset", "asset_status"],
     ["Sumber Perolehan", "asset_acquisition_source"],
     ["Jenis Ruangan", "room_type"],
+    ["Jenis Reservasi", "reservation_type"],
     ["Status Reservasi", "reservation_status"],
     ["Status Peminjaman", "loan_status"],
     ["Status Denda", "fine_status"],
