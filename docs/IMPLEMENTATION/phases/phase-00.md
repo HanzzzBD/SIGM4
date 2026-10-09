@@ -100,44 +100,48 @@ Tidak ada. Ini titik masuk proyek.
 ## 8. Task Breakdown
 
 ### `PR-00-04` — Base repository ber-`AuthContext`
-- [ ] Definisikan tipe `AuthContext` (`SDD-AUTH-02` §4.2)
-- [ ] Base repository dengan `ctx` sebagai parameter **wajib**, tanpa *overload* tanpa `ctx`
-- [ ] Helper transaksi yang meneruskan `ctx` ke seluruh operasi di dalamnya
-- [ ] Uji arsitektur: metode repository tanpa `ctx` gagal kompilasi
+- [x] Definisikan tipe `AuthContext` (`SDD-AUTH-02` §4.2)
+- [x] Base repository dengan `ctx` sebagai parameter **wajib**, tanpa *overload* tanpa `ctx`
+- [x] Helper transaksi yang meneruskan `ctx` ke seluruh operasi di dalamnya
+- [x] Uji arsitektur: metode repository tanpa `ctx` gagal kompilasi
 
 ### `PR-00-09` — Registri route
-- [ ] `defineRoute()` dengan field wajib `permission`, `params`, `response`, `rateLimitClass`
-- [ ] Pemindaian saat *bootstrap*; route tanpa `permission` dan tanpa `public: true` → `throw`
-- [ ] Generator OpenAPI dari skema route
-- [ ] Uji: menambah route tanpa permission menggagalkan startup
+- [x] `defineRoute()` dengan `response`/`rateLimitClass` wajib, skema params/query/body sesuai kebutuhan, dan tepat satu kelas permission/public/authenticated (kontrak registry terkini)
+- [x] Pemindaian saat *bootstrap*; route tanpa permission/public/authenticated → `throw` (`authenticated: true` ditambahkan #62, SDD-AUTH-12)
+- [x] Generator OpenAPI dari skema route
+- [x] Uji: menambah route tanpa permission menggagalkan startup
 
 ### `PR-00-13` — Activity log
-- [ ] Tabel terpartisi RANGE per bulan + indeks (`SDD-DB` §4.4)
-- [ ] Job pembuat partisi 3 bulan ke depan
-- [ ] `AuditLogger.write()` sinkron di dalam transaksi (`SDD-EVT-08`)
-- [ ] Rantai hash `prev_hash`/`row_hash` + job verifikasi harian
-- [ ] Cabut `UPDATE`/`DELETE` dari akun aplikasi (`AL-03b`)
-- [ ] Kegagalan tulis log → alarm, **tidak** rollback transaksi (`AL-08`)
+- [x] Tabel terpartisi RANGE per bulan + indeks (`SDD-DB` §4.4)
+- [x] Job pembuat partisi 3 bulan ke depan
+- [x] `AuditLogger.write()` sinkron di dalam transaksi (`SDD-EVT-08`)
+- [x] Rantai hash `prev_hash`/`row_hash` + job verifikasi harian
+- [x] Cabut `UPDATE`/`DELETE` dari akun aplikasi (`AL-03b`)
+- [x] Kegagalan tulis log → alarm, **tidak** rollback transaksi (`AL-08`)
 
 ### `PR-00-16` — Skema RBAC + seed permission
-- [ ] Migration `expand` `roles`, `permissions`, `role_permissions` + enum `permission_scope` (`SDD-05 §4.7`, `SDD-DB-16`)
-- [ ] Migration seed 79 kode dari Lampiran C, idempoten (`ON CONFLICT DO UPDATE`)
-- [ ] Seed 7 role + matriks bawaan ber-scope: Lampiran C, ditafsirkan `SDD-03 §4.8` bila pemiliknya bukan daftar role
-- [ ] Tandai permission inti 🔒 agar tidak dapat dicabut (`FR-02.2 A1`)
-- [ ] Seed `work_days` Senin–Sabtu aktif (Lampiran E.2)
-- [ ] Uji pembanding: hasil seed = Lampiran C + tafsir, tanpa selisih
+- [x] Migration `expand` `roles`, `permissions`, `role_permissions` + enum `permission_scope` (`SDD-05 §4.7`, `SDD-DB-16`)
+- [x] Migration seed 79 kode dari Lampiran C, idempoten (`ON CONFLICT DO UPDATE`)
+- [x] Seed 7 role + matriks bawaan ber-scope: Lampiran C, ditafsirkan `SDD-03 §4.8` bila pemiliknya bukan daftar role
+- [x] Tandai permission inti 🔒 agar tidak dapat dicabut (`FR-02.2 A1`)
+- [x] Seed `work_days` Senin–Sabtu aktif (Lampiran E.2)
+- [x] Uji pembanding: hasil seed = Lampiran C + tafsir, tanpa selisih
 
 ## 9. Acceptance Checklist
 
 - [ ] Pipeline hijau dari commit hingga deploy staging tanpa langkah manual
-- [ ] `/health` memisahkan *liveness* dan *readiness* serta melaporkan DB dan Redis; keenam dependensi `OBS-06` dilengkapi bertahap sampai `PR-03-20` — diperiksa di [`phase-03.md` §9](phase-03.md)
-- [ ] Worker berjalan sebagai proses dan `/health/ready`-nya tervalidasi di runtime (`SDD-SYS-08`) — **blocking**, `PR-00-18`
-- [ ] Route tanpa deklarasi permission menggagalkan *bootstrap* (`PM-01`)
-- [ ] Seed permission identik dengan Lampiran C
-- [ ] Dua instance worker tidak menjalankan job yang sama dua kali (`JOB-02`)
-- [ ] Log produksi tidak memuat satu pun field pada daftar tolak (`SDD-OBS-04`)
-- [ ] Rantai hash activity log terverifikasi pada data uji
+- [x] Implementasi `/health` memisahkan *liveness* dan *readiness* serta melaporkan DB dan Redis; health tests lulus CI. Keenam dependensi `OBS-06` dilengkapi bertahap sampai `PR-03-20` — diperiksa di [`phase-03.md` §9](phase-03.md)
+- [ ] Health pada deployment staging nyata terverifikasi — GAP-00-INFRA/QA-CLOSURE
+- [x] Worker berjalan sebagai proses dan `/health/ready`-nya tervalidasi di runtime (`SDD-SYS-08`) — **blocker kode tertutup** #39/#40; runtime staging nyata masih GAP-00-INFRA
+- [x] Route tanpa deklarasi permission menggagalkan *bootstrap* (`PM-01`)
+- [x] Seed permission identik dengan Lampiran C
+- [x] Dua instance worker tidak menjalankan job yang sama dua kali (`JOB-02`)
+- [x] Implementasi redaksi field daftar tolak teruji (`SDD-OBS-04`), observability/activity-log tests
+- [ ] Log runtime staging/produksi diperiksa tanpa field sensitif — GAP-QA-CLOSURE; uji kode tidak membuktikan keadaan log produksi
+- [x] Rantai hash activity log terverifikasi pada data uji
 - [ ] Tiga lingkungan berdiri dan terpisah (`NFR-M-09`)
+
+**Audit 7 Oktober 2026:** centang menunjukkan bukti teknis pada tree CI terbaru, bukan QA staging. Pipeline deploy nyata/tiga lingkungan tetap belum terbukti; vendor/pemantauan sertifikat/publikasi OpenAPI mengikuti GAP-00-OBS/OPENAPI. Matriks setiap syarat dan bukti ada di [audit §2–3](../audits/closure-phase-00-02-2026-10-07.md#3-closure-phase-00).
 
 ## 10. Risks
 
@@ -165,9 +169,9 @@ Ini satu-satunya phase yang boleh di-*reset* total. Setelah Phase 01, aturan exp
 **Tambahan khusus phase ini:**
 
 - [ ] Kriteria keluar `M0` PRD terpenuhi: pipeline hijau · deploy staging otomatis · `/health` memisahkan *liveness* dan *readiness* dan melaporkan dependensi yang integrasinya sudah dibangun
-- [ ] Seluruh 18 PR ter-*merge* ke `develop`
-- [ ] `scripts/audit_docs.py` masih LULUS (dokumentasi tidak rusak oleh perubahan kode)
-- [ ] Log phase ([`logs/phase-00.md`](../logs/phase-00.md)) terisi keputusan implementasi dan blocker yang muncul
+- [x] Seluruh 18 PR ter-*merge* ke `develop` — #6–#40
+- [x] `scripts/audit_docs.py` masih LULUS (dokumentasi tidak rusak oleh perubahan kode)
+- [x] Log phase ([`logs/phase-00.md`](../logs/phase-00.md)) terisi keputusan implementasi dan blocker yang muncul
 
 ---
 

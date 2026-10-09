@@ -99,14 +99,14 @@ Keluaran phase ini bukan kode, melainkan **keputusan bahwa sistem boleh dipakai*
 | `PR-08-05` | Penutupan temuan pentest — batch 1 | M | M | pentest | `GL-04`, `ST-04` | Nol temuan High/Critical terbuka |
 | `PR-08-06` | Penutupan temuan pentest — batch 2 | M | M | 05 | `GL-04` | Verifikasi ulang oleh penguji |
 | `PR-08-07` | Backup terverifikasi + skrip pemulihan | M | M | Ph00 | `BR-DR-01` … `BR-DR-04` | Pemulihan diuji dari backup nyata, bukan asumsi |
-| `PR-08-08` | DR runbook + pelaksanaan drill | M | M | 07 | `GL-06`, `BR-DR-05` | RTO/RPO terukur dan memenuhi target |
+| `PR-08-08` | DR runbook + pelaksanaan drill | M | M | 07 | `GL-06`, `BR-DR-05` | RTO/RPO terukur dan memenuhi target; **deferred DoD Phase 02 FR-01.6:** operator melatih admin:recover, alarm/log diterima, sesi dicabut dan akses dua Administrator pulih; owner operator/DevOps/QA, dependency staging nyata + PR-08-07, bukti latihan manusia wajib |
 | `PR-08-09` | Alerting produksi + jalur eskalasi | M | M | Ph00 | `OBS-07`, `SDD-OBS-07`, **TBD-OBS-B** | Setiap alarm punya penerima bernama |
 | `PR-08-10` | Perkakas migrasi data produksi + validasi | L | L | Ph07 | `GL-08`, `IMP-01` `IMP-03` | ≥95% aset (`SC-01`), ≥95% ber-QR (`SC-02`) |
 | `PR-08-11` | **Contract**: hapus `users.unit_kerja` | S | S | Ph07 | `SDD-DB-08`, `WU-01` | Nol pembaca tersisa, dibuktikan pencarian kode |
 | `PR-08-12` | Pemberitahuan privasi + alur persetujuan wali di produksi | M | M | Ph01 | `GL-07`, `DP-01` `DP-02`, `DP-AI-04`, Bab 28 | Seluruh akun siswa aktif punya persetujuan; pemberitahuan privasi menyatakan konsekuensi tier gratis chatbot sebelum chatbot aktif (`DP-AI-04`) |
 | `PR-08-13` | Pengerasan mobile + versi paksa + berkas rilis store | M | M | Ph07 | `GL-11`, `SDD-MOB-08/09/10` | Lolos tinjauan kedua store |
 | `PR-08-14` | Uji rencana rollback pada staging berdata produksi tiruan | M | M | 07 | `GL-12`, `CD-05` | Rollback dijalankan sungguhan dan terukur waktunya |
-| `PR-08-15` | Dokumen serah terima `IMP-08` | L | L | seluruhnya | `IMP-08` | Delapan dokumen lengkap dan terbaca pihak sekolah |
+| `PR-08-15` | Dokumen serah terima `IMP-08` | L | L | seluruhnya | `IMP-08` | Delapan dokumen lengkap dan terbaca pihak sekolah; **GAP-08-INSTALL (deferred FR-01.6 AC 4):** prosedur/validasi instalasi menolak satu Administrator, rehearsal dua akun beserta aktivasi 2FA; owner DevOps/Backend/dokumentasi |
 | `PR-08-16` | DAST OWASP ZAP *baseline scan* terhadap staging per kandidat rilis | S | S | Ph00 | `ST-03`, `SDD-SEC-11` | Dijalankan pipeline setelah smoke test staging; temuan High/Critical menggagalkan kandidat rilis; laporan tersimpan sebagai artefak |
 
 ## 8. Task Breakdown

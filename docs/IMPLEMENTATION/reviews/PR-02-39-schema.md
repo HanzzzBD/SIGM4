@@ -58,7 +58,7 @@ Menetapkan kontrak satu PDF per operasi mutasi dan persistensi snapshot transaks
 
 - [ ] Tidak diperlukan
 - [x] Diperlukan — menyentuh: `migration` dan katalog permission/default role
-  Peninjau: belum ditetapkan; wajib sebelum merge sesuai BRANCHING §3.1.
+  Peninjau: PM-Codexpert — approve #136 pada head `85bfae5` sebelum merge, diterima sebagai tinjauan arsitek (keputusan 64 log phase-02).
 
 ## Rollback
 

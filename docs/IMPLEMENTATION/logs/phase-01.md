@@ -189,22 +189,22 @@ Angka nyata, bukan perkiraan. Kosongkan bila belum diukur — jangan diisi tebak
 
 ## 9. Gerbang keluar
 
-Diisi 19 September 2026 lewat `chore/gerbang-keluar-phase-01` (keputusan 36). Seluruh 18 PR tergabung, sehingga Phase 01 berstatus **`In Review`**: gerbang keluarnya **lulus bersyarat untuk backend**. Butir yang bergantung pada UI (`apps/web`), modul phase berikutnya, staging, atau data riil sekolah **tidak dicentang** dan tercatat di bawah dengan penutupnya. Daftar lengkap ada di [`phase-01.md` §9 dan §12](../phases/phase-01.md).
+Gerbang awal diisi 19 September 2026 (#61). **Re-audit 7 Oktober 2026** memeriksa kembali semua syarat terhadap implementasi Phase 02–03 dan CI terbaru dengan tree identik. [Bukti/gap/owner](../audits/closure-phase-00-02-2026-10-07.md#4-closure-phase-01). Phase 01 tetap **In Review**; dependency yang sudah selesai tidak lagi disebut blocker.
 
-- [x] Seluruh 18 PR tergabung — `PR-01-01` … `PR-01-18` ([#42](https://github.com/HanzzzBD/SIGM4/pull/42) … [#60](https://github.com/HanzzzBD/SIGM4/pull/60)); rencana semula 16 PR, bertambah `PR-01-17` dan `PR-01-18` (keputusan 19, 29)
-- [ ] Acceptance checklist phase terpenuhi — lihat 9.1: lima dari enam butir terbukti penuh; satu (AC per FR) terbukti sebagian, dengan sisanya ditunda (9.2)
-- [ ] Definition of Done phase terpenuhi — lihat 9.3: satu dari empat butir terbukti penuh, satu sebagian, dua ditunda
-- [x] Bagian 5 log ini terisi seluruhnya — ketiga butirnya tercatat (`SL-04` → `PR-05-09` §10; `unit_kerja` contract → `PR-08-11`, keputusan 25/29; `SDD-AUTH-11`/`SDD-EVT-10` ditutup 25 Agustus 2026)
-- [x] [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) diperbarui — Phase 01 `In Review`, 18/18
+- [x] Seluruh 18 PR tergabung; penutup lanjutan #83/#84/#96/#101/#108/#125 diperhitungkan
+- [ ] Acceptance lengkap: 16 terbukti teknis, 7 sebagian, 1 gap, 1 deferred; QA staging belum tersedia
+- [ ] DoD lengkap: UI/demo/unduh template dan data kalender sekolah belum terbukti
+- [x] Butir log terisi dan dependency diberi target/owner
+- [x] IMPLEMENTATION-STATUS diperbarui; 18/18 PR bukan bukti phase Done
 
 ### 9.1 Acceptance checklist phase (`phase-01.md` §9)
 
 | Butir | Status | Bukti |
 |---|:---:|---|
-| Seluruh AC `FR-02.1`, `FR-02.2`, `FR-03.1`, `FR-03.2`, `FR-18.1`, `FR-18.2`, `FR-20.1` terverifikasi | **Sebagian** | 9.2: 17 dari 25 AC terbukti penuh, 3 sebagian, 5 ditunda |
+| Seluruh AC `FR-02.1`, `FR-02.2`, `FR-03.1`, `FR-03.2`, `FR-18.1`, `FR-18.2`, `FR-20.1` terverifikasi | **Sebagian** | 9.2: 16 terbukti teknis, 7 sebagian, 1 gap, 1 deferred (audit 7 Oktober) |
 | Uji otorisasi tergenerate lulus untuk keempat modul (`SEC-T-01`) | **Terbukti** | `sec-t-01.test.ts` (3 uji × 37 route ber-permission, tergenerate dari `registry.guarded()`) **dan** `phase-01-gate.test.ts` (5 uji lewat `createApp()`): setiap route → 401 tanpa konteks dan 403 tanpa permission **sebelum** validasi body, pemegang permission yang tepat lolos, permission lain 403, publik hanya probe. Mutation-check: router M-20 yang lupa memasang `otorisasi` → 2 uji merah, sedangkan `sec-t-01.test.ts` (yang hanya menguji middleware terpisah) **tetap hijau** — itulah alasan uji lewat aplikasi terakit ditambahkan |
 | Impor 500 pengguna dengan laporan galat per baris (`IMPT-02`) | **Terbukti** | `phase-01-gate.test.ts`: 500 baris (jalur asinkron) → 440 sukses, 60 gagal (email tak sah, email ganda dalam berkas, role tak dikenal, kode unit kosong, kode unit tak dikenal) dilaporkan **tepat per nomor baris** dengan alasan, 440 `USER_CREATED`. Diproses worker dalam **12,2 detik** (lokal) |
-| Perubahan matriks permission berlaku ≤ 60 detik tanpa restart (`PM-05`) | **Terbukti** | `phase-01-gate.test.ts`: Administrator mencabut `asset.view` dari Petugas → permintaan **berikutnya** Petugas ditolak 403 dalam **6 ms**; dipulihkan → lolos lagi; kunci cache ber-TTL ≤ 60 detik. Ditambah `permission-cache.test.ts` (versi role pada kunci, TTL 60). Catatan: `authenticate` sungguhan baru ada di `PR-02-02`; uji memakai pengganti yang membaca `PermissionCache` **nyata** pada setiap permintaan — persis langkah yang harus dilakukan `authenticate` |
+| Perubahan matriks permission berlaku ≤ 60 detik tanpa restart (`PM-05`) | **Terbukti** | `phase-01-gate.test.ts`: Administrator mencabut `asset.view` dari Petugas → permintaan **berikutnya** Petugas ditolak 403 dalam **6 ms**; dipulihkan → lolos lagi; kunci cache ber-TTL ≤ 60 detik. Ditambah `permission-cache.test.ts` (versi role pada kunci, TTL 60). Catatan: `authenticate` sungguhan sekarang sudah ada sejak `PR-02-02`; uji memakai pengganti yang membaca `PermissionCache` **nyata** pada setiap permintaan — belum membuktikan jalur JWT/sesi nyata; **GAP-01-AUTH-E2E**, owner QA/Backend auth — persis langkah yang dilakukan `authenticate` |
 | Setiap operasi tulis menghasilkan entri activity log (`AL-01`) | **Terbukti** untuk M-02/M-03/M-20 | `phase-01-gate.test.ts`: seluruh **23 route tulis** dijalankan dengan masukan sah dan setiap aksi log yang dijanjikan bertambah tepat satu (`hasil = SUKSES`, pelaku = Administrator), ditambah dua pembacaan yang wajib berlog (`ACTIVITY_LOG_VIEWED`, `ACTIVITY_LOG_EXPORTED`). **Penjaga:** himpunan langkah harus sama persis dengan route tulis di registri — route tulis baru tanpa langkah membuat uji merah |
 | Akun siswa tanpa `consent_guardian_at` tidak dapat diaktifkan (`DP-02`) | **Terbukti** | `guardian-consent.test.ts` (`PR-01-14`): pembuatan, pengaktifan kembali, ganti role, dan impor; 422 pada HTTP; `NT-48` ditunda ke `PR-02-25` |
 
@@ -214,41 +214,42 @@ Diisi 19 September 2026 lewat `chore/gerbang-keluar-phase-01` (keputusan 36). Se
 
 | FR | Acceptance criteria | Status | Bukti / penutup |
 |---|---|:---:|---|
-| `FR-02.1` | Akun tidak dapat dihapus permanen, hanya dinonaktifkan | Terbukti | `m02-users.test.ts` — registri tanpa `DELETE /users` (`BR-067`) |
-| `FR-02.1` | Penonaktifan Administrator aktif terakhir ditolak | Terbukti | `m02-users.test.ts` — batas minimal dua (keputusan 16), mutation-check |
-| `FR-02.1` | Impor massal menampilkan laporan galat per baris tanpa menggagalkan berkas | Terbukti | `m02-users-import.test.ts`, `user-import-async.test.ts`, `phase-01-gate.test.ts` (500 baris) |
-| `FR-02.1` | Seluruh operasi tercatat dengan nilai sebelum dan sesudah | Terbukti | `m02-users.test.ts` "USER_UPDATED dengan nilai sebelum/sesudah"; sapuan `AL-01` |
-| `FR-02.2` | Otorisasi diperiksa di server pada setiap endpoint | Terbukti | `SEC-T-01` lewat aplikasi terakit (9.1) |
-| `FR-02.2` | Perubahan permission berlaku tanpa restart | Terbukti | `PM-05` (9.1) |
-| `FR-02.2` | Perubahan matriks tercatat di activity log | Terbukti | `m02-users-roles.test.ts`; sapuan `AL-01` (`ROLE_PERMISSION_UPDATED`) |
-| `FR-03.1` | Struktur lokasi tampil sebagai pohon yang dapat diperluas/diciutkan | Sebagian | Data pohon: `m03-locations-tree.test.ts` (`GET /locations/tree`). Tampilan diperluas/diciutkan → `apps/web` (`P-` lokasi) |
-| `FR-03.1` | Ruangan `dapat_direservasi = false` tidak muncul di Reservasi Ruangan | Ditunda | Atribut tersimpan dan divalidasi (`m03-locations.test.ts`); penyaringannya milik modul reservasi `M-07` (Phase 02/03) |
-| `FR-03.1` | Setiap lokasi menampilkan jumlah aset di dalamnya | Ditunda | Pohon belum memuat hitungan; `GET /rooms/:id/assets` mengembalikan ringkasan kosong. Menunggu tabel `assets` (`PR-02-10`) |
-| `FR-03.1` | Lokasi yang pernah bertransaksi hanya dapat dinonaktifkan, tidak dihapus permanen | Sebagian | Tidak ada `DELETE` lokasi (registri) dan penonaktifan berjenjang gedung → ruangan (`m03-locations-tree.test.ts`). Syarat "pernah bertransaksi" menunggu `BR-015` sungguhan (`PR-02-10`, keputusan 22) |
-| `FR-03.2` | Daftar aset per lokasi ≤ 2 detik untuk hingga 500 unit | Ditunda | Endpoint baru berupa kerangka (`PR-01-07`, daftar kosong); diukur setelah tabel `assets` ada (`PR-02-10`) dan pada uji beban Phase 07–08 |
-| `FR-03.2` | Filter dan pencarian dapat dikombinasikan | Ditunda | Idem — filter aset menunggu tabel `assets` |
-| `FR-03.2` | Ekspor memuat identitas lokasi, tanggal cetak, dan pencetak | Ditunda | Endpoint ekspor aset per lokasi belum ada di rencana Phase 01; menunggu `assets` |
-| `FR-18.1` | 100% operasi tulis pada seluruh modul menghasilkan entri log | Terbukti untuk M-02/M-03/M-20 | Sapuan `AL-01` (9.1) beserta penjaga drift; modul baru wajib menambah langkahnya |
-| `FR-18.1` | Tidak ada role yang dapat menyunting/menghapus entri log lewat aplikasi | Terbukti | `phase-01-gate.test.ts`: seluruh route `m18-activity-log` di registri berupa GET; di basis data akun aplikasi tanpa `UPDATE`/`DELETE`/DDL (`activity-log.test.ts`, "AL-03b", dijalankan di CI dengan akun terpisah) |
-| `FR-18.1` | Log tidak memuat password, token, atau secret 2FA | Terbukti | `activity-log.test.ts` "AL-05 — nilai sensitif tidak pernah tersimpan"; `observability.test.ts` |
-| `FR-18.1` | Kegagalan pencatatan tidak menggagalkan transaksi bisnis, memicu peringatan | Terbukti | `activity-log.test.ts` "AL-08 — kegagalan tulis log TIDAK menggagalkan transaksi bisnis" |
-| `FR-18.2` | Filter kombinasi ≤ 3 detik untuk rentang 1 bulan | Terbukti (ukuran awal) | `phase-01-gate.test.ts`: 100.000 entri dalam satu bulan → filter kombinasi (rentang + pengguna + modul + aksi) median **22 ms**, rentang saja **29 ms**. Ukuran awal, **bukan** pengganti uji beban Phase 07–08 |
-| `FR-18.2` | Perbandingan sebelum/sesudah sebagai tabel dua kolom berlabel Indonesia, bukan JSON mentah | Sebagian | Backend mengembalikan `nilai_sebelum`/`nilai_sesudah` terstruktur (`m18-activity-log.test.ts`); penyajian tabel dua kolom → `apps/web` |
-| `FR-18.2` | Ekspor log tercatat sebagai aktivitas tersendiri | Terbukti | `m18-activity-log.test.ts`; sapuan `AL-01` (`ACTIVITY_LOG_EXPORTED`) |
-| `FR-20.1` | Perubahan parameter berlaku tanpa deployment maupun restart | Terbukti | `m20-settings.test.ts` "update(): … terbaca pada permintaan berikutnya tanpa restart" |
-| `FR-20.1` | Setiap parameter menampilkan penjelasan singkat dan nilai bawaan | Terbukti | `m20-settings.test.ts` "list(): setiap parameter membawa penjelasan dan nilai bawaan" |
-| `FR-20.1` | Perubahan tercatat dengan nilai lama dan baru | Terbukti | `m20-settings.test.ts` "SETTING_UPDATED lengkap dengan nilai lama dan baru" |
-| `FR-20.1` | Hanya role Administrator yang dapat mengakses menu ini | Terbukti (tafsir) | Tafsir pemilik produk (keputusan 36): menu **ubah** hanya Administrator — `setting.manage` hanya `R-01`; `setting.view` juga dipegang Pimpinan `R-03` (read-only) sesuai katalog role. `SEC-T-01` terakit membuktikan keduanya. Teks AC di PRD perlu diperjelas (§10) |
+| `FR-02.1` | Akun tidak dapat dihapus permanen, hanya dinonaktifkan | Terbukti teknis | `m02-users.test.ts` — registri tanpa `DELETE /users` (`BR-067`) |
+| `FR-02.1` | Penonaktifan Administrator aktif terakhir ditolak | Terbukti teknis | `m02-users.test.ts` — batas minimal dua (keputusan 16), mutation-check |
+| `FR-02.1` | Impor massal menampilkan laporan galat per baris tanpa menggagalkan berkas | Terbukti teknis | `m02-users-import.test.ts`, `user-import-async.test.ts`, `phase-01-gate.test.ts` (500 baris) |
+| `FR-02.1` | Seluruh operasi tercatat dengan nilai sebelum dan sesudah | Terbukti teknis | `m02-users.test.ts` "USER_UPDATED dengan nilai sebelum/sesudah"; sapuan `AL-01` |
+| `FR-02.2` | Otorisasi diperiksa di server pada setiap endpoint | Terbukti teknis | `SEC-T-01` lewat aplikasi terakit (9.1) |
+| `FR-02.2` | Perubahan permission berlaku tanpa restart | Terbukti teknis | `PM-05` (9.1) |
+| `FR-02.2` | Perubahan matriks tercatat di activity log | Terbukti teknis | `m02-users-roles.test.ts`; sapuan `AL-01` (`ROLE_PERMISSION_UPDATED`) |
+| `FR-03.1` | Struktur lokasi tampil sebagai pohon yang dapat diperluas/diciutkan | Sebagian | GET /locations/tree tersedia dan diuji; pohon expand/collapse web belum ada: GAP-01-WEB-LOCATIONS. |
+| `FR-03.1` | Ruangan `dapat_direservasi = false` tidak muncul di Reservasi Ruangan | Deferred | Atribut tersedia; konsumen/filter BR-016 milik PR-03-09/PR-03-10, owner Backend reservasi + Frontend lokasi. Bukan blocker closure Phase 01; tetap syarat M-07. |
+| `FR-03.1` | Setiap lokasi menampilkan jumlah aset di dalamnya | Sebagian | PR-02-12 (#84): ringkasan total ruangan di AssetService.listByRoom, m04-assets-list.test.ts. Pohon LocationService.getTree belum memiliki counts gedung/area/ruang; GAP-01-LOCATION-DATA + WEB-LOCATIONS. |
+| `FR-03.1` | Lokasi yang pernah bertransaksi hanya dapat dinonaktifkan, tidak dihapus permanen | Terbukti teknis | Tidak ada DELETE lokasi; #83 tergabung (2398a34), LocationService.updateRoomStatus + LocationRepository.hasAssetsInRoom menolak nonaktif ruangan beraset; m03-locations-tree.test.ts. Reservasi mendatang adalah dependency berbeda PR-03-10. |
+| `FR-03.2` | Daftar aset per lokasi ≤ 2 detik untuk hingga 500 unit | Sebagian | Endpoint dan summary sungguhan selesai PR-02-12 (#84), m04-assets-list.test.ts. Ukuran ≤2 detik pada 500 unit/layar belum ada; GAP-01-LOCATION-DATA + WEB-LOCATIONS + QA. |
+| `FR-03.2` | Filter dan pencarian dapat dikombinasikan | Sebagian | Filter kategori/kondisi/status tersedia. GET /rooms/:id/assets tidak meneruskan q; q+filter pada GET /assets tidak otomatis membuktikan endpoint ruangan. GAP-01-LOCATION-DATA, owner Backend M-03/M-04 + QA. |
+| `FR-03.2` | Ekspor memuat identitas lokasi, tanggal cetak, dan pencetak | Gap | Ekspor aset per lokasi belum ditemukan pada registry/route; shared PDF sudah tersedia #121. GAP-01-LOCATION-EXPORT, owner Backend M-04/Frontend lokasi/QA; tetapkan kontrak PRD sebelum kode. |
+| `FR-18.1` | 100% operasi tulis pada seluruh modul menghasilkan entri log | Terbukti teknis | Sapuan `AL-01` (9.1) beserta penjaga drift; modul baru wajib menambah langkahnya |
+| `FR-18.1` | Tidak ada role yang dapat menyunting/menghapus entri log lewat aplikasi | Terbukti teknis | `phase-01-gate.test.ts`: seluruh route `m18-activity-log` di registri berupa GET; di basis data akun aplikasi tanpa `UPDATE`/`DELETE`/DDL (`activity-log.test.ts`, "AL-03b", dijalankan di CI dengan akun terpisah) |
+| `FR-18.1` | Log tidak memuat password, token, atau secret 2FA | Terbukti teknis | `activity-log.test.ts` "AL-05 — nilai sensitif tidak pernah tersimpan"; `observability.test.ts` |
+| `FR-18.1` | Kegagalan pencatatan tidak menggagalkan transaksi bisnis, memicu peringatan | Terbukti teknis | `activity-log.test.ts` "AL-08 — kegagalan tulis log TIDAK menggagalkan transaksi bisnis" |
+| `FR-18.2` | Filter kombinasi ≤ 3 detik untuk rentang 1 bulan | Terbukti teknis | `phase-01-gate.test.ts`: 100.000 entri dalam satu bulan → filter kombinasi (rentang + pengguna + modul + aksi) median **22 ms**, rentang saja **29 ms**. Ukuran awal, **bukan** pengganti uji beban Phase 07–08 |
+| `FR-18.2` | Perbandingan sebelum/sesudah sebagai tabel dua kolom berlabel Indonesia, bukan JSON mentah | Sebagian | Data before/after tersedia; tabel dua kolom berlabel Indonesia + highlight belum ada pada web. GAP-01-WEB-LOG (P-73/P-74). |
+| `FR-18.2` | Ekspor log tercatat sebagai aktivitas tersendiri | Terbukti teknis | `m18-activity-log.test.ts`; sapuan `AL-01` (`ACTIVITY_LOG_EXPORTED`) |
+| `FR-20.1` | Perubahan parameter berlaku tanpa deployment maupun restart | Terbukti teknis | `m20-settings.test.ts` "update(): … terbaca pada permintaan berikutnya tanpa restart" |
+| `FR-20.1` | Setiap parameter menampilkan penjelasan singkat dan nilai bawaan | Sebagian | API m20-settings.test.ts membawa penjelasan/default; penyajian layar parameter belum dibuat. GAP-01-WEB-SETTINGS. |
+| `FR-20.1` | Perubahan tercatat dengan nilai lama dan baru | Terbukti teknis | `m20-settings.test.ts` "SETTING_UPDATED lengkap dengan nilai lama dan baru" |
+| `FR-20.1` | Hanya role Administrator yang dapat mengakses menu ini | Sebagian | setting.manage hanya R-01; setting.view juga R-03. Tafsir edit vs baca sudah keputusan 36d, tetapi teks AC masih menyatakan akses menu hanya Administrator. GAP-01-SETTINGS-AC / produk-dokumentasi; menu web belum ada. |
 
-Hitungan: 25 AC — **17 terbukti penuh** (termasuk `FR-18.1` #1 untuk tiga modul, `FR-18.2` #1 sebagai ukuran awal, dan `FR-20.1` #4 dengan tafsir), **3 sebagian** (`FR-03.1` #1 dan #4, `FR-18.2` #2), **5 ditunda** (`FR-03.1` #2 dan #3, seluruh `FR-03.2`).
+**Audit 7 Oktober:** 25 AC — **16 terbukti teknis, 7 sebagian, 1 gap, 1 deferred**. Terbukti teknis tetap membutuhkan QA staging menurut PRD 29.5; owner/dependency tiap gap ada di audit §6.
+
 
 ### 9.3 Definition of Done tambahan (`phase-01.md` §12)
 
 | Butir | Status | Keterangan |
 |---|:---:|---|
-| Empat modul dapat didemokan mandiri kepada Administrator sekolah | Ditunda | Menuntut UI (`apps/web`) dan staging nyata; gerbang keluar Phase 00 juga belum lulus untuk staging. Backend siap (seluruh endpoint 401/403 terbukti, 23 route tulis berlog) |
+| Empat modul dapat didemokan mandiri kepada Administrator sekolah | Gap scope | Menuntut UI (`apps/web`) dan staging nyata; gerbang keluar Phase 00 juga belum lulus untuk staging. Backend siap (seluruh endpoint 401/403 terbukti, 23 route tulis berlog) |
 | Template impor pengguna (`E.5.2`) tersedia untuk diunduh (`IMPT-05`) | Sebagian | **Berkas tersedia** di [`templates/impor/`](../templates/impor/) — `template_pengguna.xlsx`, `template_pengguna.csv`, `contoh_pengguna.csv` — dibangkitkan dari tabel `E.5.2` dan dijaga `import-template.test.ts`; contoh isian tidak ikut terimpor. **Tombol unduh** pada halaman impor tetap milik `apps/web` (keputusan 36) |
-| Kalender akademik terisi untuk tahun ajaran berjalan (`AC-YR-01`) | Ditunda | Endpoint siap (`PR-01-18`, `POST /academic-years` menjadikan tahun pertama aktif). **Datanya** dimasukkan Administrator sekolah — pekerjaan operasional, bukan kode |
+| Kalender akademik terisi untuk tahun ajaran berjalan (`AC-YR-01`) | Belum diverifikasi | Endpoint siap (`PR-01-18`, `POST /academic-years` menjadikan tahun pertama aktif). **Datanya** dimasukkan Administrator sekolah — pekerjaan operasional, bukan kode |
 | Log phase terisi | Terbukti | Log ini |
 
 ## 10. Yang diserahkan ke phase berikutnya
@@ -257,14 +258,14 @@ Hal yang sengaja ditinggalkan terbuka, beserta di mana ia akan ditutup.
 
 | Yang ditinggalkan | Ditutup di | Alasan penundaan |
 |---|---|---|
-| `users.foto_file_id` → `stored_files(id)` (foto profil `FR-01.4`) | `PR-03-04` (keputusan 4) | `stored_files` belum ada (`SDD-FS-02`) |
+| **SELESAI backend** users.foto_file_id → stored_files + pengelolaan foto | PR-03-25 (#125), migration 0038_stored_files.sql, ProfileService/m06-files.test.ts | UI P-76 tetap GAP-02-WEB-AUTH |
 | **[SELESAI — `PR-02-31`, keputusan 84 log phase-02]** Daftar password bocor + riwayat 3 password terakhir (`NFR-S-03a`) | `PR-02-31` (keputusan 9) | Menuntut sumber daftar dan tabel riwayat yang belum ditetapkan SDD mana pun |
-| `failed_login_count`, `locked_until`, `totp_secret_enc`, `totp_enabled_at` pada `users` | `PR-02-03`, `PR-02-07` (`SDD-04 §4.1`) | Kolom autentikasi milik Phase 02 |
-| `BR-015` sungguhan: `PATCH /rooms/{id}/status` menolak nonaktif bila ruangan masih memuat aset | `PR-02-10` (keputusan 22) | Tabel `assets` belum ada; `PR-01-06` hanya menegakkan kerangka hierarki (gedung vs ruangan aktif di bawahnya) |
-| `FR-03.1 A2`: menonaktifkan ruangan berreservasi mendatang menampilkan daftar reservasi terdampak & meminta konfirmasi | Modul reservasi (`M-07`, Phase 02) | `booking_slots`/reservasi belum ada (keputusan 22) |
-| **`NT-48`** (notifikasi in-app ke Administrator saat pengaktifan/pembuatan akun siswa ditolak, `DP-02`) dan **`NT-40`** (role/status akun berubah, belum terbit sejak `PR-01-02`) | **`PR-02-25`** (Phase 02, M-17) — keputusan 32; tugasnya tercatat di `phases/phase-02.md` §8 | Modul notifikasi belum ada; `NT-48` tidak dapat terbit dari transaksi yang ditolak (`SDD-EVT-04`), sehingga perlu transaksi terpisah dan event baru di katalog `SDD-07 §4.3` |
+| **SELESAI** kolom login/TOTP | PR-02-03 (#63), PR-02-07 (#68), migrations 0022/0024, auth tests | Tidak lagi menunggu kolom autentikasi |
+| **SELESAI** BR-015 ruangan beraset | Fix #83, merge 2398a34, m03-locations-tree.test.ts | Tidak lagi menunggu assets |
+| **Deferred:** FR-03.1 A2, daftar/konfirmasi reservasi mendatang saat nonaktif ruang | PR-03-09/10 (M-07, Phase 03), owner Backend reservasi/Frontend lokasi/QA | Booking_slots sudah tersedia #88/#89; consumer/pengaju reservasi belum ada. AC dan BR-016 diuji saat M-07 lahir |
+| **SELESAI** NT-48 create/update/status + NT-40 | PR-02-25 (#101), consumers.ts, notifications-publish.test.ts | NT-48 per baris import di luar gerbang ini masih keputusan produk |
 | Pencabutan persetujuan wali; akun siswa lama tanpa `consent_guardian_at` | Belum didefinisikan `DP-02` — perlu keputusan pemilik produk bila diperlukan | Tidak ada jalur mencabut penanda; siswa yang dibuat sebelum gerbang tetap aktif tanpa penanda dan hanya terblokir saat dinonaktifkan lalu diaktifkan kembali |
-| **`NT-52`** — konsumen event `UserImportCompleted` (notifikasi in-app "impor pengguna selesai") | **`PR-02-25`** (Phase 02, M-17) — keputusan 33; tugasnya tercatat di `phases/phase-02.md` | Event sudah terbit sejak `PR-01-17`; hanya modul notifikasi yang belum ada |
+| **SELESAI** konsumen UserImportCompleted/NT-52 | PR-02-25 (#101), notifications-publish.test.ts | Tidak lagi menunggu M-17 |
 | Masa simpan **laporan impor** (`user_import_jobs.laporan_gagal` memuat email baris gagal; barisnya tidak dihapus) | Pemilik produk — tidak didefinisikan PRD; kandidat digabung ke pseudonimisasi `PR-05-26` (`DP-04`) | Berkas mentah sudah dikosongkan saat berakhir (`DP-03`), tetapi laporannya tetap |
 | Batas atas jumlah baris jalur asinkron | Kalibrasi Phase 07–08 (kelompok B) | Kini hanya dibatasi ukuran body 8 MB (`BATAS_BODY_JSON`); pekerjaan yang sangat besar memakan waktu proporsional dengan hashing Argon2id per baris |
 | Celah pemulihan `JOB-06`: crash tepat di antara commit `UserService.create` dan `catatBaris` | Tidak dikerjakan — satu baris paling banyak, dan menutupnya menuntut `UserService.create` menerima transaksi luar | Baris itu dilaporkan "sudah digunakan" pada percobaan ulang, padahal berhasil dibuat |
@@ -272,10 +273,10 @@ Hal yang sengaja ditinggalkan terbuka, beserta di mana ia akan ditutup.
 | **Pemaksaan pembuatan tahun ajaran pada instalasi awal** (`AC-YR-01`: "instalasi awal memaksa pembuatannya") | `apps/web` — halaman `P-71` / alur pertama-kali (UX) | Backend menyediakan `POST /academic-years` dan menjadikan tahun pertama aktif; "memaksa" adalah perilaku layar/onboarding, bukan endpoint |
 | Filter `filter[academic_year_id]` pada `GET /holidays` tidak memuat hari libur nasional ber-`academic_year_id` NULL | Pemilik produk / `apps/web` `P-71` — putuskan bila layar perlu "libur tahun ini termasuk nasional" | PRD hanya menyebut "filter tahun ajaran"; kini pencocokan tepat |
 | **Teks AC `FR-20.1` #4** ("Hanya role Administrator yang dapat mengakses menu ini") bertentangan dengan `m20-settings.md` §10 dan katalog role (Pimpinan memegang `setting.view`) | PR dokumentasi terpisah — perjelas AC menjadi "mengubah" (keputusan 36d) | Tafsir sudah dipilih pemilik produk; teks PRD belum disunting |
-| **`authenticate` pengganti pada uji gerbang** (`PM-05`, `SEC-T-01`): membaca `PermissionCache` nyata per permintaan | `PR-02-02` — ganti pengganti itu dengan `authenticate` sungguhan dan pertahankan asersi yang sama | JWT dan sesi baru lahir di Phase 02; rantai role → cache → AuthContext → route sudah terbukti |
-| Butir acceptance/DoD yang **ditunda** (§9.2, §9.3): tampilan pohon dan tabel dua kolom, jumlah aset, `dapat_direservasi` di Reservasi, seluruh `FR-03.2`, demo mandiri, tombol unduh templat, data kalender riil | `apps/web` (tampilan, unduhan), `PR-02-10` (tabel `assets`), `M-07` (reservasi), Administrator sekolah (data) | Bergantung pada lapisan atau modul yang belum ada; masing-masing dengan penutup di tabel 9.2/9.3 |
+| **Gap bukti gate:** PM-05 melalui JWT/sesi nyata | GAP-01-AUTH-E2E, owner QA/Backend auth, dependency #62/#66 | Auth nyata sudah ada; gerbang masih authPalsu. Uji sesi hidup saat izin/role berubah belum dibuktikan oleh gerbang lama |
+| Acceptance/DoD yang belum selesai setelah re-audit | GAP-01-WEB-*, LOCATION-DATA/EXPORT, SCHOOL-DATA, AUTH-E2E, SETTINGS-AC; reservasi deferred PR-03-09/10 | Audit §4/6 menggantikan daftar blocker 19 September; tabel assets/job lulusan/notifikasi sudah tersedia |
 | Dukungan CSV berpemisah titik koma / deteksi pemisah | Belum ditetapkan — putuskan sebelum `IMP-02` (templat diserahkan ke sekolah) | Lihat §7; sementara petunjuk pada templat |
-| **Memasang pekerjaan `student-graduation`** ke worker (`SL-03`, `DP-10`): `GraduationService.deactivateDueGraduates` sudah ada dan teruji; belum ada yang memanggilnya secara terjadwal, sehingga lulusan **belum dinonaktifkan otomatis** | **`PR-02-32`** (Phase 02, setelah `PR-02-02`, tinjauan arsitek) — keputusan 31 | Pelaku job `SYSTEM` (`AL-06`, `SDD-03`) tidak dapat dibentuk: `AuthContext.userId` wajib bilangan bulat dan dipakai `updated_by` pada seluruh repository. `PR-02-32` merancang `SystemAuthContext` bersama `AuthContext` hasil `PR-02-02`, dan menyesuaikan `GraduationService` (entri log pelaku `SYSTEM`, ringkasan `JOB-05`) |
+| **SELESAI** worker student-graduation | PR-02-32 (#96), src/worker/student-graduation.ts, worker-student-graduation.test.ts | SL-04 masih deferred PR-05-09 (API dan worker) |
 | **Mendaftarkan pemeriksa kewajiban siswa** (peminjaman aktif, denda belum lunas) ke `studentObligations`, di proses API **dan** worker | `PR-05-09` (penutupan `SL-04`) — tugasnya kini memuat pendaftaran di proses API **dan** worker (keputusan 31) | Definisi kewajiban baru ada setelah peminjaman dan denda ada (Phase 05); sampai itu registri kosong dan `SL-04` belum memblokir apa pun |
 | `SL-05` (pseudonimisasi akun siswa nonaktif setelah 2 tahun, `DP-10`) dan `DP-04` (hak penghapusan) | **`PR-05-26`** (Phase 05, setelah `PR-05-09`) — keputusan 31 | DP-10 mengecualikan akun yang masih berkewajiban, dan definisi kewajiban baru ada di `PR-05-09`; bukan bagian task breakdown `PR-01-13` (hanya `SL-01`…`SL-04`) |
 | **Menjalankan `map_users_unit_kerja()`** setelah master `work_units` terisi, dan menutup daftar tak terpetakannya | Operator, sebelum `PR-08-11` (contract) — [runbook](../runbooks/master-data-awal.md) bagian 3 (keputusan 29) | `work_units` lahir kosong; migration hanya menjalankannya sekali (no-op). Tidak ada penebakan — sisa tak terpetakan diputuskan manusia |

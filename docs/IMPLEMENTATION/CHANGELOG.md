@@ -6,6 +6,24 @@ Perubahan pada [PRD](../PRD/) dan [SDD](../SDD/) tidak dicatat di sini — masin
 
 ---
 
+## 9 Oktober 2026 — PR-02-38 dan PR-02-39 tergabung
+
+Status PR-02-38 dan PR-02-39 menjadi **Done**; Phase 02 **37/37** tergabung, total rencana **81/179**. Kode PDF/P-20 yang tertinggal di cabang parent sesudah #137 diteruskan lewat PR penerus #138. Tinjauan arsitek migration 0041/0042 dicatat tertutup (approve pada head #131/#136, keputusan 64). Log Phase 02 mencatat pola stack child-tertinggal sebagai masalah tertutup beserta verifikasi `git diff` sebelum Done, dan CI push develop yang merah sesudah #133/#136 (timeout tes Clock). AC FR-04.1 #3 dan FR-04.4 #3 menjadi terbukti teknis (58/14/1/4). Phase 02 tetap **In Review**: gap layar web/FCM/ekspor/MOVE-SLOT/STATUS-WRITERS dan QA staging.
+
+## 8 Oktober 2026 — pelaksanaan lokal PR-02-39
+
+Status PR-02-39 menjadi **In Progress**. Produk memilih P-20 + PDF per operasi dengan snapshot tetap, cakupan L, migration pendahulu terpisah, permission khusus tiga role dan patch dependency terpisah. Bukti lokal mencakup PDF 1.7 A4 untuk 50 aset, antrean/storage nyata, akses/konkurensi/retry dan browser desktop/mobile. CI remote/tinjauan/QA staging tetap pending; hitungan tergabung tidak berubah. [Draf fitur](reviews/PR-02-39.md), [skema](reviews/PR-02-39-schema.md), [dependency](reviews/PR-02-39-dependencies.md).
+
+## 8 Oktober 2026 — pelaksanaan lokal PR-02-38
+
+Status PR-02-38 menjadi **In Progress**; log Phase 02 mencatat keputusan produk, pendahulu migration terpisah, implementasi P-17/API/worker, dan bukti lokal 500 baris lewat antrean nyata dalam 4,28 detik. Checklist membedakan implementasi lokal dari CI/tinjauan/QA staging yang belum dilakukan; jumlah tergabung dan status closure phase tetap. [Draf fitur](reviews/PR-02-38.md) dan [draf skema](reviews/PR-02-38-schema.md) disiapkan untuk ditinjau.
+
+## 7 Oktober 2026 — re-audit closure Phase 00–02
+
+Audit terhadap tree develop terbaru (identik checkout PR #128) dan metadata GitHub/CI. [Laporan lengkap](audits/closure-phase-00-02-2026-10-07.md) memetakan DoD dasar, setiap checklist, bukti per AC, gap scope, owner/dependency, dan rekomendasi. Blocker lama BR-015/daftar ruangan/job lulusan/notifikasi/password/QR/foto/storage/AV/FCM direkonsiliasi; bukti API mobile/deep link/timing dashboard dibatasi sesuai yang diuji.
+
+PR rencana **PR-02-38 bulk import aset** dan **PR-02-39 PDF berita acara mutasi** ditambahkan (177 → **179**, Phase 02 35/37). Deferred preventif/drill ditautkan ke PR-04-07/PR-08-08; instalasi dua admin ke GAP-08-INSTALL/PR-08-15. Checklist/log, status kanonik, README/DELIVERY-PLAN/CLAUDE dan hitungan validator diselaraskan. Ketiga phase tetap In Review karena gap scope dan QA staging belum selesai. Approval #78 terverifikasi sebelum merge; gap retrospektif lama ditutup. PR #128 juga direkonsiliasi Done (Phase 03 8/26, total 79/179); ekspor katalog mempunyai task GAP-02-ASSET-EXPORT. Tidak ada requirement atau keputusan desain baru; kontrak gap wajib ditetapkan di PRD/SDD pemilik sebelum implementasi.
+
 ## 21 September 2026 — `PR-02-33` baru; `PR-02-08` diperluas
 
 Tidak ada TBD baru. Requirement baru (`BR-070d`, `BR-070e`, `NT-39a`) sudah diputuskan pemilik produk dan ditulis ke PRD/SDD/UX (keputusan 46–47 di [`logs/phase-02.md` §2](logs/phase-02.md)); entri ini hanya mencatat penetapan PR pelaksananya (keputusan 48).

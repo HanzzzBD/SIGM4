@@ -112,7 +112,7 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | `PR-02-03` | Penguncian akun + `NT-39` + audit percobaan gagal | M | M | 02 | `FR-01.1 A2`, `SDD-SESS-06/07`, `NFR-S-07`, `SEC-T-06` | 5 gagal → kunci; pesan galat tidak membocorkan keberadaan akun; sumbu akun (PostgreSQL) dan sumbu IP (Redis) login aktif bersamaan, keduanya hanya menghitung percobaan gagal |
 | `PR-02-04` | Logout + pencabutan sesi + daftar perangkat | M | M | 02 | `FR-01.2`, `SDD-SESS-06` | Token tercabut ditolak ≤ 60 detik |
 | `PR-02-05` | Lupa & reset password administratif (password sementara sekali tampil) | M | M | 02 | `FR-01.3`, `NT-37`, `NT-38` | Respons seragam untuk email ada/tidak ada; metode verifikasi wajib; password sementara tak pernah tersimpan/tercatat; kedaluwarsa 72 jam *(rencana semula: "token sekali pakai" dan `NT-41` — keliru, koreksi keputusan 21 [log phase-02](../logs/phase-02.md))* |
-| `PR-02-06` | Ganti password + kelola profil + pencabutan sesi lain | S | S | 04 | `FR-01.4` | Ganti password mencabut sesi lain; foto profil menunggu `users.foto_file_id` dari `PR-03-04` (keputusan 4 log phase-01) |
+| `PR-02-06` | Ganti password + kelola profil + pencabutan sesi lain | S | S | 04 | `FR-01.4` | Ganti password mencabut sesi lain; backend foto sudah terpenuhi #124/#125 (0038/PR-03-25); layar P-76/P-77 masih GAP-02-WEB-AUTH |
 | `PR-02-07` | 2FA TOTP: pendaftaran, verifikasi, kode pemulihan | L | L | 02 | `FR-01.5`, `BR-070` `BR-070c`, `SDD-SESS-08/09` | Role sensitif tidak dapat melewati 2FA; `TOTP_ENCRYPTION_KEY` masuk skema `shared/config` (`SDD-SYS-14`) |
 | `PR-02-08` | Break-glass CLI + CLI penerbit kode aktivasi 2FA + jejak audit wajib | M | M | 07, 33 | `FR-01.6`, `BR-070b`, `FR-01.5 A6`, `BR-070d`, `SDD-SESS-11/17` | Setiap pemakaian menghasilkan alarm & entri log; `admin:activation-code` hanya menerbitkan kode bagi akun role wajib yang belum ber-2FA, tercatat `TWO_FA_ACTIVATION_CODE_ISSUED` pelaku `SYSTEM:CLI`; `TOTP_ENCRYPTION_KEY` masuk skema worker |
 | `PR-02-09` | **Pensiun** — dipindah ke `PR-01-15` (keputusan 63, [log phase-00 §2](../logs/phase-00.md)); nomornya tidak dipakai ulang | — | — | — | — | — |
@@ -144,6 +144,8 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 | `PR-02-35` | Konsumen notifikasi M-01: `NT-37`, `NT-38`, `NT-38a`, `NT-39`, `NT-39a`, `NT-53` + notifikasi Administrator atas pemakaian ulang refresh token *(baru, keputusan 78 log phase-02)* | M | M | 25 | `FR-17.1`, `SDD-08 §4.2a`, `SDD-SESS-04` | Setiap event M-01 yang sudah terbit (`PasswordResetRequested`, `PasswordResetIssued`, `PasswordChangedAfterReset`, `AccountLocked`, `TwoFactorEnabled`, `AdminBreakGlassRecovery`) menghasilkan notifikasi ke penerimanya; kode NT pemakaian ulang refresh token dinaikkan ke PRD M-01 lebih dulu |
 | `PR-02-36` | Alur masuk web: P-02 Verifikasi 2FA, P-03 Aktivasi 2FA, P-05 Ganti Password Wajib + banner sesi akan berakhir *(baru, keputusan 83 log phase-02)* | M | M | 30 | `FR-01.1 A4`, `FR-01.2 A2`, `FR-01.5`, `BR-070`, `SDD-AUTH-09`, P-02, P-03, P-05 | Role wajib 2FA dapat masuk web ujung-ke-ujung; gerbang ganti password memblokir seluruh route lain; banner menit ke-28, logout menit ke-30 |
 | `PR-02-37` | Job terjadwal `slot-activation` + `tentative-slot-expiry` *(baru, keputusan 88d log phase-02)* | M | M | 17, 32 | `BR-005b`, `BR-023b`, `CI-05`, `SDD-AVL-11`, `SDD-01 §4.6`, `JOB-01` … `JOB-06` | Slot `TENTATIVE` yang melewati `expires_at` menjadi `RELEASED` dan menerbitkan `TentativeSlotExpired` di transaksi yang sama (konsumen: `PR-03-10`, `PR-04-02`); aset dengan slot `CONFIRMED` yang mencakup waktu kini → `DIRESERVASI` dan kembali `TERSEDIA` saat slot berakhir tanpa serah terima, masing-masing tercatat `ASSET_STATUS_CHANGED` pelaku `SYSTEM`; status aset lain (`DIPINJAM`, `DALAM_PERBAIKAN`, `TIDAK_TERSEDIA`) tidak pernah ditimpa; idempoten (`JOB-03`), ringkasan `JOB-05` |
+| `PR-02-38` | Bulk import aset CSV/XLSX + template + laporan per baris *(gap closure audit 7 Oktober)* | L | L | 11, 15, Ph00, PR-01-17; kontrak PRD/SDD sebelum kode | `FR-04.1` AC 3, `IMPT-01` … `IMPT-05`, `IMP-02`, `AL-01`, `SEC-T-01` | Owner **Backend M-04**, QA/Data, Frontend P-17: import file dengan validasi per baris, jalur >200 asinkron/idempotensi sesuai IMPT, 500 baris ≤60 detik, laporan dan template dapat diunduh. Bila perlu skema baru, PR migration dipisah sesuai BRANCHING §5. **Blocker closure Phase 02** |
+| `PR-02-39` | P-20 + PDF berita acara mutasi *(gap closure audit 7 Oktober; cakupan dipilih produk 8 Oktober)* | L | L | 14; PR-03-02 (#121), PR-03-04 (#124); pendahulu terpisah skema 0042 dan patch dependency; kontrak PRD/SDD sebelum kode | `FR-04.4` AC 3, `SDD-FS-12`, `NFR-C-07` | Owner **Backend M-04**, Frontend P-20, QA: satu PDF 1.7 A4 per operasi 1–50 aset dengan snapshot tetap; status/unduh privat 15 menit, permission khusus tiga role dan audit. Mutasi gagal tidak menghasilkan berita acara; PDF gagal mempertahankan mutasi yang commit. **Blocker closure Phase 02** sampai review/merge/QA |
 
 ## 8. Task Breakdown
 
@@ -165,45 +167,63 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 - [x] Catat di log phase-02: menonaktifkan 2FA sendiri bagi role opsional (`TWO_FA_DISABLED`) **bukan** bagian PR ini dan masih tanpa PR pemilik
 
 ### `PR-02-02` — Login & sesi
-- [ ] Ed25519 keypair + `kid` pada header JWT (`SDD-SESS-03`)
-- [ ] Refresh token opaque tersimpan ter-hash di PostgreSQL (`SDD-SESS-03`, `SDD-SESS-04`)
-- [ ] Rotasi setiap pemakaian; simpan `family_id` dan `parent_id`
-- [ ] Deteksi pemakaian ulang → cabut seluruh rantai + alarm (`SDD-SESS-05`)
-- [ ] Uji: token lama pasca-rotasi ditolak dan mencabut rantai
+- [x] Ed25519 keypair + `kid` pada header JWT (`SDD-SESS-03`)
+- [x] Refresh token opaque tersimpan ter-hash di PostgreSQL (`SDD-SESS-03`, `SDD-SESS-04`)
+- [x] Rotasi setiap pemakaian; simpan `family_id` dan `parent_id`
+- [x] Deteksi pemakaian ulang → cabut seluruh rantai + alarm (`SDD-SESS-05`)
+- [x] Uji: token lama pasca-rotasi ditolak dan mencabut rantai
 
 ### `PR-02-16` / `PR-02-17` — Ketersediaan
-- [ ] `CREATE EXTENSION btree_gist` (sudah di Phase 00; verifikasi ulang)
-- [ ] `booking_slots` dengan `slot_range tstzrange` setengah terbuka `[mulai, selesai)` (`SDD-AVL-01`)
-- [ ] Exclusion constraint parsial pada status `Tentative`/`Confirmed`/`Active`
-- [ ] Petakan `SQLSTATE 23P01` → HTTP 409 `SLOT_CONFLICT` (`SDD-AVL-05`)
-- [ ] Urutkan penguncian menurut `asset_id` menaik untuk menghindari deadlock (`SDD-AVL-06`)
-- [ ] Uji beban: 100 permintaan serentak pada slot yang sama
+- [x] `CREATE EXTENSION btree_gist` (sudah di Phase 00; verifikasi ulang)
+- [x] `booking_slots` dengan `slot_range tstzrange` setengah terbuka `[mulai, selesai)` (`SDD-AVL-01`)
+- [x] Exclusion constraint parsial pada status `Tentative`/`Confirmed`/`Active`
+- [x] Petakan `SQLSTATE 23P01` → HTTP 409 `SLOT_CONFLICT` (`SDD-AVL-05`)
+- [x] Urutkan penguncian menurut `asset_id` menaik untuk menghindari deadlock (`SDD-AVL-06`)
+- [x] Uji beban: 100 permintaan serentak pada slot yang sama
 
 > Phase ini hanya membangun **mesin** ketersediaan. Konsumen pertamanya adalah M-07 di Phase 03. Membangunnya di sini disengaja: ia menentukan bentuk skema dan tidak boleh disisipkan setelah reservasi berjalan.
 
 ### `PR-02-21` — First-responder-wins
-- [ ] UPDATE bersyarat `WHERE keputusan IS NULL` (`SDD-APR-07`)
-- [ ] 1 baris terpengaruh → menang (200); 0 baris → kalah (409 `APPROVAL_ALREADY_DECIDED`)
-- [ ] Terbitkan event hanya di jalur yang menang
-- [ ] Uji konkurensi dua approver pada langkah yang sama
+- [x] UPDATE bersyarat `WHERE keputusan IS NULL` (`SDD-APR-07`)
+- [x] 1 baris terpengaruh → menang (200); 0 baris → kalah (409 `APPROVAL_ALREADY_DECIDED`)
+- [x] Terbitkan event hanya di jalur yang menang
+- [x] Uji konkurensi dua approver pada langkah yang sama
 
 ### `PR-02-25` — Skema notifikasi + penerbitan
-- [ ] Pasang notifikasi milik M-02 yang **tertunda dari Phase 01** (keputusan 32 log phase-01): `NT-48` (penolakan mengaktifkan/membuat akun siswa tanpa `consent_guardian_at`, `DP-02`) dan `NT-40` (role/status akun berubah) — keduanya belum terbit sejak `PR-01-02`/`PR-01-14` karena modul notifikasi belum ada
-- [ ] `NT-48` **tidak dapat** terbit dari transaksi yang ditolak (rollback membuang outbox, `SDD-EVT-04`): terbitkan pada transaksi terpisah setelah penolakan, dan tambahkan event-nya ke katalog `SDD-07 §4.3`
-- [ ] Konsumen `ApprovalSlaBreached` (keputusan 75, event terbit sejak `PR-02-22`): baca payload lewat `ApprovalSlaBreachedPayloadSchema` (m10 `index.ts`) — payload tak sah = galat handler (dead letter + alarm), bukan diabaikan; `tindakan` → kode lewat `NOTIFIKASI_TINDAKAN_SLA`: `REMIND` → `NT-06` (pemutus sah langkah + Petugas Sarpras), `ESCALATE` → `NT-07` (`eskalasi_ke`), `EXHAUSTED` → `NT-47` (Administrator + Petugas Sarpras). Konsumen `ApprovalFallbackRouted` → `NT-47`
-- [ ] `dedupe_key` kejadian tunggal berbasis id event (`SDD-08 §4.1`, keputusan 75): uji — handler yang diproses ulang atas event yang sama TIDAK menambah notifikasi; `NT-06` tetap berkunci harian
-- [ ] Konsumen `ApprovalDecided` (`NT-02`…`NT-05`) dengan penerima dari M-10 `penerimaNotifikasi` dan rincian dari registri `penyediaRincian` (keputusan 78)
-- [ ] `NT-40`: event `UserAccountChanged` saat role/status akun berubah (keputusan 78)
+- [x] Pasang notifikasi milik M-02 yang **tertunda dari Phase 01** (keputusan 32 log phase-01): `NT-48` (penolakan mengaktifkan/membuat akun siswa tanpa `consent_guardian_at`, `DP-02`) dan `NT-40` (role/status akun berubah) — keduanya belum terbit sejak `PR-01-02`/`PR-01-14` karena modul notifikasi belum ada
+- [x] `NT-48` **tidak dapat** terbit dari transaksi yang ditolak (rollback membuang outbox, `SDD-EVT-04`): terbitkan pada transaksi terpisah setelah penolakan, dan tambahkan event-nya ke katalog `SDD-07 §4.3`
+- [x] Konsumen `ApprovalSlaBreached` (keputusan 75, event terbit sejak `PR-02-22`): baca payload lewat `ApprovalSlaBreachedPayloadSchema` (m10 `index.ts`) — payload tak sah = galat handler (dead letter + alarm), bukan diabaikan; `tindakan` → kode lewat `NOTIFIKASI_TINDAKAN_SLA`: `REMIND` → `NT-06` (pemutus sah langkah + Petugas Sarpras), `ESCALATE` → `NT-07` (`eskalasi_ke`), `EXHAUSTED` → `NT-47` (Administrator + Petugas Sarpras). Konsumen `ApprovalFallbackRouted` → `NT-47`
+- [x] `dedupe_key` kejadian tunggal berbasis id event (`SDD-08 §4.1`, keputusan 75): uji — handler yang diproses ulang atas event yang sama TIDAK menambah notifikasi; `NT-06` tetap berkunci harian
+- [x] Konsumen `ApprovalDecided` (`NT-02`…`NT-05`) dengan penerima dari M-10 `penerimaNotifikasi` dan rincian dari registri `penyediaRincian` (keputusan 78)
+- [x] `NT-40`: event `UserAccountChanged` saat role/status akun berubah (keputusan 78)
 - [x] `NT-52` (impor pengguna > 200 baris selesai, `IMPT-04`): pasang konsumen event `UserImportCompleted` — event-nya **sudah terbit sejak `PR-01-17`** (payload `job_id`, `oleh`; isi pesan dibaca dari `user_import_jobs`), hanya konsumennya yang belum ada (keputusan 33 log phase-01)
 
 ### `PR-02-29` — Dashboard
-- [ ] Kartu dideklarasikan bersama permission yang diwajibkannya
-- [ ] Penyaringan di server: data kartu terlarang **tidak dikirim**, bukan disembunyikan CSS (`PM-03`)
-- [ ] Agregat berat memakai kueri ringkasan, bukan N+1 (`SDD-PERF-03`)
+- [x] Kartu dideklarasikan bersama permission yang diwajibkannya
+- [x] Penyaringan di server: data kartu terlarang **tidak dikirim**, bukan disembunyikan CSS (`PM-03`)
+- [x] Agregat berat memakai kueri ringkasan, bukan N+1 (`SDD-PERF-03`)
+
+### `PR-02-38` — Bulk import aset
+- [x] Backend M-04 + produk menetapkan kontrak endpoint/persistensi pada PRD/SDD dahulu; pendahulu migration 0041 disiapkan pada cabang terpisah (8 Oktober 2026; masuk develop lewat #131)
+- [x] Template Lampiran E.5.1 dan pipeline CSV/XLSX sesuai IMPT, laporan galat per nomor baris; bukti lokal `asset-import.test.ts` dan `m04-assets-import.test.ts`
+- [x] Jalur worker/outbox/idempotensi untuk >200 baris, AL-01 dan otorisasi penolakan; 500 baris valid lewat PostgreSQL 18 + Redis 7/BullMQ = 4,28 detik (lokal)
+- [x] Frontend P-17 menyediakan unggah/template/laporan, polling dan berkas koreksi; sembilan uji halaman termasuk axe lulus lokal
+- [x] PR/CI/tinjauan migration sebelum merge — #131 (approve pada head `f26d8bd`, keputusan 64) dan #133 ke develop (`7c8878b`)
+- [ ] QA membuktikan pada staging, termasuk push perangkat nyata. [Draf dan batas bukti](../reviews/PR-02-38.md)
+
+### `PR-02-39` — PDF berita acara mutasi
+- [x] Kontrak PRD/SDD ditetapkan sebelum kode: snapshot per operasi, `asset_movement_document.view` hanya R-01/R-02/R-03 bawaan, status/URL 15 menit diaudit; migration 0042 dan patch dependency disiapkan terpisah
+- [x] Asset_movements dihubungkan ke operasi, outbox/BullMQ/worker menggunakan Chromium dan storage privat yang tersedia; retry/konkurensi/persistensi mutasi saat PDF gagal diuji lokal
+- [x] PDF 1.7 A4 memuat asal/tujuan/tanggal/pelaku/alasan/identitas; 50 aset menghasilkan empat halaman melalui worker nyata. P-20 menyediakan form 1–50 aset, status dan unduh; uji aksesibilitas dan browser desktop/mobile lokal lulus
+- [x] PR/CI/tinjauan arsitek sebelum merge — migration #136 (approve pada head `85bfae5`, keputusan 64), fitur lewat PR penerus #138 (`8efa83d`, 9 Oktober)
+- [ ] QA membuktikan isi, penolakan akses, mutasi gagal dan unduh pada staging. [Draf dan batas bukti](../reviews/PR-02-39.md)
+
+Gap scope tambahan **GAP-02-MOVE-SLOT** (booking_slots pada tanggal mutasi), **GAP-02-STATUS-WRITERS** (uji invariant penulis status), layar/peramban/FCM, owner dan dependency ada di [audit §6](../audits/closure-phase-00-02-2026-10-07.md#6-gap-task-owner-dependency-dan-bukti-penutupan).
+
 
 ## 9. Acceptance Checklist
 
-- [ ] Seluruh AC pada `FR-01.1`…`FR-01.6`, `FR-04.1`…`FR-04.5`, `FR-10.1`…`FR-10.3`, `FR-15.1`, `FR-17.1`…`FR-17.3` terverifikasi — *59 dari 77 terbukti, 13 sebagian, 5 ditunda ([log §9.2](../logs/phase-02.md))*
+- [ ] Seluruh AC pada `FR-01.1`…`FR-01.6`, `FR-04.1`…`FR-04.5`, `FR-10.1`…`FR-10.3`, `FR-15.1`, `FR-17.1`…`FR-17.3` terverifikasi — *audit 7 Oktober: 56 terbukti teknis, 14 sebagian, 3 gap, 4 deferred ([log §9.2](../logs/phase-02.md)); QR unik sudah terbukti, mobile/API dan render dashboard dinilai terpisah*
 - [x] Uji konkurensi `CI-02` lulus: 100 permintaan serentak → tepat satu slot terbentuk
 - [x] Uji konkurensi approval lulus: dua approver → satu menang, satu 409
 - [x] Uji otorisasi tergenerate mencakup **100%** route terdaftar (`SEC-T-01`)
@@ -238,9 +258,9 @@ Tidak ada milestone yang tertutup di sini. `M1` masih menunggu M-05 (Phase 03); 
 **Tambahan khusus phase ini:**
 
 - [x] Uji konkurensi ketersediaan **dan** approval keduanya berjalan di CI, bukan sekali manual
-- [ ] Prosedur break-glass sudah **dilatih**, bukan hanya ditulis (`FR-01.6`) — *ditunda ke DR drill Phase 08 ([log §9.3](../logs/phase-02.md))*
+- [ ] Prosedur break-glass sudah **dilatih**, bukan hanya ditulis (`FR-01.6`) — **Deferred PR-08-08**, owner operator/DevOps/QA, setelah staging + PR-08-07; bukti latihan manusia/alarm/log/sesi/pemulihan dua admin wajib. Bukan blocker closure Phase 02, tetap menahan Phase 08/GL-06 ([audit §6](../audits/closure-phase-00-02-2026-10-07.md#6-gap-task-owner-dependency-dan-bukti-penutupan))
 - [x] `TBD-APR-A`, `TBD-APR-B`, `TBD-APR-C`, `TBD-NTF-B` tertutup di [TBD-REGISTER](../../SDD/TBD-REGISTER.md)
-- [ ] Log phase terisi
+- [x] Log phase terisi — direkonsiliasi audit 7 Oktober 2026
 
 ---
 

@@ -14,14 +14,14 @@ Urutan phase dan graf dependensinya ada di [`ROADMAP.md`](ROADMAP.md) dan tidak 
 |:---:|:---:|:---:|---|---|
 | 00 | — | 18 | M | Tidak ada modul fungsional; seluruhnya kerangka |
 | 01 | 4 | 18 | S–M | Paralelisme tertinggi — empat modul saling bebas setelah middleware otorisasi `PR-01-15`; `PR-01-17` baru — impor asinkron dipisah dari `PR-01-03` (keputusan 19, log phase-01) |
-| 02 | 5 | 35 | M–L | **Phase terbesar.** Menanam tiga tulang punggung sekaligus |
+| 02 | 5 | 37 | M–L | **Phase terbesar.** Menanam tiga tulang punggung sekaligus |
 | 03 | 6 | 26 | M | Enam modul bebas satu sama lain |
 | 04 | 3 | 14 | M | Sebagian besar memakai ulang abstraksi Phase 02 |
 | 05 | 3 | 26 | M–L | Menutup dua milestone; menampung seluruh domain Bahan |
 | 06 | 1 | 10 | M–L | Satu modul, ketergantungan baca ke seluruh sistem |
 | 07 | — | 14 | M | Integrasi & UAT; banyak aktivitas non-PR |
 | 08 | — | 16 | S–M | Pengerasan; banyak aktivitas non-PR |
-| **Total** | **22** | **177** | | |
+| **Total** | **22** | **179** | | |
 
 Skala kompleksitas PR mengikuti [`templates/PHASE-TEMPLATE.md`](templates/PHASE-TEMPLATE.md): **S** ≤ 200 baris berubah · **M** ≤ 400 · **L** > 400 dan wajib disertai alasan di deskripsi PR. Sejak 7 September 2026 §7 tiap phase memisahkannya menjadi **dua kolom** — `Kode` untuk baris kode produksi, `Uji` untuk baris uji. Kolom **Kompleksitas dominan** pada tabel di atas mengacu pada `Kode`.
 
@@ -84,6 +84,8 @@ Rantai yang panjangnya menentukan tanggal go-live. Menambah orang **tidak** memp
 **Titik verifikasi.** Langkah 7 dan 8 adalah tempat kesalahan desain Phase 02 muncul. Bila `PR-04-01` menuntut perubahan pada `SlotService`, itu bukan kerja kecil — itu tanda abstraksi Phase 02 kurang umum, dan perubahannya wajib melalui tinjauan arsitek sebelum ditulis.
 
 **Cadangan waktu.** PRD tidak menetapkan tanggal, jadi dokumen ini pun tidak. Yang ditetapkan di sini: cadangan waktu ditempatkan **sebelum** langkah 4–6 dan sebelum langkah 10, bukan disebar rata. Ketiga langkah tulang punggung dan migrasi produksi adalah tempat ketidakpastian sesungguhnya berada.
+
+Audit closure 7 Oktober 2026 menambahkan **PR-02-38** bulk import aset dan **PR-02-39** PDF mutasi. [Gap task, owner jalur dan dependency](audits/closure-phase-00-02-2026-10-07.md#6-gap-task-owner-dependency-dan-bukti-penutupan) menutup pekerjaan yang belum termodelkan; deferred mobile mengikuti titik sinkronisasi akhir Phase 05, preventif PR-04-07 dan drill PR-08-08.
 
 ## 4. Jalur kerja paralel
 
