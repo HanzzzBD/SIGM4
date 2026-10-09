@@ -127,6 +127,16 @@ describe("P-68 Approval Rules", () => {
         await router.navigate({ to: "/approval-rules/$id", params: { id: "abc" } });
         await waitFor(() => expect(router.state.location.pathname).toBe("/tidak-ditemukan"));
     });
+
+    it("id aturan dua digit atau lebih membuka editor; awalan nol & campuran tetap P-11 (regresi regex P-69)", async () => {
+        server(IZIN_ADMIN, (p) => (p.url === "/approval-rules" && p.method === "GET" ? sukses([...DAFTAR, aturan(12, "PENGADAAN_BARANG", 70)]) : undefined));
+        const { router } = await renderAplikasi("/approval-rules/12");
+        expect(router.state.location.pathname).toBe("/approval-rules/12");
+        for (const id of ["012", "1d", "12a"]) {
+            await router.navigate({ to: "/approval-rules/$id", params: { id } });
+            await waitFor(() => expect(router.state.location.pathname).toBe("/tidak-ditemukan"));
+        }
+    });
 });
 
 describe("P-69 Editor Approval Rule", () => {
