@@ -157,6 +157,7 @@ NFR-SC-01 mewajibkan API *stateless* multi-instance, sementara Bab 12.4 mendefin
 | Waktu (WIB) | Pekerjaan | Fungsi |
 |---|---|---|
 | Setiap 5 menit | `slot-activation` | Menetapkan `assets.status = Direservasi` saat slot `Confirmed` mulai berlaku, dan mengembalikannya ke `Tersedia` saat slot berakhir tanpa serah terima; reservasi ruangan `Disetujui` → `Berlangsung` (slot `Active`) saat waktu mulai dan `Berlangsung` → `Selesai` saat waktu selesai, induk berulang `Selesai` begitu seluruh tanggalnya berakhir (FR-07.4) |
+| Setiap hari 00:30 | `fixed-schedule-materialize` | Memperpanjang horizon bergulir slot jadwal tetap aktif dan melepas kemunculan mendatang yang kini jatuh pada hari libur; kemunculan yang beririsan slot lain dilewati, tidak pernah membatalkan (FR-07.5 langkah 4, A4) |
 | Setiap 15 menit | `tentative-slot-expiry` | Membebaskan slot `Tentative` yang melewati `expires_at` (BR-023b) |
 | Setiap 30 menit | `approval-sla-check` | Mengirim pengingat SLA dan menjalankan eskalasi (FR-10.2 A2) |
 | Setiap hari 01:30 | `notification-archive` | Memindahkan notifikasi berusia > 90 hari ke `notifications_archive` per batch 5.000 baris (FR-17.1 A2); idempoten (JOB-03) |

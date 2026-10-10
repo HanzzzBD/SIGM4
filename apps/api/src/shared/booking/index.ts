@@ -7,6 +7,7 @@ export type {
     PesanSlot,
     RentangWaktu,
     RujukanSlot,
+    SlotBlokade,
     SlotReservasi,
     SlotRow,
     SlotTerpakai,
@@ -14,4 +15,4 @@ export type {
     StatusSlot,
     SumberDaya,
 } from "./slot-service.js";
-export { BATCH_KEDALUWARSA, EVENT_SLOT_TENTATIF_KEDALUWARSA, SlotService, adaSlotAsetTerkonfirmasi, daftarSlotTerpakai, slotMilikReservasi } from "./slot-service.js";
+export { BATCH_KEDALUWARSA, EVENT_SLOT_TENTATIF_KEDALUWARSA, SlotService, adaSlotAsetTerkonfirmasi, daftarSlotTerpakai, slotMilikBlokade, slotMilikReservasi } from "./slot-service.js";

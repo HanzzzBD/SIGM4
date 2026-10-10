@@ -429,7 +429,7 @@ Komponen paling kompleks di sistem (`SDD-FE-06`).
 | **Konten** | Kepala baris: nama ruangan, kapasitas, gedung. Sel: label kegiatan + lencana keadaan | `FR-07.1` |
 | **Lima keadaan slot** | Kosong · Menunggu Persetujuan · Disetujui · Jadwal Tetap (dengan label) · Dalam Pemeliharaan / Libur — dibedakan warna **dan** pola **dan** teks | `CAL-UI-05` · `NFR-AC-06` |
 | **Aksi utama** | Klik slot kosong membuka wizard pengajuan dengan slot terisi otomatis | `CAL-UI-03` |
-| **Aksi sekunder** | *Drag-select* lintas slot berdampingan (desktop) · ketuk-dan-geser (mobile) · Kelola Jadwal Tetap 🔒 (`reservation.fixed_schedule`) · Blokade Manual 🔒 | `CAL-UI-03` · `FR-07.5` |
+| **Aksi sekunder** | *Drag-select* lintas slot berdampingan (desktop) · ketuk-dan-geser (mobile) · Kelola Jadwal Tetap 🔒 (`reservation.fixed_schedule`) · Blokade Manual 🔒 — satu panel di atas kalender (keadaannya di URL P-27: `kelola`, `ruang`): daftar aturan & blokade ruangan, Nonaktifkan berkonfirmasi, formulir yang selalu diperiksa server dulu (libur dilewati, bentrok blokade lain = sesuaikan, bentrok reservasi = pilihan eksplisit "Batalkan reservasi tersebut" beralasan atau "Sesuaikan blokade", alur F-11) | `CAL-UI-03` · `FR-07.5` |
 | **Filter** | Gedung, jenis ruangan, kapasitas minimum | `FR-07.1` langkah 3 |
 | **Performa** | Baris divirtualisasi; hanya baris dalam viewport dirender; target ≤ 2 detik untuk 30 ruangan × 1 bulan | `CAL-UI-04` · `FR-07.1 AC` |
 | **Kesegaran data** | Tidak boleh di-*cache*; dimuat ulang saat jendela kembali fokus | `AV-04` · `UXP-04` |

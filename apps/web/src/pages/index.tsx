@@ -10,7 +10,7 @@ import type { AlasanLogin } from "../modules/m01-auth";
 import { muatApprovalRulesPage, muatEditorAturanPage } from "../modules/m10-approval";
 import { muatDashboardPage } from "../modules/m15-dashboard";
 import { loadAssetImportPage, loadAssetMovementPage } from "../modules/m04-assets";
-import { loadReservationDetailPage, loadReservationListPage, loadReservationWizardPage, loadRoomCalendarPage } from "../modules/m07-reservation-room";
+import { loadReservationDetailPage, loadReservationListPage, loadReservationWizardPage, loadRoomBlocksPanel, loadRoomCalendarPage } from "../modules/m07-reservation-room";
 import type { IsianWizard, PencarianDaftar, PencarianKalender, PilihanSlot, ReservasiSlot } from "../modules/m07-reservation-room";
 import type { ReservationDetail, RoomReservationCreated } from "@sigm4/schemas";
 import type { Rentang } from "../modules/m15-dashboard";
@@ -42,6 +42,7 @@ const RoomCalendarPage = lazy(loadRoomCalendarPage);
 const ReservationWizardPage = lazy(loadReservationWizardPage);
 const ReservationListPage = lazy(loadReservationListPage);
 const ReservationDetailPage = lazy(loadReservationDetailPage);
+const RoomBlocksPanel = lazy(loadRoomBlocksPanel);
 /** P-27 (FR-07.1). `aksiPilihan` = jalan ke wizard P-29 bagi pemegang `reservation.create` (PR-03-10). */
 export const HalamanKalenderRuangan = (props: {
     readonly pencarian: PencarianKalender;
@@ -49,8 +50,13 @@ export const HalamanKalenderRuangan = (props: {
     readonly aksiPilihan?: ((p: PilihanSlot) => ReactNode) | undefined;
     /** UX §7.6.1: slot terisi → P-31 bila berhak (PR-03-27). */
     readonly tautanReservasi?: ((r: ReservasiSlot) => ReactNode) | undefined;
+    /** Aksi sekunder P-27 + panelnya (FR-07.5, PR-03-13) — dirender di atas kalender. */
+    readonly aksiSekunder?: ReactNode;
+    readonly panel?: ReactNode;
 }) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat kalender ruangan" baris={6} />}>
+        {props.aksiSekunder !== undefined && <div className="mb-4 flex justify-end">{props.aksiSekunder}</div>}
+        {props.panel !== undefined && <div className="mb-6">{props.panel}</div>}
         <RoomCalendarPage
             pencarian={props.pencarian}
             onPencarian={props.onPencarian}
@@ -63,6 +69,12 @@ export const HalamanKalenderRuangan = (props: {
 export const HalamanWizardReservasi = (props: { readonly isianAwal: IsianWizard; readonly onBatal: () => void; readonly onKalender: (tanggal: string) => void; readonly onTerbentuk?: (h: RoomReservationCreated) => void }) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat formulir reservasi" baris={6} />}>
         <ReservationWizardPage {...props} />
+    </Suspense>
+);
+/** Panel blokade ruangan — aksi sekunder P-27 (FR-07.5, PR-03-13). */
+export const HalamanPanelBlokade = (props: { readonly roomId: string | null; readonly onRuangan: (id: string) => void; readonly onTutup: () => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat blokade ruangan" baris={4} />}>
+        <RoomBlocksPanel {...props} />
     </Suspense>
 );
 /** P-30 Daftar Reservasi (FR-07.3, UX §7.4; PR-03-27). */

@@ -566,6 +566,37 @@ export interface BookingSlotsTable {
     expires_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
     created_by: ColumnType<string | null, string | number | null | undefined, string | number | null>;
     created_at: Generated<Date>;
+    /** Sumber blokade (0047, PR-03-13; FR-07.5). */
+    fixed_schedule_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    manual_block_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+}
+
+/** Bab 11.3 "Status Blokade Ruangan" (0047). */
+export type StatusBlokadeRuangan = "AKTIF" | "NONAKTIF";
+
+/** `room_fixed_schedules` (0047; FR-07.5 langkah 2) — aturan mingguan, satu hari per baris. */
+export interface RoomFixedSchedulesTable extends KolomBaku {
+    id: Generated<string>;
+    room_id: ColumnType<string, string | number, string | number>;
+    hari: number;
+    /** `HH:MM:SS` (tipe `time`). */
+    jam_mulai: string;
+    jam_selesai: string;
+    label_kegiatan: string;
+    /** `date` — repository membacanya lewat `to_char(…, 'YYYY-MM-DD')` (pola `holidays`), bukan objek `Date`. */
+    berlaku_mulai: ColumnType<string, string, string>;
+    berlaku_sampai: ColumnType<string, string, string>;
+    status: ColumnType<StatusBlokadeRuangan, StatusBlokadeRuangan | undefined, StatusBlokadeRuangan>;
+}
+
+/** `room_manual_blocks` (0047; FR-07.5 langkah 3) — satu rentang menerus = satu slot. */
+export interface RoomManualBlocksTable extends KolomBaku {
+    id: Generated<string>;
+    room_id: ColumnType<string, string | number, string | number>;
+    mulai: Date;
+    selesai: Date;
+    label_kegiatan: string;
+    status: ColumnType<StatusBlokadeRuangan, StatusBlokadeRuangan | undefined, StatusBlokadeRuangan>;
 }
 
 /**
@@ -842,6 +873,8 @@ export interface Database {
     asset_movement_documents: AssetMovementDocumentsTable;
     booking_slots: BookingSlotsTable;
     reservations: ReservationsTable;
+    room_fixed_schedules: RoomFixedSchedulesTable;
+    room_manual_blocks: RoomManualBlocksTable;
     approval_rules: ApprovalRulesTable;
     approval_rule_steps: ApprovalRuleStepsTable;
     approval_instances: ApprovalInstancesTable;

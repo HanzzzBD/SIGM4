@@ -5,7 +5,7 @@
 # Indeks Aksi Activity Log
 
 > Setiap aksi dimiliki modul penerbitnya. Prinsip pencatatan di `../03-architecture/activity-log.md`.
-> Total: **87** baris, dikumpulkan dari 22 berkas modul.
+> Total: **88** baris, dikumpulkan dari 22 berkas modul.
 
 | Aksi | Keterangan | Pemilik |
 |---|---|---|
@@ -76,6 +76,7 @@
 | `REPORT_EXPORTED` | Ekspor laporan beserta jenis dan filter | [M-16](../02-modules/m16-analytics.md) |
 | `RESERVATION_CREATED` / `RESERVATION_UPDATED` / `RESERVATION_CANCELLED` / `RESERVATION_EXPIRED` | Termasuk alasan pembatalan | [M-07](../02-modules/m07-reservation-room.md) |
 | `ROLE_PERMISSION_UPDATED` | Perubahan matriks permission | [M-02](../02-modules/m02-users.md) |
+| `ROOM_BLOCK_CREATED` / `ROOM_BLOCK_DEACTIVATED` / `ROOM_BLOCK_SYNCED` | Blokade jadwal tetap & manual (FR-07.5): pembuatan (termasuk reservasi yang dibatalkan karenanya), penonaktifan (jumlah slot dilepas), dan materialisasi horizon oleh job (slot dibuat, dilepas karena libur, kemunculan bentrok) | [M-07](../02-modules/m07-reservation-room.md) |
 | `SCHEDULED_JOB_EXECUTED` | Ringkasan satu eksekusi pekerjaan terjadwal (`JOB-05`): nama pekerjaan, waktu mulai/selesai, jumlah record diproses, jumlah galat; pelaku `SYSTEM` (`AL-06`); hasil `gagal` bila pekerjaan itu sendiri gagal (`AL-07`) | [M-18](../02-modules/m18-activity-log.md) |
 | `SETTING_UPDATED` | Perubahan parameter sistem beserta nilai lama/baru | [M-20](../02-modules/m20-settings.md) |
 | `STUDENT_ENROLLMENT_SET` | Kelas siswa pada suatu tahun ajaran ditetapkan atau diubah (`SL-01`, `SL-02`), nilai lama/baru | [M-02](../02-modules/m02-users.md) |

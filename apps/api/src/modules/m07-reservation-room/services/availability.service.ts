@@ -10,6 +10,7 @@ import type { SlotTerpakai } from "../../../shared/booking/index.js";
 import type { BusinessCalendarService } from "../../../shared/calendar/index.js";
 import type { Database } from "../../../shared/db/index.js";
 import { createAvailabilityRepository } from "../repositories/availability.repository.js";
+import { createBlockRepository } from "../repositories/block.repository.js";
 import type { FilterRuangan, ReservasiRingkasRow } from "../repositories/availability.repository.js";
 
 /** CAL-03 / CAL-UI-09: batas hari WIB (UTC+7, tanpa DST). */
@@ -44,6 +45,12 @@ export class AvailabilityService {
         const terbatas = ctx.scopeOf("reservation.view") === "restricted";
         const ids = slot.flatMap((s) => (s.reservation_id === null ? [] : [s.reservation_id]));
         const rincian = new Map<string, ReservasiRingkasRow>((await repo.ringkasReservasi(ctx, ids, terbatas ? ctx.userId : undefined)).map((r) => [r.id, r]));
+        // FR-07.1 A4 (PR-03-13): label kegiatan blokade jadwal tetap/manual — bukan data pribadi, tampil bagi semua.
+        const labelBlokade = await createBlockRepository(this.db).label(
+            ctx,
+            slot.flatMap((s) => (s.fixed_schedule_id === null ? [] : [s.fixed_schedule_id])),
+            slot.flatMap((s) => (s.manual_block_id === null ? [] : [s.manual_block_id])),
+        );
         const { hariKerja, libur } = await this.kalender.kalenderRentang(this.db, tanggalWib(p.dari), tanggalWib(new Date(p.sampai.getTime() - 1)));
         const { startMinute, endMinute } = await this.kalender.jamOperasional(this.db);
 
@@ -62,7 +69,7 @@ export class AvailabilityService {
                     mulai: s.mulai.toISOString(),
                     selesai: s.selesai.toISOString(),
                     keadaan: keadaan(s),
-                    label: v?.nama_kegiatan ?? null,
+                    label: v?.nama_kegiatan ?? (s.fixed_schedule_id !== null ? labelBlokade.get(`t${s.fixed_schedule_id}`) : s.manual_block_id !== null ? labelBlokade.get(`m${s.manual_block_id}`) : undefined) ?? null,
                     reservasi: v === undefined ? null : { id: v.id, nomor: v.nomor, pemohon: v.pemohon },
                 };
             }),

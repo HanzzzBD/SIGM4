@@ -24,3 +24,21 @@ export { CancelReservationBodySchema, KEADAAN_TANGGAL, PolaPengulanganSchema, Ro
 export type { CancelReservationBody, KeadaanTanggal, ReservationCancelled, HasilPenggunaan, RecordUsageBody, ReservationUsage, StatusReservasi, ReservationListQuery, ReservationListItem, ReservationDetail, RoomReservationBody, RoomReservationCreated, RoomReservationPreview, TanggalPengajuanRuangan } from "./reservation.js";
 export { HistoryResponseSchema } from "./approval-history.js";
 export type { LinimasaPersetujuan } from "./approval-history.js";
+export {
+    BlockDeactivatedResponseSchema,
+    BlockDeactivatedSchema,
+    BlockIdParamSchema,
+    BlockStatusBodySchema,
+    JENIS_BLOKADE,
+    RoomBlockCreateSchema,
+    RoomBlockCreatedResponseSchema,
+    RoomBlockCreatedSchema,
+    RoomBlockInputSchema,
+    RoomBlockListResponseSchema,
+    RoomBlockListSchema,
+    RoomBlockPreviewResponseSchema,
+    RoomBlockPreviewSchema,
+    RoomIdParamSchema,
+    STATUS_BLOKADE,
+} from "./room-blocks.js";
+export type { BlockDeactivated, JenisBlokade, RoomBlockCreate, RoomBlockCreated, RoomBlockInput, RoomBlockList, RoomBlockPreview } from "./room-blocks.js";

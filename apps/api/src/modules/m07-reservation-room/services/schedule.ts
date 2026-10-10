@@ -57,7 +57,7 @@ export function tambahHari(tanggal: string, n: number): string {
     return new Date(Date.parse(`${tanggal}T00:00:00Z`) + n * HARI_MS).toISOString().slice(0, 10);
 }
 
-function hariIso(tanggal: string): number {
+export function hariIso(tanggal: string): number {
     const h = new Date(`${tanggal}T00:00:00Z`).getUTCDay();
     return h === 0 ? 7 : h;
 }

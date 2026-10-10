@@ -70,6 +70,7 @@ import { PEKERJAAN_PARTISI_LOG, PEKERJAAN_VERIFIKASI_LOG, jalankanPartisiLog, ja
 import { CRON_SLA, PEKERJAAN_SLA, jalankanPemeriksaanSla } from "./approval-sla-check.js";
 import { PEKERJAAN_ARSIP_NOTIFIKASI, jalankanArsipNotifikasi } from "./notification-archive.js";
 import { startOutboxPoller } from "./outbox-poller.js";
+import { PEKERJAAN_MATERIALISASI_JADWAL_TETAP, jalankanMaterialisasiJadwalTetap } from "./fixed-schedule-jobs.js";
 import { CRON_AKTIVASI_SLOT, CRON_KEDALUWARSA_SLOT, PEKERJAAN_AKTIVASI_SLOT, PEKERJAAN_KEDALUWARSA_SLOT, jalankanAktivasiSlot, jalankanKedaluwarsaSlot } from "./slot-jobs.js";
 import { PEKERJAAN_KELULUSAN, jalankanKelulusan } from "./student-graduation.js";
 import { BATAS_DRAIN_WORKER_MS, langkahHentiWorker } from "./shutdown.js";
@@ -121,6 +122,14 @@ export const registry = new JobRegistry().register(
         cron: wibCronToUtc(10, 0),
         handler: async () => {
             await jalankanKelulusan(getDb(), new SystemClock());
+        },
+    },
+    {
+        // FR-07.5 langkah 4 + A4 (PR-03-13): horizon bergulir jadwal tetap, setiap hari 00:30 WIB.
+        name: PEKERJAAN_MATERIALISASI_JADWAL_TETAP,
+        cron: wibCronToUtc(30, 0),
+        handler: async () => {
+            await jalankanMaterialisasiJadwalTetap(getDb(), new SystemClock());
         },
     },
     {

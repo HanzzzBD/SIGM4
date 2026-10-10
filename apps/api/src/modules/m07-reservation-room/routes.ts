@@ -1,6 +1,9 @@
 // Route M-07 (SDD-AUTH-01, PM-01) + perakit router modul. Katalog: m07-reservation-room.md §7.
 
 import {
+    BlockDeactivatedResponseSchema,
+    BlockIdParamSchema,
+    BlockStatusBodySchema,
     CancelReservationBodySchema,
     RecordUsageBodySchema,
     ReservationDetailResponseSchema,
@@ -10,6 +13,12 @@ import {
     ReservationListResponseSchema,
     ReservationUsageResponseSchema,
     RoomAvailabilityQuerySchema,
+    RoomBlockCreateSchema,
+    RoomBlockCreatedResponseSchema,
+    RoomBlockInputSchema,
+    RoomBlockListResponseSchema,
+    RoomBlockPreviewResponseSchema,
+    RoomIdParamSchema,
     RoomAvailabilityResponseSchema,
     RoomReservationBodySchema,
     RoomReservationCreatedResponseSchema,
@@ -28,9 +37,11 @@ import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
 import { DocumentNumberService } from "../../shared/numbering/index.js";
 import { roomAvailabilityHandler } from "./controllers/availability.controller.js";
+import { createBlockHandler, deactivateBlockHandler, listBlocksHandler, previewBlockHandler } from "./controllers/block.controller.js";
 import { cancelReservationHandler, createReservationHandler, getReservationHandler, listReservationsHandler, previewReservationHandler, recordUsageHandler } from "./controllers/reservation.controller.js";
 import { daftarkanReservasiRuangan } from "./registration.js";
 import { AvailabilityService } from "./services/availability.service.js";
+import { BlockService } from "./services/block.service.js";
 import { CancellationService } from "./services/cancellation.service.js";
 import { ReservationQueryService } from "./services/reservation-query.service.js";
 import { ReservationService } from "./services/reservation.service.js";
@@ -135,6 +146,71 @@ export const getReservationRoute = defineRoute({
     response: ReservationDetailResponseSchema,
 });
 
+/** FR-07.5 (keputusan 19): daftar jadwal tetap & blokade manual sebuah ruangan. */
+export const listBlocksRoute = defineRoute({
+    method: "GET",
+    path: "/rooms/:id/blocks",
+    permission: "reservation.fixed_schedule",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Daftar jadwal tetap & blokade manual ruangan (FR-07.5)",
+    params: RoomIdParamSchema,
+    response: RoomBlockListResponseSchema,
+});
+
+/** FR-07.5 A1/A4: kemunculan, libur yang dilewati, dan bentrok — tanpa efek. */
+export const previewBlockRoute = defineRoute({
+    method: "POST",
+    path: "/rooms/:id/blocks/preview",
+    permission: "reservation.fixed_schedule",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Pratinjau blokade ruangan: kemunculan, hari libur dilewati, reservasi & blokade yang bentrok (FR-07.5)",
+    successStatus: 200,
+    params: RoomIdParamSchema,
+    body: RoomBlockInputSchema,
+    response: RoomBlockPreviewResponseSchema,
+});
+
+/** FR-07.5 langkah 2-4 + A1: bentrok reservasi → 409 kecuali `batalkan_bentrok` eksplisit (keputusan 19c). */
+export const createBlockRoute = defineRoute({
+    method: "POST",
+    path: "/rooms/:id/blocks",
+    permission: "reservation.fixed_schedule",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Buat jadwal tetap (mingguan) atau blokade manual ruangan (FR-07.5)",
+    successStatus: 201,
+    params: RoomIdParamSchema,
+    body: RoomBlockCreateSchema,
+    response: RoomBlockCreatedResponseSchema,
+});
+
+/** FR-07.5 A3 (keputusan 19f): hanya dinonaktifkan; slot mendatang dilepas. */
+export const deactivateFixedScheduleRoute = defineRoute({
+    method: "PATCH",
+    path: "/room-fixed-schedules/:id/status",
+    permission: "reservation.fixed_schedule",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Nonaktifkan jadwal tetap ruangan; slot mendatang dilepas (FR-07.5 A3)",
+    params: BlockIdParamSchema,
+    body: BlockStatusBodySchema,
+    response: BlockDeactivatedResponseSchema,
+});
+
+export const deactivateManualBlockRoute = defineRoute({
+    method: "PATCH",
+    path: "/room-manual-blocks/:id/status",
+    permission: "reservation.fixed_schedule",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Nonaktifkan blokade manual ruangan; slot yang belum dimulai dilepas (FR-07.5 A3)",
+    params: BlockIdParamSchema,
+    body: BlockStatusBodySchema,
+    response: BlockDeactivatedResponseSchema,
+});
+
 export interface ReservationsModuleDeps {
     readonly db: Kysely<Database>;
     readonly clock: Clock;
@@ -168,7 +244,15 @@ export function reservationsRouter(
     const baca = new ReservationQueryService(deps.db, deps.clock, deps.auditLogger, approval);
     router.get(listReservationsRoute.path, batasi(listReservationsRoute), otorisasi(listReservationsRoute.permission), listReservationsHandler(baca));
     router.get(getReservationRoute.path, batasi(getReservationRoute), otorisasi(getReservationRoute.permission), getReservationHandler(baca));
-    router.post(cancelReservationRoute.path, batasi(cancelReservationRoute), otorisasi(cancelReservationRoute.permission), cancelReservationHandler(new CancellationService(deps.db, deps.clock, deps.auditLogger, approval)));
+    const pembatalan = new CancellationService(deps.db, deps.clock, deps.auditLogger, approval);
+    router.post(cancelReservationRoute.path, batasi(cancelReservationRoute), otorisasi(cancelReservationRoute.permission), cancelReservationHandler(pembatalan));
+    // FR-07.5 (PR-03-13). `/preview` sebelum pola tanpa sufiks agar tak tertangkap sebagai id.
+    const blokade = new BlockService(deps.db, deps.clock, kalender, deps.auditLogger, pembatalan);
+    router.get(listBlocksRoute.path, batasi(listBlocksRoute), otorisasi(listBlocksRoute.permission), listBlocksHandler(blokade));
+    router.post(previewBlockRoute.path, batasi(previewBlockRoute), otorisasi(previewBlockRoute.permission), previewBlockHandler(blokade));
+    router.post(createBlockRoute.path, batasi(createBlockRoute), otorisasi(createBlockRoute.permission), createBlockHandler(blokade));
+    router.patch(deactivateFixedScheduleRoute.path, batasi(deactivateFixedScheduleRoute), otorisasi(deactivateFixedScheduleRoute.permission), deactivateBlockHandler(blokade, "JADWAL_TETAP"));
+    router.patch(deactivateManualBlockRoute.path, batasi(deactivateManualBlockRoute), otorisasi(deactivateManualBlockRoute.permission), deactivateBlockHandler(blokade, "BLOKADE_MANUAL"));
     router.post(recordUsageRoute.path, batasi(recordUsageRoute), otorisasi(recordUsageRoute.permission), recordUsageHandler(new UsageService(deps.db, deps.clock, deps.auditLogger)));
     return router;
 }

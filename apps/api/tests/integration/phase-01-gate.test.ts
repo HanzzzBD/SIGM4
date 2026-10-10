@@ -436,6 +436,16 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 expect(kedua.status).toBe(201);
                 await kueri(`UPDATE reservations SET status = 'SELESAI' WHERE id = ${id(kedua)}`);
                 await langkah("POST /reservations/:id/usage", `/reservations/${id(kedua)}/usage`, { hasil: "BAIK", catatan: "Uji gerbang AL-01" }, ["RESERVATION_UPDATED"]);
+                // PR-03-13: blokade ruangan — masa berlaku di dalam tahun ajaran aktif (2041/2042, diaktifkan di atas);
+                // di luar horizon sehingga tanpa slot. Pratinjau tanpa aksi log.
+                const pola = { jenis: "JADWAL_TETAP", hari: [1], jam_mulai: "07:00", jam_selesai: "08:00", berlaku_mulai: "2041-08-01", berlaku_sampai: "2041-08-31", label_kegiatan: "KBM gerbang" };
+                await langkah("POST /rooms/:id/blocks/preview", `/rooms/${id(ruang)}/blocks/preview`, pola, []);
+                const tetap = await langkah("POST /rooms/:id/blocks", `/rooms/${id(ruang)}/blocks`, pola, ["ROOM_BLOCK_CREATED"]);
+                const idTetap = (tetap.json.data as { ids: string[] }).ids[0] ?? "";
+                await langkah("PATCH /room-fixed-schedules/:id/status", `/room-fixed-schedules/${idTetap}/status`, { status: "NONAKTIF" }, ["ROOM_BLOCK_DEACTIVATED"]);
+                const manual = await panggil(mode, "POST", `/rooms/${id(ruang)}/blocks`, { jenis: "BLOKADE_MANUAL", mulai: "2026-09-24T01:00:00.000Z", selesai: "2026-09-24T03:00:00.000Z", label_kegiatan: "Perbaikan gerbang" });
+                expect(manual.status, JSON.stringify(manual.json)).toBe(201);
+                await langkah("PATCH /room-manual-blocks/:id/status", `/room-manual-blocks/${(manual.json.data as { ids: string[] }).ids[0] ?? ""}/status`, { status: "NONAKTIF" }, ["ROOM_BLOCK_DEACTIVATED"]);
 
                 // --- M-04: aset (PR-02-11) — SEBELUM ruangan dinonaktifkan (BR-009: ruangan wajib AKTIF).
                 // PR-02-15: kategori lewat endpoint sungguhan. PUT sebelum aset dibuat (kode kategori
@@ -621,6 +631,9 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await kueri("DELETE FROM booking_slots WHERE resource_type = 'room'");
                 await kueri("DELETE FROM reservations WHERE parent_id IS NOT NULL");
                 await kueri("DELETE FROM reservations");
+                // PR-03-13: blokade menunjuk rooms dan users (slotnya sudah dihapus di atas).
+                await kueri("DELETE FROM room_fixed_schedules");
+                await kueri("DELETE FROM room_manual_blocks");
                 await kueri("DELETE FROM idempotency_keys WHERE endpoint = 'POST /reservations'");
                 await kueri("DELETE FROM rooms");
                 await kueri("DELETE FROM areas");
