@@ -556,7 +556,7 @@ Enam kelompok (**UXD-05**), dua kanal per kelompok.
 
 | Aspek | Ketentuan | Rujukan |
 |---|---|---|
-| Kelompok tidak relevan | Kelompok yang tidak menghasilkan notifikasi apa pun bagi role pengguna **tidak dirender**. Relevansi diturunkan dari **permission** `/me` (bukan role, `SDD-FE-04`) menurut kolom Penerima indeks notifikasi: Persetujuan ← `approval.decide`, `reservation.create`, `loan.extend`, `procurement.create`, `disposal.create`, `material.request` · Reservasi & Peminjaman ← `reservation.view`, `loan.view` · Denda & Kewajiban ← `fine.view` · Kerusakan & Perawatan ← `damage.create`, `damage.view`, `workorder.view` · Opname & Pengadaan ← `audit.view`, `procurement.view`, `disposal.view`, `material.request` · Akun & Sistem ← selalu | `FR-17.3` langkah 2 · keputusan 92 [log phase-02](../IMPLEMENTATION/logs/phase-02.md) |
+| Kelompok tidak relevan | Kelompok yang tidak menghasilkan notifikasi apa pun bagi role pengguna **tidak dirender** | `FR-17.3` langkah 2 |
 | Notifikasi wajib | Ditampilkan terkunci beserta penjelasan singkat mengapa tidak dapat dimatikan — bukan sekadar dinonaktifkan tanpa alasan | `FR-17.3 A1` · `UX-05` |
 | Berlaku | Seketika setelah disimpan | `FR-17.3 AC` |
 | Push bergantung in-app | Mematikan in-app suatu kelompok ikut mematikan dan menonaktifkan pengalih push-nya — tanpa notifikasi tersimpan tidak ada push | `SDD-08 §4.5` (keputusan 81) |
