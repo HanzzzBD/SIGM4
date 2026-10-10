@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **165** baris, dikumpulkan dari 22 berkas modul.
+> Total: **169** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -29,6 +29,8 @@
 | GET | `/assets/export` | `asset.export` | Ekspor XLSX/PDF | [M-04](../02-modules/m04-assets.md) |
 | GET | `/assets/import/template` | `asset.create` | Unduh template XLSX E.5.1 beserta contoh (`IMPT-05`) | [M-04](../02-modules/m04-assets.md) |
 | GET | `/assets/import/{id}` | `asset.create` | Status, hitungan baris sukses/gagal, unit dibuat, alasan dan isian asli baris gagal untuk koreksi (`IMPT-02`); hanya pengunggah | [M-04](../02-modules/m04-assets.md) |
+| GET | `/assets/movements/{id}/document/download` | `asset_movement_document.view` | URL privat PDF siap, berlaku 15 menit; setiap penerbitan diaudit | [M-04](../02-modules/m04-assets.md) |
+| GET | `/assets/movements/{id}/document` | `asset_movement_document.view` | Status dan data tetap berita acara satu operasi mutasi | [M-04](../02-modules/m04-assets.md) |
 | GET | `/assets/{id}/documents/{docId}/download` | `asset_document.view` | URL unduhan bertanda tangan | [M-06](../02-modules/m06-documents.md) |
 | GET | `/assets/{id}/documents` | `asset_document.view` | Daftar dokumen aset beserta status pemindaian (tab Dokumen, langkah 1) | [M-06](../02-modules/m06-documents.md) |
 | GET | `/assets/{id}/service-history` | `asset.view` | Riwayat servis aset | [M-12](../02-modules/m12-maintenance.md) |
@@ -150,7 +152,9 @@
 | POST | `/materials` | `material.manage` | Daftarkan bahan baru | [M-22](../02-modules/m22-materials.md) |
 | POST | `/procurements/{id}/receipts` | `procurement.receive` | Catat penerimaan & buat aset | [M-14](../02-modules/m14-procurement.md) |
 | POST | `/procurements` | `procurement.create` | Buat usulan pengadaan | [M-14](../02-modules/m14-procurement.md) |
+| POST | `/reservations/preview` | `reservation.create` | Pratinjau pengajuan tanpa menyimpan apa pun: tanggal turunan beserta yang bentrok atau tidak sah, kuota pengajuan tertunda (`BR-023a`), dan jalur persetujuan yang akan berlaku (`RE-07`) — bahan langkah Tinjau wizard (UXD-04) | [M-07](../02-modules/m07-reservation-room.md) |
 | POST | `/reservations/{id}/cancel` | `reservation.cancel_own` · `reservation.cancel_any` | Batalkan reservasi + alasan. Pemilik reservasi cukup `cancel_own`; membatalkan reservasi pihak lain wajib `cancel_any` (`FR-07.3 A2`). Kepemilikan diperiksa di server, bukan disimpulkan dari role | [M-07](../02-modules/m07-reservation-room.md) |
+| POST | `/reservations/{id}/usage` | `reservation.record_usage` | Catat penggunaan ruangan pasca-kegiatan per tanggal, sekali (`FR-07.4` langkah 3, A1): kondisi `Baik`/`Perlu Perhatian` + catatan bagi yang `Selesai`, atau `Tidak Digunakan` dari `Berlangsung`/`Selesai` — slotnya dilepas | [M-07](../02-modules/m07-reservation-room.md) |
 | POST | `/reservations` | `reservation.create` | Ajukan reservasi ruangan/aset | [M-07](../02-modules/m07-reservation-room.md) |
 | POST | `/users/import` | `user.create` | Impor massal CSV/XLSX: ≤ 200 baris diproses sinkron, lebih dari itu asinkron (`IMPT-04`); berkas identik dalam 24 jam mengembalikan hasil sebelumnya (`IMPT-03`) | [M-02](../02-modules/m02-users.md) |
 | POST | `/users/{id}/2fa-activation-code` | `user.reset_2fa` | Terbitkan kode aktivasi 2FA bagi akun role wajib yang belum ber-2FA (`FR-01.5 A7`, `BR-070d`); `metode_verifikasi` wajib; kode tampil satu kali; tidak untuk akun sendiri | [M-02](../02-modules/m02-users.md) |

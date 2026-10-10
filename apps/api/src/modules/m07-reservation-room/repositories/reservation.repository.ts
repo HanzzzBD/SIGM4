@@ -6,7 +6,7 @@ import { sql } from "kysely";
 import type { AuthContext } from "../../../shared/auth/index.js";
 import { pelakuId } from "../../../shared/auth/index.js";
 import { BaseRepository, defineRepository } from "../../../shared/db/index.js";
-import type { QueryExecutor, StatusReservasi } from "../../../shared/db/index.js";
+import type { KondisiRuanganPasca, QueryExecutor, StatusReservasi } from "../../../shared/db/index.js";
 
 export interface ReservasiRuanganBaru {
     readonly nomor: string;
@@ -159,6 +159,65 @@ export class ReservationRepository extends BaseRepository {
             .returning("id")
             .execute();
         return baris.map((b) => b.id);
+    }
+
+    /**
+     * FR-07.4 langkah 1-2 (job `slot-activation`): baris PEMEGANG SLOT ruangan (turunan, atau tunggal tanpa
+     * turunan) berstatus `dari` yang `kolom`-nya sudah lewat. `SKIP LOCKED` terurut id: baris yang sedang
+     * dikunci pembatalan/pencatatan dilewati putaran ini, bukan ditunggu — job tak pernah membentuk siklus kunci.
+     */
+    async kunciJatuhTempo(ctx: AuthContext, dari: StatusReservasi, kolom: "waktu_mulai" | "waktu_selesai", waktu: Date, batas: number): Promise<readonly { id: string; nomor: string }[]> {
+        return this.query(ctx)
+            .selectFrom("reservations as v")
+            .select(["v.id", "v.nomor"])
+            .where("v.jenis", "=", "RUANGAN")
+            .where("v.status", "=", dari)
+            .where(`v.${kolom}`, "<=", waktu)
+            .where((eb) => eb.or([eb("v.parent_id", "is not", null), eb.not(eb.exists(eb.selectFrom("reservations as t").select("t.id").whereRef("t.parent_id", "=", "v.id")))]))
+            .orderBy("v.id")
+            .limit(batas)
+            .forUpdate()
+            .skipLocked()
+            .execute();
+    }
+
+    /** Induk berulang `Disetujui` yang tak lagi punya tanggal Menunggu/Disetujui/Berlangsung (keputusan 16c). */
+    async kunciIndukTuntas(ctx: AuthContext, batas: number): Promise<readonly { id: string; nomor: string }[]> {
+        return this.query(ctx)
+            .selectFrom("reservations as v")
+            .select(["v.id", "v.nomor"])
+            .where("v.jenis", "=", "RUANGAN")
+            .where("v.parent_id", "is", null)
+            .where("v.status", "=", "DISETUJUI")
+            .where((eb) => eb.exists(eb.selectFrom("reservations as t").select("t.id").whereRef("t.parent_id", "=", "v.id")))
+            .where((eb) =>
+                eb.not(
+                    eb.exists(
+                        eb.selectFrom("reservations as t").select("t.id").whereRef("t.parent_id", "=", "v.id").where("t.status", "in", ["MENUNGGU_PERSETUJUAN", "DISETUJUI", "BERLANGSUNG"]),
+                    ),
+                ),
+            )
+            .orderBy("v.id")
+            .limit(batas)
+            .forUpdate()
+            .skipLocked()
+            .execute();
+    }
+
+    /** Pencatatan penggunaan yang sudah ada (FR-07.4: sekali per tanggal). Baris sudah dikunci pemanggil. */
+    async pencatatan(ctx: AuthContext, id: number): Promise<Date | null> {
+        const b = await this.query(ctx).selectFrom("reservations").select("penggunaan_dicatat_pada").where("id", "=", String(id)).executeTakeFirstOrThrow();
+        return b.penggunaan_dicatat_pada;
+    }
+
+    async catatPenggunaan(ctx: AuthContext, id: number, p: { readonly status: StatusReservasi; readonly kondisi: KondisiRuanganPasca | null; readonly catatan: string | null; readonly pada: Date }): Promise<void> {
+        const pelaku = pelakuId(ctx);
+        await this.query(ctx)
+            .updateTable("reservations")
+            .set({ status: p.status, kondisi_ruangan: p.kondisi, catatan_penggunaan: p.catatan, penggunaan_dicatat_oleh: pelaku, penggunaan_dicatat_pada: p.pada, updated_by: pelaku })
+            .where("id", "=", String(id))
+            .where("penggunaan_dicatat_pada", "is", null)
+            .execute();
     }
 
     /** `{nomor}`/`{objek}`/`{tanggal}` notifikasi approval (SDD-08 §4.2a). */

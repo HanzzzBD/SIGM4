@@ -101,6 +101,7 @@ stateDiagram-v2
     Disetujui --> Berlangsung: Waktu pelaksanaan tiba
     Berlangsung --> Selesai: Pelaksanaan berakhir
     Berlangsung --> TidakDigunakan: Petugas menandai tidak digunakan (FR-07.4 A1)
+    Selesai --> TidakDigunakan: Petugas menandai tidak digunakan setelah selesai (FR-07.4 A1)
     Ditolak --> [*]
     Dibatalkan --> [*]
     Kedaluwarsa --> [*]

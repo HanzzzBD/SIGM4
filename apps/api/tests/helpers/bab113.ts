@@ -60,6 +60,7 @@ export const NAMA_TIPE: ReadonlyMap<string, string> = new Map([
     ["Jenis Ruangan", "room_type"],
     ["Jenis Reservasi", "reservation_type"],
     ["Status Reservasi", "reservation_status"],
+    ["Kondisi Ruangan Pasca-Kegiatan", "room_usage_condition"],
     ["Status Peminjaman", "loan_status"],
     ["Status Denda", "fine_status"],
     ["Jenis Kewajiban Finansial", "financial_obligation_type"],

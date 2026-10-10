@@ -276,6 +276,7 @@ sequenceDiagram
 | GET | `/reservations` | `reservation.view` | Daftar reservasi (tersaring sesuai role) |
 | GET | `/reservations/{id}` | `reservation.view` | Detail reservasi + riwayat approval |
 | POST | `/reservations/{id}/cancel` | `reservation.cancel_own` · `reservation.cancel_any` | Batalkan reservasi + alasan. Pemilik reservasi cukup `cancel_own`; membatalkan reservasi pihak lain wajib `cancel_any` (`FR-07.3 A2`). Kepemilikan diperiksa di server, bukan disimpulkan dari role |
+| POST | `/reservations/{id}/usage` | `reservation.record_usage` | Catat penggunaan ruangan pasca-kegiatan per tanggal, sekali (`FR-07.4` langkah 3, A1): kondisi `Baik`/`Perlu Perhatian` + catatan bagi yang `Selesai`, atau `Tidak Digunakan` dari `Berlangsung`/`Selesai` — slotnya dilepas |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
@@ -286,7 +287,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **reservations** | Pengajuan reservasi ruangan & aset | id, nomor, jenis (`RUANGAN`/`ASET`), pemohon_id, room_id, nama_kegiatan, jenis_kegiatan, waktu_mulai, waktu_selesai, jumlah_peserta, keperluan, kebutuhan_tambahan, keterangan, status, parent_id (untuk berulang) | ± 3.000 |
+| **reservations** | Pengajuan reservasi ruangan & aset | id, nomor, jenis (`RUANGAN`/`ASET`), pemohon_id, room_id, nama_kegiatan, jenis_kegiatan, waktu_mulai, waktu_selesai, jumlah_peserta, keperluan, kebutuhan_tambahan, keterangan, status, parent_id (untuk berulang), kondisi_ruangan, catatan_penggunaan, penggunaan_dicatat_oleh, penggunaan_dicatat_pada (`FR-07.4`) | ± 3.000 |
 | **reservation_items** | Unit aset yang dialokasikan pada reservasi | id, reservation_id, asset_id, jumlah | ± 6.000 |
 | **room_fixed_schedules** | Blokade jadwal tetap ruangan (FR-07.5) | id, room_id, hari, jam_mulai, jam_selesai, label_kegiatan, berlaku_mulai, berlaku_sampai, status | Petugas Sarpras |
 
@@ -316,6 +317,7 @@ Ketentuan umum kanal, latensi, dan preferensi: [`m17-notifications.md`](m17-noti
 | `reservation.cancel_any` | Reservasi | Membatalkan reservasi pihak lain | Admin, Petugas |
 | `reservation.urgent` | Reservasi | Mengajukan di luar tenggat H-1 (BR-020) | Admin, Petugas |
 | `reservation.fixed_schedule` | Reservasi | Mengelola blokade jadwal tetap ruangan (FR-07.5) | Admin, Petugas |
+| `reservation.record_usage` | Reservasi | Mencatat penggunaan & kondisi ruangan pasca-kegiatan (FR-07.4) | Admin, Petugas |
 
 Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-foundation/roles-permissions.md).
 

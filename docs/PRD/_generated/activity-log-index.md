@@ -5,7 +5,7 @@
 # Indeks Aksi Activity Log
 
 > Setiap aksi dimiliki modul penerbitnya. Prinsip pencatatan di `../03-architecture/activity-log.md`.
-> Total: **82** baris, dikumpulkan dari 22 berkas modul.
+> Total: **87** baris, dikumpulkan dari 22 berkas modul.
 
 | Aksi | Keterangan | Pemilik |
 |---|---|---|
@@ -29,6 +29,10 @@
 | `ASSET_IMPORT_REQUESTED` | Penerimaan pekerjaan sinkron/asinkron beserta outbox dalam satu transaksi | [M-04](../02-modules/m04-assets.md) |
 | `ASSET_IMPORT_ROW_PROCESSED` | Progres satu baris, jumlah unit atau alasan gagal; atomik dengan aset yang dibuat | [M-04](../02-modules/m04-assets.md) |
 | `ASSET_MOVED` | Mutasi lokasi beserta asal dan tujuan | [M-04](../02-modules/m04-assets.md) |
+| `ASSET_MOVEMENT_DOCUMENT_DOWNLOADED` | Setiap penerbitan URL PDF privat, termasuk pelaku dan ID operasi | [M-04](../02-modules/m04-assets.md) |
+| `ASSET_MOVEMENT_DOCUMENT_READY` / `ASSET_MOVEMENT_DOCUMENT_FAILED` | Hasil akhir worker; mutasi tetap tersimpan | [M-04](../02-modules/m04-assets.md) |
+| `ASSET_MOVEMENT_DOCUMENT_REQUESTED` | Snapshot dan permintaan PDF atomik dengan mutasi | [M-04](../02-modules/m04-assets.md) |
+| `ASSET_MOVEMENT_DOCUMENT_STARTED` | Worker mulai mencoba pembuatan dokumen | [M-04](../02-modules/m04-assets.md) |
 | `ASSET_QR_PRINTED` | Pencetakan label beserta jumlah | [M-05](../02-modules/m05-qr.md) |
 | `ASSET_QR_REGENERATED` | Regenerasi UUID QR | [M-05](../02-modules/m05-qr.md) |
 | `ASSET_REINSTATED` | Pemulihan aset yang telah dihapuskan, beserta alasan | [M-21](../02-modules/m21-disposal.md) |
@@ -42,6 +46,7 @@
 | `COMPENSATION_WAIVED` | Pembebasan ganti rugi oleh Pimpinan beserta alasan dan nilai yang dibebaskan (BR-028e) | [M-09](../02-modules/m09-loans.md) |
 | `DAMAGE_REPORTED` / `DAMAGE_VERIFIED` / `DAMAGE_REJECTED` / `DAMAGE_CLOSED` | Siklus tiket | [M-11](../02-modules/m11-damage-reports.md) |
 | `DOCUMENT_UPLOADED` / `DOCUMENT_DOWNLOADED` / `DOCUMENT_DELETED` | Termasuk pencatatan siapa mengunduh | [M-06](../02-modules/m06-documents.md) |
+| `FILE_GENERATED` | PDF mutasi keluaran worker terpercaya didaftarkan CLEAN; file_id, owner_id, MIME, ukuran dan checksum, atomik dengan status SIAP M-04 (`SDD-09 §4.6`) | [M-06](../02-modules/m06-documents.md) |
 | `FILE_SCANNED` | Putusan akhir pemindaian anti-malware oleh worker (pelaku SYSTEM): `file_id`, hasil (`CLEAN`/`INFECTED`/`FAILED`), alasan (nama tanda tangan, ketidakcocokan MIME, atau kegagalan pemindaian) | [M-06](../02-modules/m06-documents.md) |
 | `FILE_UPLOADED` | Berkas terunggah dikonfirmasi (`POST /files/confirm`): jenis, MIME, ukuran, `file_id` — tanpa nama asli berkas (`SDD-FS-06`) | [M-06](../02-modules/m06-documents.md) |
 | `FINE_ISSUED` / `FINE_PAID` / `FINE_WAIVED` | Termasuk alasan pembebasan | [M-09](../02-modules/m09-loans.md) |
