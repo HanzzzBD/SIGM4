@@ -104,7 +104,7 @@ const langkah = (id: number) =>
         `SELECT urutan, keputusan, catatan, diputuskan_oleh::text, atas_nama_user_id::text, sla_deadline FROM approval_steps WHERE instance_id = ${String(id)} ORDER BY urutan`,
     );
 const event = (id: number) =>
-    kueri<{ event_name: string; payload: Record<string, unknown> }>(`SELECT event_name, payload FROM event_outbox WHERE aggregate_type = 'approval_instance' AND aggregate_id = '${String(id)}' ORDER BY id`);
+    kueri<{ event_name: string; payload: Record<string, unknown> }>(`SELECT event_name, payload FROM event_outbox WHERE aggregate_type = 'approval_instance' AND aggregate_id = '${String(id)}' AND event_name <> 'ApprovalInstanceCreated' ORDER BY id`);
 const logKeputusan = (id: number) =>
     kueri<{ user_id: string }>(`SELECT user_id::text FROM activity_logs WHERE aksi = 'APPROVAL_DECIDED' AND entitas_id = '${String(id)}'`);
 

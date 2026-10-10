@@ -69,6 +69,20 @@ describe.skipIf(!ADA_DB)(
                 });
             });
 
+            it("PR-03-10 (keputusan 14b): jam dibaca dari system_settings — mengubahnya menggeser tenggat SLA tanpa restart", async () => {
+                expect(await kalender.jamOperasional(db)).toEqual(DEFAULT_OPERATING_HOURS);
+                // Senin 17.00 WIB + 2 jam kerja: bawaan → Selasa 07.00; jam selesai 19.00 → Senin 19.00.
+                expect(await kalender.addWorkingHours(db, wib("2026-09-07T17:00:00"), 2)).toEqual(wib("2026-09-08T07:00:00"));
+                await kueri(`UPDATE system_settings SET value = '"19:00"' WHERE key = 'reservasi.jam_operasional_selesai'`);
+                try {
+                    expect(await kalender.jamOperasional(db)).toEqual({ startMinute: 360, endMinute: 1140 });
+                    expect(await kalender.addWorkingHours(db, wib("2026-09-07T17:00:00"), 2)).toEqual(wib("2026-09-07T19:00:00"));
+                    expect(await kalender.workingMinutesBetween(db, wib("2026-09-07T17:00:00"), wib("2026-09-08T00:00:00"))).toBe(120);
+                } finally {
+                    await kueri(`UPDATE system_settings SET value = '"18:00"' WHERE key = 'reservasi.jam_operasional_selesai'`);
+                }
+            });
+
             it("menolak jam operasional terbalik", () => {
                 expect(
                     () =>

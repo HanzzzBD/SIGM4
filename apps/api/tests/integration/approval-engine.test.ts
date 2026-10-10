@@ -194,9 +194,13 @@ describe.skipIf(!ADA_DB)("PR-02-20 — resolusi approver, delegasi, fallback (ac
             expect(r.inst?.status).toBe("MENUNGGU"); // BR-039a: tidak pernah disetujui otomatis
             expect(r.langkah[2]?.sla_deadline).toEqual(await tenggat(24));
             const ev = await kueri<{ event_name: string; payload: Record<string, unknown> }>(
-                `SELECT event_name, payload FROM event_outbox WHERE aggregate_type = 'approval_instance' AND aggregate_id = '${String(r.instanceId)}'`,
+                `SELECT event_name, payload FROM event_outbox WHERE aggregate_type = 'approval_instance' AND aggregate_id = '${String(r.instanceId)}' ORDER BY id`,
             );
-            expect(ev).toEqual([{ event_name: "ApprovalFallbackRouted", payload: { instance_id: r.instanceId, urutan_fallback: 3 } }]);
+            // NT-01 (PR-03-10) menyasar langkah yang BENAR-BENAR aktif — di sini langkah fallback.
+            expect(ev).toEqual([
+                { event_name: "ApprovalFallbackRouted", payload: { instance_id: r.instanceId, urutan_fallback: 3 } },
+                { event_name: "ApprovalInstanceCreated", payload: { instance_id: r.instanceId, jenis_pengajuan: "PENGADAAN_BARANG", langkah_aktif: 3 } },
+            ]);
         });
 
         it("fallback_approver aturan dipakai bila ditetapkan (SDD-APR-13)", async () => {

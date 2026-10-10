@@ -18,8 +18,27 @@ const NILAI_TERBATAS: Readonly<Record<string, readonly number[]>> = {
     "reservasi.granularitas_menit": [15, 30, 60],
 };
 
+/** Jam operasional (BR-018) — teks jam WIB `HH:MM`; bentuk & urutannya ditegakkan di sini (keputusan 14b log phase-03). */
+export const KUNCI_JAM_MULAI = "reservasi.jam_operasional_mulai";
+export const KUNCI_JAM_SELESAI = "reservasi.jam_operasional_selesai";
+const POLA_JAM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 /** Panjang maksimum parameter bertipe teks — pagar kewajaran teknis, bukan business rule. */
 const PANJANG_TEKS_MAKS = 500;
+
+/**
+ * Aturan antar-parameter atas nilai AKHIR (tersimpan ditimpa yang diminta): jam mulai operasional
+ * harus sebelum jam selesainya, karena SLA approval dan kalender ruangan membaca keduanya bersama.
+ * Pelanggaran ditautkan ke kunci yang diminta pemanggil.
+ */
+export function validasiLintasKunci(nilaiAkhir: ReadonlyMap<string, unknown>, diminta: ReadonlySet<string>): readonly { field: string; message: string }[] {
+    const mulai = nilaiAkhir.get(KUNCI_JAM_MULAI);
+    const selesai = nilaiAkhir.get(KUNCI_JAM_SELESAI);
+    if (typeof mulai !== "string" || typeof selesai !== "string" || !POLA_JAM.test(mulai) || !POLA_JAM.test(selesai)) return [];
+    if (mulai < selesai) return [];
+    const field = diminta.has(KUNCI_JAM_SELESAI) ? KUNCI_JAM_SELESAI : KUNCI_JAM_MULAI;
+    return [{ field, message: "Jam mulai operasional harus sebelum jam selesainya." }];
+}
 
 function penjelasanRentang(min: number | null, maks: number | null): string {
     if (min !== null && maks !== null) return `Nilai harus antara ${min} dan ${maks}.`;
@@ -54,6 +73,9 @@ export function validasiNilai(definisi: DefinisiSetting, nilai: unknown): string
             return typeof nilai === "boolean" ? undefined : "Nilai harus berupa true atau false.";
         case "TEKS":
             if (typeof nilai !== "string" || nilai.trim().length === 0) return "Nilai harus berupa teks yang tidak kosong.";
+            if ((definisi.key === KUNCI_JAM_MULAI || definisi.key === KUNCI_JAM_SELESAI) && !POLA_JAM.test(nilai)) {
+                return "Nilai harus berupa jam dengan format HH:MM, mis. 06:30.";
+            }
             return nilai.length > PANJANG_TEKS_MAKS
                 ? `Teks tidak boleh lebih dari ${PANJANG_TEKS_MAKS} karakter.`
                 : undefined;

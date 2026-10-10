@@ -13,7 +13,7 @@ import { withTransaction } from "../../../shared/db/index.js";
 import { DomainError } from "../../../shared/errors/index.js";
 import type { ListSettingsFilter, SettingRow } from "../repositories/setting.repository.js";
 import { createSettingRepository } from "../repositories/setting.repository.js";
-import { validasiNilai } from "./setting-validator.js";
+import { KUNCI_JAM_MULAI, KUNCI_JAM_SELESAI, validasiLintasKunci, validasiNilai } from "./setting-validator.js";
 
 const MODUL = "m20-settings";
 
@@ -60,8 +60,10 @@ export class SettingService {
             async (scope) => {
                 const repo = createSettingRepository(scope.tx);
                 const kunci = Object.keys(input);
+                // Pasangan jam operasional ikut dikunci & dibaca: aturan antar-kunci menilai nilai AKHIR.
+                const dibaca = [...new Set([...kunci, KUNCI_JAM_MULAI, KUNCI_JAM_SELESAI])];
                 const baris = new Map(
-                    (await repo.findByKeysForUpdate(scope.ctx, kunci)).map((r) => [r.key, r] as const),
+                    (await repo.findByKeysForUpdate(scope.ctx, dibaca)).map((r) => [r.key, r] as const),
                 );
 
                 const pelanggaran: SettingViolation[] = [];
@@ -73,6 +75,10 @@ export class SettingService {
                     }
                     const pesan = validasiNilai(definisi, input[key]);
                     if (pesan !== undefined) pelanggaran.push({ field: key, message: pesan });
+                }
+                if (pelanggaran.length === 0) {
+                    const akhir = new Map<string, unknown>([...baris].map(([k, r]) => [k, k in input ? input[k] : r.value]));
+                    pelanggaran.push(...validasiLintasKunci(akhir, new Set(kunci)));
                 }
                 if (pelanggaran.length > 0) {
                     throw new DomainError("VALIDATION_ERROR", "Satu atau lebih parameter tidak sah.", {

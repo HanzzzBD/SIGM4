@@ -1,15 +1,30 @@
 // Route M-07 (SDD-AUTH-01, PM-01) + perakit router modul. Katalog: m07-reservation-room.md §7.
 
-import { RoomAvailabilityQuerySchema, RoomAvailabilityResponseSchema } from "@sigm4/schemas";
+import {
+    RoomAvailabilityQuerySchema,
+    RoomAvailabilityResponseSchema,
+    RoomReservationBodySchema,
+    RoomReservationCreatedResponseSchema,
+    RoomReservationPreviewResponseSchema,
+} from "@sigm4/schemas";
 import express from "express";
 import type { RequestHandler, Router } from "express";
 import type { Kysely } from "kysely";
+import { ApprovalService, RuleConfigService } from "../m10-approval/index.js";
+import type { AuditLogger } from "../../shared/audit/index.js";
+import { SlotService } from "../../shared/booking/index.js";
 import { BusinessCalendarService } from "../../shared/calendar/index.js";
+import type { Clock } from "../../shared/clock/index.js";
 import type { Database } from "../../shared/db/index.js";
 import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
+import { DocumentNumberService } from "../../shared/numbering/index.js";
 import { roomAvailabilityHandler } from "./controllers/availability.controller.js";
+import { createReservationHandler, previewReservationHandler } from "./controllers/reservation.controller.js";
+import { daftarkanReservasiRuangan } from "./registration.js";
 import { AvailabilityService } from "./services/availability.service.js";
+import { ReservationService } from "./services/reservation.service.js";
+import { SubmissionService } from "./services/submission.service.js";
 
 /** Pemilik katalog endpoint M-07 (m07-reservation-room.md §7). */
 const MODUL = "m07-reservation-room";
@@ -26,8 +41,37 @@ export const roomAvailabilityRoute = defineRoute({
     response: RoomAvailabilityResponseSchema,
 });
 
+/** FR-07.2 / P-29 langkah 3 (keputusan 14f): pemeriksaan yang sama dengan pengajuan, tanpa efek. */
+export const previewReservationRoute = defineRoute({
+    method: "POST",
+    path: "/reservations/preview",
+    permission: "reservation.create",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Pratinjau pengajuan reservasi ruangan: tanggal, bentrok, kuota, jalur persetujuan (FR-07.2)",
+    successStatus: 200,
+    body: RoomReservationBodySchema,
+    response: RoomReservationPreviewResponseSchema,
+});
+
+/** FR-07.2, sekuens 15.2; ID-01 (UX P-29 "Idempotensi"). */
+export const createReservationRoute = defineRoute({
+    method: "POST",
+    path: "/reservations",
+    permission: "reservation.create",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Ajukan reservasi ruangan (FR-07.2)",
+    successStatus: 201,
+    idempotent: true,
+    body: RoomReservationBodySchema,
+    response: RoomReservationCreatedResponseSchema,
+});
+
 export interface ReservationsModuleDeps {
     readonly db: Kysely<Database>;
+    readonly clock: Clock;
+    readonly auditLogger: AuditLogger;
 }
 
 /** Router M-07. `batasi`/`otorisasi` datang dari perakit `api/index.ts`. */
@@ -36,9 +80,23 @@ export function reservationsRouter(
     batasi: (route: RouteDefinition) => RequestHandler,
     otorisasi: (permission: string) => RequestHandler,
 ): Router {
-    // Jam operasional = DEFAULT_OPERATING_HOURS sampai PR-03-10 memindahkannya ke system_settings (keputusan 12b).
-    const ketersediaan = new AvailabilityService(deps.db, new BusinessCalendarService());
+    // SDD-APR-17 / keputusan 75: penangan hasil + penyedia rincian proses ini (sekali per proses).
+    daftarkanReservasiRuangan(deps.clock, deps.auditLogger);
+    // Jam operasional dari system_settings (BR-018, keputusan 14b) — satu sumber dengan SLA approval.
+    const kalender = new BusinessCalendarService();
+    const approval = new ApprovalService(deps.db, deps.auditLogger, deps.clock, kalender);
+    const pengajuan = new SubmissionService(
+        deps.db,
+        deps.clock,
+        kalender,
+        new ReservationService(new SlotService(deps.clock), new DocumentNumberService(deps.clock), deps.auditLogger),
+        approval,
+        new RuleConfigService(deps.db, deps.auditLogger, approval),
+    );
     const router = express.Router();
-    router.get(roomAvailabilityRoute.path, batasi(roomAvailabilityRoute), otorisasi(roomAvailabilityRoute.permission), roomAvailabilityHandler(ketersediaan));
+    router.get(roomAvailabilityRoute.path, batasi(roomAvailabilityRoute), otorisasi(roomAvailabilityRoute.permission), roomAvailabilityHandler(new AvailabilityService(deps.db, kalender)));
+    // `/preview` SEBELUM pola `/:id` kelak (PR-03-27) agar tak tertangkap sebagai id.
+    router.post(previewReservationRoute.path, batasi(previewReservationRoute), otorisasi(previewReservationRoute.permission), previewReservationHandler(pengajuan));
+    router.post(createReservationRoute.path, batasi(createReservationRoute), otorisasi(createReservationRoute.permission), createReservationHandler(deps.db, pengajuan));
     return router;
 }

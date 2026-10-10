@@ -10,8 +10,8 @@ import type { AlasanLogin } from "../modules/m01-auth";
 import { muatApprovalRulesPage, muatEditorAturanPage } from "../modules/m10-approval";
 import { muatDashboardPage } from "../modules/m15-dashboard";
 import { loadAssetImportPage, loadAssetMovementPage } from "../modules/m04-assets";
-import { loadRoomCalendarPage } from "../modules/m07-reservation-room";
-import type { PencarianKalender } from "../modules/m07-reservation-room";
+import { loadReservationWizardPage, loadRoomCalendarPage } from "../modules/m07-reservation-room";
+import type { IsianWizard, PencarianKalender, PilihanSlot } from "../modules/m07-reservation-room";
 import type { Rentang } from "../modules/m15-dashboard";
 import { KeadaanKosong, KeadaanMemuat, KeadaanTanpaAkses } from "../shared/states";
 import { Ikon } from "../shared/ui/icon";
@@ -38,8 +38,19 @@ const DashboardPage = lazy(muatDashboardPage);
 const AssetImportPage = lazy(loadAssetImportPage);
 const AssetMovementPage = lazy(loadAssetMovementPage);
 const RoomCalendarPage = lazy(loadRoomCalendarPage);
-/** P-27 (FR-07.1). Aksi lanjut ke wizard P-29 dipasang di sini setelah halamannya terdaftar (PR-03-10). */
-export const HalamanKalenderRuangan = (props: { readonly pencarian: PencarianKalender; readonly onPencarian: (p: Partial<PencarianKalender>) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat kalender ruangan" baris={6} />}><RoomCalendarPage {...props} /></Suspense>;
+const ReservationWizardPage = lazy(loadReservationWizardPage);
+/** P-27 (FR-07.1). `aksiPilihan` = jalan ke wizard P-29 bagi pemegang `reservation.create` (PR-03-10). */
+export const HalamanKalenderRuangan = (props: { readonly pencarian: PencarianKalender; readonly onPencarian: (p: Partial<PencarianKalender>) => void; readonly aksiPilihan?: ((p: PilihanSlot) => ReactNode) | undefined }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat kalender ruangan" baris={6} />}>
+        <RoomCalendarPage pencarian={props.pencarian} onPencarian={props.onPencarian} {...(props.aksiPilihan === undefined ? {} : { aksiPilihan: props.aksiPilihan })} />
+    </Suspense>
+);
+/** P-29 Wizard Pengajuan Reservasi (FR-07.2, UX §7.6.2). */
+export const HalamanWizardReservasi = (props: { readonly isianAwal: IsianWizard; readonly onBatal: () => void; readonly onKalender: (tanggal: string) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat formulir reservasi" baris={6} />}>
+        <ReservationWizardPage {...props} />
+    </Suspense>
+);
 export const HalamanMutasiAset = (props: { readonly documentId: number | null; readonly onDocument: (id: number | null) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat mutasi aset" baris={4} />}><AssetMovementPage {...props} /></Suspense>;
 export const HalamanImporAset = (props: { readonly jobId: number | null; readonly onJob: (id: number) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat impor aset" baris={4} />}><AssetImportPage {...props} /></Suspense>;
 

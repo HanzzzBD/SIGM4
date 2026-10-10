@@ -30,6 +30,9 @@ const SLA_FALLBACK_JAM = ATURAN_BAWAAN.steps[0].sla_hours;
 /** SQLSTATE `exclusion_violation`. */
 const EXCLUSION_VIOLATION = "23P01";
 
+/** Instance baru beserta langkah aktifnya — konsumen M-17 menerbitkan NT-01 (keputusan 14e log phase-03). */
+export const EVENT_INSTANCE_DIBENTUK = "ApprovalInstanceCreated";
+
 interface TargetSnapshot {
     readonly approver_type: "role" | "user";
     readonly approver_role_id: number | null;
@@ -124,7 +127,28 @@ export class ApprovalService {
         }
 
         const langkahAktif = await this.aktifkanBerikutnya(scope, instanceId);
+        // FR-07.2 langkah 6 / sekuens 15.2: approver langkah aktif dinotifikasi setelah commit (NT-01, SDD-EVT-03).
+        await publish(scope, {
+            name: EVENT_INSTANCE_DIBENTUK,
+            aggregateType: "approval_instance",
+            aggregateId: instanceId,
+            payload: { instance_id: instanceId, jenis_pengajuan: p.jenis, langkah_aktif: langkahAktif },
+        });
         return { instanceId, ruleId: snapshot.rule_id, langkahAktif };
+    }
+
+    /**
+     * Objek pengajuan berhenti DI LUAR keputusan approver — TTL slot habis (BR-023b), kelak
+     * pembatalan pemohon (`PR-03-11`): instance `MENUNGGU` → `DIBATALKAN`, langkah aktif ditutup.
+     * Mengembalikan langkah yang aktif saat ditutup (penerima NT-46) atau `undefined` bila tak ada
+     * instance berjalan. Dicatat pemanggil pada entri objeknya, di transaksi yang sama (AL-01).
+     */
+    async tutupKarenaObjek(scope: TransactionScope, jenis: JenisPengajuan, referensiId: number): Promise<{ instanceId: number; langkahAktif: number | null } | undefined> {
+        const repo = createApprovalRepository(scope.tx);
+        const berjalan = await repo.instanceBerjalan(scope.ctx, jenis, referensiId);
+        if (berjalan === undefined) return undefined;
+        await repo.tutupInstance(scope.ctx, berjalan.instanceId, "DIBATALKAN", this.clock.now());
+        return berjalan;
     }
 
     /**

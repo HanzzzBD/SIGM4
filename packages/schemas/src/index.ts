@@ -20,3 +20,5 @@ export { ASSET_IMPORT_COLUMNS, ASSET_IMPORT_REQUIRED_COLUMNS, ASSET_IMPORT_SYNC_
 export type { AssetImportJob, AssetImportFailure } from "./asset-import.js";
 export { KEADAAN_SLOT, LABEL_KEADAAN_SLOT, RENTANG_KETERSEDIAAN_MAKS_HARI, RoomAvailabilityQuerySchema, RoomAvailabilityResponseSchema, RoomAvailabilitySchema } from "./room-availability.js";
 export type { KeadaanSlot, RoomAvailability, RuanganKetersediaan, SlotKetersediaan } from "./room-availability.js";
+export { KEADAAN_TANGGAL, PolaPengulanganSchema, RoomReservationBodySchema, RoomReservationCreatedResponseSchema, RoomReservationCreatedSchema, RoomReservationPreviewResponseSchema, RoomReservationPreviewSchema } from "./reservation.js";
+export type { KeadaanTanggal, RoomReservationBody, RoomReservationCreated, RoomReservationPreview, TanggalPengajuanRuangan } from "./reservation.js";

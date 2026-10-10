@@ -118,6 +118,28 @@ export async function daftarSlotTerpakai(
     return hasil.rows;
 }
 
+/** Slot sebuah reservasi beserta statusnya — bahan transisi milik modul pengaju (SDD-APR-17). */
+export interface SlotReservasi {
+    readonly id: string;
+    readonly reservation_id: string;
+    readonly status: StatusSlot;
+}
+
+/**
+ * Slot milik reservasi-reservasi ini, seluruh status (`PR-03-10`). Pembacaan lewat shared/booking
+ * agar modul tak menyentuh `booking_slots` (SDD-SYS-10); transisinya tetap lewat `SlotService`.
+ */
+export async function slotMilikReservasi(executor: QueryExecutor, reservationIds: readonly number[]): Promise<readonly SlotReservasi[]> {
+    if (reservationIds.length === 0) return [];
+    const hasil = await sql<SlotReservasi>`
+        SELECT id::text AS id, reservation_id::text AS reservation_id, status
+          FROM booking_slots
+         WHERE reservation_id = ANY(${reservationIds.map(String)}::bigint[])
+         ORDER BY reservation_id, id
+    `.execute(executor);
+    return hasil.rows;
+}
+
 /** `BR-023b`: pengajuan pemilik slot → Kedaluwarsa; dikonsumsi M-07 (`PR-03-10`) dan M-08 (`PR-04-02`). */
 export const EVENT_SLOT_TENTATIF_KEDALUWARSA = "TentativeSlotExpired";
 

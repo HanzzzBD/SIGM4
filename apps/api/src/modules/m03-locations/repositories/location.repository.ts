@@ -20,7 +20,19 @@ export type RoomType =
     | "LAINNYA";
 export type LocationStatus = "AKTIF" | "NONAKTIF";
 
-const KOLOM_BUILDING = ["id", "nama", "kode", "keterangan", "status", "created_at", "updated_at"] as const;
+export interface RuanganReservasiRow {
+    readonly id: string;
+    readonly nama: string;
+    readonly kode: string;
+    readonly jenis: RoomType;
+    readonly kapasitas: number | null;
+    readonly status: LocationStatus;
+    readonly dapat_direservasi: boolean;
+    readonly boleh_direservasi_siswa: boolean;
+    readonly status_gedung: LocationStatus;
+}
+
+const KOLOM_BUILDING =["id", "nama", "kode", "keterangan", "status", "created_at", "updated_at"] as const;
 export interface BuildingRow {
     readonly id: string;
     readonly nama: string;
@@ -176,6 +188,17 @@ export class LocationRepository extends BaseRepository {
             .selectFrom("rooms")
             .select(KOLOM_ROOM)
             .where("id", "=", String(id))
+            .executeTakeFirst();
+    }
+
+    /** Bahan kelayakan reservasi ruangan (BR-016, BR-019, BR-022) — ruangan beserta status gedungnya. */
+    async findRoomForReservation(ctx: AuthContext, id: number): Promise<RuanganReservasiRow | undefined> {
+        return this.query(ctx)
+            .selectFrom("rooms as r")
+            .innerJoin("areas as a", "a.id", "r.area_id")
+            .innerJoin("buildings as g", "g.id", "a.building_id")
+            .select(["r.id", "r.nama", "r.kode", "r.jenis", "r.kapasitas", "r.status", "r.dapat_direservasi", "r.boleh_direservasi_siswa", "g.status as status_gedung"])
+            .where("r.id", "=", String(id))
             .executeTakeFirst();
     }
 

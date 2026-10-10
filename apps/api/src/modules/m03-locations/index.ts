@@ -12,3 +12,5 @@ export {
     updateRoomRoute,
     updateRoomStatusRoute,
 } from "./routes.js";
+export type { RuanganReservasi } from "./services/reservation-eligibility.js";
+export { ruanganUntukReservasi } from "./services/reservation-eligibility.js";

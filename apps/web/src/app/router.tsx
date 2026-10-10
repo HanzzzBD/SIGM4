@@ -10,7 +10,7 @@ import { Outlet, createRootRouteWithContext, createRoute, createRouter, redirect
 // zod/mini: API skema yang sama dengan bundel jauh lebih kecil (NFR-P-03, SDD-11 §4.7).
 import { z } from "zod/mini";
 import { ambilTantangan } from "../modules/m01-auth";
-import { TAMPILAN, hariIniWib } from "../modules/m07-reservation-room";
+import { TAMPILAN, hariIniWib, isianDariSlot } from "../modules/m07-reservation-room";
 import { RENTANG } from "../modules/m15-dashboard";
 import {
     HalamanAktivasiDuaFaktor,
@@ -26,11 +26,13 @@ import {
     HalamanMutasiAset,
     HalamanTanpaAkses,
     HalamanTidakDitemukan,
+    HalamanWizardReservasi,
     HalamanVerifikasiDuaFaktor,
 } from "../pages";
 import { ApiError } from "../shared/api";
-import { kueriMe } from "../shared/auth";
+import { kueriMe, useSesi } from "../shared/auth";
 import { KeadaanGalat } from "../shared/states";
+import { Tombol } from "../shared/ui/primitives";
 import { Shell } from "./shell";
 
 export interface KonteksRouter {
@@ -198,12 +200,43 @@ const kalenderRuanganRoute = createRoute({
     component: function RouteKalenderRuangan() {
         const cari = kalenderRuanganRoute.useSearch();
         const navigate = useNavigate({ from: kalenderRuanganRoute.fullPath });
+        // UX F-09: slot kosong terpilih → wizard P-29 langkah 1 terisi, hanya bagi pemegang reservation.create.
+        const bolehAjukan = useSesi().permissions["reservation.create"] !== undefined;
         return (
             <HalamanKalenderRuangan
                 pencarian={{ ...cari, tampilan: cari.tampilan ?? "harian", tanggal: cari.tanggal ?? hariIniWib() }}
                 onPencarian={(p) => void navigate({ search: (lama) => ({ ...lama, ...p }) })}
+                aksiPilihan={
+                    bolehAjukan
+                        ? (p) => (
+                              <Tombol className="self-start" onClick={() => void navigate({ to: "/reservasi/baru", search: { ruangan: p.ruangan.id, mulai: p.mulai.toISOString(), selesai: p.selesai.toISOString() } })}>
+                                  Ajukan reservasi
+                              </Tombol>
+                          )
+                        : undefined
+                }
             />
         );
+    },
+});
+
+/** P-29 Wizard Pengajuan Reservasi (FR-07.2, UX §6 `/reservasi/baru`): slot terpilih P-27 dibawa lewat URL. */
+const wizardReservasiRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/reservasi/baru",
+    beforeLoad: butuhIzin("reservation.create"),
+    validateSearch: z.object({
+        // `?ruangan=10` diurai router sebagai angka — dikoersi agar tautan tulisan tangan tetap sah.
+        ruangan: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined),
+        mulai: z.catch(z.optional(z.string()), undefined),
+        selesai: z.catch(z.optional(z.string()), undefined),
+    }),
+    component: function RouteWizardReservasi() {
+        const cari = wizardReservasiRoute.useSearch();
+        const navigate = useNavigate({ from: wizardReservasiRoute.fullPath });
+        const isianAwal = isianDariSlot(cari.ruangan, cari.mulai, cari.selesai);
+        const keKalender = (tanggal: string) => void navigate({ to: "/kalender-ruangan", search: { tanggal: tanggal === "" ? undefined : tanggal } });
+        return <HalamanWizardReservasi isianAwal={isianAwal} onBatal={() => keKalender(isianAwal.tanggal)} onKalender={keKalender} />;
     },
 });
 
@@ -214,7 +247,7 @@ export const routeTree = rootRoute.addChildren([
     gantiPasswordRoute,
     gangguanRoute,
     tidakDitemukanRoute,
-    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {

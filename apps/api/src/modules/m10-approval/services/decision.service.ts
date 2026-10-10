@@ -158,8 +158,10 @@ export class DecisionService {
         } else {
             // BR-038: penolakan pada langkah mana pun mengakhiri alur; revisi mengembalikan ke pemohon (A1).
             status = input.keputusan;
-            await repo.tutup(scope.ctx, instanceId, status, pada);
+            // Urutan kunci seragam di semua jalur: objek pengajuan LALU instance (keputusan 14j log
+            // phase-03) — sama dengan persetujuan dan kedaluwarsa TTL, jadi tak ada siklus 40P01.
             await penangan?.setelahDitutup(scope, inst.referensiId, input.keputusan);
+            await repo.tutup(scope.ctx, instanceId, status, pada);
         }
 
         const hasil: HasilKeputusan = {
@@ -198,8 +200,9 @@ export class DecisionService {
         const repo = createDecisionRepository(scope.tx);
         const inst = await repo.instance(scope.ctx, instanceId);
         if (inst === undefined) throw new Error(`Instance persetujuan ${String(instanceId)} tidak ada.`);
-        await repo.tutup(scope.ctx, instanceId, "DITOLAK", this.clock.now());
+        // Objek lalu instance — urutan kunci seragam (keputusan 14j log phase-03).
         await this.penangan.cari(inst.jenis)?.setelahDitutup(scope, inst.referensiId, "DITOLAK");
+        await repo.tutup(scope.ctx, instanceId, "DITOLAK", this.clock.now());
         const hasil = { instance_id: instanceId, urutan, keputusan: "DITOLAK", status: "DITOLAK", langkah_aktif: null } as const;
         await this.audit.write(scope, {
             modul: MODUL,
