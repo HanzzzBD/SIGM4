@@ -365,7 +365,23 @@ describe.skipIf(!ADA_DB)("PR-02-21 — eksekusi persetujuan (acceptance)", () =>
             const hal1 = await layanan().pending(ctxDari(a1), 1, 2);
             expect(hal1.total).toBe(3);
             expect(hal1.rows.map((r) => r.instance_id)).toEqual([ids[2], ids[1]]);
+            // Sisa SLA dalam MENIT KERJA (CAL-01, keputusan 92d): 09.00 → 12.00 WIB = 180; 09.00 → 17.00 WIB = 480.
+            expect(hal1.rows.map((r) => r.sla)).toEqual([
+                { sisa_menit_kerja: 180, terlambat: false },
+                { sisa_menit_kerja: 480, terlambat: false },
+            ]);
             expect((await layanan().pending(ctxDari(a1), 2, 2)).rows.map((r) => r.instance_id)).toEqual([ids[0]]);
+        });
+
+        it("sisa SLA melewati jam tutup dihitung menit kerja; tenggat lewat → terlambat, sisa 0", async () => {
+            await aturan([{ role }]);
+            const [lintas, telat] = [await ajukan(pemohon), await ajukan(pemohon)];
+            // Selasa 29 Sept 08.00 WIB: 540 (Senin 09.00–18.00) + 120 (Selasa 06.00–08.00) = 660; kalender = 1.380.
+            await kueri(`UPDATE approval_steps SET sla_deadline = '2026-09-29T01:00:00Z' WHERE instance_id = ${String(lintas)}`);
+            await kueri(`UPDATE approval_steps SET sla_deadline = '2026-09-28T01:00:00Z' WHERE instance_id = ${String(telat)}`);
+            const baris = (await layanan().pending(ctxDari(a1), 1, 25)).rows;
+            expect(baris.find((r) => r.instance_id === lintas)?.sla).toEqual({ sisa_menit_kerja: 660, terlambat: false });
+            expect(baris.find((r) => r.instance_id === telat)?.sla).toEqual({ sisa_menit_kerja: 0, terlambat: true });
         });
     });
 

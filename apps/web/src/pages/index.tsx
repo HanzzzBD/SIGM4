@@ -7,10 +7,12 @@ import { Suspense, lazy } from "react";
 import type { ReactNode } from "react";
 import { AktivasiDuaFaktorPage, GantiPasswordPage, LoginPage, VerifikasiDuaFaktorPage } from "../modules/m01-auth";
 import type { AlasanLogin } from "../modules/m01-auth";
-import { muatApprovalRulesPage, muatEditorAturanPage } from "../modules/m10-approval";
+import { muatApprovalInboxPage, muatApprovalRulesPage, muatDecisionPage, muatEditorAturanPage } from "../modules/m10-approval";
 import { muatDashboardPage } from "../modules/m15-dashboard";
+import { loadNotificationCenterPage, loadPreferencesPage } from "../modules/m17-notifications";
+import type { PencarianNotifikasi } from "../modules/m17-notifications";
 import { loadAssetImportPage, loadAssetMovementPage } from "../modules/m04-assets";
-import { loadReservationDetailPage, loadReservationListPage, loadReservationWizardPage, loadRoomBlocksPanel, loadRoomCalendarPage } from "../modules/m07-reservation-room";
+import { RingkasanReservasi, loadReservationDetailPage, loadReservationListPage, loadReservationWizardPage, loadRoomBlocksPanel, loadRoomCalendarPage } from "../modules/m07-reservation-room";
 import type { IsianWizard, PencarianDaftar, PencarianKalender, PilihanSlot, ReservasiSlot } from "../modules/m07-reservation-room";
 import type { ReservationDetail, RoomReservationCreated } from "@sigm4/schemas";
 import type { Rentang } from "../modules/m15-dashboard";
@@ -99,6 +101,21 @@ export const HalamanDashboard = ({ rentang, onRentang }: { readonly rentang: Ren
     </Suspense>
 );
 
+const NotificationCenterPage = lazy(loadNotificationCenterPage);
+const PreferencesPage = lazy(loadPreferencesPage);
+/** P-13 Pusat Notifikasi (FR-17.1; PR-02-43). */
+export const HalamanPusatNotifikasi = (props: { readonly pencarian: PencarianNotifikasi; readonly onPencarian: (p: Partial<PencarianNotifikasi>) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat notifikasi" baris={6} />}>
+        <NotificationCenterPage {...props} />
+    </Suspense>
+);
+/** P-78 Preferensi Notifikasi (FR-17.3; PR-02-43). */
+export const HalamanPreferensiNotifikasi = () => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat preferensi notifikasi" baris={6} />}>
+        <PreferencesPage />
+    </Suspense>
+);
+
 const ApprovalRulesPage = lazy(muatApprovalRulesPage);
 const EditorAturanPage = lazy(muatEditorAturanPage);
 
@@ -113,6 +130,29 @@ export const HalamanApprovalRules = ({ disimpan }: { readonly disimpan?: number 
 export const HalamanEditorAturan = ({ id }: { readonly id: number | null }) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat editor approval rule" baris={8} />}>
         <EditorAturanPage id={id} />
+    </Suspense>
+);
+
+const ApprovalInboxPage = lazy(muatApprovalInboxPage);
+const DecisionPage = lazy(muatDecisionPage);
+
+/** P-37 Persetujuan Saya (FR-10.2; PR-02-44). */
+export const HalamanPersetujuanSaya = (props: { readonly page: number; readonly diputuskan?: string | undefined; readonly onPage: (page: number) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat persetujuan" baris={6} />}>
+        <ApprovalInboxPage {...props} />
+    </Suspense>
+);
+
+/** Konteks objek P-38 per jenis pengajuan (keputusan 92c): hanya reservasi ruangan yang punya modul web kini. */
+function konteksPengajuan(jenis: string, referensiId: number): ReactNode {
+    if (jenis === "RESERVASI_RUANGAN") return <RingkasanReservasi id={String(referensiId)} />;
+    return <p className="text-base text-text-secondary">Rincian objek untuk jenis pengajuan ini belum tersedia.</p>;
+}
+
+/** P-38 Detail Keputusan (FR-10.2 langkah 3–7, FR-10.3; PR-02-44). */
+export const HalamanDetailKeputusan = (props: { readonly id: number; readonly onSelesai: (label: string) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat detail pengajuan" baris={8} />}>
+        <DecisionPage {...props} konteks={konteksPengajuan} />
     </Suspense>
 );
 
