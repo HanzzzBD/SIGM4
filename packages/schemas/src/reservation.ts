@@ -129,3 +129,31 @@ export const ReservationCancelledSchema = z.object({
 export const ReservationCancelledResponseSchema = z.object({ success: z.literal(true), data: ReservationCancelledSchema, meta: z.null() });
 
 export type ReservationCancelled = z.infer<typeof ReservationCancelledSchema>;
+
+/**
+ * `POST /reservations/{id}/usage` (FR-07.4 langkah 3 + A1, keputusan 16 log phase-03): sekali per
+ * tanggal. `TIDAK_DIGUNAKAN` dari `Berlangsung` atau `Selesai`; `BAIK`/`PERLU_PERHATIAN` hanya `Selesai`.
+ */
+export const HASIL_PENGGUNAAN = ["BAIK", "PERLU_PERHATIAN", "TIDAK_DIGUNAKAN"] as const;
+export type HasilPenggunaan = (typeof HASIL_PENGGUNAAN)[number];
+
+export const RecordUsageBodySchema = z
+    .object({
+        hasil: z.enum(HASIL_PENGGUNAAN, { error: "Pilih hasil penggunaan: Baik, Perlu Perhatian, atau Tidak Digunakan." }),
+        catatan: opsional(1000, "Catatan"),
+    })
+    .strict();
+
+export type RecordUsageBody = z.input<typeof RecordUsageBodySchema>;
+
+export const ReservationUsageSchema = z.object({
+    id: z.string(),
+    nomor: z.string(),
+    status: z.enum(["SELESAI", "TIDAK_DIGUNAKAN"]),
+    kondisi_ruangan: z.enum(["BAIK", "PERLU_PERHATIAN"]).nullable(),
+    catatan: z.string().nullable(),
+});
+
+export const ReservationUsageResponseSchema = z.object({ success: z.literal(true), data: ReservationUsageSchema, meta: z.null() });
+
+export type ReservationUsage = z.infer<typeof ReservationUsageSchema>;

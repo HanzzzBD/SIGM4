@@ -3,7 +3,7 @@
 // slot, instance approval, dan respons tersimpan commit bersama (ID-01 … ID-05, UX P-29).
 // Isian tak sah dijawab `422 VALIDATION_ERROR` per isian (Bab 17.2), bukan 400.
 
-import { CancelReservationBodySchema, ReservationIdParamSchema, RoomReservationBodySchema } from "@sigm4/schemas";
+import { CancelReservationBodySchema, RecordUsageBodySchema, ReservationIdParamSchema, RoomReservationBodySchema } from "@sigm4/schemas";
 import type { RequestHandler } from "express";
 import type { Kysely } from "kysely";
 import { requireAuthContext } from "../../../shared/auth/index.js";
@@ -12,6 +12,7 @@ import { DomainError } from "../../../shared/errors/index.js";
 import { runIdempotent } from "../../../shared/http/index.js";
 import type { CancellationService } from "../services/cancellation.service.js";
 import type { IsianPengajuan, SubmissionService } from "../services/submission.service.js";
+import type { UsageService } from "../services/usage.service.js";
 
 function urai(body: unknown): IsianPengajuan {
     const hasil = RoomReservationBodySchema.safeParse(body);
@@ -53,6 +54,21 @@ export function cancelReservationHandler(service: CancellationService): RequestH
             });
         }
         const data = await service.batalkan(requireAuthContext(res), id, hasil.data.alasan);
+        res.status(200).json({ success: true, data, meta: null });
+    };
+}
+
+/** FR-07.4 langkah 3 + A1 (keputusan 16): hasil tak sah → 422 per isian. */
+export function recordUsageHandler(service: UsageService): RequestHandler {
+    return async (req, res) => {
+        const { id } = ReservationIdParamSchema.parse(req.params);
+        const hasil = RecordUsageBodySchema.safeParse(req.body);
+        if (!hasil.success) {
+            throw new DomainError("VALIDATION_ERROR", "Isian pencatatan penggunaan tidak sah.", {
+                errors: hasil.error.issues.map((i) => ({ field: i.path.map(String).join(".") || "(body)", message: i.message })),
+            });
+        }
+        const data = await service.catat(requireAuthContext(res), id, hasil.data.hasil, hasil.data.catatan);
         res.status(200).json({ success: true, data, meta: null });
     };
 }

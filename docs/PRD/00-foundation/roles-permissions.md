@@ -13,7 +13,7 @@ Berkas ini memuat bagian **normatif**: daftar role, matriks akses, katalog kode 
 | Bab 5 — daftar role & aturan role | Normatif | Berkas ini (PRD) |
 | Bab 18 — matriks permission per role | Normatif (ringkasan bagi non-teknis) | Berkas ini (PRD) |
 | Lampiran C.1 — konvensi penamaan & scope | Normatif | Berkas ini (PRD) |
-| Lampiran C.2 — katalog 79 kode permission | Normatif — sumber kebenaran tunggal RBAC | Berkas ini (PRD) |
+| Lampiran C.2 — katalog 81 kode permission | Normatif — sumber kebenaran tunggal RBAC | Berkas ini (PRD) |
 | Lampiran C.3 — aturan penegakan (`PM-01`…`PM-06`) | Normatif | Berkas ini (PRD) |
 | Middleware, `AuthContext`, scope di repository, serializer | **Rancangan** | [`../../SDD/03-authorization.md`](../../SDD/03-authorization.md) |
 | Cache permission, urutan gerbang sesi, otorisasi tool AI | **Rancangan** | [`../../SDD/03-authorization.md`](../../SDD/03-authorization.md) |
@@ -180,6 +180,7 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 | `reservation.cancel_any` | Reservasi | Membatalkan reservasi pihak lain | Admin, Petugas |
 | `reservation.urgent` | Reservasi | Mengajukan di luar tenggat H-1 (BR-020) | Admin, Petugas |
 | `reservation.fixed_schedule` | Reservasi | Mengelola blokade jadwal tetap ruangan (FR-07.5) | Admin, Petugas |
+| `reservation.record_usage` | Reservasi | Mencatat penggunaan & kondisi ruangan pasca-kegiatan (FR-07.4) | Admin, Petugas |
 | `loan.view` | Peminjaman | Melihat transaksi peminjaman | Semua (scope berbeda) |
 | `loan.manage` | Peminjaman | Serah terima & pengembalian | Admin, Petugas |
 | `loan.direct` | Peminjaman | Peminjaman langsung tanpa reservasi | Admin, Petugas |

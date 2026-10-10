@@ -590,7 +590,15 @@ export interface ReservationsTable extends KolomBaku {
     kebutuhan_tambahan: string | null;
     keterangan: string | null;
     status: ColumnType<StatusReservasi, StatusReservasi | undefined, StatusReservasi>;
+    /** FR-07.4 langkah 3 (0046, PR-03-12): diisi sekali oleh pencatat penggunaan. */
+    kondisi_ruangan: ColumnType<KondisiRuanganPasca | null, KondisiRuanganPasca | null | undefined, KondisiRuanganPasca | null>;
+    catatan_penggunaan: ColumnType<string | null, string | null | undefined, string | null>;
+    penggunaan_dicatat_oleh: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    penggunaan_dicatat_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
 }
+
+/** Bab 11.3 "Kondisi Ruangan Pasca-Kegiatan" (0046). */
+export type KondisiRuanganPasca = "BAIK" | "PERLU_PERHATIAN";
 
 /**
  * Mesin persetujuan (0031, PR-02-18; FR-10.1, Lampiran D.5, SDD-APR-03/04/12). Nilai

@@ -94,6 +94,7 @@ Data acuan bernilai tetap yang digunakan sebagai enumerasi dan dropdown.
 | **Jenis Ruangan** | Kelas, Laboratorium, Aula, Perpustakaan, Kantor, Gudang, Lapangan, Lainnya |
 | **Jenis Reservasi** | Ruangan, Aset |
 | **Status Reservasi** | Draf, Menunggu Persetujuan, Disetujui, Ditolak, Perlu Revisi, Dibatalkan, Kedaluwarsa, Berlangsung, Selesai, Tidak Digunakan |
+| **Kondisi Ruangan Pasca-Kegiatan** | Baik, Perlu Perhatian |
 | **Status Peminjaman** | Dipinjam, Sebagian Dikembalikan, Dikembalikan, Terlambat, Hilang |
 | **Status Denda** | Belum Dibayar, Lunas, Dibebaskan, Dibebaskan Sebagian |
 | **Jenis Kewajiban Finansial** | Keterlambatan, Ganti Rugi |

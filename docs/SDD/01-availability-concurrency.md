@@ -260,7 +260,7 @@ Format dirakit aplikasi sesuai `SEQ-01`, divalidasi terhadap regex `SEQ-04` pada
 
 | Job | Jadwal (UTC, lihat `JOB-04`) | Idempoten karena |
 |---|---|---|
-| `slot-activation` | tiap 5 menit | `UPDATE … WHERE status <> target` |
+| `slot-activation` | tiap 5 menit | `UPDATE … WHERE status <> target`; reservasi ruangan (FR-07.4, `PR-03-12`) bertransisi hanya dari status asal (`Disetujui`/`Berlangsung`) atas baris yang dikunci `FOR UPDATE SKIP LOCKED` terurut id — baris yang sedang dipegang pembatalan/pencatatan dilewati putaran itu, job tak pernah menunggu kunci; transaksi terpisah dari sisi aset M-04 |
 | `tentative-slot-expiry` | tiap 15 menit | `WHERE status='TENTATIVE' AND expires_at < now()` |
 | `loan-overdue` | 17:05 (= 00:05 WIB) | denda diperiksa unik per `(loan_item_id, tanggal)` |
 | `reservation-expiry` | 16:00 (= 23:00 WIB) | transisi hanya dari `Confirmed` |

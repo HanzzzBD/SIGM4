@@ -2,8 +2,10 @@
 
 import {
     CancelReservationBodySchema,
+    RecordUsageBodySchema,
     ReservationCancelledResponseSchema,
     ReservationIdParamSchema,
+    ReservationUsageResponseSchema,
     RoomAvailabilityQuerySchema,
     RoomAvailabilityResponseSchema,
     RoomReservationBodySchema,
@@ -23,12 +25,13 @@ import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
 import { DocumentNumberService } from "../../shared/numbering/index.js";
 import { roomAvailabilityHandler } from "./controllers/availability.controller.js";
-import { cancelReservationHandler, createReservationHandler, previewReservationHandler } from "./controllers/reservation.controller.js";
+import { cancelReservationHandler, createReservationHandler, previewReservationHandler, recordUsageHandler } from "./controllers/reservation.controller.js";
 import { daftarkanReservasiRuangan } from "./registration.js";
 import { AvailabilityService } from "./services/availability.service.js";
 import { CancellationService } from "./services/cancellation.service.js";
 import { ReservationService } from "./services/reservation.service.js";
 import { SubmissionService } from "./services/submission.service.js";
+import { UsageService } from "./services/usage.service.js";
 
 /** Pemilik katalog endpoint M-07 (m07-reservation-room.md §7). */
 const MODUL = "m07-reservation-room";
@@ -90,6 +93,20 @@ export const cancelReservationRoute = defineRoute({
     response: ReservationCancelledResponseSchema,
 });
 
+/** FR-07.4 langkah 3 + A1 (keputusan 16): kondisi pasca-kegiatan atau Tidak Digunakan, sekali per tanggal. */
+export const recordUsageRoute = defineRoute({
+    method: "POST",
+    path: "/reservations/:id/usage",
+    permission: "reservation.record_usage",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Catat penggunaan ruangan pasca-kegiatan: Baik, Perlu Perhatian, atau Tidak Digunakan (FR-07.4)",
+    successStatus: 200,
+    params: ReservationIdParamSchema,
+    body: RecordUsageBodySchema,
+    response: ReservationUsageResponseSchema,
+});
+
 export interface ReservationsModuleDeps {
     readonly db: Kysely<Database>;
     readonly clock: Clock;
@@ -121,5 +138,6 @@ export function reservationsRouter(
     router.post(previewReservationRoute.path, batasi(previewReservationRoute), otorisasi(previewReservationRoute.permission), previewReservationHandler(pengajuan));
     router.post(createReservationRoute.path, batasi(createReservationRoute), otorisasi(createReservationRoute.permission), createReservationHandler(deps.db, pengajuan));
     router.post(cancelReservationRoute.path, batasi(cancelReservationRoute), otorisasi(cancelReservationRoute.permission), cancelReservationHandler(new CancellationService(deps.db, deps.clock, deps.auditLogger, approval)));
+    router.post(recordUsageRoute.path, batasi(recordUsageRoute), otorisasi(recordUsageRoute.permission), recordUsageHandler(new UsageService(deps.db, deps.clock, deps.auditLogger)));
     return router;
 }

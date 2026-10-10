@@ -430,6 +430,12 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 const diajukan = await langkah("POST /reservations", "/reservations", reservasi, ["RESERVATION_CREATED", "APPROVAL_INSTANCE_CREATED"], { "idempotency-key": randomUUID() });
                 // PR-03-11: pembatalan beralasan (BR-025) — slot dilepas, instance ditutup, alasan pada log.
                 await langkah("POST /reservations/:id/cancel", `/reservations/${id(diajukan)}/cancel`, { alasan: "Uji gerbang AL-01" }, ["RESERVATION_CANCELLED"]);
+                // PR-03-12: pencatatan penggunaan — reservasi kedua dibawa langsung ke Selesai (transisinya milik job,
+                // diuji m07-reservation-usage.test.ts); yang dibuktikan di sini hanya entri log route-nya.
+                const kedua = await panggil(mode, "POST", "/reservations", { ...reservasi, waktu_mulai: "2026-09-22T01:00:00.000Z", waktu_selesai: "2026-09-22T03:00:00.000Z" }, { "idempotency-key": randomUUID() });
+                expect(kedua.status).toBe(201);
+                await kueri(`UPDATE reservations SET status = 'SELESAI' WHERE id = ${id(kedua)}`);
+                await langkah("POST /reservations/:id/usage", `/reservations/${id(kedua)}/usage`, { hasil: "BAIK", catatan: "Uji gerbang AL-01" }, ["RESERVATION_UPDATED"]);
 
                 // --- M-04: aset (PR-02-11) — SEBELUM ruangan dinonaktifkan (BR-009: ruangan wajib AKTIF).
                 // PR-02-15: kategori lewat endpoint sungguhan. PUT sebelum aset dibuat (kode kategori
