@@ -10,8 +10,9 @@ import type { AlasanLogin } from "../modules/m01-auth";
 import { muatApprovalRulesPage, muatEditorAturanPage } from "../modules/m10-approval";
 import { muatDashboardPage } from "../modules/m15-dashboard";
 import { loadAssetImportPage, loadAssetMovementPage } from "../modules/m04-assets";
-import { loadReservationWizardPage, loadRoomCalendarPage } from "../modules/m07-reservation-room";
-import type { IsianWizard, PencarianKalender, PilihanSlot } from "../modules/m07-reservation-room";
+import { loadReservationDetailPage, loadReservationListPage, loadReservationWizardPage, loadRoomCalendarPage } from "../modules/m07-reservation-room";
+import type { IsianWizard, PencarianDaftar, PencarianKalender, PilihanSlot, ReservasiSlot } from "../modules/m07-reservation-room";
+import type { ReservationDetail, RoomReservationCreated } from "@sigm4/schemas";
 import type { Rentang } from "../modules/m15-dashboard";
 import { KeadaanKosong, KeadaanMemuat, KeadaanTanpaAkses } from "../shared/states";
 import { Ikon } from "../shared/ui/icon";
@@ -39,16 +40,41 @@ const AssetImportPage = lazy(loadAssetImportPage);
 const AssetMovementPage = lazy(loadAssetMovementPage);
 const RoomCalendarPage = lazy(loadRoomCalendarPage);
 const ReservationWizardPage = lazy(loadReservationWizardPage);
+const ReservationListPage = lazy(loadReservationListPage);
+const ReservationDetailPage = lazy(loadReservationDetailPage);
 /** P-27 (FR-07.1). `aksiPilihan` = jalan ke wizard P-29 bagi pemegang `reservation.create` (PR-03-10). */
-export const HalamanKalenderRuangan = (props: { readonly pencarian: PencarianKalender; readonly onPencarian: (p: Partial<PencarianKalender>) => void; readonly aksiPilihan?: ((p: PilihanSlot) => ReactNode) | undefined }) => (
+export const HalamanKalenderRuangan = (props: {
+    readonly pencarian: PencarianKalender;
+    readonly onPencarian: (p: Partial<PencarianKalender>) => void;
+    readonly aksiPilihan?: ((p: PilihanSlot) => ReactNode) | undefined;
+    /** UX §7.6.1: slot terisi → P-31 bila berhak (PR-03-27). */
+    readonly tautanReservasi?: ((r: ReservasiSlot) => ReactNode) | undefined;
+}) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat kalender ruangan" baris={6} />}>
-        <RoomCalendarPage pencarian={props.pencarian} onPencarian={props.onPencarian} {...(props.aksiPilihan === undefined ? {} : { aksiPilihan: props.aksiPilihan })} />
+        <RoomCalendarPage
+            pencarian={props.pencarian}
+            onPencarian={props.onPencarian}
+            {...(props.aksiPilihan === undefined ? {} : { aksiPilihan: props.aksiPilihan })}
+            {...(props.tautanReservasi === undefined ? {} : { tautanReservasi: props.tautanReservasi })}
+        />
     </Suspense>
 );
 /** P-29 Wizard Pengajuan Reservasi (FR-07.2, UX §7.6.2). */
-export const HalamanWizardReservasi = (props: { readonly isianAwal: IsianWizard; readonly onBatal: () => void; readonly onKalender: (tanggal: string) => void }) => (
+export const HalamanWizardReservasi = (props: { readonly isianAwal: IsianWizard; readonly onBatal: () => void; readonly onKalender: (tanggal: string) => void; readonly onTerbentuk?: (h: RoomReservationCreated) => void }) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat formulir reservasi" baris={6} />}>
         <ReservationWizardPage {...props} />
+    </Suspense>
+);
+/** P-30 Daftar Reservasi (FR-07.3, UX §7.4; PR-03-27). */
+export const HalamanDaftarReservasi = (props: { readonly pencarian: PencarianDaftar; readonly onPencarian: (p: Partial<PencarianDaftar>) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat daftar reservasi" baris={6} />}>
+        <ReservationListPage {...props} />
+    </Suspense>
+);
+/** P-31 Detail Reservasi (FR-07.3, FR-07.4, FR-10.3; PR-03-27). */
+export const HalamanDetailReservasi = (props: { readonly id: string; readonly terkirim: boolean; readonly onUlang: (d: ReservationDetail) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat detail reservasi" baris={8} />}>
+        <ReservationDetailPage {...props} />
     </Suspense>
 );
 export const HalamanMutasiAset = (props: { readonly documentId: number | null; readonly onDocument: (id: number | null) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat mutasi aset" baris={4} />}><AssetMovementPage {...props} /></Suspense>;

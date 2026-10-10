@@ -3,8 +3,11 @@
 import {
     CancelReservationBodySchema,
     RecordUsageBodySchema,
+    ReservationDetailResponseSchema,
     ReservationCancelledResponseSchema,
     ReservationIdParamSchema,
+    ReservationListQuerySchema,
+    ReservationListResponseSchema,
     ReservationUsageResponseSchema,
     RoomAvailabilityQuerySchema,
     RoomAvailabilityResponseSchema,
@@ -25,10 +28,11 @@ import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
 import { DocumentNumberService } from "../../shared/numbering/index.js";
 import { roomAvailabilityHandler } from "./controllers/availability.controller.js";
-import { cancelReservationHandler, createReservationHandler, previewReservationHandler, recordUsageHandler } from "./controllers/reservation.controller.js";
+import { cancelReservationHandler, createReservationHandler, getReservationHandler, listReservationsHandler, previewReservationHandler, recordUsageHandler } from "./controllers/reservation.controller.js";
 import { daftarkanReservasiRuangan } from "./registration.js";
 import { AvailabilityService } from "./services/availability.service.js";
 import { CancellationService } from "./services/cancellation.service.js";
+import { ReservationQueryService } from "./services/reservation-query.service.js";
 import { ReservationService } from "./services/reservation.service.js";
 import { SubmissionService } from "./services/submission.service.js";
 import { UsageService } from "./services/usage.service.js";
@@ -107,6 +111,30 @@ export const recordUsageRoute = defineRoute({
     response: ReservationUsageResponseSchema,
 });
 
+/** P-30 (m07 §7, keputusan 17b): satu baris per pengajuan; `restricted` hanya miliknya sendiri. */
+export const listReservationsRoute = defineRoute({
+    method: "GET",
+    path: "/reservations",
+    permission: "reservation.view",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Daftar pengajuan reservasi, tersaring scope (FR-07.3 langkah 1, UX P-30)",
+    params: ReservationListQuerySchema,
+    response: ReservationListResponseSchema,
+});
+
+/** P-31 (m07 §7): detail + aksi yang tersedia + riwayat (keputusan 17); di luar scope → 404. */
+export const getReservationRoute = defineRoute({
+    method: "GET",
+    path: "/reservations/:id",
+    permission: "reservation.view",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Detail reservasi: objek, jadwal, tanggal turunan, penggunaan, riwayat (UX P-31)",
+    params: ReservationIdParamSchema,
+    response: ReservationDetailResponseSchema,
+});
+
 export interface ReservationsModuleDeps {
     readonly db: Kysely<Database>;
     readonly clock: Clock;
@@ -137,6 +165,9 @@ export function reservationsRouter(
     // `/preview` SEBELUM pola `/:id` kelak (PR-03-27) agar tak tertangkap sebagai id.
     router.post(previewReservationRoute.path, batasi(previewReservationRoute), otorisasi(previewReservationRoute.permission), previewReservationHandler(pengajuan));
     router.post(createReservationRoute.path, batasi(createReservationRoute), otorisasi(createReservationRoute.permission), createReservationHandler(deps.db, pengajuan));
+    const baca = new ReservationQueryService(deps.db, deps.clock, deps.auditLogger, approval);
+    router.get(listReservationsRoute.path, batasi(listReservationsRoute), otorisasi(listReservationsRoute.permission), listReservationsHandler(baca));
+    router.get(getReservationRoute.path, batasi(getReservationRoute), otorisasi(getReservationRoute.permission), getReservationHandler(baca));
     router.post(cancelReservationRoute.path, batasi(cancelReservationRoute), otorisasi(cancelReservationRoute.permission), cancelReservationHandler(new CancellationService(deps.db, deps.clock, deps.auditLogger, approval)));
     router.post(recordUsageRoute.path, batasi(recordUsageRoute), otorisasi(recordUsageRoute.permission), recordUsageHandler(new UsageService(deps.db, deps.clock, deps.auditLogger)));
     return router;

@@ -157,3 +157,117 @@ export const ReservationUsageSchema = z.object({
 export const ReservationUsageResponseSchema = z.object({ success: z.literal(true), data: ReservationUsageSchema, meta: z.null() });
 
 export type ReservationUsage = z.infer<typeof ReservationUsageSchema>;
+
+/** Bab 11.3 "Status Reservasi" (kode teknis; label dipetakan lapisan penyajian). */
+export const STATUS_RESERVASI = ["DRAF", "MENUNGGU_PERSETUJUAN", "DISETUJUI", "DITOLAK", "PERLU_REVISI", "DIBATALKAN", "KEDALUWARSA", "BERLANGSUNG", "SELESAI", "TIDAK_DIGUNAKAN"] as const;
+export type StatusReservasi = (typeof STATUS_RESERVASI)[number];
+
+/**
+ * `GET /reservations` (m07 §7, UX §7.4 P-30; PR-03-27, keputusan 17 log phase-03): satu baris per
+ * PENGAJUAN (induk berulang atau tunggal). `pemohon=saya` = milik pemanggil; scope `restricted`
+ * selalu tersaring miliknya sendiri. Rentang `dari`/`sampai` (WIB, inklusif) atas waktu kegiatan.
+ */
+export const ReservationListQuerySchema = z.object({
+    page: z.coerce.number().int().positive().default(1),
+    per_page: z.coerce.number().int().positive().max(100).default(25),
+    q: z.string().trim().max(100).optional(),
+    jenis: z.enum(["RUANGAN", "ASET"]).optional(),
+    status: z.enum(STATUS_RESERVASI).optional(),
+    pemohon: z.union([z.literal("saya"), z.coerce.number().int().positive()]).optional(),
+    dari: z.iso.date(TANGGAL).optional(),
+    sampai: z.iso.date(TANGGAL).optional(),
+    urut: z.enum(["diajukan", "mulai"]).default("diajukan"),
+});
+
+export type ReservationListQuery = z.input<typeof ReservationListQuerySchema>;
+
+const Orang = z.object({ id: z.string(), nama: z.string() });
+
+export const ReservationListItemSchema = z.object({
+    id: z.string(),
+    nomor: z.string(),
+    jenis: z.enum(["RUANGAN", "ASET"]),
+    status: z.enum(STATUS_RESERVASI),
+    nama_kegiatan: z.string().nullable(),
+    ruangan: z.object({ id: z.string(), nama: z.string() }).nullable(),
+    pemohon: Orang,
+    waktu_mulai: z.iso.datetime({ offset: true }),
+    waktu_selesai: z.iso.datetime({ offset: true }),
+    diajukan_pada: z.iso.datetime({ offset: true }),
+    /** BR-024a: jumlah tanggal turunan; 0 bagi reservasi tunggal. */
+    jumlah_tanggal: z.number().int(),
+});
+
+export const ReservationListResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.array(ReservationListItemSchema),
+    meta: z.object({ page: z.number(), per_page: z.number(), total: z.number(), total_pages: z.number() }),
+});
+
+const TanggalTurunan = z.object({
+    id: z.string(),
+    nomor: z.string(),
+    status: z.enum(STATUS_RESERVASI),
+    waktu_mulai: z.iso.datetime({ offset: true }),
+    waktu_selesai: z.iso.datetime({ offset: true }),
+});
+
+/**
+ * `GET /reservations/{id}` (m07 §7, UX P-31): baris yang diminta — induk berulang membawa `tanggal`,
+ * tanggal turunan membawa `induk`. `aksi` diturunkan server dari aturan yang SAMA dengan endpoint
+ * tulisnya (FR-07.3, FR-07.4) sehingga klien tak menebak. `riwayat` = entri activity log kelompok ini
+ * (keputusan 17d/17e — penyajiannya tercatat `ACTIVITY_LOG_VIEWED`).
+ */
+export const ReservationDetailSchema = z.object({
+    id: z.string(),
+    nomor: z.string(),
+    jenis: z.enum(["RUANGAN", "ASET"]),
+    status: z.enum(STATUS_RESERVASI),
+    ruangan: z.object({ id: z.string(), nama: z.string(), gedung: z.string() }).nullable(),
+    pemohon: Orang,
+    nama_kegiatan: z.string().nullable(),
+    jenis_kegiatan: z.string().nullable(),
+    jumlah_peserta: z.number().int().nullable(),
+    keperluan: z.string().nullable(),
+    kebutuhan_tambahan: z.string().nullable(),
+    keterangan: z.string().nullable(),
+    waktu_mulai: z.iso.datetime({ offset: true }),
+    waktu_selesai: z.iso.datetime({ offset: true }),
+    diajukan_pada: z.iso.datetime({ offset: true }),
+    induk: z.object({ id: z.string(), nomor: z.string() }).nullable(),
+    tanggal: z.array(TanggalTurunan),
+    penggunaan: z
+        .object({
+            kondisi_ruangan: z.enum(["BAIK", "PERLU_PERHATIAN"]).nullable(),
+            catatan: z.string().nullable(),
+            dicatat_oleh: z.string().nullable(),
+            dicatat_pada: z.iso.datetime({ offset: true }),
+        })
+        .nullable(),
+    /** Instance approval pengajuan ini (akar kelompok) — bahan linimasa FR-10.3 lewat `GET /approvals/{id}/history`. */
+    approval_instance_id: z.number().int().nullable(),
+    aksi: z.object({
+        batalkan: z.boolean(),
+        /** BR-024: batalkan + pengajuan baru lewat wizard terisi — hanya pemohon. */
+        ubah_jadwal: z.boolean(),
+        /** Pengajuan baru terisi dari yang Perlu Revisi / Ditolak / Kedaluwarsa (keputusan 17d). */
+        ajukan_ulang: z.boolean(),
+        catat_penggunaan: z.object({ kondisi: z.boolean(), tidak_digunakan: z.boolean() }),
+    }),
+    riwayat: z.array(
+        z.object({
+            waktu: z.iso.datetime({ offset: true }),
+            aksi: z.string(),
+            /** `null` = Sistem (AL-06). */
+            pelaku: z.string().nullable(),
+            nomor: z.string().nullable(),
+            status: z.string().nullable(),
+            keterangan: z.string().nullable(),
+        }),
+    ),
+});
+
+export const ReservationDetailResponseSchema = z.object({ success: z.literal(true), data: ReservationDetailSchema, meta: z.null() });
+
+export type ReservationListItem = z.infer<typeof ReservationListItemSchema>;
+export type ReservationDetail = z.infer<typeof ReservationDetailSchema>;

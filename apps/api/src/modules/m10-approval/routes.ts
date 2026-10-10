@@ -14,7 +14,7 @@ import { historyHandler } from "./controllers/history.controller.js";
 import { createRuleHandler, listRulesHandler, previewRuleHandler, ruleStatusHandler, updateRuleHandler } from "./controllers/rule.controller.js";
 import { DecideBodySchema, DecideResponseSchema, InstanceIdParamSchema, ListPendingResponseSchema } from "./schemas/decision.schema.js";
 import { DelegateBodySchema, DelegateResponseSchema } from "./schemas/delegation.schema.js";
-import { HistoryResponseSchema } from "./schemas/history.schema.js";
+import { HistoryResponseSchema } from "@sigm4/schemas";
 import { DefinisiAturanSchema, PreviewBodySchema, PreviewResponseSchema, RuleIdParamSchema, RuleListResponseSchema, RuleResponseSchema, StatusAturanBodySchema } from "./schemas/rule.schema.js";
 import { ApprovalService } from "./services/approval.service.js";
 import type { PenanganHasil } from "./services/decision.service.js";

@@ -39,11 +39,11 @@ export class AvailabilityService {
         const repo = createAvailabilityRepository(this.db);
         const ruangan = await repo.daftarRuangan(ctx, p);
         const slot = await daftarSlotTerpakai(this.db, "room", ruangan.map((r) => Number(r.id)), { mulai: p.dari, selesai: p.sampai });
-        // FR-07.1 A1 / CAL-UI-06: Siswa/OSIS hanya melihat "Terpakai" — rincian tidak pernah dibaca.
+        // FR-07.1 A1 / CAL-UI-06: Siswa/OSIS hanya melihat "Terpakai" — rincian pihak lain tidak pernah dibaca;
+        // miliknya sendiri tetap berincian agar tertaut ke Detail Reservasi P-31 (keputusan 17b).
         const terbatas = ctx.scopeOf("reservation.view") === "restricted";
-        const rincian = new Map<string, ReservasiRingkasRow>(
-            terbatas ? [] : (await repo.ringkasReservasi(ctx, slot.flatMap((s) => (s.reservation_id === null ? [] : [s.reservation_id])))).map((r) => [r.id, r]),
-        );
+        const ids = slot.flatMap((s) => (s.reservation_id === null ? [] : [s.reservation_id]));
+        const rincian = new Map<string, ReservasiRingkasRow>((await repo.ringkasReservasi(ctx, ids, terbatas ? ctx.userId : undefined)).map((r) => [r.id, r]));
         const { hariKerja, libur } = await this.kalender.kalenderRentang(this.db, tanggalWib(p.dari), tanggalWib(new Date(p.sampai.getTime() - 1)));
         const { startMinute, endMinute } = await this.kalender.jamOperasional(this.db);
 

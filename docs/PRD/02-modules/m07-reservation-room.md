@@ -273,8 +273,8 @@ sequenceDiagram
 | GET | `/rooms/availability` | `reservation.view` | Ketersediaan ruangan pada rentang waktu |
 | POST | `/reservations` | `reservation.create` | Ajukan reservasi ruangan/aset |
 | POST | `/reservations/preview` | `reservation.create` | Pratinjau pengajuan tanpa menyimpan apa pun: tanggal turunan beserta yang bentrok atau tidak sah, kuota pengajuan tertunda (`BR-023a`), dan jalur persetujuan yang akan berlaku (`RE-07`) — bahan langkah Tinjau wizard (UXD-04) |
-| GET | `/reservations` | `reservation.view` | Daftar reservasi (tersaring sesuai role) |
-| GET | `/reservations/{id}` | `reservation.view` | Detail reservasi + riwayat approval |
+| GET | `/reservations` | `reservation.view` | Daftar reservasi (tersaring sesuai role): satu baris per pengajuan; scope `restricted` hanya miliknya sendiri |
+| GET | `/reservations/{id}` | `reservation.view` | Detail reservasi + riwayat approval: tanggal turunan, penggunaan, aksi yang tersedia bagi pemanggil, dan riwayat perubahan dari activity log (penyajiannya tercatat, `AL-10`); di luar scope → 404 |
 | POST | `/reservations/{id}/cancel` | `reservation.cancel_own` · `reservation.cancel_any` | Batalkan reservasi + alasan. Pemilik reservasi cukup `cancel_own`; membatalkan reservasi pihak lain wajib `cancel_any` (`FR-07.3 A2`). Kepemilikan diperiksa di server, bukan disimpulkan dari role |
 | POST | `/reservations/{id}/usage` | `reservation.record_usage` | Catat penggunaan ruangan pasca-kegiatan per tanggal, sekali (`FR-07.4` langkah 3, A1): kondisi `Baik`/`Perlu Perhatian` + catatan bagi yang `Selesai`, atau `Tidak Digunakan` dari `Berlangsung`/`Selesai` — slotnya dilepas |
 

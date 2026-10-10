@@ -1,6 +1,14 @@
 import { queryOptions } from "@tanstack/react-query";
-import { RoomAvailabilityResponseSchema, RoomReservationCreatedResponseSchema, RoomReservationPreviewResponseSchema } from "@sigm4/schemas";
-import type { RoomReservationBody, RoomReservationCreated, RoomReservationPreview } from "@sigm4/schemas";
+import {
+    ReservationCancelledResponseSchema,
+    ReservationDetailResponseSchema,
+    ReservationListResponseSchema,
+    ReservationUsageResponseSchema,
+    RoomAvailabilityResponseSchema,
+    RoomReservationCreatedResponseSchema,
+    RoomReservationPreviewResponseSchema,
+} from "@sigm4/schemas";
+import type { HasilPenggunaan, ReservationCancelled, ReservationListQuery, ReservationUsage, RoomReservationBody, RoomReservationCreated, RoomReservationPreview } from "@sigm4/schemas";
 import { api } from "../../shared/api";
 
 export interface FilterKalender {
@@ -30,4 +38,28 @@ export async function pratinjauPengajuan(body: RoomReservationBody): Promise<Roo
 /** ID-01: kunci yang sama untuk body yang sama — ketuk ganda tak pernah menghasilkan dua pengajuan. */
 export async function ajukanReservasi(body: RoomReservationBody, kunci: string): Promise<RoomReservationCreated> {
     return RoomReservationCreatedResponseSchema.parse((await api.post("/reservations", body, { headers: { "Idempotency-Key": kunci } })).data).data;
+}
+
+/** P-30 (m07 §7, keputusan 17): saringan & halaman hidup di URL; respons diurai skema bersama. */
+export const daftarReservasiQuery = (q: ReservationListQuery) =>
+    queryOptions({
+        queryKey: ["reservations", "list", q],
+        queryFn: async () => ReservationListResponseSchema.parse((await api.get("/reservations", { params: q })).data),
+    });
+
+/** P-31: aksi & riwayat berubah setelah tiap tindakan — selalu dimuat ulang sesudahnya. */
+export const detailReservasiQuery = (id: string) =>
+    queryOptions({
+        queryKey: ["reservations", "detail", id],
+        queryFn: async () => ReservationDetailResponseSchema.parse((await api.get(`/reservations/${id}`)).data).data,
+    });
+
+/** FR-07.3 (BR-025): alasan wajib. Bukan ID-01 — pembatalan kedua ditolak penjaga status. */
+export async function batalkanReservasi(id: string, alasan: string): Promise<ReservationCancelled> {
+    return ReservationCancelledResponseSchema.parse((await api.post(`/reservations/${id}/cancel`, { alasan })).data).data;
+}
+
+/** FR-07.4 langkah 3 + A1 (keputusan 16). */
+export async function catatPenggunaan(id: string, hasil: HasilPenggunaan, catatan: string | null): Promise<ReservationUsage> {
+    return ReservationUsageResponseSchema.parse((await api.post(`/reservations/${id}/usage`, { hasil, catatan })).data).data;
 }

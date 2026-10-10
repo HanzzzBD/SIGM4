@@ -109,7 +109,18 @@ function TeksPanjang({ label, value, onChange, galat }: { readonly label: string
     );
 }
 
-export default function ReservationWizardPage({ isianAwal, onBatal, onKalender }: { readonly isianAwal: IsianWizard; readonly onBatal: () => void; readonly onKalender: (tanggal: string) => void }) {
+export default function ReservationWizardPage({
+    isianAwal,
+    onBatal,
+    onKalender,
+    onTerbentuk,
+}: {
+    readonly isianAwal: IsianWizard;
+    readonly onBatal: () => void;
+    readonly onKalender: (tanggal: string) => void;
+    /** UXD-06 (PR-03-27): objek bernomor → berpindah ke Detail Reservasi P-31. Tanpanya, layar hasil sendiri. */
+    readonly onTerbentuk?: (hasil: RoomReservationCreated) => void;
+}) {
     const [langkah, setLangkah] = useState<Langkah>(1);
     const [isian, setIsian] = useState<IsianWizard>(isianAwal);
     const [galat, setGalat] = useState<Galat>({});
@@ -204,7 +215,7 @@ export default function ReservationWizardPage({ isianAwal, onBatal, onKalender }
         // ID-01/ID-04: kunci per isi body — isian yang berubah adalah pengajuan lain.
         const key = kunci.current.get(teks) ?? crypto.randomUUID();
         kunci.current.set(teks, key);
-        ajukan.mutate({ body, key }, { onSuccess: setHasil, onError: (e) => tanganiGalatServer(e, false) });
+        ajukan.mutate({ body, key }, { onSuccess: onTerbentuk ?? setHasil, onError: (e) => tanganiGalatServer(e, false) });
     };
 
     const lewati = (tanggal: string, ya: boolean) => {

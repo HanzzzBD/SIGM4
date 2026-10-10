@@ -138,6 +138,18 @@ export class ApprovalRepository extends BaseRepository {
         return baris === undefined ? undefined : { instanceId: Number(baris.id), langkahAktif: baris.langkah_aktif };
     }
 
+    /** Instance TERBARU sebuah objek, status apa pun — rujukan linimasa pada layar detail (FR-10.3; PR-03-27). */
+    async instanceTerbaru(ctx: AuthContext, jenis: JenisPengajuan, referensiId: number): Promise<number | undefined> {
+        const baris = await this.query(ctx)
+            .selectFrom("approval_instances")
+            .select("id")
+            .where("jenis_pengajuan", "=", jenis)
+            .where("referensi_id", "=", String(referensiId))
+            .orderBy("id", "desc")
+            .executeTakeFirst();
+        return baris === undefined ? undefined : Number(baris.id);
+    }
+
     /** Status akhir di luar keputusan approver; CHECK `approval_instances_selesai_konsisten` menuntut waktu selesai. */
     async tutupInstance(ctx: AuthContext, instanceId: number, status: "DIBATALKAN", pada: Date): Promise<void> {
         await this.query(ctx)

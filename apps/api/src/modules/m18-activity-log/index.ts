@@ -9,3 +9,5 @@ export {
 } from "./routes.js";
 export type { EntriTerbaru } from "./services/dashboard-source.js";
 export { aktivitasPerHari, aktivitasTerbaru, catatAksesLogDashboard, ringkasanLogin } from "./services/dashboard-source.js";
+export type { EntriRiwayat } from "./services/entity-history.js";
+export { BATAS_RIWAYAT, riwayatEntitas } from "./services/entity-history.js";

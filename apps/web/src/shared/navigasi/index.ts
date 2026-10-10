@@ -20,6 +20,8 @@ export const HALAMAN_TERDAFTAR: Readonly<Record<string, string>> = {
     "P-20": "/aset/mutasi",
     "P-27": "/kalender-ruangan",
     "P-29": "/reservasi/baru",
+    "P-30": "/reservasi",
+    "P-31": "/reservasi/$id",
     "P-68": "/approval-rules",
     "P-69": "/approval-rules/$id",
 };

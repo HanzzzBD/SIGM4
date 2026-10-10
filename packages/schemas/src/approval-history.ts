@@ -1,4 +1,5 @@
-// Skema respons linimasa persetujuan (FR-10.3, SDD-02 §4.5a; SDD-API-01, NFR-M-05).
+// Kontrak linimasa persetujuan `GET /approvals/{id}/history` (FR-10.3, SDD-02 §4.5a; SDD-API-01, NFR-M-05).
+// Dipindah dari skema lokal M-10 di PR-03-27 agar layar P-31 memakai definisi yang sama (SDD-FE-05).
 
 import { z } from "zod";
 
@@ -37,3 +38,5 @@ export const HistoryResponseSchema = z.object({
     }),
     meta: z.null(),
 });
+
+export type LinimasaPersetujuan = z.infer<typeof HistoryResponseSchema>["data"];
