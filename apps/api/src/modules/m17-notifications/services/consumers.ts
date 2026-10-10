@@ -30,7 +30,7 @@ import {
     EVENT_SESI_DICABUT,
 } from "../../m01-auth/index.js";
 import { EVENT_RESERVASI_DIBATALKAN, EVENT_RESERVASI_KEDALUWARSA } from "../../m07-reservation-room/index.js";
-import { EVENT_KERUSAKAN_DILAPORKAN } from "../../m11-damage-reports/index.js";
+import { EVENT_KERUSAKAN_DILAPORKAN, EVENT_KERUSAKAN_DIVERIFIKASI } from "../../m11-damage-reports/index.js";
 import {
     ApprovalSlaBreachedPayloadSchema,
     EVENT_INSTANCE_DIBENTUK,
@@ -58,7 +58,7 @@ const PIMPINAN = "R-03";
 const KODE_DIPAKAI = [
     ...["NT-01", "NT-02", "NT-03", "NT-04", "NT-05", "NT-06", "NT-07", "NT-47", "NT-40", "NT-48", "NT-52", "NT-55", "NT-46", "NT-08"],
     ...["NT-37", "NT-38", "NT-38a", "NT-39", "NT-39a", "NT-53", "NT-54"],
-    ...["NT-19", "NT-20"],
+    ...["NT-19", "NT-20", "NT-21"],
 ] as const;
 
 /** Deep link M-01: P-67 antrean reset, P-63 detail pengguna (UX §6), profil sendiri. */
@@ -211,6 +211,26 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
                 params: kritis
                     ? { nomor: p["nomor"], objek: p["objek"], lokasi: p["lokasi"] }
                     : { nomor: p["nomor"], objek: p["objek"], pelapor: (await identitasPengguna(scope, pelaporId))?.nama ?? "Pengguna" },
+                referensi: { jenis: "damage_report", id },
+                deepLink: `/kerusakan/${String(id)}`,
+                dedupe: { event: e.id },
+            });
+        }),
+    );
+
+    // FR-11.2 langkah 5 (m11 §9, keputusan 21b): hasil verifikasi → pelapor, beserta catatan/alasannya.
+    // Pelapor yang memverifikasi tiketnya sendiri tidak dinotifikasi.
+    registry.on(
+        EVENT_KERUSAKAN_DIVERIFIKASI,
+        jalankan(async (scope, e, p, emit) => {
+            const id = angka(p["damage_report_id"]);
+            const pelaporId = angka(p["pelapor_id"]);
+            if (pelaporId === angka(p["pelaku_id"])) return;
+            const hasil = p["status"] === "DITOLAK" ? "ditolak" : p["status"] === "SELESAI" ? "diverifikasi dan diselesaikan dengan perbaikan ringan" : "diverifikasi dan akan ditindaklanjuti";
+            await emit(scope, {
+                kode: "NT-21",
+                penerima: [pelaporId],
+                params: { nomor: p["nomor"], hasil, catatan: p["catatan"] ?? null },
                 referensi: { jenis: "damage_report", id },
                 deepLink: `/kerusakan/${String(id)}`,
                 dedupe: { event: e.id },

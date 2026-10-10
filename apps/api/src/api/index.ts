@@ -140,7 +140,7 @@ import {
     presignRoute,
 } from "../modules/m06-documents/index.js";
 import { cancelReservationRoute, createBlockRoute, createReservationRoute, deactivateFixedScheduleRoute, deactivateManualBlockRoute, listBlocksRoute, previewBlockRoute, getReservationRoute, listReservationsRoute, previewReservationRoute, recordUsageRoute, reservationsRouter, roomAvailabilityRoute } from "../modules/m07-reservation-room/index.js";
-import { createDamageReportRoute, damageReportsRouter, openDamageReportRoute } from "../modules/m11-damage-reports/index.js";
+import { createDamageReportRoute, damageReportsRouter, getDamageReportRoute, openDamageReportRoute, verifyDamageReportRoute } from "../modules/m11-damage-reports/index.js";
 import { dashboardCardRoute, dashboardManifestRoute, dashboardRouter } from "../modules/m15-dashboard/index.js";
 import type { HubSse } from "../modules/m17-notifications/index.js";
 import {
@@ -270,6 +270,8 @@ export const registry = new RouteRegistry().register(
     deactivateManualBlockRoute,
     openDamageReportRoute,
     createDamageReportRoute,
+    getDamageReportRoute,
+    verifyDamageReportRoute,
     listCategoriesRoute,
     createCategoryRoute,
     updateCategoryRoute,
@@ -505,7 +507,7 @@ export function createApp(deps: AppDeps): Express {
     app.use(
         BASE_PATH,
         damageReportsRouter(
-            { db: deps.db, clock: deps.clock, auditLogger: new AuditLogger({ clock: deps.clock, logger: deps.logger }) },
+            { db: deps.db, clock: deps.clock, auditLogger: new AuditLogger({ clock: deps.clock, logger: deps.logger }), penyimpanan },
             (route) => rateLimit(route, deps.limiter, deps.logger),
             authorize,
         ),

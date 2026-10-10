@@ -43,7 +43,7 @@
 | GET | `/auth/sessions` | Bearer | Daftar sesi (perangkat) aktif milik pengguna | 200 `[{id, platform, ip, user_agent, dibuat_pada, terakhir_diperbarui, berlaku_sampai, saat_ini}]` | 401 | [M-01](../02-modules/m01-auth.md) |
 | GET | `/chat/sessions` | Bearer | Riwayat percakapan sendiri | [M-19](../02-modules/m19-chatbot.md) |
 | GET | `/damage-reports/open` | `damage.view` | Tiket terbuka untuk aset atau ruangan tertentu (`asset_id` atau `room_id`) — ringkasan tanpa identitas pelapor, juga bagi scope `own` (FR-11.1 A1) | [M-11](../02-modules/m11-damage-reports.md) |
-| GET | `/damage-reports/{id}` | `damage.view` | Detail tiket beserta foto | [M-11](../02-modules/m11-damage-reports.md) |
+| GET | `/damage-reports/{id}` | `damage.view` | Detail tiket beserta foto (foto yang unggahannya tertunda ditandai) dan garansi aktif aset (`BR-052`, bagi pemegang `asset_document.view`); scope `own` = tiket milik sendiri | [M-11](../02-modules/m11-damage-reports.md) |
 | GET | `/damage-reports` | `damage.view` | Daftar tiket (tersaring sesuai role) | [M-11](../02-modules/m11-damage-reports.md) |
 | GET | `/dashboard/cards/{id}` | `dashboard.view` + permission kartu | Data satu kartu (rentang, muat ulang); kartu di luar templat role atau permission ditolak | [M-15](../02-modules/m15-dashboard.md) |
 | GET | `/dashboard` | `dashboard.view` | Manifes kartu dashboard sesuai role pengguna — tanpa data; kartu di luar permission tidak tercantum | [M-15](../02-modules/m15-dashboard.md) |
@@ -136,7 +136,7 @@
 | POST | `/chat/messages` | Bearer | Kirim pesan ke chatbot | [M-19](../02-modules/m19-chatbot.md) |
 | POST | `/chat/sessions` | Bearer | Mulai sesi chatbot | [M-19](../02-modules/m19-chatbot.md) |
 | POST | `/class-promotions` | `user.update` | Kenaikan kelas massal: tetapkan kelas atau tandai lulus per siswa pada satu tahun ajaran (`SL-02`) | [M-02](../02-modules/m02-users.md) |
-| POST | `/damage-reports/{id}/verify` | `damage.verify` | Verifikasi / tolak tiket | [M-11](../02-modules/m11-damage-reports.md) |
+| POST | `/damage-reports/{id}/verify` | `damage.verify` | Verifikasi / tolak tiket dari status `Dilaporkan`: `keputusan` Tindak Lanjut (→ `Diverifikasi`) · Perbaikan Ringan (→ `Selesai`, catatan wajib) · Tolak (→ `Ditolak`, alasan wajib); `kondisi_aset` opsional menuntut juga `asset.update_condition` (langkah 4, A1) | [M-11](../02-modules/m11-damage-reports.md) |
 | POST | `/damage-reports` | `damage.create` | Buat tiket kerusakan | [M-11](../02-modules/m11-damage-reports.md) |
 | POST | `/device-tokens` | `notification.manage_own` | Daftarkan token perangkat FCM | [M-17](../02-modules/m17-notifications.md) |
 | POST | `/files/confirm` | Bearer | Daftarkan berkas terunggah & antrekan pemindaian AV | [M-06](../02-modules/m06-documents.md) |

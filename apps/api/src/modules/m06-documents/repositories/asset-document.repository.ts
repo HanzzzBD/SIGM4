@@ -66,6 +66,26 @@ export class AssetDocumentRepository extends BaseRepository {
             .execute();
     }
 
+    /**
+     * BR-052 / FR-11.2 A3 (PR-03-15): dokumen GARANSI yang tertaut aktif ke aset dan masa berlakunya
+     * mencakup `tanggal` (WIB, YYYY-MM-DD). Berakhir paling lambat dahulu.
+     */
+    async garansiAktif(ctx: AuthContext, assetId: number, tanggal: string): Promise<readonly { readonly id: string; readonly nama_berkas: string; readonly garansi_selesai: string }[]> {
+        return this.query(ctx)
+            .selectFrom("asset_documents as d")
+            .innerJoin("asset_document_links as l", "l.document_id", "d.id")
+            .select(["d.id", "d.nama_berkas", sql<string>`to_char(d.garansi_selesai, 'YYYY-MM-DD')`.as("garansi_selesai")])
+            .where("l.asset_id", "=", String(assetId))
+            .where("l.aktif", "=", true)
+            .where("d.dihapus", "=", false)
+            .where("d.jenis", "=", "GARANSI")
+            .where("d.garansi_mulai", "<=", tanggal)
+            .where("d.garansi_selesai", ">=", tanggal)
+            .orderBy("d.garansi_selesai")
+            .orderBy("d.id")
+            .execute();
+    }
+
     /** Tab Dokumen (FR-06.1 langkah 1): terbaru dahulu; `jumlah_aset` = tautan aktif (A3). */
     async daftarUntukAset(ctx: AuthContext, assetId: number): Promise<readonly DokumenRow[]> {
         return this.query(ctx)

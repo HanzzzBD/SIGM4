@@ -8,7 +8,7 @@ import type { AuditLogger } from "../../../shared/audit/index.js";
 import type { AuthContext } from "../../../shared/auth/index.js";
 import type { Clock } from "../../../shared/clock/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
-import type { AssetDocumentType, Database } from "../../../shared/db/index.js";
+import type { AssetDocumentType, Database, QueryExecutor } from "../../../shared/db/index.js";
 import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
 import type { PenyimpananObjek } from "../../../shared/storage/index.js";
 import { createAssetDocumentRepository } from "../repositories/asset-document.repository.js";
@@ -131,4 +131,12 @@ export class DocumentService {
         );
         return hasil;
     }
+}
+
+/**
+ * Garansi aktif sebuah aset bagi M-11 (BR-052, FR-11.2 A3; PR-03-15) — pemilik data garansi tetap M-06.
+ * Pemeriksaan `asset_document.view` milik pemanggil.
+ */
+export async function garansiAktifAset(executor: QueryExecutor, ctx: AuthContext, assetId: number, tanggal: string): Promise<readonly { readonly id: string; readonly nama_berkas: string; readonly garansi_selesai: string }[]> {
+    return createAssetDocumentRepository(executor).garansiAktif(ctx, assetId, tanggal);
 }
