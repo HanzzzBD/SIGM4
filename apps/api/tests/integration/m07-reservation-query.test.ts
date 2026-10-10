@@ -21,7 +21,8 @@ import { jalankanAktivasiSlot } from "../../src/worker/slot-jobs.js";
 import { authPalsu } from "../helpers/auth.js";
 import { dbmate, kueri } from "../helpers/db.js";
 
-const ADA = process.env["DATABASE_URL"] !== undefined && process.env["REDIS_URL"] !== undefined;
+// Dilewati hanya tanpa basis data; prasyarat lain yang hilang = FAILED, bukan skipped (templates/PULL-REQUEST.md).
+const ADA = process.env["DATABASE_URL"] !== undefined;
 // Senin 2 Agustus 2027 09.00 WIB — di luar jendela tanggal berkas uji reservasi lain.
 const SEKARANG = new Date("2027-08-02T02:00:00Z");
 const clock = new FixedClock(SEKARANG);
@@ -42,6 +43,12 @@ describe.skipIf(!ADA)("PR-03-27 — daftar & detail reservasi (acceptance)", () 
     const ruang = { aula: "", osis: "" };
     let aturanId = "";
     const pengguna: Record<"guru" | "guru2" | "siswa" | "petugas" | "approver" | "tanpa", Peran> = {} as never;
+
+    // Penjaga lingkungan sebagai UJI, bukan beforeAll: prasyarat yang hilang harus FAILED, bukan
+    // ter-skip diam-diam (templates/PULL-REQUEST.md).
+    it("lingkungannya lengkap — REDIS_URL ada saat DATABASE_URL ada", () => {
+        expect(process.env["REDIS_URL"], "REDIS_URL wajib diisi: lingkungan integrasi API memakai Redis.").toBeDefined();
+    });
 
     beforeAll(async () => {
         dbmate("up");

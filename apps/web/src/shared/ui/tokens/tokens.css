@@ -126,6 +126,9 @@
     --spacing-control-lg: 3.25rem;
     --spacing-touch: 2.75rem;
     --spacing-row: 2.75rem;
+    /* FOUNDATIONS `size.header.table` dan `size.row.mobile` (48px) — kepala tabel & kartu baris C-15 (PR-03-27). */
+    --spacing-header-table: 3rem;
+    --spacing-row-mobile: 3rem;
     --spacing-topbar: 4rem;
     --spacing-sidebar: 15rem;
     --spacing-sidebar-ciut: 4rem;

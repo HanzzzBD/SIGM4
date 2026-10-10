@@ -275,6 +275,7 @@ const daftarReservasiRoute = createRoute({
         sampai: z.catch(z.optional(z.string().check(z.regex(/^\d{4}-\d{2}-\d{2}$/))), undefined),
         urut: z.catch(z.optional(z.literal("mulai")), undefined),
         page: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(2))), undefined),
+        per: z.catch(z.optional(z.union([z.literal(50), z.literal(100)])), undefined),
     }),
     component: function RouteDaftarReservasi() {
         const cari = daftarReservasiRoute.useSearch();

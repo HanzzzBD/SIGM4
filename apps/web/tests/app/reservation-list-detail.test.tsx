@@ -140,8 +140,9 @@ describe("P-30 Daftar Reservasi", () => {
         server({ daftar: () => ({ status: 200, data: { success: true, data: [], meta: { page: 1, per_page: 25, total: 0, total_pages: 0 } } }) });
         const user = userEvent.setup();
         const { router } = await renderAplikasi("/reservasi?status=DITOLAK");
-        expect(await screen.findByText("Tidak ada reservasi yang cocok")).toBeTruthy();
-        await user.click(screen.getByRole("button", { name: "Hapus saringan" }));
+        // C-15: keadaan kosong DI DALAM badan tabel (kartu mobile memuat salinannya sendiri).
+        expect(within(await screen.findByRole("table")).getByText("Tidak ada reservasi yang cocok")).toBeTruthy();
+        await user.click(within(screen.getByRole("table")).getByRole("button", { name: "Hapus saringan" }));
         await waitFor(() => expect(router.state.location.search).toEqual({}));
     });
 
@@ -149,6 +150,83 @@ describe("P-30 Daftar Reservasi", () => {
         server({ me: ME_ADMIN });
         const { router } = await renderAplikasi("/reservasi");
         await waitFor(() => expect(router.state.location.pathname).toBe("/tidak-punya-akses"));
+    });
+});
+
+describe("P-30 — tabel C-15", () => {
+    const halaman = (n: number, total = 120): Opsi["daftar"] => () => ({ status: 200, data: { success: true, data: [BARIS], meta: { page: n, per_page: 25, total, total_pages: Math.ceil(total / 25) } } });
+
+    it("urut lewat kepala kolom (ikon + aria-sort), klik baris membuka detail, kepala melekat", async () => {
+        const log = server();
+        const user = userEvent.setup();
+        const { router } = await renderAplikasi("/reservasi");
+        const tabel = await screen.findByRole("table");
+        // Selalu dari tabel yang sedang tampil — tabel dirender ulang setelah kueri berganti.
+        const kepala = (nama: string) => within(screen.getByRole("table")).getByRole("columnheader", { name: new RegExp(`^${nama}`) });
+        expect(kepala("Diajukan").getAttribute("aria-sort")).toBe("descending");
+        expect(kepala("Jadwal").getAttribute("aria-sort")).toBe("none");
+        await user.click(within(kepala("Jadwal")).getByRole("button"));
+        await waitFor(() => expect(router.state.location.search).toMatchObject({ urut: "mulai" }));
+        await waitFor(() => expect(log.filter((p) => p.url === "/reservations").at(-1)?.params).toMatchObject({ urut: "mulai" }));
+        await waitFor(() => expect(kepala("Jadwal").getAttribute("aria-sort")).toBe("descending"));
+        expect(kepala("Diajukan").getAttribute("aria-sort")).toBe("none");
+        expect(kepala("Nomor").className).toContain("sticky");
+        expect(tabel.parentElement?.className).not.toMatch(/rounded/);
+
+        await user.click(within(screen.getByRole("table")).getByText("Rapat Komite"));
+        await waitFor(() => expect(router.state.location.pathname).toBe("/reservasi/123"));
+    });
+
+    it("halaman bernomor + ukuran halaman di URL (25 bawaan, 50/100 tercatat)", async () => {
+        const log = server({ daftar: halaman(3) });
+        const user = userEvent.setup();
+        const { router } = await renderAplikasi("/reservasi?page=3");
+        const nav = await screen.findByRole("navigation", { name: "Halaman daftar reservasi" });
+        expect(within(nav).getByRole("button", { name: "Halaman 3" }).getAttribute("aria-current")).toBe("page");
+        expect(within(nav).getAllByRole("button", { name: /^Halaman \d+$/ }).map((b) => b.textContent)).toEqual(["1", "2", "3", "4", "5"]);
+        await user.selectOptions(within(nav).getByLabelText(/^Baris per halaman/), "50");
+        await waitFor(() => expect(router.state.location.search).toEqual({ per: 50 }));
+        await waitFor(() => expect(log.filter((p) => p.url === "/reservations").at(-1)?.params).toMatchObject({ page: 1, per_page: 50 }));
+    });
+});
+
+describe("regresi regex route (kelas bug #143) — id tiga digit & tanggal", () => {
+    it("P-30: `dari`/`sampai` YYYY-MM-DD dan `page` dari URL sampai ke API; bentuk lain dibuang", async () => {
+        const log = server();
+        await renderAplikasi("/reservasi?dari=2027-03-01&sampai=2027-03-31&page=3&per=100");
+        await waitFor(() => expect(log.filter((p) => p.url === "/reservations").at(-1)?.params).toMatchObject({ dari: "2027-03-01", sampai: "2027-03-31", page: 3, per_page: 100 }));
+        const salah = server();
+        await renderAplikasi("/reservasi?dari=2027-3-1&sampai=31-03-2027");
+        await waitFor(() => expect(salah.some((p) => p.url === "/reservations")).toBe(true));
+        const p = salah.filter((x) => x.url === "/reservations").at(-1)?.params ?? {};
+        expect([p["dari"], p["sampai"]]).toEqual([undefined, undefined]);
+    });
+
+    it("P-31: `/reservasi/123` terbuka; `0123` dan `12a` dialihkan ke Tidak Ditemukan", async () => {
+        server();
+        const ok = await renderAplikasi("/reservasi/123");
+        expect(await screen.findByRole("heading", { name: "RSV-RG-2027-0123", level: 1 })).toBeTruthy();
+        expect(ok.router.state.location.pathname).toBe("/reservasi/123");
+        ok.unmount();
+        for (const salah of ["/reservasi/0123", "/reservasi/12a"]) {
+            const { router, unmount } = await renderAplikasi(salah);
+            await waitFor(() => expect(router.state.location.pathname).toBe("/tidak-ditemukan"));
+            unmount();
+        }
+    });
+
+    it("P-29: `?dari=123` mengisi wizard dari reservasi itu; `?dari=12a` diabaikan tanpa memanggil API", async () => {
+        const log = server();
+        const { router, unmount } = await renderAplikasi("/reservasi/baru?dari=123");
+        await waitFor(() => expect((screen.getByLabelText(/^Ruangan/) as HTMLSelectElement).value).toBe("10"));
+        expect(router.state.location.search).toEqual({ dari: "123" });
+        expect(log.some((p) => p.url === "/reservations/123")).toBe(true);
+        unmount();
+        const abai = server();
+        const lain = await renderAplikasi("/reservasi/baru?dari=12a");
+        expect(await screen.findByRole("heading", { name: "Ajukan Reservasi Ruangan" })).toBeTruthy();
+        expect(lain.router.state.location.search).toEqual({});
+        expect(abai.some((p) => p.url.startsWith("/reservations/"))).toBe(false);
     });
 });
 

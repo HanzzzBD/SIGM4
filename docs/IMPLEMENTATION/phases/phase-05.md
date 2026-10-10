@@ -97,7 +97,7 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 
 | PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
 |---|---|:---:|:---:|---|---|---|
-| `PR-05-01` | Skema peminjaman + check-out dari reservasi | L | L | Ph04 | `FR-09.1`, `BR-026` `BR-026a` `BR-027` | Check-out tanpa reservasi disetujui ditolak; entri peminjaman masuk linimasa aset (`PR-03-24`, keputusan 4 log phase-03) |
+| `PR-05-01` | Skema peminjaman + check-out dari reservasi | L | L | Ph04 | `FR-09.1`, `BR-026` `BR-026a` `BR-027` | Check-out tanpa reservasi disetujui ditolak; entri peminjaman masuk linimasa aset (`PR-03-24`, keputusan 4 log phase-03). *Keputusan 18 log phase-03:* juga memasang tautan P-31 Detail Reservasi → P-34 Detail Peminjaman; layar P-34 + `GET /loans/{id}` = PR baru di luar rencana Phase 05 |
 | `PR-05-02` | Bukti serah terima: foto + tanda tangan | M | M | 01, Ph03 | `FR-09.1`, `SDD-FS-08`, `DP-01` `DP-05a`, `SDD-FS-11` | Foto tersimpan ter-*scan* AV; foto berwajah dipertahankan utuh dan dilindungi `DP-05` — tidak dikaburkan, tidak dihapus |
 | `PR-05-03` | Check-in + pemeriksaan kondisi + kerusakan baru | L | L | 01, Ph03 | `FR-09.2`, `BR-028` … `BR-028e` | Kerusakan saat kembali membuat laporan M-11 otomatis |
 | `PR-05-04` | Pelepasan slot & pemulihan status aset saat check-in | M | M | 03, Ph02 | `BR-030`, `SDD-AVL-07` | Aset kembali tersedia seketika |
