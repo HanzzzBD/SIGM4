@@ -128,6 +128,22 @@ export class FileService {
     }
 }
 
+/**
+ * Pintu foto laporan kerusakan bagi M-11 (FR-11.1, PR-03-14): dalam transaksi pembuatan tiket, berkas
+ * pesanan `DAMAGE_PHOTO` milik pelapor ditautkan ke tiketnya (SDD-FS-02) — tak lagi yatim (SDD-FS-09).
+ * Mengembalikan jumlah foto yang belum dikonfirmasi: unggahannya masih di antrean perangkat (A2,
+ * MOB-OFF-02/04, keputusan 20b log phase-03).
+ */
+export async function tautkanFotoKerusakan(scope: TransactionScope, fileIds: readonly number[], reportId: number): Promise<number> {
+    const repo = createStoredFileRepository(scope.tx);
+    const berkas = await repo.kunciFotoKerusakan(scope.ctx, fileIds);
+    if (berkas.length !== new Set(fileIds).size) {
+        throw galatValidasi("foto_file_ids", "Foto tidak ditemukan, sudah dipakai, terinfeksi, atau bukan unggahan foto kerusakan Anda.");
+    }
+    for (const b of berkas) await repo.tetapkanPemilik(scope.ctx, b.id, String(reportId));
+    return berkas.filter((b) => b.checksum === null).length;
+}
+
 /** Keadaan foto profil bagi `GET /me` (keputusan 7c log phase-03): URL hanya bila `CLEAN`. */
 export interface TampilanFoto {
     readonly status: FileScanStatus;

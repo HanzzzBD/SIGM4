@@ -599,6 +599,34 @@ export interface RoomManualBlocksTable extends KolomBaku {
     status: ColumnType<StatusBlokadeRuangan, StatusBlokadeRuangan | undefined, StatusBlokadeRuangan>;
 }
 
+/** Bab 11.3 "Urgensi Kerusakan" / "Status Laporan Kerusakan" (0048). */
+export type UrgensiKerusakan = "RENDAH" | "SEDANG" | "TINGGI" | "KRITIS";
+export type StatusLaporanKerusakan = "DILAPORKAN" | "DIVERIFIKASI" | "DALAM_PERBAIKAN" | "SELESAI" | "DITOLAK";
+
+/** `damage_reports` (0048; FR-11.1) — objek tepat satu: aset atau ruangan. */
+export interface DamageReportsTable extends KolomBaku {
+    id: Generated<string>;
+    nomor: string;
+    pelapor_id: ColumnType<string, string | number, string | number>;
+    asset_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    room_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    deskripsi: string;
+    urgensi: UrgensiKerusakan;
+    status: ColumnType<StatusLaporanKerusakan, StatusLaporanKerusakan | undefined, StatusLaporanKerusakan>;
+    diverifikasi_oleh: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    diverifikasi_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+}
+
+/** `damage_report_photos` (0048) — anak append-only; berkas di `stored_files` (SDD-FS-02). */
+export interface DamageReportPhotosTable {
+    id: Generated<string>;
+    damage_report_id: ColumnType<string, string | number, never>;
+    file_id: ColumnType<string, string | number, never>;
+    urutan: number;
+    created_at: ColumnType<Date, never, never>;
+    created_by: ColumnType<string | null, string | number | null, never>;
+}
+
 /**
  * `reservations` (0043, PR-03-08; m07 §8). Induk berulang + anak ber-`parent_id` (BR-024a);
  * nomor anak = nomor induk + `.NN`. Kolom kegiatan wajib bagi `RUANGAN` (CHECK).
@@ -875,6 +903,8 @@ export interface Database {
     reservations: ReservationsTable;
     room_fixed_schedules: RoomFixedSchedulesTable;
     room_manual_blocks: RoomManualBlocksTable;
+    damage_reports: DamageReportsTable;
+    damage_report_photos: DamageReportPhotosTable;
     approval_rules: ApprovalRulesTable;
     approval_rule_steps: ApprovalRuleStepsTable;
     approval_instances: ApprovalInstancesTable;

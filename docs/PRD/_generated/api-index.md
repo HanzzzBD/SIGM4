@@ -42,7 +42,7 @@
 | GET | `/auth/password/requests` | `user.reset_password` | Antrean permintaan reset (filter status; memuat identitas pemohon untuk verifikasi luring) | 200 daftar terpaginasi | 401, 403 | [M-01](../02-modules/m01-auth.md) |
 | GET | `/auth/sessions` | Bearer | Daftar sesi (perangkat) aktif milik pengguna | 200 `[{id, platform, ip, user_agent, dibuat_pada, terakhir_diperbarui, berlaku_sampai, saat_ini}]` | 401 | [M-01](../02-modules/m01-auth.md) |
 | GET | `/chat/sessions` | Bearer | Riwayat percakapan sendiri | [M-19](../02-modules/m19-chatbot.md) |
-| GET | `/damage-reports/open` | `damage.view` | Tiket terbuka untuk aset tertentu | [M-11](../02-modules/m11-damage-reports.md) |
+| GET | `/damage-reports/open` | `damage.view` | Tiket terbuka untuk aset atau ruangan tertentu (`asset_id` atau `room_id`) — ringkasan tanpa identitas pelapor, juga bagi scope `own` (FR-11.1 A1) | [M-11](../02-modules/m11-damage-reports.md) |
 | GET | `/damage-reports/{id}` | `damage.view` | Detail tiket beserta foto | [M-11](../02-modules/m11-damage-reports.md) |
 | GET | `/damage-reports` | `damage.view` | Daftar tiket (tersaring sesuai role) | [M-11](../02-modules/m11-damage-reports.md) |
 | GET | `/dashboard/cards/{id}` | `dashboard.view` + permission kartu | Data satu kartu (rentang, muat ulang); kartu di luar templat role atau permission ditolak | [M-15](../02-modules/m15-dashboard.md) |

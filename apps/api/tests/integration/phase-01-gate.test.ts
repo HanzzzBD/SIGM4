@@ -505,6 +505,9 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await panggil(mode, "POST", "/files/confirm", { file_id: pesananDok.file_id, checksum: createHash("sha256").update(pdf).digest("hex") });
                 const dok = await langkah("POST /assets/:id/documents", `/assets/${asetId}/documents`, { file_id: Number(pesananDok.file_id), jenis: "FAKTUR", nama_berkas: "faktur.pdf" }, ["DOCUMENT_UPLOADED"]);
                 await langkah("DELETE /assets/:id/documents/:docId", `/assets/${asetId}/documents/${id(dok)}`, undefined, ["DOCUMENT_DELETED"]);
+                // PR-03-14 (M-11): foto cukup dipesan — unggahannya boleh tertunda (FR-11.1 A2, keputusan 20b).
+                const pesananFoto = (await panggil(mode, "POST", "/files/presign", { jenis: "DAMAGE_PHOTO", mime: "image/jpeg", ukuran: 1024 })).json.data as { file_id: string };
+                await langkah("POST /damage-reports", "/damage-reports", { asset_id: Number(asetId), deskripsi: "Uji gerbang AL-01", urgensi: "SEDANG", foto_file_ids: [Number(pesananFoto.file_id)] }, ["DAMAGE_REPORTED"]);
                 await langkah(
                     "PATCH /assets/:id/condition",
                     `/assets/${asetId}/condition`,
@@ -516,6 +519,8 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 // sini — disingkirkan sebelum langkah PATCH .../status di bawah (riwayat
                 // kondisi PR-02-13 lebih dulu — FK asset_condition_history.asset_id).
                 await kueri(`DELETE FROM asset_document_links WHERE asset_id = ${asetId}`); // PR-03-06: menunjuk assets
+                await kueri(`DELETE FROM damage_report_photos WHERE damage_report_id IN (SELECT id FROM damage_reports WHERE asset_id = ${asetId})`); // PR-03-14
+                await kueri(`DELETE FROM damage_reports WHERE asset_id = ${asetId}`);
                 await kueri(`DELETE FROM asset_condition_history WHERE asset_id = ${asetId}`);
                 await kueri(`DELETE FROM asset_movements WHERE asset_id = ${asetId}`);
                 await kueri(`DELETE FROM assets WHERE room_id = ${id(ruang)}`);
@@ -621,6 +626,10 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 // PR-02-39: operasi menyimpan creator; bersihkan setelah FK riwayat, sebelum users.
                 await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'asset_movement_document'");
                 await kueri("DELETE FROM asset_movement_documents");
+                // PR-03-14: tiket kerusakan menunjuk assets/rooms/users/stored_files — sebelum semuanya.
+                await kueri("DELETE FROM damage_report_photos");
+                await kueri("DELETE FROM damage_reports");
+                await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'damage_report'");
                 // PR-02-11: assets/asset_code_counters menunjuk rooms DAN asset_categories — sebelum keduanya.
                 await kueri("DELETE FROM assets");
                 await kueri("DELETE FROM asset_import_jobs");

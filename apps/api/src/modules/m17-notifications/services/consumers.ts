@@ -30,6 +30,7 @@ import {
     EVENT_SESI_DICABUT,
 } from "../../m01-auth/index.js";
 import { EVENT_RESERVASI_DIBATALKAN, EVENT_RESERVASI_KEDALUWARSA } from "../../m07-reservation-room/index.js";
+import { EVENT_KERUSAKAN_DILAPORKAN } from "../../m11-damage-reports/index.js";
 import {
     ApprovalSlaBreachedPayloadSchema,
     EVENT_INSTANCE_DIBENTUK,
@@ -57,6 +58,7 @@ const PIMPINAN = "R-03";
 const KODE_DIPAKAI = [
     ...["NT-01", "NT-02", "NT-03", "NT-04", "NT-05", "NT-06", "NT-07", "NT-47", "NT-40", "NT-48", "NT-52", "NT-55", "NT-46", "NT-08"],
     ...["NT-37", "NT-38", "NT-38a", "NT-39", "NT-39a", "NT-53", "NT-54"],
+    ...["NT-19", "NT-20"],
 ] as const;
 
 /** Deep link M-01: P-67 antrean reset, P-63 detail pengguna (UX §6), profil sendiri. */
@@ -188,6 +190,29 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
                 params: { nomor: p["nomor"], pelaku, alasan: p["alasan"] },
                 referensi: { jenis: "reservation", id },
                 deepLink: `/reservasi/${String(id)}`,
+                dedupe: { event: e.id },
+            });
+        }),
+    );
+
+    // FR-11.1 langkah 5 (m11 §9, keputusan 20d): NT-19 ke Petugas Sarpras; urgensi KRITIS → NT-20 ke
+    // Petugas + Pimpinan SEBAGAI GANTI NT-19 (satu notifikasi per tiket). Pelapor tidak dinotifikasi.
+    registry.on(
+        EVENT_KERUSAKAN_DILAPORKAN,
+        jalankan(async (scope, e, p, emit) => {
+            const id = angka(p["damage_report_id"]);
+            const kritis = p["urgensi"] === "KRITIS";
+            const pelaporId = angka(p["pelapor_id"]);
+            const penerima = (await penggunaAktifBerperan(scope, kritis ? [PETUGAS_SARPRAS, PIMPINAN] : [PETUGAS_SARPRAS])).filter((u) => u !== pelaporId);
+            if (penerima.length === 0) return;
+            await emit(scope, {
+                kode: kritis ? "NT-20" : "NT-19",
+                penerima,
+                params: kritis
+                    ? { nomor: p["nomor"], objek: p["objek"], lokasi: p["lokasi"] }
+                    : { nomor: p["nomor"], objek: p["objek"], pelapor: (await identitasPengguna(scope, pelaporId))?.nama ?? "Pengguna" },
+                referensi: { jenis: "damage_report", id },
+                deepLink: `/kerusakan/${String(id)}`,
                 dedupe: { event: e.id },
             });
         }),

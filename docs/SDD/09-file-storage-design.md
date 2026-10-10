@@ -121,6 +121,8 @@ CREATE INDEX stored_files_pending_scan
 
 Langkah 3 dan 5 sengaja terpisah: berkas dapat diunggah lebih dulu (mis. antrean unggah mobile, `MOB-OFF-02`) lalu ditautkan ketika transaksi bisnisnya siap.
 
+Urutan sebaliknya sah untuk **foto laporan kerusakan** (`FR-11.1 A2`, `MOB-OFF-02`/`MOB-OFF-04`; keputusan 20b log phase-03): `POST /damage-reports` menautkan pesanan `DAMAGE_PHOTO` hasil langkah 1 — milik pelapor, belum dimiliki, tidak `INFECTED` — sebelum langkah 3, sehingga tiket tercatat walau unggahannya masih di antrean perangkat. Foto yang belum dikonfirmasi = "foto tertunda" (`checksum` kosong); langkah 3 tetap berjalan sesudahnya tanpa syarat pemilik. Jenis lain tetap menuntut berkas terkonfirmasi saat ditautkan.
+
 ### 4.3 Kebijakan per jenis berkas
 
 | Jenis | MIME diizinkan | Maks | Sumber |
