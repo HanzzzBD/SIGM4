@@ -44,7 +44,7 @@
 | GET | `/chat/sessions` | Bearer | Riwayat percakapan sendiri | [M-19](../02-modules/m19-chatbot.md) |
 | GET | `/damage-reports/open` | `damage.view` | Tiket terbuka untuk aset atau ruangan tertentu (`asset_id` atau `room_id`) — ringkasan tanpa identitas pelapor, juga bagi scope `own` (FR-11.1 A1) | [M-11](../02-modules/m11-damage-reports.md) |
 | GET | `/damage-reports/{id}` | `damage.view` | Detail tiket beserta foto (foto yang unggahannya tertunda ditandai) dan garansi aktif aset (`BR-052`, bagi pemegang `asset_document.view`); scope `own` = tiket milik sendiri | [M-11](../02-modules/m11-damage-reports.md) |
-| GET | `/damage-reports` | `damage.view` | Daftar tiket (tersaring sesuai role) | [M-11](../02-modules/m11-damage-reports.md) |
+| GET | `/damage-reports` | `damage.view` | Daftar tiket (tersaring sesuai role; scope `own` = tiket milik sendiri, A1) — saringan langkah 3 (status, urgensi, gedung/ruangan, kategori aset, rentang tanggal lapor, pelapor, `melampaui_sla`), jumlah per status (langkah 2), dan `batas_sla` + `melampaui_sla` per tiket (langkah 4) | [M-11](../02-modules/m11-damage-reports.md) |
 | GET | `/dashboard/cards/{id}` | `dashboard.view` + permission kartu | Data satu kartu (rentang, muat ulang); kartu di luar templat role atau permission ditolak | [M-15](../02-modules/m15-dashboard.md) |
 | GET | `/dashboard` | `dashboard.view` | Manifes kartu dashboard sesuai role pengguna — tanpa data; kartu di luar permission tidak tercantum | [M-15](../02-modules/m15-dashboard.md) |
 | GET | `/fines` | `fine.view` | Daftar denda | [M-09](../02-modules/m09-loans.md) |
