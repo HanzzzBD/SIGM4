@@ -51,6 +51,14 @@ function approver(l: Langkah): string {
     return l.approver.user?.nama ?? l.approver.role?.nama ?? "—";
 }
 
+/** Durasi dalam satuan SLA — jam kerja (FR-10.3 AC 2, CAL-01). */
+export function durasiKerja(menit: number): string {
+    const jam = Math.floor(menit / 60);
+    const sisa = menit % 60;
+    if (jam === 0) return `${String(sisa)} menit kerja`;
+    return sisa === 0 ? `${String(jam)} jam kerja` : `${String(jam)} jam ${String(sisa)} menit kerja`;
+}
+
 function BarisLangkah({ l }: { readonly l: Langkah }) {
     const sisa = l.sla === null ? null : Math.max(0, Math.round(l.sla.sisa_menit_kerja / 60));
     return (
@@ -67,7 +75,14 @@ function BarisLangkah({ l }: { readonly l: Langkah }) {
                 </p>
                 {l.eskalasi !== null && <p className="text-sm text-text-secondary">Dieskalasi {waktuWib(l.eskalasi.pada)}{l.eskalasi.dari !== null && ` dari ${nama(l.eskalasi.dari)}`}</p>}
                 {l.alasan_dilewati !== null && <p className="text-sm text-text-secondary">{l.alasan_dilewati}</p>}
+                {l.durasi_menit_kerja !== null && <p className="text-sm text-text-secondary">Durasi {durasiKerja(l.durasi_menit_kerja)}</p>}
                 {l.catatan !== null && <p className="rounded-sm bg-surface-subtle p-2 text-base text-text-primary">“{l.catatan}”</p>}
+                {/* BR-039a / UX F-08: eskalasi habis → status eksplisit, bukan diam. */}
+                {l.status === "AKTIF" && l.eskalasi_habis_pada !== null && (
+                    <span className="self-start">
+                        <Lencana varian="warning">{`Menunggu tindakan manual sejak ${waktuWib(l.eskalasi_habis_pada)}`}</Lencana>
+                    </span>
+                )}
                 {l.status === "AKTIF" && sisa !== null && (
                     <span className="self-start">
                         <Lencana varian={l.sla?.terlambat === true ? "error" : "neutral"}>{l.sla?.terlambat === true ? "Melewati SLA" : `Sisa SLA ${String(sisa)} jam kerja`}</Lencana>

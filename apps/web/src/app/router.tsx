@@ -30,6 +30,8 @@ import {
     HalamanKalenderRuangan,
     HalamanMutasiAset,
     HalamanPanelBlokade,
+    HalamanDetailKeputusan,
+    HalamanPersetujuanSaya,
     HalamanPreferensiNotifikasi,
     HalamanPusatNotifikasi,
     HalamanTanpaAkses,
@@ -346,6 +348,37 @@ const pusatNotifikasiRoute = createRoute({
 /** P-78 Preferensi Notifikasi (FR-17.3, UX §6 `/profil/notifikasi`; PR-02-43). */
 const preferensiNotifikasiRoute = createRoute({ getParentRoute: () => shellRoute, path: "/profil/notifikasi", beforeLoad: butuhIzin("notification.manage_own"), component: HalamanPreferensiNotifikasi });
 
+/** P-37 Persetujuan Saya (FR-10.2, UX §6 `/persetujuan`; PR-02-44). `diputuskan` = umpan balik setelah P-38. */
+const persetujuanSayaRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/persetujuan",
+    beforeLoad: butuhIzin("approval.decide"),
+    validateSearch: z.object({
+        page: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(2))), undefined),
+        diputuskan: z.catch(z.optional(z.string()), undefined),
+    }),
+    component: function RoutePersetujuanSaya() {
+        const { page, diputuskan } = persetujuanSayaRoute.useSearch();
+        const navigate = useNavigate({ from: persetujuanSayaRoute.fullPath });
+        return <HalamanPersetujuanSaya page={page ?? 1} diputuskan={diputuskan} onPage={(p) => void navigate({ search: { page: p === 1 ? undefined : p } })} />;
+    },
+});
+
+/** P-38 Detail Keputusan (FR-10.2, FR-10.3; PR-02-44) — sasaran deep link NT-01/05/06/07/47. Keputusan kembali ke P-37. */
+const detailKeputusanRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/persetujuan/$id",
+    beforeLoad: async (a) => {
+        if (!/^[1-9]\d*$/.test(a.params.id)) throw redirect({ to: "/tidak-ditemukan" });
+        await butuhIzin("approval.decide")(a);
+    },
+    component: function RouteDetailKeputusan() {
+        const { id } = detailKeputusanRoute.useParams();
+        const navigate = useNavigate({ from: detailKeputusanRoute.fullPath });
+        return <HalamanDetailKeputusan key={id} id={Number(id)} onSelesai={(label) => void navigate({ to: "/persetujuan", search: { diputuskan: label } })} />;
+    },
+});
+
 export const routeTree = rootRoute.addChildren([
     loginRoute,
     verifikasiDuaFaktorRoute,
@@ -353,7 +386,7 @@ export const routeTree = rootRoute.addChildren([
     gantiPasswordRoute,
     gangguanRoute,
     tidakDitemukanRoute,
-    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {
