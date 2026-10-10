@@ -7,6 +7,7 @@
 import type { Kysely } from "kysely";
 import type { AuditLogger } from "../../../shared/audit/index.js";
 import type { AuthContext } from "../../../shared/auth/index.js";
+import { BusinessCalendarService } from "../../../shared/calendar/index.js";
 import type { Clock } from "../../../shared/clock/index.js";
 import type { Database, TransactionScope } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
@@ -55,6 +56,8 @@ export interface ItemPending {
     readonly pemohon: { readonly id: number; readonly nama: string | null };
     readonly urutan: number;
     readonly sla_deadline: Date | null;
+    /** Sisa SLA langkah dalam MENIT KERJA (CAL-01, keputusan 92d) — sama dengan linimasa; null bila tanpa tenggat. */
+    readonly sla: { readonly sisa_menit_kerja: number; readonly terlambat: boolean } | null;
     readonly created_at: Date;
     /** RE-12: terisi bila pemanggil memutus sebagai penerima delegasi. */
     readonly atas_nama_user_id: number | null;
@@ -87,6 +90,7 @@ export const penanganHasil = new RegistriPenanganHasil();
 
 export class DecisionService {
     private readonly penangan: RegistriPenanganHasil;
+    private readonly calendar = new BusinessCalendarService();
 
     constructor(
         private readonly db: Kysely<Database>,
@@ -225,9 +229,11 @@ export class DecisionService {
             async (scope) => {
                 const kandidat = await createDecisionRepository(scope.tx).kandidatPending(scope.ctx, ctx.userId, tanggalWib(this.clock.now()));
                 const hasil: ItemPending[] = [];
+                const sekarang = this.clock.now();
                 for (const k of kandidat) {
                     const saya = (await this.approval.pemutusSah(scope, k, k.pemohonId)).pemutus.find((p) => p.userId === ctx.userId);
                     if (saya === undefined) continue;
+                    const lewat = k.slaDeadline !== null && k.slaDeadline.getTime() <= sekarang.getTime();
                     hasil.push({
                         instance_id: k.instanceId,
                         jenis_pengajuan: k.jenis,
@@ -235,6 +241,7 @@ export class DecisionService {
                         pemohon: { id: k.pemohonId, nama: k.pemohonNama },
                         urutan: k.urutan,
                         sla_deadline: k.slaDeadline,
+                        sla: k.slaDeadline === null ? null : { sisa_menit_kerja: lewat ? 0 : await this.calendar.workingMinutesBetween(scope.tx, sekarang, k.slaDeadline), terlambat: lewat },
                         created_at: k.createdAt,
                         atas_nama_user_id: saya.atasNamaUserId,
                     });
