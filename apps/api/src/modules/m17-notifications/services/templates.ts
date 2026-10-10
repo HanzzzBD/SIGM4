@@ -157,6 +157,14 @@ export const TEMPLAT: Readonly<Record<string, Templat>> = {
         judul: "Kerusakan kritis",
         render: (p) => `KRITIS: ${teks(p["objek"])} di ${teks(p["lokasi"])} dilaporkan rusak berat.`,
     },
+    /** FR-11.2 langkah 5 (PR-03-15): `{hasil}` dirender konsumen dari status tiket. */
+    "NT-21": {
+        jenis: "KERUSAKAN_PERAWATAN",
+        wajib: false,
+        push: true,
+        judul: "Hasil verifikasi laporan kerusakan",
+        render: (p) => `Laporan ${teks(p["nomor"])} telah ${teks(p["hasil"])}.${teks(p["catatan"]) === "" ? "" : ` ${teks(p["catatan"])}`}`,
+    },
     "NT-46": {
         jenis: "RESERVASI_PEMINJAMAN",
         wajib: true,

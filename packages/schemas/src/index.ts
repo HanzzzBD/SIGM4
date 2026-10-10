@@ -44,12 +44,19 @@ export {
 export type { BlockDeactivated, JenisBlokade, RoomBlockCreate, RoomBlockCreated, RoomBlockInput, RoomBlockList, RoomBlockPreview } from "./room-blocks.js";
 export {
     DamageReportCreateSchema,
+    DamageReportDetailResponseSchema,
+    DamageReportDetailSchema,
+    DamageReportIdParamSchema,
     DamageReportCreatedResponseSchema,
     DamageReportCreatedSchema,
     DamageReportOpenQuerySchema,
     DamageReportOpenResponseSchema,
     DamageReportOpenSchema,
+    DamageReportVerifiedResponseSchema,
+    DamageReportVerifiedSchema,
+    DamageReportVerifySchema,
+    KEPUTUSAN_VERIFIKASI_KERUSAKAN,
     STATUS_LAPORAN_KERUSAKAN,
     URGENSI_KERUSAKAN,
 } from "./damage-reports.js";
-export type { DamageReportCreate, DamageReportCreated, DamageReportOpen } from "./damage-reports.js";
+export type { DamageReportCreate, DamageReportCreated, DamageReportDetail, DamageReportOpen, DamageReportVerified, DamageReportVerify } from "./damage-reports.js";

@@ -6,6 +6,7 @@ export { confirmRoute, createDocumentRoute, deleteDocumentRoute, downloadDocumen
 /** Penjaga unduh SDD-FS-03 — dipakai seluruh penerbit URL unduhan (PR-03-06 dst.). */
 export type { TampilanFoto } from "./services/file.service.js";
 export { buatPengelolaFotoProfil, tautkanFotoKerusakan, urlUnduhBerkas } from "./services/file.service.js";
+export { garansiAktifAset } from "./services/document.service.js";
 /** Pemindaian AV (SDD-FS-04, PR-03-05) — dipasang entrypoint worker; `av_scanner` di /health. */
 export type { PemindaiVirus, PutusanClamd } from "./services/clamd.js";
 export { KlienClamd } from "./services/clamd.js";

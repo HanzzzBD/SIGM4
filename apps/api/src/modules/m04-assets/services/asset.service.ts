@@ -347,6 +347,15 @@ export class AssetService {
      * `NT-33`, di luar endpoint generik ini).
      */
     async ubahKondisi(ctx: AuthContext, id: number, input: UbahKondisiInput): Promise<AssetRow> {
+        return withTransaction(ctx, (scope) => this.ubahKondisiDalam(scope, id, input), this.db);
+    }
+
+    /**
+     * Inti `ubahKondisi` di transaksi PEMANGGIL — dipakai juga verifikasi laporan kerusakan
+     * (FR-11.2 langkah 4 / A1, PR-03-15): aturan, riwayat ber-referensi, dan log sama.
+     */
+    async ubahKondisiDalam(scope: TransactionScope, id: number, input: UbahKondisiInput): Promise<AssetRow> {
+        const ctx = scope.ctx;
         if (input.kondisi === "HILANG" && (input.referensiJenis === null || input.referensiId === null)) {
             throw new DomainError(
                 "VALIDATION_ERROR",
@@ -355,62 +364,56 @@ export class AssetService {
             );
         }
 
-        return withTransaction(
-            ctx,
-            async (scope) => {
-                const repo = createAssetRepository(scope.tx);
-                const existing = await repo.findById(scope.ctx, id);
-                if (existing === undefined) {
-                    throw new NotFoundError("Aset tidak ditemukan.");
-                }
+        const repo = createAssetRepository(scope.tx);
+        const existing = await repo.findById(scope.ctx, id);
+        if (existing === undefined) {
+            throw new NotFoundError("Aset tidak ditemukan.");
+        }
 
-                const kondisiLama = existing.kondisi;
-                // BR-006/FR-04.3 A1/A2: kondisi memburuk -> status turunan Tidak Tersedia.
-                const statusBaru: AssetStatus | undefined =
-                    input.kondisi === "RUSAK_BERAT" || input.kondisi === "HILANG" ? "TIDAK_TERSEDIA" : undefined;
+        const kondisiLama = existing.kondisi;
+        // BR-006/FR-04.3 A1/A2: kondisi memburuk -> status turunan Tidak Tersedia.
+        const statusBaru: AssetStatus | undefined =
+            input.kondisi === "RUSAK_BERAT" || input.kondisi === "HILANG" ? "TIDAK_TERSEDIA" : undefined;
 
-                const diperbarui = await repo.updateKondisi(scope.ctx, id, {
-                    kondisi: input.kondisi,
-                    ...(statusBaru === undefined ? {} : { status: statusBaru }),
-                });
+        const diperbarui = await repo.updateKondisi(scope.ctx, id, {
+            kondisi: input.kondisi,
+            ...(statusBaru === undefined ? {} : { status: statusBaru }),
+        });
 
-                // BR-007: riwayat kondisi (nilai lama -> baru, pelaku, waktu, alasan).
-                await repo.insertRiwayatKondisi(scope.ctx, {
-                    assetId: id,
-                    kondisiLama,
-                    kondisiBaru: input.kondisi,
-                    alasan: input.alasan,
-                    referensiJenis: input.referensiJenis,
-                    referensiId: input.referensiId,
-                    diubahOleh: ctx.userId,
-                    diubahPada: this.clock.now(),
-                });
+        // BR-007: riwayat kondisi (nilai lama -> baru, pelaku, waktu, alasan).
+        await repo.insertRiwayatKondisi(scope.ctx, {
+            assetId: id,
+            kondisiLama,
+            kondisiBaru: input.kondisi,
+            alasan: input.alasan,
+            referensiJenis: input.referensiJenis,
+            referensiId: input.referensiId,
+            diubahOleh: ctx.userId,
+            diubahPada: this.clock.now(),
+        });
 
-                await this.audit.write(scope, {
-                    modul: MODUL,
-                    aksi: "ASSET_CONDITION_CHANGED",
-                    entitas: "assets",
-                    entitasId: String(id),
-                    nilaiSebelum: { kondisi: kondisiLama },
-                    nilaiSesudah: { kondisi: input.kondisi, alasan: input.alasan },
-                });
+        await this.audit.write(scope, {
+            modul: MODUL,
+            aksi: "ASSET_CONDITION_CHANGED",
+            entitas: "assets",
+            entitasId: String(id),
+            nilaiSebelum: { kondisi: kondisiLama },
+            nilaiSesudah: { kondisi: input.kondisi, alasan: input.alasan },
+        });
 
-                // §11: "termasuk yang otomatis oleh sistem" — hanya bila status BENAR berubah.
-                if (statusBaru !== undefined && existing.status !== statusBaru) {
-                    await this.audit.write(scope, {
-                        modul: MODUL,
-                        aksi: "ASSET_STATUS_CHANGED",
-                        entitas: "assets",
-                        entitasId: String(id),
-                        nilaiSebelum: { status: existing.status },
-                        nilaiSesudah: { status: statusBaru },
-                    });
-                }
+        // §11: "termasuk yang otomatis oleh sistem" — hanya bila status BENAR berubah.
+        if (statusBaru !== undefined && existing.status !== statusBaru) {
+            await this.audit.write(scope, {
+                modul: MODUL,
+                aksi: "ASSET_STATUS_CHANGED",
+                entitas: "assets",
+                entitasId: String(id),
+                nilaiSebelum: { status: existing.status },
+                nilaiSesudah: { status: statusBaru },
+            });
+        }
 
-                return diperbarui;
-            },
-            this.db,
-        );
+        return diperbarui;
     }
 
     /**

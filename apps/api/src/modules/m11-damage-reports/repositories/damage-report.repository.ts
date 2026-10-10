@@ -1,10 +1,11 @@
 // Repository laporan kerusakan (FR-11.1; PR-03-14, keputusan 20 log phase-03). PRIVAT terhadap modul.
 // Penautan berkas foto bukan urusan berkas ini — pemilik `stored_files` adalah M-06 (SDD-FS-02).
 
+import { sql } from "kysely";
 import type { AuthContext } from "../../../shared/auth/index.js";
 import { pelakuId } from "../../../shared/auth/index.js";
 import { BaseRepository, defineRepository } from "../../../shared/db/index.js";
-import type { QueryExecutor, StatusLaporanKerusakan, UrgensiKerusakan } from "../../../shared/db/index.js";
+import type { FileScanStatus, QueryExecutor, StatusLaporanKerusakan, UrgensiKerusakan } from "../../../shared/db/index.js";
 
 /** Objek tiket — tepat satu terisi (FR-11.1 langkah 3, A4). */
 export interface ObjekLaporan {
@@ -31,6 +32,41 @@ export interface TiketBaru extends ObjekLaporan {
     readonly nomor: string;
     readonly deskripsi: string;
     readonly urgensi: UrgensiKerusakan;
+}
+
+/** Baris tiket yang dikunci untuk transisi status (verifikasi, titik ekstensi work order). */
+export interface TiketTerkunci {
+    readonly id: string;
+    readonly nomor: string;
+    readonly status: StatusLaporanKerusakan;
+    readonly pelapor_id: string;
+    readonly asset_id: string | null;
+    readonly room_id: string | null;
+}
+
+export interface TiketDetail extends TiketTerkunci {
+    readonly urgensi: UrgensiKerusakan;
+    readonly deskripsi: string;
+    readonly created_at: Date;
+    readonly pelapor_nama: string;
+    readonly diverifikasi_oleh: string | null;
+    readonly verifikator_nama: string | null;
+    readonly diverifikasi_pada: Date | null;
+    readonly catatan_verifikasi: string | null;
+    readonly aset_nama: string | null;
+    readonly kode_barang: string | null;
+    readonly ruangan: string | null;
+    readonly gedung: string | null;
+}
+
+export interface FotoTiket {
+    readonly file_id: string;
+    readonly urutan: number;
+    readonly checksum: string | null;
+    readonly scan_status: FileScanStatus;
+    readonly object_key: string;
+    readonly thumb_key: string | null;
+    readonly medium_key: string | null;
 }
 
 /** FR-11.1 A1: tiket yang belum Selesai/Ditolak — cermin indeks unik parsial 0048. */
@@ -91,6 +127,58 @@ export class DamageReportRepository extends BaseRepository {
             .returning("id")
             .executeTakeFirstOrThrow();
         return r.id;
+    }
+
+    async kunci(ctx: AuthContext, id: number): Promise<TiketTerkunci | undefined> {
+        return this.query(ctx)
+            .selectFrom("damage_reports")
+            .select(["id", "nomor", "status", "pelapor_id", "asset_id", "room_id"])
+            .where("id", "=", String(id))
+            .forUpdate()
+            .executeTakeFirst();
+    }
+
+    /** FR-11.2 langkah 3 + AC SLA (SC-07): pelaku & waktu verifikasi dicatat pada ketiga hasil. */
+    async tetapkanVerifikasi(ctx: AuthContext, id: string, v: { readonly status: StatusLaporanKerusakan; readonly catatan: string | null; readonly waktu: Date }): Promise<void> {
+        await this.query(ctx)
+            .updateTable("damage_reports")
+            .set({ status: v.status, catatan_verifikasi: v.catatan, diverifikasi_oleh: ctx.userId, diverifikasi_pada: v.waktu, updated_by: pelakuId(ctx) })
+            .where("id", "=", id)
+            .execute();
+    }
+
+    async ubahStatus(ctx: AuthContext, id: string, status: StatusLaporanKerusakan): Promise<void> {
+        await this.query(ctx).updateTable("damage_reports").set({ status, updated_by: pelakuId(ctx) }).where("id", "=", id).execute();
+    }
+
+    /** Scope `damage.view` ditegakkan di kueri (SDD-AUTH-05): selain `all` hanya tiket milik sendiri (FR-11.3 A1). */
+    async detail(ctx: AuthContext, id: number): Promise<TiketDetail | undefined> {
+        let q = this.query(ctx)
+            .selectFrom("damage_reports as k")
+            .innerJoin("users as p", "p.id", "k.pelapor_id")
+            .leftJoin("users as v", "v.id", "k.diverifikasi_oleh")
+            .leftJoin("assets as s", "s.id", "k.asset_id")
+            .leftJoin("rooms as r", (j) => j.on(sql<boolean>`r.id = coalesce(k.room_id, s.room_id)`))
+            .leftJoin("areas as a", "a.id", "r.area_id")
+            .leftJoin("buildings as g", "g.id", "a.building_id")
+            .select([
+                "k.id", "k.nomor", "k.status", "k.urgensi", "k.deskripsi", "k.pelapor_id", "k.asset_id", "k.room_id", "k.created_at",
+                "k.diverifikasi_oleh", "k.diverifikasi_pada", "k.catatan_verifikasi",
+                "p.nama as pelapor_nama", "v.nama as verifikator_nama", "s.nama as aset_nama", "s.kode_barang", "r.nama as ruangan", "g.nama as gedung",
+            ])
+            .where("k.id", "=", String(id));
+        if (ctx.scopeOf("damage.view") !== "all") q = q.where("k.pelapor_id", "=", String(ctx.userId));
+        return q.executeTakeFirst();
+    }
+
+    async foto(ctx: AuthContext, id: string): Promise<readonly FotoTiket[]> {
+        return this.query(ctx)
+            .selectFrom("damage_report_photos as f")
+            .innerJoin("stored_files as b", "b.id", "f.file_id")
+            .select(["f.file_id", "f.urutan", "b.checksum", "b.scan_status", "b.object_key", "b.thumb_key", "b.medium_key"])
+            .where("f.damage_report_id", "=", id)
+            .orderBy("f.urutan")
+            .execute();
     }
 
     /** Urutan foto = urutan isian pelapor (1–5). */

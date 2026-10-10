@@ -34,3 +34,5 @@ export { asetByUuid, profilPublikAset } from "./services/scan-aset.js";
 export { AssetCatalogItemSchema } from "./schemas/asset.schema.js";
 /** Keberadaan aset bagi tautan dokumen M-06 (FR-06.1 A3, PR-03-06). */
 export { asetTidakTerdaftar } from "./services/aset-terdaftar.js";
+export type { UbahKondisiInput } from "./services/asset.service.js";
+export { AssetService } from "./services/asset.service.js";

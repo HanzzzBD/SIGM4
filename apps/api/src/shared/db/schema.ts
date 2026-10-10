@@ -615,6 +615,8 @@ export interface DamageReportsTable extends KolomBaku {
     status: ColumnType<StatusLaporanKerusakan, StatusLaporanKerusakan | undefined, StatusLaporanKerusakan>;
     diverifikasi_oleh: ColumnType<string | null, string | number | null | undefined, string | number | null>;
     diverifikasi_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    /** 0049 (FR-11.2): alasan penolakan / catatan perbaikan ringan — terlihat pelapor. */
+    catatan_verifikasi: ColumnType<string | null, string | null | undefined, string | null>;
 }
 
 /** `damage_report_photos` (0048) — anak append-only; berkas di `stored_files` (SDD-FS-02). */

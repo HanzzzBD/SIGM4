@@ -146,6 +146,7 @@ Konsekuensinya, event yang gagal **menahan** event sesudahnya pada agregat yang 
 | `FineIssued` | M-09 | Notifikasi `NT-15` |
 | `BorrowerBlocked` | M-09 | Notifikasi `NT-18` |
 | `DamageReported` | M-11 | Notifikasi `NT-19`/`NT-20` |
+| `DamageReportVerified` | M-11 | Notifikasi `NT-21` (pelapor; bukan bila ia sendiri pemverifikasinya) |
 | `WorkOrderAssigned` | M-12 | Notifikasi `NT-22` |
 | `WorkOrderClosed` | M-12 | Notifikasi `NT-26` |
 | `ReservationCancelledByMaintenance` | M-12 | Notifikasi `NT-27` |

@@ -507,7 +507,9 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await langkah("DELETE /assets/:id/documents/:docId", `/assets/${asetId}/documents/${id(dok)}`, undefined, ["DOCUMENT_DELETED"]);
                 // PR-03-14 (M-11): foto cukup dipesan — unggahannya boleh tertunda (FR-11.1 A2, keputusan 20b).
                 const pesananFoto = (await panggil(mode, "POST", "/files/presign", { jenis: "DAMAGE_PHOTO", mime: "image/jpeg", ukuran: 1024 })).json.data as { file_id: string };
-                await langkah("POST /damage-reports", "/damage-reports", { asset_id: Number(asetId), deskripsi: "Uji gerbang AL-01", urgensi: "SEDANG", foto_file_ids: [Number(pesananFoto.file_id)] }, ["DAMAGE_REPORTED"]);
+                const tiket = await langkah("POST /damage-reports", "/damage-reports", { asset_id: Number(asetId), deskripsi: "Uji gerbang AL-01", urgensi: "SEDANG", foto_file_ids: [Number(pesananFoto.file_id)] }, ["DAMAGE_REPORTED"]);
+                // PR-03-15: perbaikan ringan menutup tiket — dua aksi dalam satu transaksi (keputusan 21b).
+                await langkah("POST /damage-reports/:id/verify", `/damage-reports/${id(tiket)}/verify`, { keputusan: "PERBAIKAN_RINGAN", catatan: "Uji gerbang AL-01" }, ["DAMAGE_VERIFIED", "DAMAGE_CLOSED"]);
                 await langkah(
                     "PATCH /assets/:id/condition",
                     `/assets/${asetId}/condition`,

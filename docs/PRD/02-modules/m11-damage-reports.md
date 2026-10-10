@@ -225,9 +225,9 @@ flowchart TD
 |---|---|---|---|
 | POST | `/damage-reports` | `damage.create` | Buat tiket kerusakan |
 | GET | `/damage-reports` | `damage.view` | Daftar tiket (tersaring sesuai role) |
-| GET | `/damage-reports/{id}` | `damage.view` | Detail tiket beserta foto |
+| GET | `/damage-reports/{id}` | `damage.view` | Detail tiket beserta foto (foto yang unggahannya tertunda ditandai) dan garansi aktif aset (`BR-052`, bagi pemegang `asset_document.view`); scope `own` = tiket milik sendiri |
 | GET | `/damage-reports/open` | `damage.view` | Tiket terbuka untuk aset atau ruangan tertentu (`asset_id` atau `room_id`) — ringkasan tanpa identitas pelapor, juga bagi scope `own` (FR-11.1 A1) |
-| POST | `/damage-reports/{id}/verify` | `damage.verify` | Verifikasi / tolak tiket |
+| POST | `/damage-reports/{id}/verify` | `damage.verify` | Verifikasi / tolak tiket dari status `Dilaporkan`: `keputusan` Tindak Lanjut (→ `Diverifikasi`) · Perbaikan Ringan (→ `Selesai`, catatan wajib) · Tolak (→ `Ditolak`, alasan wajib); `kondisi_aset` opsional menuntut juga `asset.update_condition` (langkah 4, A1) |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
@@ -238,7 +238,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **damage_reports** | Tiket laporan kerusakan | id, nomor, pelapor_id, asset_id, room_id, deskripsi, urgensi, status, loan_id, diverifikasi_oleh, diverifikasi_pada | ± 600 |
+| **damage_reports** | Tiket laporan kerusakan | id, nomor, pelapor_id, asset_id, room_id, deskripsi, urgensi, status, loan_id, diverifikasi_oleh, diverifikasi_pada, catatan_verifikasi | ± 600 |
 | **damage_report_photos** | Foto laporan kerusakan | id, damage_report_id, file_id (→ stored_files, `SDD-FS-02`), urutan | ± 1.800 |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).

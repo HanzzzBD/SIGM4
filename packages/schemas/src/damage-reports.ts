@@ -60,3 +60,74 @@ export const DamageReportOpenSchema = z.object({
 });
 export type DamageReportOpen = z.infer<typeof DamageReportOpenSchema>;
 export const DamageReportOpenResponseSchema = z.object({ success: z.literal(true), data: DamageReportOpenSchema.nullable(), meta: z.null() });
+
+export const DamageReportIdParamSchema = z.object({ id: z.coerce.number().int().positive() });
+
+/** FR-11.2 langkah 3 (keputusan 21b). */
+export const KEPUTUSAN_VERIFIKASI_KERUSAKAN = ["TINDAK_LANJUT", "PERBAIKAN_RINGAN", "TOLAK"] as const;
+
+/**
+ * `POST /damage-reports/{id}/verify`. TINDAK_LANJUT → `DIVERIFIKASI` (siap work order, BR-045);
+ * PERBAIKAN_RINGAN → `SELESAI`; TOLAK → `DITOLAK`. Catatan wajib bagi keduanya yang menutup tiket —
+ * alasan penolakan terlihat pelapor (FR-11.2 AC). `kondisi_aset` opsional (langkah 4 / A1, keputusan 21c);
+ * `HILANG` tidak dapat ditetapkan dari sini (BR-012 menuntut sesi opname / berita acara).
+ */
+export const DamageReportVerifySchema = z
+    .object({
+        keputusan: z.enum(KEPUTUSAN_VERIFIKASI_KERUSAKAN, { error: "Pilih tindak lanjut: Buat Work Order, Perbaikan Ringan, atau Tolak." }),
+        catatan: z.string().trim().min(1, { error: "Catatan tidak boleh kosong." }).max(1000, { error: "Catatan paling panjang 1000 karakter." }).optional(),
+        kondisi_aset: z
+            .object({
+                kondisi: z.enum(["BAIK", "RUSAK_RINGAN", "RUSAK_BERAT"], { error: "Kondisi aset harus Baik, Rusak Ringan, atau Rusak Berat." }),
+                alasan: z.string().trim().min(1).max(500).optional(),
+            })
+            .strict()
+            .optional(),
+    })
+    .strict()
+    .refine((v) => v.keputusan === "TINDAK_LANJUT" || v.catatan !== undefined, {
+        error: (i) => ((i.input as { keputusan?: string }).keputusan === "TOLAK" ? "Alasan penolakan wajib diisi." : "Catatan perbaikan wajib diisi."),
+        path: ["catatan"],
+    });
+export type DamageReportVerify = z.input<typeof DamageReportVerifySchema>;
+
+export const DamageReportVerifiedSchema = z.object({
+    id: z.string(),
+    nomor: z.string(),
+    status: z.enum(STATUS_LAPORAN_KERUSAKAN),
+    diverifikasi_pada: z.iso.datetime({ offset: true }),
+    /** Kondisi aset sesudah verifikasi bila diubah; `null` bila tidak. */
+    kondisi_aset: z.string().nullable(),
+});
+export type DamageReportVerified = z.infer<typeof DamageReportVerifiedSchema>;
+export const DamageReportVerifiedResponseSchema = z.object({ success: z.literal(true), data: DamageReportVerifiedSchema, meta: z.null() });
+
+const Pengguna = z.object({ id: z.string(), nama: z.string() });
+
+/** `GET /damage-reports/{id}` — FR-11.2 langkah 1–2, A3 (keputusan 21a). */
+export const DamageReportDetailSchema = z.object({
+    id: z.string(),
+    nomor: z.string(),
+    status: z.enum(STATUS_LAPORAN_KERUSAKAN),
+    urgensi: z.enum(URGENSI_KERUSAKAN),
+    deskripsi: z.string(),
+    objek: z.object({ jenis: z.enum(["ASET", "RUANGAN"]), id: z.string(), label: z.string(), lokasi: z.string() }),
+    pelapor: Pengguna,
+    dilaporkan_pada: z.iso.datetime({ offset: true }),
+    diverifikasi_oleh: Pengguna.nullable(),
+    diverifikasi_pada: z.iso.datetime({ offset: true }).nullable(),
+    catatan_verifikasi: z.string().nullable(),
+    /**
+     * `BELUM_TERUNGGAH` = pesanan yang unggahannya masih di antrean perangkat (A2, MOB-OFF-04); URL hanya
+     * bagi berkas `CLEAN` (SDD-FS-03).
+     */
+    foto: z.array(z.object({ file_id: z.string(), urutan: z.number().int(), status: z.enum(["BELUM_TERUNGGAH", "PENDING", "CLEAN", "INFECTED", "FAILED"]), url: z.string().nullable() })),
+    foto_tertunda: z.number().int(),
+    /**
+     * BR-052 / A3: garansi aktif atas aset hari ini (WIB). `null` = tidak berlaku (tiket ruangan) atau
+     * pemanggil tanpa `asset_document.view`.
+     */
+    garansi: z.array(z.object({ dokumen_id: z.string(), nama_berkas: z.string(), garansi_selesai: z.iso.date() })).nullable(),
+});
+export type DamageReportDetail = z.infer<typeof DamageReportDetailSchema>;
+export const DamageReportDetailResponseSchema = z.object({ success: z.literal(true), data: DamageReportDetailSchema, meta: z.null() });
