@@ -3,7 +3,7 @@
 // slot, instance approval, dan respons tersimpan commit bersama (ID-01 … ID-05, UX P-29).
 // Isian tak sah dijawab `422 VALIDATION_ERROR` per isian (Bab 17.2), bukan 400.
 
-import { CancelReservationBodySchema, RecordUsageBodySchema, ReservationIdParamSchema, RoomReservationBodySchema } from "@sigm4/schemas";
+import { CancelReservationBodySchema, RecordUsageBodySchema, ReservationIdParamSchema, ReservationListQuerySchema, RoomReservationBodySchema } from "@sigm4/schemas";
 import type { RequestHandler } from "express";
 import type { Kysely } from "kysely";
 import { requireAuthContext } from "../../../shared/auth/index.js";
@@ -11,6 +11,7 @@ import type { Database } from "../../../shared/db/index.js";
 import { DomainError } from "../../../shared/errors/index.js";
 import { runIdempotent } from "../../../shared/http/index.js";
 import type { CancellationService } from "../services/cancellation.service.js";
+import type { ReservationQueryService } from "../services/reservation-query.service.js";
 import type { IsianPengajuan, SubmissionService } from "../services/submission.service.js";
 import type { UsageService } from "../services/usage.service.js";
 
@@ -70,5 +71,27 @@ export function recordUsageHandler(service: UsageService): RequestHandler {
         }
         const data = await service.catat(requireAuthContext(res), id, hasil.data.hasil, hasil.data.catatan);
         res.status(200).json({ success: true, data, meta: null });
+    };
+}
+
+/** P-30 (m07 §7): query tak sah → 422 per isian (pola `GET /rooms/availability`, keputusan 12). */
+export function listReservationsHandler(service: ReservationQueryService): RequestHandler {
+    return async (req, res) => {
+        const hasil = ReservationListQuerySchema.safeParse(req.query);
+        if (!hasil.success) {
+            throw new DomainError("VALIDATION_ERROR", "Saringan daftar reservasi tidak sah.", {
+                errors: hasil.error.issues.map((i) => ({ field: i.path.map(String).join(".") || "(query)", message: i.message })),
+            });
+        }
+        const { data, meta } = await service.daftar(requireAuthContext(res), hasil.data);
+        res.status(200).json({ success: true, data, meta });
+    };
+}
+
+/** P-31 (m07 §7): di luar scope → 404 (SDD-AUTH-08). */
+export function getReservationHandler(service: ReservationQueryService): RequestHandler {
+    return async (req, res) => {
+        const { id } = ReservationIdParamSchema.parse(req.params);
+        res.status(200).json({ success: true, data: await service.detail(requireAuthContext(res), id), meta: null });
     };
 }

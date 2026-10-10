@@ -174,7 +174,7 @@ const DAFTAR: readonly DefinisiKartu[] = [
     // --- 19.6 Guru & Staf/TU · 19.7 Siswa/OSIS
     {
         id: "pengajuan-saya", judul: "Pengajuan Saya", zona: 2, jenis: "KPI", permissions: ["approval.view"],
-        lingkup: "PENGGUNA", berperiode: true, drilldown: "P-30",
+        lingkup: "PENGGUNA", berperiode: true, drilldown: "P-30?saya=true", // UX §8.3 "P-30 scope own" (PR-03-27)
         muat: async (k) => ({ per_status: await baca(k, (s) => pengajuanSayaPerStatus(s, k.rentang!.mulai, k.rentang!.akhir)) }),
     },
 ];

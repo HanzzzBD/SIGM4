@@ -63,7 +63,7 @@ describe.skipIf(!ADA)("PR-03-09 — GET /rooms/availability (acceptance)", () =>
         const luar = express();
         luar.use((req, res, next) => {
             const perms = (req.header("x-uji-perms") ?? "").split(",").filter((p) => p !== "");
-            setAuthContext(res, createAuthContext({ userId: pengguna, roleCode: "R-02", scopes: new Map<string, Scope>(perms.map((p) => [p.split(":")[0]!, (p.split(":")[1] ?? "all") as Scope])) }));
+            setAuthContext(res, createAuthContext({ userId: Number(req.header("x-uji-user") ?? pengguna), roleCode: "R-02", scopes: new Map<string, Scope>(perms.map((p) => [p.split(":")[0]!, (p.split(":")[1] ?? "all") as Scope])) }));
             setAmr(res, ["pwd", AMR_OTP]);
             next();
         });
@@ -125,8 +125,8 @@ describe.skipIf(!ADA)("PR-03-09 — GET /rooms/availability (acceptance)", () =>
         await kueri(`DELETE FROM users WHERE id = ${String(pengguna)}`);
     });
 
-    const minta = async (query: string, perms: readonly string[] = ["reservation.view"]) => {
-        const res = await fetch(`${url}/rooms/availability?${query}`, { headers: { "x-uji-perms": perms.join(",") } });
+    const minta = async (query: string, perms: readonly string[] = ["reservation.view"], userId = pengguna) => {
+        const res = await fetch(`${url}/rooms/availability?${query}`, { headers: { "x-uji-perms": perms.join(","), "x-uji-user": String(userId) } });
         return { status: res.status, json: (await res.json()) as { data: RoomAvailability; error?: { code: string; details?: { field: string }[] } } };
     };
     const rentang = `dari=${encodeURIComponent(DARI)}&sampai=${encodeURIComponent(SAMPAI)}`;
@@ -179,7 +179,8 @@ describe.skipIf(!ADA)("PR-03-09 — GET /rooms/availability (acceptance)", () =>
     });
 
     it("FR-07.1 A1 / CAL-UI-06: scope restricted hanya ruangan siswa, tanpa label & pemohon", async () => {
-        const d = (await minta(`${rentang}&gedung_id=${gedung}`, ["reservation.view:restricted"])).json.data;
+        // Siswa LAIN dari pemohon: rincian pengajuan pihak lain tak pernah dibaca (miliknya sendiri berincian, keputusan 17b).
+        const d = (await minta(`${rentang}&gedung_id=${gedung}`, ["reservation.view:restricted"], pengguna + 100_000)).json.data;
         expect(d.ruangan.map((r) => r.nama)).toEqual(["Ruang OSIS"]);
         expect(d.slot).toHaveLength(1);
         expect(d.slot[0]).toMatchObject({ keadaan: "MENUNGGU_PERSETUJUAN", label: null, reservasi: null });

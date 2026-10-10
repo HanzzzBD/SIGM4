@@ -67,8 +67,8 @@
 | GET | `/notifications` | `notification.manage_own` | Daftar notifikasi pengguna | [M-17](../02-modules/m17-notifications.md) |
 | GET | `/procurements` | `procurement.view` | Daftar usulan | [M-14](../02-modules/m14-procurement.md) |
 | GET | `/public/assets/{uuid}` | Publik | Info dasar aset untuk scan kamera bawaan | [M-05](../02-modules/m05-qr.md) |
-| GET | `/reservations/{id}` | `reservation.view` | Detail reservasi + riwayat approval | [M-07](../02-modules/m07-reservation-room.md) |
-| GET | `/reservations` | `reservation.view` | Daftar reservasi (tersaring sesuai role) | [M-07](../02-modules/m07-reservation-room.md) |
+| GET | `/reservations/{id}` | `reservation.view` | Detail reservasi + riwayat approval: tanggal turunan, penggunaan, aksi yang tersedia bagi pemanggil, dan riwayat perubahan dari activity log (penyajiannya tercatat, `AL-10`); di luar scope → 404 | [M-07](../02-modules/m07-reservation-room.md) |
+| GET | `/reservations` | `reservation.view` | Daftar reservasi (tersaring sesuai role): satu baris per pengajuan; scope `restricted` hanya miliknya sendiri | [M-07](../02-modules/m07-reservation-room.md) |
 | GET | `/roles` | `role.view` | Daftar role | [M-02](../02-modules/m02-users.md) |
 | GET | `/rooms/availability` | `reservation.view` | Ketersediaan ruangan pada rentang waktu | [M-07](../02-modules/m07-reservation-room.md) |
 | GET | `/rooms/{id}/assets` | `asset.view` | Aset dalam satu ruangan | [M-04](../02-modules/m04-assets.md) |

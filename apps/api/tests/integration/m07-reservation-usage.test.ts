@@ -91,6 +91,9 @@ describe.skipIf(!ADA)("PR-03-12 — penggunaan & penyelesaian reservasi ruangan 
         await new Promise<void>((r) => server.close(() => r()));
         const ids = Object.values(pengguna).map((p) => p.id).join(",");
         await kueri(`DELETE FROM notifications WHERE user_id IN (${ids})`);
+        // Notifikasi peran (NT-06/NT-47 ke SELURUH Petugas/Admin) dapat menyasar pengguna berkas lain: dihapus menurut rujukannya.
+        await kueri(`DELETE FROM notifications WHERE referensi_jenis = 'approval_instance' AND referensi_id IN (SELECT id FROM approval_instances WHERE pemohon_id IN (${ids}))`);
+        await kueri(`DELETE FROM notifications WHERE referensi_jenis = 'reservation' AND referensi_id IN (SELECT id FROM reservations WHERE pemohon_id IN (${ids}))`);
         await kueri(`DELETE FROM approval_steps WHERE instance_id IN (SELECT id FROM approval_instances WHERE pemohon_id IN (${ids}))`);
         await kueri(`DELETE FROM approval_instances WHERE pemohon_id IN (${ids})`);
         await kueri(`DELETE FROM approval_rule_steps WHERE rule_id = ${aturanId}`);

@@ -143,6 +143,11 @@ export class ApprovalService {
      * Mengembalikan langkah yang aktif saat ditutup (penerima NT-46) atau `undefined` bila tak ada
      * instance berjalan. Dicatat pemanggil pada entri objeknya, di transaksi yang sama (AL-01).
      */
+    /** Instance terbaru objek pengajuan (status apa pun) — bagi layar detail modul pengaju (FR-10.3). */
+    async instanceObjek(scope: TransactionScope, jenis: JenisPengajuan, referensiId: number): Promise<number | undefined> {
+        return createApprovalRepository(scope.tx).instanceTerbaru(scope.ctx, jenis, referensiId);
+    }
+
     async tutupKarenaObjek(scope: TransactionScope, jenis: JenisPengajuan, referensiId: number): Promise<{ instanceId: number; langkahAktif: number | null } | undefined> {
         const repo = createApprovalRepository(scope.tx);
         const berjalan = await repo.instanceBerjalan(scope.ctx, jenis, referensiId);

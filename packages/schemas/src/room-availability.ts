@@ -56,9 +56,9 @@ const Slot = z.object({
     mulai: z.iso.datetime({ offset: true }),
     selesai: z.iso.datetime({ offset: true }),
     keadaan: z.enum(KEADAAN_SLOT),
-    /** Nama kegiatan; `null` bagi scope `restricted` (FR-07.1 A1) dan blokade tanpa label. */
+    /** Nama kegiatan; `null` bagi scope `restricted` atas milik pihak lain (FR-07.1 A1, keputusan 17b) dan blokade tanpa label. */
     label: z.string().nullable(),
-    /** Rincian pengajuan; `null` bagi scope `restricted` dan slot non-reservasi. */
+    /** Rincian pengajuan; `null` bagi scope `restricted` atas milik pihak lain dan slot non-reservasi. */
     reservasi: z.object({ id: z.string(), nomor: z.string(), pemohon: z.string() }).nullable(),
 });
 

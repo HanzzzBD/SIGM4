@@ -31,11 +31,34 @@ const PRATINJAU: RoomReservationPreview = {
     kuota: { berjalan: 1, batas: 5 },
 };
 const DIBUAT = {
-    id: "77",
+    id: "123",
     nomor: "RSV-RG-2027-0042",
     status: "MENUNGGU_PERSETUJUAN",
-    tanggal: [{ id: "77", nomor: "RSV-RG-2027-0042", mulai: "2027-03-01T03:00:00.000Z", selesai: "2027-03-01T04:00:00.000Z" }],
+    tanggal: [{ id: "123", nomor: "RSV-RG-2027-0042", mulai: "2027-03-01T03:00:00.000Z", selesai: "2027-03-01T04:00:00.000Z" }],
     approval: { instance_id: 9, langkah_aktif: 1 },
+};
+const DETAIL = {
+    id: "123",
+    nomor: "RSV-RG-2027-0042",
+    jenis: "RUANGAN",
+    status: "MENUNGGU_PERSETUJUAN",
+    ruangan: { id: "10", nama: "Aula Utama", gedung: "Gedung A" },
+    pemohon: { id: "1", nama: "Admin Uji" },
+    nama_kegiatan: "Rapat Komite",
+    jenis_kegiatan: "Rapat",
+    jumlah_peserta: 20,
+    keperluan: null,
+    kebutuhan_tambahan: null,
+    keterangan: null,
+    waktu_mulai: "2027-03-01T03:00:00.000Z",
+    waktu_selesai: "2027-03-01T04:00:00.000Z",
+    diajukan_pada: "2027-02-27T02:00:00.000Z",
+    induk: null,
+    tanggal: [],
+    penggunaan: null,
+    approval_instance_id: 9,
+    aksi: { batalkan: true, ubah_jadwal: true, ajukan_ulang: false, catat_penggunaan: { kondisi: false, tidak_digunakan: false } },
+    riwayat: [],
 };
 const URL_WIZARD = "/reservasi/baru?ruangan=10&mulai=2027-03-01T03%3A00%3A00.000Z&selesai=2027-03-01T04%3A00%3A00.000Z";
 
@@ -45,6 +68,9 @@ function server(o: { me?: unknown; pratinjau?: (p: Permintaan) => Jawaban; ajuka
         if (p.url === "/rooms/availability") return sukses(DATA);
         if (p.url === "/reservations/preview") return o.pratinjau?.(p) ?? sukses(PRATINJAU);
         if (p.url === "/reservations") return o.ajukan?.(p) ?? { status: 201, data: { success: true, data: DIBUAT, meta: null } };
+        // UXD-06 (PR-03-27): setelah terbentuk, P-31 memuat detailnya; linimasa di luar hak lihat → disembunyikan.
+        if (p.url === "/reservations/123") return sukses(DETAIL);
+        if (p.url === "/approvals/9/history") return gagal(403, "FORBIDDEN", "Akses ditolak.");
         return { status: 404 };
     });
 }
@@ -118,7 +144,7 @@ describe("P-29 Wizard Pengajuan Reservasi", () => {
 
     it("alur utuh: langkah 1 bentrok ditolak + saran; langkah 2 wajib diisi; tinjau dari pratinjau server; Ajukan ber-Idempotency-Key; tanpa pelanggaran axe", async () => {
         const log = server();
-        const { container } = await renderAplikasi("/reservasi/baru?ruangan=10&mulai=2027-03-01T02%3A00%3A00.000Z&selesai=2027-03-01T03%3A00%3A00.000Z");
+        const { container, router } = await renderAplikasi("/reservasi/baru?ruangan=10&mulai=2027-03-01T02%3A00%3A00.000Z&selesai=2027-03-01T03%3A00%3A00.000Z");
         const user = userEvent.setup();
         await waitFor(() => expect((screen.getByLabelText(/^Ruangan/) as HTMLSelectElement).value).toBe("10"));
         await user.click(screen.getByRole("button", { name: "Lanjut" }));
@@ -141,7 +167,10 @@ describe("P-29 Wizard Pengajuan Reservasi", () => {
         expect(await pelanggaranAxe(container)).toEqual([]);
 
         await user.click(screen.getByRole("button", { name: "Ajukan" }));
-        expect(await screen.findByText("Nomor pengajuan RSV-RG-2027-0042")).toBeTruthy();
+        expect(await screen.findByText("Pengajuan terkirim — nomor RSV-RG-2027-0042")).toBeTruthy();
+        // UXD-06 + regex route P-31 (#143): id tiga digit bertahan di Detail Reservasi, tidak dialihkan ke Tidak Ditemukan.
+        expect(router.state.location.pathname).toBe("/reservasi/123");
+        expect(router.state.location.search).toEqual({ terkirim: true });
         const kirim = log.filter((p) => p.url === "/reservations");
         expect(kirim).toHaveLength(1);
         expect(String(kirim[0]?.headers["Idempotency-Key"])).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
@@ -193,7 +222,7 @@ describe("P-29 Wizard Pengajuan Reservasi", () => {
         await user.click(screen.getByRole("button", { name: "Pakai slot terdekat 10.30–11.30 WIB" }));
         await waitFor(() => expect(log.filter((p) => p.url === "/reservations/preview").at(-1)?.data).toMatchObject({ waktu_mulai: "2027-03-01T03:30:00.000Z" }));
         await user.click(await screen.findByRole("button", { name: "Ajukan" }));
-        expect(await screen.findByText("Nomor pengajuan RSV-RG-2027-0042")).toBeTruthy();
+        expect(await screen.findByText("Pengajuan terkirim — nomor RSV-RG-2027-0042")).toBeTruthy();
         const [a, b] = log.filter((p) => p.url === "/reservations");
         // ID-04: body berbeda = kunci berbeda.
         expect(a?.headers["Idempotency-Key"]).not.toBe(b?.headers["Idempotency-Key"]);

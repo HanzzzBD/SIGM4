@@ -53,14 +53,18 @@ export class AvailabilityRepository extends BaseRepository {
         return q.orderBy("g.nama").orderBy("r.nama").orderBy("r.id").execute();
     }
 
-    /** Nama kegiatan + pemohon untuk slot reservasi (FR-07.1 langkah 4). */
-    async ringkasReservasi(ctx: AuthContext, ids: readonly string[]): Promise<readonly ReservasiRingkasRow[]> {
+    /**
+     * Nama kegiatan + pemohon untuk slot reservasi (FR-07.1 langkah 4). `pemohonId` = hanya milik pemohon
+     * itu — scope `restricted` tak pernah membaca rincian pihak lain (A1, keputusan 17b).
+     */
+    async ringkasReservasi(ctx: AuthContext, ids: readonly string[], pemohonId?: number): Promise<readonly ReservasiRingkasRow[]> {
         if (ids.length === 0) return [];
         return this.query(ctx)
             .selectFrom("reservations as v")
             .innerJoin("users as u", "u.id", "v.pemohon_id")
             .select(["v.id", "v.nomor", "v.nama_kegiatan", "u.nama as pemohon"])
             .where("v.id", "in", [...new Set(ids)])
+            .$if(pemohonId !== undefined, (q) => q.where("v.pemohon_id", "=", String(pemohonId)))
             .execute();
     }
 

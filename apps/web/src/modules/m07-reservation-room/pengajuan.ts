@@ -1,7 +1,7 @@
 // Logika murni wizard P-29 (FR-07.2, UX §7.6.2; PR-03-10): isian → body kontrak bersama,
 // saran slot alternatif terdekat (FR-07.2 A1) dan ruangan berkapasitas cukup (A2) dari data
 // ketersediaan yang SAMA dengan kalender P-27. Seluruh waktu WIB.
-import type { RoomAvailability, RoomReservationBody, RuanganKetersediaan } from "@sigm4/schemas";
+import type { ReservationDetail, RoomAvailability, RoomReservationBody, RuanganKetersediaan } from "@sigm4/schemas";
 import { keadaanHari, kolomHarian, slotBeririsan, tanggalWib, tengahMalamWib } from "./kalender";
 
 const MENIT_MS = 60_000;
@@ -131,4 +131,26 @@ export function ruanganCukup(data: RoomAvailability, i: IsianWizard, peserta: nu
         .filter((r) => r.id !== i.ruangan && r.kapasitas !== null && r.kapasitas >= peserta && slotBeririsan(data.slot, r.id, m, s).length === 0)
         .sort((a, b) => (a.kapasitas ?? 0) - (b.kapasitas ?? 0))
         .slice(0, 3);
+}
+
+/**
+ * Ubah jadwal / Ajukan Ulang (BR-024, keputusan 17d): pengajuan BARU terisi dari reservasi lama —
+ * ruangan, jadwal, dan rincian kegiatan. Pola berulang tidak disimpan, jadi tak dapat dipulihkan.
+ */
+export function isianDariReservasi(d: ReservationDetail): IsianWizard {
+    const mulai = new Date(d.waktu_mulai);
+    const teks = (v: string | null) => v ?? "";
+    return {
+        ...ISIAN_KOSONG,
+        ruangan: d.ruangan?.id ?? "",
+        tanggal: tanggalWib(mulai),
+        mulai: jamDari(mulai),
+        selesai: jamDari(new Date(d.waktu_selesai)),
+        nama_kegiatan: teks(d.nama_kegiatan),
+        jenis_kegiatan: teks(d.jenis_kegiatan),
+        jumlah_peserta: d.jumlah_peserta === null ? "" : String(d.jumlah_peserta),
+        keperluan: teks(d.keperluan),
+        kebutuhan_tambahan: teks(d.kebutuhan_tambahan),
+        keterangan: teks(d.keterangan),
+    };
 }

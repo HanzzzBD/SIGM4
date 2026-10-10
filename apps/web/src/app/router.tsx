@@ -5,18 +5,22 @@
 // Path literal di sini dijaga sama dengan `HALAMAN_TERDAFTAR` oleh uji.
 
 import type { QueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { STATUS_RESERVASI } from "@sigm4/schemas";
 import type { RouterHistory } from "@tanstack/react-router";
-import { Outlet, createRootRouteWithContext, createRoute, createRouter, redirect, useNavigate } from "@tanstack/react-router";
+import { Link, Outlet, createRootRouteWithContext, createRoute, createRouter, redirect, useNavigate } from "@tanstack/react-router";
 // zod/mini: API skema yang sama dengan bundel jauh lebih kecil (NFR-P-03, SDD-11 §4.7).
 import { z } from "zod/mini";
 import { ambilTantangan } from "../modules/m01-auth";
-import { TAMPILAN, hariIniWib, isianDariSlot } from "../modules/m07-reservation-room";
+import { TAMPILAN, detailReservasiQuery, hariIniWib, isianDariReservasi, isianDariSlot } from "../modules/m07-reservation-room";
 import { RENTANG } from "../modules/m15-dashboard";
 import {
     HalamanAktivasiDuaFaktor,
     HalamanApprovalRules,
     HalamanDashboard,
     HalamanDataTidakTersedia,
+    HalamanDaftarReservasi,
+    HalamanDetailReservasi,
     HalamanEditorAturan,
     HalamanGangguan,
     HalamanGantiPassword,
@@ -31,7 +35,7 @@ import {
 } from "../pages";
 import { ApiError } from "../shared/api";
 import { kueriMe, useSesi } from "../shared/auth";
-import { KeadaanGalat } from "../shared/states";
+import { KeadaanGalat, KeadaanMemuat } from "../shared/states";
 import { Tombol } from "../shared/ui/primitives";
 import { Shell } from "./shell";
 
@@ -215,6 +219,11 @@ const kalenderRuanganRoute = createRoute({
                           )
                         : undefined
                 }
+                tautanReservasi={(r) => (
+                    <Link to="/reservasi/$id" params={{ id: r.id }} className="text-text-link hover:text-text-link-hover">
+                        Lihat detail {r.nomor}
+                    </Link>
+                )}
             />
         );
     },
@@ -230,13 +239,65 @@ const wizardReservasiRoute = createRoute({
         ruangan: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined),
         mulai: z.catch(z.optional(z.string()), undefined),
         selesai: z.catch(z.optional(z.string()), undefined),
+        /** Ubah jadwal / Ajukan Ulang dari P-31 (BR-024, keputusan 17d): isian dari reservasi ini. */
+        dari: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined),
     }),
     component: function RouteWizardReservasi() {
         const cari = wizardReservasiRoute.useSearch();
         const navigate = useNavigate({ from: wizardReservasiRoute.fullPath });
-        const isianAwal = isianDariSlot(cari.ruangan, cari.mulai, cari.selesai);
+        const asal = useQuery({ ...detailReservasiQuery(cari.dari ?? ""), enabled: cari.dari !== undefined });
+        if (cari.dari !== undefined && asal.isPending) return <KeadaanMemuat label="Memuat data reservasi" baris={6} />;
+        const isianAwal = asal.data === undefined ? isianDariSlot(cari.ruangan, cari.mulai, cari.selesai) : isianDariReservasi(asal.data);
         const keKalender = (tanggal: string) => void navigate({ to: "/kalender-ruangan", search: { tanggal: tanggal === "" ? undefined : tanggal } });
-        return <HalamanWizardReservasi isianAwal={isianAwal} onBatal={() => keKalender(isianAwal.tanggal)} onKalender={keKalender} />;
+        return (
+            <HalamanWizardReservasi
+                key={cari.dari ?? "baru"}
+                isianAwal={isianAwal}
+                onBatal={() => keKalender(isianAwal.tanggal)}
+                onKalender={keKalender}
+                // UXD-06: objek bernomor → Detail Reservasi P-31 menampilkan nomornya.
+                onTerbentuk={(h) => void navigate({ to: "/reservasi/$id", params: { id: h.id }, search: { terkirim: true } })}
+            />
+        );
+    },
+});
+
+/** P-30 Daftar Reservasi (FR-07.3, UX §7.4; PR-03-27): saringan, urutan, halaman di URL (C-15). */
+const daftarReservasiRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/reservasi",
+    beforeLoad: butuhIzin("reservation.view"),
+    validateSearch: z.object({
+        q: z.catch(z.optional(z.coerce.string()), undefined),
+        status: z.catch(z.optional(z.enum(STATUS_RESERVASI)), undefined),
+        saya: z.catch(z.optional(z.literal(true)), undefined),
+        dari: z.catch(z.optional(z.string().check(z.regex(/^\d{4}-\d{2}-\d{2}$/))), undefined),
+        sampai: z.catch(z.optional(z.string().check(z.regex(/^\d{4}-\d{2}-\d{2}$/))), undefined),
+        urut: z.catch(z.optional(z.literal("mulai")), undefined),
+        page: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(2))), undefined),
+        per: z.catch(z.optional(z.union([z.literal(50), z.literal(100)])), undefined),
+    }),
+    component: function RouteDaftarReservasi() {
+        const cari = daftarReservasiRoute.useSearch();
+        const navigate = useNavigate({ from: daftarReservasiRoute.fullPath });
+        return <HalamanDaftarReservasi pencarian={cari} onPencarian={(p) => void navigate({ search: (lama) => ({ ...lama, ...p }) })} />;
+    },
+});
+
+/** P-31 Detail Reservasi (FR-07.3, FR-07.4, FR-10.3; PR-03-27). */
+const detailReservasiRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/reservasi/$id",
+    beforeLoad: async (a) => {
+        if (!/^[1-9]\d*$/.test(a.params.id)) throw redirect({ to: "/tidak-ditemukan" });
+        await butuhIzin("reservation.view")(a);
+    },
+    validateSearch: z.object({ terkirim: z.catch(z.optional(z.literal(true)), undefined) }),
+    component: function RouteDetailReservasi() {
+        const { id } = detailReservasiRoute.useParams();
+        const { terkirim } = detailReservasiRoute.useSearch();
+        const navigate = useNavigate({ from: detailReservasiRoute.fullPath });
+        return <HalamanDetailReservasi key={id} id={id} terkirim={terkirim === true} onUlang={(d) => void navigate({ to: "/reservasi/baru", search: { dari: d.id } })} />;
     },
 });
 
@@ -247,7 +308,7 @@ export const routeTree = rootRoute.addChildren([
     gantiPasswordRoute,
     gangguanRoute,
     tidakDitemukanRoute,
-    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {

@@ -4,7 +4,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { LABEL_JENIS_RUANGAN, LABEL_KEADAAN_SLOT } from "@sigm4/schemas";
-import type { RoomAvailability, RuanganKetersediaan } from "@sigm4/schemas";
+import type { RoomAvailability, RuanganKetersediaan, SlotKetersediaan } from "@sigm4/schemas";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import { useSesi } from "../../shared/auth";
@@ -148,7 +148,23 @@ interface Seleksi {
 }
 
 /** Tampilan Harian: ruangan × slot, seleksi rentang kosong berdampingan (CAL-UI-03). */
-function GridHarian({ data, tanggal, terbatas, onPilih }: { readonly data: RoomAvailability; readonly tanggal: string; readonly terbatas: boolean; readonly onPilih: (p: PilihanSlot | null) => void }) {
+/** Rincian slot terisi yang boleh dibuka — `reservasi` hanya ada bila pemanggil berhak (keputusan 17b). */
+export type ReservasiSlot = NonNullable<SlotKetersediaan["reservasi"]>;
+
+function GridHarian({
+    data,
+    tanggal,
+    terbatas,
+    onPilih,
+    onLihat,
+}: {
+    readonly data: RoomAvailability;
+    readonly tanggal: string;
+    readonly terbatas: boolean;
+    readonly onPilih: (p: PilihanSlot | null) => void;
+    /** UX §7.6.1: klik slot terisi → Detail Reservasi P-31 bila berhak (PR-03-27). */
+    readonly onLihat: (r: ReservasiSlot | null) => void;
+}) {
     const kolom = useMemo(() => kolomHarian(tanggal, data), [tanggal, data]);
     const sel = useMemo(() => data.ruangan.map((r) => kolom.map((k) => keadaanSel(data, r.id, k))), [data, kolom]);
     const [fokus, setFokus] = useState({ baris: 0, kolom: 0 });
@@ -196,7 +212,13 @@ function GridHarian({ data, tanggal, terbatas, onPilih }: { readonly data: RoomA
             pindahFokus(fokus.baris + l[0], fokus.kolom + l[1]);
         } else if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            if (kosong(fokus.baris, fokus.kolom)) setSeleksi({ baris: fokus.baris, dari: fokus.kolom, sampai: fokus.kolom });
+            if (kosong(fokus.baris, fokus.kolom)) {
+                onLihat(null);
+                setSeleksi({ baris: fokus.baris, dari: fokus.kolom, sampai: fokus.kolom });
+            } else {
+                const r = sel[fokus.baris]?.[fokus.kolom]?.slot?.reservasi ?? null;
+                if (r !== null) onLihat(r);
+            }
         } else if (e.key === "Escape") {
             setSeleksi(null);
         }
@@ -247,7 +269,12 @@ function GridHarian({ data, tanggal, terbatas, onPilih }: { readonly data: RoomA
                                         tabIndex={fokus.baris === b && fokus.kolom === c ? 0 : -1}
                                         onFocus={() => setFokus({ baris: b, kolom: c })}
                                         onMouseDown={(e) => {
-                                            if (s.keadaan !== "KOSONG") return;
+                                            if (s.keadaan !== "KOSONG") {
+                                                // Slot terisi tak dapat dipilih (CAL-UI-03); yang berincian dapat dibuka.
+                                                if (s.slot?.reservasi != null) onLihat(s.slot.reservasi);
+                                                return;
+                                            }
+                                            onLihat(null);
                                             e.preventDefault();
                                             seret.current = b;
                                             setFokus({ baris: b, kolom: c });
@@ -364,7 +391,7 @@ function GridBulanan({ data, hari, bulan, onHari }: { readonly data: RoomAvailab
 }
 
 /** CAL-UI-07: < 768 px — daftar per hari, bukan matriks. */
-function DaftarHarian({ data, tanggal, terbatas }: { readonly data: RoomAvailability; readonly tanggal: string; readonly terbatas: boolean }) {
+function DaftarHarian({ data, tanggal, terbatas, tautan }: { readonly data: RoomAvailability; readonly tanggal: string; readonly terbatas: boolean; readonly tautan?: ((r: ReservasiSlot) => ReactNode) | undefined }) {
     const h = keadaanHari(tanggal, data);
     const awal = tengahMalamWib(tanggal);
     const akhir = new Date(awal.getTime() + 86_400_000);
@@ -389,6 +416,7 @@ function DaftarHarian({ data, tanggal, terbatas }: { readonly data: RoomAvailabi
                                         <li key={`${s.mulai}-${s.keadaan}`} className={gabung("rounded-sm px-2 py-1 text-sm text-text-primary", GAYA[s.keadaan])}>
                                             {jamWib(s.mulai)}–{jamWib(s.selesai)} WIB · {LABEL_KEADAAN_SLOT[s.keadaan]}
                                             {teksSel({ keadaan: s.keadaan, label: s.label, slot: s }, terbatas) !== LABEL_KEADAAN_SLOT[s.keadaan] && ` · ${teksSel({ keadaan: s.keadaan, label: s.label, slot: s }, terbatas)}`}
+                                            {s.reservasi !== null && tautan !== undefined && <> · {tautan(s.reservasi)}</>}
                                         </li>
                                     ))}
                                 </ul>
@@ -405,11 +433,14 @@ export default function RoomCalendarPage({
     pencarian,
     onPencarian,
     aksiPilihan,
+    tautanReservasi,
 }: {
     readonly pencarian: PencarianKalender;
     readonly onPencarian: (p: Partial<PencarianKalender>) => void;
     /** Aksi lanjutan atas slot terpilih — wizard P-29 dipasang perakit halaman bila terdaftar. */
     readonly aksiPilihan?: (p: PilihanSlot) => ReactNode;
+    /** Tautan Detail Reservasi P-31 atas slot terisi yang berincian (PR-03-27). */
+    readonly tautanReservasi?: (r: ReservasiSlot) => ReactNode;
 }) {
     const sesi = useSesi();
     const terbatas = sesi.permissions["reservation.view"] === "restricted";
@@ -419,6 +450,7 @@ export default function RoomCalendarPage({
     const filter: FilterKalender = { gedung: pencarian.gedung, jenis: pencarian.jenis, kapasitas: pencarian.kapasitas };
     const kueri = useQuery(ketersediaanQuery(rentang.dari, rentang.sampai, filter));
     const [pilihan, setPilihan] = useState<PilihanSlot | null>(null);
+    const [dilihat, setDilihat] = useState<ReservasiSlot | null>(null);
     // Opsi gedung dikumpulkan dari jawaban sebelumnya — tak menuntut `location.view` (Guru/Siswa).
     const [gedung, setGedung] = useState<ReadonlyMap<string, string>>(new Map());
     useEffect(() => {
@@ -477,9 +509,9 @@ export default function RoomCalendarPage({
             {kueri.data !== undefined && kueri.data.ruangan.length > 0 && (
                 <>
                     {sempit ? (
-                        <DaftarHarian data={kueri.data} tanggal={tanggal} terbatas={terbatas} />
+                        <DaftarHarian data={kueri.data} tanggal={tanggal} terbatas={terbatas} tautan={tautanReservasi} />
                     ) : tampilan === "harian" ? (
-                        <GridHarian data={kueri.data} tanggal={tanggal} terbatas={terbatas} onPilih={setPilihan} />
+                        <GridHarian data={kueri.data} tanggal={tanggal} terbatas={terbatas} onPilih={setPilihan} onLihat={setDilihat} />
                     ) : tampilan === "mingguan" ? (
                         <GridMingguan data={kueri.data} hari={rentang.hari} terbatas={terbatas} onHari={keHari} />
                     ) : (
@@ -493,6 +525,11 @@ export default function RoomCalendarPage({
                         </p>
                     )}
                     {pilihan !== null && tampilan === "harian" && !sempit && aksiPilihan?.(pilihan)}
+                    {dilihat !== null && tampilan === "harian" && !sempit && tautanReservasi !== undefined && (
+                        <p className="text-sm text-text-primary">
+                            Slot terisi {dilihat.nomor} · {tautanReservasi(dilihat)}
+                        </p>
+                    )}
                 </>
             )}
         </div>

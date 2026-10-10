@@ -1,7 +1,7 @@
 // Permukaan publik m07-reservation-room (SDD-SYS-03). Hanya berkas ini yang boleh diimpor modul
 // lain / entrypoint `api/` dan `worker/`.
 export type { ReservationsModuleDeps } from "./routes.js";
-export { cancelReservationRoute, createReservationRoute, previewReservationRoute, recordUsageRoute, reservationsRouter, roomAvailabilityRoute } from "./routes.js";
+export { cancelReservationRoute, createReservationRoute, getReservationRoute, listReservationsRoute, previewReservationRoute, recordUsageRoute, reservationsRouter, roomAvailabilityRoute } from "./routes.js";
 export type { KonsumenReservasiDeps } from "./registration.js";
 export { daftarkanReservasiRuangan, pasangKonsumenReservasi } from "./registration.js";
 export { EVENT_RESERVASI_KEDALUWARSA } from "./services/approval-outcome.js";
