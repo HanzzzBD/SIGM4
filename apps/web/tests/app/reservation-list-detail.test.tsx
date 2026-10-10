@@ -154,7 +154,7 @@ describe("P-30 Daftar Reservasi", () => {
 });
 
 describe("P-30 — tabel C-15", () => {
-    const halaman = (n: number, total = 120): Opsi["daftar"] => () => ({ status: 200, data: { success: true, data: [BARIS], meta: { page: n, per_page: 25, total, total_pages: Math.ceil(total / 25) } } });
+    const halaman = (n: number, total = 120): ((p: Permintaan) => Jawaban) => () => ({ status: 200, data: { success: true, data: [BARIS], meta: { page: n, per_page: 25, total, total_pages: Math.ceil(total / 25) } } });
 
     it("urut lewat kepala kolom (ikon + aria-sort), klik baris membuka detail, kepala melekat", async () => {
         const log = server();
