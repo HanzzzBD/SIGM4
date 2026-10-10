@@ -427,7 +427,9 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 // (T1 = Sabtu, H-1 terpenuhi). Pratinjau tanpa aksi log; pengajuan + instance approval dalam satu transaksi.
                 const reservasi = { room_id: Number(id(ruang)), waktu_mulai: "2026-09-21T01:00:00.000Z", waktu_selesai: "2026-09-21T03:00:00.000Z", nama_kegiatan: "Rapat gerbang", jenis_kegiatan: "Rapat", jumlah_peserta: 10 };
                 await langkah("POST /reservations/preview", "/reservations/preview", reservasi, []);
-                await langkah("POST /reservations", "/reservations", reservasi, ["RESERVATION_CREATED", "APPROVAL_INSTANCE_CREATED"], { "idempotency-key": randomUUID() });
+                const diajukan = await langkah("POST /reservations", "/reservations", reservasi, ["RESERVATION_CREATED", "APPROVAL_INSTANCE_CREATED"], { "idempotency-key": randomUUID() });
+                // PR-03-11: pembatalan beralasan (BR-025) — slot dilepas, instance ditutup, alasan pada log.
+                await langkah("POST /reservations/:id/cancel", `/reservations/${id(diajukan)}/cancel`, { alasan: "Uji gerbang AL-01" }, ["RESERVATION_CANCELLED"]);
 
                 // --- M-04: aset (PR-02-11) — SEBELUM ruangan dinonaktifkan (BR-009: ruangan wajib AKTIF).
                 // PR-02-15: kategori lewat endpoint sungguhan. PUT sebelum aset dibuat (kode kategori
