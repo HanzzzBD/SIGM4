@@ -261,6 +261,7 @@ Format dirakit aplikasi sesuai `SEQ-01`, divalidasi terhadap regex `SEQ-04` pada
 | Job | Jadwal (UTC, lihat `JOB-04`) | Idempoten karena |
 |---|---|---|
 | `slot-activation` | tiap 5 menit | `UPDATE … WHERE status <> target`; reservasi ruangan (FR-07.4, `PR-03-12`) bertransisi hanya dari status asal (`Disetujui`/`Berlangsung`) atas baris yang dikunci `FOR UPDATE SKIP LOCKED` terurut id — baris yang sedang dipegang pembatalan/pencatatan dilewati putaran itu, job tak pernah menunggu kunci; transaksi terpisah dari sisi aset M-04 |
+| `fixed-schedule-materialize` | harian 17:30 (= 00:30 WIB) | kemunculan dibuat hanya bila belum ber-slot (tak dilepas) dan tak beririsan apa pun — yang beririsan dilewati, dicoba lagi besok, tak pernah membatalkan; slot mendatang yang kini libur dilepas; satu transaksi per aturan yang dikunci `FOR UPDATE` (`PR-03-13`) |
 | `tentative-slot-expiry` | tiap 15 menit | `WHERE status='TENTATIVE' AND expires_at < now()` |
 | `loan-overdue` | 17:05 (= 00:05 WIB) | denda diperiksa unik per `(loan_item_id, tanggal)` |
 | `reservation-expiry` | 16:00 (= 23:00 WIB) | transisi hanya dari `Confirmed` |
@@ -279,7 +280,10 @@ Ditetapkan pemilik produk saat `PR-02-17` (keputusan 64 [log phase-02](../IMPLEM
 | `reserve` | Sumber daya eksplisit: ruangan, unit aset pilihan Petugas, blokade pemeliharaan. Status awal `TENTATIVE` (wajib TTL, ditegakkan tipe) atau `CONFIRMED` | Aset `ORDER BY id FOR UPDATE NOWAIT` (CI-02, SDD-AVL-05), lalu ruangan `ORDER BY id FOR UPDATE` menunggu (SDD-AVL-06) | `55P03` diterjemahkan **di dalam** layanan menjadi `409 ASSET_NOT_AVAILABLE`; `23P01` diteruskan ke ErrorMapper (CI-04). Kunci ruangan menjamin pihak kalah selalu `23P01`, tidak pernah `40P01` |
 | `allocate` | Alokasi otomatis per kategori (§4.2 langkah 4-6), selalu `TENTATIVE` | `ORDER BY id … FOR UPDATE OF a SKIP LOCKED` | Unit kurang → `409 ASSET_NOT_AVAILABLE` |
 | `confirm` / `activate` | `TENTATIVE`→`CONFIRMED` (TTL dihapus) / `CONFIRMED`→`ACTIVE` | `UPDATE … WHERE status = asal` | Ada slot yang tak berstatus asal → `409 RESERVATION_CONFLICT`, seluruh transisi batal |
+| `reserveRuanganBerulang` | Blokade jadwal tetap (FR-07.5, `PR-03-13`): **banyak** rentang `CONFIRMED` atas **satu** ruangan dalam satu pernyataan, origin `fixed_schedule` — jalur regenerasi horizon (AC ≤ 10 detik untuk 90 hari × 30 ruangan) | Ruangan `FOR UPDATE` sekali (urutan sama dengan `reserve`, SDD-AVL-06) | `23P01` diteruskan ke ErrorMapper; pemanggil menyaring irisan lebih dulu |
 | `release` | `*`→`RELEASED`, idempoten; baris dipertahankan (TBD-AVL-A) | — | — |
+
+**Rujukan sumber slot** (`PR-03-13`): selain `reservation_id`/`loan_id`/`work_order_id`, slot blokade ruangan membawa `fixed_schedule_id` atau `manual_block_id` (FK ke `room_fixed_schedules`/`room_manual_blocks`, migration `0047`); pembacaannya lewat `slotMilikBlokade` dan kolomnya ikut `daftarSlotTerpakai` (label kalender FR-07.1 A4). `created_by` diisi `pelakuId` — `NULL` bagi pelaku SYSTEM (job materialisasi, `AL-06`), bukan id 0 yang melanggar FK.
 
 Yang **bukan** tanggung jawabnya: aturan reservasi (`BR-030`, `BR-023a`, `BR-023c`) milik M-07/M-08, dan kelayakan aset untuk `reserve` milik pemanggil — blokade pemeliharaan justru menyasar aset rusak. **Activity log** dicatat pemanggil atas aksi bisnisnya dalam transaksi yang sama; tidak ada aksi `SLOT_*` (`AL-01`).
 

@@ -1,14 +1,30 @@
 import { queryOptions } from "@tanstack/react-query";
 import {
+    BlockDeactivatedResponseSchema,
     ReservationCancelledResponseSchema,
     ReservationDetailResponseSchema,
     ReservationListResponseSchema,
     ReservationUsageResponseSchema,
     RoomAvailabilityResponseSchema,
+    RoomBlockCreatedResponseSchema,
+    RoomBlockListResponseSchema,
+    RoomBlockPreviewResponseSchema,
     RoomReservationCreatedResponseSchema,
     RoomReservationPreviewResponseSchema,
 } from "@sigm4/schemas";
-import type { HasilPenggunaan, ReservationCancelled, ReservationListQuery, ReservationUsage, RoomReservationBody, RoomReservationCreated, RoomReservationPreview } from "@sigm4/schemas";
+import type {
+    BlockDeactivated,
+    HasilPenggunaan,
+    ReservationCancelled,
+    ReservationListQuery,
+    ReservationUsage,
+    RoomBlockCreated,
+    RoomBlockInput,
+    RoomBlockPreview,
+    RoomReservationBody,
+    RoomReservationCreated,
+    RoomReservationPreview,
+} from "@sigm4/schemas";
 import { api } from "../../shared/api";
 
 export interface FilterKalender {
@@ -62,4 +78,27 @@ export async function batalkanReservasi(id: string, alasan: string): Promise<Res
 /** FR-07.4 langkah 3 + A1 (keputusan 16). */
 export async function catatPenggunaan(id: string, hasil: HasilPenggunaan, catatan: string | null): Promise<ReservationUsage> {
     return ReservationUsageResponseSchema.parse((await api.post(`/reservations/${id}/usage`, { hasil, catatan })).data).data;
+}
+
+/** FR-07.5 (PR-03-13, keputusan 19): jadwal tetap & blokade manual sebuah ruangan. */
+export const daftarBlokadeQuery = (roomId: string) =>
+    queryOptions({
+        queryKey: ["rooms", roomId, "blocks"],
+        queryFn: async () => RoomBlockListResponseSchema.parse((await api.get(`/rooms/${roomId}/blocks`)).data).data,
+    });
+
+/** A1/A4: kemunculan, libur dilewati, dan bentrok — tanpa efek (pola keputusan 14f). */
+export async function pratinjauBlokade(roomId: string, isian: RoomBlockInput): Promise<RoomBlockPreview> {
+    return RoomBlockPreviewResponseSchema.parse((await api.post(`/rooms/${roomId}/blocks/preview`, isian)).data).data;
+}
+
+/** A1 (keputusan 19c): `batalkan` = keputusan eksplisit membatalkan reservasi yang bentrok (beralasan, NT-08). */
+export async function buatBlokade(roomId: string, isian: RoomBlockInput, batalkan?: { readonly alasan: string }): Promise<RoomBlockCreated> {
+    return RoomBlockCreatedResponseSchema.parse((await api.post(`/rooms/${roomId}/blocks`, batalkan === undefined ? isian : { ...isian, batalkan_bentrok: batalkan })).data).data;
+}
+
+/** A3 (keputusan 19f): hanya penonaktifan; slot mendatang dilepas. */
+export async function nonaktifkanBlokade(jenis: "JADWAL_TETAP" | "BLOKADE_MANUAL", id: string): Promise<BlockDeactivated> {
+    const path = jenis === "JADWAL_TETAP" ? `/room-fixed-schedules/${id}/status` : `/room-manual-blocks/${id}/status`;
+    return BlockDeactivatedResponseSchema.parse((await api.patch(path, { status: "NONAKTIF" })).data).data;
 }

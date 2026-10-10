@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **169** baris, dikumpulkan dari 22 berkas modul.
+> Total: **174** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -72,6 +72,7 @@
 | GET | `/roles` | `role.view` | Daftar role | [M-02](../02-modules/m02-users.md) |
 | GET | `/rooms/availability` | `reservation.view` | Ketersediaan ruangan pada rentang waktu | [M-07](../02-modules/m07-reservation-room.md) |
 | GET | `/rooms/{id}/assets` | `asset.view` | Aset dalam satu ruangan | [M-04](../02-modules/m04-assets.md) |
+| GET | `/rooms/{id}/blocks` | `reservation.fixed_schedule` | Jadwal tetap & blokade manual sebuah ruangan, aktif maupun nonaktif (`FR-07.5`) | [M-07](../02-modules/m07-reservation-room.md) |
 | GET | `/settings` | `setting.view` | Baca parameter sistem | [M-20](../02-modules/m20-settings.md) |
 | GET | `/users/import/{id}` | `user.create` | Status dan laporan per baris sebuah pekerjaan impor (`IMPT-02`) | [M-02](../02-modules/m02-users.md) |
 | GET | `/users/{id}` | `user.view` | Detail pengguna | [M-02](../02-modules/m02-users.md) |
@@ -90,6 +91,8 @@
 | PATCH | `/materials/{id}` | `material.manage` | Ubah data bahan | [M-22](../02-modules/m22-materials.md) |
 | PATCH | `/notifications/read-all` | `notification.manage_own` | Tandai semua terbaca | [M-17](../02-modules/m17-notifications.md) |
 | PATCH | `/notifications/{id}/read` | `notification.manage_own` | Tandai terbaca | [M-17](../02-modules/m17-notifications.md) |
+| PATCH | `/room-fixed-schedules/{id}/status` | `reservation.fixed_schedule` | Nonaktifkan jadwal tetap; slot yang belum dimulai dilepas (A3). Aturan tidak dapat disunting — nonaktifkan lalu buat baru | [M-07](../02-modules/m07-reservation-room.md) |
+| PATCH | `/room-manual-blocks/{id}/status` | `reservation.fixed_schedule` | Nonaktifkan blokade manual; slot yang belum dimulai dilepas (A3) | [M-07](../02-modules/m07-reservation-room.md) |
 | PATCH | `/users/{id}/status` | `user.update` | Aktifkan/nonaktifkan | [M-02](../02-modules/m02-users.md) |
 | PATCH | `/work-orders/{id}/progress` | `workorder.execute` | Perbarui progres, biaya, foto | [M-12](../02-modules/m12-maintenance.md) |
 | PATCH | `/work-orders/{id}/start` | `workorder.execute` | Mulai kerjakan | [M-12](../02-modules/m12-maintenance.md) |
@@ -156,6 +159,8 @@
 | POST | `/reservations/{id}/cancel` | `reservation.cancel_own` · `reservation.cancel_any` | Batalkan reservasi + alasan. Pemilik reservasi cukup `cancel_own`; membatalkan reservasi pihak lain wajib `cancel_any` (`FR-07.3 A2`). Kepemilikan diperiksa di server, bukan disimpulkan dari role | [M-07](../02-modules/m07-reservation-room.md) |
 | POST | `/reservations/{id}/usage` | `reservation.record_usage` | Catat penggunaan ruangan pasca-kegiatan per tanggal, sekali (`FR-07.4` langkah 3, A1): kondisi `Baik`/`Perlu Perhatian` + catatan bagi yang `Selesai`, atau `Tidak Digunakan` dari `Berlangsung`/`Selesai` — slotnya dilepas | [M-07](../02-modules/m07-reservation-room.md) |
 | POST | `/reservations` | `reservation.create` | Ajukan reservasi ruangan/aset | [M-07](../02-modules/m07-reservation-room.md) |
+| POST | `/rooms/{id}/blocks/preview` | `reservation.fixed_schedule` | Pratinjau blokade tanpa efek: kemunculan dalam horizon, hari libur yang dilewati (A4), reservasi yang beririsan (A1), dan blokade/pemeliharaan lain yang beririsan | [M-07](../02-modules/m07-reservation-room.md) |
+| POST | `/rooms/{id}/blocks` | `reservation.fixed_schedule` | Buat jadwal tetap (pola mingguan; satu aturan per hari) atau blokade manual (rentang tunggal). Beririsan reservasi → ditolak kecuali pengguna memilih eksplisit membatalkannya beserta alasan (A1, NT-08); beririsan blokade lain → ditolak | [M-07](../02-modules/m07-reservation-room.md) |
 | POST | `/users/import` | `user.create` | Impor massal CSV/XLSX: ≤ 200 baris diproses sinkron, lebih dari itu asinkron (`IMPT-04`); berkas identik dalam 24 jam mengembalikan hasil sebelumnya (`IMPT-03`) | [M-02](../02-modules/m02-users.md) |
 | POST | `/users/{id}/2fa-activation-code` | `user.reset_2fa` | Terbitkan kode aktivasi 2FA bagi akun role wajib yang belum ber-2FA (`FR-01.5 A7`, `BR-070d`); `metode_verifikasi` wajib; kode tampil satu kali; tidak untuk akun sendiri | [M-02](../02-modules/m02-users.md) |
 | POST | `/users/{id}/reset-2fa` | `user.reset_2fa` | Reset 2FA pengguna (`FR-01.5 A3`): menonaktifkan 2FA, menghapus kode cadangan, mencabut seluruh sesi; `metode_verifikasi` wajib; untuk role wajib 2FA menerbitkan kode aktivasi baru, tampil satu kali (`BR-070d`) | [M-02](../02-modules/m02-users.md) |

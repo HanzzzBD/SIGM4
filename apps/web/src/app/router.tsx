@@ -28,6 +28,7 @@ import {
     HalamanImporAset,
     HalamanKalenderRuangan,
     HalamanMutasiAset,
+    HalamanPanelBlokade,
     HalamanTanpaAkses,
     HalamanTidakDitemukan,
     HalamanWizardReservasi,
@@ -200,14 +201,35 @@ const kalenderRuanganRoute = createRoute({
         gedung: z.catch(z.optional(z.string().check(z.regex(/^[1-9]\d*$/))), undefined),
         jenis: z.catch(z.optional(z.string()), undefined),
         kapasitas: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1))), undefined),
+        /** Aksi sekunder P-27 "Kelola Jadwal Tetap · Blokade Manual" (FR-07.5, PR-03-13): panel terbuka + ruangannya. */
+        kelola: z.catch(z.optional(z.literal(true)), undefined),
+        ruang: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined),
     }),
     component: function RouteKalenderRuangan() {
-        const cari = kalenderRuanganRoute.useSearch();
+        const { kelola, ruang, ...cari } = kalenderRuanganRoute.useSearch();
         const navigate = useNavigate({ from: kalenderRuanganRoute.fullPath });
+        const izin = useSesi().permissions;
         // UX F-09: slot kosong terpilih → wizard P-29 langkah 1 terisi, hanya bagi pemegang reservation.create.
-        const bolehAjukan = useSesi().permissions["reservation.create"] !== undefined;
+        const bolehAjukan = izin["reservation.create"] !== undefined;
+        const bolehBlokade = izin["reservation.fixed_schedule"] !== undefined;
         return (
             <HalamanKalenderRuangan
+                aksiSekunder={
+                    bolehBlokade && kelola !== true ? (
+                        <Tombol varian="secondary" onClick={() => void navigate({ search: (lama) => ({ ...lama, kelola: true }) })}>
+                            Kelola Jadwal Tetap & Blokade
+                        </Tombol>
+                    ) : undefined
+                }
+                panel={
+                    bolehBlokade && kelola === true ? (
+                        <HalamanPanelBlokade
+                            roomId={ruang ?? null}
+                            onRuangan={(id) => void navigate({ search: (lama) => ({ ...lama, ruang: id }) })}
+                            onTutup={() => void navigate({ search: (lama) => ({ ...lama, kelola: undefined, ruang: undefined }) })}
+                        />
+                    ) : undefined
+                }
                 pencarian={{ ...cari, tampilan: cari.tampilan ?? "harian", tanggal: cari.tanggal ?? hariIniWib() }}
                 onPencarian={(p) => void navigate({ search: (lama) => ({ ...lama, ...p }) })}
                 aksiPilihan={

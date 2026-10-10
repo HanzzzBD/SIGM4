@@ -14,6 +14,7 @@
 import { sql } from "kysely";
 import type { Clock } from "../clock/index.js";
 import type { QueryExecutor, TransactionScope } from "../db/index.js";
+import { pelakuId } from "../auth/index.js";
 import { DomainError } from "../errors/index.js";
 import { publishAll } from "../events/index.js";
 
@@ -36,6 +37,9 @@ export interface RujukanSlot {
     readonly reservationId?: number;
     readonly loanId?: number;
     readonly workOrderId?: number;
+    /** Blokade ruangan FR-07.5 (0047, PR-03-13). */
+    readonly fixedScheduleId?: number;
+    readonly manualBlockId?: number;
 }
 
 /** `TENTATIVE` wajib ber-TTL (BR-023b, CHECK `tentative_needs_ttl`) — ditegakkan tipe. */
@@ -92,6 +96,9 @@ export interface SlotTerpakai {
     readonly status: Exclude<StatusSlot, "RELEASED">;
     readonly origin: AsalSlot;
     readonly reservation_id: string | null;
+    /** Sumber blokade (PR-03-13) — label kalender FR-07.1 A4. */
+    readonly fixed_schedule_id: string | null;
+    readonly manual_block_id: string | null;
 }
 
 /**
@@ -108,12 +115,43 @@ export async function daftarSlotTerpakai(
     if (ids.length === 0) return [];
     const hasil = await sql<SlotTerpakai>`
         SELECT id::text AS id, resource_id::text AS resource_id, lower(slot_range) AS mulai, upper(slot_range) AS selesai,
-               status, origin, reservation_id::text AS reservation_id
+               status, origin, reservation_id::text AS reservation_id,
+               fixed_schedule_id::text AS fixed_schedule_id, manual_block_id::text AS manual_block_id
           FROM booking_slots
          WHERE resource_type = ${jenis}::booking_resource AND resource_id = ANY(${ids.map(String)}::bigint[])
            AND status IN ('TENTATIVE', 'CONFIRMED', 'ACTIVE')
            AND slot_range && tstzrange(${rentang.mulai}, ${rentang.selesai}, '[)')
          ORDER BY resource_id, lower(slot_range), id
+    `.execute(executor);
+    return hasil.rows;
+}
+
+/** Slot milik sebuah blokade ruangan (PR-03-13) — bahan materialisasi idempoten & pelepasan (FR-07.5 A3/A4). */
+export interface SlotBlokade {
+    readonly id: string;
+    readonly fixed_schedule_id: string | null;
+    readonly manual_block_id: string | null;
+    readonly mulai: Date;
+    readonly selesai: Date;
+    readonly status: StatusSlot;
+}
+
+/** Slot belum dilepas milik blokade `sumber` yang berakhir setelah `sejak` (lewat shared/booking, SDD-SYS-10). */
+export async function slotMilikBlokade(
+    executor: QueryExecutor,
+    sumber: { readonly fixedScheduleIds?: readonly number[]; readonly manualBlockIds?: readonly number[] },
+    sejak: Date,
+): Promise<readonly SlotBlokade[]> {
+    const tetap = (sumber.fixedScheduleIds ?? []).map(String);
+    const manual = (sumber.manualBlockIds ?? []).map(String);
+    if (tetap.length === 0 && manual.length === 0) return [];
+    const hasil = await sql<SlotBlokade>`
+        SELECT id::text AS id, fixed_schedule_id::text AS fixed_schedule_id, manual_block_id::text AS manual_block_id,
+               lower(slot_range) AS mulai, upper(slot_range) AS selesai, status
+          FROM booking_slots
+         WHERE (fixed_schedule_id = ANY(${tetap}::bigint[]) OR manual_block_id = ANY(${manual}::bigint[]))
+           AND status <> 'RELEASED' AND upper(slot_range) > ${sejak}
+         ORDER BY lower(slot_range), id
     `.execute(executor);
     return hasil.rows;
 }
@@ -200,6 +238,38 @@ export class SlotService {
             ...ruanganIds.map((id) => ({ jenis: "room" as const, id })),
         ];
         return this.sisipkan(scope, urut, pesan.rentang, pesan.asal, pesan, pesan.rujukan);
+    }
+
+    /**
+     * Blokade ruangan berulang (FR-07.5, PR-03-13): BANYAK rentang `CONFIRMED` atas SATU ruangan dalam
+     * satu pernyataan — baris ruangan dikunci sekali (urutan kunci sama dengan `reserve`, SDD-AVL-06),
+     * irisan tetap diputus exclusion constraint (CI-01). Regenerasi horizon 90 hari × 30 ruangan
+     * memakai jalur ini agar memenuhi ≤ 10 detik (FR-07.5 AC).
+     */
+    async reserveRuanganBerulang(
+        scope: TransactionScope,
+        p: { readonly roomId: number; readonly rentang: readonly RentangWaktu[]; readonly asal: "fixed_schedule"; readonly rujukan: RujukanSlot },
+    ): Promise<readonly SlotRow[]> {
+        if (p.rentang.length === 0) return [];
+        p.rentang.forEach((r) => this.periksaRentang(r));
+        const ada = await scope.tx.selectFrom("rooms").select("id").where("id", "=", String(p.roomId)).forUpdate().execute();
+        if (ada.length !== 1) throw new DomainError("VALIDATION_ERROR", "Ruangan yang dipesan tidak ditemukan.", { field: "sumber_daya" });
+        return scope.tx
+            .insertInto("booking_slots")
+            .values(
+                p.rentang.map((r) => ({
+                    resource_type: "room" as const,
+                    resource_id: p.roomId,
+                    slot_range: this.rentangSql(r),
+                    status: "CONFIRMED" as const,
+                    origin: p.asal,
+                    expires_at: null,
+                    fixed_schedule_id: p.rujukan.fixedScheduleId ?? null,
+                    created_by: pelakuId(scope.ctx),
+                })),
+            )
+            .returning(KOLOM_SLOT)
+            .execute();
     }
 
     /**
@@ -386,7 +456,10 @@ export class SlotService {
                     reservation_id: rujukan?.reservationId ?? null,
                     loan_id: rujukan?.loanId ?? null,
                     work_order_id: rujukan?.workOrderId ?? null,
-                    created_by: scope.ctx.userId,
+                    fixed_schedule_id: rujukan?.fixedScheduleId ?? null,
+                    manual_block_id: rujukan?.manualBlockId ?? null,
+                    // SYSTEM (job materialisasi, AL-06) → NULL, bukan id 0 yang melanggar FK users.
+                    created_by: pelakuId(scope.ctx),
                 })),
             )
             .returning(KOLOM_SLOT)

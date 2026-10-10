@@ -12,3 +12,5 @@ export type { PencarianDaftar } from "./ReservationListPage";
 export const loadReservationDetailPage = () => import("./ReservationDetailPage");
 export { isianDariReservasi } from "./pengajuan";
 export { detailReservasiQuery } from "./api";
+// Panel blokade ruangan — aksi sekunder P-27 (PR-03-13), dimuat malas.
+export const loadRoomBlocksPanel = () => import("./RoomBlocksPanel");

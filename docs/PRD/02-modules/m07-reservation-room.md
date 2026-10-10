@@ -234,7 +234,7 @@ sequenceDiagram
 - **A3 — Blokade dinonaktifkan:** Slot mendatang dilepas; slot yang telah lewat tetap tersimpan sebagai arsip utilisasi.
 - **A4 — Hari libur sekolah:** Blokade berulang otomatis dilewati pada tanggal yang terdaftar sebagai hari libur (Lampiran E).
 
-**Post Conditions** — Slot blokade aktif; ruangan tidak dapat dipesan pada waktu tersebut oleh siapa pun kecuali pengguna dengan permission `reservation.urgent`.
+**Post Conditions** — Slot blokade aktif; ruangan tidak dapat dipesan pada waktu tersebut oleh siapa pun, **termasuk** pemegang `reservation.urgent` (yang hanya membebaskan tenggat H-1, BR-020). Bila ruangan diperlukan, kemunculan blokade dilepas lebih dulu lewat pengelolaan blokade oleh pemegang `reservation.fixed_schedule` (keputusan 19d log phase-03).
 
 **Acceptance Criteria**
 - [ ] Slot blokade menghalangi pengajuan reservasi dengan mekanisme yang sama seperti reservasi biasa (*exclusion constraint*, CI-01).
@@ -276,6 +276,11 @@ sequenceDiagram
 | GET | `/reservations` | `reservation.view` | Daftar reservasi (tersaring sesuai role): satu baris per pengajuan; scope `restricted` hanya miliknya sendiri |
 | GET | `/reservations/{id}` | `reservation.view` | Detail reservasi + riwayat approval: tanggal turunan, penggunaan, aksi yang tersedia bagi pemanggil, dan riwayat perubahan dari activity log (penyajiannya tercatat, `AL-10`); di luar scope → 404 |
 | POST | `/reservations/{id}/cancel` | `reservation.cancel_own` · `reservation.cancel_any` | Batalkan reservasi + alasan. Pemilik reservasi cukup `cancel_own`; membatalkan reservasi pihak lain wajib `cancel_any` (`FR-07.3 A2`). Kepemilikan diperiksa di server, bukan disimpulkan dari role |
+| GET | `/rooms/{id}/blocks` | `reservation.fixed_schedule` | Jadwal tetap & blokade manual sebuah ruangan, aktif maupun nonaktif (`FR-07.5`) |
+| POST | `/rooms/{id}/blocks/preview` | `reservation.fixed_schedule` | Pratinjau blokade tanpa efek: kemunculan dalam horizon, hari libur yang dilewati (A4), reservasi yang beririsan (A1), dan blokade/pemeliharaan lain yang beririsan |
+| POST | `/rooms/{id}/blocks` | `reservation.fixed_schedule` | Buat jadwal tetap (pola mingguan; satu aturan per hari) atau blokade manual (rentang tunggal). Beririsan reservasi → ditolak kecuali pengguna memilih eksplisit membatalkannya beserta alasan (A1, NT-08); beririsan blokade lain → ditolak |
+| PATCH | `/room-fixed-schedules/{id}/status` | `reservation.fixed_schedule` | Nonaktifkan jadwal tetap; slot yang belum dimulai dilepas (A3). Aturan tidak dapat disunting — nonaktifkan lalu buat baru |
+| PATCH | `/room-manual-blocks/{id}/status` | `reservation.fixed_schedule` | Nonaktifkan blokade manual; slot yang belum dimulai dilepas (A3) |
 | POST | `/reservations/{id}/usage` | `reservation.record_usage` | Catat penggunaan ruangan pasca-kegiatan per tanggal, sekali (`FR-07.4` langkah 3, A1): kondisi `Baik`/`Perlu Perhatian` + catatan bagi yang `Selesai`, atau `Tidak Digunakan` dari `Berlangsung`/`Selesai` — slotnya dilepas |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
@@ -290,6 +295,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 | **reservations** | Pengajuan reservasi ruangan & aset | id, nomor, jenis (`RUANGAN`/`ASET`), pemohon_id, room_id, nama_kegiatan, jenis_kegiatan, waktu_mulai, waktu_selesai, jumlah_peserta, keperluan, kebutuhan_tambahan, keterangan, status, parent_id (untuk berulang), kondisi_ruangan, catatan_penggunaan, penggunaan_dicatat_oleh, penggunaan_dicatat_pada (`FR-07.4`) | ± 3.000 |
 | **reservation_items** | Unit aset yang dialokasikan pada reservasi | id, reservation_id, asset_id, jumlah | ± 6.000 |
 | **room_fixed_schedules** | Blokade jadwal tetap ruangan (FR-07.5) | id, room_id, hari, jam_mulai, jam_selesai, label_kegiatan, berlaku_mulai, berlaku_sampai, status | Petugas Sarpras |
+| **room_manual_blocks** | Blokade manual ruangan — satu rentang menerus (FR-07.5 langkah 3) | id, room_id, mulai, selesai, label_kegiatan, status | Petugas Sarpras |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
 
@@ -328,6 +334,7 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | Aksi | Keterangan |
 |---|---|
 | `RESERVATION_CREATED` / `RESERVATION_UPDATED` / `RESERVATION_CANCELLED` / `RESERVATION_EXPIRED` | Termasuk alasan pembatalan |
+| `ROOM_BLOCK_CREATED` / `ROOM_BLOCK_DEACTIVATED` / `ROOM_BLOCK_SYNCED` | Blokade jadwal tetap & manual (FR-07.5): pembuatan (termasuk reservasi yang dibatalkan karenanya), penonaktifan (jumlah slot dilepas), dan materialisasi horizon oleh job (slot dibuat, dilepas karena libur, kemunculan bentrok) |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
 
