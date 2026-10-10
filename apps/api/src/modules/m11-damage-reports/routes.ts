@@ -1,12 +1,14 @@
 // Route M-11 (SDD-AUTH-01, PM-01) + perakit router modul. Katalog: m11-damage-reports.md §7.
 // PR-03-14: `POST /damage-reports`, `GET /damage-reports/open`. PR-03-15: `GET /damage-reports/{id}`,
-// `POST /damage-reports/{id}/verify`. Daftar menyusul PR-03-16.
+// `POST /damage-reports/{id}/verify`. PR-03-16: `GET /damage-reports`.
 
 import {
     DamageReportCreateSchema,
     DamageReportCreatedResponseSchema,
     DamageReportDetailResponseSchema,
     DamageReportIdParamSchema,
+    DamageReportListQuerySchema,
+    DamageReportListResponseSchema,
     DamageReportOpenQuerySchema,
     DamageReportOpenResponseSchema,
     DamageReportVerifiedResponseSchema,
@@ -21,7 +23,7 @@ import type { Database } from "../../shared/db/index.js";
 import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
 import type { PenyimpananObjek } from "../../shared/storage/index.js";
-import { createDamageReportHandler, getDamageReportHandler, openDamageReportHandler, verifyDamageReportHandler } from "./controllers/damage-report.controller.js";
+import { createDamageReportHandler, getDamageReportHandler, listDamageReportsHandler, openDamageReportHandler, verifyDamageReportHandler } from "./controllers/damage-report.controller.js";
 import { DamageReportQueryService } from "./services/damage-report-query.service.js";
 import { DamageReportService } from "./services/damage-report.service.js";
 import { VerificationService } from "./services/verification.service.js";
@@ -52,6 +54,18 @@ export const openDamageReportRoute = defineRoute({
     summary: "Tiket kerusakan terbuka untuk aset atau ruangan tertentu (FR-11.1 A1)",
     params: DamageReportOpenQuerySchema,
     response: DamageReportOpenResponseSchema,
+});
+
+/** FR-11.3 (keputusan 22): daftar pantau ber-indikator SLA; scope selain `all` = milik sendiri (A1). */
+export const listDamageReportsRoute = defineRoute({
+    method: "GET",
+    path: "/damage-reports",
+    permission: "damage.view",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Daftar pantau tiket kerusakan dengan saringan, jumlah per status, dan indikator SLA (FR-11.3)",
+    params: DamageReportListQuerySchema,
+    response: DamageReportListResponseSchema,
 });
 
 /** FR-11.2 langkah 1–2, A3 — deskripsi, foto, garansi aktif; scope `own` = milik sendiri (keputusan 21a). */
@@ -96,9 +110,11 @@ export function damageReportsRouter(
 ): Router {
     const laporan = new DamageReportService(deps.db, deps.clock, deps.auditLogger);
     const router = express.Router();
+    const kueri = new DamageReportQueryService(deps.db, deps.clock, deps.penyimpanan);
+    router.get(listDamageReportsRoute.path, batasi(listDamageReportsRoute), otorisasi(listDamageReportsRoute.permission), listDamageReportsHandler(kueri));
     // `/open` SEBELUM pola `/:id` agar tak tertangkap sebagai id.
     router.get(openDamageReportRoute.path, batasi(openDamageReportRoute), otorisasi(openDamageReportRoute.permission), openDamageReportHandler(laporan));
-    router.get(getDamageReportRoute.path, batasi(getDamageReportRoute), otorisasi(getDamageReportRoute.permission), getDamageReportHandler(new DamageReportQueryService(deps.db, deps.clock, deps.penyimpanan)));
+    router.get(getDamageReportRoute.path, batasi(getDamageReportRoute), otorisasi(getDamageReportRoute.permission), getDamageReportHandler(kueri));
     router.post(verifyDamageReportRoute.path, batasi(verifyDamageReportRoute), otorisasi(verifyDamageReportRoute.permission), verifyDamageReportHandler(new VerificationService(deps.db, deps.clock, deps.auditLogger)));
     router.post(createDamageReportRoute.path, batasi(createDamageReportRoute), otorisasi(createDamageReportRoute.permission), createDamageReportHandler(laporan));
     return router;

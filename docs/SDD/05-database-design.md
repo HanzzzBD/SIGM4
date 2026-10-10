@@ -306,6 +306,10 @@ Bukan entitas domain: tidak memakai `created_*`, dan tidak memakai `id` — `key
 | `reservasi.jam_operasional_mulai` | `RESERVASI` | `TEKS` | `"06:00"` | — | `BR-018`, `SDD-APR-15` (`PR-03-10`, `0045`) |
 | `reservasi.jam_operasional_selesai` | `RESERVASI` | `TEKS` | `"18:00"` | — | `BR-018`, `SDD-APR-15` (`PR-03-10`, `0045`) |
 | `reservasi.jarak_minimum_hari` | `RESERVASI` | `BILANGAN_BULAT` | 1 | 0 – 30 | `BR-020` (`PR-03-10`, `0045`) |
+| `maintenance.sla_tindak_lanjut_hari_rendah` | `MAINTENANCE` | `BILANGAN_BULAT` | 3 | 1 – 30 | `FR-11.3`, `SC-07` (`PR-03-16`, `0050`) |
+| `maintenance.sla_tindak_lanjut_hari_sedang` | `MAINTENANCE` | `BILANGAN_BULAT` | 3 | 1 – 30 | `FR-11.3`, `SC-07` (`PR-03-16`, `0050`) |
+| `maintenance.sla_tindak_lanjut_hari_tinggi` | `MAINTENANCE` | `BILANGAN_BULAT` | 3 | 1 – 30 | `FR-11.3`, `SC-07` (`PR-03-16`, `0050`) |
+| `maintenance.sla_tindak_lanjut_hari_kritis` | `MAINTENANCE` | `BILANGAN_BULAT` | 3 | 1 – 30 | `FR-11.3`, `SC-07` (`PR-03-16`, `0050`) |
 | `kode_aset.pola` | `KODE_ASET` | `TEKS` | `"KATEGORI,LOKASI"` | — | `FR-20.1` |
 | `kode_aset.pemisah` | `KODE_ASET` | `TEKS` | `"-"` | — | `FR-20.1` |
 | `kode_aset.panjang_urut` | `KODE_ASET` | `BILANGAN_BULAT` | 4 | 1 – 10 | `FR-20.1` |
@@ -313,6 +317,8 @@ Bukan entitas domain: tidak memakai `created_*`, dan tidak memakai `id` — `key
 **Himpunan tertutup.** `reservasi.granularitas_menit` hanya sah bernilai 15, 30, atau 60 — kelipatan yang membagi satu jam habis agar kolom kalender sejajar batas jam. Rentang 15 – 60 di baris seed adalah pagar luarnya; himpunannya ditegakkan validator m20 (`NILAI_TERBATAS`), karena kolom `nilai_min`/`nilai_maks` tidak dapat menyatakannya.
 
 **Jam operasional & jarak minimum (`PR-03-10`, keputusan 14b–c log phase-03).** Kedua kunci jam bertipe `TEKS` berbentuk `HH:MM` WIB; bentuknya dan syarat mulai < selesai — dinilai atas nilai akhir, meski hanya satu kunci yang diubah — ditegakkan validator m20. Bawaannya sama dengan konstanta `DEFAULT_OPERATING_HOURS` (`SDD-APR-15`) yang digantikannya: `BusinessCalendarService` kini membacanya dari sini, sehingga SLA approval, kalender P-27, dan validasi pengajuan memakai satu sumber. `reservasi.jarak_minimum_hari` adalah H-n `BR-020` dalam **hari kalender WIB** — tanggal mulai ≥ hari ini + n.
+
+**SLA tindak lanjut kerusakan (`PR-03-16`, keputusan 22 log phase-03).** M-20 menetapkan SLA tindak lanjut "per tingkat urgensi" tanpa angka per urgensi; keempat kunci memakai 3 hari kerja dari `SC-07`. Satuannya **hari kerja** (`work_days` + `holidays`, `CAL-01`): tenggat = akhir (00.00 WIB berikutnya) hari kerja ke-N sesudah tanggal lapor WIB — hari lapor tidak dihitung. Tenggat disimpan **absolut** di `damage_reports.batas_sla` saat tiket dibuat (pola `SDD-APR-07`), sehingga perubahan kunci ini atau `holidays` tidak menggeser tiket yang sudah berjalan; tiket sebelum `0050` ber-`batas_sla` NULL dan tidak pernah ditandai melampaui SLA.
 
 Parameter kelompok lain (tarif denda, durasi sesi, dst.) **tidak dikarang di sini**: nilai bawaannya belum ditetapkan PRD, dan masing-masing ditambahkan PR yang mengonsumsinya (`SDD-DB-17`).
 
