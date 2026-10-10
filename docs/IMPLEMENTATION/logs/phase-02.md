@@ -473,6 +473,7 @@ Hal yang sengaja ditinggalkan terbuka, beserta di mana ia akan ditutup.
 
 | Yang ditinggalkan | Ditutup di | Alasan penundaan |
 |---|---|---|
+| **Rekonsiliasi 10 Oktober 2026** — gap closure GAP-01/02-* dan butir tabel ini dipetakan ke PR bernomor | [Keputusan 23 log phase-03](phase-03.md#2-keputusan-yang-diambil); pertanyaan produk Q1–Q6 juga diputuskan di sana | Audit cakupan [10 Oktober](../audits/plan-coverage-ui-system-2026-10-10.md) |
 | **Closure Phase 02:** QA staging bulk import aset | QA/Data, Frontend P-17; kode **PR-02-38** tergabung (#133) | Merge, CI dan tinjauan migration tertutup 9 Oktober; QA staging/peramban/push perangkat menunggu staging (GAP-00-INFRA). Blocker closure sebatas QA staging. |
 | **Gap scope Phase 02:** ekspor katalog XLSX/PDF, FR-04.2 A3 | GAP-02-ASSET-EXPORT, owner Backend M-04/Frontend aset/QA; kontrak GET /assets/export + asset.export sudah di PRD | Belum ada implementasi endpoint; filter/scope/field finansial harus sama dengan katalog, bukti unduh dan denial test. Blocker closure. |
 | **Closure Phase 02:** QA staging PDF berita acara mutasi | QA, Frontend P-20; kode **PR-02-39** tergabung (#136/#138) | Merge, CI dan tinjauan migration tertutup 9 Oktober; QA staging menunggu staging (GAP-00-INFRA). Blocker closure sebatas QA staging. |

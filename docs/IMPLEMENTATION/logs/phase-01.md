@@ -258,6 +258,7 @@ Hal yang sengaja ditinggalkan terbuka, beserta di mana ia akan ditutup.
 
 | Yang ditinggalkan | Ditutup di | Alasan penundaan |
 |---|---|---|
+| **Rekonsiliasi 10 Oktober 2026** — gap closure GAP-01/02-* dan butir tabel ini dipetakan ke PR bernomor | [Keputusan 23 log phase-03](phase-03.md#2-keputusan-yang-diambil); pertanyaan produk Q1–Q6 juga diputuskan di sana | Audit cakupan [10 Oktober](../audits/plan-coverage-ui-system-2026-10-10.md) |
 | **SELESAI backend** users.foto_file_id → stored_files + pengelolaan foto | PR-03-25 (#125), migration 0038_stored_files.sql, ProfileService/m06-files.test.ts | UI P-76 tetap GAP-02-WEB-AUTH |
 | **[SELESAI — `PR-02-31`, keputusan 84 log phase-02]** Daftar password bocor + riwayat 3 password terakhir (`NFR-S-03a`) | `PR-02-31` (keputusan 9) | Menuntut sumber daftar dan tabel riwayat yang belum ditetapkan SDD mana pun |
 | **SELESAI** kolom login/TOTP | PR-02-03 (#63), PR-02-07 (#68), migrations 0022/0024, auth tests | Tidak lagi menunggu kolom autentikasi |

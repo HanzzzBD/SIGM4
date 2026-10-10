@@ -96,6 +96,7 @@ Tidak ada. Ini titik masuk proyek.
 | `PR-00-16` | Skema RBAC + seed: 79 permission, 7 role, matriks ber-scope, `work_days` | L | L | 05 | Lampiran C, `SDD-DB-10`, `SDD-DB-16`, `SDD-03 §4.8` | Uji membandingkan hasil seed dengan Lampiran C baris per baris, termasuk scope |
 | `PR-00-17` | Pipeline CI: lint → uji → SAST → SCA → build → image scan | L | M | 01, 03 | `CD-01` `CD-02`, `ST-01` `ST-02`, `SDD-INF-12`, `SDD-REPO-11`, `SDD-SEC-11`, `AL-03b` | Cakupan < 70% atau kerentanan High → pipeline merah; `APP_DATABASE_URL`+`APP_DB_PASSWORD` tersedia sehingga acceptance `AL-03b` benar-benar berjalan |
 | `PR-00-18` | Deploy staging + job migration + smoke test | M | S | 17 | `CD-03` `CD-04` `CD-07`, `SDD-INF-03/04/13`, `SDD-SYS-08` | Merge ke `staging` men-deploy lingkungan staging otomatis (`CD-03`); worker berjalan sebagai proses dan `/health/ready`-nya tervalidasi di runtime — **blocking** sejak `PR-00-14`; topologi origin web/API diputuskan bersama konfigurasi Nginx, lalu `cors` (`SDD-06 §4.2`) dipasang atau dinyatakan tidak diperlukan |
+| `PR-00-19` | Publikasi dokumen OpenAPI di dev/staging *(rekonsiliasi 10 Okt, keputusan 23 log phase-03)* | S | S | 18 | `SDD-API-11` `SDD-API-12`, `NFR-M-05` | GAP-00-OPENAPI: dokumen OpenAPI yang diturunkan registri pada commit ter-deploy tersedia di dev & staging (URL tercatat di runbook); tidak tersedia di produksi; uji memastikan dokumen sinkron dengan registri |
 
 ## 8. Task Breakdown
 
