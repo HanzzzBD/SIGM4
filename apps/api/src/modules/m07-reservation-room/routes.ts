@@ -1,6 +1,9 @@
 // Route M-07 (SDD-AUTH-01, PM-01) + perakit router modul. Katalog: m07-reservation-room.md §7.
 
 import {
+    CancelReservationBodySchema,
+    ReservationCancelledResponseSchema,
+    ReservationIdParamSchema,
     RoomAvailabilityQuerySchema,
     RoomAvailabilityResponseSchema,
     RoomReservationBodySchema,
@@ -20,9 +23,10 @@ import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
 import { DocumentNumberService } from "../../shared/numbering/index.js";
 import { roomAvailabilityHandler } from "./controllers/availability.controller.js";
-import { createReservationHandler, previewReservationHandler } from "./controllers/reservation.controller.js";
+import { cancelReservationHandler, createReservationHandler, previewReservationHandler } from "./controllers/reservation.controller.js";
 import { daftarkanReservasiRuangan } from "./registration.js";
 import { AvailabilityService } from "./services/availability.service.js";
+import { CancellationService } from "./services/cancellation.service.js";
 import { ReservationService } from "./services/reservation.service.js";
 import { SubmissionService } from "./services/submission.service.js";
 
@@ -68,6 +72,24 @@ export const createReservationRoute = defineRoute({
     response: RoomReservationCreatedResponseSchema,
 });
 
+/**
+ * FR-07.3 (keputusan 15b): gerbang route = `cancel_own` (PM-01, tepat satu permission); membatalkan
+ * reservasi pihak lain menuntut tambahan `cancel_any`, diperiksa layanan atas pemohon di basis data.
+ * Bukan ID-01 — pembatalan berulang ditolak penjaga status, bukan diduplikasi.
+ */
+export const cancelReservationRoute = defineRoute({
+    method: "POST",
+    path: "/reservations/:id/cancel",
+    permission: "reservation.cancel_own",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Batalkan reservasi beserta alasannya; slot dilepas seketika (FR-07.3)",
+    successStatus: 200,
+    params: ReservationIdParamSchema,
+    body: CancelReservationBodySchema,
+    response: ReservationCancelledResponseSchema,
+});
+
 export interface ReservationsModuleDeps {
     readonly db: Kysely<Database>;
     readonly clock: Clock;
@@ -98,5 +120,6 @@ export function reservationsRouter(
     // `/preview` SEBELUM pola `/:id` kelak (PR-03-27) agar tak tertangkap sebagai id.
     router.post(previewReservationRoute.path, batasi(previewReservationRoute), otorisasi(previewReservationRoute.permission), previewReservationHandler(pengajuan));
     router.post(createReservationRoute.path, batasi(createReservationRoute), otorisasi(createReservationRoute.permission), createReservationHandler(deps.db, pengajuan));
+    router.post(cancelReservationRoute.path, batasi(cancelReservationRoute), otorisasi(cancelReservationRoute.permission), cancelReservationHandler(new CancellationService(deps.db, deps.clock, deps.auditLogger, approval)));
     return router;
 }

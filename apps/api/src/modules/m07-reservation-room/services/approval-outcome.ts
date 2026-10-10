@@ -58,7 +58,10 @@ export function penangananReservasiRuangan(clock: Clock, audit: AuditLogger): Pe
 
         /** Ditolak / perlu revisi (BR-038, FR-10.2 A1): seluruh slot dilepas, status mengikuti keputusan. */
         async setelahDitutup(scope, referensiId, status) {
-            const { kelompok } = await kunci(scope, referensiId);
+            const { kelompok, akar } = await kunci(scope, referensiId);
+            // Pengajuan yang dibatalkan/kedaluwarsa SAAT keputusan menunggu kunci kelompok: instance-nya sudah
+            // `DIBATALKAN` di transaksi itu — keputusan ini kalah, bukan menimpa status instance (PR-03-11).
+            if (akar?.status !== MENUNGGU) throw new DomainError("APPROVAL_ALREADY_DECIDED", "Pengajuan ini sudah tidak menunggu persetujuan (dibatalkan atau kedaluwarsa).");
             const milik = await slotMilikReservasi(scope.tx, kelompok.map((b) => Number(b.id)));
             await slot.release(scope, milik.map((s) => Number(s.id)));
             const berubah = await createReservationRepository(scope.tx).ubahStatus(scope.ctx, kelompok.filter((b) => b.status === MENUNGGU).map((b) => b.id), MENUNGGU, status);

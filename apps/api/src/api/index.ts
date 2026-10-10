@@ -139,7 +139,7 @@ import {
     listDocumentsRoute,
     presignRoute,
 } from "../modules/m06-documents/index.js";
-import { createReservationRoute, previewReservationRoute, reservationsRouter, roomAvailabilityRoute } from "../modules/m07-reservation-room/index.js";
+import { cancelReservationRoute, createReservationRoute, previewReservationRoute, reservationsRouter, roomAvailabilityRoute } from "../modules/m07-reservation-room/index.js";
 import { dashboardCardRoute, dashboardManifestRoute, dashboardRouter } from "../modules/m15-dashboard/index.js";
 import type { HubSse } from "../modules/m17-notifications/index.js";
 import {
@@ -258,6 +258,7 @@ export const registry = new RouteRegistry().register(
     roomAvailabilityRoute,
     previewReservationRoute,
     createReservationRoute,
+    cancelReservationRoute,
     listCategoriesRoute,
     createCategoryRoute,
     updateCategoryRoute,

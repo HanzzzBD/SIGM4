@@ -133,7 +133,14 @@ export const TEMPLAT: Readonly<Record<string, Templat>> = {
         judul: "Hasil impor aset",
         render: (p) => `Impor aset ${teks(p["status"])}: ${teks(p["sukses"])} berhasil, ${teks(p["gagal"])} gagal dari ${teks(p["total"])} baris; ${teks(p["unit"])} unit dibuat.`,
     },
-    // M-07 (m07-reservation-room.md §9; PR-03-10)
+    // M-07 (m07-reservation-room.md §9; PR-03-10, PR-03-11)
+    "NT-08": {
+        jenis: "RESERVASI_PEMINJAMAN",
+        wajib: true,
+        push: true,
+        judul: "Reservasi dibatalkan",
+        render: (p) => `Reservasi ${teks(p["nomor"])} dibatalkan oleh ${teks(p["pelaku"])}. Alasan: ${teks(p["alasan"])}.`,
+    },
     "NT-46": {
         jenis: "RESERVASI_PEMINJAMAN",
         wajib: true,

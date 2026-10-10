@@ -101,3 +101,31 @@ export const RoomReservationCreatedResponseSchema = z.object({ success: z.litera
 export type RoomReservationPreview = z.infer<typeof RoomReservationPreviewSchema>;
 export type RoomReservationCreated = z.infer<typeof RoomReservationCreatedSchema>;
 export type TanggalPengajuanRuangan = z.infer<typeof TanggalPengajuan>;
+
+/** `POST /reservations/{id}/cancel` (FR-07.3, BR-025): alasan wajib — tampil pada riwayat dan NT-08. */
+export const CancelReservationBodySchema = z
+    .object({
+        alasan: teks(1000, "Alasan pembatalan"),
+    })
+    .strict();
+
+export type CancelReservationBody = z.input<typeof CancelReservationBodySchema>;
+
+export const ReservationIdParamSchema = z.object({ id: z.coerce.number().int().positive() });
+
+/**
+ * Hasil pembatalan (keputusan 15c log phase-03): `dibatalkan` = baris yang benar-benar dibatalkan —
+ * satu tanggal, seluruh tanggal yang belum dimulai bila `id` adalah induk berulang, atau reservasi
+ * tunggal itu sendiri. `status` = status baris `id` sesudahnya (induk berulang tetap berstatus
+ * semula selama masih ada tanggal yang berjalan).
+ */
+export const ReservationCancelledSchema = z.object({
+    id: z.string(),
+    nomor: z.string(),
+    status: z.string(),
+    dibatalkan: z.array(z.object({ id: z.string(), nomor: z.string() })),
+});
+
+export const ReservationCancelledResponseSchema = z.object({ success: z.literal(true), data: ReservationCancelledSchema, meta: z.null() });
+
+export type ReservationCancelled = z.infer<typeof ReservationCancelledSchema>;

@@ -49,6 +49,8 @@ export interface BarisPengajuan {
     readonly parent_id: string | null;
     readonly pemohon_id: string;
     readonly status: StatusReservasi;
+    /** FR-07.3: pembatalan hanya sebelum kegiatan dimulai (A1). */
+    readonly waktu_mulai: Date;
 }
 
 export interface RincianReservasi {
@@ -139,7 +141,7 @@ export class ReservationRepository extends BaseRepository {
     async kunciKelompok(ctx: AuthContext, akarId: number): Promise<readonly BarisPengajuan[]> {
         return this.query(ctx)
             .selectFrom("reservations")
-            .select(["id", "nomor", "parent_id", "pemohon_id", "status"])
+            .select(["id", "nomor", "parent_id", "pemohon_id", "status", "waktu_mulai"])
             .where((eb) => eb.or([eb("id", "=", String(akarId)), eb("parent_id", "=", String(akarId))]))
             .orderBy("id")
             .forUpdate()
