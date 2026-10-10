@@ -14,7 +14,6 @@ import { z } from "zod/mini";
 import { ambilTantangan } from "../modules/m01-auth";
 import { TAMPILAN, detailReservasiQuery, hariIniWib, isianDariReservasi, isianDariSlot } from "../modules/m07-reservation-room";
 import { RENTANG } from "../modules/m15-dashboard";
-import { KELOMPOK, TAMPILAN_NOTIFIKASI } from "../modules/m17-notifications";
 import {
     HalamanAktivasiDuaFaktor,
     HalamanApprovalRules,
@@ -30,8 +29,6 @@ import {
     HalamanKalenderRuangan,
     HalamanMutasiAset,
     HalamanPanelBlokade,
-    HalamanPreferensiNotifikasi,
-    HalamanPusatNotifikasi,
     HalamanTanpaAkses,
     HalamanTidakDitemukan,
     HalamanWizardReservasi,
@@ -326,26 +323,6 @@ const detailReservasiRoute = createRoute({
     },
 });
 
-/** P-13 Pusat Notifikasi (FR-17.1, UX §6 `/notifikasi`; PR-02-43): saringan & halaman di URL. */
-const pusatNotifikasiRoute = createRoute({
-    getParentRoute: () => shellRoute,
-    path: "/notifikasi",
-    beforeLoad: butuhIzin("notification.manage_own"),
-    validateSearch: z.object({
-        jenis: z.catch(z.optional(z.enum(KELOMPOK)), undefined),
-        tampilan: z.catch(z.optional(z.enum(TAMPILAN_NOTIFIKASI)), undefined),
-        page: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(2))), undefined),
-    }),
-    component: function RoutePusatNotifikasi() {
-        const cari = pusatNotifikasiRoute.useSearch();
-        const navigate = useNavigate({ from: pusatNotifikasiRoute.fullPath });
-        return <HalamanPusatNotifikasi pencarian={cari} onPencarian={(p) => void navigate({ search: (lama) => ({ ...lama, ...p }) })} />;
-    },
-});
-
-/** P-78 Preferensi Notifikasi (FR-17.3, UX §6 `/profil/notifikasi`; PR-02-43). */
-const preferensiNotifikasiRoute = createRoute({ getParentRoute: () => shellRoute, path: "/profil/notifikasi", beforeLoad: butuhIzin("notification.manage_own"), component: HalamanPreferensiNotifikasi });
-
 export const routeTree = rootRoute.addChildren([
     loginRoute,
     verifikasiDuaFaktorRoute,
@@ -353,7 +330,7 @@ export const routeTree = rootRoute.addChildren([
     gantiPasswordRoute,
     gangguanRoute,
     tidakDitemukanRoute,
-    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {

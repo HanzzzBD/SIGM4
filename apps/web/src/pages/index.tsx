@@ -9,8 +9,6 @@ import { AktivasiDuaFaktorPage, GantiPasswordPage, LoginPage, VerifikasiDuaFakto
 import type { AlasanLogin } from "../modules/m01-auth";
 import { muatApprovalRulesPage, muatEditorAturanPage } from "../modules/m10-approval";
 import { muatDashboardPage } from "../modules/m15-dashboard";
-import { loadNotificationCenterPage, loadPreferencesPage } from "../modules/m17-notifications";
-import type { PencarianNotifikasi } from "../modules/m17-notifications";
 import { loadAssetImportPage, loadAssetMovementPage } from "../modules/m04-assets";
 import { loadReservationDetailPage, loadReservationListPage, loadReservationWizardPage, loadRoomBlocksPanel, loadRoomCalendarPage } from "../modules/m07-reservation-room";
 import type { IsianWizard, PencarianDaftar, PencarianKalender, PilihanSlot, ReservasiSlot } from "../modules/m07-reservation-room";
@@ -98,21 +96,6 @@ export const HalamanImporAset = (props: { readonly jobId: number | null; readonl
 export const HalamanDashboard = ({ rentang, onRentang }: { readonly rentang: Rentang; readonly onRentang: (r: Rentang) => void }) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat dashboard" baris={6} />}>
         <DashboardPage rentang={rentang} onRentang={onRentang} />
-    </Suspense>
-);
-
-const NotificationCenterPage = lazy(loadNotificationCenterPage);
-const PreferencesPage = lazy(loadPreferencesPage);
-/** P-13 Pusat Notifikasi (FR-17.1; PR-02-43). */
-export const HalamanPusatNotifikasi = (props: { readonly pencarian: PencarianNotifikasi; readonly onPencarian: (p: Partial<PencarianNotifikasi>) => void }) => (
-    <Suspense fallback={<KeadaanMemuat label="Memuat notifikasi" baris={6} />}>
-        <NotificationCenterPage {...props} />
-    </Suspense>
-);
-/** P-78 Preferensi Notifikasi (FR-17.3; PR-02-43). */
-export const HalamanPreferensiNotifikasi = () => (
-    <Suspense fallback={<KeadaanMemuat label="Memuat preferensi notifikasi" baris={6} />}>
-        <PreferencesPage />
     </Suspense>
 );
 

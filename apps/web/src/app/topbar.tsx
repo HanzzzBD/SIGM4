@@ -1,14 +1,13 @@
 // Topbar C-04 (UX §5.2; keputusan 83): ciutkan sidebar, identitas, penanda WIB, menu
 // pengguna (Keluar · Keluar dari semua perangkat, FR-01.2/A1). Pencarian global lahir
-// bersama P-15; lonceng + pratinjau notifikasi milik P-13 (PR-02-43); banner sesi berakhir ada di shell (FR-01.2 A2).
+// bersama P-15, lonceng bersama P-13; banner sesi berakhir ada di shell (FR-01.2 A2).
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { logout, logoutSemua } from "../modules/m01-auth";
-import { Lonceng } from "../modules/m17-notifications";
-import { useCan, useSesi } from "../shared/auth";
+import { useSesi } from "../shared/auth";
 import { Ikon } from "../shared/ui/icon";
 import { Logo } from "../shared/ui/logo";
 
@@ -27,7 +26,6 @@ const ITEM = "flex min-h-touch cursor-pointer items-center gap-3 rounded-sm px-4
 
 export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; readonly menuLabel: string }) {
     const sesi = useSesi();
-    const can = useCan();
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const keluar = async (semua: boolean) => {
@@ -49,7 +47,6 @@ export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; rea
             <Logo ukuran="sm" className="md:hidden" />
             <div className="ml-auto flex items-center gap-4">
                 <JamWib />
-                {can("notification.manage_own") && <Lonceng />}
                 <Menu.Root>
                     <Menu.Trigger className="flex min-h-touch items-center gap-2 rounded-md px-2 text-base font-medium text-text-primary hover:bg-neutral-50">
                         {sesi.user.nama}
@@ -59,12 +56,6 @@ export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; rea
                         <Menu.Content align="end" sideOffset={4} className="z-40 flex min-w-sidebar flex-col rounded-md border border-border-subtle bg-surface-default p-1 shadow-1">
                             <Menu.Label className="px-4 py-2 text-sm text-text-secondary">{sesi.user.email}</Menu.Label>
                             <Menu.Separator className="my-1 h-px bg-border-subtle" />
-                            {can("notification.manage_own") && (
-                                <Menu.Item className={ITEM} onSelect={() => void navigate({ to: "/profil/notifikasi" })}>
-                                    <Ikon nama="notifikasi" />
-                                    Preferensi Notifikasi
-                                </Menu.Item>
-                            )}
                             <Menu.Item className={ITEM} onSelect={() => void keluar(false)}>
                                 <Ikon nama="keluar" />
                                 Keluar
