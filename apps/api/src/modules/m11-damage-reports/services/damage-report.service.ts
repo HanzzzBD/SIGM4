@@ -8,6 +8,7 @@ import type { Kysely } from "kysely";
 import { tautkanFotoKerusakan } from "../../m06-documents/index.js";
 import type { AuditLogger } from "../../../shared/audit/index.js";
 import type { AuthContext } from "../../../shared/auth/index.js";
+import { BusinessCalendarService } from "../../../shared/calendar/index.js";
 import type { Clock } from "../../../shared/clock/index.js";
 import type { Database, UrgensiKerusakan } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
@@ -39,6 +40,7 @@ export class DamageReportService {
         private readonly db: Kysely<Database>,
         private readonly clock: Clock,
         private readonly audit: AuditLogger,
+        private readonly kalender: BusinessCalendarService = new BusinessCalendarService(),
     ) {}
 
     /**
@@ -71,7 +73,9 @@ export class DamageReportService {
 
                 // SEQ-02: nomor dari penghitung di transaksi yang sama.
                 const nomor = await new DocumentNumberService(this.clock).next(scope.tx, "KRS");
-                const id = await repo.buat(scope.ctx, { ...isian, nomor });
+                // FR-11.3 / SC-07: tenggat tindak lanjut absolut sejak lapor (0050, pola SDD-APR-07).
+                const batasSla = await this.kalender.endOfNthWorkingDayAfter(scope.tx, this.clock.now(), await repo.slaHari(scope.ctx, isian.urgensi));
+                const id = await repo.buat(scope.ctx, { ...isian, nomor, batasSla });
                 // BR-044: minimal satu foto (skema); di sini dipastikan foto itu milik pelapor dan berjenis benar.
                 const fotoTertunda = await tautkanFotoKerusakan(scope, isian.fotoFileIds, Number(id));
                 await repo.tambahFoto(scope.ctx, id, isian.fotoFileIds);

@@ -94,6 +94,26 @@ describe.skipIf(!ADA_DB)(
             });
         });
 
+        describe("endOfNthWorkingDayAfter (SLA kerusakan, SC-07; PR-03-16)", () => {
+            it("hari lapor tidak dihitung: Senin + 3 hari kerja = akhir Kamis", async () => {
+                expect(asWib(await kalender.endOfNthWorkingDayAfter(db, wib("2026-09-07T10:00:00"), 3))).toBe("2026-09-11 00:00:00");
+                // Laporan larut malam WIB tetap tanggal Senin.
+                expect(asWib(await kalender.endOfNthWorkingDayAfter(db, wib("2026-09-07T23:59:00"), 3))).toBe("2026-09-11 00:00:00");
+            });
+
+            it("melompati Minggu dan hari libur", async () => {
+                await kueri(`INSERT INTO holidays (tanggal, nama, jenis) VALUES ('2026-09-10', 'Libur Uji', 'NASIONAL')`);
+                // Jumat → Sabtu, (Minggu), Senin, Selasa.
+                expect(asWib(await kalender.endOfNthWorkingDayAfter(db, wib("2026-09-11T10:00:00"), 3))).toBe("2026-09-16 00:00:00");
+                // Senin → Selasa, Rabu, (Kamis libur), Jumat.
+                expect(asWib(await kalender.endOfNthWorkingDayAfter(db, wib("2026-09-07T10:00:00"), 3))).toBe("2026-09-12 00:00:00");
+            });
+
+            it("menolak jumlah hari bukan bilangan bulat positif", async () => {
+                await expect(kalender.endOfNthWorkingDayAfter(db, wib("2026-09-07T10:00:00"), 0)).rejects.toThrow(/bulat positif/);
+            });
+        });
+
         describe("isWorkingDay", () => {
             it("Senin adalah hari kerja", async () => {
                 expect(

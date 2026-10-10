@@ -131,3 +131,59 @@ export const DamageReportDetailSchema = z.object({
 });
 export type DamageReportDetail = z.infer<typeof DamageReportDetailSchema>;
 export const DamageReportDetailResponseSchema = z.object({ success: z.literal(true), data: DamageReportDetailSchema, meta: z.null() });
+
+const TANGGAL = { error: "Tanggal harus berformat YYYY-MM-DD." } as const;
+
+/**
+ * `GET /damage-reports` — FR-11.3 (PR-03-16, keputusan 22 log phase-03). Scope selain `all` selalu
+ * tersaring tiket milik sendiri (A1). Lokasi = ruangan tiket atau ruangan aset; rentang `dari`/`sampai`
+ * (WIB, inklusif) atas waktu lapor. `melampaui_sla` menyaring tiket yang melewati `batas_sla` (langkah 4).
+ */
+export const DamageReportListQuerySchema = z
+    .object({
+        page: z.coerce.number().int().positive().default(1),
+        per_page: z.coerce.number().int().positive().max(100).default(25),
+        /** UX §7.4 P-39: nomor tiket atau kode aset. */
+        q: z.string().trim().max(100).optional(),
+        status: z.enum(STATUS_LAPORAN_KERUSAKAN).optional(),
+        urgensi: z.enum(URGENSI_KERUSAKAN).optional(),
+        building_id: z.coerce.number().int().positive().optional(),
+        room_id: z.coerce.number().int().positive().optional(),
+        category_id: z.coerce.number().int().positive().optional(),
+        pelapor: z.union([z.literal("saya"), z.coerce.number().int().positive()]).optional(),
+        dari: z.iso.date(TANGGAL).optional(),
+        sampai: z.iso.date(TANGGAL).optional(),
+        melampaui_sla: z.enum(["true", "false"], { error: "melampaui_sla harus true atau false." }).transform((v) => v === "true").optional(),
+        urut: z.enum(["dilaporkan", "urgensi"]).default("dilaporkan"),
+    })
+    .strict();
+export type DamageReportListQuery = z.input<typeof DamageReportListQuerySchema>;
+
+export const DamageReportListItemSchema = z.object({
+    id: z.string(),
+    nomor: z.string(),
+    status: z.enum(STATUS_LAPORAN_KERUSAKAN),
+    urgensi: z.enum(URGENSI_KERUSAKAN),
+    objek: z.object({ jenis: z.enum(["ASET", "RUANGAN"]), id: z.string(), label: z.string(), lokasi: z.string() }),
+    pelapor: Pengguna,
+    dilaporkan_pada: z.iso.datetime({ offset: true }),
+    diverifikasi_pada: z.iso.datetime({ offset: true }).nullable(),
+    /** Tenggat tindak lanjut absolut (SC-07); `null` bagi tiket sebelum 0050 — tanpa indikator. */
+    batas_sla: z.iso.datetime({ offset: true }).nullable(),
+    /** Masih `DILAPORKAN` lewat `batas_sla`, atau diverifikasi sesudahnya. */
+    melampaui_sla: z.boolean(),
+});
+export type DamageReportListItem = z.infer<typeof DamageReportListItemSchema>;
+
+export const DamageReportListResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.array(DamageReportListItemSchema),
+    meta: z.object({
+        page: z.number(),
+        per_page: z.number(),
+        total: z.number(),
+        total_pages: z.number(),
+        /** FR-11.3 langkah 2: jumlah per status dalam saringan lain (tanpa `status`) — tab P-39. */
+        jumlah_per_status: z.record(z.enum(STATUS_LAPORAN_KERUSAKAN), z.number()),
+    }),
+});
