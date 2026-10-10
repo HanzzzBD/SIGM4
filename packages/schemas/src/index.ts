@@ -42,3 +42,14 @@ export {
     STATUS_BLOKADE,
 } from "./room-blocks.js";
 export type { BlockDeactivated, JenisBlokade, RoomBlockCreate, RoomBlockCreated, RoomBlockInput, RoomBlockList, RoomBlockPreview } from "./room-blocks.js";
+export {
+    DamageReportCreateSchema,
+    DamageReportCreatedResponseSchema,
+    DamageReportCreatedSchema,
+    DamageReportOpenQuerySchema,
+    DamageReportOpenResponseSchema,
+    DamageReportOpenSchema,
+    STATUS_LAPORAN_KERUSAKAN,
+    URGENSI_KERUSAKAN,
+} from "./damage-reports.js";
+export type { DamageReportCreate, DamageReportCreated, DamageReportOpen } from "./damage-reports.js";

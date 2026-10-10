@@ -97,6 +97,23 @@ export class StoredFileRepository extends BaseRepository {
             .executeTakeFirst();
     }
 
+    /**
+     * Foto laporan kerusakan (FR-11.1, PR-03-14): unggahan pemanggil, jenis `DAMAGE_PHOTO`, belum
+     * dimiliki, tidak `INFECTED` — dikunci. Belum dikonfirmasi BOLEH (A2, MOB-OFF-02, keputusan 20b).
+     */
+    async kunciFotoKerusakan(ctx: AuthContext, ids: readonly number[]): Promise<readonly { readonly id: string; readonly checksum: string | null }[]> {
+        return this.query(ctx)
+            .selectFrom("stored_files")
+            .select(["id", "checksum"])
+            .where("id", "in", ids.map(String))
+            .where("uploaded_by", "=", String(ctx.userId))
+            .where("owner_type", "=", "DAMAGE_PHOTO")
+            .where("scan_status", "<>", "INFECTED")
+            .where("owner_id", "is", null)
+            .forUpdate()
+            .execute();
+    }
+
     /** Pemilik berkas = dokumen (SDD-FS-02) — berkas tak lagi yatim (SDD-FS-09). */
     async tetapkanPemilik(ctx: AuthContext, id: string, ownerId: string): Promise<void> {
         await this.query(ctx).updateTable("stored_files").set({ owner_id: ownerId }).where("id", "=", id).execute();

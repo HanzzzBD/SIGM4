@@ -141,6 +141,22 @@ export const TEMPLAT: Readonly<Record<string, Templat>> = {
         judul: "Reservasi dibatalkan",
         render: (p) => `Reservasi ${teks(p["nomor"])} dibatalkan oleh ${teks(p["pelaku"])}. Alasan: ${teks(p["alasan"])}.`,
     },
+    // M-11 (m11-damage-reports.md §9; PR-03-14)
+    "NT-19": {
+        jenis: "KERUSAKAN_PERAWATAN",
+        wajib: true,
+        push: true,
+        judul: "Laporan kerusakan baru",
+        render: (p) => `Laporan kerusakan ${teks(p["nomor"])} atas ${teks(p["objek"])} dari ${teks(p["pelapor"])}.`,
+        isiPush: "Ada laporan kerusakan baru yang perlu diverifikasi.",
+    },
+    "NT-20": {
+        jenis: "KERUSAKAN_PERAWATAN",
+        wajib: true,
+        push: true,
+        judul: "Kerusakan kritis",
+        render: (p) => `KRITIS: ${teks(p["objek"])} di ${teks(p["lokasi"])} dilaporkan rusak berat.`,
+    },
     "NT-46": {
         jenis: "RESERVASI_PEMINJAMAN",
         wajib: true,
