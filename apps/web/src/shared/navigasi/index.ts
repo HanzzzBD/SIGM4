@@ -16,6 +16,7 @@ export const HALAMAN_TERDAFTAR: Readonly<Record<string, string>> = {
     "P-10": "/gangguan",
     "P-11": "/tidak-ditemukan",
     "P-12": "/",
+    "P-13": "/notifikasi",
     "P-17": "/aset/impor",
     "P-20": "/aset/mutasi",
     "P-27": "/kalender-ruangan",
@@ -24,6 +25,7 @@ export const HALAMAN_TERDAFTAR: Readonly<Record<string, string>> = {
     "P-31": "/reservasi/$id",
     "P-68": "/approval-rules",
     "P-69": "/approval-rules/$id",
+    "P-78": "/profil/notifikasi",
 };
 
 export interface EntriNav {
@@ -110,6 +112,15 @@ export const NAVIGASI: readonly GrupNav[] = [
 /** Grup berisi entri yang boleh dirender; grup kosong ikut hilang (UXD-01). */
 export function navigasiTerlihat(can: (permission: string) => boolean): readonly GrupNav[] {
     return NAVIGASI.map((g) => ({ ...g, entri: g.entri.filter((x) => HALAMAN_TERDAFTAR[x.halaman] !== undefined && x.permission.some(can)) })).filter((g) => g.entri.length > 0);
+}
+
+/**
+ * Deep link notifikasi (path relatif aplikasi, SDD-NTF-09) → apakah route-nya ada di build
+ * ini. Segmen `$param` cocok dengan satu segmen apa pun; query diabaikan.
+ */
+export function jalurTerdaftar(deepLink: string): boolean {
+    const path = deepLink.split(/[?#]/)[0] ?? "";
+    return Object.values(HALAMAN_TERDAFTAR).some((pola) => new RegExp(`^${pola.replace(/\$[^/]+/g, "[^/]+")}$`).test(path));
 }
 
 /**

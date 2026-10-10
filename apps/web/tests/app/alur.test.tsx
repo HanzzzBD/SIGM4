@@ -183,7 +183,7 @@ describe("P-12 Dashboard + shell", () => {
     it("sidebar hanya berisi entri yang halamannya ada dan permission-nya dipegang (PM-04)", async () => {
         await renderAplikasi("/");
         const nav = await screen.findByRole("navigation", { name: "Navigasi utama" });
-        expect(within(nav).getAllByRole("link").map((a) => a.textContent)).toEqual(["Dashboard"]);
+        expect(within(nav).getAllByRole("link").map((a) => a.textContent)).toEqual(["Dashboard", "Notifikasi"]);
         server((p) => (p.url === "/me" ? sukses({ ...ME_ADMIN, permissions: { "user.view": "all" } }) : undefined));
         await renderAplikasi("/");
         const kosong = (await screen.findAllByRole("navigation", { name: "Navigasi utama" })).at(-1)!;
