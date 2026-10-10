@@ -423,6 +423,12 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 const ruang = await langkah("POST /rooms", "/rooms", { area_id: id(area), nama: `Ruang ${sfx}`, kode: `R${sfx}`, jenis: "KELAS", kapasitas: 30, dapat_direservasi: true, boleh_direservasi_siswa: false }, ["LOCATION_CREATED"]);
                 await langkah("PUT /rooms/:id", `/rooms/${id(ruang)}`, { area_id: id(area), nama: `Ruang ${sfx} B`, kode: `R${sfx}`, jenis: "KELAS", kapasitas: 32, dapat_direservasi: true, boleh_direservasi_siswa: false }, ["LOCATION_UPDATED"]);
 
+                // --- M-07: pengajuan reservasi ruangan (PR-03-10) — selagi ruangan AKTIF. Senin 21-09 08:00–10:00 WIB
+                // (T1 = Sabtu, H-1 terpenuhi). Pratinjau tanpa aksi log; pengajuan + instance approval dalam satu transaksi.
+                const reservasi = { room_id: Number(id(ruang)), waktu_mulai: "2026-09-21T01:00:00.000Z", waktu_selesai: "2026-09-21T03:00:00.000Z", nama_kegiatan: "Rapat gerbang", jenis_kegiatan: "Rapat", jumlah_peserta: 10 };
+                await langkah("POST /reservations/preview", "/reservations/preview", reservasi, []);
+                await langkah("POST /reservations", "/reservations", reservasi, ["RESERVATION_CREATED", "APPROVAL_INSTANCE_CREATED"], { "idempotency-key": randomUUID() });
+
                 // --- M-04: aset (PR-02-11) — SEBELUM ruangan dinonaktifkan (BR-009: ruangan wajib AKTIF).
                 // PR-02-15: kategori lewat endpoint sungguhan. PUT sebelum aset dibuat (kode kategori
                 // terpakai tak dapat diubah, FR-04.5 A4); DELETE atas kategori kedua yang tak dipakai (A2).
@@ -603,6 +609,11 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'AssetImportJob'");
                 await kueri("DELETE FROM asset_code_counters");
                 await kueri("DELETE FROM asset_categories");
+                // PR-03-10: slot & reservasi (turunan lebih dulu) menunjuk rooms dan users.
+                await kueri("DELETE FROM booking_slots WHERE resource_type = 'room'");
+                await kueri("DELETE FROM reservations WHERE parent_id IS NOT NULL");
+                await kueri("DELETE FROM reservations");
+                await kueri("DELETE FROM idempotency_keys WHERE endpoint = 'POST /reservations'");
                 await kueri("DELETE FROM rooms");
                 await kueri("DELETE FROM areas");
                 await kueri("DELETE FROM buildings");
