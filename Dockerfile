@@ -58,10 +58,11 @@ RUN git init -q . \
     && git checkout -q FETCH_HEAD
 # Menutup CVE-2026-56854 (x/crypto ≥ 0.55.0), CVE-2026-46600 (x/net ≥ 0.56.0),
 # CVE-2026-56852 (x/text ≥ 0.39.0), CVE-2026-84304 dan CVE-2026-84445 (grpc ≥
-# 1.83.2). x/net dan x/text dinaikkan melampaui batas tambalnya karena versi
-# minimum yang dituntut grpc 1.83.2 dan x/crypto 0.55.0: x/net 0.58.0, x/text 0.41.0.
-RUN go get golang.org/x/crypto@v0.55.0 golang.org/x/net@v0.58.0 \
-        golang.org/x/text@v0.41.0 google.golang.org/grpc@v1.83.2 \
+# 1.83.2), dan CVE-2026-78669 (x/net ≥ 0.60.0, net/http2, HIGH; masuk basis data
+# Trivy 10 Oktober 2026 — merah pada #148). x/net 0.60.0 menuntut x/crypto 0.57.0
+# dan x/text 0.42.0, sehingga keduanya ikut naik melampaui batas tambalnya.
+RUN go get golang.org/x/crypto@v0.57.0 golang.org/x/net@v0.60.0 \
+        golang.org/x/text@v0.42.0 google.golang.org/grpc@v1.83.2 \
     && go mod tidy
 RUN CGO_ENABLED=1 go build -trimpath \
         -tags netgo,osusergo,sqlite_omit_load_extension,sqlite_fts5,sqlite_json \
