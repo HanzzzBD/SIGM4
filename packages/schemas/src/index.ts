@@ -49,6 +49,9 @@ export {
     DamageReportIdParamSchema,
     DamageReportCreatedResponseSchema,
     DamageReportCreatedSchema,
+    DamageReportListItemSchema,
+    DamageReportListQuerySchema,
+    DamageReportListResponseSchema,
     DamageReportOpenQuerySchema,
     DamageReportOpenResponseSchema,
     DamageReportOpenSchema,
@@ -59,4 +62,4 @@ export {
     STATUS_LAPORAN_KERUSAKAN,
     URGENSI_KERUSAKAN,
 } from "./damage-reports.js";
-export type { DamageReportCreate, DamageReportCreated, DamageReportDetail, DamageReportOpen, DamageReportVerified, DamageReportVerify } from "./damage-reports.js";
+export type { DamageReportCreate, DamageReportCreated, DamageReportDetail, DamageReportListItem, DamageReportListQuery, DamageReportOpen, DamageReportVerified, DamageReportVerify } from "./damage-reports.js";
