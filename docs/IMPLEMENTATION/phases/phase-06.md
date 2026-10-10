@@ -89,7 +89,8 @@ M-16 tidak memiliki modul hilir. Ia daun terakhir pada graf dependensi.
 | `PR-06-07` | Laporan pengadaan & penghapusan | M | M | 02, Ph05 | `FR-16.1` | Aset terhapus tetap terhitung pada periodenya |
 | `PR-06-08` | Ekspor laporan + pencatatan activity log | M | M | 03 … 07 | `FR-16.1`, `AL-10` | Ekspor besar tidak memblokir permintaan lain |
 | `PR-06-09` | Indeks pendukung + verifikasi `EXPLAIN` | M | M | 03 … 07 | `SDD-PERF-05`, `SDD-DB-06` | Tidak ada *sequential scan* pada tabel besar |
-| `PR-06-10` | Visualisasi laporan (UI) | L | L | 03 … 07 | `FR-16.1`, `SDD-FE-10` | Grafik dapat diakses (kontras & label), bukan hanya kanvas |
+| `PR-06-10` | Visualisasi laporan (UI) | L | L | 03 … 07 | `FR-16.1`, `SDD-FE-10` | Grafik dapat diakses (kontras & label), bukan hanya kanvas. *Rekonsiliasi (keputusan 23 log phase-03):* layar P-58 dan P-59 |
+| `PR-06-11` | Ekspor daftar operasional: reservasi P-30 & kerusakan P-39 *(rekonsiliasi 10 Okt, keputusan 23 log phase-03)* | M | M | 08, PR-03-27, PR-03-32 | `FR-07.3`, `FR-11.3`, `AL-10` | Gap 9 + keputusan 22c: isi, format, dan batas baris ditetapkan PRD/UX lebih dulu; memakai jalur ekspor `PR-06-08`; `report.export`; tercatat `AL-10` |
 
 ## 8. Task Breakdown
 

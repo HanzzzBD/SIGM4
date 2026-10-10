@@ -43,6 +43,8 @@ export const ListPendingResponseSchema = z.object({
             pemohon: z.object({ id: z.number(), nama: z.string().nullable() }),
             urutan: z.number(),
             sla_deadline: z.string().nullable(),
+            /** Sisa SLA dalam menit kerja (CAL-01, keputusan 92d log phase-02) — P-37 urgensi. */
+            sla: z.object({ sisa_menit_kerja: z.number(), terlambat: z.boolean() }).nullable(),
             created_at: z.string(),
             atas_nama_user_id: z.number().nullable(),
         }),

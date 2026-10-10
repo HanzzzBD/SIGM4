@@ -59,6 +59,16 @@ export const LABEL_ALASAN_PENGHAPUSAN = {
     LAINNYA: "Lainnya",
 } as const;
 
+/** Bab 11.3 "Kelompok Notifikasi" (UXD-05) — urutan sama dengan API preferensi. */
+export const LABEL_KELOMPOK_NOTIFIKASI = {
+    PERSETUJUAN: "Persetujuan",
+    RESERVASI_PEMINJAMAN: "Reservasi & Peminjaman",
+    DENDA_KEWAJIBAN: "Denda & Kewajiban",
+    KERUSAKAN_PERAWATAN: "Kerusakan & Perawatan",
+    OPNAME_PENGADAAN: "Opname & Pengadaan",
+    AKUN_SISTEM: "Akun & Sistem",
+} as const;
+
 /** Bab 11.3 "Prioritas" — nilai field DSL `priority` (D.2). */
 export const LABEL_PRIORITAS = {
     RENDAH: "Rendah",

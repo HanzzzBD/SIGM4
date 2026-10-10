@@ -19,7 +19,7 @@
 | GET | `/activity-logs` | `activity_log.view` | Telusuri activity log | [M-18](../02-modules/m18-activity-log.md) |
 | GET | `/analytics/{jenis}` | `report.view` | Data laporan analitik | [M-16](../02-modules/m16-analytics.md) |
 | GET | `/approval-rules` | `approval_rule.view` | Daftar aturan | [M-10](../02-modules/m10-approval.md) |
-| GET | `/approvals/pending` | `approval.decide` | Pengajuan menunggu keputusan saya | [M-10](../02-modules/m10-approval.md) |
+| GET | `/approvals/pending` | `approval.decide` | Pengajuan menunggu keputusan saya, terurut tenggat SLA lalu waktu pengajuan; tiap baris membawa sisa SLA langkah dalam **menit kerja** dan penanda terlambat (CAL-01) — bahan urgensi P-37 | [M-10](../02-modules/m10-approval.md) |
 | GET | `/approvals/{id}/history` | `approval.view` | Linimasa persetujuan | [M-10](../02-modules/m10-approval.md) |
 | GET | `/asset-categories` | `asset.view` | Daftar kategori | [M-04](../02-modules/m04-assets.md) |
 | GET | `/asset-disposals/{id}/report` | `disposal.view` | Unduh berita acara penghapusan PDF | [M-21](../02-modules/m21-disposal.md) |
