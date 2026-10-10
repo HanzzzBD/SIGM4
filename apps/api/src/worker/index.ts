@@ -59,6 +59,8 @@ import type { KonfigurasiAntivirus, KonfigurasiPenyimpanan } from "../shared/con
 import { PenyiarNotifikasi, buatPengirimPush, fcmCheck, kirimPushNotifikasi, pasangKonsumenNotifikasi } from "../modules/m17-notifications/index.js";
 import type { PengirimPush } from "../modules/m17-notifications/index.js";
 import { createSystemAuthContext } from "../shared/auth/system-context.js";
+import { ApprovalService } from "../modules/m10-approval/index.js";
+import { daftarkanReservasiRuangan, pasangKonsumenReservasi } from "../modules/m07-reservation-room/index.js";
 import type { Queue } from "bullmq";
 import { AssetImportRunner, AssetImportService, ASSET_IMPORT_JOB_NAME, EVENT_ASSET_IMPORT_REQUESTED, assetImportQueueId } from "../modules/m04-assets/index.js";
 import { MovementDocumentService, MOVEMENT_DOCUMENT_JOB_NAME, EVENT_MOVEMENT_DOCUMENT_REQUESTED, movementDocumentQueueId } from "../modules/m04-assets/index.js";
@@ -304,6 +306,20 @@ pasangKonsumenNotifikasi(eventHandlers, {
     },
     // SDD-08 §4.3a: siaran ke `ntf:user:{id}` setelah commit — dibuat saat pertama dipakai.
     penyiar: () => (penyiarNotifikasi ??= new PenyiarNotifikasi(getRedis(), new Logger({ clock: new SystemClock(), modulBawaan: "notifikasi" }))),
+});
+
+// SDD-APR-17 / keputusan 75: job `approval-sla-check` (auto_reject) melepas slot reservasi lewat
+// penangan yang SAMA dengan API; BR-023b: slot habis TTL → pengajuan Kedaluwarsa (PR-03-10).
+const jamReservasi = new SystemClock();
+const auditReservasi = new AuditLogger({ clock: jamReservasi, logger: new Logger({ clock: jamReservasi, modulBawaan: "reservasi" }) });
+const pelakuReservasi = createSystemAuthContext("outbox-reservasi");
+daftarkanReservasiRuangan(jamReservasi, auditReservasi);
+pasangKonsumenReservasi(eventHandlers, {
+    db: getDb,
+    clock: jamReservasi,
+    ctx: () => pelakuReservasi,
+    audit: auditReservasi,
+    approval: () => new ApprovalService(getDb(), auditReservasi, jamReservasi),
 });
 
 /**

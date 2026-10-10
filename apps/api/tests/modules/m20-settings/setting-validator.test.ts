@@ -2,7 +2,7 @@
 // yang sebenarnya: "nilai di luar rentang ditolak dengan penjelasan".
 
 import { describe, expect, it } from "vitest";
-import { validasiNilai } from "../../../src/modules/m20-settings/services/setting-validator.js";
+import { validasiLintasKunci, validasiNilai } from "../../../src/modules/m20-settings/services/setting-validator.js";
 import {
     ListSettingsQuerySchema,
     UpdateSettingsBodySchema,
@@ -51,6 +51,27 @@ describe("validasiNilai — himpunan tertutup (CAL-UI-02, keputusan 12c)", () =>
         for (const n of [15, 30, 60]) expect(validasiNilai(granularitas, n)).toBeUndefined();
         expect(validasiNilai(granularitas, 45)).toBe("Nilai harus salah satu dari 15, 30, 60.");
         expect(validasiNilai(granularitas, 10)).toBe("Nilai harus antara 15 dan 60.");
+    });
+});
+
+describe("jam operasional (BR-018, keputusan 14b log phase-03)", () => {
+    const jamMulai = { key: "reservasi.jam_operasional_mulai", tipe: "TEKS", nilai_min: null, nilai_maks: null } as const;
+    it("hanya teks jam HH:MM 00:00–23:59", () => {
+        for (const n of ["06:00", "00:00", "23:59"]) expect(validasiNilai(jamMulai, n)).toBeUndefined();
+        for (const n of ["6:00", "24:00", "06:60", "06.00", "pagi"]) expect(validasiNilai(jamMulai, n)).toBe("Nilai harus berupa jam dengan format HH:MM, mis. 06:30.");
+        // Kunci teks lain tak terkena pola jam.
+        expect(validasiNilai({ ...jamMulai, key: "kode_aset.pemisah" }, "-")).toBeUndefined();
+    });
+
+    it("antar-kunci: mulai harus sebelum selesai atas nilai AKHIR; galat pada kunci yang diminta", () => {
+        const akhir = (mulai: string, selesai: string) => new Map<string, unknown>([["reservasi.jam_operasional_mulai", mulai], ["reservasi.jam_operasional_selesai", selesai]]);
+        expect(validasiLintasKunci(akhir("06:00", "18:00"), new Set(["reservasi.jam_operasional_mulai"]))).toEqual([]);
+        expect(validasiLintasKunci(akhir("18:00", "18:00"), new Set(["reservasi.jam_operasional_mulai"]))).toEqual([
+            { field: "reservasi.jam_operasional_mulai", message: "Jam mulai operasional harus sebelum jam selesainya." },
+        ]);
+        expect(validasiLintasKunci(akhir("07:00", "06:30"), new Set(["reservasi.jam_operasional_selesai"]))).toEqual([
+            { field: "reservasi.jam_operasional_selesai", message: "Jam mulai operasional harus sebelum jam selesainya." },
+        ]);
     });
 });
 

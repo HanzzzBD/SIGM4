@@ -141,11 +141,11 @@ describe.skipIf(!ADA_DB)("PR-01-10 — parameter sistem (acceptance)", () => {
     it("list(): terpaginasi dan dapat disaring per kelompok (SDD-PERF-04, P-70)", async () => {
         const adminId = await seedAdmin();
         const reservasi = await buatService().list(buatCtx(adminId), { page: 1, perPage: 100, kelompok: "RESERVASI" });
-        expect(reservasi.total).toBe(5);
+        expect(reservasi.total).toBe(8);
         expect(reservasi.rows.every((s) => s.kelompok === "RESERVASI")).toBe(true);
 
-        const halaman2 = await buatService().list(buatCtx(adminId), { page: 2, perPage: 3, kelompok: "RESERVASI" });
-        expect(halaman2.rows).toHaveLength(2);
+        const halaman2 = await buatService().list(buatCtx(adminId), { page: 2, perPage: 5, kelompok: "RESERVASI" });
+        expect(halaman2.rows).toHaveLength(3);
         expect(halaman2.totalPages).toBe(2);
     });
 
@@ -196,6 +196,21 @@ describe.skipIf(!ADA_DB)("PR-01-10 — parameter sistem (acceptance)", () => {
         expect(await nilai("reservasi.horizon_hari")).toBe(90);
         expect(await nilai("reservasi.ttl_tentative_jam")).toBe(48);
         expect(await jumlahLog("reservasi.horizon_hari")).toBe(logSebelum);
+    });
+
+    it("update(): jam operasional — mulai ≥ selesai TERSIMPAN ditolak meski hanya satu kunci diminta; keduanya sekaligus sah (keputusan 14b)", async () => {
+        const adminId = await seedAdmin();
+        await expect(buatService().update(buatCtx(adminId), { "reservasi.jam_operasional_mulai": "18:30" })).rejects.toMatchObject({
+            kode: "VALIDATION_ERROR",
+            detail: { errors: [{ field: "reservasi.jam_operasional_mulai", message: "Jam mulai operasional harus sebelum jam selesainya." }] },
+        });
+        expect(await nilai("reservasi.jam_operasional_mulai")).toBe("06:00");
+        const hasil = await buatService().update(buatCtx(adminId), { "reservasi.jam_operasional_mulai": "18:30", "reservasi.jam_operasional_selesai": "21:00" });
+        expect(hasil.map((s) => [s.key, s.value])).toEqual([
+            ["reservasi.jam_operasional_mulai", "18:30"],
+            ["reservasi.jam_operasional_selesai", "21:00"],
+        ]);
+        await buatService().update(buatCtx(adminId), { "reservasi.jam_operasional_mulai": "06:00", "reservasi.jam_operasional_selesai": "18:00" });
     });
 
     it("update(): ditolak tanpa entri log — tidak ada perubahan yang tercatat", async () => {

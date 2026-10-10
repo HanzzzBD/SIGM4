@@ -22,11 +22,41 @@ export interface OperatingHours {
     readonly endMinute: number;
 }
 
-/** `SDD-APR-15`: Senin–Sabtu 06.00–18.00 WIB, dan tidak ada rentang kedua. */
+/**
+ * `SDD-APR-15`: bawaan 06.00–18.00 WIB, tanpa rentang kedua. Sejak `PR-03-10` nilai yang berlaku
+ * dibaca dari `system_settings` (`reservasi.jam_operasional_*`, migration 0045, keputusan 88e log
+ * phase-02 / 14b log phase-03) — konstanta ini hanya nilai seed-nya dan pengganti eksplisit uji.
+ */
 export const DEFAULT_OPERATING_HOURS: OperatingHours = {
     startMinute: 6 * 60,
     endMinute: 18 * 60,
 };
+
+const KUNCI_JAM_MULAI = "reservasi.jam_operasional_mulai";
+const KUNCI_JAM_SELESAI = "reservasi.jam_operasional_selesai";
+
+/** `HH:MM` → menit sejak tengah malam; bentuknya dijamin validator m20. */
+function menitDariJam(jam: unknown, key: string): number {
+    const cocok = typeof jam === "string" ? /^(\d{2}):(\d{2})$/.exec(jam) : null;
+    if (cocok === null) throw new Error(`Parameter ${key} tidak berbentuk HH:MM.`);
+    return Number(cocok[1]) * 60 + Number(cocok[2]);
+}
+
+/**
+ * Jam operasional yang berlaku saat ini (BR-018, SDD-APR-15). Satu sumber bagi SLA approval,
+ * kalender ruangan, dan validasi pengajuan — perubahan Administrator berlaku pada transaksi
+ * berikutnya (FR-20.1 langkah 4). Baris seed 0045 wajib ada; ketiadaannya adalah galat konfigurasi.
+ */
+export async function bacaJamOperasional(executor: QueryExecutor): Promise<OperatingHours> {
+    const baris = await sql<{ key: string; value: unknown }>`
+      SELECT key, value FROM system_settings WHERE key IN (${KUNCI_JAM_MULAI}, ${KUNCI_JAM_SELESAI})
+    `.execute(executor);
+    const nilai = new Map(baris.rows.map((r) => [r.key, r.value]));
+    return {
+        startMinute: menitDariJam(nilai.get(KUNCI_JAM_MULAI), KUNCI_JAM_MULAI),
+        endMinute: menitDariJam(nilai.get(KUNCI_JAM_SELESAI), KUNCI_JAM_SELESAI),
+    };
+}
 
 /** Snapshot kalender untuk satu rentang — dibaca sekali, dipakai seluruh perhitungan. */
 interface CalendarSnapshot {
@@ -66,15 +96,28 @@ function startOfWibDay(wib: Date): Date {
     );
 }
 
+function periksaJam(hours: OperatingHours): OperatingHours {
+    if (hours.startMinute >= hours.endMinute) {
+        throw new Error(
+            "Jam operasional tidak valid: mulai harus sebelum selesai (SDD-APR-15).",
+        );
+    }
+    return hours;
+}
+
 export class BusinessCalendarService {
-    constructor(
-        private readonly hours: OperatingHours = DEFAULT_OPERATING_HOURS,
-    ) {
-        if (hours.startMinute >= hours.endMinute) {
-            throw new Error(
-                "Jam operasional tidak valid: mulai harus sebelum selesai (SDD-APR-15).",
-            );
-        }
+    /**
+     * Tanpa argumen: jam operasional dibaca dari `system_settings` pada tiap perhitungan
+     * (`bacaJamOperasional`). Dengan argumen: jam tetap — hanya untuk uji yang menguji
+     * aritmetika terhadap jam tertentu.
+     */
+    constructor(private readonly tetap?: OperatingHours) {
+        if (tetap !== undefined) periksaJam(tetap);
+    }
+
+    /** Jam operasional yang dipakai perhitungan pada `executor` ini (BR-018, SDD-APR-15). */
+    async jamOperasional(executor: QueryExecutor): Promise<OperatingHours> {
+        return this.tetap ?? periksaJam(await bacaJamOperasional(executor));
     }
 
     /**
@@ -122,11 +165,6 @@ export class BusinessCalendarService {
         return { hariKerja: days.rows.map((r) => Number(r.hari)), libur: libur.rows };
     }
 
-    /** Jam operasional yang dipakai layanan ini (SDD-APR-15; sumbernya diganti `PR-03-10`). */
-    get jamOperasional(): OperatingHours {
-        return this.hours;
-    }
-
     private isWorkingWibDay(wib: Date, calendar: CalendarSnapshot): boolean {
         return (
             calendar.activeWeekdays.has(isoWeekday(wib)) &&
@@ -166,6 +204,7 @@ export class BusinessCalendarService {
             );
         }
 
+        const jam = await this.jamOperasional(executor);
         let remaining = Math.round(hours * 60);
         let cursor = toWibClock(start);
         // Rentang kalender dimuat sekali, dengan pagu yang sama dengan pagu iterasi.
@@ -185,18 +224,18 @@ export class BusinessCalendarService {
             const isWorking = this.isWorkingWibDay(cursor, calendar);
             const current = minuteOfDay(cursor);
 
-            if (!isWorking || current >= this.hours.endMinute) {
+            if (!isWorking || current >= jam.endMinute) {
                 // Lompat ke pembukaan hari berikutnya.
                 cursor = new Date(
                     dayStart.getTime() +
-                        (DAY_MINUTES + this.hours.startMinute) * MINUTE_MS,
+                        (DAY_MINUTES + jam.startMinute) * MINUTE_MS,
                 );
                 continue;
             }
 
             // Sebelum jam buka: hitungan baru mulai saat operasional dibuka.
-            const from = Math.max(current, this.hours.startMinute);
-            const available = this.hours.endMinute - from;
+            const from = Math.max(current, jam.startMinute);
+            const available = jam.endMinute - from;
 
             if (remaining <= available) {
                 return fromWibClock(
@@ -209,7 +248,7 @@ export class BusinessCalendarService {
             remaining -= available;
             cursor = new Date(
                 dayStart.getTime() +
-                    (DAY_MINUTES + this.hours.startMinute) * MINUTE_MS,
+                    (DAY_MINUTES + jam.startMinute) * MINUTE_MS,
             );
         }
 
@@ -228,6 +267,7 @@ export class BusinessCalendarService {
         to: Date,
     ): Promise<number> {
         if (to.getTime() <= from.getTime()) return 0;
+        const jam = await this.jamOperasional(executor);
 
         const startWib = toWibClock(from);
         const endWib = toWibClock(to);
@@ -244,9 +284,9 @@ export class BusinessCalendarService {
 
             if (this.isWorkingWibDay(day, calendar)) {
                 const openAt =
-                    day.getTime() + this.hours.startMinute * MINUTE_MS;
+                    day.getTime() + jam.startMinute * MINUTE_MS;
                 const closeAt =
-                    day.getTime() + this.hours.endMinute * MINUTE_MS;
+                    day.getTime() + jam.endMinute * MINUTE_MS;
                 const overlapStart = Math.max(openAt, startWib.getTime());
                 const overlapEnd = Math.min(closeAt, endWib.getTime());
                 if (overlapEnd > overlapStart)

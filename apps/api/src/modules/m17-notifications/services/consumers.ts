@@ -29,8 +29,10 @@ import {
     EVENT_RESET_DITERBITKAN,
     EVENT_SESI_DICABUT,
 } from "../../m01-auth/index.js";
+import { EVENT_RESERVASI_KEDALUWARSA } from "../../m07-reservation-room/index.js";
 import {
     ApprovalSlaBreachedPayloadSchema,
+    EVENT_INSTANCE_DIBENTUK,
     NOTIFIKASI_TINDAKAN_SLA,
     catatanLangkah,
     pemutusLangkah,
@@ -53,7 +55,7 @@ const PIMPINAN = "R-03";
 
 /** Seluruh kode yang dapat diterbitkan konsumen di sini — diperiksa saat dipasang (SDD-08 §5). */
 const KODE_DIPAKAI = [
-    ...["NT-02", "NT-03", "NT-04", "NT-05", "NT-06", "NT-07", "NT-47", "NT-40", "NT-48", "NT-52", "NT-55"],
+    ...["NT-01", "NT-02", "NT-03", "NT-04", "NT-05", "NT-06", "NT-07", "NT-47", "NT-40", "NT-48", "NT-52", "NT-55", "NT-46"],
     ...["NT-37", "NT-38", "NT-38a", "NT-39", "NT-39a", "NT-53", "NT-54"],
 ] as const;
 
@@ -139,6 +141,37 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
                 const penerima = await pemutusLangkah(scope, deps.clock, id, angka(p["langkah_aktif"]));
                 await emit(scope, { kode: "NT-05", penerima, params: a.params, referensi: a.referensi, deepLink: a.deepLink, dedupe });
             }
+        }),
+    );
+
+    // FR-07.2 langkah 6 / sekuens 15.2 (m10 §9 NT-01): pengajuan RESERVASI baru → pemutus sah langkah aktif.
+    registry.on(
+        EVENT_INSTANCE_DIBENTUK,
+        jalankan(async (scope, e, p, emit) => {
+            if (p["jenis_pengajuan"] !== "RESERVASI_RUANGAN" && p["jenis_pengajuan"] !== "RESERVASI_ASET") return;
+            const id = angka(p["instance_id"]);
+            const a = await approval(scope, id);
+            if (a === undefined) return;
+            const penerima = await pemutusLangkah(scope, deps.clock, id, angka(p["langkah_aktif"]));
+            const pemohon = (await identitasPengguna(scope, a.sumber.pemohonId))?.nama ?? "";
+            await emit(scope, { kode: "NT-01", penerima, params: { ...a.params, pemohon }, referensi: a.referensi, deepLink: a.deepLink, dedupe: { event: e.id } });
+        }),
+    );
+
+    // BR-023b (m07 §9 NT-46): pengajuan kedaluwarsa TTL → pemohon + pemutus langkah yang aktif saat itu.
+    registry.on(
+        EVENT_RESERVASI_KEDALUWARSA,
+        jalankan(async (scope, e, p, emit) => {
+            const id = angka(p["reservation_id"]);
+            const approver = p["instance_id"] == null || p["langkah_aktif"] == null ? [] : await pemutusLangkah(scope, deps.clock, angka(p["instance_id"]), angka(p["langkah_aktif"]));
+            await emit(scope, {
+                kode: "NT-46",
+                penerima: [...new Set([angka(p["pemohon_id"]), ...approver])],
+                params: { nomor: p["nomor"] },
+                referensi: { jenis: "reservation", id },
+                deepLink: `/reservasi/${String(id)}`,
+                dedupe: { event: e.id },
+            });
         }),
     );
 

@@ -28,7 +28,9 @@ export { SlaTracker } from "./services/sla-tracker.js";
 export type { ApprovalSlaBreachedPayload } from "./schemas/sla-event.schema.js";
 export { ApprovalSlaBreachedPayloadSchema, NOTIFIKASI_TINDAKAN_SLA } from "./schemas/sla-event.schema.js";
 export type { InstanceBaru, PengajuanBaru, SnapshotAturan } from "./services/approval.service.js";
-export { ApprovalService } from "./services/approval.service.js";
+export { ApprovalService, EVENT_INSTANCE_DIBENTUK } from "./services/approval.service.js";
+export type { LangkahPratinjau } from "./services/rule-config.service.js";
+export { RuleConfigService } from "./services/rule-config.service.js";
 export type { PenyediaRincian, RincianPengajuan, SumberNotifikasiApproval } from "./services/notification-sources.js";
 export {
     RegistriPenyediaRincian,

@@ -17,6 +17,7 @@ export interface Permintaan {
     readonly url: string;
     readonly params: Record<string, unknown>;
     readonly data: unknown;
+    readonly headers: Readonly<Record<string, unknown>>;
 }
 
 export type Jawaban = { readonly status: number; readonly data?: unknown; readonly headers?: Record<string, string> };
@@ -31,6 +32,7 @@ export function pasangServer(penangan: Penangan, klien: AxiosInstance = api): Pe
             url: config.url ?? "",
             params: (config.params as Record<string, unknown> | undefined) ?? {},
             data: typeof config.data === "string" ? (JSON.parse(config.data) as unknown) : config.data,
+            headers: AxiosHeaders.from(config.headers).toJSON(),
         };
         log.push(p);
         const j = await penangan(p);

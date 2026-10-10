@@ -158,6 +158,21 @@ export class RuleConfigService {
         }, this.db);
     }
 
+    /**
+     * Jalur yang AKAN terbentuk bagi pengajuan pemohon ini (P-29 langkah 3, RE-07; keputusan 14f
+     * log phase-03): pemilih aturan & resolusi pemutus yang sama dengan `createInstance`, di
+     * transaksi pemanggil, tanpa efek samping dan tanpa aturan draf.
+     */
+    async jalurPemohon(scope: TransactionScope, jenis: JenisPengajuan, fakta: KamusFakta, pemohonId: number): Promise<readonly LangkahPratinjau[]> {
+        const repo = createRuleRepository(scope.tx);
+        const roles = await repo.roles(scope.ctx);
+        const kandidat: Kandidat[] = (await repo.daftar(scope.ctx))
+            .filter((a) => a.statusAktif && a.jenis === jenis)
+            .map((a) => ({ id: a.id, prioritas: a.prioritas, kondisi: a.kondisi, aturan: a, draf: false, versi: a.versi }));
+        const { terpilih } = selectRule(kandidat, fakta);
+        return this.langkahPratinjau(scope, repo, roles, terpilih?.aturan ?? this.aturanBawaan(roles, jenis), pemohonId);
+    }
+
     /** SDD-APR-02 lapis makna: seluruh pelanggaran dikumpulkan lalu dilempar sekaligus (RE-08). */
     private async solusikan(scope: TransactionScope, repo: RuleRepository, def: DefinisiAturan, awalan = ""): Promise<AturanTersolusi> {
         const errors: PelanggaranAturan[] = [];

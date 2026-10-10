@@ -139,7 +139,7 @@ import {
     listDocumentsRoute,
     presignRoute,
 } from "../modules/m06-documents/index.js";
-import { reservationsRouter, roomAvailabilityRoute } from "../modules/m07-reservation-room/index.js";
+import { createReservationRoute, previewReservationRoute, reservationsRouter, roomAvailabilityRoute } from "../modules/m07-reservation-room/index.js";
 import { dashboardCardRoute, dashboardManifestRoute, dashboardRouter } from "../modules/m15-dashboard/index.js";
 import type { HubSse } from "../modules/m17-notifications/index.js";
 import {
@@ -256,6 +256,8 @@ export const registry = new RouteRegistry().register(
     deleteDocumentRoute,
     downloadDocumentRoute,
     roomAvailabilityRoute,
+    previewReservationRoute,
+    createReservationRoute,
     listCategoriesRoute,
     createCategoryRoute,
     updateCategoryRoute,
@@ -482,7 +484,11 @@ export function createApp(deps: AppDeps): Express {
     );
     app.use(
         BASE_PATH,
-        reservationsRouter({ db: deps.db }, (route) => rateLimit(route, deps.limiter, deps.logger), authorize),
+        reservationsRouter(
+            { db: deps.db, clock: deps.clock, auditLogger: new AuditLogger({ clock: deps.clock, logger: deps.logger }) },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
     );
     app.use(
         BASE_PATH,

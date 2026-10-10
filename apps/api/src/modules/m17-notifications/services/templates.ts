@@ -31,6 +31,14 @@ const pengajuan = (p: Readonly<Record<string, unknown>>) => teks(p["label"]);
 
 export const TEMPLAT: Readonly<Record<string, Templat>> = {
     // M-10 (m10-approval.md §9)
+    "NT-01": {
+        jenis: "PERSETUJUAN",
+        wajib: true,
+        push: true,
+        judul: "Pengajuan reservasi baru",
+        render: (p) => `Pengajuan ${pengajuan(p)} dari ${teks(p["pemohon"])} menunggu persetujuan Anda.`,
+        isiPush: "Ada pengajuan reservasi baru yang menunggu persetujuan Anda.",
+    },
     "NT-02": {
         jenis: "PERSETUJUAN",
         wajib: true,
@@ -124,6 +132,14 @@ export const TEMPLAT: Readonly<Record<string, Templat>> = {
         jenis: "AKUN_SISTEM", wajib: true, push: true,
         judul: "Hasil impor aset",
         render: (p) => `Impor aset ${teks(p["status"])}: ${teks(p["sukses"])} berhasil, ${teks(p["gagal"])} gagal dari ${teks(p["total"])} baris; ${teks(p["unit"])} unit dibuat.`,
+    },
+    // M-07 (m07-reservation-room.md §9; PR-03-10)
+    "NT-46": {
+        jenis: "RESERVASI_PEMINJAMAN",
+        wajib: true,
+        push: true,
+        judul: "Pengajuan kedaluwarsa",
+        render: (p) => `Pengajuan ${teks(p["nomor"])} kedaluwarsa karena belum diputuskan hingga batas waktu.`,
     },
 };
 

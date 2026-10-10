@@ -45,7 +45,7 @@ export class AvailabilityService {
             terbatas ? [] : (await repo.ringkasReservasi(ctx, slot.flatMap((s) => (s.reservation_id === null ? [] : [s.reservation_id])))).map((r) => [r.id, r]),
         );
         const { hariKerja, libur } = await this.kalender.kalenderRentang(this.db, tanggalWib(p.dari), tanggalWib(new Date(p.sampai.getTime() - 1)));
-        const { startMinute, endMinute } = this.kalender.jamOperasional;
+        const { startMinute, endMinute } = await this.kalender.jamOperasional(this.db);
 
         return {
             dari: p.dari.toISOString(),

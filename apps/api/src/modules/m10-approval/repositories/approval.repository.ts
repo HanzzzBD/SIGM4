@@ -125,6 +125,29 @@ export class ApprovalRepository extends BaseRepository {
         return baris.map((b) => ({ pemberiId: Number(b.pemberi_id), penerimaId: Number(b.penerima_id), penerimaAktif: b.status === "AKTIF" }));
     }
 
+    /** Instance `MENUNGGU` sebuah objek (paling banyak satu — indeks `approval_instances_berjalan_uq`), dikunci. */
+    async instanceBerjalan(ctx: AuthContext, jenis: JenisPengajuan, referensiId: number): Promise<{ instanceId: number; langkahAktif: number | null } | undefined> {
+        const baris = await this.query(ctx)
+            .selectFrom("approval_instances")
+            .select(["id", "langkah_aktif"])
+            .where("jenis_pengajuan", "=", jenis)
+            .where("referensi_id", "=", String(referensiId))
+            .where("status", "=", "MENUNGGU")
+            .forUpdate()
+            .executeTakeFirst();
+        return baris === undefined ? undefined : { instanceId: Number(baris.id), langkahAktif: baris.langkah_aktif };
+    }
+
+    /** Status akhir di luar keputusan approver; CHECK `approval_instances_selesai_konsisten` menuntut waktu selesai. */
+    async tutupInstance(ctx: AuthContext, instanceId: number, status: "DIBATALKAN", pada: Date): Promise<void> {
+        await this.query(ctx)
+            .updateTable("approval_instances")
+            .set({ status, diselesaikan_pada: pada, langkah_aktif: null })
+            .where("id", "=", String(instanceId))
+            .where("status", "=", "MENUNGGU")
+            .execute();
+    }
+
     async insertInstance(ctx: AuthContext, jenis: JenisPengajuan, referensiId: number, pemohonId: number, ruleId: number | null, snapshot: unknown): Promise<number> {
         const baris = await this.query(ctx)
             .insertInto("approval_instances")
