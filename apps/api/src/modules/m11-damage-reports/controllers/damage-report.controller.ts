@@ -1,6 +1,6 @@
 // Controller laporan kerusakan (FR-11.1; PR-03-14). Isian tak sah → 422 per isian (Bab 17.2).
 
-import { DamageReportCreateSchema, DamageReportIdParamSchema, DamageReportOpenQuerySchema, DamageReportVerifySchema } from "@sigm4/schemas";
+import { DamageReportCreateSchema, DamageReportIdParamSchema, DamageReportListQuerySchema, DamageReportOpenQuerySchema, DamageReportVerifySchema } from "@sigm4/schemas";
 import type { RequestHandler } from "express";
 import type { ZodType } from "zod";
 import { requireAuthContext } from "../../../shared/auth/index.js";
@@ -31,6 +31,14 @@ export function openDamageReportHandler(service: DamageReportService): RequestHa
     return async (req, res) => {
         const q = urai(DamageReportOpenQuerySchema, req.query);
         res.status(200).json({ success: true, data: await service.terbuka(requireAuthContext(res), { assetId: q.asset_id, roomId: q.room_id }), meta: null });
+    };
+}
+
+/** FR-11.3 (P-39): saringan tak sah → 422 per isian. */
+export function listDamageReportsHandler(service: DamageReportQueryService): RequestHandler {
+    return async (req, res) => {
+        const { data, meta } = await service.daftar(requireAuthContext(res), urai(DamageReportListQuerySchema, req.query));
+        res.status(200).json({ success: true, data, meta });
     };
 }
 

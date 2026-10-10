@@ -258,6 +258,36 @@ export class BusinessCalendarService {
     }
 
     /**
+     * Akhir hari kerja ke-`days` sesudah tanggal WIB `start` — tengah malam WIB yang menutupnya
+     * (SLA tindak lanjut kerusakan dalam **hari kerja**, SC-07). Hari `start` sendiri tidak dihitung:
+     * laporan Senin dengan SLA 3 hari kerja jatuh tempo pada akhir Kamis.
+     */
+    async endOfNthWorkingDayAfter(
+        executor: QueryExecutor,
+        start: Date,
+        days: number,
+    ): Promise<Date> {
+        if (!Number.isInteger(days) || days < 1) {
+            throw new Error("Jumlah hari kerja harus bilangan bulat positif.");
+        }
+        const first = startOfWibDay(toWibClock(start));
+        const calendar = await this.loadCalendar(
+            executor,
+            wibDateKey(first),
+            wibDateKey(new Date(first.getTime() + MAX_DAYS_SCANNED * DAY_MINUTES * MINUTE_MS)),
+        );
+        let remaining = days;
+        for (let i = 1; i <= MAX_DAYS_SCANNED; i += 1) {
+            const day = new Date(first.getTime() + i * DAY_MINUTES * MINUTE_MS);
+            if (this.isWorkingWibDay(day, calendar)) remaining -= 1;
+            if (remaining === 0) return fromWibClock(new Date(day.getTime() + DAY_MINUTES * MINUTE_MS));
+        }
+        throw new Error(
+            `Tidak menemukan hari kerja dalam ${MAX_DAYS_SCANNED} hari — periksa isi work_days.`,
+        );
+    }
+
+    /**
      * Menit kerja yang berlalu antara dua saat (`CAL-01`). Dipakai `SlaTracker`
      * untuk mengukur keterlambatan, bukan untuk menetapkan tenggat.
      */

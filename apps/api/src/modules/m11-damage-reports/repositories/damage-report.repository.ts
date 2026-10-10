@@ -32,6 +32,46 @@ export interface TiketBaru extends ObjekLaporan {
     readonly nomor: string;
     readonly deskripsi: string;
     readonly urgensi: UrgensiKerusakan;
+    /** FR-11.3 / SC-07: tenggat absolut yang ditetapkan saat lapor (0050, pola SDD-APR-07). */
+    readonly batasSla: Date;
+}
+
+/** Saringan `GET /damage-reports` (FR-11.3 langkah 3); rentang sudah berupa instan WIB `[dari, sampai)`. */
+export interface SaringanDaftar {
+    readonly q?: string | undefined;
+    readonly status?: StatusLaporanKerusakan | undefined;
+    readonly urgensi?: UrgensiKerusakan | undefined;
+    readonly buildingId?: number | undefined;
+    readonly roomId?: number | undefined;
+    readonly categoryId?: number | undefined;
+    readonly pelaporId?: number | undefined;
+    readonly dari?: Date | undefined;
+    readonly sampai?: Date | undefined;
+    readonly melampauiSla?: boolean | undefined;
+    readonly urut: "dilaporkan" | "urgensi";
+    readonly page: number;
+    readonly perPage: number;
+    /** Saat ini menurut `Clock` — pembanding tiket yang masih menunggu verifikasi. */
+    readonly sekarang: Date;
+}
+
+export interface BarisDaftar {
+    readonly id: string;
+    readonly nomor: string;
+    readonly status: StatusLaporanKerusakan;
+    readonly urgensi: UrgensiKerusakan;
+    readonly asset_id: string | null;
+    readonly room_id: string | null;
+    readonly pelapor_id: string;
+    readonly pelapor_nama: string;
+    readonly created_at: Date;
+    readonly diverifikasi_pada: Date | null;
+    readonly batas_sla: Date | null;
+    readonly melampaui_sla: boolean;
+    readonly aset_nama: string | null;
+    readonly kode_barang: string | null;
+    readonly ruangan: string | null;
+    readonly gedung: string | null;
 }
 
 /** Baris tiket yang dikunci untuk transisi status (verifikasi, titik ekstensi work order). */
@@ -71,6 +111,22 @@ export interface FotoTiket {
 
 /** FR-11.1 A1: tiket yang belum Selesai/Ditolak — cermin indeks unik parsial 0048. */
 const TERBUKA: readonly StatusLaporanKerusakan[] = ["DILAPORKAN", "DIVERIFIKASI", "DALAM_PERBAIKAN"];
+
+/** Scope `damage.view` selain `all` = tiket milik sendiri (FR-11.3 A1; Teknisi `own` sampai work order Phase 04). */
+const milikSendiri = (ctx: AuthContext) => ctx.scopeOf("damage.view") !== "all";
+
+/** `%`, `_`, dan `\` pada kata kunci dicari harfiah, bukan sebagai pola. */
+const pola = (q: string) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
+/**
+ * FR-11.3 langkah 4 (keputusan 22b): lewat `batas_sla` = diverifikasi sesudahnya, atau masih `DILAPORKAN`
+ * sementara tenggat sudah lewat. `batas_sla` NULL (tiket pra-0050) tidak pernah ditandai.
+ */
+const melampauiSla = (sekarang: Date) =>
+    sql<boolean>`coalesce(k.batas_sla < coalesce(k.diverifikasi_pada, CASE WHEN k.status = 'DILAPORKAN' THEN ${sekarang}::timestamptz END), false)`;
+
+/** Urut urgensi: Kritis lebih dulu. */
+const PERINGKAT_URGENSI = sql<number>`CASE k.urgensi WHEN 'KRITIS' THEN 4 WHEN 'TINGGI' THEN 3 WHEN 'SEDANG' THEN 2 ELSE 1 END`;
 
 export class DamageReportRepository extends BaseRepository {
     constructor(executor: QueryExecutor) {
@@ -121,12 +177,66 @@ export class DamageReportRepository extends BaseRepository {
                 room_id: t.roomId ?? null,
                 deskripsi: t.deskripsi,
                 urgensi: t.urgensi,
+                batas_sla: t.batasSla,
                 created_by: pelakuId(ctx),
                 updated_by: pelakuId(ctx),
             })
             .returning("id")
             .executeTakeFirstOrThrow();
         return r.id;
+    }
+
+    /** SLA tindak lanjut urgensi ini dalam hari kerja (0050); baris seed wajib ada. */
+    async slaHari(ctx: AuthContext, urgensi: UrgensiKerusakan): Promise<number> {
+        const key = `maintenance.sla_tindak_lanjut_hari_${urgensi.toLowerCase()}`;
+        const r = await this.query(ctx).selectFrom("system_settings").select("value").where("key", "=", key).executeTakeFirst();
+        if (typeof r?.value !== "number") throw new Error(`Pengaturan ${key} hilang atau bukan angka.`);
+        return r.value;
+    }
+
+    /**
+     * FR-11.3: daftar tersaring scope (SDD-AUTH-05) + jumlah per status dalam saringan yang sama minus
+     * `status` (langkah 2, tab P-39).
+     */
+    async daftar(ctx: AuthContext, s: SaringanDaftar): Promise<{ readonly baris: readonly BarisDaftar[]; readonly total: number; readonly perStatus: ReadonlyMap<StatusLaporanKerusakan, number> }> {
+        let dasar = this.query(ctx)
+            .selectFrom("damage_reports as k")
+            .leftJoin("assets as s", "s.id", "k.asset_id")
+            // Lokasi = ruangan tiket (A4) atau ruangan aset.
+            .leftJoin("rooms as r", (j) => j.on(sql<boolean>`r.id = coalesce(k.room_id, s.room_id)`))
+            .leftJoin("areas as a", "a.id", "r.area_id")
+            .leftJoin("buildings as g", "g.id", "a.building_id")
+            .$if(milikSendiri(ctx), (q) => q.where("k.pelapor_id", "=", String(ctx.userId)));
+        if (s.q !== undefined && s.q !== "") {
+            const p = pola(s.q);
+            dasar = dasar.where((eb) => eb.or([eb("k.nomor", "ilike", p), eb("s.kode_barang", "ilike", p)]));
+        }
+        if (s.urgensi !== undefined) dasar = dasar.where("k.urgensi", "=", s.urgensi);
+        if (s.roomId !== undefined) dasar = dasar.where("r.id", "=", String(s.roomId));
+        if (s.buildingId !== undefined) dasar = dasar.where("g.id", "=", String(s.buildingId));
+        if (s.categoryId !== undefined) dasar = dasar.where("s.category_id", "=", String(s.categoryId));
+        if (s.pelaporId !== undefined) dasar = dasar.where("k.pelapor_id", "=", String(s.pelaporId));
+        if (s.dari !== undefined) dasar = dasar.where("k.created_at", ">=", s.dari);
+        if (s.sampai !== undefined) dasar = dasar.where("k.created_at", "<", s.sampai);
+        if (s.melampauiSla !== undefined) dasar = dasar.where(melampauiSla(s.sekarang), "=", s.melampauiSla);
+
+        const perStatus = await dasar.select(["k.status", (eb) => eb.fn.countAll<string>().as("n")]).groupBy("k.status").execute();
+        const berstatus = s.status === undefined ? dasar : dasar.where("k.status", "=", s.status);
+        const total = await berstatus.select((eb) => eb.fn.countAll<string>().as("n")).executeTakeFirstOrThrow();
+        const baris = await berstatus
+            .innerJoin("users as p", "p.id", "k.pelapor_id")
+            .select([
+                "k.id", "k.nomor", "k.status", "k.urgensi", "k.asset_id", "k.room_id", "k.pelapor_id", "k.created_at", "k.diverifikasi_pada", "k.batas_sla",
+                "p.nama as pelapor_nama", "s.nama as aset_nama", "s.kode_barang", "r.nama as ruangan", "g.nama as gedung",
+                melampauiSla(s.sekarang).as("melampaui_sla"),
+            ])
+            .$call((q) => (s.urut === "urgensi" ? q.orderBy(PERINGKAT_URGENSI, "desc") : q))
+            .orderBy("k.created_at", "desc")
+            .orderBy("k.id", "desc")
+            .limit(s.perPage)
+            .offset((s.page - 1) * s.perPage)
+            .execute();
+        return { baris, total: Number(total.n), perStatus: new Map(perStatus.map((r) => [r.status, Number(r.n)])) };
     }
 
     async kunci(ctx: AuthContext, id: number): Promise<TiketTerkunci | undefined> {
