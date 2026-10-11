@@ -25,6 +25,15 @@ export interface RolePermissionRow {
     readonly inti: boolean;
 }
 
+/** Satu baris katalog Lampiran C bagi matriks P-66 (`GET /permissions`). */
+export interface PermissionKatalogRow {
+    readonly kode: string;
+    readonly modul: string;
+    readonly aksi: string;
+    readonly deskripsi: string;
+    readonly inti: boolean;
+}
+
 /** Katalog permission yang dicocokkan terhadap payload `PUT .../permissions`. */
 export interface PermissionCatalogRow {
     readonly id: string;
@@ -138,6 +147,58 @@ export class RoleRepository extends BaseRepository {
                 )
                 .execute();
         }
+    }
+
+    /** Katalog Lampiran C utuh, urut modul lalu kode (`GET /permissions`, P-66). */
+    async listCatalog(ctx: AuthContext): Promise<readonly PermissionKatalogRow[]> {
+        return this.query(ctx)
+            .selectFrom("permissions")
+            .select(["kode", "modul", "aksi", "deskripsi", "inti"])
+            .orderBy("modul", "asc")
+            .orderBy("kode", "asc")
+            .execute();
+    }
+
+    /**
+     * Menyerialkan pembuat role kustom: pemeriksaan nama tanpa-huruf-besar lalu INSERT tidak boleh disalip
+     * permintaan serentak (READ COMMITTED; `roles_nama_uq` hanya peka huruf). Dilepas saat transaksi selesai.
+     */
+    async lockPembuatanRole(ctx: AuthContext): Promise<void> {
+        await sql`SELECT pg_advisory_xact_lock(hashtext('roles-kustom'))`.execute(this.query(ctx));
+    }
+
+    async existsByNama(ctx: AuthContext, nama: string): Promise<boolean> {
+        const baris = await this.query(ctx)
+            .selectFrom("roles")
+            .select("id")
+            .where(sql<string>`lower(nama)`, "=", nama.toLowerCase())
+            .executeTakeFirst();
+        return baris !== undefined;
+    }
+
+    /**
+     * FR-02.2 A2: role kustom berkode `RK-{id}`. Id diambil dari sekuens lebih dulu agar kode
+     * dapat ditulis pada INSERT yang sama (`roles.kode` NOT NULL UNIQUE).
+     */
+    async insertCustom(ctx: AuthContext, input: { readonly nama: string; readonly deskripsi: string | null }): Promise<RoleRow> {
+        const { rows } = await sql<{ id: string }>`SELECT nextval(pg_get_serial_sequence('roles', 'id'))::text AS id`.execute(this.query(ctx));
+        const id = rows[0]!.id;
+        return this.query(ctx)
+            .insertInto("roles")
+            .values({ id, kode: `RK-${id}`, nama: input.nama, deskripsi: input.deskripsi, is_system: false, created_by: ctx.userId, updated_by: ctx.userId })
+            .returning(["id", "kode", "nama", "deskripsi", "is_system", "role_version"])
+            .executeTakeFirstOrThrow();
+    }
+
+    /** Menyalin seluruh baris matriks (permission + scope) dari role sumber ke role tujuan. */
+    async copyPermissions(ctx: AuthContext, dariRoleId: number, keRoleId: string): Promise<void> {
+        await this.query(ctx)
+            .insertInto("role_permissions")
+            .columns(["role_id", "permission_id", "scope"])
+            .expression((eb) =>
+                eb.selectFrom("role_permissions").select([sql<string>`${keRoleId}::bigint`.as("role_id"), "permission_id", "scope"]).where("role_id", "=", String(dariRoleId)),
+            )
+            .execute();
     }
 
     /** Menaikkan `role_version` (SDD-AUTH-04) — membatalkan cache permission seketika. */

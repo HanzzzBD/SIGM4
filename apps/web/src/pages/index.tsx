@@ -10,7 +10,7 @@ import type { AlasanLogin } from "../modules/m01-auth";
 import { muatApprovalInboxPage, muatApprovalRulesPage, muatDecisionPage, muatEditorAturanPage } from "../modules/m10-approval";
 import { muatDashboardPage } from "../modules/m15-dashboard";
 import { loadDamageDetailPage, loadDamageListPage, loadDamageReportPage } from "../modules/m11-damage-reports";
-import { loadClassPromotionPage, loadUserCreatePage, loadUserDetailPage, loadUserImportPage, loadUserListPage } from "../modules/m02-users";
+import { loadClassPromotionPage, loadUserCreatePage, loadUserDetailPage, loadUserImportPage, loadUserListPage, loadRoleListPage, loadRolePermissionPage } from "../modules/m02-users";
 import type { AksiPengguna, SaringanPengguna } from "../modules/m02-users";
 import type { AwalLaporan, PencarianKerusakan } from "../modules/m11-damage-reports";
 import { loadLabelQrPage, loadPublicAssetPage, loadScanPage } from "../modules/m05-qr";
@@ -186,6 +186,20 @@ export const HalamanDetailPengguna = (props: { readonly id: string; readonly aks
 export const HalamanKenaikanKelas = () => (
     <Suspense fallback={<KeadaanMemuat label="Memuat kenaikan kelas" baris={6} />}>
         <ClassPromotionPage />
+    </Suspense>
+);
+const RoleListPage = lazy(loadRoleListPage);
+const RolePermissionPage = lazy(loadRolePermissionPage);
+/** P-65 Role & Permission (FR-02.2; PR-01-20). */
+export const HalamanRole = (props: { readonly disimpan?: string | undefined; readonly onBuka: (id: string) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat role" baris={6} />}>
+        <RoleListPage {...props} />
+    </Suspense>
+);
+/** P-66 Matriks Permission (FR-02.2; PR-01-20). */
+export const HalamanMatriksPermission = (props: { readonly id: string; readonly onSimpan: (id: string) => void; readonly onBatal: () => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat matriks permission" baris={8} />}>
+        <RolePermissionPage {...props} />
     </Suspense>
 );
 const DamageListPage = lazy(loadDamageListPage);

@@ -10,10 +10,12 @@ export { studentObligations } from "./services/student-obligation-registry.js";
 export { GraduationService, tanggalWib } from "./services/graduation.service.js";
 export {
     classPromotionRoute,
+    createRoleRoute,
     createUserRoute,
     getUserImportRoute,
     getUserRoute,
     importUsersRoute,
+    listPermissionsRoute,
     listRolesRoute,
     listUsersRoute,
     resetUserDuaFaktorRoute,

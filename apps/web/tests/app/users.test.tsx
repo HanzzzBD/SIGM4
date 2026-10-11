@@ -101,11 +101,11 @@ describe("P-60 Pengguna", () => {
         expect(log.some((p) => p.url === "/roles" || p.url === "/work-units")).toBe(false);
     });
 
-    it("tautan Role & Permission hanya bila P-65 terdaftar — belum di cabang ini", async () => {
+    it("tautan Role & Permission menuju P-65 bagi pemegang role.view (PR-01-20)", async () => {
         server();
         await renderAplikasi("/pengguna");
         await screen.findByRole("table");
-        expect(screen.queryByRole("link", { name: "Role & Permission" })).toBeNull();
+        expect(screen.getByRole("link", { name: "Role & Permission" }).getAttribute("href")).toBe("/role");
         expect(screen.getByRole("link", { name: "Tambah Pengguna" }).getAttribute("href")).toBe("/pengguna/baru");
     });
 

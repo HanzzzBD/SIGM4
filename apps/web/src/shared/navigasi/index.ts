@@ -43,6 +43,8 @@ export const HALAMAN_TERDAFTAR: Readonly<Record<string, string>> = {
     "P-62": "/pengguna/impor",
     "P-63": "/pengguna/$id",
     "P-64": "/pengguna/kenaikan-kelas",
+    "P-65": "/role",
+    "P-66": "/role/$id",
     "P-68": "/approval-rules",
     "P-69": "/approval-rules/$id",
     "P-78": "/profil/notifikasi",
@@ -54,6 +56,11 @@ export interface EntriNav {
     /** Salah satu cukup (mis. Parameter Sistem: lihat ATAU kelola). */
     readonly permission: readonly string[];
     readonly ikon: NamaIkon;
+    /**
+     * Tujuan cadangan berurutan bila tujuan utama tak terdaftar atau izinnya tak dipegang — mis. "Pengguna &
+     * Role" menuju P-65 bagi pemegang `role.view` tanpa `user.view` (UX §5.3 satu entri untuk M-02).
+     */
+    readonly alternatif?: readonly { readonly halaman: string; readonly permission: readonly string[] }[];
 }
 
 export interface GrupNav {
@@ -119,7 +126,7 @@ export const NAVIGASI: readonly GrupNav[] = [
         label: "Sistem",
         accent: "accent-gray",
         entri: [
-            e("Pengguna & Role", "P-60", "pengguna", "user.view"),
+            { ...e("Pengguna & Role", "P-60", "pengguna", "user.view"), alternatif: [{ halaman: "P-65", permission: ["role.view"] }] },
             e("Permintaan Reset Password", "P-67", "kunci", "user.reset_password"),
             e("Approval Rules", "P-68", "aturan", "approval_rule.view"),
             e("Parameter Sistem", "P-70", "pengaturan", "setting.view", "setting.manage"),
@@ -129,9 +136,16 @@ export const NAVIGASI: readonly GrupNav[] = [
     },
 ];
 
-/** Grup berisi entri yang boleh dirender; grup kosong ikut hilang (UXD-01). */
+/**
+ * Grup berisi entri yang boleh dirender; grup kosong ikut hilang (UXD-01). Entri bertujuan cadangan memakai
+ * tujuan PERTAMA yang terdaftar di build ini dan izinnya dipegang.
+ */
 export function navigasiTerlihat(can: (permission: string) => boolean): readonly GrupNav[] {
-    return NAVIGASI.map((g) => ({ ...g, entri: g.entri.filter((x) => HALAMAN_TERDAFTAR[x.halaman] !== undefined && x.permission.some(can)) })).filter((g) => g.entri.length > 0);
+    const pilih = (x: EntriNav): EntriNav | null => {
+        const tujuan = [{ halaman: x.halaman, permission: x.permission }, ...(x.alternatif ?? [])].find((t) => HALAMAN_TERDAFTAR[t.halaman] !== undefined && t.permission.some(can));
+        return tujuan === undefined ? null : { ...x, halaman: tujuan.halaman, permission: tujuan.permission };
+    };
+    return NAVIGASI.map((g) => ({ ...g, entri: g.entri.map(pilih).filter((x): x is EntriNav => x !== null) })).filter((g) => g.entri.length > 0);
 }
 
 /**

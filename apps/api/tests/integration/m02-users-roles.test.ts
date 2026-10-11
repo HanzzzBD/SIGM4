@@ -260,3 +260,74 @@ describe.skipIf(!ADA_DB)("PR-01-04 — matriks permission (acceptance)", () => {
         }
     });
 });
+
+describe.skipIf(!ADA_DB)("PR-01-20 — role kustom dari template + katalog permission (acceptance)", () => {
+    beforeAll(() => {
+        dbmate("up");
+    });
+
+    /** Role kustom dibuang seusai uji: `created_by` merujuk akun uji yang dibersihkan berkas lain. */
+    async function buang(id: string): Promise<void> {
+        await kueri(`DELETE FROM role_permissions WHERE role_id = ${id}`);
+        await kueri(`DELETE FROM roles WHERE id = ${id}`);
+    }
+
+    it("katalog GET /permissions: seluruh baris Lampiran C urut modul, penanda inti terbawa", async () => {
+        const katalog = await buatService().catalog(buatCtx(await seedAdmin()));
+        const [jumlah] = await kueri<{ n: string }>("SELECT count(*)::text AS n FROM permissions");
+        expect(katalog).toHaveLength(Number(jumlah?.n));
+        expect(katalog.find((p) => p.kode === "role.update")).toMatchObject({ modul: expect.any(String), aksi: "update", inti: true });
+        expect(katalog.map((p) => p.modul)).toEqual([...katalog.map((p) => p.modul)].sort());
+    });
+
+    it("menyalin R-02: kode RK-{id}, bukan bawaan, matriks + scope identik, ROLE_CREATED tercatat (FR-02.2 A2, AL-01)", async () => {
+        const adminId = await seedAdmin();
+        const sumber = await idRole("R-02");
+        const nama = `Role Uji ${randomUUID().slice(0, 8)}`;
+        const role = await buatService().createFromTemplate(buatCtx(adminId), { sumberRoleId: sumber, nama, deskripsi: "Salinan uji" });
+        try {
+            expect(role.kode).toBe(`RK-${role.id}`);
+            expect(role.is_system).toBe(false);
+            expect(await matriks(Number(role.id))).toEqual(await matriks(sumber));
+            const log = await aksiTerakhir(role.id);
+            expect(log?.aksi).toBe("ROLE_CREATED");
+            expect(log?.nilai_sesudah).toMatchObject({ kode: role.kode, sumber_kode: "R-02" });
+            await expect(buatService().createFromTemplate(buatCtx(adminId), { sumberRoleId: sumber, nama: nama.toUpperCase(), deskripsi: null })).rejects.toMatchObject({ kode: "DUPLICATE_CODE" });
+        } finally {
+            await buang(role.id);
+        }
+    });
+
+    it("BR-069a: R-01, R-03, dan R-07 tidak dapat dijadikan template; tidak ada role yang tercipta", async () => {
+        const adminId = await seedAdmin();
+        const [awal] = await kueri<{ n: string }>("SELECT count(*)::text AS n FROM roles");
+        for (const kode of ["R-01", "R-03", "R-07"]) {
+            await expect(buatService().createFromTemplate(buatCtx(adminId), { sumberRoleId: await idRole(kode), nama: `Tolak ${kode} ${randomUUID().slice(0, 6)}`, deskripsi: null })).rejects.toMatchObject({ kode: "VALIDATION_ERROR", detail: { rule: "BR-069a" } });
+        }
+        const [akhir] = await kueri<{ n: string }>("SELECT count(*)::text AS n FROM roles");
+        expect(akhir?.n).toBe(awal?.n);
+    });
+
+    it("dua permintaan serentak bernama sama (beda huruf) → tepat satu tercipta (temuan inspeksi R-001)", async () => {
+        const adminId = await seedAdmin();
+        const sumber = await idRole("R-02");
+        const dasar = `Serentak ${randomUUID().slice(0, 8)}`;
+        const hasil = await Promise.allSettled([dasar, dasar.toUpperCase()].map((nama) => buatService().createFromTemplate(buatCtx(adminId), { sumberRoleId: sumber, nama, deskripsi: null })));
+        try {
+            expect(hasil.filter((h) => h.status === "fulfilled")).toHaveLength(1);
+            expect(hasil.find((h) => h.status === "rejected")).toMatchObject({ reason: { kode: "DUPLICATE_CODE" } });
+        } finally {
+            for (const h of hasil) if (h.status === "fulfilled") await buang(h.value.id);
+        }
+    });
+
+    it("role sumber tidak ada → NotFoundError", async () => {
+        await expect(buatService().createFromTemplate(buatCtx(await seedAdmin()), { sumberRoleId: 999_999, nama: `Hilang ${randomUUID().slice(0, 6)}`, deskripsi: null })).rejects.toMatchObject({ name: "NotFoundError" });
+    });
+
+    it("PM-01: POST /roles berpermission role.update, GET /permissions berpermission role.view", () => {
+        const route = (m: string, p: string) => registry.all().find((r) => r.method === m && r.path === p);
+        expect(route("POST", "/roles")?.permission).toBe("role.update");
+        expect(route("GET", "/permissions")?.permission).toBe("role.view");
+    });
+});

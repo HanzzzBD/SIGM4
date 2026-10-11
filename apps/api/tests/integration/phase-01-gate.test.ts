@@ -567,6 +567,8 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
 
                 const semuaPerm = matriksTeknisi;
                 await langkah("PUT /roles/:id/permissions", `/roles/${roleTeknisi?.id}/permissions`, { permissions: semuaPerm.slice(1) }, ["ROLE_PERMISSION_UPDATED"]);
+                // PR-01-20: role kustom dari template (FR-02.2 A2); dibuang di `finally`.
+                await langkah("POST /roles", "/roles", { sumber_role_id: Number(roleTeknisi?.id), nama: `Role Gerbang ${sfx}`, deskripsi: null }, ["ROLE_CREATED"]);
 
                 const csv = `nama_lengkap,email,nip_nis,kode_role,kode_unit_kerja\nImpor Gerbang,${emailUnik()},${nipUnik()},R-05,X1${sfx}\n`;
                 await langkah("POST /users/import", "/users/import", { filename: "kecil.csv", content_base64: Buffer.from(csv, "utf8").toString("base64") }, ["USER_IMPORT_REQUESTED", "USER_IMPORTED"]);
@@ -629,6 +631,8 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                     await kueri(`INSERT INTO role_permissions (role_id, permission_id, scope) SELECT ${roleTeknisi?.id}, id, '${m.scope}'::permission_scope FROM permissions WHERE kode = '${m.kode}'`);
                 }
                 await kueri(`UPDATE roles SET role_version = ${roleTeknisi?.role_version} WHERE id = ${roleTeknisi?.id}`);
+                await kueri(`DELETE FROM role_permissions WHERE role_id IN (SELECT id FROM roles WHERE nama = 'Role Gerbang ${sfx}')`);
+                await kueri(`DELETE FROM roles WHERE nama = 'Role Gerbang ${sfx}'`);
                 // Urutan mengikuti FK: users <-> work_units saling merujuk, dan tabel ber-created_by menunjuk users.
                 await kueri("DELETE FROM user_import_jobs");
                 await kueri("DELETE FROM student_enrollments");
