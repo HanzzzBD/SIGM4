@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **178** baris, dikumpulkan dari 22 berkas modul.
+> Total: **179** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -16,6 +16,7 @@
 | DELETE | `/holidays/{id}` | `setting.manage` | Hapus hari libur | [M-20](../02-modules/m20-settings.md) |
 | GET | `/academic-years` | `setting.view` | Daftar tahun ajaran beserta semesternya (Lampiran E.2) | [M-20](../02-modules/m20-settings.md) |
 | GET | `/activity-logs/export` | `activity_log.export` | Ekspor log | [M-18](../02-modules/m18-activity-log.md) |
+| GET | `/activity-logs/{id}` | `activity_log.view` | Detail satu entri beserta nilai sebelum/sesudah (`FR-18.2` langkah 4); akses tercatat `ACTIVITY_LOG_VIEWED` | [M-18](../02-modules/m18-activity-log.md) |
 | GET | `/activity-logs` | `activity_log.view` | Telusuri activity log | [M-18](../02-modules/m18-activity-log.md) |
 | GET | `/analytics/{jenis}` | `report.view` | Data laporan analitik | [M-16](../02-modules/m16-analytics.md) |
 | GET | `/approval-rules` | `approval_rule.view` | Daftar aturan | [M-10](../02-modules/m10-approval.md) |

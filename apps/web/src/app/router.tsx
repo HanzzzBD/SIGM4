@@ -47,6 +47,8 @@ import {
     HalamanKalenderAkademik,
     HalamanParameter,
     HalamanUnitKerja,
+    HalamanActivityLog,
+    HalamanDetailLog,
     HalamanDetailPengguna,
     HalamanImporPengguna,
     HalamanKenaikanKelas,
@@ -699,6 +701,55 @@ const unitKerjaRoute = createRoute({
     },
 });
 
+const tanggalWib = z.catch(z.optional(z.string().check(z.regex(/^\d{4}-\d{2}-\d{2}$/))), undefined);
+const teksSaring = z.catch(z.optional(z.string().check(z.minLength(1), z.maxLength(100))), undefined);
+const idSaring = z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined);
+
+/**
+ * P-73 Activity Log (FR-18.2, UX §6 `/activity-log`; PR-01-25). Saringan di URL; alias `filter[aksi]` (drill-down
+ * dashboard UX §8.3, satu nilai) dan `entitas`/`entitas_id` (tombol Riwayat Perubahan pada detail entitas, FR-18.2 A2).
+ */
+const activityLogRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/activity-log",
+    beforeLoad: butuhIzin("activity_log.view"),
+    validateSearch: z.object({
+        dari: tanggalWib,
+        sampai: tanggalWib,
+        user: idSaring,
+        role: teksSaring,
+        modul: teksSaring,
+        aksi: teksSaring,
+        "filter[aksi]": teksSaring,
+        entitas: teksSaring,
+        entitas_id: idSaring,
+        page: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(2))), undefined),
+        snap: z.catch(z.optional(z.iso.datetime({ offset: true })), undefined),
+    }),
+    component: function RouteActivityLog() {
+        const cari = activityLogRoute.useSearch();
+        const navigate = useNavigate({ from: activityLogRoute.fullPath });
+        const saringan = { dari: cari.dari, sampai: cari.sampai, user: cari.user, role: cari.role, modul: cari.modul, aksi: cari.aksi ?? cari["filter[aksi]"], entitas: cari.entitas, entitas_id: cari.entitas_id, page: cari.page, snap: cari.snap };
+        return <HalamanActivityLog saringan={saringan} onSaringan={(s) => void navigate({ search: { ...saringan, ...s } })} />;
+    },
+});
+
+/** P-74 Detail Entri Log (FR-18.2 langkah 4, UX §6 `/activity-log/{id}`; PR-01-25). */
+const detailLogRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/activity-log/$id",
+    beforeLoad: async (a) => {
+        if (!/^[1-9]\d*$/.test(a.params.id)) throw redirect({ to: "/tidak-ditemukan" });
+        await butuhIzin("activity_log.view")(a);
+    },
+    validateSearch: z.object({ kembali: z.catch(z.optional(z.string().check(z.maxLength(2000))), undefined) }),
+    component: function RouteDetailLog() {
+        const { id } = detailLogRoute.useParams();
+        const { kembali } = detailLogRoute.useSearch();
+        return <HalamanDetailLog key={id} id={id} kembali={kembali} />;
+    },
+});
+
 export const routeTree = rootRoute.addChildren([
     loginRoute,
     verifikasiDuaFaktorRoute,
@@ -707,7 +758,7 @@ export const routeTree = rootRoute.addChildren([
     gangguanRoute,
     tidakDitemukanRoute,
     publikAsetRoute,
-    shellRoute.addChildren([dashboardRoute, parameterRoute, kalenderAkademikRoute, unitKerjaRoute, penggunaRoute, tambahPenggunaRoute, imporPenggunaRoute, kenaikanKelasRoute, detailPenggunaRoute, roleRoute, matriksRoute, daftarKerusakanRoute, laporKerusakanRoute, detailKerusakanRoute, inventarisRoute, detailAsetRoute, riwayatAsetRoute, tambahAsetRoute, ubahAsetRoute, kategoriAsetRoute, labelQrRoute, scanRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    shellRoute.addChildren([dashboardRoute, parameterRoute, kalenderAkademikRoute, unitKerjaRoute, activityLogRoute, detailLogRoute, penggunaRoute, tambahPenggunaRoute, imporPenggunaRoute, kenaikanKelasRoute, detailPenggunaRoute, roleRoute, matriksRoute, daftarKerusakanRoute, laporKerusakanRoute, detailKerusakanRoute, inventarisRoute, detailAsetRoute, riwayatAsetRoute, tambahAsetRoute, ubahAsetRoute, kategoriAsetRoute, labelQrRoute, scanRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {

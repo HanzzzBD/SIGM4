@@ -9,11 +9,14 @@ import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
 import {
     exportActivityLogsHandler,
+    getActivityLogHandler,
     listActivityLogsHandler,
 } from "./controllers/activity-log.controller.js";
 import {
+    ActivityLogIdParamSchema,
     ExportActivityLogsResponseSchema,
     ListActivityLogsResponseSchema,
+    SingleActivityLogResponseSchema,
 } from "./schemas/activity-log.schema.js";
 import { ActivityLogService } from "./services/activity-log.service.js";
 
@@ -43,6 +46,18 @@ export const exportActivityLogsRoute = defineRoute({
     contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 });
 
+/** FR-18.2 langkah 4 (P-74): detail satu entri; akses tercatat `ACTIVITY_LOG_VIEWED`. */
+export const getActivityLogRoute = defineRoute({
+    method: "GET",
+    path: "/activity-logs/:id",
+    permission: "activity_log.view",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Detail entri activity log (nilai sebelum/sesudah)",
+    params: ActivityLogIdParamSchema,
+    response: SingleActivityLogResponseSchema,
+});
+
 export interface ActivityLogModuleDeps {
     readonly db: Kysely<Database>;
     readonly auditLogger: AuditLogger;
@@ -68,6 +83,13 @@ export function activityLogRouter(
         batasi(exportActivityLogsRoute),
         otorisasi(exportActivityLogsRoute.permission),
         exportActivityLogsHandler(service),
+    );
+    // Sesudah `/export`: segmen literal itu tidak boleh terbaca sebagai `:id`.
+    router.get(
+        getActivityLogRoute.path,
+        batasi(getActivityLogRoute),
+        otorisasi(getActivityLogRoute.permission),
+        getActivityLogHandler(service),
     );
 
     return router;

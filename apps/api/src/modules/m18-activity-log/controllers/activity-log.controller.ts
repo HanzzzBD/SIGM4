@@ -3,6 +3,7 @@
 import type { Request, RequestHandler } from "express";
 import { requireAuthContext } from "../../../shared/auth/index.js";
 import {
+    ActivityLogIdParamSchema,
     ExportActivityLogsQuerySchema,
     ListActivityLogsQuerySchema,
 } from "../schemas/activity-log.schema.js";
@@ -92,6 +93,15 @@ export function listActivityLogsHandler(service: ActivityLogService): RequestHan
                 total_pages: hasil.totalPages,
             },
         });
+    };
+}
+
+/** `GET /activity-logs/{id}` (FR-18.2 langkah 4). */
+export function getActivityLogHandler(service: ActivityLogService): RequestHandler {
+    return async (req, res) => {
+        const ctx = requireAuthContext(res);
+        const { id } = ActivityLogIdParamSchema.parse(req.params);
+        res.status(200).json({ success: true, data: keLog(await service.get(ctx, id)), meta: null });
     };
 }
 
