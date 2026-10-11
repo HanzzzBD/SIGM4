@@ -7,11 +7,12 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { ApiError, aturPenangan } from "../shared/api";
 import { KUNCI_ME } from "../shared/auth";
+import { ikatRahasiaKeSesi } from "../modules/m02-users";
 import { buatRouter } from "./router";
 
 /** SDD-11 §4.3: bawaan daftar/katalog 30 detik; galat 4xx tidak diulang otomatis. */
 export function buatQueryClient(): QueryClient {
-    return new QueryClient({
+    const queryClient = new QueryClient({
         defaultOptions: {
             queries: {
                 staleTime: 30_000,
@@ -19,6 +20,9 @@ export function buatQueryClient(): QueryClient {
             },
         },
     });
+    // Rahasia sekali tampil M-02 dibuang begitu sesi berakhir (cache `/me` dikosongkan).
+    ikatRahasiaKeSesi(queryClient);
+    return queryClient;
 }
 
 const queryClient = buatQueryClient();

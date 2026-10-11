@@ -10,6 +10,8 @@ import type { AlasanLogin } from "../modules/m01-auth";
 import { muatApprovalInboxPage, muatApprovalRulesPage, muatDecisionPage, muatEditorAturanPage } from "../modules/m10-approval";
 import { muatDashboardPage } from "../modules/m15-dashboard";
 import { loadDamageDetailPage, loadDamageListPage, loadDamageReportPage } from "../modules/m11-damage-reports";
+import { loadClassPromotionPage, loadUserCreatePage, loadUserDetailPage, loadUserImportPage, loadUserListPage } from "../modules/m02-users";
+import type { AksiPengguna, SaringanPengguna } from "../modules/m02-users";
 import type { AwalLaporan, PencarianKerusakan } from "../modules/m11-damage-reports";
 import { loadLabelQrPage, loadPublicAssetPage, loadScanPage } from "../modules/m05-qr";
 import { loadNotificationCenterPage, loadPreferencesPage } from "../modules/m17-notifications";
@@ -149,6 +151,41 @@ export const HalamanUbahAset = (props: { readonly id: string; readonly onSelesai
 export const HalamanKategoriAset = () => (
     <Suspense fallback={<KeadaanMemuat label="Memuat kategori aset" baris={6} />}>
         <CategoryPage />
+    </Suspense>
+);
+const UserListPage = lazy(loadUserListPage);
+const UserCreatePage = lazy(loadUserCreatePage);
+const UserImportPage = lazy(loadUserImportPage);
+const UserDetailPage = lazy(loadUserDetailPage);
+const ClassPromotionPage = lazy(loadClassPromotionPage);
+/** P-60 Pengguna (FR-02.1; PR-01-19). */
+export const HalamanPengguna = (props: { readonly saringan: SaringanPengguna; readonly onSaringan: (s: Partial<SaringanPengguna>) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat pengguna" baris={6} />}>
+        <UserListPage {...props} />
+    </Suspense>
+);
+/** P-61 Tambah Pengguna (FR-02.1; PR-01-19). */
+export const HalamanTambahPengguna = (props: { readonly onDibuat: (id: string) => void; readonly onBatal: () => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat formulir pengguna" baris={6} />}>
+        <UserCreatePage {...props} />
+    </Suspense>
+);
+/** P-62 Impor Pengguna (FR-02.1 A4; PR-01-19). */
+export const HalamanImporPengguna = (props: { readonly jobId: number | null; readonly onJob: (id: number) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat impor pengguna" baris={4} />}>
+        <UserImportPage {...props} />
+    </Suspense>
+);
+/** P-63 Detail Pengguna (FR-02.1; PR-01-19). */
+export const HalamanDetailPengguna = (props: { readonly id: string; readonly aksi?: AksiPengguna | undefined; readonly onAksi: (a: AksiPengguna | undefined) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat pengguna" baris={8} />}>
+        <UserDetailPage {...props} />
+    </Suspense>
+);
+/** P-64 Kenaikan Kelas Massal (SL-02; PR-01-19). */
+export const HalamanKenaikanKelas = () => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat kenaikan kelas" baris={6} />}>
+        <ClassPromotionPage />
     </Suspense>
 );
 const DamageListPage = lazy(loadDamageListPage);

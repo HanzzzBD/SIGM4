@@ -16,6 +16,7 @@ import { jalurTerdaftar } from "../shared/navigasi";
 import { TAMPILAN, detailReservasiQuery, hariIniWib, isianDariReservasi, isianDariSlot } from "../modules/m07-reservation-room";
 import { KONDISI, STATUS, URUTAN } from "../modules/m04-assets";
 import { STATUS_TIKET, URGENSI_TIKET } from "../modules/m11-damage-reports";
+import { STATUS_PENGGUNA } from "../modules/m02-users";
 import { RENTANG } from "../modules/m15-dashboard";
 import { KELOMPOK, TAMPILAN_NOTIFIKASI } from "../modules/m17-notifications";
 import {
@@ -42,6 +43,11 @@ import {
     HalamanMutasiAset,
     HalamanPanelBlokade,
     HalamanDaftarKerusakan,
+    HalamanDetailPengguna,
+    HalamanImporPengguna,
+    HalamanKenaikanKelas,
+    HalamanPengguna,
+    HalamanTambahPengguna,
     HalamanDetailKerusakan,
     HalamanDetailKeputusan,
     HalamanLaporKerusakan,
@@ -557,6 +563,75 @@ const detailKerusakanRoute = createRoute({
     },
 });
 
+const idAngka = z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined);
+
+/** P-60 Pengguna (FR-02.1, UX §6 `/pengguna`; PR-01-19): saringan role/status/unit kerja dan halaman di URL. */
+const penggunaRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/pengguna",
+    beforeLoad: butuhIzin("user.view"),
+    // `filter[...]` = bentuk drill-down kartu dashboard UX §8.3 ("Total Pengguna Aktif"); dinormalkan di bawah.
+    validateSearch: z.object({
+        role: idAngka,
+        status: z.catch(z.optional(z.enum(STATUS_PENGGUNA)), undefined),
+        unit: idAngka,
+        "filter[role_id]": idAngka,
+        "filter[status]": z.catch(z.optional(z.enum(STATUS_PENGGUNA)), undefined),
+        "filter[work_unit_id]": idAngka,
+        page: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(2))), undefined),
+    }),
+    component: function RoutePengguna() {
+        const cari = penggunaRoute.useSearch();
+        const navigate = useNavigate({ from: penggunaRoute.fullPath });
+        const saringan = { role: cari.role ?? cari["filter[role_id]"], status: cari.status ?? cari["filter[status]"], unit: cari.unit ?? cari["filter[work_unit_id]"], page: cari.page };
+        return <HalamanPengguna saringan={saringan} onSaringan={(s) => void navigate({ search: { ...saringan, ...s } })} />;
+    },
+});
+
+/** P-61 Tambah Pengguna (FR-02.1, UX §6 `/pengguna/baru`; PR-01-19). */
+const tambahPenggunaRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/pengguna/baru",
+    beforeLoad: butuhIzin("user.create"),
+    component: function RouteTambahPengguna() {
+        const navigate = useNavigate();
+        return <HalamanTambahPengguna onDibuat={(id) => void navigate({ to: "/pengguna/$id", params: { id } })} onBatal={() => void navigate({ href: jalurTerdaftar("/pengguna") ? "/pengguna" : "/" })} />;
+    },
+});
+
+/** P-62 Impor Pengguna (FR-02.1 A4, UX §6 `/pengguna/impor`; PR-01-19): laporan pekerjaan di `?job=`. */
+const imporPenggunaRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/pengguna/impor",
+    beforeLoad: butuhIzin("user.create"),
+    validateSearch: z.object({ job: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1))), undefined) }),
+    component: function RouteImporPengguna() {
+        const { job } = imporPenggunaRoute.useSearch();
+        const navigate = useNavigate({ from: imporPenggunaRoute.fullPath });
+        return <HalamanImporPengguna jobId={job ?? null} onJob={(id) => void navigate({ search: { job: id } })} />;
+    },
+});
+
+/** P-64 Kenaikan Kelas Massal (SL-02, UX §6 `/pengguna/kenaikan-kelas`; PR-01-19). */
+const kenaikanKelasRoute = createRoute({ getParentRoute: () => shellRoute, path: "/pengguna/kenaikan-kelas", beforeLoad: butuhIzin("user.update"), component: HalamanKenaikanKelas });
+
+/** P-63 Detail Pengguna (FR-02.1, UX §6 `/pengguna/{id}`; PR-01-19). Drawer aksi `?aksi=` (UXD-02). */
+const detailPenggunaRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/pengguna/$id",
+    beforeLoad: async (a) => {
+        if (!/^[1-9]\d*$/.test(a.params.id)) throw redirect({ to: "/tidak-ditemukan" });
+        await butuhIzin("user.view")(a);
+    },
+    validateSearch: z.object({ aksi: z.catch(z.optional(z.enum(["ubah", "status", "reset-password", "reset-2fa", "kode-aktivasi"])), undefined) }),
+    component: function RouteDetailPengguna() {
+        const { id } = detailPenggunaRoute.useParams();
+        const { aksi } = detailPenggunaRoute.useSearch();
+        const navigate = useNavigate({ from: detailPenggunaRoute.fullPath });
+        return <HalamanDetailPengguna key={id} id={id} aksi={aksi} onAksi={(x) => void navigate({ search: { aksi: x } })} />;
+    },
+});
+
 export const routeTree = rootRoute.addChildren([
     loginRoute,
     verifikasiDuaFaktorRoute,
@@ -565,7 +640,7 @@ export const routeTree = rootRoute.addChildren([
     gangguanRoute,
     tidakDitemukanRoute,
     publikAsetRoute,
-    shellRoute.addChildren([dashboardRoute, daftarKerusakanRoute, laporKerusakanRoute, detailKerusakanRoute, inventarisRoute, detailAsetRoute, riwayatAsetRoute, tambahAsetRoute, ubahAsetRoute, kategoriAsetRoute, labelQrRoute, scanRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    shellRoute.addChildren([dashboardRoute, penggunaRoute, tambahPenggunaRoute, imporPenggunaRoute, kenaikanKelasRoute, detailPenggunaRoute, daftarKerusakanRoute, laporKerusakanRoute, detailKerusakanRoute, inventarisRoute, detailAsetRoute, riwayatAsetRoute, tambahAsetRoute, ubahAsetRoute, kategoriAsetRoute, labelQrRoute, scanRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {

@@ -22,6 +22,7 @@ export {
     updateRolePermissionsRoute,
     updateUserRoute,
     updateUserStatusRoute,
+    userImportTemplateRoute,
     usersRouter,
 } from "./routes.js";
 export {

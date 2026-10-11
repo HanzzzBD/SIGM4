@@ -3,6 +3,7 @@
 import express from "express";
 import type { RequestHandler, Router } from "express";
 import type { Kysely } from "kysely";
+import { z } from "zod";
 import type { AuditLogger } from "../../shared/audit/index.js";
 import type { AuthContext } from "../../shared/auth/index.js";
 import type { Clock } from "../../shared/clock/index.js";
@@ -23,6 +24,7 @@ import { resetPasswordHandler } from "./controllers/reset-password.controller.js
 import {
     getUserImportHandler,
     importUsersHandler,
+    userImportTemplateHandler,
 } from "./controllers/user-import.controller.js";
 import {
     ClassPromotionBodySchema,
@@ -221,6 +223,18 @@ export const importUsersRoute = defineRoute({
     response: ImportUserJobResponseSchema,
 });
 
+/** IMPT-05 (P-62): unduh template XLSX E.5.2 beserta petunjuk dan contoh. */
+export const userImportTemplateRoute = defineRoute({
+    method: "GET",
+    path: "/users/import/template",
+    permission: "user.create",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Template XLSX impor pengguna E.5.2",
+    response: z.string(),
+    contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+});
+
 /** IMPT-02/04: status dan laporan per baris sebuah pekerjaan impor. */
 export const getUserImportRoute = defineRoute({
     method: "GET",
@@ -369,6 +383,13 @@ export function usersRouter(
         batasi(importUsersRoute),
         otorisasi(importUsersRoute.permission),
         importUsersHandler(importService),
+    );
+    // Didaftarkan sebelum `/users/import/:id` agar "template" tidak dibaca sebagai id.
+    router.get(
+        userImportTemplateRoute.path,
+        batasi(userImportTemplateRoute),
+        otorisasi(userImportTemplateRoute.permission),
+        userImportTemplateHandler(),
     );
     router.get(
         getUserImportRoute.path,

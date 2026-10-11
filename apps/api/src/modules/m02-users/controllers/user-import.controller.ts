@@ -9,6 +9,7 @@ import {
     ImportUsersBodySchema,
 } from "../schemas/user-import.schema.js";
 import type { UserImportService } from "../services/user-import.service.js";
+import { userImportTemplate } from "../services/user-import-template.js";
 
 function keJob(job: ImportJobRow): Record<string, unknown> {
     return {
@@ -53,5 +54,14 @@ export function getUserImportHandler(service: UserImportService): RequestHandler
         const { id } = ImportJobIdParamSchema.parse(req.params);
         const job = await service.get(ctx, id);
         res.status(200).json({ success: true, data: keJob(job), meta: null });
+    };
+}
+
+/** IMPT-05 (P-62): template XLSX E.5.2; izin `user.create` ditegakkan middleware route. */
+export function userImportTemplateHandler(): RequestHandler {
+    return async (_req, res) => {
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        res.setHeader("Content-Disposition", 'attachment; filename="template_pengguna.xlsx"');
+        res.send(await userImportTemplate());
     };
 }
