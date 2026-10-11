@@ -220,6 +220,11 @@ export class ReservationRepository extends BaseRepository {
             .execute();
     }
 
+    /** Reservasi yang dirujuk laporan kerusakan pasca-kegiatan (FR-07.4 A2, PR-03-31) — dibaca M-11 lewat `index.ts`. */
+    async untukLaporanKerusakan(ctx: AuthContext, id: number): Promise<{ readonly id: string; readonly nomor: string; readonly jenis: "RUANGAN" | "ASET"; readonly room_id: string | null; readonly status: StatusReservasi } | undefined> {
+        return this.query(ctx).selectFrom("reservations").select(["id", "nomor", "jenis", "room_id", "status"]).where("id", "=", String(id)).executeTakeFirst();
+    }
+
     /** `{nomor}`/`{objek}`/`{tanggal}` notifikasi approval (SDD-08 §4.2a). */
     async rincian(ctx: AuthContext, id: number): Promise<RincianReservasi | undefined> {
         return this.query(ctx)

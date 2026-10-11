@@ -53,6 +53,9 @@ export {
     DamageReportListItemSchema,
     DamageReportListQuerySchema,
     DamageReportListResponseSchema,
+    DamageReportNoteCreateSchema,
+    DamageReportNoteResponseSchema,
+    DamageReportNoteSchema,
     DamageReportOpenQuerySchema,
     DamageReportOpenResponseSchema,
     DamageReportOpenSchema,
@@ -63,6 +66,6 @@ export {
     STATUS_LAPORAN_KERUSAKAN,
     URGENSI_KERUSAKAN,
 } from "./damage-reports.js";
-export type { DamageReportCreate, DamageReportCreated, DamageReportDetail, DamageReportListItem, DamageReportListQuery, DamageReportOpen, DamageReportVerified, DamageReportVerify } from "./damage-reports.js";
+export type { DamageReportCreate, DamageReportCreated, DamageReportDetail, DamageReportListItem, DamageReportListQuery, DamageReportNote, DamageReportNoteCreate, DamageReportOpen, DamageReportVerified, DamageReportVerify } from "./damage-reports.js";
 export { AssetDetailResponseSchema, AssetDetailSchema, AssetTimelineQuerySchema, AssetTimelineResponseSchema, EntriLinimasaAsetSchema, JENIS_LINIMASA_ASET } from "./asset-detail.js";
 export type { AssetDetail, EntriLinimasaAset } from "./asset-detail.js";

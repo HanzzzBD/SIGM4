@@ -9,6 +9,8 @@ import {
     DamageReportIdParamSchema,
     DamageReportListQuerySchema,
     DamageReportListResponseSchema,
+    DamageReportNoteCreateSchema,
+    DamageReportNoteResponseSchema,
     DamageReportOpenQuerySchema,
     DamageReportOpenResponseSchema,
     DamageReportVerifiedResponseSchema,
@@ -24,7 +26,7 @@ import type { Database } from "../../shared/db/index.js";
 import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
 import type { PenyimpananObjek } from "../../shared/storage/index.js";
-import { createDamageReportHandler, getDamageReportHandler, listDamageReportsHandler, openDamageReportHandler, verifyDamageReportHandler } from "./controllers/damage-report.controller.js";
+import { addDamageReportNoteHandler, createDamageReportHandler, getDamageReportHandler, listDamageReportsHandler, openDamageReportHandler, verifyDamageReportHandler } from "./controllers/damage-report.controller.js";
 import { DamageReportQueryService } from "./services/damage-report-query.service.js";
 import { DamageReportService } from "./services/damage-report.service.js";
 import { VerificationService } from "./services/verification.service.js";
@@ -95,6 +97,20 @@ export const verifyDamageReportRoute = defineRoute({
     response: DamageReportVerifiedResponseSchema,
 });
 
+/** FR-11.1 A1 (PR-03-31, keputusan 25a/25b): catatan + 0–5 foto ke tiket terbuka; setiap pemegang `damage.create`. */
+export const addDamageReportNoteRoute = defineRoute({
+    method: "POST",
+    path: "/damage-reports/:id/notes",
+    permission: "damage.create",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Tambahkan informasi (keterangan + foto) ke tiket kerusakan yang masih terbuka (FR-11.1 A1)",
+    successStatus: 201,
+    params: DamageReportIdParamSchema,
+    body: DamageReportNoteCreateSchema,
+    response: DamageReportNoteResponseSchema,
+});
+
 export interface DamageReportsModuleDeps {
     readonly db: Kysely<Database>;
     readonly clock: Clock;
@@ -118,6 +134,7 @@ export function damageReportsRouter(
     router.get(openDamageReportRoute.path, batasi(openDamageReportRoute), otorisasi(openDamageReportRoute.permission), openDamageReportHandler(laporan));
     router.get(getDamageReportRoute.path, batasi(getDamageReportRoute), otorisasi(getDamageReportRoute.permission), getDamageReportHandler(kueri));
     router.post(verifyDamageReportRoute.path, batasi(verifyDamageReportRoute), otorisasi(verifyDamageReportRoute.permission), verifyDamageReportHandler(new VerificationService(deps.db, deps.clock, deps.auditLogger)));
+    router.post(addDamageReportNoteRoute.path, batasi(addDamageReportNoteRoute), otorisasi(addDamageReportNoteRoute.permission), addDamageReportNoteHandler(laporan, kueri));
     router.post(createDamageReportRoute.path, batasi(createDamageReportRoute), otorisasi(createDamageReportRoute.permission), createDamageReportHandler(laporan));
     return router;
 }

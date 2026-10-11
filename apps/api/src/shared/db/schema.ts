@@ -619,6 +619,27 @@ export interface DamageReportsTable extends KolomBaku {
     catatan_verifikasi: ColumnType<string | null, string | null | undefined, string | null>;
     /** 0050 (FR-11.3, SC-07): tenggat tindak lanjut absolut, ditetapkan saat lapor; NULL = tiket pra-0050. */
     batas_sla: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    /** 0051 (FR-07.4 A2): reservasi ruangan asal laporan pasca-kegiatan. */
+    reservation_id: ColumnType<string | null, string | number | null | undefined, never>;
+}
+
+/** `damage_report_notes` (0051, FR-11.1 A1) — catatan tambahan append-only atas tiket terbuka. */
+export interface DamageReportNotesTable {
+    id: Generated<string>;
+    damage_report_id: ColumnType<string, string | number, never>;
+    keterangan: string;
+    created_at: ColumnType<Date, never, never>;
+    created_by: ColumnType<string, string | number, never>;
+}
+
+/** `damage_report_note_photos` (0051) — 0–5 foto per catatan; berkas di `stored_files` (SDD-FS-02). */
+export interface DamageReportNotePhotosTable {
+    id: Generated<string>;
+    note_id: ColumnType<string, string | number, never>;
+    file_id: ColumnType<string, string | number, never>;
+    urutan: number;
+    created_at: ColumnType<Date, never, never>;
+    created_by: ColumnType<string | null, string | number | null, never>;
 }
 
 /** `damage_report_photos` (0048) — anak append-only; berkas di `stored_files` (SDD-FS-02). */
@@ -909,6 +930,8 @@ export interface Database {
     room_manual_blocks: RoomManualBlocksTable;
     damage_reports: DamageReportsTable;
     damage_report_photos: DamageReportPhotosTable;
+    damage_report_notes: DamageReportNotesTable;
+    damage_report_note_photos: DamageReportNotePhotosTable;
     approval_rules: ApprovalRulesTable;
     approval_rule_steps: ApprovalRuleStepsTable;
     approval_instances: ApprovalInstancesTable;

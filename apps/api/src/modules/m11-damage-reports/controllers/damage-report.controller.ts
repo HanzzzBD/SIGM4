@@ -1,6 +1,6 @@
 // Controller laporan kerusakan (FR-11.1; PR-03-14). Isian tak sah → 422 per isian (Bab 17.2).
 
-import { DamageReportCreateSchema, DamageReportIdParamSchema, DamageReportListQuerySchema, DamageReportOpenQuerySchema, DamageReportVerifySchema } from "@sigm4/schemas";
+import { DamageReportCreateSchema, DamageReportIdParamSchema, DamageReportNoteCreateSchema, DamageReportListQuerySchema, DamageReportOpenQuerySchema, DamageReportVerifySchema } from "@sigm4/schemas";
 import type { RequestHandler } from "express";
 import type { ZodType } from "zod";
 import { requireAuthContext } from "../../../shared/auth/index.js";
@@ -22,7 +22,7 @@ function urai<T>(skema: ZodType<T>, masukan: unknown): T {
 export function createDamageReportHandler(service: DamageReportService): RequestHandler {
     return async (req, res) => {
         const b = urai(DamageReportCreateSchema, req.body);
-        const data = await service.buat(requireAuthContext(res), { assetId: b.asset_id, roomId: b.room_id, deskripsi: b.deskripsi, urgensi: b.urgensi, fotoFileIds: b.foto_file_ids });
+        const data = await service.buat(requireAuthContext(res), { assetId: b.asset_id, roomId: b.room_id, deskripsi: b.deskripsi, urgensi: b.urgensi, fotoFileIds: b.foto_file_ids, reservationId: b.reservation_id });
         res.status(201).json({ success: true, data, meta: null });
     };
 }
@@ -59,5 +59,18 @@ export function verifyDamageReportHandler(service: VerificationService): Request
             kondisiAset: b.kondisi_aset === undefined ? null : { kondisi: b.kondisi_aset.kondisi, alasan: b.kondisi_aset.alasan ?? null },
         });
         res.status(200).json({ success: true, data, meta: null });
+    };
+}
+
+/** FR-11.1 A1 (PR-03-31): tambah informasi ke tiket terbuka; respons = catatan yang terbentuk. */
+export function addDamageReportNoteHandler(service: DamageReportService, kueri: DamageReportQueryService): RequestHandler {
+    return async (req, res) => {
+        const ctx = requireAuthContext(res);
+        const { id } = DamageReportIdParamSchema.parse(req.params);
+        const b = urai(DamageReportNoteCreateSchema, req.body);
+        const { id: catatanId } = await service.tambahCatatan(ctx, id, { keterangan: b.keterangan, fotoFileIds: b.foto_file_ids });
+        // Penulis bukan pelapor pun melihat catatannya sendiri — dibaca tanpa penyaring scope detail.
+        const data = (await kueri.catatan(ctx, String(id))).find((c) => c.id === catatanId);
+        res.status(201).json({ success: true, data, meta: null });
     };
 }

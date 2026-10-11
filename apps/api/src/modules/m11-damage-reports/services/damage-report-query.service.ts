@@ -4,7 +4,7 @@
 // Daftar pantau `GET /damage-reports` (FR-11.3; PR-03-16, keputusan 22) memakai scope yang sama.
 
 import { STATUS_LAPORAN_KERUSAKAN } from "@sigm4/schemas";
-import type { DamageReportDetail, DamageReportListItem, DamageReportListQuerySchema } from "@sigm4/schemas";
+import type { DamageReportDetail, DamageReportListItem, DamageReportListQuerySchema, DamageReportNote } from "@sigm4/schemas";
 import type { Kysely } from "kysely";
 import type { z } from "zod";
 import { garansiAktifAset, urlUnduhBerkas } from "../../m06-documents/index.js";
@@ -14,6 +14,7 @@ import type { Database } from "../../../shared/db/index.js";
 import { NotFoundError } from "../../../shared/errors/index.js";
 import type { PenyimpananObjek } from "../../../shared/storage/index.js";
 import { createDamageReportRepository } from "../repositories/damage-report.repository.js";
+import type { FotoTiket } from "../repositories/damage-report.repository.js";
 
 const WIB_MS = 7 * 3_600_000;
 /** Tanggal perdata WIB `YYYY-MM-DD` — "hari ini" bagi masa garansi (CAL-03). */
@@ -86,20 +87,38 @@ export class DamageReportQueryService {
         };
     }
 
+    /** Foto tiket/catatan: MOB-OFF-04 — pesanan tanpa checksum = unggahannya masih di antrean perangkat (A2). */
+    private async fotoDto(f: FotoTiket) {
+        return {
+            file_id: f.file_id,
+            urutan: f.urutan,
+            status: f.checksum === null ? ("BELUM_TERUNGGAH" as const) : f.scan_status,
+            url: f.checksum !== null && f.scan_status === "CLEAN" ? (await urlUnduhBerkas(this.penyimpanan, this.clock, f, "medium")).url : null,
+        };
+    }
+
+    /** FR-11.1 A1 (PR-03-31): catatan tambahan tiket, terlama lebih dulu. */
+    async catatan(ctx: AuthContext, reportId: string): Promise<readonly DamageReportNote[]> {
+        const repo = createDamageReportRepository(this.db);
+        const daftar = await repo.catatan(ctx, reportId);
+        const foto = await repo.fotoCatatan(ctx, daftar.map((c) => c.id));
+        return Promise.all(
+            daftar.map(async (c) => ({
+                id: c.id,
+                keterangan: c.keterangan,
+                penulis: { id: c.penulis_id, nama: c.penulis_nama },
+                dibuat_pada: c.created_at.toISOString(),
+                foto: await Promise.all(foto.filter((f) => f.note_id === c.id).map((f) => this.fotoDto(f))),
+            })),
+        );
+    }
+
     async detail(ctx: AuthContext, id: number): Promise<DamageReportDetail> {
         const repo = createDamageReportRepository(this.db);
         const t = await repo.detail(ctx, id);
         if (t === undefined) throw new NotFoundError("Laporan kerusakan tidak ditemukan.");
 
-        const foto = await Promise.all(
-            (await repo.foto(ctx, t.id)).map(async (f) => ({
-                file_id: f.file_id,
-                urutan: f.urutan,
-                // MOB-OFF-04: pesanan tanpa checksum = unggahannya masih di antrean perangkat (A2).
-                status: f.checksum === null ? ("BELUM_TERUNGGAH" as const) : f.scan_status,
-                url: f.checksum !== null && f.scan_status === "CLEAN" ? (await urlUnduhBerkas(this.penyimpanan, this.clock, f, "medium")).url : null,
-            })),
-        );
+        const foto = await Promise.all((await repo.foto(ctx, t.id)).map((f) => this.fotoDto(f)));
         const garansi =
             t.asset_id !== null && ctx.can("asset_document.view")
                 ? (await garansiAktifAset(this.db, ctx, Number(t.asset_id), tanggalWib(this.clock.now()))).map((g) => ({ dokumen_id: g.id, nama_berkas: g.nama_berkas, garansi_selesai: g.garansi_selesai }))
@@ -119,6 +138,8 @@ export class DamageReportQueryService {
             catatan_verifikasi: t.catatan_verifikasi,
             foto,
             foto_tertunda: foto.filter((f) => f.status === "BELUM_TERUNGGAH").length,
+            catatan: [...(await this.catatan(ctx, t.id))],
+            reservasi: t.reservation_id === null ? null : { id: t.reservation_id, nomor: t.reservasi_nomor ?? "" },
             garansi,
         };
     }
