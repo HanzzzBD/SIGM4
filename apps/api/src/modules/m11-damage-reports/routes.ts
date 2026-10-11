@@ -15,6 +15,7 @@ import {
     DamageReportVerifySchema,
 } from "@sigm4/schemas";
 import express from "express";
+import { daftarkanSumberLinimasaKerusakan } from "./services/timeline-source.js";
 import type { RequestHandler, Router } from "express";
 import type { Kysely } from "kysely";
 import type { AuditLogger } from "../../shared/audit/index.js";
@@ -108,6 +109,7 @@ export function damageReportsRouter(
     batasi: (route: RouteDefinition) => RequestHandler,
     otorisasi: (permission: string) => RequestHandler,
 ): Router {
+    daftarkanSumberLinimasaKerusakan();
     const laporan = new DamageReportService(deps.db, deps.clock, deps.auditLogger);
     const router = express.Router();
     const kueri = new DamageReportQueryService(deps.db, deps.clock, deps.penyimpanan);
