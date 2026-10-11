@@ -12,6 +12,7 @@ import { Link, Outlet, createRootRouteWithContext, createRoute, createRouter, re
 // zod/mini: API skema yang sama dengan bundel jauh lebih kecil (NFR-P-03, SDD-11 §4.7).
 import { z } from "zod/mini";
 import { ambilTantangan } from "../modules/m01-auth";
+import { jalurTerdaftar } from "../shared/navigasi";
 import { TAMPILAN, detailReservasiQuery, hariIniWib, isianDariReservasi, isianDariSlot } from "../modules/m07-reservation-room";
 import { RENTANG } from "../modules/m15-dashboard";
 import { KELOMPOK, TAMPILAN_NOTIFIKASI } from "../modules/m17-notifications";
@@ -28,6 +29,9 @@ import {
     HalamanLogin,
     HalamanImporAset,
     HalamanKalenderRuangan,
+    HalamanLabelQr,
+    HalamanPublikAset,
+    HalamanScanQr,
     HalamanMutasiAset,
     HalamanPanelBlokade,
     HalamanDetailKeputusan,
@@ -379,6 +383,39 @@ const detailKeputusanRoute = createRoute({
     },
 });
 
+/** P-06 Halaman Publik Aset (FR-05.2 A3, UX §6 `/a/{uuid}`; PR-03-28): TANPA gerbang sesi — payload QR permanen. */
+const publikAsetRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/a/$uuid",
+    component: function RoutePublikAset() {
+        const { uuid } = publikAsetRoute.useParams();
+        return <HalamanPublikAset uuid={uuid} />;
+    },
+});
+
+/** P-24 Label QR (FR-05.1, UX §6 `/label-qr`; PR-03-28). `?aset=1,2,3` membawa pilihan dari P-16/P-18. */
+const labelQrRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/label-qr",
+    beforeLoad: butuhIzin("asset.qr_print"),
+    validateSearch: z.object({ aset: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*(,[1-9]\d*)*$/))), undefined) }),
+    component: function RouteLabelQr() {
+        const { aset } = labelQrRoute.useSearch();
+        return <HalamanLabelQr awal={aset === undefined ? [] : [...new Set(aset.split(","))]} />;
+    },
+});
+
+/** P-25 Scan QR web (FR-05.2, UX §6 `/scan`; PR-03-28). Hasil → P-18 bila terdaftar. */
+const scanRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/scan",
+    beforeLoad: butuhIzin("asset.view"),
+    component: function RouteScan() {
+        const navigate = useNavigate();
+        return <HalamanScanQr onBuka={(id) => void navigate({ href: jalurTerdaftar(`/aset/${id}`) ? `/aset/${id}` : "/" })} />;
+    },
+});
+
 export const routeTree = rootRoute.addChildren([
     loginRoute,
     verifikasiDuaFaktorRoute,
@@ -386,7 +423,8 @@ export const routeTree = rootRoute.addChildren([
     gantiPasswordRoute,
     gangguanRoute,
     tidakDitemukanRoute,
-    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    publikAsetRoute,
+    shellRoute.addChildren([dashboardRoute, labelQrRoute, scanRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {
