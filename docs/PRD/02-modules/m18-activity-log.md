@@ -96,6 +96,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 |---|---|---|---|
 | GET | `/activity-logs` | `activity_log.view` | Telusuri activity log |
 | GET | `/activity-logs/export` | `activity_log.export` | Ekspor log |
+| GET | `/activity-logs/{id}` | `activity_log.view` | Detail satu entri beserta nilai sebelum/sesudah (`FR-18.2` langkah 4); akses tercatat `ACTIVITY_LOG_VIEWED` |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).

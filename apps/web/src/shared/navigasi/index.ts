@@ -50,6 +50,8 @@ export const HALAMAN_TERDAFTAR: Readonly<Record<string, string>> = {
     "P-70": "/pengaturan",
     "P-71": "/pengaturan/kalender-akademik",
     "P-72": "/pengaturan/unit-kerja",
+    "P-73": "/activity-log",
+    "P-74": "/activity-log/$id",
     "P-78": "/profil/notifikasi",
 };
 

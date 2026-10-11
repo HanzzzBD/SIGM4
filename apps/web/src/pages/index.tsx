@@ -12,6 +12,8 @@ import { muatDashboardPage } from "../modules/m15-dashboard";
 import { loadDamageDetailPage, loadDamageListPage, loadDamageReportPage } from "../modules/m11-damage-reports";
 import { loadCalendarPage, loadParameterPage, loadWorkUnitPage } from "../modules/m20-settings";
 import type { Kelompok, SaringanUnit } from "../modules/m20-settings";
+import { loadActivityLogDetailPage, loadActivityLogPage } from "../modules/m18-activity-log";
+import type { SaringanLog } from "../modules/m18-activity-log";
 import { loadClassPromotionPage, loadUserCreatePage, loadUserDetailPage, loadUserImportPage, loadUserListPage, loadRoleListPage, loadRolePermissionPage } from "../modules/m02-users";
 import type { AksiPengguna, SaringanPengguna } from "../modules/m02-users";
 import type { AwalLaporan, PencarianKerusakan } from "../modules/m11-damage-reports";
@@ -223,6 +225,20 @@ export const HalamanKalenderAkademik = () => (
 export const HalamanUnitKerja = (props: { readonly saringan: SaringanUnit; readonly onSaringan: (s: Partial<SaringanUnit>) => void }) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat unit kerja" baris={6} />}>
         <WorkUnitPage {...props} />
+    </Suspense>
+);
+const ActivityLogPage = lazy(loadActivityLogPage);
+const ActivityLogDetailPage = lazy(loadActivityLogDetailPage);
+/** P-73 Activity Log (FR-18.2; PR-01-25). */
+export const HalamanActivityLog = (props: { readonly saringan: SaringanLog; readonly onSaringan: (s: Partial<SaringanLog>) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat activity log" baris={8} />}>
+        <ActivityLogPage {...props} />
+    </Suspense>
+);
+/** P-74 Detail Entri Log (FR-18.2 langkah 4; PR-01-25). */
+export const HalamanDetailLog = (props: { readonly id: string; readonly kembali?: string | undefined }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat entri log" baris={8} />}>
+        <ActivityLogDetailPage {...props} />
     </Suspense>
 );
 const DamageListPage = lazy(loadDamageListPage);

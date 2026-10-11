@@ -165,6 +165,7 @@ import {
 import {
     activityLogRouter,
     exportActivityLogsRoute,
+    getActivityLogRoute,
     listActivityLogsRoute,
 } from "../modules/m18-activity-log/index.js";
 import {
@@ -311,6 +312,7 @@ export const registry = new RouteRegistry().register(
     dashboardCardRoute,
     listActivityLogsRoute,
     exportActivityLogsRoute,
+    getActivityLogRoute,
     getSettingsRoute,
     updateSettingsRoute,
     classPromotionRoute,

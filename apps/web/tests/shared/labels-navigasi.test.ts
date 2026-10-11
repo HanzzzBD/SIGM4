@@ -64,7 +64,8 @@ describe("registri navigasi", () => {
     });
 
     it("drill-down hanya menjadi tautan bila halaman sasarannya terdaftar; filter URL dipertahankan", () => {
-        expect(jalurDrilldown("P-73?filter[aksi]=LOGIN_SUCCESS")).toBeNull();
+        expect(jalurDrilldown("P-75")).toBeNull();
+        expect(jalurDrilldown("P-73?filter[aksi]=LOGIN_SUCCESS")).toBe("/activity-log?filter[aksi]=LOGIN_SUCCESS");
         expect(jalurDrilldown("P-60?filter[status]=AKTIF")).toBe("/pengguna?filter[status]=AKTIF");
         expect(jalurDrilldown(null)).toBeNull();
         expect(jalurDrilldown("P-12?rentang=7_hari")).toBe("/?rentang=7_hari");
