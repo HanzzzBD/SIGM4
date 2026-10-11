@@ -218,9 +218,12 @@ export const AssetCatalogItemSchema = z.object({
     nilai_perolehan: z.string().nullable().optional(),
 });
 
+/** Item daftar katalog: + nama kategori & lokasi (keputusan 93b log phase-02). */
+export const AssetCatalogListItemSchema = AssetCatalogItemSchema.extend({ kategori_nama: z.string(), lokasi: z.object({ ruang: z.string(), gedung: z.string() }) });
+
 export const ListAssetsResponseSchema = z.object({
     success: z.literal(true),
-    data: z.array(AssetCatalogItemSchema),
+    data: z.array(AssetCatalogListItemSchema),
     meta: z.object({
         page: z.number(),
         per_page: z.number(),

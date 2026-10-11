@@ -40,6 +40,7 @@ import {
     RefreshCw,
     ScanLine,
     ScrollText,
+    Search,
     Settings,
     ShieldOff,
     ShoppingCart,
@@ -103,6 +104,7 @@ const PETA = {
     centang: Check,
     unduh: Download,
     belumTerpenuhi: CircleDot,
+    cari: Search,
 } satisfies Record<string, LucideIcon>;
 
 export type NamaIkon = keyof typeof PETA;

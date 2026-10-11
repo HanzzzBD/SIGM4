@@ -135,7 +135,8 @@ describe("P-19 Ubah Aset", () => {
         await user.type(nama, "Proyektor Aula Utama");
         await user.click(screen.getByRole("button", { name: "Simpan perubahan" }));
         await waitFor(() => expect(log.find((p) => p.method === "PUT")?.data).toEqual({ nama: "Proyektor Aula Utama", merek: "Epson", model: null, nomor_seri: "SN-12", tahun_perolehan: 2023, dapat_dipinjam: true, boleh_dipinjam_siswa: false, penanggung_jawab_id: 5, sumber_perolehan: "PEMBELIAN", nilai_perolehan: 5000000 }));
-        await waitFor(() => expect(router.state.location.pathname).toBe("/"));
+        // Kembali ke P-18 (terdaftar sejak PR-02-45).
+        await waitFor(() => expect(router.state.location.pathname).toBe("/aset/12"));
     });
 
     it("kondisi berubah menuntut alasan; terkirim bersama atribut dalam satu PUT (keputusan 93f)", async () => {
@@ -172,7 +173,7 @@ describe("P-19 Ubah Aset", () => {
         const dialog = await screen.findByRole("dialog", { name: "Buang perubahan?" });
         expect(router.state.location.pathname).toBe("/aset/12/ubah");
         await user.click(within(dialog).getByRole("button", { name: "Buang perubahan" }));
-        await waitFor(() => expect(router.state.location.pathname).toBe("/"));
+        await waitFor(() => expect(router.state.location.pathname).toBe("/aset/12"));
     });
 
     it("aset terhapuskan tidak dapat diubah; 404 → tidak ditemukan; tanpa asset.update → P-08", async () => {
@@ -185,6 +186,18 @@ describe("P-19 Ubah Aset", () => {
         server({ me: { ...ME, permissions: { "asset.view": "all" } } });
         const { router } = await renderAplikasi("/aset/12/ubah");
         await waitFor(() => expect(router.state.location.pathname).toBe("/tidak-punya-akses"));
+    });
+});
+
+describe("P-18 → P-19", () => {
+    it("P-18 menampilkan Ubah menuju P-19 bagi pemegang asset.update; aset terhapuskan tidak", async () => {
+        server();
+        await renderAplikasi("/aset/12");
+        expect((await screen.findByRole("link", { name: "Ubah" })).getAttribute("href")).toBe("/aset/12/ubah");
+        server({ detail: sukses({ ...DETAIL, dihapuskan: true }) });
+        await renderAplikasi("/aset/12");
+        expect((await screen.findAllByRole("heading", { level: 1 })).length).toBeGreaterThan(0);
+        expect(screen.queryAllByRole("link", { name: "Ubah" })).toHaveLength(1);
     });
 });
 

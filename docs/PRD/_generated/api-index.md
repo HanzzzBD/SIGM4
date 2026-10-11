@@ -36,7 +36,7 @@
 | GET | `/assets/{id}/service-history` | `asset.view` | Riwayat servis aset | [M-12](../02-modules/m12-maintenance.md) |
 | GET | `/assets/{id}/timeline` | `asset.view` | Linimasa riwayat aset terpaginasi: kondisi, mutasi, dan riwayat yang diisi modul lain (peminjaman, pemeliharaan, kerusakan, dokumen) — jenis sensitif disembunyikan bagi scope `restricted` (FR-04.2 langkah 5, A1) | [M-04](../02-modules/m04-assets.md) |
 | GET | `/assets/{id}` | `asset.view` | Detail aset — identitas lengkap, QR, kategori & lokasi (FR-04.2 langkah 5) | [M-04](../02-modules/m04-assets.md) |
-| GET | `/assets` | `asset.view` | Daftar aset (filter & pencarian) | [M-04](../02-modules/m04-assets.md) |
+| GET | `/assets` | `asset.view` | Daftar aset (filter & pencarian); tiap item membawa nama kategori dan lokasi (ruang, gedung) | [M-04](../02-modules/m04-assets.md) |
 | GET | `/audit-sessions/{id}/items` | `audit.execute` | Daftar aset target (filter lokasi) | [M-13](../02-modules/m13-audit-stocktake.md) |
 | GET | `/audit-sessions/{id}/report` | `audit.view` | Unduh berita acara PDF | [M-13](../02-modules/m13-audit-stocktake.md) |
 | GET | `/auth/password/requests` | `user.reset_password` | Antrean permintaan reset (filter status; memuat identitas pemohon untuk verifikasi luring) | 200 daftar terpaginasi | 401, 403 | [M-01](../02-modules/m01-auth.md) |

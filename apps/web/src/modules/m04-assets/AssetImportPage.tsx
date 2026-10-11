@@ -23,7 +23,7 @@ export default function AssetImportPage({ jobId, onJob }: { readonly jobId: numb
         event.preventDefault();
         if (file !== null) upload.mutate(file);
     }
-    const catalog = job === undefined ? null : jalurDrilldown(`P-15?filter[import_job_id]=${job.id}`);
+    const catalog = job === undefined ? null : jalurDrilldown(`P-15?impor=${job.id}`);
     function download(correction: boolean): void {
         if (job === undefined) return;
         saveDownload(new Blob([importReportCsv(job, correction)], { type: "text/csv;charset=utf-8" }), `${correction ? "koreksi" : "laporan"}_impor_aset_${job.id}.csv`);

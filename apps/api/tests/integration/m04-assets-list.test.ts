@@ -269,6 +269,9 @@ describe.skipIf(!ADA_DB)("PR-02-12 — katalog aset: pencarian, filter, paginasi
 
             expect(hasil.rows).toHaveLength(1);
             expect((hasil.rows[0] as { id: string }).id).toBe(publikSiswa);
+            // Keputusan 93b: nama kategori & lokasi ikut terkirim — Siswa/OSIS tak memegang location.view.
+            expect(hasil.rows[0]).toMatchObject({ kategori_nama: "Kategori Uji Katalog", lokasi: { ruang: "Ruang Uji Katalog", gedung: "Gedung Uji Katalog" } });
+            expect("ruang_nama" in (hasil.rows[0] as object)).toBe(false);
         });
 
         it("scope all (mis. Petugas) melihat aset boleh_dipinjam_siswa=false juga", async () => {

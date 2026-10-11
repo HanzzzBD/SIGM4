@@ -53,7 +53,7 @@ describe("registri navigasi", () => {
     });
 
     it("entri dirender hanya bila halamannya terdaftar DAN permission dipegang; grup kosong hilang", () => {
-        expect(navigasiTerlihat(semua("dashboard.view", "user.view", "asset.view")).map((g) => [g.label, g.entri.map((e) => e.label)])).toEqual([["Beranda", ["Dashboard"]]]);
+        expect(navigasiTerlihat(semua("dashboard.view", "user.view", "material.view")).map((g) => [g.label, g.entri.map((e) => e.label)])).toEqual([["Beranda", ["Dashboard"]]]);
         expect(navigasiTerlihat(semua("user.view"))).toEqual([]);
     });
 

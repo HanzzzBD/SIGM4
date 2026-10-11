@@ -11,7 +11,8 @@ import { muatApprovalInboxPage, muatApprovalRulesPage, muatDecisionPage, muatEdi
 import { muatDashboardPage } from "../modules/m15-dashboard";
 import { loadNotificationCenterPage, loadPreferencesPage } from "../modules/m17-notifications";
 import type { PencarianNotifikasi } from "../modules/m17-notifications";
-import { loadAddAssetPage, loadAssetImportPage, loadAssetMovementPage, loadCategoryPage, loadEditAssetPage } from "../modules/m04-assets";
+import { loadAddAssetPage, loadAssetDetailPage, loadAssetImportPage, loadAssetMovementPage, loadCategoryPage, loadEditAssetPage, loadInventoryPage } from "../modules/m04-assets";
+import type { SaringanKatalog, TabAset } from "../modules/m04-assets";
 import { RingkasanReservasi, loadReservationDetailPage, loadReservationListPage, loadReservationWizardPage, loadRoomBlocksPanel, loadRoomCalendarPage } from "../modules/m07-reservation-room";
 import type { IsianWizard, PencarianDaftar, PencarianKalender, PilihanSlot, ReservasiSlot } from "../modules/m07-reservation-room";
 import type { ReservationDetail, RoomReservationCreated } from "@sigm4/schemas";
@@ -89,6 +90,20 @@ export const HalamanDaftarReservasi = (props: { readonly pencarian: PencarianDaf
 export const HalamanDetailReservasi = (props: { readonly id: string; readonly terkirim: boolean; readonly onUlang: (d: ReservationDetail) => void }) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat detail reservasi" baris={8} />}>
         <ReservationDetailPage {...props} />
+    </Suspense>
+);
+const InventoryPage = lazy(loadInventoryPage);
+const AssetDetailPage = lazy(loadAssetDetailPage);
+/** P-15 Inventaris Aset (FR-04.2; PR-02-45). */
+export const HalamanInventaris = (props: { readonly pencarian: SaringanKatalog; readonly onPencarian: (p: Partial<SaringanKatalog>) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat inventaris aset" baris={6} />}>
+        <InventoryPage {...props} />
+    </Suspense>
+);
+/** P-18 Detail Aset (FR-04.2 langkah 5; PR-02-45). */
+export const HalamanDetailAset = (props: { readonly id: string; readonly tab: TabAset; readonly riwayatPage: number; readonly onRiwayatPage: (p: number) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat detail aset" baris={8} />}>
+        <AssetDetailPage {...props} />
     </Suspense>
 );
 const AddAssetPage = lazy(loadAddAssetPage);

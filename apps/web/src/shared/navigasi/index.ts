@@ -17,8 +17,12 @@ export const HALAMAN_TERDAFTAR: Readonly<Record<string, string>> = {
     "P-11": "/tidak-ditemukan",
     "P-12": "/",
     "P-13": "/notifikasi",
+    "P-15": "/aset",
     "P-16": "/aset/baru",
     "P-17": "/aset/impor",
+    "P-18": "/aset/$id",
+    /** Tab Riwayat P-18 sebagai segmen URL (UXP-01). */
+    "P-18 · Riwayat": "/aset/$id/riwayat",
     "P-19": "/aset/$id/ubah",
     "P-20": "/aset/mutasi",
     "P-21": "/kategori-aset",
