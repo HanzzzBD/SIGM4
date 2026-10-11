@@ -11,23 +11,28 @@ import type { AuthContext } from "../../../shared/auth/index.js";
 import { BaseRepository, defineRepository } from "../../../shared/db/index.js";
 import type { QueryExecutor } from "../../../shared/db/index.js";
 
+/**
+ * Kolom entri. `user_nama` = nama yang tersimpan pada entri (pelaku sistem/CLI) atau, bila kosong, nama pengguna
+ * pelaku saat ini (`AuditLogger.write` tidak menyimpan nama pengguna terautentikasi) — P-73/P-74 menampilkan
+ * pelaku, bukan sekadar ID (FR-18.2). Entri tidak diubah: hanya dibaca dengan LEFT JOIN.
+ */
 const KOLOM_LOG = [
-    "id",
-    "waktu",
-    "user_id",
-    "user_nama",
-    "role",
-    "ip",
-    "user_agent",
-    "modul",
-    "aksi",
-    "entitas",
-    "entitas_id",
-    "nilai_sebelum",
-    "nilai_sesudah",
-    "keterangan",
-    "hasil",
-    "request_id",
+    "l.id",
+    "l.waktu",
+    "l.user_id",
+    sql<string | null>`coalesce(l.user_nama, u.nama)`.as("user_nama"),
+    "l.role",
+    "l.ip",
+    "l.user_agent",
+    "l.modul",
+    "l.aksi",
+    "l.entitas",
+    "l.entitas_id",
+    "l.nilai_sebelum",
+    "l.nilai_sesudah",
+    "l.keterangan",
+    "l.hasil",
+    "l.request_id",
 ] as const;
 
 export interface ActivityLogRow {
@@ -77,16 +82,16 @@ export class ActivityLogRepository extends BaseRepository {
     }
 
     private dasar(ctx: AuthContext, filter: ActivityLogFilter) {
-        let q = this.query(ctx).selectFrom("activity_logs");
-        if (filter.dari !== undefined) q = q.where("waktu", ">=", filter.dari);
-        if (filter.sampai !== undefined) q = q.where("waktu", "<=", filter.sampai);
-        if (filter.userId !== undefined) q = q.where("user_id", "=", String(filter.userId));
-        if (filter.role !== undefined) q = q.where("role", "=", filter.role);
-        if (filter.modul !== undefined) q = q.where("modul", "=", filter.modul);
-        if (filter.aksi !== undefined) q = q.where("aksi", "=", filter.aksi);
-        if (filter.entitas !== undefined) q = q.where("entitas", "=", filter.entitas);
+        let q = this.query(ctx).selectFrom("activity_logs as l").leftJoin("users as u", "u.id", "l.user_id");
+        if (filter.dari !== undefined) q = q.where("l.waktu", ">=", filter.dari);
+        if (filter.sampai !== undefined) q = q.where("l.waktu", "<=", filter.sampai);
+        if (filter.userId !== undefined) q = q.where("l.user_id", "=", String(filter.userId));
+        if (filter.role !== undefined) q = q.where("l.role", "=", filter.role);
+        if (filter.modul !== undefined) q = q.where("l.modul", "=", filter.modul);
+        if (filter.aksi !== undefined) q = q.where("l.aksi", "=", filter.aksi);
+        if (filter.entitas !== undefined) q = q.where("l.entitas", "=", filter.entitas);
         if (filter.entitasId !== undefined)
-            q = q.where("entitas_id", "=", String(filter.entitasId));
+            q = q.where("l.entitas_id", "=", String(filter.entitasId));
         return q;
     }
 
@@ -95,8 +100,8 @@ export class ActivityLogRepository extends BaseRepository {
         const [rows, hitung] = await Promise.all([
             this.dasar(ctx, filter)
                 .select(KOLOM_LOG)
-                .orderBy("waktu", "desc")
-                .orderBy("id", "desc")
+                .orderBy("l.waktu", "desc")
+                .orderBy("l.id", "desc")
                 .limit(filter.perPage)
                 .offset((filter.page - 1) * filter.perPage)
                 .execute(),
@@ -120,10 +125,15 @@ export class ActivityLogRepository extends BaseRepository {
     ): Promise<readonly ActivityLogRow[]> {
         return this.dasar(ctx, filter)
             .select(KOLOM_LOG)
-            .orderBy("waktu", "desc")
-            .orderBy("id", "desc")
+            .orderBy("l.waktu", "desc")
+            .orderBy("l.id", "desc")
             .limit(batas)
             .execute();
+    }
+
+    /** FR-18.2 langkah 4 (P-74): satu entri; `undefined` bila tidak ada. */
+    async findById(ctx: AuthContext, id: number): Promise<ActivityLogRow | undefined> {
+        return this.query(ctx).selectFrom("activity_logs as l").leftJoin("users as u", "u.id", "l.user_id").select(KOLOM_LOG).where("l.id", "=", String(id)).executeTakeFirst();
     }
 }
 

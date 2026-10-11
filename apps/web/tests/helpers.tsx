@@ -37,7 +37,8 @@ export function pasangServer(penangan: Penangan, klien: AxiosInstance = api): Pe
         log.push(p);
         const j = await penangan(p);
         const respons: AxiosResponse = { status: j.status, statusText: String(j.status), data: j.data ?? null, headers: new AxiosHeaders(j.headers ?? {}), config };
-        if (j.status >= 400) throw new AxiosError(`HTTP ${String(j.status)}`, "ERR_BAD_RESPONSE", config, {}, respons);
+        // Semantik axios: `validateStatus` menentukan galat (bawaan: status ≥ 400).
+        if (!(config.validateStatus ?? ((st: number) => st < 400))(j.status)) throw new AxiosError(`HTTP ${String(j.status)}`, "ERR_BAD_RESPONSE", config, {}, respons);
         return respons;
     };
     return log;

@@ -10,7 +10,7 @@ import type { AuthContext } from "../../../shared/auth/index.js";
 import type { AuditLogger } from "../../../shared/audit/index.js";
 import type { Database } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
-import { DomainError } from "../../../shared/errors/index.js";
+import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
 import type {
     ActivityLogFilter,
     ActivityLogRow,
@@ -102,6 +102,23 @@ export class ActivityLogService {
         private readonly db: Kysely<Database>,
         private readonly audit: AuditLogger,
     ) {}
+
+    /**
+     * `GET /activity-logs/{id}` (FR-18.2 langkah 4, P-74). Membuka entri adalah akses terhadap log itu sendiri:
+     * tercatat `ACTIVITY_LOG_VIEWED` (m18 §11) dalam transaksi yang sama.
+     */
+    async get(ctx: AuthContext, id: number): Promise<ActivityLogRow> {
+        return withTransaction(
+            ctx,
+            async (scope) => {
+                const entri = await createActivityLogRepository(scope.tx).findById(scope.ctx, id);
+                if (entri === undefined) throw new NotFoundError("Entri activity log tidak ditemukan.");
+                await this.audit.write(scope, { modul: MODUL, aksi: "ACTIVITY_LOG_VIEWED", entitas: "activity_logs", entitasId: id, nilaiSesudah: { entri_id: id } });
+                return entri;
+            },
+            this.db,
+        );
+    }
 
     /** `GET /activity-logs` (FR-18.2 langkah 2-4). */
     async list(ctx: AuthContext, filter: ListActivityLogsFilter): Promise<ListActivityLogsResult> {

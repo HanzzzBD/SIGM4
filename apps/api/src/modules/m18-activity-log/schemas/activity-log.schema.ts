@@ -76,6 +76,14 @@ const PaginationMetaSchema = z.object({
     total_pages: z.number(),
 });
 
+export const ActivityLogIdParamSchema = z.object({ id: z.coerce.number().int().positive() });
+
+export const SingleActivityLogResponseSchema = z.object({
+    success: z.literal(true),
+    data: ActivityLogSchema,
+    meta: z.null(),
+});
+
 export const ListActivityLogsResponseSchema = z.object({
     success: z.literal(true),
     data: z.array(ActivityLogSchema),

@@ -93,7 +93,8 @@ export default function UserDetailPage({ id, aksi, onAksi }: { readonly id: stri
     };
     const ubah = useMutation({ mutationFn: (isian: IsianPengguna) => ubahPengguna(id, isian), onSuccess: (u) => { segarkan(u); setPesan("Perubahan pengguna tersimpan."); onAksi(undefined); } });
     const status = useMutation({ mutationFn: (alasan: string) => ubahStatus(id, kueri.data?.status === "AKTIF" ? "NONAKTIF" : "AKTIF", kueri.data?.status === "AKTIF" ? alasan : undefined), onSuccess: (u) => { segarkan(u); setPesan(`Pengguna ${LABEL_STATUS[u.status].toLowerCase()}.`); onAksi(undefined); } });
-    const riwayat = jalurDrilldown(`P-73?entitas=users&entitas_id=${id}`);
+    // FR-18.2 A2: Riwayat Perubahan hanya bagi pemegang activity_log.view (P-73), dan hanya bila P-73 terdaftar.
+    const riwayat = can("activity_log.view") ? jalurDrilldown(`P-73?entitas=users&entitas_id=${id}`) : null;
 
     if (kueri.isPending) return <KeadaanMemuat baris={6} label="Memuat pengguna" />;
     if (kueri.isError) return <KeadaanGalat galat={kueri.error} onCobaLagi={() => void kueri.refetch()} />;

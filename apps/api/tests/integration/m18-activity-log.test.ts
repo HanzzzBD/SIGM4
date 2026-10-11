@@ -320,3 +320,58 @@ describe.skipIf(!ADA_DB)("PR-01-09 — ekspor activity log (acceptance)", () => 
         expect(log).toBeUndefined();
     });
 });
+
+describe.skipIf(!ADA_DB)("PR-01-25 — detail entri activity log (acceptance)", () => {
+    beforeAll(() => {
+        dbmate("up");
+    });
+
+    it("katalog endpoint: GET /activity-logs/:id berpermission activity_log.view", () => {
+        const route = registry.all().find((r) => r.method === "GET" && r.path === "/activity-logs/:id");
+        expect(route).toMatchObject({ permission: "activity_log.view" });
+    });
+
+    it("get(): mengembalikan entri beserta nilai sebelum/sesudah apa adanya (FR-18.2 langkah 4)", async () => {
+        const adminId = await seedAdmin();
+        const id = await seedLog({ waktu: new Date("2026-09-10T12:00:00Z"), modul: kodeUnik("m-uji"), aksi: "ROLE_PERMISSION_UPDATED", entitas: "roles", entitasId: 4 });
+        await kueri(`UPDATE activity_logs SET nilai_sebelum = '[{"kode":"user.view","scope":"ALL"}]', nilai_sesudah = '[{"kode":"user.view","scope":"OWN"}]' WHERE id = ${id}`);
+        const entri = await buatService().get(buatCtx(adminId), Number(id));
+        expect(entri).toMatchObject({ id, aksi: "ROLE_PERMISSION_UPDATED", entitas: "roles", entitas_id: "4", nilai_sebelum: [{ kode: "user.view", scope: "ALL" }], nilai_sesudah: [{ kode: "user.view", scope: "OWN" }] });
+    });
+
+    it("get(): membuka entri tercatat ACTIVITY_LOG_VIEWED berentitas entri itu (m18 §11, AL-01)", async () => {
+        const adminId = await seedAdmin();
+        const id = await seedLog({ waktu: new Date("2026-09-10T12:00:00Z"), modul: kodeUnik("m-uji"), aksi: kodeUnik("AKSI_UJI") });
+        await buatService().get(buatCtx(adminId), Number(id));
+        const [log] = await kueri<{ aksi: string; entitas: string; entitas_id: string }>(`
+            SELECT aksi, entitas, entitas_id::text FROM activity_logs
+             WHERE user_id = ${adminId} AND aksi = 'ACTIVITY_LOG_VIEWED' ORDER BY id DESC LIMIT 1`);
+        expect(log).toEqual({ aksi: "ACTIVITY_LOG_VIEWED", entitas: "activity_logs", entitas_id: id });
+    });
+
+    it("get(): entri tidak ada → NotFoundError, tanpa entri ACTIVITY_LOG_VIEWED", async () => {
+        const adminId = await seedAdmin();
+        await expect(buatService().get(buatCtx(adminId), 999_999_999)).rejects.toMatchObject({ name: "NotFoundError" });
+        const [log] = await kueri<{ n: string }>(`SELECT count(*)::text AS n FROM activity_logs WHERE user_id = ${adminId} AND aksi = 'ACTIVITY_LOG_VIEWED'`);
+        expect(log?.n).toBe("0");
+    });
+});
+
+describe.skipIf(!ADA_DB)("PR-01-25 — nama pelaku (temuan inspeksi R1)", () => {
+    beforeAll(() => {
+        dbmate("up");
+    });
+
+    it("entri dari AuditLogger.write (pengguna terautentikasi, user_nama tak tersimpan) tampil dengan nama penggunanya", async () => {
+        const adminId = await seedAdmin();
+        const [admin] = await kueri<{ nama: string }>(`SELECT nama FROM users WHERE id = ${adminId}`);
+        // Penelusuran ini sendiri menulis ACTIVITY_LOG_VIEWED lewat AuditLogger.write (user_nama NULL di baris).
+        await buatService().list(buatCtx(adminId), { page: 1, perPage: 1 });
+        const [mentah] = await kueri<{ user_nama: string | null }>(`SELECT user_nama FROM activity_logs WHERE user_id = ${adminId} AND aksi = 'ACTIVITY_LOG_VIEWED' ORDER BY id DESC LIMIT 1`);
+        expect(mentah?.user_nama).toBeNull();
+        const hasil = await buatService().list(buatCtx(adminId), { page: 1, perPage: 5, userId: adminId, aksi: "ACTIVITY_LOG_VIEWED" });
+        expect(hasil.rows[0]?.user_nama).toBe(admin?.nama);
+        const detail = await buatService().get(buatCtx(adminId), Number(hasil.rows[0]?.id));
+        expect(detail.user_nama).toBe(admin?.nama);
+    });
+});

@@ -5,6 +5,7 @@ export type { ActivityLogModuleDeps } from "./routes.js";
 export {
     activityLogRouter,
     exportActivityLogsRoute,
+    getActivityLogRoute,
     listActivityLogsRoute,
 } from "./routes.js";
 export type { EntriTerbaru } from "./services/dashboard-source.js";
