@@ -144,6 +144,17 @@ export default function AssetDetailPage({ id, tab, riwayatPage, onRiwayatPage }:
                         </Link>
                     )
                 )}
+                {/* UX §7.6.3 aksi utama: Ubah (P-19, PR-02-46) · Cetak Label QR (P-24, PR-03-28) — tampil saat route-nya terdaftar. */}
+                {aksiTransaksi && can("asset.qr_print") && jalurTerdaftar("/label-qr") && (
+                    <a href={`/label-qr?aset=${id}`} className="inline-flex min-h-control-md items-center rounded-md border border-border-strong px-4 text-base font-medium text-text-primary hover:bg-neutral-50">
+                        Cetak Label QR
+                    </a>
+                )}
+                {aksiTransaksi && can("asset.update") && jalurTerdaftar(`/aset/${id}/ubah`) && (
+                    <a href={`/aset/${id}/ubah`} className="inline-flex min-h-control-md items-center rounded-md bg-teal-600 px-4 text-base font-medium text-text-inverse hover:bg-teal-700">
+                        Ubah
+                    </a>
+                )}
             </header>
 
             {d.dihapuskan && (
