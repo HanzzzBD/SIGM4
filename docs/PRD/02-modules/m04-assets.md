@@ -194,7 +194,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | POST | `/assets` | `asset.create` | Buat aset (mendukung `jumlah_unit` untuk N record) |
 | GET | `/assets/{id}` | `asset.view` | Detail aset — identitas lengkap, QR, kategori & lokasi (FR-04.2 langkah 5) |
 | GET | `/assets/{id}/timeline` | `asset.view` | Linimasa riwayat aset terpaginasi: kondisi, mutasi, dan riwayat yang diisi modul lain (peminjaman, pemeliharaan, kerusakan, dokumen) — jenis sensitif disembunyikan bagi scope `restricted` (FR-04.2 langkah 5, A1) |
-| PUT | `/assets/{id}` | `asset.update` | Perbarui aset |
+| PUT | `/assets/{id}` | `asset.update` | Perbarui atribut deskriptif aset (nama, merek, model, nomor seri, tahun, kelayakan pinjam, penanggung jawab; perolehan hanya bagi `asset.view_financial`) — kategori, lokasi, kode, status tetap. `kondisi` opsional: bila berubah, `alasan` wajib, menuntut juga `asset.update_condition`, dan dijalankan atomik bersama atribut (FR-04.3) |
 | PATCH | `/assets/{id}/condition` | `asset.update` | Ubah kondisi + alasan |
 | POST | `/assets/move` | `asset.update` | Mutasi lokasi (massal) |
 | GET | `/assets/movements/{id}/document` | `asset_movement_document.view` | Status dan data tetap berita acara satu operasi mutasi |

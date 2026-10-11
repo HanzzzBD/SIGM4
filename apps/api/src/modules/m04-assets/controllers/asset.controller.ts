@@ -10,6 +10,7 @@ import {
     ListRoomAssetsQuerySchema,
     MoveAssetsBodySchema,
     RoomIdParamSchema,
+    UpdateAssetBodySchema,
     UpdateAssetConditionBodySchema,
 } from "../schemas/asset.schema.js";
 import type { AssetService } from "../services/asset.service.js";
@@ -159,5 +160,29 @@ export function moveAssetsHandler(service: AssetService, dasarQr: string): Reque
         });
         res.status(200).json({ success: true, data: denganQr(dasarQr, hasil.assets),
             meta: { jumlah_aset: hasil.assets.length, berita_acara: { id: hasil.documentId, status: "MENUNGGU" } } });
+    };
+}
+
+/** `PUT /assets/{id}` (FR-04.3; PR-02-46): atribut deskriptif + kondisi opsional, atomik. */
+export function updateAssetHandler(service: AssetService, dasarQr: string): RequestHandler {
+    return async (req, res) => {
+        const ctx = requireAuthContext(res);
+        const { id } = AssetIdParamSchema.parse(req.params);
+        const b = UpdateAssetBodySchema.parse(req.body);
+        const aset = await service.perbarui(ctx, id, {
+            atribut: {
+                nama: b.nama,
+                merek: b.merek,
+                model: b.model,
+                nomorSeri: b.nomor_seri,
+                tahunPerolehan: b.tahun_perolehan,
+                dapatDipinjam: b.dapat_dipinjam,
+                bolehDipinjamSiswa: b.boleh_dipinjam_siswa,
+                penanggungJawabId: b.penanggung_jawab_id,
+                ...(b.sumber_perolehan === undefined ? {} : { sumberPerolehan: b.sumber_perolehan, nilaiPerolehan: b.nilai_perolehan ?? null }),
+            },
+            ...(b.kondisi === undefined ? {} : { kondisi: { kondisi: b.kondisi, alasan: b.alasan ?? "", referensiJenis: b.referensi_jenis ?? null, referensiId: b.referensi_id ?? null } }),
+        });
+        res.status(200).json({ success: true, data: denganQr(dasarQr, [aset])[0], meta: null });
     };
 }

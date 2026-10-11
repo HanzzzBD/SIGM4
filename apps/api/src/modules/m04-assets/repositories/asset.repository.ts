@@ -76,6 +76,20 @@ export interface AssetRow {
     readonly created_at: Date;
 }
 
+export interface AtributAset {
+    readonly nama: string;
+    readonly merek: string | null;
+    readonly model: string | null;
+    readonly nomorSeri: string | null;
+    readonly tahunPerolehan: number;
+    readonly dapatDipinjam: boolean;
+    readonly bolehDipinjamSiswa: boolean;
+    readonly penanggungJawabId: number | null;
+    /** BR-073: hanya ada bila pemanggil memegang `asset.view_financial`. */
+    readonly sumberPerolehan?: AssetRow["sumber_perolehan"];
+    readonly nilaiPerolehan?: number | null;
+}
+
 export interface AssetFields {
     readonly importJobId?: string;
     readonly kodeBarang: string;
@@ -384,6 +398,42 @@ export class AssetRepository extends BaseRepository {
     }
 
     /** `PATCH /assets/{id}/condition` (FR-04.3 langkah 1): baris lengkap, termasuk `status` saat ini. */
+    /** `PUT /assets/{id}` (PR-02-46): baris aset terkunci + penanda terhapuskan. */
+    async kunciUntukUbah(ctx: AuthContext, id: number): Promise<(AssetRow & { readonly dihapuskan: boolean }) | undefined> {
+        return this.query(ctx)
+            .selectFrom("assets")
+            .select([...KOLOM_ASSET, "dihapuskan"])
+            .where("id", "=", String(id))
+            .forUpdate()
+            .executeTakeFirst();
+    }
+
+    /** BR-003 pada penyuntingan: nomor seri unik di antara aset LAIN. */
+    async nomorSeriDipakaiLain(ctx: AuthContext, nomorSeri: string, id: number): Promise<boolean> {
+        return (await this.query(ctx).selectFrom("assets").select("id").where("nomor_seri", "=", nomorSeri).where("id", "!=", String(id)).executeTakeFirst()) !== undefined;
+    }
+
+    /** Atribut deskriptif FR-04.3 langkah 2 (keputusan 93e) — lokasi, kondisi, status, kode, dan kategori tidak di sini. */
+    async updateAtribut(ctx: AuthContext, id: number, data: AtributAset): Promise<AssetRow> {
+        return this.query(ctx)
+            .updateTable("assets")
+            .set({
+                nama: data.nama,
+                merek: data.merek,
+                model: data.model,
+                nomor_seri: data.nomorSeri,
+                tahun_perolehan: data.tahunPerolehan,
+                dapat_dipinjam: data.dapatDipinjam,
+                boleh_dipinjam_siswa: data.bolehDipinjamSiswa,
+                penanggung_jawab_id: data.penanggungJawabId,
+                ...(data.sumberPerolehan === undefined ? {} : { sumber_perolehan: data.sumberPerolehan, nilai_perolehan: data.nilaiPerolehan ?? null }),
+                updated_by: ctx.userId,
+            })
+            .where("id", "=", String(id))
+            .returning(KOLOM_ASSET)
+            .executeTakeFirstOrThrow();
+    }
+
     async findById(ctx: AuthContext, id: number): Promise<AssetRow | undefined> {
         return this.query(ctx)
             .selectFrom("assets")
