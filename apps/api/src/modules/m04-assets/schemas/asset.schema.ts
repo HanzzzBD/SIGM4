@@ -228,3 +228,28 @@ export const ListAssetsResponseSchema = z.object({
         total_pages: z.number(),
     }),
 });
+
+/**
+ * `PUT /assets/{id}` (FR-04.3 langkah 2–3; PR-02-46, keputusan 93e/93f log phase-02). Ganti utuh
+ * atribut deskriptif; `sumber_perolehan`/`nilai_perolehan` opsional (hanya pemegang
+ * `asset.view_financial`, BR-073). `kondisi` opsional — bila berubah, `alasan` wajib (aturan bisnis
+ * → 422 di layanan, SDD-API §4.4). Lokasi, kategori, kode, status tidak diterima (`strictObject`).
+ */
+export const UpdateAssetBodySchema = z.strictObject({
+    nama: z.string().trim().min(1).max(150),
+    merek: z.string().trim().min(1).max(100).nullable(),
+    model: z.string().trim().min(1).max(100).nullable(),
+    nomor_seri: z.string().trim().min(1).max(100).nullable(),
+    tahun_perolehan: z.coerce.number().int().min(1900).max(2100),
+    dapat_dipinjam: z.boolean(),
+    boleh_dipinjam_siswa: z.boolean(),
+    penanggung_jawab_id: z.coerce.number().int().positive().nullable(),
+    sumber_perolehan: SumberPerolehanSchema.optional(),
+    nilai_perolehan: z.coerce.number().nonnegative().nullable().optional(),
+    kondisi: AssetConditionSchema.optional(),
+    alasan: z.string().trim().max(500).optional(),
+    referensi_jenis: z.string().trim().min(1).max(50).nullable().optional(),
+    referensi_id: z.coerce.number().int().positive().nullable().optional(),
+});
+
+export const UpdateAssetResponseSchema = UpdateAssetConditionResponseSchema;

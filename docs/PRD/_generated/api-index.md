@@ -173,7 +173,7 @@
 | PUT | `/academic-years/{id}` | `setting.manage` | Sunting nama, rentang tanggal, dan semester tahun ajaran | [M-20](../02-modules/m20-settings.md) |
 | PUT | `/approval-rules/{id}` | `approval_rule.manage` | Ganti definisi aturan utuh; `versi` naik, instance berjalan tetap memakai snapshot (FR-10.1 A4, BR-040) | [M-10](../02-modules/m10-approval.md) |
 | PUT | `/asset-categories/{id}` | `category.manage` | Perbarui kategori | [M-04](../02-modules/m04-assets.md) |
-| PUT | `/assets/{id}` | `asset.update` | Perbarui aset | [M-04](../02-modules/m04-assets.md) |
+| PUT | `/assets/{id}` | `asset.update` | Perbarui atribut deskriptif aset (nama, merek, model, nomor seri, tahun, kelayakan pinjam, penanggung jawab; perolehan hanya bagi `asset.view_financial`) — kategori, lokasi, kode, status tetap. `kondisi` opsional: bila berubah, `alasan` wajib, menuntut juga `asset.update_condition`, dan dijalankan atomik bersama atribut (FR-04.3) | [M-04](../02-modules/m04-assets.md) |
 | PUT | `/holidays/{id}` | `setting.manage` | Sunting hari libur | [M-20](../02-modules/m20-settings.md) |
 | PUT | `/me` | Bearer | Perbarui profil sendiri — nama, telepon, `foto_file_id` (berkas `USER_PHOTO` milik pemanggil yang sudah dikonfirmasi; `null` menghapus foto) | 200 | 401, 422 | [M-01](../02-modules/m01-auth.md) |
 | PUT | `/notifications/preferences` | `notification.manage_own` | Atur preferensi notifikasi | [M-17](../02-modules/m17-notifications.md) |

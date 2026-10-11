@@ -18,6 +18,7 @@ export {
     listRoomAssetsRoute,
     moveAssetsRoute,
     updateAssetConditionRoute,
+    updateAssetRoute,
 } from "./routes.js";
 export type { RingkasanAset } from "./services/dashboard-source.js";
 export { ringkasanAset } from "./services/dashboard-source.js";

@@ -12,6 +12,7 @@ import { Link, Outlet, createRootRouteWithContext, createRoute, createRouter, re
 // zod/mini: API skema yang sama dengan bundel jauh lebih kecil (NFR-P-03, SDD-11 §4.7).
 import { z } from "zod/mini";
 import { ambilTantangan } from "../modules/m01-auth";
+import { jalurTerdaftar } from "../shared/navigasi";
 import { TAMPILAN, detailReservasiQuery, hariIniWib, isianDariReservasi, isianDariSlot } from "../modules/m07-reservation-room";
 import { RENTANG } from "../modules/m15-dashboard";
 import { KELOMPOK, TAMPILAN_NOTIFIKASI } from "../modules/m17-notifications";
@@ -27,6 +28,9 @@ import {
     HalamanGantiPassword,
     HalamanLogin,
     HalamanImporAset,
+    HalamanKategoriAset,
+    HalamanTambahAset,
+    HalamanUbahAset,
     HalamanKalenderRuangan,
     HalamanMutasiAset,
     HalamanPanelBlokade,
@@ -379,6 +383,27 @@ const detailKeputusanRoute = createRoute({
     },
 });
 
+/** P-16 Tambah Aset (FR-04.1, UX §6 `/aset/baru`; PR-02-46). */
+const tambahAsetRoute = createRoute({ getParentRoute: () => shellRoute, path: "/aset/baru", beforeLoad: butuhIzin("asset.create"), component: HalamanTambahAset });
+
+/** P-19 Ubah Aset (FR-04.3, UX §6 `/aset/{id}/ubah`; PR-02-46). Selesai/batal kembali ke P-18 bila terdaftar. */
+const ubahAsetRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/aset/$id/ubah",
+    beforeLoad: async (a) => {
+        if (!/^[1-9]\d*$/.test(a.params.id)) throw redirect({ to: "/tidak-ditemukan" });
+        await butuhIzin("asset.update")(a);
+    },
+    component: function RouteUbahAset() {
+        const { id } = ubahAsetRoute.useParams();
+        const navigate = useNavigate();
+        return <HalamanUbahAset key={id} id={id} onSelesai={() => void navigate({ href: jalurTerdaftar(`/aset/${id}`) ? `/aset/${id}` : "/" })} />;
+    },
+});
+
+/** P-21 Kategori Aset (FR-04.5, UX §6 `/kategori-aset`; PR-02-46). */
+const kategoriAsetRoute = createRoute({ getParentRoute: () => shellRoute, path: "/kategori-aset", beforeLoad: butuhIzin("category.manage"), component: HalamanKategoriAset });
+
 export const routeTree = rootRoute.addChildren([
     loginRoute,
     verifikasiDuaFaktorRoute,
@@ -386,7 +411,7 @@ export const routeTree = rootRoute.addChildren([
     gantiPasswordRoute,
     gangguanRoute,
     tidakDitemukanRoute,
-    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    shellRoute.addChildren([dashboardRoute, tambahAsetRoute, ubahAsetRoute, kategoriAsetRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {
