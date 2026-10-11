@@ -189,3 +189,13 @@ describe("Sidebar Pengguna & Role — tujuan cadangan (UX §5.3)", () => {
         expect(within(nav).getByRole("link", { name: "Pengguna & Role" }).getAttribute("href")).toBe("/role");
     });
 });
+
+describe("Perbaikan: scope permission inti Administrator terkunci (FR-02.2 A1, SDD-AUTH-10)", () => {
+    it("pemilih cakupan data permission inti Administrator nonaktif; permission bukan inti tetap dapat diubah", async () => {
+        server();
+        await renderAplikasi("/role/1");
+        await screen.findByRole("heading", { name: /Administrator/ });
+        expect((screen.getByLabelText("Cakupan data: Mengubah matriks permission") as HTMLSelectElement).disabled).toBe(true);
+        expect((screen.getByLabelText("Cakupan data: Melihat role & matriks permission") as HTMLSelectElement).disabled).toBe(false);
+    });
+});

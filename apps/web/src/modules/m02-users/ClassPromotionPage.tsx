@@ -4,7 +4,7 @@
 // berkewajiban aktif tampil sebagai daftar terblokir (SL-04).
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useCan } from "../../shared/auth";
 import { jalurDrilldown } from "../../shared/navigasi";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
@@ -30,17 +30,25 @@ export default function ClassPromotionPage() {
     const [pilih, setPilih] = useState<Record<string, PilihanSiswa>>({});
     const [terpilih, setTerpilih] = useState<ReadonlySet<string>>(new Set());
     const [massal, setMassal] = useState("");
+    // Tahun ajaran yang sedang dipilih — dibaca penangan sukses agar hasil sebuah proses tidak mengubah draf tahun lain.
+    const tahunTerkini = useRef(tahunId);
+    tahunTerkini.current = tahunId;
     const proses = useMutation({
-        mutationFn: (items: ItemKenaikan[]) => prosesKenaikan(Number(tahunId), items),
+        // Tahun ajaran ikut dikirim sebagai variabel: hasil SELALU milik tahun yang diproses (SL-02).
+        mutationFn: (v: { readonly tahun: string; readonly items: ItemKenaikan[] }) => prosesKenaikan(Number(v.tahun), v.items),
         // Siswa yang berhasil dikeluarkan dari antrean & pilihan: batch berikutnya tidak mengirim ulang mereka;
-        // yang gagal tetap tersisa untuk dikoreksi.
-        onSuccess: (h) => {
+        // yang gagal tetap tersisa untuk dikoreksi. Hanya bila draf yang terbuka masih milik tahun yang diproses.
+        onSuccess: (h, v) => {
+            if (tahunTerkini.current !== v.tahun) return;
             const selesai = new Set(h.baris.filter((b) => b.status === "SUKSES").map((b) => String(b.user_id)));
             setPilih((p) => Object.fromEntries(Object.entries(p).filter(([id]) => !selesai.has(id))));
             setTerpilih((t) => new Set([...t].filter((id) => !selesai.has(id))));
         },
     });
     const daftar = jalurDrilldown("P-60");
+    // Selama proses berjalan, tahun ajaran, pilihan, tindakan, dan halaman dikunci: mengganti tahun di tengah proses
+    // dapat mengaitkan hasil dengan tahun yang salah.
+    const terkunci = proses.isPending;
 
     if (!siap)
         return (
@@ -69,13 +77,13 @@ export default function ClassPromotionPage() {
                 <KeadaanGalat galat={tahun.error ?? kelas.error ?? roles.error} onCobaLagi={() => { void tahun.refetch(); void kelas.refetch(); void roles.refetch(); }} />
             ) : (
                 <section aria-label="Pengaturan proses" className="grid grid-cols-1 gap-3 rounded-md border border-border-subtle bg-surface-default p-4 md:grid-cols-3">
-                    <Pilihan label="Tahun ajaran" required kosong="Pilih tahun ajaran" value={tahunId} opsi={(tahun.data ?? []).map((t) => ({ nilai: t.id, label: t.is_active ? `${t.nama} (aktif)` : t.nama }))} onChange={(e) => { setTahunId(e.target.value); setPilih({}); setTerpilih(new Set()); proses.reset(); }} />
-                    <Pilihan label="Kelas untuk siswa terpilih" kosong="Pilih kelas" value={massal} opsi={opsiKelas} onChange={(e) => setMassal(e.target.value)} />
+                    <Pilihan label="Tahun ajaran" required kosong="Pilih tahun ajaran" value={tahunId} disabled={terkunci} opsi={(tahun.data ?? []).map((t) => ({ nilai: t.id, label: t.is_active ? `${t.nama} (aktif)` : t.nama }))} onChange={(e) => { setTahunId(e.target.value); setPilih({}); setTerpilih(new Set()); proses.reset(); }} />
+                    <Pilihan label="Kelas untuk siswa terpilih" kosong="Pilih kelas" value={massal} disabled={terkunci} opsi={opsiKelas} onChange={(e) => setMassal(e.target.value)} />
                     <div className="flex items-end gap-2">
-                        <Tombol varian="secondary" disabled={terpilih.size === 0 || massal === ""} onClick={() => setPilih((p) => ({ ...p, ...Object.fromEntries([...terpilih].map((id) => [id, { tindakan: "NAIK", kelas: massal } as const])) }))}>
+                        <Tombol varian="secondary" disabled={terkunci || terpilih.size === 0 || massal === ""} onClick={() => setPilih((p) => ({ ...p, ...Object.fromEntries([...terpilih].map((id) => [id, { tindakan: "NAIK", kelas: massal } as const])) }))}>
                             Naikkan terpilih
                         </Tombol>
-                        <Tombol varian="secondary" disabled={terpilih.size === 0} onClick={() => setPilih((p) => ({ ...p, ...Object.fromEntries([...terpilih].map((id) => [id, { tindakan: "LULUS" } as const])) }))}>
+                        <Tombol varian="secondary" disabled={terkunci || terpilih.size === 0} onClick={() => setPilih((p) => ({ ...p, ...Object.fromEntries([...terpilih].map((id) => [id, { tindakan: "LULUS" } as const])) }))}>
                             Luluskan terpilih
                         </Tombol>
                     </div>
@@ -106,7 +114,7 @@ export default function ClassPromotionPage() {
                                 return (
                                     <tr key={s.id}>
                                         <td className={TD}>
-                                            <KotakCentang label={`Pilih ${s.nama}`} checked={terpilih.has(s.id)} onCheckedChange={(v) => setTerpilih((t) => { const n = new Set(t); if (v) n.add(s.id); else n.delete(s.id); return n; })} />
+                                            <KotakCentang label={`Pilih ${s.nama}`} checked={terpilih.has(s.id)} disabled={terkunci} onCheckedChange={(v) => setTerpilih((t) => { const n = new Set(t); if (v) n.add(s.id); else n.delete(s.id); return n; })} />
                                         </td>
                                         <th scope="row" className={`${TD} text-left font-medium`}>{s.nama}</th>
                                         <td className={`${TD} font-mono`}>{s.nip_nis}</td>
@@ -114,6 +122,7 @@ export default function ClassPromotionPage() {
                                             <Pilihan
                                                 label={`Tindakan untuk ${s.nama}`}
                                                 kosong="Tidak diproses"
+                                                disabled={terkunci}
                                                 value={p === null ? "" : p.tindakan === "LULUS" ? "LULUS" : p.kelas}
                                                 opsi={[...opsiKelas.map((k) => ({ nilai: k.nilai, label: `Naik ke ${k.label}` })), { nilai: "LULUS", label: "Tandai lulus" }]}
                                                 onChange={(e) => setPilih((x) => ({ ...x, [s.id]: e.target.value === "" ? null : e.target.value === "LULUS" ? { tindakan: "LULUS" } : { tindakan: "NAIK", kelas: e.target.value } }))}
@@ -126,9 +135,9 @@ export default function ClassPromotionPage() {
                     </table>
                     {siswa.data.meta.total_pages > 1 && (
                         <nav aria-label="Halaman siswa" className="flex items-center justify-between gap-3 p-3 text-sm text-text-secondary">
-                            <Tombol varian="secondary" disabled={page <= 1} onClick={() => setPage(page - 1)}>Sebelumnya</Tombol>
+                            <Tombol varian="secondary" disabled={terkunci || page <= 1} onClick={() => setPage(page - 1)}>Sebelumnya</Tombol>
                             <span>Halaman {page} dari {siswa.data.meta.total_pages}</span>
-                            <Tombol varian="secondary" disabled={page >= siswa.data.meta.total_pages} onClick={() => setPage(page + 1)}>Berikutnya</Tombol>
+                            <Tombol varian="secondary" disabled={terkunci || page >= siswa.data.meta.total_pages} onClick={() => setPage(page + 1)}>Berikutnya</Tombol>
                         </nav>
                     )}
                 </div>
@@ -136,7 +145,7 @@ export default function ClassPromotionPage() {
 
             {proses.isError && <Peringatan varian="error" judul="Proses ditolak">{galatIsian(proses.error).umum ?? Object.values(galatIsian(proses.error).isian).join(" ")}</Peringatan>}
             <div>
-                <Tombol disabled={tahunId === "" || items.length === 0 || items.length > BATAS_KENAIKAN} sibuk={proses.isPending} onClick={() => proses.mutate(items)}>
+                <Tombol disabled={tahunId === "" || items.length === 0 || items.length > BATAS_KENAIKAN} sibuk={proses.isPending} onClick={() => proses.mutate({ tahun: tahunId, items })}>
                     Proses {items.length} siswa
                 </Tombol>
             </div>

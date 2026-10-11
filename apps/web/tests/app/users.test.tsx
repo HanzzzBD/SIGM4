@@ -432,3 +432,29 @@ describe("P-64 Kenaikan Kelas Massal", () => {
         await waitFor(() => expect(router.state.location.pathname).toBe("/tidak-punya-akses"));
     });
 });
+
+describe("Perbaikan: P-64 tahun ajaran terkunci selama proses; P-60 halaman di luar jangkauan", () => {
+    it("selama kenaikan kelas diproses, tahun ajaran, pilihan, tindakan, dan halaman terkunci; tahun ikut dikirim", async () => {
+        let lepas: (j: Jawaban) => void = () => undefined;
+        const log = server({ promosi: () => new Promise<Jawaban>((r) => { lepas = r; }) as unknown as Jawaban });
+        const user = userEvent.setup();
+        await renderAplikasi("/pengguna/kenaikan-kelas");
+        await screen.findByRole("row", { name: /Andi Siswa/ });
+        await user.selectOptions(screen.getByLabelText("Tahun ajaran", { exact: false }), "4");
+        await user.selectOptions(screen.getByLabelText("Tindakan untuk Andi Siswa"), "LULUS");
+        await user.click(screen.getByRole("button", { name: "Proses 1 siswa" }));
+        await waitFor(() => expect((screen.getByLabelText("Tahun ajaran", { exact: false }) as HTMLSelectElement).disabled).toBe(true));
+        expect((screen.getByLabelText("Tindakan untuk Andi Siswa") as HTMLSelectElement).disabled).toBe(true);
+        expect((screen.getByRole("checkbox", { name: "Pilih Andi Siswa" }) as HTMLButtonElement).disabled).toBe(true);
+        expect(log.find((p) => p.url === "/class-promotions")?.data).toEqual({ academic_year_id: 4, items: [{ user_id: 9, tindakan: "LULUS" }] });
+        lepas(sukses({ total: 1, sukses: 1, gagal: 0, baris: [{ user_id: 9, tindakan: "LULUS", status: "SUKSES", pesan: null, kewajiban: [] }] }));
+        await waitFor(() => expect((screen.getByLabelText("Tahun ajaran", { exact: false }) as HTMLSelectElement).disabled).toBe(false));
+    });
+
+    it("P-60: halaman di luar jangkauan dikembalikan ke halaman terakhir yang ada", async () => {
+        server();
+        const { router } = await renderAplikasi("/pengguna?page=4");
+        await waitFor(() => expect(router.state.location.search).not.toHaveProperty("page"));
+        expect(await screen.findByRole("link", { name: "Bu Sari" })).toBeTruthy();
+    });
+});
