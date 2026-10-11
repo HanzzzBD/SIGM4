@@ -8,7 +8,8 @@ import { Link } from "@tanstack/react-router";
 import type { HasilPenggunaan, ReservationDetail } from "@sigm4/schemas";
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../../shared/api";
-import { useSesi } from "../../shared/auth";
+import { useCan, useSesi } from "../../shared/auth";
+import { jalurTerdaftar } from "../../shared/navigasi";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
 import { DialogKonfirmasi } from "../../shared/ui/dialog";
 import { Isian, Kartu, Lencana, Peringatan, Pilihan, Tombol } from "../../shared/ui/primitives";
@@ -75,6 +76,7 @@ export default function ReservationDetailPage({
 }) {
     const qc = useQueryClient();
     const sesi = useSesi();
+    const can = useCan();
     const kueri = useQuery(detailReservasiQuery(id));
     const [dialog, setDialog] = useState<"batal" | "ubah" | null>(null);
     const judul = useRef<HTMLHeadingElement>(null);
@@ -206,6 +208,12 @@ export default function ReservationDetailPage({
                         {d.penggunaan.catatan !== null && <Baris label="Catatan">{d.penggunaan.catatan}</Baris>}
                         <Baris label="Dicatat">{`${d.penggunaan.dicatat_oleh ?? "—"} · ${waktuWib(d.penggunaan.dicatat_pada)}`}</Baris>
                     </dl>
+                    {/* FR-07.4 A2 / UX F-09 → F-16: "Perlu Perhatian" membuka P-40 terisi ruangan + reservasi (PR-03-32). */}
+                    {d.penggunaan.kondisi_ruangan === "PERLU_PERHATIAN" && d.ruangan !== null && can("damage.create") && jalurTerdaftar("/kerusakan/baru") && (
+                        <a href={`/kerusakan/baru?ruang=${d.ruangan.id}&reservasi=${d.id}`} className="self-start text-text-link hover:text-text-link-hover">
+                            Laporkan kerusakan ruangan
+                        </a>
+                    )}
                 </Kartu>
             )}
             {adaPencatatan && <PencatatanPenggunaan key={d.id} d={d} onSelesai={muatUlang} />}

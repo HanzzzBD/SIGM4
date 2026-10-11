@@ -144,6 +144,12 @@ export default function AssetDetailPage({ id, tab, riwayatPage, onRiwayatPage }:
                         </Link>
                     )
                 )}
+                {/* UX §7.6.3 aksi sekunder: Lapor Kerusakan (P-40, PR-03-32). */}
+                {aksiTransaksi && can("damage.create") && jalurTerdaftar("/kerusakan/baru") && (
+                    <a href={`/kerusakan/baru?aset=${id}`} className="inline-flex min-h-control-md items-center rounded-md border border-border-strong px-4 text-base font-medium text-text-primary hover:bg-neutral-50">
+                        Lapor Kerusakan
+                    </a>
+                )}
                 {/* UX §7.6.3 aksi utama: Ubah (P-19, PR-02-46) · Cetak Label QR (P-24, PR-03-28) — tampil saat route-nya terdaftar. */}
                 {aksiTransaksi && can("asset.qr_print") && jalurTerdaftar("/label-qr") && (
                     <a href={`/label-qr?aset=${id}`} className="inline-flex min-h-control-md items-center rounded-md border border-border-strong px-4 text-base font-medium text-text-primary hover:bg-neutral-50">

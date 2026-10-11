@@ -59,7 +59,7 @@ const PREF = ["PERSETUJUAN", "RESERVASI_PEMINJAMAN", "DENDA_KEWAJIBAN", "KERUSAK
 function server(o: { me?: unknown; list?: (p: Permintaan) => Jawaban; put?: (p: Permintaan) => Jawaban } = {}) {
     return pasangServer((p) => {
         if (p.url === "/me") return sukses(o.me ?? { ...ME_ADMIN, permissions: { ...ME_ADMIN.permissions, "reservation.view": "all", "approval.decide": "all" } });
-        if (p.url === "/notifications" && p.method === "GET") return o.list?.(p) ?? daftar([N(1), N(2, { jenis: "AKUN_SISTEM", kode: "NT-38a", deep_link: "/kerusakan/5", dibaca_pada: null, wajib: false }), N(3, { dibaca_pada: "2027-02-27T03:00:00.000Z" })], 2);
+        if (p.url === "/notifications" && p.method === "GET") return o.list?.(p) ?? daftar([N(1), N(2, { jenis: "AKUN_SISTEM", kode: "NT-38a", deep_link: "/perbaikan/5", dibaca_pada: null, wajib: false }), N(3, { dibaca_pada: "2027-02-27T03:00:00.000Z" })], 2);
         if (p.url === "/notifications/1/read" || p.url === "/notifications/2/read") return sukses({ id: 1, dibaca_pada: "2027-02-28T00:00:00.000Z", unread_count: 1 });
         if (p.url === "/notifications/read-all") return sukses({ ditandai: 2, unread_count: 0 });
         if (p.url === "/notifications/preferences" && p.method === "GET") return sukses(PREF);
@@ -81,7 +81,7 @@ describe("jalurTerdaftar (SDD-NTF-09)", () => {
     it("mencocokkan route berparameter dan mengabaikan query; path yang belum ada ditolak", () => {
         expect(jalurTerdaftar("/reservasi/123")).toBe(true);
         expect(jalurTerdaftar("/aset/impor?job=4")).toBe(true);
-        expect(jalurTerdaftar("/kerusakan/5")).toBe(false);
+        expect(jalurTerdaftar("/perbaikan/5")).toBe(false);
         expect(jalurTerdaftar("/reservasi/123/lain")).toBe(false);
     });
 });
