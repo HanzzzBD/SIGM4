@@ -32,6 +32,8 @@ import {
 } from "./schemas/class-promotion.schema.js";
 import { ClassPromotionService } from "./services/class-promotion.service.js";
 import {
+    createRoleHandler,
+    listPermissionsHandler,
     listRolesHandler,
     updateRolePermissionsHandler,
 } from "./controllers/role.controller.js";
@@ -55,6 +57,8 @@ import {
     ImportUsersBodySchema,
 } from "./schemas/user-import.schema.js";
 import {
+    CreateRoleBodySchema,
+    ListPermissionsResponseSchema,
     ListRolesResponseSchema,
     RoleIdParamSchema,
     SingleRoleResponseSchema,
@@ -289,6 +293,29 @@ export const updateRolePermissionsRoute = defineRoute({
     response: SingleRoleResponseSchema,
 });
 
+/** FR-02.2 A2: role kustom dari template; BR-069a ditolak di `RoleService`. Tanpa `role.create` di katalog — PM-01 memakai `role.update`. */
+export const createRoleRoute = defineRoute({
+    method: "POST",
+    path: "/roles",
+    permission: "role.update",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Buat role kustom dengan menyalin role sumber (kode RK-{id})",
+    body: CreateRoleBodySchema,
+    response: SingleRoleResponseSchema,
+});
+
+/** FR-02.2 langkah 3 (P-66): katalog permission utuh beserta penanda inti. */
+export const listPermissionsRoute = defineRoute({
+    method: "GET",
+    path: "/permissions",
+    permission: "role.view",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Katalog permission (kode, modul, aksi, deskripsi, inti)",
+    response: ListPermissionsResponseSchema,
+});
+
 export interface UsersModuleDeps {
     readonly db: Kysely<Database>;
     readonly auditLogger: AuditLogger;
@@ -408,6 +435,18 @@ export function usersRouter(
         batasi(listRolesRoute),
         otorisasi(listRolesRoute.permission),
         listRolesHandler(roleService),
+    );
+    router.post(
+        createRoleRoute.path,
+        batasi(createRoleRoute),
+        otorisasi(createRoleRoute.permission),
+        createRoleHandler(roleService),
+    );
+    router.get(
+        listPermissionsRoute.path,
+        batasi(listPermissionsRoute),
+        otorisasi(listPermissionsRoute.permission),
+        listPermissionsHandler(roleService),
     );
     router.put(
         updateRolePermissionsRoute.path,

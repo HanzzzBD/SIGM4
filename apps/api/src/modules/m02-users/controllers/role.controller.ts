@@ -2,7 +2,7 @@
 
 import type { RequestHandler } from "express";
 import { requireAuthContext } from "../../../shared/auth/index.js";
-import { RoleIdParamSchema, UpdateRolePermissionsBodySchema } from "../schemas/role.schema.js";
+import { CreateRoleBodySchema, RoleIdParamSchema, UpdateRolePermissionsBodySchema } from "../schemas/role.schema.js";
 import type { RoleSummary } from "../services/role.service.js";
 import type { RoleService } from "../services/role.service.js";
 
@@ -24,6 +24,22 @@ export function listRolesHandler(service: RoleService): RequestHandler {
         const ctx = requireAuthContext(res);
         const roles = await service.list(ctx);
         res.status(200).json({ success: true, data: roles.map(keRole), meta: null });
+    };
+}
+
+export function listPermissionsHandler(service: RoleService): RequestHandler {
+    return async (_req, res) => {
+        const ctx = requireAuthContext(res);
+        res.status(200).json({ success: true, data: await service.catalog(ctx), meta: null });
+    };
+}
+
+export function createRoleHandler(service: RoleService): RequestHandler {
+    return async (req, res) => {
+        const ctx = requireAuthContext(res);
+        const body = CreateRoleBodySchema.parse(req.body);
+        const role = await service.createFromTemplate(ctx, { sumberRoleId: body.sumber_role_id, nama: body.nama, deskripsi: body.deskripsi ?? null });
+        res.status(201).json({ success: true, data: keRole(role), meta: null });
     };
 }
 

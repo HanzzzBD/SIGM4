@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **176** baris, dikumpulkan dari 22 berkas modul.
+> Total: **178** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -65,6 +65,7 @@
 | GET | `/notifications/preferences` | `notification.manage_own` | Baca preferensi notifikasi sendiri (enam kelompok × dua kanal) | [M-17](../02-modules/m17-notifications.md) |
 | GET | `/notifications/stream` | `notification.manage_own` | Aliran notifikasi real-time via SSE (NTF-01) | [M-17](../02-modules/m17-notifications.md) |
 | GET | `/notifications` | `notification.manage_own` | Daftar notifikasi pengguna | [M-17](../02-modules/m17-notifications.md) |
+| GET | `/permissions` | `role.view` | Katalog permission (kode, modul, aksi, deskripsi, penanda inti 🔒) untuk matriks | [M-02](../02-modules/m02-users.md) |
 | GET | `/procurements` | `procurement.view` | Daftar usulan | [M-14](../02-modules/m14-procurement.md) |
 | GET | `/public/assets/{uuid}` | Publik | Info dasar aset untuk scan kamera bawaan | [M-05](../02-modules/m05-qr.md) |
 | GET | `/reservations/{id}` | `reservation.view` | Detail reservasi + riwayat approval: tanggal turunan, penggunaan, aksi yang tersedia bagi pemanggil, dan riwayat perubahan dari activity log (penyajiannya tercatat, `AL-10`); di luar scope → 404 | [M-07](../02-modules/m07-reservation-room.md) |
@@ -161,6 +162,7 @@
 | POST | `/reservations/{id}/cancel` | `reservation.cancel_own` · `reservation.cancel_any` | Batalkan reservasi + alasan. Pemilik reservasi cukup `cancel_own`; membatalkan reservasi pihak lain wajib `cancel_any` (`FR-07.3 A2`). Kepemilikan diperiksa di server, bukan disimpulkan dari role | [M-07](../02-modules/m07-reservation-room.md) |
 | POST | `/reservations/{id}/usage` | `reservation.record_usage` | Catat penggunaan ruangan pasca-kegiatan per tanggal, sekali (`FR-07.4` langkah 3, A1): kondisi `Baik`/`Perlu Perhatian` + catatan bagi yang `Selesai`, atau `Tidak Digunakan` dari `Berlangsung`/`Selesai` — slotnya dilepas | [M-07](../02-modules/m07-reservation-room.md) |
 | POST | `/reservations` | `reservation.create` | Ajukan reservasi ruangan/aset | [M-07](../02-modules/m07-reservation-room.md) |
+| POST | `/roles` | `role.update` | Buat role kustom dengan menyalin role sumber sebagai template (`FR-02.2 A2`, `BR-069a`); kode `RK-{id}` dibangkitkan sistem; nama unik | [M-02](../02-modules/m02-users.md) |
 | POST | `/rooms/{id}/blocks/preview` | `reservation.fixed_schedule` | Pratinjau blokade tanpa efek: kemunculan dalam horizon, hari libur yang dilewati (A4), reservasi yang beririsan (A1), dan blokade/pemeliharaan lain yang beririsan | [M-07](../02-modules/m07-reservation-room.md) |
 | POST | `/rooms/{id}/blocks` | `reservation.fixed_schedule` | Buat jadwal tetap (pola mingguan; satu aturan per hari) atau blokade manual (rentang tunggal). Beririsan reservasi → ditolak kecuali pengguna memilih eksplisit membatalkannya beserta alasan (A1, NT-08); beririsan blokade lain → ditolak | [M-07](../02-modules/m07-reservation-room.md) |
 | POST | `/users/import` | `user.create` | Impor massal CSV/XLSX: ≤ 200 baris diproses sinkron, lebih dari itu asinkron (`IMPT-04`); berkas identik dalam 24 jam mengembalikan hasil sebelumnya (`IMPT-03`) | [M-02](../02-modules/m02-users.md) |

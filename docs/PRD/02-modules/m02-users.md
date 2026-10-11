@@ -76,7 +76,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 
 **Alternative Flow**
 - **A1 — Menghapus permission inti role Administrator:** Sistem menolak.
-- **A2 — Membuat role kustom:** Administrator menyalin role yang ada sebagai template lalu menyesuaikan.
+- **A2 — Membuat role kustom:** Administrator menyalin role yang ada sebagai template lalu menyesuaikan. Role kustom memperoleh kode `RK-{id}` dari sistem dan seluruh permission beserta scope role sumbernya; role yang perilakunya terikat kode role tidak dapat dijadikan template (`BR-069a`).
 - **A3 — Menghapus role yang masih memiliki pengguna:** Sistem menolak dan meminta pemindahan pengguna terlebih dahulu.
 
 **Post Conditions** — Matriks permission terbarui dan berlaku pada seluruh titik pemeriksaan otorisasi (API dan UI).
@@ -96,6 +96,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | BR-067 | Akun pengguna tidak dapat dihapus permanen; hanya dapat dinonaktifkan. |
 | BR-068 | Sistem wajib memiliki minimal satu akun Administrator berstatus aktif. |
 | BR-069 | Pengguna tidak dapat mengubah email dan rolenya sendiri. |
+| BR-069a | Role Administrator (R-01), Pimpinan Sekolah (R-03), dan Siswa/OSIS (R-07) tidak dapat dijadikan template role kustom: kewajiban 2FA (`BR-070`) dan perlindungan siswa (`DP-02`, `SL-01` … `SL-06`) melekat pada kode role, sehingga salinannya akan lolos dari perlindungan tersebut. |
 | BR-073 | Role Siswa/OSIS tidak boleh mengakses data finansial aset, biaya pemeliharaan, data pengadaan, dokumen aset, maupun data pribadi pengguna lain. |
 | BR-074 | Setiap pengguna hanya dapat melihat riwayat transaksi, denda, dan percakapan chatbot miliknya sendiri, kecuali role yang diberi permission lebih luas. |
 
@@ -118,7 +119,9 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | POST | `/users/{id}/reset-2fa` | `user.reset_2fa` | Reset 2FA pengguna (`FR-01.5 A3`): menonaktifkan 2FA, menghapus kode cadangan, mencabut seluruh sesi; `metode_verifikasi` wajib; untuk role wajib 2FA menerbitkan kode aktivasi baru, tampil satu kali (`BR-070d`) |
 | POST | `/users/{id}/2fa-activation-code` | `user.reset_2fa` | Terbitkan kode aktivasi 2FA bagi akun role wajib yang belum ber-2FA (`FR-01.5 A7`, `BR-070d`); `metode_verifikasi` wajib; kode tampil satu kali; tidak untuk akun sendiri |
 | GET | `/roles` | `role.view` | Daftar role |
+| POST | `/roles` | `role.update` | Buat role kustom dengan menyalin role sumber sebagai template (`FR-02.2 A2`, `BR-069a`); kode `RK-{id}` dibangkitkan sistem; nama unik |
 | PUT | `/roles/{id}/permissions` | `role.update` | Perbarui matriks permission |
+| GET | `/permissions` | `role.view` | Katalog permission (kode, modul, aksi, deskripsi, penanda inti 🔒) untuk matriks |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
@@ -179,6 +182,7 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | `STUDENT_MARKED_GRADUATED` | Siswa ditandai lulus pada suatu tahun ajaran (`SL-02`) |
 | `STUDENT_GRADUATION_DEACTIVATED` | Akun siswa lulus dinonaktifkan setelah tahun ajarannya berakhir (`SL-03`); pelaku `SYSTEM` bila dijalankan pekerjaan terjadwal |
 | `ROLE_PERMISSION_UPDATED` | Perubahan matriks permission |
+| `ROLE_CREATED` | Pembuatan role kustom dari template (`FR-02.2 A2`) |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
 

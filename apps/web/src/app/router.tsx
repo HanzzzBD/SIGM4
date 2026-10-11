@@ -48,6 +48,8 @@ import {
     HalamanKenaikanKelas,
     HalamanPengguna,
     HalamanTambahPengguna,
+    HalamanMatriksPermission,
+    HalamanRole,
     HalamanDetailKerusakan,
     HalamanDetailKeputusan,
     HalamanLaporKerusakan,
@@ -632,6 +634,34 @@ const detailPenggunaRoute = createRoute({
     },
 });
 
+/** P-65 Role & Permission (FR-02.2, UX §6 `/role`; PR-01-20). `disimpan` = umpan balik sesudah P-66 menyimpan. */
+const roleRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/role",
+    beforeLoad: butuhIzin("role.view"),
+    validateSearch: z.object({ disimpan: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined) }),
+    component: function RouteRole() {
+        const { disimpan } = roleRoute.useSearch();
+        const navigate = useNavigate();
+        return <HalamanRole disimpan={disimpan} onBuka={(id) => void navigate({ to: "/role/$id", params: { id } })} />;
+    },
+});
+
+/** P-66 Matriks Permission (FR-02.2, UX §6 `/role/{id}`; PR-01-20): dibaca `role.view`, diubah `role.update`. */
+const matriksRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/role/$id",
+    beforeLoad: async (a) => {
+        if (!/^[1-9]\d*$/.test(a.params.id)) throw redirect({ to: "/tidak-ditemukan" });
+        await butuhIzin("role.view")(a);
+    },
+    component: function RouteMatriks() {
+        const { id } = matriksRoute.useParams();
+        const navigate = useNavigate();
+        return <HalamanMatriksPermission key={id} id={id} onSimpan={(x) => void navigate({ to: "/role", search: { disimpan: x } })} onBatal={() => void navigate({ to: "/role", search: {} })} />;
+    },
+});
+
 export const routeTree = rootRoute.addChildren([
     loginRoute,
     verifikasiDuaFaktorRoute,
@@ -640,7 +670,7 @@ export const routeTree = rootRoute.addChildren([
     gangguanRoute,
     tidakDitemukanRoute,
     publikAsetRoute,
-    shellRoute.addChildren([dashboardRoute, penggunaRoute, tambahPenggunaRoute, imporPenggunaRoute, kenaikanKelasRoute, detailPenggunaRoute, daftarKerusakanRoute, laporKerusakanRoute, detailKerusakanRoute, inventarisRoute, detailAsetRoute, riwayatAsetRoute, tambahAsetRoute, ubahAsetRoute, kategoriAsetRoute, labelQrRoute, scanRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    shellRoute.addChildren([dashboardRoute, penggunaRoute, tambahPenggunaRoute, imporPenggunaRoute, kenaikanKelasRoute, detailPenggunaRoute, roleRoute, matriksRoute, daftarKerusakanRoute, laporKerusakanRoute, detailKerusakanRoute, inventarisRoute, detailAsetRoute, riwayatAsetRoute, tambahAsetRoute, ubahAsetRoute, kategoriAsetRoute, labelQrRoute, scanRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {

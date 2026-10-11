@@ -36,6 +36,28 @@ export const UpdateRolePermissionsBodySchema = z
         });
     });
 
+/** POST — role kustom dari template (FR-02.2 A2, BR-069a); kode dibangkitkan server. */
+export const CreateRoleBodySchema = z.object({
+    sumber_role_id: z.coerce.number().int().positive(),
+    nama: z.string().trim().min(1).max(100),
+    deskripsi: z.string().trim().min(1).max(500).nullable().optional(),
+});
+
+const PermissionKatalogSchema = z.object({
+    kode: z.string(),
+    modul: z.string(),
+    aksi: z.string(),
+    deskripsi: z.string(),
+    /** 🔒 — tidak dapat dicabut dari Administrator (FR-02.2 A1, SDD-AUTH-10). */
+    inti: z.boolean(),
+});
+
+export const ListPermissionsResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.array(PermissionKatalogSchema),
+    meta: z.null(),
+});
+
 const RolePermissionSchema = z.object({
     kode: z.string(),
     scope: PermissionScopeSchema,

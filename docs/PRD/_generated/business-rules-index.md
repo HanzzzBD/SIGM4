@@ -5,7 +5,7 @@
 # Indeks Business Rules
 
 > Setiap aturan dimiliki satu modul. Sunting di berkas modulnya, bukan di sini.
-> Total: **121** baris, dikumpulkan dari 22 berkas modul.
+> Total: **122** baris, dikumpulkan dari 22 berkas modul.
 
 | Kode | Business Rule | Pemilik |
 |---|---|---|
@@ -99,6 +99,7 @@
 | BR-067 | Akun pengguna tidak dapat dihapus permanen; hanya dapat dinonaktifkan. | [M-02](../02-modules/m02-users.md) |
 | BR-068 | Sistem wajib memiliki minimal satu akun Administrator berstatus aktif. | [M-02](../02-modules/m02-users.md) |
 | BR-069 | Pengguna tidak dapat mengubah email dan rolenya sendiri. | [M-02](../02-modules/m02-users.md) |
+| BR-069a | Role Administrator (R-01), Pimpinan Sekolah (R-03), dan Siswa/OSIS (R-07) tidak dapat dijadikan template role kustom: kewajiban 2FA (`BR-070`) dan perlindungan siswa (`DP-02`, `SL-01` … `SL-06`) melekat pada kode role, sehingga salinannya akan lolos dari perlindungan tersebut. | [M-02](../02-modules/m02-users.md) |
 | BR-070 | Role Administrator dan Pimpinan Sekolah wajib mengaktifkan 2FA. | [M-01](../02-modules/m01-auth.md) |
 | BR-070a | Sistem wajib memiliki **minimal dua** akun Administrator aktif; instalasi awal tidak dianggap selesai sebelum syarat ini terpenuhi (RS-19). | [M-01](../02-modules/m01-auth.md) |
 | BR-070b | Kehilangan total akses Administrator dipulihkan melalui prosedur *break-glass* berbasis CLI di sisi server dengan otorisasi tertulis Kepala Sekolah (FR-01.6). Prosedur ini tidak pernah tersedia melalui antarmuka web atau API. | [M-01](../02-modules/m01-auth.md) |
