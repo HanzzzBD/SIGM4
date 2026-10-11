@@ -13,6 +13,7 @@ import { Link, Outlet, createRootRouteWithContext, createRoute, createRouter, re
 import { z } from "zod/mini";
 import { ambilTantangan } from "../modules/m01-auth";
 import { TAMPILAN, detailReservasiQuery, hariIniWib, isianDariReservasi, isianDariSlot } from "../modules/m07-reservation-room";
+import { KONDISI, STATUS, URUTAN } from "../modules/m04-assets";
 import { RENTANG } from "../modules/m15-dashboard";
 import { KELOMPOK, TAMPILAN_NOTIFIKASI } from "../modules/m17-notifications";
 import {
@@ -20,6 +21,8 @@ import {
     HalamanApprovalRules,
     HalamanDashboard,
     HalamanDataTidakTersedia,
+    HalamanDetailAset,
+    HalamanInventaris,
     HalamanDaftarReservasi,
     HalamanDetailReservasi,
     HalamanEditorAturan,
@@ -379,6 +382,58 @@ const detailKeputusanRoute = createRoute({
     },
 });
 
+/** P-15 Inventaris Aset (FR-04.2, UX §7.4; PR-02-45): saringan, urutan, halaman di URL (SDD-FE-10). */
+const inventarisRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/aset",
+    beforeLoad: butuhIzin("asset.view"),
+    validateSearch: z.object({
+        q: z.catch(z.optional(z.coerce.string()), undefined),
+        kategori: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined),
+        lokasi: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined),
+        kondisi: z.catch(z.optional(z.enum(KONDISI)), undefined),
+        status: z.catch(z.optional(z.enum(STATUS)), undefined),
+        tahun: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1900), z.maximum(2100))), undefined),
+        pinjam: z.catch(z.optional(z.boolean()), undefined),
+        impor: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1))), undefined),
+        urut: z.catch(z.optional(z.enum(URUTAN)), undefined),
+        page: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(2))), undefined),
+        per: z.catch(z.optional(z.union([z.literal(50), z.literal(100)])), undefined),
+    }),
+    component: function RouteInventaris() {
+        const cari = inventarisRoute.useSearch();
+        const navigate = useNavigate({ from: inventarisRoute.fullPath });
+        return <HalamanInventaris pencarian={cari} onPencarian={(p) => void navigate({ search: (lama) => ({ ...lama, ...p }) })} />;
+    },
+});
+
+/** P-18 Detail Aset (FR-04.2 langkah 5; PR-02-45). Tab sebagai segmen (UXP-01): `/aset/{id}` · `/aset/{id}/riwayat`. */
+const cekIdAset = async (a: { params: { id: string }; context: KonteksRouter }) => {
+    if (!/^[1-9]\d*$/.test(a.params.id)) throw redirect({ to: "/tidak-ditemukan" });
+    await butuhIzin("asset.view")(a);
+};
+const detailAsetRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/aset/$id",
+    beforeLoad: cekIdAset,
+    component: function RouteDetailAset() {
+        const { id } = detailAsetRoute.useParams();
+        return <HalamanDetailAset key={id} id={id} tab="informasi" riwayatPage={1} onRiwayatPage={() => undefined} />;
+    },
+});
+const riwayatAsetRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/aset/$id/riwayat",
+    beforeLoad: cekIdAset,
+    validateSearch: z.object({ page: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(2))), undefined) }),
+    component: function RouteRiwayatAset() {
+        const { id } = riwayatAsetRoute.useParams();
+        const { page } = riwayatAsetRoute.useSearch();
+        const navigate = useNavigate({ from: riwayatAsetRoute.fullPath });
+        return <HalamanDetailAset key={id} id={id} tab="riwayat" riwayatPage={page ?? 1} onRiwayatPage={(p) => void navigate({ search: { page: p === 1 ? undefined : p } })} />;
+    },
+});
+
 export const routeTree = rootRoute.addChildren([
     loginRoute,
     verifikasiDuaFaktorRoute,
@@ -386,7 +441,7 @@ export const routeTree = rootRoute.addChildren([
     gantiPasswordRoute,
     gangguanRoute,
     tidakDitemukanRoute,
-    shellRoute.addChildren([dashboardRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    shellRoute.addChildren([dashboardRoute, inventarisRoute, detailAsetRoute, riwayatAsetRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {

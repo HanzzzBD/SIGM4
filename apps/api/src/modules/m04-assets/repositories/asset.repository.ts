@@ -147,6 +147,13 @@ const KOLOM_KATALOG_BASE = [
 /** BR-073: hanya ter-SELECT bila pemanggil memegang `asset.view_financial` (SDD-03 §4.3, SDD-AUTH-06). */
 const KOLOM_KATALOG_FINANSIAL = ["nilai_perolehan", "sumber_perolehan"] as const;
 
+/** Nama kategori & lokasi bagi kolom P-15 (keputusan 93b log phase-02) — Siswa/OSIS tak memegang `location.view`. */
+const KOLOM_KATALOG_NAMA = [
+    sql<string>`(SELECT c.nama FROM asset_categories c WHERE c.id = assets.category_id)`.as("kategori_nama"),
+    sql<string>`(SELECT r.nama FROM rooms r WHERE r.id = assets.room_id)`.as("ruang_nama"),
+    sql<string>`(SELECT b.nama FROM rooms r JOIN areas a ON a.id = r.area_id JOIN buildings b ON b.id = a.building_id WHERE r.id = assets.room_id)`.as("gedung_nama"),
+];
+
 export interface AssetCatalogFilter {
     /** FR-04.2 langkah 3: kode aset, nama, merek, atau nomor seri (substring, tanpa mempedulikan huruf besar/kecil). */
     readonly q?: string;
@@ -234,15 +241,16 @@ export class AssetRepository extends BaseRepository {
             .select(sql<string>`count(*) over()`.as("total"));
 
         const rows = ctx.can("asset.view_financial")
-            ? await dasar.select([...KOLOM_KATALOG_BASE, ...KOLOM_KATALOG_FINANSIAL]).execute()
-            : await dasar.select(KOLOM_KATALOG_BASE).execute();
+            ? await dasar.select([...KOLOM_KATALOG_BASE, ...KOLOM_KATALOG_FINANSIAL, ...KOLOM_KATALOG_NAMA]).execute()
+            : await dasar.select([...KOLOM_KATALOG_BASE, ...KOLOM_KATALOG_NAMA]).execute();
 
         const total = rows.length > 0 ? Number((rows[0] as { total: string }).total) : 0;
         return {
             rows: rows.map((baris) => {
                 const sisanya: Record<string, unknown> = { ...baris };
-                delete sisanya["total"];
-                return sisanya;
+                const lokasi = { ruang: sisanya["ruang_nama"], gedung: sisanya["gedung_nama"] };
+                for (const k of ["total", "ruang_nama", "gedung_nama"]) delete sisanya[k];
+                return { ...sisanya, lokasi };
             }),
             total,
         };
