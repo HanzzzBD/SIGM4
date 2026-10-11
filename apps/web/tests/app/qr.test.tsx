@@ -24,6 +24,7 @@ function server(o: { me?: unknown; publik?: Jawaban; cari?: (p: Permintaan) => J
         if (p.url === "/me") return sukses(o.me ?? ME);
         if (p.url === `/public/assets/${UUID}`) return o.publik ?? sukses(PUBLIK);
         if (p.url === `/assets/by-uuid/${UUID}`) return o.byUuid ?? sukses(PINDAIAN);
+        if (p.url === "/assets/12") return sukses({ id: "12", uuid: UUID, kode_barang: "LAB-PRY-0012", nama: "Proyektor Aula", kategori: { id: "3", nama: "Proyektor" }, merek: null, model: null, nomor_seri: null, tahun_perolehan: 2023, lokasi: { room_id: "10", ruang: "Aula", area: "Lantai 1", gedung: "Gedung A" }, kondisi: "BAIK", status: "TERSEDIA", dapat_dipinjam: true, boleh_dipinjam_siswa: false, penanggung_jawab: null, qr_url: `https://sigm4.sekolah.test/a/${UUID}`, qr_terpasang: false, dihapuskan: false, tanggal_penghapusan: null, created_at: "2026-10-01T03:00:00.000Z" });
         if (p.url === "/assets/21") return sukses(ringkas("21", "LAB-PRY-0021"));
         if (p.url === "/assets/22") return sukses(ringkas("22", "LAB-PRY-0022", true));
         if (p.url === "/assets") return o.cari?.(p) ?? halaman([ringkas("30", "LAB-PRY-0030")]);
@@ -112,6 +113,14 @@ describe("P-24 Label QR", () => {
     });
 });
 
+describe("P-18 → P-24", () => {
+    it("P-18 menampilkan Cetak Label QR menuju P-24 dengan aset itu terpilih", async () => {
+        server();
+        await renderAplikasi("/aset/12");
+        expect((await screen.findByRole("link", { name: "Cetak Label QR" })).getAttribute("href")).toBe("/label-qr?aset=12");
+    });
+});
+
 describe("P-25 Scan QR web", () => {
     const kameraAda = () => {
         const stop = vi.fn();
@@ -135,6 +144,16 @@ describe("P-25 Scan QR web", () => {
         // UX-02: input manual tetap terlihat.
         expect(screen.getByLabelText("Masukkan kode aset manual")).toBeTruthy();
         expect(await pelanggaranAxe(container)).toEqual([]);
+    });
+
+    it("hasil pindai → Buka detail aset menuju P-18 (PR-02-45)", async () => {
+        server();
+        kameraAda();
+        isiQr.nilai = `https://sigm4.sekolah.test/a/${UUID}`;
+        const user = userEvent.setup();
+        const { router } = await renderAplikasi("/scan");
+        await user.click(await screen.findByRole("button", { name: "Buka detail aset" }, { timeout: 3000 }));
+        await waitFor(() => expect(router.state.location.pathname).toBe("/aset/12"));
     });
 
     it("QR asing → 'QR tidak dikenali' tanpa memanggil server (FR-05.2 A1)", async () => {

@@ -12,7 +12,8 @@ import { muatDashboardPage } from "../modules/m15-dashboard";
 import { loadLabelQrPage, loadPublicAssetPage, loadScanPage } from "../modules/m05-qr";
 import { loadNotificationCenterPage, loadPreferencesPage } from "../modules/m17-notifications";
 import type { PencarianNotifikasi } from "../modules/m17-notifications";
-import { loadAssetImportPage, loadAssetMovementPage } from "../modules/m04-assets";
+import { loadAssetDetailPage, loadAssetImportPage, loadAssetMovementPage, loadInventoryPage } from "../modules/m04-assets";
+import type { SaringanKatalog, TabAset } from "../modules/m04-assets";
 import { RingkasanReservasi, loadReservationDetailPage, loadReservationListPage, loadReservationWizardPage, loadRoomBlocksPanel, loadRoomCalendarPage } from "../modules/m07-reservation-room";
 import type { IsianWizard, PencarianDaftar, PencarianKalender, PilihanSlot, ReservasiSlot } from "../modules/m07-reservation-room";
 import type { ReservationDetail, RoomReservationCreated } from "@sigm4/schemas";
@@ -111,6 +112,20 @@ export const HalamanLabelQr = ({ awal }: { readonly awal: readonly string[] }) =
 export const HalamanScanQr = ({ onBuka }: { readonly onBuka: (assetId: string) => void }) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat pemindai" baris={4} />}>
         <ScanPage onBuka={onBuka} />
+    </Suspense>
+);
+const InventoryPage = lazy(loadInventoryPage);
+const AssetDetailPage = lazy(loadAssetDetailPage);
+/** P-15 Inventaris Aset (FR-04.2; PR-02-45). */
+export const HalamanInventaris = (props: { readonly pencarian: SaringanKatalog; readonly onPencarian: (p: Partial<SaringanKatalog>) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat inventaris aset" baris={6} />}>
+        <InventoryPage {...props} />
+    </Suspense>
+);
+/** P-18 Detail Aset (FR-04.2 langkah 5; PR-02-45). */
+export const HalamanDetailAset = (props: { readonly id: string; readonly tab: TabAset; readonly riwayatPage: number; readonly onRiwayatPage: (p: number) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat detail aset" baris={8} />}>
+        <AssetDetailPage {...props} />
     </Suspense>
 );
 export const HalamanMutasiAset = (props: { readonly documentId: number | null; readonly onDocument: (id: number | null) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat mutasi aset" baris={4} />}><AssetMovementPage {...props} /></Suspense>;
