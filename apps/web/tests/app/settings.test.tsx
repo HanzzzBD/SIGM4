@@ -399,7 +399,8 @@ describe("Temuan inspeksi PR-01-24 ronde 2", () => {
         await waitFor(() => expect((screen.getByRole("button", { name: "Ubah Kesiswaan" }) as HTMLButtonElement).disabled).toBe(true));
         lepas(sukses({ id: "3", nama: "Kurikulum", kode: "KUR", jenis: "MANAJEMEN", kepala_unit_id: null, status: "AKTIF" }));
         await waitFor(() => expect(screen.queryByRole("form", { name: "Ubah Kurikulum" })).toBeNull());
-        expect((screen.getByRole("button", { name: "Ubah Kesiswaan" }) as HTMLButtonElement).disabled).toBe(false);
+        // Kunci dilepas pembersihan efek formulir yang dilepas — dapat tiba satu giliran render sesudahnya.
+        await waitFor(() => expect((screen.getByRole("button", { name: "Ubah Kesiswaan" }) as HTMLButtonElement).disabled).toBe(false));
     });
 
     it("R24-07: halaman di luar jangkauan dikembalikan ke halaman terakhir yang ada", async () => {
