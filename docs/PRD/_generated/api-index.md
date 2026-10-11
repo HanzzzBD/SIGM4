@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **174** baris, dikumpulkan dari 22 berkas modul.
+> Total: **175** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -136,8 +136,9 @@
 | POST | `/chat/messages` | Bearer | Kirim pesan ke chatbot | [M-19](../02-modules/m19-chatbot.md) |
 | POST | `/chat/sessions` | Bearer | Mulai sesi chatbot | [M-19](../02-modules/m19-chatbot.md) |
 | POST | `/class-promotions` | `user.update` | Kenaikan kelas massal: tetapkan kelas atau tandai lulus per siswa pada satu tahun ajaran (`SL-02`) | [M-02](../02-modules/m02-users.md) |
+| POST | `/damage-reports/{id}/notes` | `damage.create` | Tambahkan informasi ke tiket yang masih terbuka (Dilaporkan/Diverifikasi/Dalam Perbaikan): keterangan wajib + 0–5 foto milik penulis; terbuka bagi setiap pemegang `damage.create`, termasuk penemu kedua yang ditawari tiket lewat `/open` (FR-11.1 A1) | [M-11](../02-modules/m11-damage-reports.md) |
 | POST | `/damage-reports/{id}/verify` | `damage.verify` | Verifikasi / tolak tiket dari status `Dilaporkan`: `keputusan` Tindak Lanjut (→ `Diverifikasi`) · Perbaikan Ringan (→ `Selesai`, catatan wajib) · Tolak (→ `Ditolak`, alasan wajib); `kondisi_aset` opsional menuntut juga `asset.update_condition` (langkah 4, A1) | [M-11](../02-modules/m11-damage-reports.md) |
-| POST | `/damage-reports` | `damage.create` | Buat tiket kerusakan | [M-11](../02-modules/m11-damage-reports.md) |
+| POST | `/damage-reports` | `damage.create` | Buat tiket kerusakan; `reservation_id` opsional menautkan laporan pasca-kegiatan ke reservasi ruangan yang sama berstatus Berlangsung/Selesai — hanya pemegang `reservation.record_usage` (FR-07.4 A2) | [M-11](../02-modules/m11-damage-reports.md) |
 | POST | `/device-tokens` | `notification.manage_own` | Daftarkan token perangkat FCM | [M-17](../02-modules/m17-notifications.md) |
 | POST | `/files/confirm` | Bearer | Daftarkan berkas terunggah & antrekan pemindaian AV | [M-06](../02-modules/m06-documents.md) |
 | POST | `/files/presign` | Bearer | Minta URL unggah bertanda tangan ke object storage | [M-06](../02-modules/m06-documents.md) |

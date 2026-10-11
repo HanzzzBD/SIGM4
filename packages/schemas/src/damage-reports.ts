@@ -27,9 +27,12 @@ export const DamageReportCreateSchema = z
             .min(1, { error: "Unggah minimal satu foto kerusakan." })
             .max(5, { error: "Paling banyak 5 foto." })
             .refine((f) => new Set(f).size === f.length, { error: "Foto tidak boleh berulang." }),
+        /** FR-07.4 A2 (PR-03-31, keputusan 25c): reservasi ruangan asal laporan pasca-kegiatan — hanya tiket ruangan. */
+        reservation_id: ID.optional(),
     })
     .strict()
-    .refine(satuObjek, OBJEK_TUNGGAL);
+    .refine(satuObjek, OBJEK_TUNGGAL)
+    .refine((v) => v.reservation_id === undefined || v.room_id !== undefined, { error: "Laporan tertaut reservasi harus menunjuk ruangan reservasi itu.", path: ["reservation_id"] });
 export type DamageReportCreate = z.input<typeof DamageReportCreateSchema>;
 
 export const DamageReportCreatedSchema = z.object({
@@ -104,6 +107,29 @@ export const DamageReportVerifiedResponseSchema = z.object({ success: z.literal(
 
 const Pengguna = z.object({ id: z.string(), nama: z.string() });
 
+/** Foto tiket/catatan: `BELUM_TERUNGGAH` = pesanan yang unggahannya di antrean perangkat (MOB-OFF-04); URL hanya bila `CLEAN`. */
+const Foto = z.object({ file_id: z.string(), urutan: z.number().int(), status: z.enum(["BELUM_TERUNGGAH", "PENDING", "CLEAN", "INFECTED", "FAILED"]), url: z.string().nullable() });
+
+/**
+ * `POST /damage-reports/{id}/notes` — FR-11.1 A1 "Tambahkan informasi ke tiket yang ada" (PR-03-31, keputusan 25a/25b):
+ * keterangan wajib, 0–5 foto `DAMAGE_PHOTO` milik penulis (unggahan boleh tertunda, A2).
+ */
+export const DamageReportNoteCreateSchema = z
+    .object({
+        keterangan: z.string({ error: "Keterangan wajib diisi." }).trim().min(1, { error: "Keterangan wajib diisi." }).max(2000, { error: "Keterangan paling panjang 2000 karakter." }),
+        foto_file_ids: z
+            .array(ID)
+            .max(5, { error: "Paling banyak 5 foto." })
+            .refine((f) => new Set(f).size === f.length, { error: "Foto tidak boleh berulang." })
+            .default([]),
+    })
+    .strict();
+export type DamageReportNoteCreate = z.input<typeof DamageReportNoteCreateSchema>;
+
+export const DamageReportNoteSchema = z.object({ id: z.string(), keterangan: z.string(), penulis: Pengguna, dibuat_pada: z.iso.datetime({ offset: true }), foto: z.array(Foto) });
+export type DamageReportNote = z.infer<typeof DamageReportNoteSchema>;
+export const DamageReportNoteResponseSchema = z.object({ success: z.literal(true), data: DamageReportNoteSchema, meta: z.null() });
+
 /** `GET /damage-reports/{id}` — FR-11.2 langkah 1–2, A3 (keputusan 21a). */
 export const DamageReportDetailSchema = z.object({
     id: z.string(),
@@ -121,8 +147,12 @@ export const DamageReportDetailSchema = z.object({
      * `BELUM_TERUNGGAH` = pesanan yang unggahannya masih di antrean perangkat (A2, MOB-OFF-04); URL hanya
      * bagi berkas `CLEAN` (SDD-FS-03).
      */
-    foto: z.array(z.object({ file_id: z.string(), urutan: z.number().int(), status: z.enum(["BELUM_TERUNGGAH", "PENDING", "CLEAN", "INFECTED", "FAILED"]), url: z.string().nullable() })),
+    foto: z.array(Foto),
     foto_tertunda: z.number().int(),
+    /** FR-11.1 A1 (PR-03-31): catatan tambahan, terlama lebih dulu. */
+    catatan: z.array(DamageReportNoteSchema),
+    /** FR-07.4 A2 (PR-03-31): reservasi ruangan asal laporan; `null` bila tidak tertaut. */
+    reservasi: z.object({ id: z.string(), nomor: z.string() }).nullable(),
     /**
      * BR-052 / A3: garansi aktif atas aset hari ini (WIB). `null` = tidak berlaku (tiket ruangan) atau
      * pemanggil tanpa `asset_document.view`.

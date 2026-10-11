@@ -223,10 +223,11 @@ flowchart TD
 
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
-| POST | `/damage-reports` | `damage.create` | Buat tiket kerusakan |
+| POST | `/damage-reports` | `damage.create` | Buat tiket kerusakan; `reservation_id` opsional menautkan laporan pasca-kegiatan ke reservasi ruangan yang sama berstatus Berlangsung/Selesai — hanya pemegang `reservation.record_usage` (FR-07.4 A2) |
 | GET | `/damage-reports` | `damage.view` | Daftar tiket (tersaring sesuai role; scope `own` = tiket milik sendiri, A1) — saringan langkah 3 (status, urgensi, gedung/ruangan, kategori aset, rentang tanggal lapor, pelapor, `melampaui_sla`), jumlah per status (langkah 2), dan `batas_sla` + `melampaui_sla` per tiket (langkah 4) |
 | GET | `/damage-reports/{id}` | `damage.view` | Detail tiket beserta foto (foto yang unggahannya tertunda ditandai) dan garansi aktif aset (`BR-052`, bagi pemegang `asset_document.view`); scope `own` = tiket milik sendiri |
 | GET | `/damage-reports/open` | `damage.view` | Tiket terbuka untuk aset atau ruangan tertentu (`asset_id` atau `room_id`) — ringkasan tanpa identitas pelapor, juga bagi scope `own` (FR-11.1 A1) |
+| POST | `/damage-reports/{id}/notes` | `damage.create` | Tambahkan informasi ke tiket yang masih terbuka (Dilaporkan/Diverifikasi/Dalam Perbaikan): keterangan wajib + 0–5 foto milik penulis; terbuka bagi setiap pemegang `damage.create`, termasuk penemu kedua yang ditawari tiket lewat `/open` (FR-11.1 A1) |
 | POST | `/damage-reports/{id}/verify` | `damage.verify` | Verifikasi / tolak tiket dari status `Dilaporkan`: `keputusan` Tindak Lanjut (→ `Diverifikasi`) · Perbaikan Ringan (→ `Selesai`, catatan wajib) · Tolak (→ `Ditolak`, alasan wajib); `kondisi_aset` opsional menuntut juga `asset.update_condition` (langkah 4, A1) |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
@@ -238,8 +239,10 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **damage_reports** | Tiket laporan kerusakan | id, nomor, pelapor_id, asset_id, room_id, deskripsi, urgensi, status, loan_id, diverifikasi_oleh, diverifikasi_pada, catatan_verifikasi, batas_sla | ± 600 |
+| **damage_reports** | Tiket laporan kerusakan | id, nomor, pelapor_id, asset_id, room_id, deskripsi, urgensi, status, loan_id, reservation_id (FR-07.4 A2), diverifikasi_oleh, diverifikasi_pada, catatan_verifikasi, batas_sla | ± 600 |
 | **damage_report_photos** | Foto laporan kerusakan | id, damage_report_id, file_id (→ stored_files, `SDD-FS-02`), urutan | ± 1.800 |
+| **damage_report_notes** | Catatan tambahan atas tiket terbuka (FR-11.1 A1), append-only | id, damage_report_id, keterangan, created_at, created_by | ± 300 |
+| **damage_report_note_photos** | Foto catatan tambahan (0–5 per catatan) | id, note_id, file_id (→ stored_files), urutan | ± 300 |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
 
@@ -274,6 +277,7 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | Aksi | Keterangan |
 |---|---|
 | `DAMAGE_REPORTED` / `DAMAGE_VERIFIED` / `DAMAGE_REJECTED` / `DAMAGE_CLOSED` | Siklus tiket |
+| `DAMAGE_INFO_ADDED` | Informasi tambahan (catatan + foto) ke tiket terbuka (FR-11.1 A1) |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
 

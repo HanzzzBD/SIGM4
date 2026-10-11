@@ -5,7 +5,7 @@
 # Indeks Aksi Activity Log
 
 > Setiap aksi dimiliki modul penerbitnya. Prinsip pencatatan di `../03-architecture/activity-log.md`.
-> Total: **88** baris, dikumpulkan dari 22 berkas modul.
+> Total: **89** baris, dikumpulkan dari 22 berkas modul.
 
 | Aksi | Keterangan | Pemilik |
 |---|---|---|
@@ -44,6 +44,7 @@
 | `CATEGORY_CREATED` / `CATEGORY_UPDATED` / `CATEGORY_DELETED` | Perubahan kategori | [M-04](../02-modules/m04-assets.md) |
 | `CHAT_MESSAGE_SENT` | Metadata percakapan (tanpa merekam ulang isi di log audit) | [M-19](../02-modules/m19-chatbot.md) |
 | `COMPENSATION_WAIVED` | Pembebasan ganti rugi oleh Pimpinan beserta alasan dan nilai yang dibebaskan (BR-028e) | [M-09](../02-modules/m09-loans.md) |
+| `DAMAGE_INFO_ADDED` | Informasi tambahan (catatan + foto) ke tiket terbuka (FR-11.1 A1) | [M-11](../02-modules/m11-damage-reports.md) |
 | `DAMAGE_REPORTED` / `DAMAGE_VERIFIED` / `DAMAGE_REJECTED` / `DAMAGE_CLOSED` | Siklus tiket | [M-11](../02-modules/m11-damage-reports.md) |
 | `DOCUMENT_UPLOADED` / `DOCUMENT_DOWNLOADED` / `DOCUMENT_DELETED` | Termasuk pencatatan siapa mengunduh | [M-06](../02-modules/m06-documents.md) |
 | `FILE_GENERATED` | PDF mutasi keluaran worker terpercaya didaftarkan CLEAN; file_id, owner_id, MIME, ukuran dan checksum, atomik dengan status SIAP M-04 (`SDD-09 §4.6`) | [M-06](../02-modules/m06-documents.md) |

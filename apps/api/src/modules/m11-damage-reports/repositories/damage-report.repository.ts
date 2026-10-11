@@ -34,6 +34,8 @@ export interface TiketBaru extends ObjekLaporan {
     readonly urgensi: UrgensiKerusakan;
     /** FR-11.3 / SC-07: tenggat absolut yang ditetapkan saat lapor (0050, pola SDD-APR-07). */
     readonly batasSla: Date;
+    /** FR-07.4 A2 (0051): reservasi ruangan asal laporan pasca-kegiatan. */
+    readonly reservationId?: number | undefined;
 }
 
 /** Saringan `GET /damage-reports` (FR-11.3 langkah 3); rentang sudah berupa instan WIB `[dari, sampai)`. */
@@ -97,6 +99,8 @@ export interface TiketDetail extends TiketTerkunci {
     readonly kode_barang: string | null;
     readonly ruangan: string | null;
     readonly gedung: string | null;
+    readonly reservation_id: string | null;
+    readonly reservasi_nomor: string | null;
 }
 
 export interface FotoTiket {
@@ -178,6 +182,7 @@ export class DamageReportRepository extends BaseRepository {
                 deskripsi: t.deskripsi,
                 urgensi: t.urgensi,
                 batas_sla: t.batasSla,
+                reservation_id: t.reservationId ?? null,
                 created_by: pelakuId(ctx),
                 updated_by: pelakuId(ctx),
             })
@@ -271,7 +276,9 @@ export class DamageReportRepository extends BaseRepository {
             .leftJoin("rooms as r", (j) => j.on(sql<boolean>`r.id = coalesce(k.room_id, s.room_id)`))
             .leftJoin("areas as a", "a.id", "r.area_id")
             .leftJoin("buildings as g", "g.id", "a.building_id")
+            .leftJoin("reservations as rv", "rv.id", "k.reservation_id")
             .select([
+                "k.reservation_id", "rv.nomor as reservasi_nomor",
                 "k.id", "k.nomor", "k.status", "k.urgensi", "k.deskripsi", "k.pelapor_id", "k.asset_id", "k.room_id", "k.created_at",
                 "k.diverifikasi_oleh", "k.diverifikasi_pada", "k.catatan_verifikasi",
                 "p.nama as pelapor_nama", "v.nama as verifikator_nama", "s.nama as aset_nama", "s.kode_barang", "r.nama as ruangan", "g.nama as gedung",
@@ -287,6 +294,42 @@ export class DamageReportRepository extends BaseRepository {
             .innerJoin("stored_files as b", "b.id", "f.file_id")
             .select(["f.file_id", "f.urutan", "b.checksum", "b.scan_status", "b.object_key", "b.thumb_key", "b.medium_key"])
             .where("f.damage_report_id", "=", id)
+            .orderBy("f.urutan")
+            .execute();
+    }
+
+    /** FR-11.1 A1 (0051): catatan tambahan berpelaku — append-only. */
+    async tambahCatatan(ctx: AuthContext, reportId: string, keterangan: string): Promise<string> {
+        return (await this.query(ctx).insertInto("damage_report_notes").values({ damage_report_id: reportId, keterangan, created_by: ctx.userId }).returning("id").executeTakeFirstOrThrow()).id;
+    }
+
+    async tambahFotoCatatan(ctx: AuthContext, noteId: string, fileIds: readonly number[]): Promise<void> {
+        if (fileIds.length === 0) return;
+        await this.query(ctx)
+            .insertInto("damage_report_note_photos")
+            .values(fileIds.map((fileId, i) => ({ note_id: noteId, file_id: fileId, urutan: i + 1, created_by: pelakuId(ctx) })))
+            .execute();
+    }
+
+    /** Catatan tiket, terlama lebih dulu, beserta nama penulis. */
+    async catatan(ctx: AuthContext, reportId: string): Promise<readonly { readonly id: string; readonly keterangan: string; readonly created_at: Date; readonly penulis_id: string; readonly penulis_nama: string }[]> {
+        return this.query(ctx)
+            .selectFrom("damage_report_notes as c")
+            .innerJoin("users as u", "u.id", "c.created_by")
+            .select(["c.id", "c.keterangan", "c.created_at", "c.created_by as penulis_id", "u.nama as penulis_nama"])
+            .where("c.damage_report_id", "=", reportId)
+            .orderBy("c.created_at")
+            .orderBy("c.id")
+            .execute();
+    }
+
+    async fotoCatatan(ctx: AuthContext, noteIds: readonly string[]): Promise<readonly (FotoTiket & { readonly note_id: string })[]> {
+        if (noteIds.length === 0) return [];
+        return this.query(ctx)
+            .selectFrom("damage_report_note_photos as f")
+            .innerJoin("stored_files as b", "b.id", "f.file_id")
+            .select(["f.note_id", "f.file_id", "f.urutan", "b.checksum", "b.scan_status", "b.object_key", "b.thumb_key", "b.medium_key"])
+            .where("f.note_id", "in", noteIds)
             .orderBy("f.urutan")
             .execute();
     }

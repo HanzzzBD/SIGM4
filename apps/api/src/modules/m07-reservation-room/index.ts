@@ -15,3 +15,6 @@ export { sinkronkanStatusReservasi } from "./services/usage.service.js";
 export { BlockService } from "./services/block.service.js";
 export type { HasilSinkronAturan } from "./services/block.service.js";
 export { CancellationService } from "./services/cancellation.service.js";
+// Laporan kerusakan pasca-kegiatan tertaut reservasi (FR-07.4 A2, PR-03-31).
+export type { ReservasiLaporan } from "./services/damage-link.js";
+export { reservasiUntukLaporan } from "./services/damage-link.js";

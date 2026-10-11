@@ -515,6 +515,8 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 // PR-03-14 (M-11): foto cukup dipesan — unggahannya boleh tertunda (FR-11.1 A2, keputusan 20b).
                 const pesananFoto = (await panggil(mode, "POST", "/files/presign", { jenis: "DAMAGE_PHOTO", mime: "image/jpeg", ukuran: 1024 })).json.data as { file_id: string };
                 const tiket = await langkah("POST /damage-reports", "/damage-reports", { asset_id: Number(asetId), deskripsi: "Uji gerbang AL-01", urgensi: "SEDANG", foto_file_ids: [Number(pesananFoto.file_id)] }, ["DAMAGE_REPORTED"]);
+                // PR-03-31: tambah informasi ke tiket terbuka (FR-11.1 A1) — catatan tanpa foto.
+                await langkah("POST /damage-reports/:id/notes", `/damage-reports/${id(tiket)}/notes`, { keterangan: "Uji gerbang AL-01: informasi tambahan" }, ["DAMAGE_INFO_ADDED"]);
                 // PR-03-15: perbaikan ringan menutup tiket — dua aksi dalam satu transaksi (keputusan 21b).
                 await langkah("POST /damage-reports/:id/verify", `/damage-reports/${id(tiket)}/verify`, { keputusan: "PERBAIKAN_RINGAN", catatan: "Uji gerbang AL-01" }, ["DAMAGE_VERIFIED", "DAMAGE_CLOSED"]);
                 await langkah(
@@ -528,6 +530,8 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 // sini — disingkirkan sebelum langkah PATCH .../status di bawah (riwayat
                 // kondisi PR-02-13 lebih dulu — FK asset_condition_history.asset_id).
                 await kueri(`DELETE FROM asset_document_links WHERE asset_id = ${asetId}`); // PR-03-06: menunjuk assets
+                await kueri(`DELETE FROM damage_report_note_photos WHERE note_id IN (SELECT n.id FROM damage_report_notes n JOIN damage_reports k ON k.id = n.damage_report_id WHERE k.asset_id = ${asetId})`); // PR-03-31
+                await kueri(`DELETE FROM damage_report_notes WHERE damage_report_id IN (SELECT id FROM damage_reports WHERE asset_id = ${asetId})`);
                 await kueri(`DELETE FROM damage_report_photos WHERE damage_report_id IN (SELECT id FROM damage_reports WHERE asset_id = ${asetId})`); // PR-03-14
                 await kueri(`DELETE FROM damage_reports WHERE asset_id = ${asetId}`);
                 await kueri(`DELETE FROM asset_condition_history WHERE asset_id = ${asetId}`);
@@ -636,6 +640,8 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'asset_movement_document'");
                 await kueri("DELETE FROM asset_movement_documents");
                 // PR-03-14: tiket kerusakan menunjuk assets/rooms/users/stored_files — sebelum semuanya.
+                await kueri("DELETE FROM damage_report_note_photos");
+                await kueri("DELETE FROM damage_report_notes");
                 await kueri("DELETE FROM damage_report_photos");
                 await kueri("DELETE FROM damage_reports");
                 await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'damage_report'");
