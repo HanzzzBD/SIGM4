@@ -1,6 +1,6 @@
 // Topbar C-04 (UX §5.2; keputusan 83): ciutkan sidebar, identitas, penanda WIB, menu
 // pengguna (Keluar · Keluar dari semua perangkat, FR-01.2/A1). Pencarian global lahir
-// bersama P-15; lonceng + pratinjau notifikasi milik P-13 (PR-02-43); banner sesi berakhir ada di shell (FR-01.2 A2).
+// bersama P-15 (PR-02-45: kotak cari menuju Inventaris `?q=`); lonceng + pratinjau notifikasi milik P-13 (PR-02-43); banner sesi berakhir ada di shell (FR-01.2 A2).
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { logout, logoutSemua } from "../modules/m01-auth";
 import { Lonceng } from "../modules/m17-notifications";
 import { useCan, useSesi } from "../shared/auth";
+import { jalurTerdaftar } from "../shared/navigasi";
 import { Ikon } from "../shared/ui/icon";
 import { Logo } from "../shared/ui/logo";
 
@@ -24,6 +25,28 @@ function JamWib() {
 }
 
 const ITEM = "flex min-h-touch cursor-pointer items-center gap-3 rounded-sm px-4 text-base text-text-primary outline-none data-highlighted:bg-neutral-50";
+
+/** Pencarian global C-04 (UX NAVIGATION §2): kode aset, nomor seri, nama → P-15 terfilter (FR-04.2). */
+function PencarianGlobal() {
+    const navigate = useNavigate();
+    const [kata, setKata] = useState("");
+    return (
+        <form
+            role="search"
+            className="hidden w-full max-w-sm items-center gap-2 rounded-sm border border-border-strong bg-surface-default px-3 md:flex"
+            onSubmit={(e) => {
+                e.preventDefault();
+                if (kata.trim() === "") return;
+                void navigate({ to: "/aset", search: { q: kata.trim() } });
+            }}
+        >
+            <span aria-hidden className="text-icon-muted">
+                <Ikon nama="cari" />
+            </span>
+            <input type="search" aria-label="Cari aset: kode, nomor seri, atau nama" placeholder="Cari kode aset, nomor seri, nama…" value={kata} onChange={(e) => setKata(e.target.value)} className="min-h-control-md w-full bg-transparent text-base text-text-primary outline-none" />
+        </form>
+    );
+}
 
 export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; readonly menuLabel: string }) {
     const sesi = useSesi();
@@ -47,6 +70,7 @@ export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; rea
                 <Ikon nama="menu" />
             </button>
             <Logo ukuran="sm" className="md:hidden" />
+            {can("asset.view") && jalurTerdaftar("/aset") && <PencarianGlobal />}
             <div className="ml-auto flex items-center gap-4">
                 <JamWib />
                 {can("notification.manage_own") && <Lonceng />}
