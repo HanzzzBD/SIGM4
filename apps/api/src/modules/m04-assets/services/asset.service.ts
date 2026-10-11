@@ -22,6 +22,7 @@ import { publish } from "../../../shared/events/index.js";
 import { movementDocumentRepository } from "../repositories/movement-document.repository.js";
 import { EVENT_MOVEMENT_DOCUMENT_REQUESTED } from "./movement-document.service.js";
 import type {
+    AtributAset,
     AssetFields,
     AssetRow,
     ListAssetsFilter,
@@ -149,6 +150,12 @@ export interface UbahKondisiInput {
     /** BR-012: wajib bila `kondisi === "HILANG"` — divalidasi di `ubahKondisi`. */
     readonly referensiJenis: string | null;
     readonly referensiId: number | null;
+}
+
+/** `PUT /assets/{id}` (PR-02-46): atribut deskriptif + kondisi opsional. */
+export interface PerbaruiAsetInput {
+    readonly atribut: AtributAset;
+    readonly kondisi?: UbahKondisiInput;
 }
 
 export class AssetService {
@@ -414,6 +421,56 @@ export class AssetService {
         }
 
         return diperbarui;
+    }
+
+    /**
+     * `PUT /assets/{id}` (FR-04.3 langkah 1–4; PR-02-46, keputusan 93e/93f log phase-02). Atribut
+     * deskriptif saja — lokasi lewat mutasi (FR-04.4), status turunan, kode/UUID/kategori tetap.
+     * Finansial hanya bagi pemegang `asset.view_financial` (BR-073). Kondisi yang berubah dijalankan
+     * lewat inti `ubahKondisiDalam` di transaksi yang sama: alasan wajib (BR-007) dan menuntut
+     * `asset.update_condition`. Satu `ASSET_UPDATED` memuat field yang benar-benar berubah (AL-01).
+     */
+    async perbarui(ctx: AuthContext, id: number, input: PerbaruiAsetInput): Promise<AssetRow> {
+        if (input.atribut.bolehDipinjamSiswa && !input.atribut.dapatDipinjam) {
+            throw new DomainError("VALIDATION_ERROR", "boleh_dipinjam_siswa tidak dapat true bila dapat_dipinjam false.", { field: "boleh_dipinjam_siswa" });
+        }
+        if (input.atribut.sumberPerolehan !== undefined && !ctx.can("asset.view_financial")) {
+            throw new ForbiddenError();
+        }
+        return withTransaction(
+            ctx,
+            async (scope) => {
+                const repo = createAssetRepository(scope.tx);
+                const lama = await repo.kunciUntukUbah(scope.ctx, id);
+                if (lama === undefined) throw new NotFoundError("Aset tidak ditemukan.");
+                // BR-065d: aset terhapuskan tetap dapat dilihat, tetapi tidak lagi disunting.
+                if (lama.dihapuskan) throw new DomainError("VALIDATION_ERROR", "Aset telah dihapuskan dan tidak dapat diubah.", { field: "id" });
+                const kondisiBerubah = input.kondisi !== undefined && input.kondisi.kondisi !== lama.kondisi;
+                if (kondisiBerubah && !ctx.can("asset.update_condition")) throw new ForbiddenError();
+                if (kondisiBerubah && (input.kondisi?.alasan ?? "") === "") {
+                    throw new DomainError("VALIDATION_ERROR", "Alasan perubahan kondisi wajib diisi.", { field: "alasan" });
+                }
+                const a = input.atribut;
+                if (a.nomorSeri !== null && a.nomorSeri !== lama.nomor_seri && (await repo.nomorSeriDipakaiLain(scope.ctx, a.nomorSeri, id))) {
+                    throw new DomainError("DUPLICATE_CODE", "Nomor seri sudah digunakan.", { field: "nomor_seri" });
+                }
+                const baru = await repo.updateAtribut(scope.ctx, id, a);
+                const sebelum: Record<string, unknown> = {};
+                const sesudah: Record<string, unknown> = {};
+                for (const k of ["nama", "merek", "model", "nomor_seri", "tahun_perolehan", "dapat_dipinjam", "boleh_dipinjam_siswa", "penanggung_jawab_id", "sumber_perolehan", "nilai_perolehan"] as const) {
+                    if (lama[k] !== baru[k]) {
+                        sebelum[k] = lama[k];
+                        sesudah[k] = baru[k];
+                    }
+                }
+                if (Object.keys(sesudah).length > 0) {
+                    await this.audit.write(scope, { modul: MODUL, aksi: "ASSET_UPDATED", entitas: "assets", entitasId: String(id), nilaiSebelum: sebelum, nilaiSesudah: sesudah });
+                }
+                if (!kondisiBerubah || input.kondisi === undefined) return baru;
+                return this.ubahKondisiDalam(scope, id, input.kondisi);
+            },
+            this.db,
+        );
     }
 
     /**

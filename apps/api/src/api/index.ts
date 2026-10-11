@@ -114,6 +114,7 @@ import {
     updateAssetConditionRoute,
     getAssetRoute,
     assetTimelineRoute,
+    updateAssetRoute,
     importAssetsRoute, getAssetImportRoute, assetImportTemplateRoute, movementDocumentRoute, movementDocumentDownloadRoute,
 } from "../modules/m04-assets/index.js";
 import { assetByUuidRoute, printQrRoute, publicAssetRoute, qrRouter, qrTerpasangRoute, regenerateQrRoute } from "../modules/m05-qr/index.js";
@@ -247,6 +248,7 @@ export const registry = new RouteRegistry().register(
     listAssetsRoute,
     getAssetRoute,
     assetTimelineRoute,
+    updateAssetRoute,
     updateAssetConditionRoute,
     moveAssetsRoute,
     assetByUuidRoute,

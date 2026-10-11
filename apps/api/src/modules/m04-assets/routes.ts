@@ -20,6 +20,7 @@ import {
     listRoomAssetsHandler,
     moveAssetsHandler,
     updateAssetConditionHandler,
+    updateAssetHandler,
 } from "./controllers/asset.controller.js";
 import {
     AssetIdParamSchema,
@@ -30,8 +31,10 @@ import {
     MoveAssetsResponseSchema,
     RoomAssetsResponseSchema,
     RoomIdParamSchema,
+    UpdateAssetBodySchema,
     UpdateAssetConditionBodySchema,
     UpdateAssetConditionResponseSchema,
+    UpdateAssetResponseSchema,
 } from "./schemas/asset.schema.js";
 import { AssetService } from "./services/asset.service.js";
 import {
@@ -111,6 +114,19 @@ export const updateAssetConditionRoute = defineRoute({
     params: AssetIdParamSchema,
     body: UpdateAssetConditionBodySchema,
     response: UpdateAssetConditionResponseSchema,
+});
+
+/** FR-04.3 langkah 1–4 (PR-02-46, keputusan 93e/93f): atribut deskriptif; kondisi berubah menuntut juga `asset.update_condition`. */
+export const updateAssetRoute = defineRoute({
+    method: "PUT",
+    path: "/assets/:id",
+    permission: "asset.update",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Perbarui atribut aset; kondisi opsional beralasan (FR-04.3)",
+    params: AssetIdParamSchema,
+    body: UpdateAssetBodySchema,
+    response: UpdateAssetResponseSchema,
 });
 
 /**
@@ -257,6 +273,7 @@ export function assetsRouter(
         otorisasi(updateAssetConditionRoute.permission),
         updateAssetConditionHandler(service, deps.appBaseUrl),
     );
+    router.put(updateAssetRoute.path, batasi(updateAssetRoute), otorisasi(updateAssetRoute.permission), updateAssetHandler(service, deps.appBaseUrl));
     router.post(
         moveAssetsRoute.path,
         batasi(moveAssetsRoute),
