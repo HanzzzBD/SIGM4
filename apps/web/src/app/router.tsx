@@ -17,6 +17,7 @@ import { TAMPILAN, detailReservasiQuery, hariIniWib, isianDariReservasi, isianDa
 import { KONDISI, STATUS, URUTAN } from "../modules/m04-assets";
 import { STATUS_TIKET, URGENSI_TIKET } from "../modules/m11-damage-reports";
 import { STATUS_PENGGUNA } from "../modules/m02-users";
+import { JENIS_UNIT, KELOMPOK as KELOMPOK_PARAMETER, STATUS_UNIT } from "../modules/m20-settings";
 import { RENTANG } from "../modules/m15-dashboard";
 import { KELOMPOK, TAMPILAN_NOTIFIKASI } from "../modules/m17-notifications";
 import {
@@ -43,6 +44,9 @@ import {
     HalamanMutasiAset,
     HalamanPanelBlokade,
     HalamanDaftarKerusakan,
+    HalamanKalenderAkademik,
+    HalamanParameter,
+    HalamanUnitKerja,
     HalamanDetailPengguna,
     HalamanImporPengguna,
     HalamanKenaikanKelas,
@@ -662,6 +666,39 @@ const matriksRoute = createRoute({
     },
 });
 
+/** P-70 Parameter Sistem (FR-20.1, UX §6 `/pengaturan`; PR-01-24): kelompok aktif di `?kelompok=`. */
+const parameterRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/pengaturan",
+    beforeLoad: butuhIzin("setting.view"),
+    validateSearch: z.object({ kelompok: z.catch(z.optional(z.enum(KELOMPOK_PARAMETER)), undefined) }),
+    component: function RouteParameter() {
+        const { kelompok } = parameterRoute.useSearch();
+        const navigate = useNavigate({ from: parameterRoute.fullPath });
+        return <HalamanParameter kelompok={kelompok ?? KELOMPOK_PARAMETER[0]} onKelompok={(k) => void navigate({ search: { kelompok: k } })} />;
+    },
+});
+
+/** P-71 Kalender Akademik (Lampiran E.2, UX §6; PR-01-24): terbaca `setting.view`, diubah `setting.manage`. */
+const kalenderAkademikRoute = createRoute({ getParentRoute: () => shellRoute, path: "/pengaturan/kalender-akademik", beforeLoad: butuhIzin("setting.view"), component: HalamanKalenderAkademik });
+
+/** P-72 Unit Kerja (Lampiran E.3, UX §6; PR-01-24): saringan jenis/status dan halaman di URL. */
+const unitKerjaRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/pengaturan/unit-kerja",
+    beforeLoad: butuhIzin("setting.view"),
+    validateSearch: z.object({
+        jenis: z.catch(z.optional(z.enum(JENIS_UNIT)), undefined),
+        status: z.catch(z.optional(z.enum(STATUS_UNIT)), undefined),
+        page: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(2))), undefined),
+    }),
+    component: function RouteUnitKerja() {
+        const saringan = unitKerjaRoute.useSearch();
+        const navigate = useNavigate({ from: unitKerjaRoute.fullPath });
+        return <HalamanUnitKerja saringan={saringan} onSaringan={(s) => void navigate({ search: { ...saringan, ...s } })} />;
+    },
+});
+
 export const routeTree = rootRoute.addChildren([
     loginRoute,
     verifikasiDuaFaktorRoute,
@@ -670,7 +707,7 @@ export const routeTree = rootRoute.addChildren([
     gangguanRoute,
     tidakDitemukanRoute,
     publikAsetRoute,
-    shellRoute.addChildren([dashboardRoute, penggunaRoute, tambahPenggunaRoute, imporPenggunaRoute, kenaikanKelasRoute, detailPenggunaRoute, roleRoute, matriksRoute, daftarKerusakanRoute, laporKerusakanRoute, detailKerusakanRoute, inventarisRoute, detailAsetRoute, riwayatAsetRoute, tambahAsetRoute, ubahAsetRoute, kategoriAsetRoute, labelQrRoute, scanRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    shellRoute.addChildren([dashboardRoute, parameterRoute, kalenderAkademikRoute, unitKerjaRoute, penggunaRoute, tambahPenggunaRoute, imporPenggunaRoute, kenaikanKelasRoute, detailPenggunaRoute, roleRoute, matriksRoute, daftarKerusakanRoute, laporKerusakanRoute, detailKerusakanRoute, inventarisRoute, detailAsetRoute, riwayatAsetRoute, tambahAsetRoute, ubahAsetRoute, kategoriAsetRoute, labelQrRoute, scanRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {
