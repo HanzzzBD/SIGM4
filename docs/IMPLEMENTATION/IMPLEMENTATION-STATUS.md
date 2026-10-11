@@ -123,7 +123,9 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-01-18` | `Done` | [#60](https://github.com/HanzzzBD/SIGM4/pull/60) | Endpoint master data Lampiran E: tahun ajaran & semester, hari libur, hari kerja, unit kerja *(baru, keputusan 29)* — menutup butir terbuka `PR-01-11`/`PR-01-12` ; 14 endpoint M-20 tanpa migration — keputusan 34 [log phase-01](logs/phase-01.md) |
 | `PR-01-19` | `Done` | [#164](https://github.com/HanzzzBD/SIGM4/pull/164) (`96f7048`) | UI pengguna P-60…P-64 + `GET /users/import/template` (`IMPT-05`); drawer reset password/2FA/kode aktivasi P-63 — keputusan 37 [log phase-01 §2](logs/phase-01.md) |
 | `PR-01-20` | `In Review` | [#165](https://github.com/HanzzzBD/SIGM4/pull/165) | UI role P-65 + matriks P-66 + `GET /permissions` + `POST /roles` (salin role, `BR-069a`) — keputusan 38 [log phase-01 §2](logs/phase-01.md) |
-| `PR-01-21` … `PR-01-26` | `Not Started` | — | UI pengguna/role/lokasi/pengaturan/activity log + data & ekspor lokasi + bukti PM-05 — rekonsiliasi cakupan UI & gap (keputusan 23 log phase-03); rincian [`phases/phase-01.md` §7](phases/phase-01.md) |
+| `PR-01-21` … `PR-01-23` | `Not Started` | — | UI pengguna/role/lokasi/pengaturan/activity log + data & ekspor lokasi + bukti PM-05 — rekonsiliasi cakupan UI & gap (keputusan 23 log phase-03); rincian [`phases/phase-01.md` §7](phases/phase-01.md) |
+| `PR-01-24` | `In Review` | [#166](https://github.com/HanzzzBD/SIGM4/pull/166) | UI pengaturan P-70 Parameter, P-71 Kalender Akademik (onboarding tahun ajaran), P-72 Unit Kerja; teks AC `FR-20.1` #4 diselaraskan keputusan 36d — keputusan 39 [log phase-01 §2](logs/phase-01.md) |
+| `PR-01-25` … `PR-01-26` | `Not Started` | — | UI pengguna/role/lokasi/pengaturan/activity log + data & ekspor lokasi + bukti PM-05 — rekonsiliasi cakupan UI & gap (keputusan 23 log phase-03); rincian [`phases/phase-01.md` §7](phases/phase-01.md) |
 
 ### Phase 02 — Inti Sistem · `In Review`
 

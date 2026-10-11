@@ -10,6 +10,8 @@ import type { AlasanLogin } from "../modules/m01-auth";
 import { muatApprovalInboxPage, muatApprovalRulesPage, muatDecisionPage, muatEditorAturanPage } from "../modules/m10-approval";
 import { muatDashboardPage } from "../modules/m15-dashboard";
 import { loadDamageDetailPage, loadDamageListPage, loadDamageReportPage } from "../modules/m11-damage-reports";
+import { loadCalendarPage, loadParameterPage, loadWorkUnitPage } from "../modules/m20-settings";
+import type { Kelompok, SaringanUnit } from "../modules/m20-settings";
 import { loadClassPromotionPage, loadUserCreatePage, loadUserDetailPage, loadUserImportPage, loadUserListPage, loadRoleListPage, loadRolePermissionPage } from "../modules/m02-users";
 import type { AksiPengguna, SaringanPengguna } from "../modules/m02-users";
 import type { AwalLaporan, PencarianKerusakan } from "../modules/m11-damage-reports";
@@ -200,6 +202,27 @@ export const HalamanRole = (props: { readonly disimpan?: string | undefined; rea
 export const HalamanMatriksPermission = (props: { readonly id: string; readonly onSimpan: (id: string) => void; readonly onBatal: () => void }) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat matriks permission" baris={8} />}>
         <RolePermissionPage {...props} />
+    </Suspense>
+);
+const ParameterPage = lazy(loadParameterPage);
+const CalendarPage = lazy(loadCalendarPage);
+const WorkUnitPage = lazy(loadWorkUnitPage);
+/** P-70 Parameter Sistem (FR-20.1; PR-01-24). */
+export const HalamanParameter = (props: { readonly kelompok: Kelompok; readonly onKelompok: (k: Kelompok) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat parameter sistem" baris={6} />}>
+        <ParameterPage {...props} />
+    </Suspense>
+);
+/** P-71 Kalender Akademik (Lampiran E.2; PR-01-24). */
+export const HalamanKalenderAkademik = () => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat kalender akademik" baris={6} />}>
+        <CalendarPage />
+    </Suspense>
+);
+/** P-72 Unit Kerja (Lampiran E.3; PR-01-24). */
+export const HalamanUnitKerja = (props: { readonly saringan: SaringanUnit; readonly onSaringan: (s: Partial<SaringanUnit>) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat unit kerja" baris={6} />}>
+        <WorkUnitPage {...props} />
     </Suspense>
 );
 const DamageListPage = lazy(loadDamageListPage);

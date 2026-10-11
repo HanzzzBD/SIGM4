@@ -68,7 +68,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 - [ ] Perubahan parameter berlaku tanpa perlu deployment maupun restart layanan.
 - [ ] Setiap parameter menampilkan penjelasan singkat dan nilai bawaan.
 - [ ] Perubahan parameter tercatat lengkap dengan nilai lama dan baru.
-- [ ] Hanya role Administrator yang dapat mengakses menu ini.
+- [ ] Hanya role Administrator (`setting.manage`) yang dapat mengubah parameter; Pimpinan Sekolah (`setting.view`) hanya membaca.
 
 ## 6. Business Rules
 
