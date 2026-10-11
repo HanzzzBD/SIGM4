@@ -9,6 +9,8 @@ import { AktivasiDuaFaktorPage, GantiPasswordPage, LoginPage, VerifikasiDuaFakto
 import type { AlasanLogin } from "../modules/m01-auth";
 import { muatApprovalInboxPage, muatApprovalRulesPage, muatDecisionPage, muatEditorAturanPage } from "../modules/m10-approval";
 import { muatDashboardPage } from "../modules/m15-dashboard";
+import { loadDamageDetailPage, loadDamageListPage, loadDamageReportPage } from "../modules/m11-damage-reports";
+import type { AwalLaporan, PencarianKerusakan } from "../modules/m11-damage-reports";
 import { loadLabelQrPage, loadPublicAssetPage, loadScanPage } from "../modules/m05-qr";
 import { loadNotificationCenterPage, loadPreferencesPage } from "../modules/m17-notifications";
 import type { PencarianNotifikasi } from "../modules/m17-notifications";
@@ -147,6 +149,27 @@ export const HalamanUbahAset = (props: { readonly id: string; readonly onSelesai
 export const HalamanKategoriAset = () => (
     <Suspense fallback={<KeadaanMemuat label="Memuat kategori aset" baris={6} />}>
         <CategoryPage />
+    </Suspense>
+);
+const DamageListPage = lazy(loadDamageListPage);
+const DamageReportPage = lazy(loadDamageReportPage);
+const DamageDetailPage = lazy(loadDamageDetailPage);
+/** P-39 Laporan Kerusakan (FR-11.3; PR-03-32). */
+export const HalamanDaftarKerusakan = (props: { readonly pencarian: PencarianKerusakan; readonly onPencarian: (p: Partial<PencarianKerusakan>) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat laporan kerusakan" baris={6} />}>
+        <DamageListPage {...props} />
+    </Suspense>
+);
+/** P-40 Lapor Kerusakan (FR-11.1; PR-03-32). */
+export const HalamanLaporKerusakan = (props: { readonly awal: AwalLaporan; readonly onSelesai: (id: string) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat formulir laporan" baris={6} />}>
+        <DamageReportPage {...props} />
+    </Suspense>
+);
+/** P-41 Detail Tiket Kerusakan (FR-11.2; PR-03-32). */
+export const HalamanDetailKerusakan = (props: { readonly id: string; readonly aksi?: "verifikasi" | undefined; readonly onAksi: (a: "verifikasi" | undefined) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat laporan kerusakan" baris={8} />}>
+        <DamageDetailPage {...props} />
     </Suspense>
 );
 export const HalamanMutasiAset = (props: { readonly documentId: number | null; readonly onDocument: (id: number | null) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat mutasi aset" baris={4} />}><AssetMovementPage {...props} /></Suspense>;
