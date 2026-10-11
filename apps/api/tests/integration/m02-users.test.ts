@@ -359,6 +359,41 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
         expect(sisa?.n).toBe("2");
     });
 
+    /** Isian `update` dari baris basis data apa adanya — hanya field yang diuji yang diganti. */
+    async function isianDari(id: number) {
+        const [u] = await kueri<{ nama: string; email: string; nip_nis: string; role_id: string }>(`SELECT nama, email, nip_nis, role_id::text FROM users WHERE id = ${String(id)}`);
+        if (u === undefined) throw new Error("Pengguna uji tidak ada");
+        return { nama: u.nama, email: u.email, nipNis: u.nip_nis, roleId: Number(u.role_id), workUnitId: null, telepon: null };
+    }
+
+    it("BR-069: mengubah role atau email akun sendiri ditolak; nama sendiri tetap boleh (PR-01-19)", async () => {
+        const service = buatService();
+        const a = await seedAdmin();
+        await seedAdmin();
+        await seedAdmin();
+        const ctx = buatCtx(a);
+        const isian = await isianDari(a);
+
+        await expect(service.update(ctx, a, { ...isian, roleId: await idRole("R-02") })).rejects.toMatchObject({ kode: "VALIDATION_ERROR", detail: { rule: "BR-069", field: "role_id" } });
+        await expect(service.update(ctx, a, { ...isian, email: emailUnik() })).rejects.toMatchObject({ kode: "VALIDATION_ERROR", detail: { rule: "BR-069", field: "email" } });
+        await expect(service.update(ctx, a, { ...isian, nama: "Nama Baru" })).resolves.toMatchObject({ nama: "Nama Baru" });
+    });
+
+    it("BR-068 + BR-070a: menurunkan Administrator saat hanya 2 aktif ditolak; saat 3 aktif boleh (PR-01-19)", async () => {
+        const service = buatService();
+        const a = await seedAdmin();
+        const b = await seedAdmin();
+        const ctx = buatCtx(a);
+        const guru = await idRole("R-05");
+
+        await expect(service.update(ctx, b, { ...(await isianDari(b)), roleId: guru })).rejects.toMatchObject({ kode: "VALIDATION_ERROR", detail: { rule: "BR-068+BR-070a", field: "role_id" } });
+        const [tetap] = await kueri<{ n: string }>("SELECT count(*)::text AS n FROM users u JOIN roles r ON r.id = u.role_id WHERE r.kode = 'R-01' AND u.status = 'AKTIF'");
+        expect(tetap?.n).toBe("2");
+
+        await seedAdmin();
+        await expect(service.update(ctx, b, { ...(await isianDari(b)), roleId: guru })).resolves.toMatchObject({ role_id: String(guru) });
+    });
+
     it("list: paginasi dan filter status/role_id/work_unit_id", async () => {
         const adminId = await seedAdmin();
         const service = buatService();

@@ -53,8 +53,8 @@ describe("registri navigasi", () => {
     });
 
     it("entri dirender hanya bila halamannya terdaftar DAN permission dipegang; grup kosong hilang", () => {
-        expect(navigasiTerlihat(semua("dashboard.view", "user.view", "material.view")).map((g) => [g.label, g.entri.map((e) => e.label)])).toEqual([["Beranda", ["Dashboard"]]]);
-        expect(navigasiTerlihat(semua("user.view"))).toEqual([]);
+        expect(navigasiTerlihat(semua("dashboard.view", "loan.view", "material.view")).map((g) => [g.label, g.entri.map((e) => e.label)])).toEqual([["Beranda", ["Dashboard"]]]);
+        expect(navigasiTerlihat(semua("loan.view"))).toEqual([]);
     });
 
     it("HALAMAN_TERDAFTAR identik dengan route yang benar-benar ada di router", () => {
@@ -64,7 +64,8 @@ describe("registri navigasi", () => {
     });
 
     it("drill-down hanya menjadi tautan bila halaman sasarannya terdaftar; filter URL dipertahankan", () => {
-        expect(jalurDrilldown("P-60?filter[status]=AKTIF")).toBeNull();
+        expect(jalurDrilldown("P-73?filter[aksi]=LOGIN_SUCCESS")).toBeNull();
+        expect(jalurDrilldown("P-60?filter[status]=AKTIF")).toBe("/pengguna?filter[status]=AKTIF");
         expect(jalurDrilldown(null)).toBeNull();
         expect(jalurDrilldown("P-12?rentang=7_hari")).toBe("/?rentang=7_hari");
         expect(jalurDrilldown("P-12 · P-70")).toBe("/");

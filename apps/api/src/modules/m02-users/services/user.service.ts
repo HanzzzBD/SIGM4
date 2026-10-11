@@ -194,6 +194,27 @@ export class UserService {
                 )
                     tolakDuplikat("nip_nis");
 
+                const gantiRole = String(input.roleId) !== before.role_id;
+                // BR-069: pengguna tidak dapat mengubah email dan rolenya sendiri.
+                if (scope.ctx.userId === id) {
+                    if (before.email.toLowerCase() !== input.email.toLowerCase())
+                        throw new DomainError("VALIDATION_ERROR", "Anda tidak dapat mengubah email akun Anda sendiri.", { rule: "BR-069", field: "email" });
+                    if (gantiRole)
+                        throw new DomainError("VALIDATION_ERROR", "Anda tidak dapat mengubah role akun Anda sendiri.", { rule: "BR-069", field: "role_id" });
+                }
+                // BR-068 + BR-070a: menurunkan Administrator aktif sama dengan menonaktifkannya sebagai
+                // Administrator — ambang dan kunci baris yang sama dengan `updateStatus`.
+                if (gantiRole && before.status === "AKTIF" && (await repo.findRoleKode(scope.ctx, id)) === KODE_ROLE_ADMINISTRATOR) {
+                    const adminAktif = await repo.lockActiveUserIdsByRole(scope.ctx, before.role_id);
+                    if (adminAktif.length <= AMBANG_ADMIN_AKTIF) {
+                        throw new DomainError(
+                            "VALIDATION_ERROR",
+                            "Penggantian role ditolak — sistem wajib memiliki minimal dua akun Administrator aktif.",
+                            { rule: "BR-068+BR-070a", field: "role_id" },
+                        );
+                    }
+                }
+
                 if (
                     input.workUnitId !== null &&
                     String(input.workUnitId) !== before.work_unit_id

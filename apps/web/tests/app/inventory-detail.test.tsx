@@ -204,7 +204,8 @@ describe("P-18 Detail Aset", () => {
         expect(screen.getByText("Dokumen ditautkan: faktur.pdf")).toBeTruthy();
         expect(screen.getByText("Mutasi Gudang → Lab Komputer")).toBeTruthy();
         expect(screen.getByText("Kondisi Baik → Rusak Ringan")).toBeTruthy();
-        expect(screen.getByText("Sistem")).toBeTruthy();
+        // Dibatasi ke konten: grup sidebar "Sistem" ikut tampil sejak P-60 terdaftar (PR-01-19).
+        expect(within(screen.getByRole("main")).getByText("Sistem")).toBeTruthy();
         expect(screen.getAllByText(/WIB$/).length).toBe(4);
         expect(screen.getByRole("link", { name: "Riwayat" }).getAttribute("aria-current")).toBe("page");
     });

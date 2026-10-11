@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **175** baris, dikumpulkan dari 22 berkas modul.
+> Total: **176** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -74,6 +74,7 @@
 | GET | `/rooms/{id}/assets` | `asset.view` | Aset dalam satu ruangan | [M-04](../02-modules/m04-assets.md) |
 | GET | `/rooms/{id}/blocks` | `reservation.fixed_schedule` | Jadwal tetap & blokade manual sebuah ruangan, aktif maupun nonaktif (`FR-07.5`) | [M-07](../02-modules/m07-reservation-room.md) |
 | GET | `/settings` | `setting.view` | Baca parameter sistem | [M-20](../02-modules/m20-settings.md) |
+| GET | `/users/import/template` | `user.create` | Unduh template XLSX E.5.2 beserta petunjuk dan contoh isian (`IMPT-05`) | [M-02](../02-modules/m02-users.md) |
 | GET | `/users/import/{id}` | `user.create` | Status dan laporan per baris sebuah pekerjaan impor (`IMPT-02`) | [M-02](../02-modules/m02-users.md) |
 | GET | `/users/{id}` | `user.view` | Detail pengguna | [M-02](../02-modules/m02-users.md) |
 | GET | `/users` | `user.view` | Daftar pengguna (filter role, status, unit kerja) | [M-02](../02-modules/m02-users.md) |

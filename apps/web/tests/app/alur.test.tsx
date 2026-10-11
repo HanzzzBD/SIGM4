@@ -148,8 +148,8 @@ describe("P-12 Dashboard + shell", () => {
         expect(screen.getByText("Siti Guru")).toBeTruthy();
         await waitFor(() => expect(screen.queryByText("Login Hari Ini")).toBeNull());
         expect(screen.queryByText("Efek Tertunda Gagal")).toBeNull();
-        // Drill-down belum menjadi tautan: halaman sasarannya belum terdaftar di build ini.
-        expect(screen.queryByRole("link", { name: /buka daftar sumbernya/ })).toBeNull();
+        // Drill-down hanya menjadi tautan bila halaman sasarannya terdaftar: P-60 sejak PR-01-19, sisanya belum.
+        expect(screen.queryAllByRole("link", { name: /buka daftar sumbernya/ }).map((a) => a.getAttribute("href"))).toEqual(["/pengguna?filter[status]=AKTIF"]);
     });
 
     it("grafik membawa tabel data alternatif bagi pembaca layar (C-23, NFR-AC-04)", async () => {
@@ -183,8 +183,8 @@ describe("P-12 Dashboard + shell", () => {
     it("sidebar hanya berisi entri yang halamannya ada dan permission-nya dipegang (PM-04)", async () => {
         await renderAplikasi("/");
         const nav = await screen.findByRole("navigation", { name: "Navigasi utama" });
-        expect(within(nav).getAllByRole("link").map((a) => a.textContent)).toEqual(["Dashboard", "Notifikasi"]);
-        server((p) => (p.url === "/me" ? sukses({ ...ME_ADMIN, permissions: { "user.view": "all" } }) : undefined));
+        expect(within(nav).getAllByRole("link").map((a) => a.textContent)).toEqual(["Dashboard", "Notifikasi", "Pengguna & Role"]);
+        server((p) => (p.url === "/me" ? sukses({ ...ME_ADMIN, permissions: { "loan.view": "all" } }) : undefined));
         await renderAplikasi("/");
         const kosong = (await screen.findAllByRole("navigation", { name: "Navigasi utama" })).at(-1)!;
         expect(within(kosong).queryAllByRole("link")).toEqual([]);
