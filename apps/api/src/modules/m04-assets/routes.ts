@@ -6,7 +6,9 @@ import type { Kysely } from "kysely";
 import type { AuditLogger } from "../../shared/audit/index.js";
 import type { Clock } from "../../shared/clock/index.js";
 import type { PenyimpananObjek } from "../../shared/storage/index.js";
-import { AssetMovementDocumentResponseSchema, AssetMovementDownloadResponseSchema } from "@sigm4/schemas";
+import { AssetDetailResponseSchema, AssetMovementDocumentResponseSchema, AssetMovementDownloadResponseSchema, AssetTimelineResponseSchema } from "@sigm4/schemas";
+import { assetTimelineHandler, getAssetHandler } from "./controllers/asset-detail.controller.js";
+import { AssetDetailService } from "./services/asset-detail.service.js";
 import { MovementDocumentService } from "./services/movement-document.service.js";
 import { movementDocumentHandler, MovementDocumentParamsSchema } from "./controllers/movement-document.controller.js";
 import type { Database } from "../../shared/db/index.js";
@@ -197,6 +199,30 @@ export const movementDocumentRoute = defineRoute({ method: "GET", path: "/assets
 export const movementDocumentDownloadRoute = defineRoute({ method: "GET", path: "/assets/movements/:id/document/download", permission: "asset_movement_document.view",
     rateLimitClass: "default", module: MODUL, summary: "URL PDF mutasi privat 15 menit; diaudit (FR-04.4)", params: MovementDocumentParamsSchema, response: AssetMovementDownloadResponseSchema });
 
+/** FR-04.2 langkah 5 (PR-03-24, keputusan 4a): identitas lengkap, QR, kategori/lokasi; BR-073; scope `restricted`. */
+export const getAssetRoute = defineRoute({
+    method: "GET",
+    path: "/assets/:id",
+    permission: "asset.view",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Detail aset (FR-04.2 langkah 5)",
+    params: AssetIdParamSchema,
+    response: AssetDetailResponseSchema,
+});
+
+/** FR-04.2 langkah 5 & A1 (keputusan 4b, 24): linimasa berjenis terpaginasi; DOKUMEN tak terlihat bagi Siswa/OSIS. */
+export const assetTimelineRoute = defineRoute({
+    method: "GET",
+    path: "/assets/:id/timeline",
+    permission: "asset.view",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Linimasa riwayat aset: kondisi, mutasi, dokumen, kerusakan (FR-04.2 langkah 5)",
+    params: AssetIdParamSchema,
+    response: AssetTimelineResponseSchema,
+});
+
 export interface AssetsModuleDeps {
     readonly penyimpanan: PenyimpananObjek;
     readonly db: Kysely<Database>;
@@ -279,6 +305,11 @@ export function assetsRouter(
         otorisasi(deleteCategoryRoute.permission),
         deleteCategoryHandler(kategori),
     );
+
+    // Didaftarkan TERAKHIR: `/assets/:id` tak boleh mendahului path bersegmen literal di bawah `/assets`.
+    const detail = new AssetDetailService(deps.db, deps.appBaseUrl);
+    router.get(assetTimelineRoute.path, batasi(assetTimelineRoute), otorisasi(assetTimelineRoute.permission), assetTimelineHandler(detail));
+    router.get(getAssetRoute.path, batasi(getAssetRoute), otorisasi(getAssetRoute.permission), getAssetHandler(detail));
 
     return router;
 }

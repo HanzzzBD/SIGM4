@@ -18,8 +18,13 @@ export {
     listRoomAssetsRoute,
     moveAssetsRoute,
     updateAssetConditionRoute,
+    getAssetRoute,
+    assetTimelineRoute,
     updateAssetRoute,
 } from "./routes.js";
+// Titik perluasan linimasa aset (PR-03-24): modul pemilik riwayat mendaftarkan sumbernya.
+export type { SumberLinimasaAset } from "./services/timeline-registry.js";
+export { RegistriSumberLinimasa, sumberLinimasaAset } from "./services/timeline-registry.js";
 export type { RingkasanAset } from "./services/dashboard-source.js";
 export { ringkasanAset } from "./services/dashboard-source.js";
 /** Job `slot-activation` (BR-005b, SDD-AVL-11) — M-04 tetap pemilik `assets.status`. */
