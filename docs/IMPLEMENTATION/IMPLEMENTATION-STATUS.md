@@ -121,7 +121,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-01-16` | `Done` | [#43](https://github.com/HanzzzBD/SIGM4/pull/43) | Hash password Argon2id + kebijakan kata sandi (keputusan 7–11); sisa `NFR-S-03a` → `PR-02-31` |
 | `PR-01-17` | `Done` | [#59](https://github.com/HanzzzBD/SIGM4/pull/59) | Impor massal pengguna — asinkron > 200 baris, idempotensi file-hash *(baru, keputusan 19)*; `user_import_jobs`, `GET /users/import/{id}`, event `UserImportCompleted` — keputusan 33 [log phase-01](logs/phase-01.md) |
 | `PR-01-18` | `Done` | [#60](https://github.com/HanzzzBD/SIGM4/pull/60) | Endpoint master data Lampiran E: tahun ajaran & semester, hari libur, hari kerja, unit kerja *(baru, keputusan 29)* — menutup butir terbuka `PR-01-11`/`PR-01-12` ; 14 endpoint M-20 tanpa migration — keputusan 34 [log phase-01](logs/phase-01.md) |
-| `PR-01-19` | `In Progress` | — (cabang `feature/PR-01-19-ui-pengguna`) | UI pengguna P-60…P-64 + `GET /users/import/template` (`IMPT-05`); drawer reset password/2FA/kode aktivasi P-63 — keputusan 37 [log phase-01 §2](logs/phase-01.md) |
+| `PR-01-19` | `In Review` | [#164](https://github.com/HanzzzBD/SIGM4/pull/164) | UI pengguna P-60…P-64 + `GET /users/import/template` (`IMPT-05`); drawer reset password/2FA/kode aktivasi P-63 — keputusan 37 [log phase-01 §2](logs/phase-01.md) |
 | `PR-01-20` … `PR-01-26` | `Not Started` | — | UI pengguna/role/lokasi/pengaturan/activity log + data & ekspor lokasi + bukti PM-05 — rekonsiliasi cakupan UI & gap (keputusan 23 log phase-03); rincian [`phases/phase-01.md` §7](phases/phase-01.md) |
 
 ### Phase 02 — Inti Sistem · `In Review`
