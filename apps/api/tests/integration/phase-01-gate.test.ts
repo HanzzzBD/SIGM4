@@ -487,6 +487,13 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                     { asset_ids: [Number(asetId)], room_tujuan_id: Number(id(ruang)), tanggal_mutasi: "2026-09-26", alasan: "Uji gerbang AL-01" },
                     ["ASSET_MOVED"],
                 );
+                // PR-02-46: ubah atribut deskriptif — satu ASSET_UPDATED berisi field yang berubah.
+                await langkah(
+                    "PUT /assets/:id",
+                    `/assets/${asetId}`,
+                    { nama: "Aset Gerbang AL-01 (diubah)", merek: null, model: "Uji", nomor_seri: null, tahun_perolehan: 2024, dapat_dipinjam: true, boleh_dipinjam_siswa: false, penanggung_jawab_id: null },
+                    ["ASSET_UPDATED"],
+                );
                 // PR-03-01 (M-05): label terpasang, lalu regenerasi UUID — dua route tulis M-05.
                 await langkah("PATCH /assets/qr-terpasang", "/assets/qr-terpasang", { asset_ids: [Number(asetId)], qr_terpasang: true }, ["ASSET_UPDATED"]);
                 await langkah("POST /assets/:id/qr/regenerate", `/assets/${asetId}/qr/regenerate`, { alasan: "Uji gerbang AL-01" }, ["ASSET_QR_REGENERATED"]);
