@@ -149,6 +149,17 @@ export class RoleService {
                             { permissions: dicabut.map((p) => p.kode) },
                         );
                     }
+                    // FR-02.2 A1 / SDD-AUTH-10: scope permission inti Administrator juga terkunci — mempersempit
+                    // cakupannya (mis. ALL → OWN) sama dengan mencabutnya sebagian.
+                    const scopeSesudah = new Map(input.permissions.map((p) => [p.kode, p.scope]));
+                    const diubah = before.filter((p) => p.inti && scopeSesudah.has(p.kode) && scopeSesudah.get(p.kode) !== p.scope);
+                    if (diubah.length > 0) {
+                        throw new DomainError(
+                            "CORE_PERMISSION_LOCKED",
+                            `Scope permission inti Administrator tidak dapat diubah: ${diubah.map((p) => p.kode).join(", ")}.`,
+                            { permissions: diubah.map((p) => p.kode) },
+                        );
+                    }
                 }
 
                 await repo.replacePermissions(

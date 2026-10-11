@@ -4,6 +4,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useCan } from "../../shared/auth";
 import { jalurDrilldown } from "../../shared/navigasi";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
@@ -25,6 +26,12 @@ export default function UserListPage({ saringan, onSaringan }: { readonly saring
     const namaRole = new Map((roles.data ?? []).map((r) => [r.id, r.nama]));
     const namaUnit = new Map((units.data ?? []).map((u) => [u.id, u.nama]));
     const ubah = (s: Partial<SaringanPengguna>) => onSaringan({ ...s, page: undefined });
+    // Halaman di luar jangkauan (baris terakhir keluar dari saringan, atau tautan lama) → halaman terakhir yang ada;
+    // tanpa ini keadaan kosong menyembunyikan navigasi halaman dan pengguna terjebak (pola yang sama dengan P-72).
+    const totalHalaman = kueri.data?.meta.total_pages;
+    useEffect(() => {
+        if (totalHalaman !== undefined && page > totalHalaman) onSaringan({ page: totalHalaman > 1 ? totalHalaman : undefined });
+    }, [page, totalHalaman, onSaringan]);
     const tersaring = saringan.role !== undefined || saringan.status !== undefined || saringan.unit !== undefined;
     const keRole = can("role.view") ? jalurDrilldown("P-65") : null;
     const tambah = can("user.create") ? jalurDrilldown("P-61") : null;

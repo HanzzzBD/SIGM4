@@ -84,7 +84,7 @@ function Matriks({ role: terkini, katalog, bolehUbah, onSimpan, onBatal }: { rea
                                             <select
                                                 aria-label={`Cakupan data: ${p.deskripsi}`}
                                                 value={scope ?? ""}
-                                                disabled={!bolehUbah || scope === null}
+                                                disabled={!bolehUbah || scope === null || kunci}
                                                 onChange={(e) => setPegang((x) => ({ ...x, [p.kode]: e.target.value as Scope }))}
                                                 className="min-h-control-md rounded-sm border border-border-strong bg-surface-default px-4 text-base text-text-primary disabled:bg-neutral-100 disabled:text-text-disabled"
                                             >

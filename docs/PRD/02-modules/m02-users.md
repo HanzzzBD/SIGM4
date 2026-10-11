@@ -75,7 +75,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 5. Sistem menerapkan perubahan pada permintaan berikutnya dari pengguna terdampak.
 
 **Alternative Flow**
-- **A1 — Menghapus permission inti role Administrator:** Sistem menolak.
+- **A1 — Menghapus permission inti role Administrator, atau mengubah cakupan datanya (scope):** Sistem menolak.
 - **A2 — Membuat role kustom:** Administrator menyalin role yang ada sebagai template lalu menyesuaikan. Role kustom memperoleh kode `RK-{id}` dari sistem dan seluruh permission beserta scope role sumbernya; role yang perilakunya terikat kode role tidak dapat dijadikan template (`BR-069a`).
 - **A3 — Menghapus role yang masih memiliki pengguna:** Sistem menolak dan meminta pemindahan pengguna terlebih dahulu.
 

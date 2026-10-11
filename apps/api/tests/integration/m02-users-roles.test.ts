@@ -237,6 +237,34 @@ describe.skipIf(!ADA_DB)("PR-01-04 — matriks permission (acceptance)", () => {
         }
     });
 
+    it("mengubah SCOPE permission inti Administrator -> CORE_PERMISSION_LOCKED, matriks tidak berubah (FR-02.2 A1, SDD-AUTH-10)", async () => {
+        const adminId = await seedAdmin();
+        const roleId = await idRole("R-01");
+        const sebelum = await matriks(roleId);
+        const metaSebelum = await metaRole(roleId);
+        const inti = sebelum.find((p) => p.kode === "user.create");
+        expect(inti).toBeDefined();
+
+        try {
+            const scopeLain = inti?.scope === "OWN" ? "ALL" : "OWN";
+            const dipersempit = sebelum.map((p) => ({ kode: p.kode, scope: p.kode === "user.create" ? scopeLain : p.scope }));
+            await expect(
+                buatService().updatePermissions(buatCtx(adminId), roleId, { permissions: dipersempit }),
+            ).rejects.toMatchObject({ kode: "CORE_PERMISSION_LOCKED", detail: { permissions: ["user.create"] } });
+
+            expect(await matriks(roleId)).toEqual(sebelum);
+            expect(await versiRole(roleId)).toBe(metaSebelum.role_version);
+            // Permission bukan inti pada Administrator tetap boleh diubah scope-nya.
+            const bukanInti = sebelum.find((p) => p.kode === "asset.view");
+            if (bukanInti !== undefined) {
+                const ubah = sebelum.map((p) => ({ kode: p.kode, scope: p.kode === "asset.view" ? (bukanInti.scope === "OWN" ? "ALL" : "OWN") : p.scope }));
+                await expect(buatService().updatePermissions(buatCtx(adminId), roleId, { permissions: ubah })).resolves.toBeDefined();
+            }
+        } finally {
+            await pulihkan(roleId, sebelum, metaSebelum);
+        }
+    });
+
     it("mencabut permission inti dari role BUKAN Administrator diizinkan — penguncian khusus Administrator (SDD-03 §4.7)", async () => {
         const adminId = await seedAdmin();
         const roleId = await idRole("R-03");
