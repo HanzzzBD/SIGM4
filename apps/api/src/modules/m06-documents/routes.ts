@@ -15,6 +15,7 @@ import { AssetIdParamSchema, CreateDocumentBodySchema, DeleteDocumentResponseSch
 import { DocumentService } from "./services/document.service.js";
 import { ConfirmBodySchema, ConfirmResponseSchema, PresignBodySchema, PresignResponseSchema } from "./schemas/file.schema.js";
 import { FileService } from "./services/file.service.js";
+import { daftarkanSumberLinimasaDokumen } from "./services/timeline-source.js";
 
 /** Pemilik katalog endpoint M-06 (m06-documents.md §7). */
 const MODUL = "m06-documents";
@@ -109,6 +110,7 @@ export function filesRouter(
     terautentikasi: () => RequestHandler,
     otorisasi: (permission: string) => RequestHandler,
 ): Router {
+    daftarkanSumberLinimasaDokumen();
     const service = new FileService(deps.db, deps.penyimpanan, deps.auditLogger, deps.clock);
     const dokumen = new DocumentService(deps.db, deps.penyimpanan, deps.auditLogger, deps.clock);
     const router = express.Router();
