@@ -35,6 +35,9 @@ import {
     HalamanTambahAset,
     HalamanUbahAset,
     HalamanKalenderRuangan,
+    HalamanLabelQr,
+    HalamanPublikAset,
+    HalamanScanQr,
     HalamanMutasiAset,
     HalamanPanelBlokade,
     HalamanDetailKeputusan,
@@ -386,6 +389,39 @@ const detailKeputusanRoute = createRoute({
     },
 });
 
+/** P-06 Halaman Publik Aset (FR-05.2 A3, UX §6 `/a/{uuid}`; PR-03-28): TANPA gerbang sesi — payload QR permanen. */
+const publikAsetRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/a/$uuid",
+    component: function RoutePublikAset() {
+        const { uuid } = publikAsetRoute.useParams();
+        return <HalamanPublikAset uuid={uuid} />;
+    },
+});
+
+/** P-24 Label QR (FR-05.1, UX §6 `/label-qr`; PR-03-28). `?aset=1,2,3` membawa pilihan dari P-16/P-18. */
+const labelQrRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/label-qr",
+    beforeLoad: butuhIzin("asset.qr_print"),
+    validateSearch: z.object({ aset: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*(,[1-9]\d*)*$/))), undefined) }),
+    component: function RouteLabelQr() {
+        const { aset } = labelQrRoute.useSearch();
+        return <HalamanLabelQr awal={aset === undefined ? [] : [...new Set(aset.split(","))]} />;
+    },
+});
+
+/** P-25 Scan QR web (FR-05.2, UX §6 `/scan`; PR-03-28). Hasil → P-18 bila terdaftar. */
+const scanRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/scan",
+    beforeLoad: butuhIzin("asset.view"),
+    component: function RouteScan() {
+        const navigate = useNavigate();
+        return <HalamanScanQr onBuka={(id) => void navigate({ href: jalurTerdaftar(`/aset/${id}`) ? `/aset/${id}` : "/" })} />;
+    },
+});
+
 /** P-15 Inventaris Aset (FR-04.2, UX §7.4; PR-02-45): saringan, urutan, halaman di URL (SDD-FE-10). */
 const inventarisRoute = createRoute({
     getParentRoute: () => shellRoute,
@@ -466,7 +502,8 @@ export const routeTree = rootRoute.addChildren([
     gantiPasswordRoute,
     gangguanRoute,
     tidakDitemukanRoute,
-    shellRoute.addChildren([dashboardRoute, inventarisRoute, detailAsetRoute, riwayatAsetRoute, tambahAsetRoute, ubahAsetRoute, kategoriAsetRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    publikAsetRoute,
+    shellRoute.addChildren([dashboardRoute, inventarisRoute, detailAsetRoute, riwayatAsetRoute, tambahAsetRoute, ubahAsetRoute, kategoriAsetRoute, labelQrRoute, scanRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {

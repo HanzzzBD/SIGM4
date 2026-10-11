@@ -9,6 +9,7 @@ import { AktivasiDuaFaktorPage, GantiPasswordPage, LoginPage, VerifikasiDuaFakto
 import type { AlasanLogin } from "../modules/m01-auth";
 import { muatApprovalInboxPage, muatApprovalRulesPage, muatDecisionPage, muatEditorAturanPage } from "../modules/m10-approval";
 import { muatDashboardPage } from "../modules/m15-dashboard";
+import { loadLabelQrPage, loadPublicAssetPage, loadScanPage } from "../modules/m05-qr";
 import { loadNotificationCenterPage, loadPreferencesPage } from "../modules/m17-notifications";
 import type { PencarianNotifikasi } from "../modules/m17-notifications";
 import { loadAddAssetPage, loadAssetDetailPage, loadAssetImportPage, loadAssetMovementPage, loadCategoryPage, loadEditAssetPage, loadInventoryPage } from "../modules/m04-assets";
@@ -90,6 +91,27 @@ export const HalamanDaftarReservasi = (props: { readonly pencarian: PencarianDaf
 export const HalamanDetailReservasi = (props: { readonly id: string; readonly terkirim: boolean; readonly onUlang: (d: ReservationDetail) => void }) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat detail reservasi" baris={8} />}>
         <ReservationDetailPage {...props} />
+    </Suspense>
+);
+const PublicAssetPage = lazy(loadPublicAssetPage);
+const LabelQrPage = lazy(loadLabelQrPage);
+const ScanPage = lazy(loadScanPage);
+/** P-06 Halaman Publik Aset (FR-05.2 A3; PR-03-28) — di luar shell, tanpa sesi. */
+export const HalamanPublikAset = ({ uuid }: { readonly uuid: string }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat informasi aset" baris={5} />}>
+        <PublicAssetPage uuid={uuid} />
+    </Suspense>
+);
+/** P-24 Label QR (FR-05.1; PR-03-28). */
+export const HalamanLabelQr = ({ awal }: { readonly awal: readonly string[] }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat label QR" baris={6} />}>
+        <LabelQrPage awal={awal} />
+    </Suspense>
+);
+/** P-25 Scan QR web (FR-05.2; PR-03-28). */
+export const HalamanScanQr = ({ onBuka }: { readonly onBuka: (assetId: string) => void }) => (
+    <Suspense fallback={<KeadaanMemuat label="Memuat pemindai" baris={4} />}>
+        <ScanPage onBuka={onBuka} />
     </Suspense>
 );
 const InventoryPage = lazy(loadInventoryPage);
