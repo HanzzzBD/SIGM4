@@ -97,7 +97,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-00-16` | `Done` | [#37](https://github.com/HanzzzBD/SIGM4/pull/37) | Skema RBAC + seed permission, role, matriks ber-scope, `work_days`. Seed parameter sistem pindah ke `PR-01-10`, tabel `roles`/`permissions`/`role_permissions` ditarik dari `PR-01-01` — [log §3](logs/phase-00.md) |
 | `PR-00-17` | `Done` | [#38](https://github.com/HanzzzBD/SIGM4/pull/38) | Pipeline CI `ci.yml` (lint → uji → integrasi+cakupan → build → CodeQL → SCA → Trivy); required check `CI lulus` aktif di `develop`; runtime image tanpa npm (keputusan 47); berkas pnpm diabaikan (keputusan 44) — [log §2](logs/phase-00.md) |
 | `PR-00-18` | `Done` | [#39](https://github.com/HanzzzBD/SIGM4/pull/39) | Deploy staging (`deploy/staging/`, job `publikasi-image` + `deploy-staging`); dibuktikan pada staging tiruan — infrastruktur nyata belum ada (keputusan 50). Tindak lanjut graceful shutdown worker + API tergabung: [#40](https://github.com/HanzzzBD/SIGM4/pull/40) (keputusan 57–61) — [log §2](logs/phase-00.md) |
-| `PR-00-19` | `In Review` | — | `GET /api/docs` JSON OpenAPI dari registri runtime, hanya `APP_ENV=development|staging`; `APP_REVISION` dari SHA build, artefak CI per commit/tag (90 hari), smoke staging memeriksa versi. Publikasi pada staging nyata menunggu infrastruktur (keputusan 50 log phase-00); [runbook](runbooks/openapi.md), [audit](audits/pr-01-26-pr-00-19-2026-10-12.md) |
+| `PR-00-19` | `In Review` | [#175](https://github.com/HanzzzBD/SIGM4/pull/175) | `GET /api/docs` JSON OpenAPI dari registri runtime, hanya `APP_ENV=development|staging`; `APP_REVISION` dari SHA build, artefak CI per commit/tag (90 hari), smoke staging memeriksa versi. Publikasi pada staging nyata menunggu infrastruktur (keputusan 50 log phase-00); [runbook](runbooks/openapi.md), [audit](audits/pr-01-26-pr-00-19-2026-10-12.md) |
 
 ### Phase 01 — Master Data Independen · `In Review`
 
@@ -128,7 +128,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-01-23` | `Done` | [#169](https://github.com/HanzzzBD/SIGM4/pull/169) (`c2ed39c`) | P-22/P-23, formulir lokasi, baca-saja, pencarian/filter/ekspor, tab Jadwal Tetap; uji aplikasi + axe dan browser 320/768/1024/1440; [catatan verifikasi lokal](audits/pr-01-21-23-2026-10-11.md) |
 | `PR-01-24` | `Done` | [#166](https://github.com/HanzzzBD/SIGM4/pull/166) (`6041092`) | UI pengaturan P-70 Parameter, P-71 Kalender Akademik (onboarding tahun ajaran), P-72 Unit Kerja; teks AC `FR-20.1` #4 diselaraskan keputusan 36d — keputusan 39 [log phase-01 §2](logs/phase-01.md) |
 | `PR-01-25` | `Done` | [#167](https://github.com/HanzzzBD/SIGM4/pull/167) (`d512308`) | UI activity log P-73 (saringan di URL, ekspor XLSX) + P-74 (dua kolom Sebelum/Sesudah bersorot) + `GET /activity-logs/{id}` — keputusan 40 [log phase-01 §2](logs/phase-01.md) |
-| `PR-01-26` | `In Review` | — | Bukti `PM-05` lewat login HTTP + JWT Ed25519, SessionStore PostgreSQL dan PermissionCache Redis nyata (tanpa authPalsu): cabut/pulihkan izin, perubahan scope, dan pergantian role berlaku pada token yang sama; [audit](audits/pr-01-26-pr-00-19-2026-10-12.md) |
+| `PR-01-26` | `In Review` | [#175](https://github.com/HanzzzBD/SIGM4/pull/175) | Bukti `PM-05` lewat login HTTP + JWT Ed25519, SessionStore PostgreSQL dan PermissionCache Redis nyata (tanpa authPalsu): cabut/pulihkan izin, perubahan scope, dan pergantian role berlaku pada token yang sama; [audit](audits/pr-01-26-pr-00-19-2026-10-12.md) |
 
 ### Phase 02 — Inti Sistem · `In Review`
 
