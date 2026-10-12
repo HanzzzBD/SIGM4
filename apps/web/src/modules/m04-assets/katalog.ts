@@ -55,6 +55,11 @@ export interface SaringanKatalog {
 }
 
 /** FR-04.2 langkah 2–4: saringan dikirim sebagai `filter[...]` (SDD-API §4.5). */
+export const paramsKatalog = (s: SaringanKatalog) => ({
+    q: s.q, sort: s.urut ?? "kode_barang", "filter[kategori_id]": s.kategori, "filter[lokasi_id]": s.lokasi,
+    "filter[kondisi]": s.kondisi, "filter[status]": s.status, "filter[tahun_perolehan]": s.tahun,
+    "filter[dapat_dipinjam]": s.pinjam, "filter[import_job_id]": s.impor,
+});
 export const katalogQuery = (s: SaringanKatalog) =>
     queryOptions({
         queryKey: ["assets", "katalog", s],
@@ -63,17 +68,9 @@ export const katalogQuery = (s: SaringanKatalog) =>
                 (
                     await api.get("/assets", {
                         params: {
-                            q: s.q,
-                            sort: s.urut ?? "kode_barang",
+                            ...paramsKatalog(s),
                             page: s.page ?? 1,
                             per_page: s.per ?? 25,
-                            "filter[kategori_id]": s.kategori,
-                            "filter[lokasi_id]": s.lokasi,
-                            "filter[kondisi]": s.kondisi,
-                            "filter[status]": s.status,
-                            "filter[tahun_perolehan]": s.tahun,
-                            "filter[dapat_dipinjam]": s.pinjam,
-                            "filter[import_job_id]": s.impor,
                         },
                     })
                 ).data,

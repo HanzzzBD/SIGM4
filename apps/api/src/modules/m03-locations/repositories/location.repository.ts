@@ -125,6 +125,12 @@ export class LocationRepository extends BaseRepository {
         if (filter.kondisi !== undefined) query = query.where("kondisi", "=", filter.kondisi);
         if (filter.status !== undefined) query = query.where("status", "=", filter.status);
         if (ctx.can("asset.view") && ctx.scopeOf("asset.view") === "restricted") query = query.where("boleh_dipinjam_siswa", "=", true);
+        for (const permission of ["report.export", ...(ctx.can("asset.view") ? ["asset.view"] : [])]) {
+            const scope = ctx.scopeOf(permission);
+            if (scope === "restricted" && permission === "report.export") query = query.where("boleh_dipinjam_siswa", "=", true);
+            if (scope === "own") query = query.where("created_by", "=", String(ctx.userId));
+            if (scope === "assigned") query = query.where("penanggung_jawab_id", "=", String(ctx.userId));
+        }
         if (filter.q) query = query.where((eb) => eb.or([eb("kode_barang", "ilike", `%${filter.q}%`), eb("nama", "ilike", `%${filter.q}%`), eb("merek", "ilike", `%${filter.q}%`), eb("nomor_seri", "ilike", `%${filter.q}%`)]));
         return query.orderBy("kode_barang").execute();
     }

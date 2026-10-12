@@ -6,6 +6,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { registry } from "../../src/api/index.js";
 import { AssetService } from "../../src/modules/m04-assets/services/asset.service.js";
+import { createAssetRepository } from "../../src/modules/m04-assets/repositories/asset.repository.js";
 import { LocationService } from "../../src/modules/m03-locations/services/location.service.js";
 import { createAuthContext } from "../../src/shared/auth/index.js";
 import type { AuthContext, Scope } from "../../src/shared/auth/index.js";
@@ -119,6 +120,26 @@ describe.skipIf(!ADA_DB)("PR-02-12 — katalog aset: pencarian, filter, paginasi
     });
     beforeAll(() => {
         dbmate("up");
+    });
+
+    it("PR-02-47: ekspor seluruh hasil tersaring, tanpa aset terhapus dan tanpa kolom finansial bagi scope restricted", async () => {
+        const kategoriId = await seedKategori();
+        const roomId = await seedRoom();
+        for (let i = 0; i < 26; i += 1) {
+            await seedAset({ kategoriId, roomId, nama: "Komputer", bolehDipinjamSiswa: i === 0, nilaiPerolehan: 12345 });
+        }
+        await seedAset({ kategoriId, roomId, nama: "Komputer", dihapuskan: true });
+        await seedAset({ kategoriId, roomId, nama: "Printer" });
+        const repo = createAssetRepository(getDb());
+        const filter = { roomId: Number(roomId), q: "Komputer", sort: "nama" as const };
+        const exporter = buatCtx("R-02", new Map([["report.export", "all"]]));
+        const rows = await repo.exportRows(exporter, filter, false);
+        expect(rows).toHaveLength(26);
+        expect(rows[0]).not.toHaveProperty("nilai_perolehan");
+        const restricted = buatCtx("R-07", new Map([["report.export", "all"], ["asset.view", "restricted"], ["asset.view_financial", "all"]]));
+        const limited = await repo.exportRows(restricted, filter, true);
+        expect(limited).toHaveLength(1);
+        expect(limited[0]).not.toHaveProperty("nilai_perolehan");
     });
 
     beforeEach(async () => {

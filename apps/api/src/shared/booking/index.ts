@@ -11,8 +11,10 @@ export type {
     SlotReservasi,
     SlotRow,
     SlotTerpakai,
+    SlotPenghalangMutasi,
     StatusAwal,
     StatusSlot,
     SumberDaya,
 } from "./slot-service.js";
 export { BATCH_KEDALUWARSA, EVENT_SLOT_TENTATIF_KEDALUWARSA, SlotService, adaSlotAsetTerkonfirmasi, daftarSlotTerpakai, slotMilikBlokade, slotMilikReservasi } from "./slot-service.js";
+export { slotPenghalangMutasi } from "./slot-service.js";

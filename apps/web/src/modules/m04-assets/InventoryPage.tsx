@@ -1,8 +1,8 @@
 // P-15 Inventaris Aset (UX §6, §7.1 A, §7.4; FR-04.2 langkah 2–4, A1, A2; PR-02-45). Seluruh saringan,
 // urutan, dan halaman hidup di URL (SDD-FE-10) dan tampil sebagai chip yang dapat dihapus (31.3). Tabel
 // C-15: kepala melekat, urut lewat kepala kolom (ikon + `aria-sort`), klik baris membuka P-18, kartu di
-// bawah 48rem. Data finansial tak pernah diminta (BR-073 ditegakkan server). Pemilihan massal dan Ekspor
-// menyusul bersama P-24/`PR-02-47` (log phase-02 §3).
+// bawah 48rem. Ekspor seluruh hasil saringan tersedia melalui PR-02-47; kolom finansial
+// pada berkas mengikuti hak akses yang ditegakkan server (BR-073).
 
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -16,6 +16,7 @@ import { Ikon } from "../../shared/ui/icon";
 import { Isian, Lencana, Pilihan, Tombol, gabung } from "../../shared/ui/primitives";
 import type { ItemKatalog, Kondisi, SaringanKatalog, StatusAset, Urutan } from "./katalog";
 import { KONDISI, STATUS, VARIAN_KONDISI, VARIAN_STATUS, kategoriQuery, katalogQuery, ruanganQuery } from "./katalog";
+import { ExportAssets } from "./ExportAssets";
 
 const TH = "sticky top-0 h-header-table bg-surface-subtle px-4 text-left text-sm font-medium text-text-primary";
 const TD = "border-t border-border-subtle px-4 py-3 text-base text-text-primary";
@@ -84,6 +85,7 @@ export default function InventoryPage({ pencarian, onPencarian }: { readonly pen
                     <p className="text-base text-text-secondary">Katalog seluruh unit aset beserta kondisi dan statusnya.</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                    {can("report.export") && <ExportAssets filter={pencarian} />}
                     {can("asset.create") && jalurTerdaftar("/aset/impor") && (
                         <Link to="/aset/impor" className="inline-flex min-h-control-md items-center rounded-md border border-border-strong px-4 text-base font-medium text-text-primary hover:bg-neutral-50">
                             Impor Aset

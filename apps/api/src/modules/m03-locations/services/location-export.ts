@@ -5,7 +5,7 @@ import type { AuditLogger } from "../../../shared/audit/index.js";
 import type { Clock } from "../../../shared/clock/index.js";
 import type { Database } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
-import { ForbiddenError, NotFoundError } from "../../../shared/errors/index.js";
+import { DomainError, ForbiddenError, NotFoundError } from "../../../shared/errors/index.js";
 import type { PembangkitPdf } from "../../../shared/pdf/index.js";
 import type { z } from "zod";
 import type { LocationExportQuerySchema } from "../schemas/location.schema.js";
@@ -38,7 +38,8 @@ export async function exportLocation(db: Kysely<Database>, audit: AuditLogger, c
         } else {
             buffer = await pdf.render(`<!doctype html><html lang="id"><meta charset="utf-8"><title>Inventaris lokasi</title><style>@page{size:A4;margin:18mm}body{font:11pt Arial}table{width:100%;border-collapse:collapse}td,th{border:1px solid #555;padding:6px;text-align:left}thead{display:table-header-group}tr{break-inside:avoid}</style><h1>Inventaris lokasi</h1><p>${escape(identity)}</p><p>Tanggal cetak: ${escape(printed)}<br>Pencetak: ${escape(printer)}</p><table><thead><tr><th>Kode aset</th><th>Nama</th><th>Kondisi</th><th>Status</th></tr></thead><tbody>${rows.map((r) => `<tr>${[r.kode_barang, r.nama, r.kondisi, r.status].map((v) => `<td>${escape(v)}</td>`).join("")}</tr>`).join("")}</tbody></table></html>`);
         }
-        await audit.write(scope, { modul: "m03-locations", aksi: "DATA_EXPORTED", entitas: "rooms", entitasId: id, nilaiSesudah: { filter, jumlah_baris: rows.length } });
+        const recorded = await audit.write(scope, { modul: "m03-locations", aksi: "DATA_EXPORTED", entitas: "rooms", entitasId: id, nilaiSesudah: { filter, jumlah_baris: rows.length } });
+        if (!recorded) throw new DomainError("INTERNAL_ERROR");
         return buffer;
     }, db);
 }

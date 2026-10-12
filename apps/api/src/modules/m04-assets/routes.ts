@@ -55,6 +55,11 @@ import { z } from "zod";
 import { AssetImportResponseSchema, ImportAssetsBodySchema } from "@sigm4/schemas";
 import { assetImportTemplateHandler, getAssetImportHandler, importAssetsHandler } from "./controllers/asset-import.controller.js";
 import { AssetImportService } from "./services/asset-import.service.js";
+import { AssetExportHttpQuerySchema } from "./schemas/asset.schema.js";
+import { exportAssetsHandler } from "./controllers/asset-export.controller.js";
+import { PembangkitPdfChromium } from "../../shared/pdf/index.js";
+import type { PembangkitPdf } from "../../shared/pdf/index.js";
+export const exportAssetsRoute = defineRoute({ method: "GET", path: "/assets/export", permission: "report.export", rateLimitClass: "export", module: "m04-assets", summary: "Ekspor seluruh katalog tersaring XLSX/PDF; keuangan sesuai scope (PR-02-47)", query: AssetExportHttpQuerySchema, response: z.string(), contentType: "application/octet-stream" });
 
 export const importAssetsRoute = defineRoute({ method: "POST", path: "/assets/import", permission: "asset.create", rateLimitClass: "upload", module: "m04-assets", summary: "Impor aset CSV/XLSX; >200 baris asinkron, replay 24 jam (PR-02-38)", body: ImportAssetsBodySchema, response: AssetImportResponseSchema, successStatus: 200, additionalSuccessStatuses: [202] });
 export const getAssetImportRoute = defineRoute({ method: "GET", path: "/assets/import/:id", permission: "asset.create", rateLimitClass: "default", module: "m04-assets", summary: "Status dan laporan impor aset milik pengunggah", params: AssetIdParamSchema, response: AssetImportResponseSchema });
@@ -224,6 +229,7 @@ export const assetTimelineRoute = defineRoute({
 });
 
 export interface AssetsModuleDeps {
+    readonly pdf?: PembangkitPdf;
     readonly penyimpanan: PenyimpananObjek;
     readonly db: Kysely<Database>;
     readonly auditLogger: AuditLogger;
@@ -241,6 +247,7 @@ export function assetsRouter(
     const service = new AssetService(deps.db, deps.auditLogger, deps.clock);
     const kategori = new CategoryService(deps.db, deps.auditLogger);
     const router = express.Router();
+    router.get(exportAssetsRoute.path, batasi(exportAssetsRoute), otorisasi(exportAssetsRoute.permission), exportAssetsHandler(deps.db, deps.auditLogger, deps.clock, deps.pdf ?? new PembangkitPdfChromium(null)));
     const importer = new AssetImportService(deps.db, deps.auditLogger, deps.clock);
     const documents = new MovementDocumentService(deps.db, deps.auditLogger, deps.clock, deps.penyimpanan);
     router.get(movementDocumentRoute.path, batasi(movementDocumentRoute), otorisasi(movementDocumentRoute.permission), movementDocumentHandler(documents, false));

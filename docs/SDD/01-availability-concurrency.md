@@ -42,6 +42,8 @@ Basis teknologi yang sudah ditetapkan dan tidak dibahas ulang: PostgreSQL 15+ (`
 | **SDD-AVL-13** | Slot `Released` **tidak dihapus**. Dipindahkan dari partisi aktif melalui kebijakan arsip (lihat TBD-AVL-A). |
 | **SDD-AVL-14** | **Bahan tidak memakai `booking_slots`.** Bahan tidak dapat direservasi maupun dipinjam (`BR-087`), sehingga tidak memiliki dimensi waktu untuk dikunci. Konkurensinya diselesaikan dengan row lock atas `material_balances` (`SDD-DB-14`), bukan exclusion constraint. |
 
+**Penegakan SDD-AVL-11 (PR-02-49).** `tests/shared/asset-status-writers.test.ts` memindai AST seluruh source API/worker. Adapter tulis yang terdaftar tepat per berkas: `m04-assets/repositories/asset.repository.ts` (AssetService), `reservation-status.repository.ts` (slot-activation), `m09-loans/repositories/loan.repository.ts` dan `m12-maintenance/repositories/maintenance.repository.ts` (dua modul terakhir belum diimplementasikan). Tidak ada izin menyeluruh untuk direktori modul. Uji menolak penulisan status melalui chain Kysely, isian variabel/spread/computed, upsert, SQL literal, serta pemanggilan metode penulis status M-04 di luar layanan pemiliknya. Isian update aset yang tak dapat dibuktikan bebas status juga ditolak. Pembacaan status dan perubahan atribut lain diperbolehkan. `.github/CODEOWNERS` mencakup adapter, layanan, job, shared booking, dan uji penjaganya; penambahan adapter/metode baru harus memperbarui penjaga ini dan ditinjau.
+
 ---
 
 ## 3. Alasan

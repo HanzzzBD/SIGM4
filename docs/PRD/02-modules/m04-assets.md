@@ -130,6 +130,8 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 - **A1 — Aset sedang dipinjam/direservasi pada tanggal mutasi:** Sistem menolak dan menampilkan transaksi yang menghalangi.
 - **A2 — Mutasi massal via scan QR:** Petugas memindai beberapa QR berurutan di aplikasi mobile lalu menetapkan satu lokasi tujuan.
 
+**Kontrak pemeriksaan tanggal (PR-02-48).** Tanggal mutasi mencakup `[00:00 WIB, 00:00 WIB hari berikutnya)`, sesuai rentang half-open SDD-AVL-02. Slot aset asal `reservation`/`loan` berstatus `TENTATIVE`, `CONFIRMED`, atau `ACTIVE` yang beririsan menolak batch dengan `409 ASSET_NOT_AVAILABLE`. Slot yang sudah `RELEASED`, berakhir tepat saat hari dimulai, atau mulai tepat pada hari berikutnya tidak menghalangi. Slot pemeliharaan tidak menambah larangan di luar prasyarat status `Tersedia`/`Dalam Perbaikan`. Seluruh aset dikunci terurut sebelum pembacaan slot; pengecekan selesai sebelum perubahan lokasi, riwayat, snapshot, audit atau outbox. Respons memakai `error.details[{field:asset_ids,message}]` untuk kode aset, jenis/ID transaksi, status dan rentang WIB tanpa data pribadi pemohon. P-20 menampilkan seluruh transaksi penghalang serta mempertahankan isian dan pilihan saat ditolak.
+
 **Post Conditions** — Lokasi aset terbarui; riwayat mutasi tersimpan permanen.
 
 **Acceptance Criteria**
@@ -185,6 +187,10 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 
 ## 7. API Endpoints
 
+**Ekspor katalog (PR-02-47).** `GET /assets/export` dipetakan ke satu permission `report.export` (PM-01). `format=xlsx|pdf`; pencarian, seluruh `filter[...]` dan sort sama dengan GET /assets, tanpa page/per_page: seluruh hasil tersaring diekspor. Scope report.export diterapkan dan diiriskan dengan asset.view bila dimiliki: all seluruh aset aktif, own aset dibuat pemanggil, assigned aset dengan penanggung_jawab_id pemanggil, restricted hanya boleh_dipinjam_siswa. Aset dihapuskan tidak masuk. Filter pekerjaan impor hanya bagi pengunggahnya (404 untuk milik orang lain).
+
+Kolom sumber/nilai perolehan tidak dipilih atau diekspor tanpa asset.view_financial, bagi scope restricted, atau Siswa/OSIS (BR-073). Scope finansial own/assigned hanya menampilkan nilai pada baris yang dibuat/menjadi tanggung jawab pemanggil; baris lainnya kosong. Nilai desimal dipertahankan sebagai teks agar tidak kehilangan presisi. Metadata memuat tanggal WIB, pencetak, saringan dan jumlah baris. Semua teks berkas sebagai teks XLSX/HTML di-escape, PDF tidak memuat sumber daya luar. DATA_EXPORTED wajib berhasil sebelum berkas dikirim; respons no-store dan attachment. Ekspor gagal tidak mengirim berkas.
+
 **Filter drill-down QR (PR-02-50).** `GET /assets` menerima query opsional `filter[qr_terpasang]=true|false`, digabungkan dengan filter katalog lain menggunakan AND. Nilai selain boolean tersebut ditolak (422); parameter yang tidak diberikan tidak menyaring status label. `false` mempertahankan scope `asset.view` (termasuk `restricted`) dan pengecualian aset dihapuskan. P-24 memakai URL web `?belum=true` untuk memuat daftar ini tanpa pencarian manual, dengan paginasi 25 aset.
 
 ### Endpoint
@@ -204,7 +210,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | POST | `/assets/import` | `asset.create` | Impor CSV/XLSX (`filename`, `content_base64`): ≤200 baris sinkron, >200 asinkron; replay hash 24 jam per pengunggah (`IMPT-03/04`) |
 | GET | `/assets/import/template` | `asset.create` | Unduh template XLSX E.5.1 beserta contoh (`IMPT-05`) |
 | GET | `/assets/import/{id}` | `asset.create` | Status, hitungan baris sukses/gagal, unit dibuat, alasan dan isian asli baris gagal untuk koreksi (`IMPT-02`); hanya pengunggah |
-| GET | `/assets/export` | `asset.export` | Ekspor XLSX/PDF |
+| GET | `/assets/export` | `report.export` | Ekspor seluruh katalog tersaring XLSX/PDF; scope dan kolom finansial sesuai hak akses |
 | GET | `/asset-categories` | `asset.view` | Daftar kategori |
 | POST | `/asset-categories` | `category.manage` | Buat kategori |
 | PUT | `/asset-categories/{id}` | `category.manage` | Perbarui kategori |
@@ -228,6 +234,8 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 | **asset_import_jobs** | Pekerjaan impor aset sinkron/asinkron (`IMPT-02/03/04`) | id, file_hash, nama_berkas, status, total_baris, baris_terproses, sukses, gagal, unit_dibuat, laporan_gagal, pesan_galat, selesai_pada | Pengunggah; `assets.import_job_id` menautkan hasil |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
+
+**Deteksi CSV (PR-02-51).** Impor mengenali koma atau titik koma secara otomatis dari header logis pertama, menghitung hanya pemisah di luar kutipan. Kutipan ganda yang di-escape, BOM UTF-8, CRLF, isi data berkutip dan nilai teks berawalan nol tetap ditangani parser CSV. Jumlah pemisah seri atau nol memakai koma agar kompatibel dengan berkas lama. Jalur sinkron dan worker memakai aturan yang sama; XLSX tetap memakai pembaca XLSX.
 
 **Kontrak impor aset (keputusan produk 8 Oktober 2026, PR-02-38).** Setiap impor yang dapat dibaca mempunyai satu `asset_import_jobs`. Header wajib mengikuti kolom wajib E.5.1; header hilang/duplikat, berkas rusak atau tanpa baris ditolak sebelum job dibuat. Nomor baris laporan mengikuti baris fisik berkas (header baris 1). Kolom opsional kosong menjadi NULL; nomor seri tetap teks dan hanya sah untuk `jumlah_unit = 1` (`BR-003`). Enum menerima label Indonesia maupun kode teknis; boolean menerima `true`/`false`. Tahun memakai tahun berjalan WIB. `penanggung_jawab_id` dan `procurement_id` tidak ada pada E.5.1 dan tetap NULL. Semua unit satu baris beserta progresnya atomik; baris lain tetap diproses (`IMPT-01`). Laporan dan replay hanya milik pengunggah, termasuk pemegang scope `all`; pemanggil lain memperoleh 404. Kolom `assets.import_job_id` menghubungkan hasil dengan job untuk filter katalog (`filter[import_job_id]`). Berkas mentah dikosongkan saat job berakhir; laporan tetap dapat ditinjau melalui ID job (`UXD-06`).
 
