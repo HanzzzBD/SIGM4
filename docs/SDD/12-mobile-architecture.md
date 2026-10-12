@@ -244,3 +244,27 @@ Keputusan pemilik produk: Expo SDK 57, React Native 0.86.0, React 19.2.3; minimu
 `SDD-MOB-02/04/11`: preparePhoto mengompresi/membuang EXIF sebelum presign dan transaksi server pemilik foto. Enqueue dilakukan setelah transaksi server menautkan file_id. Drain hanya mengirim berkas; confirm idempoten dengan checksum yang sama dicoba lebih dulu untuk menangani respons confirm yang hilang, baru meminta URL ulang PR-04-15 jika objek belum terunggah. Metadata antrean menyertakan pemilik akun agar login akun berbeda tidak mengambil unggahannya. Batas usia/jumlah berlaku per perangkat. Perubahan baris diserialkan lalu memakai transaksi eksklusif SQLite. Proses mati setelah penghapusan baris tidak mempertahankan berkas yatim: adapter membersihkan direktori antrean saat startup.
 
 SecureStore menyimpan pasangan token dalam satu rekaman; revision mencegah respons refresh lama menghidupkan sesi sesudah logout. Refresh 401 diserialkan, login/verifikasi tidak memicu refresh; gangguan jaringan tidak menghapus token. Profil/permission/challenge tetap di memori. Gerbang password/2FA mengikuti kode server. App switcher dilindungi sebelum layar berdata pribadi ditampilkan. EAS tidak dipublikasikan; OTA aktif hanya jika ID proyek sekolah dikonfigurasi. Pengerasan pinning/root serta distribusi tetap PR-08-13.
+
+
+### Implementasi PR-05-32 (12 Oktober 2026)
+
+MS-07 memakai expo-camera 57.0.6, kamera belakang dan barcode QR saja. Izin diminta melalui tombol
+pada pemindai; penolakan menyediakan pengaturan sistem dan input manual. Kamera dilepas saat
+layar tidak fokus/aplikasi masuk latar belakang. Mode beruntun menyimpan maksimal 200 hasil ringkas
+hanya di memori layar (FlatList); duplikat sukses diabaikan, permintaan tunggal dapat dibatalkan.
+Pemindaian ulang QR gagal dibatasi 1,5 detik agar kamera tidak membanjiri API. Kode manual dicocokkan
+persis tanpa memilih hasil pencarian serupa, mengikuti seluruh halaman katalog yang diizinkan.
+
+QR harus HTTPS pada origin EXPO_PUBLIC_APP_URL (fallback origin API), path /a/UUIDv4 persis,
+tanpa kredensial/query/fragment. Tidak ada navigasi atau permintaan ke URL yang dipindai.
+App/Universal Links dikonfigurasi dari domain sekolah; association files dan sertifikat binary
+sekolah tetap perlu pemasangan/validasi di deployment PR-08-02. Tujuan /a/[uuid] tetap tersedia
+setelah autentikasi melalui SessionGate. Variabel publik runtime memakai dot notation agar Expo
+menginjeksi nilai saat bundling; URL API dan origin web dapat berbeda.
+
+MS-08/09 menggunakan API privat sesuai asset.view, menandai aset dihapuskan/tidak tersedia,
+memuat foto/linimasa berpaginasi tanpa cache operasional. BR-073 tetap difilter server dan UI.
+Keputusan produk: tombol transaksi per permission/status nonaktif dengan alasan karena layar
+serah terima, pengembalian, opname, work order, reservasi dan laporan kerusakan belum tersedia.
+Tidak ada transaksi atau konteks aktif yang diasumsikan berhasil. Izin aktual adalah loan.manage,
+audit.execute, workorder.execute, damage.create dan reservation.create dari katalog RBAC.

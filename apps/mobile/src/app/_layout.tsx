@@ -4,7 +4,7 @@ import { Platform } from "react-native";
 import * as ScreenCapture from "expo-screen-capture";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, AuthScreen, useAuth } from "../features/auth";
-import { UploadProvider } from "../features/uploads/Provider";
+import { UploadProvider } from "../features/uploads";
 import { Button, Label, Notice, Screen } from "../shared/ui";
 
 function SessionGate() {
@@ -24,7 +24,7 @@ function SessionGate() {
     return <Stack screenOptions={{ headerShown: false }} />;
 }
 export default function RootLayout() {
-    const url = process.env["EXPO_PUBLIC_API_URL"];
+    const url = process.env.EXPO_PUBLIC_API_URL;
     let valid = false;
     try { if (url) { const parsed = new URL(url); valid = parsed.protocol === "https:" || (__DEV__ && parsed.protocol === "http:"); } } catch { /* Konfigurasi tidak dapat dipakai. */ }
     if (!valid || !url) return <SafeAreaProvider><SafeAreaView style={{ flex: 1 }}><Screen title="SIGM4"><Notice message="Aplikasi belum dapat terhubung. Hubungi Administrator untuk konfigurasi aplikasi." /></Screen></SafeAreaView></SafeAreaProvider>;

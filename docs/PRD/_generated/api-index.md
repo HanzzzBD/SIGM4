@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **183** baris, dikumpulkan dari 22 berkas modul.
+> Total: **184** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -35,6 +35,7 @@
 | GET | `/assets/movements/{id}/document` | `asset_movement_document.view` | Status dan data tetap berita acara satu operasi mutasi | [M-04](../02-modules/m04-assets.md) |
 | GET | `/assets/{id}/documents/{docId}/download` | `asset_document.view` | URL unduhan bertanda tangan | [M-06](../02-modules/m06-documents.md) |
 | GET | `/assets/{id}/documents` | `asset_document.view` | Daftar dokumen aset beserta status pemindaian (tab Dokumen, langkah 1) | [M-06](../02-modules/m06-documents.md) |
+| GET | `/assets/{id}/photos` | `asset.view` | Foto aset terpaginasi (page/per_page, maksimum 100), scope sama dengan detail; metadata id/file_id/urutan/is_primary/status; URL medium/thumbnail 15 menit hanya setelah berkas terkonfirmasi CLEAN, tanpa object key tersendiri atau identitas pengunggah (keputusan pemilik produk 12 Oktober 2026, PR-05-32) | [M-04](../02-modules/m04-assets.md) |
 | GET | `/assets/{id}/service-history` | `asset.view` | Riwayat servis aset | [M-12](../02-modules/m12-maintenance.md) |
 | GET | `/assets/{id}/timeline` | `asset.view` | Linimasa riwayat aset terpaginasi: kondisi, mutasi, dan riwayat yang diisi modul lain (peminjaman, pemeliharaan, kerusakan, dokumen) — jenis sensitif disembunyikan bagi scope `restricted` (FR-04.2 langkah 5, A1) | [M-04](../02-modules/m04-assets.md) |
 | GET | `/assets/{id}` | `asset.view` | Detail aset — identitas lengkap, QR, kategori & lokasi (FR-04.2 langkah 5) | [M-04](../02-modules/m04-assets.md) |

@@ -123,6 +123,7 @@ import {
     updateAssetConditionRoute,
     getAssetRoute,
     assetTimelineRoute,
+    assetPhotosRoute,
     updateAssetRoute,
     importAssetsRoute, getAssetImportRoute, assetImportTemplateRoute, movementDocumentRoute, movementDocumentDownloadRoute,
 } from "../modules/m04-assets/index.js";
@@ -267,6 +268,7 @@ export const registry = new RouteRegistry().register(
     exportAssetsRoute,
     getAssetRoute,
     assetTimelineRoute,
+    assetPhotosRoute,
     updateAssetRoute,
     updateAssetConditionRoute,
     moveAssetsRoute,

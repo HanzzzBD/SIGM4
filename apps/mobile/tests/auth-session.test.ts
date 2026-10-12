@@ -82,4 +82,15 @@ describe("PR-04-16 SecureStore dan sesi mobile", () => {
         const controller = new SessionController(api, store, "IOS", () => 1000, (state) => states.push(state));
         await expect(controller.logout()).rejects.toBeInstanceOf(MobileApiError); expect(await store.read()).toBeNull(); expect(states.at(-1)).toEqual({ kind: "LOGIN" });
     });
+    it("respons /me yang terlambat sesudah logout tidak mengembalikan sesi lama", async () => {
+        let complete!: (response: { data: unknown }) => void;
+        let requested!: () => void; const started = new Promise<void>((resolve) => { requested = resolve; });
+        server((request) => request.url === "/me" ? new Promise((resolve) => { complete = resolve; requested(); }) : { data: envelope({}) });
+        const { store } = vault(); await store.save(tokens); const states: AuthState[] = [];
+        const api = createApi("https://sekolah.test/api/v1", "IOS", "0.1.0", store, () => undefined);
+        const controller = new SessionController(api, store, "IOS", () => 1000, (state) => states.push(state));
+        const restore = controller.restore(); await started; await controller.logout();
+        complete({ data: envelope({ user, permissions: { "asset.view": "all" } }) }); await restore;
+        expect(states).toEqual([{ kind: "LOGIN" }]); expect(await store.read()).toBeNull();
+    });
 });

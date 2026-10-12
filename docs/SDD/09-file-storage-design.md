@@ -217,3 +217,14 @@ Dibuat worker untuk MIME gambar (JPG/PNG) **setelah berkas diputus `CLEAN`** —
 ### Pembaruan URL unggah (PR-04-15)
 
 `SDD-MOB-04` menggunakan `POST /files/{id}/presign` untuk mengambil URL baru bagi pesanan yang belum dikonfirmasi. Object key/MIME/ukuran berasal dari registri berkas, bukan masukan klien; tidak menulis baris baru atau mengubah entitas. Kegagalan kepemilikan tidak membedakan berkas asing dan berkas yang tidak ada. Bila respons confirm hilang, klien mencoba confirm idempoten dengan checksum yang sama sebelum meminta URL baru.
+
+
+### Baca foto aset PR-05-32
+
+GET /assets/{id}/photos memeriksa asset.view dan scope melalui repository detail aset
+sebelum membaca asset_photos. Hanya tautan ke stored_files owner_type ASSET_PHOTO dibaca;
+berkas belum terkonfirmasi atau belum CLEAN mempunyai url/thumbnail_url/expires_at null.
+CLEAN terkonfirmasi diterbitkan melalui urlUnduhBerkas (medium dan thumb, fallback asli,
+900 detik). Metadata publik id/file_id/urutan/is_primary/status tidak membawa identitas
+pengunggah atau object key tersendiri. Respons no-store, paginasi page/per_page <=100,
+primary dahulu lalu urutan/id. Tidak ada endpoint penautan/unggah foto pada PR ini.

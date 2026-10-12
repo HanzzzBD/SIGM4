@@ -9,10 +9,17 @@ import { fileURLToPath } from 'node:url';
 
 const akar = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const apiRoot = join(akar, 'apps/api');
+const mobileRoot = join(akar, 'apps/mobile');
 const BERKAS = '__batas_impor__.ts';
 
 /** cwd: akar tempat konfigurasi lint dicari. tolak: apakah impor ini harus gagal. */
 const kasus = [
+  { nama: 'mobile shared -> features dilarang', cwd: mobileRoot, tolak: true,
+    file: 'apps/mobile/src/shared/api/__batas_mobile__.ts', isi: "import '../../features/auth/index';\n" },
+  { nama: 'mobile app -> internal feature dilarang', cwd: mobileRoot, tolak: true,
+    file: 'apps/mobile/src/app/__batas_mobile_internal__.ts', isi: "import '../features/auth/session';\n" },
+  { nama: 'mobile app -> index feature DIIZINKAN', cwd: mobileRoot, tolak: false,
+    file: 'apps/mobile/src/app/__batas_mobile_sah__.ts', isi: "import '../features/auth/index';\n" },
   { nama: 'apps/web -> apps/api dilarang (SDD-REPO-07)', cwd: akar, tolak: true,
     file: 'apps/web/src/app/' + BERKAS, isi: "import '../../../api/src/api/index.js';\n" },
   { nama: 'apps/api -> apps/web dilarang (SDD-REPO-07)', cwd: akar, tolak: true,

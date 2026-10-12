@@ -8,7 +8,7 @@ import type { AddressInfo } from "node:net";
 import express from "express";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { AssetDetail, EntriLinimasaAset } from "@sigm4/schemas";
-import { AssetDetailResponseSchema, AssetTimelineResponseSchema } from "@sigm4/schemas";
+import { AssetDetailResponseSchema, AssetPhotosResponseSchema, AssetTimelineResponseSchema } from "@sigm4/schemas";
 import { createApp } from "../../src/api/index.js";
 import { fcmCheck } from "../../src/modules/m17-notifications/index.js";
 import { AMR_OTP, createAuthContext, setAmr, setAuthContext } from "../../src/shared/auth/index.js";
@@ -48,9 +48,15 @@ describe.skipIf(!ADA)("PR-03-24 — detail aset + linimasa (acceptance)", () => 
             clock,
             db: getDb(),
             auth: authPalsu(),
+            penyimpanan: {
+                urlUnduh: (key, seconds) => Promise.resolve(`https://media.sekolah.test/private/${encodeURIComponent(key)}?expires=${seconds}`),
+                urlUnggah: () => Promise.reject(new Error("Tidak dipakai")), info: () => Promise.resolve(null),
+                ambil: () => Promise.resolve(null), simpan: () => Promise.resolve(), hapus: () => Promise.resolve(), periksa: () => Promise.resolve(),
+            },
         });
         const luar = express();
         luar.use((req, res, next) => {
+            if (req.header("x-uji-anonim") === "true") { next(); return; }
             const perms = (req.header("x-uji-perms") ?? "").split(",").filter((p) => p !== "");
             setAuthContext(res, createAuthContext({ userId: pengguna, roleCode: "R-02", scopes: new Map<string, Scope>(perms.map((p) => [p.split(":")[0]!, (p.split(":")[1] ?? "all") as Scope])) }));
             setAmr(res, ["pwd", AMR_OTP]);
@@ -76,6 +82,7 @@ describe.skipIf(!ADA)("PR-03-24 — detail aset + linimasa (acceptance)", () => 
     afterAll(async () => {
         await new Promise<void>((r) => server.close(() => r()));
         const aset = `SELECT id FROM assets WHERE category_id = ${kategori}`;
+        await kueri(`DELETE FROM asset_photos WHERE asset_id IN (${aset})`);
         await kueri(`DELETE FROM damage_reports WHERE asset_id IN (${aset})`);
         await kueri(`DELETE FROM asset_document_links WHERE asset_id IN (${aset})`);
         await kueri(`DELETE FROM asset_documents WHERE file_id IN (SELECT id FROM stored_files WHERE uploaded_by = ${String(pengguna)})`);
@@ -155,6 +162,49 @@ describe.skipIf(!ADA)("PR-03-24 — detail aset + linimasa (acceptance)", () => 
             const id = await buat();
             expect((await detail(id, ["asset.create"])).status).toBe(403);
             expect((await detail("abc", GURU)).status).toBe(400);
+        });
+    });
+
+    describe("GET /assets/{id}/photos (PR-05-32)", () => {
+        const foto = async (id: string, status: string, confirmed = true, primary = false, order = 0, owner = "ASSET_PHOTO") => {
+            const [file] = await kueri<{ id: string }>(`INSERT INTO stored_files (object_key, thumb_key, medium_key, mime, ukuran, checksum, scan_status, owner_type, uploaded_by)
+                VALUES ('private-${randomUUID()}.jpg', '${randomUUID()}-thumb.jpg', '${randomUUID()}-medium.jpg', 'image/jpeg', 1000, ${confirmed ? `'${"a".repeat(64)}'` : "NULL"}, '${status}', '${owner}', ${pengguna}) RETURNING id::text`);
+            const [photo] = await kueri<{ id: string }>(`INSERT INTO asset_photos (asset_id, file_id, urutan, is_primary, diunggah_oleh) VALUES (${id}, ${file?.id}, ${order}, ${primary}, ${pengguna}) RETURNING id::text`);
+            return photo!.id;
+        };
+        it("CLEAN terkonfirmasi saja mendapat URL; metadata tidak mengandung object key/pengunggah; primary lebih dulu", async () => {
+            const id = await buat();
+            await foto(id, "PENDING"); await foto(id, "INFECTED"); await foto(id, "FAILED"); await foto(id, "CLEAN", false);
+            const primary = await foto(id, "CLEAN", true, true, 5);
+            await foto(id, "CLEAN", true, false, 1, "USER_PHOTO");
+            const response = await minta("GET", `/assets/${id}/photos`, GURU);
+            expect(response.status).toBe(200);
+            const data = AssetPhotosResponseSchema.parse(response.json);
+            expect(data.meta.total).toBe(5); expect(data.data[0]!.id).toBe(primary);
+            expect(data.data[0]).toMatchObject({ status: "CLEAN", url: expect.stringContaining("medium.jpg"), thumbnail_url: expect.stringContaining("thumb.jpg"), expires_at: "2026-10-11T03:15:00.000Z" });
+            for (const photo of data.data.slice(1)) expect(photo).toMatchObject({ url: null, thumbnail_url: null, expires_at: null });
+            expect(JSON.stringify(response.json)).not.toMatch(/object_key|diunggah_oleh|uploaded_by|private-/);
+        });
+        it("scope restricted, izin, id dan paginasi memakai penjaga detail aset", async () => {
+            const inaccessible = await buat(); const visible = await buat({ siswa: true });
+            await foto(visible, "PENDING"); await foto(visible, "CLEAN");
+            const hidden = await minta("GET", `/assets/${inaccessible}/photos`, SISWA);
+            const absent = await minta("GET", "/assets/999999999/photos", SISWA);
+            expect(hidden.status).toBe(404); expect(hidden.json.error).toEqual(absent.json.error);
+            expect((await minta("GET", `/assets/${visible}/photos`, [])).status).toBe(403);
+            expect((await fetch(`${url}/assets/${visible}/photos`, { headers: { "x-uji-anonim": "true" } })).status).toBe(401);
+            expect((await minta("GET", "/assets/abc/photos", GURU)).status).toBe(400);
+            const page = await minta("GET", `/assets/${visible}/photos?page=2&per_page=1`, SISWA);
+            expect(AssetPhotosResponseSchema.parse(page.json).meta).toMatchObject({ page: 2, total: 2, total_pages: 2 });
+            expect((await minta("GET", `/assets/${visible}/photos?per_page=101`, GURU)).status).toBe(400);
+        });
+        it("constraint DB: satu foto utama, pasangan unik, urutan nonnegatif dan FK", async () => {
+            const id = await buat(); const photoId = await foto(id, "PENDING", true, true);
+            const second = await foto(id, "PENDING");
+            await expect(kueri(`UPDATE asset_photos SET is_primary = true WHERE id = ${second}`)).rejects.toMatchObject({ code: "23505" });
+            await expect(kueri(`UPDATE asset_photos SET urutan = -1 WHERE id = ${photoId}`)).rejects.toMatchObject({ code: "23514" });
+            await expect(kueri(`UPDATE asset_photos SET file_id = 999999999 WHERE id = ${photoId}`)).rejects.toMatchObject({ code: "23503" });
+            await expect(kueri(`UPDATE asset_photos SET file_id = (SELECT file_id FROM asset_photos WHERE id = ${photoId}) WHERE id = ${second}`)).rejects.toMatchObject({ code: "23505" });
         });
     });
 

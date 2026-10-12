@@ -21,11 +21,16 @@ export function AuthScreen() {
                 if (newPassword !== confirm) throw new Error("Konfirmasi password tidak sama.");
                 await controller.changePassword(password, newPassword); setPassword(""); setNewPassword(""); setConfirm("");
             } else if (state.kind === "ENROLL") {
-                if (!enrollment) setEnrollment(EnrollmentSchema.parse((await api.post("/auth/2fa/enroll", { kode_aktivasi: activation.trim() })).data.data));
+                const revision = tokenVault.revision;
+                if (!enrollment) {
+                    const result = await api.post("/auth/2fa/enroll", { kode_aktivasi: activation.trim() });
+                    if (revision === tokenVault.revision) setEnrollment(EnrollmentSchema.parse(result.data.data));
+                }
                 else {
                     const result = await api.post("/auth/2fa/enroll/confirm", { kode: code });
+                    if (revision !== tokenVault.revision) return;
                     const current = await tokenVault.read();
-                    if (current) await tokenVault.save({ ...current, access_token: z.string().parse(result.data.data.access_token) });
+                    if (current && !(await tokenVault.save({ ...current, access_token: z.string().parse(result.data.data.access_token) }, revision))) return;
                     setEnrollment(null); setCode(""); setActivation(""); await controller.restore();
                 }
             }
@@ -38,6 +43,7 @@ export function AuthScreen() {
         {state.kind === "PASSWORD" && <><Label>Ganti password sebelum melanjutkan. Sesi di perangkat lain akan dicabut.</Label><Input label="Password saat ini" value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password" /><Input label="Password baru" value={newPassword} onChangeText={setNewPassword} secureTextEntry autoComplete="new-password" />{PASSWORD_RULES.map((rule) => <Label key={rule.label}>{rule.test(newPassword) ? "✓" : "○"} {rule.label}</Label>)}<Label>Password bocor, nama/email dan tiga password terakhir diperiksa saat disimpan.</Label><Input label="Konfirmasi password baru" value={confirm} onChangeText={setConfirm} secureTextEntry autoComplete="new-password" /></>}
         {state.kind === "ENROLL" && (enrollment ? <><Qr uri={enrollment.otpauth_uri} /><Label>Kunci manual: {enrollment.secret}</Label><Label>Kode cadangan tampil satu kali. Simpan di tempat aman.</Label>{enrollment.kode_cadangan.map((value) => <Label key={value}>{value}</Label>)}<Button title={saved ? "Kode sudah disimpan" : "Saya sudah menyimpan 10 kode cadangan"} secondary onPress={() => setSaved(!saved)} /><Input label="Kode authenticator" keyboardType="number-pad" maxLength={6} value={code} onChangeText={setCode} /></> : <><Label>Masukkan kode aktivasi yang diserahkan langsung oleh Administrator.</Label><Input label="Kode aktivasi" value={activation} onChangeText={setActivation} autoCapitalize="characters" /></>)}
         <Button title={state.kind === "LOGIN" ? "Masuk" : state.kind === "PASSWORD" ? "Simpan password" : "Lanjutkan"} busy={busy} disabled={state.kind === "LOGIN" ? !email.trim() || !password : state.kind === "CHALLENGE" ? !code : state.kind === "PASSWORD" ? !password || !confirm || !PASSWORD_RULES.every((r) => r.test(newPassword)) : state.kind === "ENROLL" && enrollment !== null ? !saved || !/^\d{6}$/.test(code) : !activation.trim()} onPress={() => void submit()} />
+        {(state.kind === "PASSWORD" || state.kind === "ENROLL") && <Button title="Keluar" secondary onPress={() => void controller.logout().catch(() => undefined)} />}
     </Card></Screen>;
 }
 export const PASSWORD_RULES = [{ label: "Minimal 12 karakter", test: (p: string) => p.length >= 12 }, { label: "Huruf besar", test: (p: string) => /[A-Z]/.test(p) }, { label: "Huruf kecil", test: (p: string) => /[a-z]/.test(p) }, { label: "Angka", test: (p: string) => /\d/.test(p) }];

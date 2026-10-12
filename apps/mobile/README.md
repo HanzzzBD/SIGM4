@@ -44,3 +44,27 @@ foto akun lama. Penghapusan akibat retensi diberi tahu pada layar masuk aplikasi
 Kamera nyata, Keychain/Keystore, pratinjau app switcher, SQLite setelah force-stop,
 cold start, ukuran APK/IPA dan matriks perangkat harus diuji pada development build.
 Certificate pinning, root/jailbreak dan distribusi store ditutup pada pengerasan `PR-08-13`.
+
+
+## Pemindai dan detail aset (PR-05-32)
+
+Isi EXPO_PUBLIC_APP_URL dengan origin HTTPS sekolah (fallback origin API); QR URL origin lain
+atau path selain /a/UUIDv4 ditolak. Pemindai tersedia dari beranda bagi asset.view; kamera QR
+native mendukung lampu dan mode beruntun, izin ditolak tetap menyediakan input kode manual.
+Hasil beruntun dibatasi 200 di memori layar; tidak ada transaksi opname/mutasi otomatis.
+Aksi sesuai permission/status tampil nonaktif dengan alasan ketika modul tujuan belum tersedia.
+Detail menampilkan foto CLEAN dari API privat dan riwayat berpaginasi. Muat ulang mengganti URL
+foto kedaluwarsa. App Links / Universal Links memerlukan association files dan identitas binary
+sekolah pada deployment PR-08-02; konfigurasi domain saja belum membuktikan integrasi perangkat.
+
+
+### Uji perangkat sebelum merge/rilis
+
+- Kamera izin pertama, penolakan permanen/pengaturan dan kode manual tanpa izin kamera.
+- QR sah 10-30 cm, QR asing/regenerasi/tidak dikenal, jaringan gagal dan retry; ukur hasil <=3 detik.
+- Beruntun, duplikat, lampu, fokus pindah layar/background; kamera tidak berjalan di latar belakang.
+- Role/scope berbeda, aset dihapuskan, finansial tersembunyi, URL foto PENDING/INFECTED tidak tampil.
+- Login/TOTP/enrolment/password wajib; logout dan pergantian akun tidak menampilkan sesi sebelumnya.
+- Antrean foto bertahan force-stop, reconnect, backoff, pembatalan, retensi dan pemisahan akun.
+- App/Universal Link setelah login; lakukan pada binary sekolah dengan association files terpasang.
+- TalkBack/VoiceOver, skala font, rotasi/tablet, minimum Android8 dan iOS16.4.
