@@ -111,9 +111,9 @@ export const HalamanPublikAset = ({ uuid }: { readonly uuid: string }) => (
     </Suspense>
 );
 /** P-24 Label QR (FR-05.1; PR-03-28). */
-export const HalamanLabelQr = ({ awal }: { readonly awal: readonly string[] }) => (
+export const HalamanLabelQr = ({ awal, belum }: { readonly awal: readonly string[]; readonly belum?: boolean | undefined }) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat label QR" baris={6} />}>
-        <LabelQrPage awal={awal} />
+        <LabelQrPage awal={awal} belum={belum ?? false} />
     </Suspense>
 );
 /** P-25 Scan QR web (FR-05.2; PR-03-28). */

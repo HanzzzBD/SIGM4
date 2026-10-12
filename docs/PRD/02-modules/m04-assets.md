@@ -185,6 +185,8 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 
 ## 7. API Endpoints
 
+**Filter drill-down QR (PR-02-50).** `GET /assets` menerima query opsional `filter[qr_terpasang]=true|false`, digabungkan dengan filter katalog lain menggunakan AND. Nilai selain boolean tersebut ditolak (422); parameter yang tidak diberikan tidak menyaring status label. `false` mempertahankan scope `asset.view` (termasuk `restricted`) dan pengecualian aset dihapuskan. P-24 memakai URL web `?belum=true` untuk memuat daftar ini tanpa pencarian manual, dengan paginasi 25 aset.
+
 ### Endpoint
 
 | Method | Endpoint | Permission | Deskripsi |
