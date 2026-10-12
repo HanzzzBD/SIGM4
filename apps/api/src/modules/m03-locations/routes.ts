@@ -156,6 +156,7 @@ export function locationsRouter(
         const { id } = IdParamSchema.parse(req.params);
         const filter = LocationExportQuerySchema.parse({ format: req.query["format"], q: req.query["q"], kategori_id: req.query["filter[kategori_id]"], kondisi: req.query["filter[kondisi]"], status: req.query["filter[status]"] });
         const buffer = await exportLocation(deps.db, deps.auditLogger, deps.clock ?? new SystemClock(), deps.pdf ?? new PembangkitPdfChromium(null), requireAuthContext(res), id, filter);
+        res.setHeader("Cache-Control", "no-store");
         res.type(filter.format === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet").attachment(`inventaris-ruangan-${id}.${filter.format}`).send(buffer);
     });
 
