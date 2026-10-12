@@ -203,6 +203,7 @@ describe("P-12 Dashboard + shell", () => {
         const { router } = await renderAplikasi("/");
         await userEvent.click(await screen.findByRole("button", { name: /Admin Uji/ }));
         await userEvent.click(await screen.findByRole("menuitem", { name: "Keluar dari semua perangkat" }));
+        await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Keluar semua" }));
         await waitFor(() => expect(router.state.location.pathname).toBe("/login"));
         expect(log.some((p) => p.url === "/auth/logout-all")).toBe(true);
     });

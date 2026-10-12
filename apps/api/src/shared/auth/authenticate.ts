@@ -102,12 +102,14 @@ export function authenticate(deps: AuthenticateDeps): RequestHandler {
 
 /**
  * Gerbang ganti password (SDD-AUTH-09 langkah 2). Pengguna yang wajib mengganti
- * password hanya boleh menjangkau `prefiksDiizinkan` (alur autentikasi: refresh,
- * logout, ganti password); selebihnya `403 PASSWORD_CHANGE_REQUIRED`.
+ * password hanya boleh menjangkau delapan route POST eksplisit di bawah prefiks
+ * autentikasi. Prefix saja, metode lain, dan route baru tidak pernah diloloskan.
  */
 export function gerbangGantiPassword(prefiksDiizinkan: string): RequestHandler {
+    // Enroll/confirm diperlukan agar role wajib 2FA tidak buntu sebelum mengganti password.
+    const paths = new Set(["login", "refresh", "logout", "logout-all", "password/change", "2fa/verify", "2fa/enroll", "2fa/enroll/confirm"].map((p) => `${prefiksDiizinkan}${p}`));
     return (req: Request, res: Response, next: NextFunction) => {
-        if (res.locals["wajibGantiPassword"] === true && !req.path.startsWith(prefiksDiizinkan)) {
+        if (res.locals["wajibGantiPassword"] === true && !(req.method === "POST" && paths.has(req.path))) {
             next(new DomainError("PASSWORD_CHANGE_REQUIRED", "Anda wajib mengganti password sebelum melanjutkan."));
             return;
         }

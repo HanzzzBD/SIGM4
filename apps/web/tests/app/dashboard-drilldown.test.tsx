@@ -10,7 +10,8 @@ const kartu = (id: string, drilldown: string): KartuManifes => ({ id, judul: id,
 describe("PR-02-50 drill-down dashboard", () => {
     it("menjaga izin tujuan, tujuan belum tersedia, dan fallback konfigurasi", () => {
         expect(tujuanDashboard(kartu("pengajuan-saya", "P-30?saya=true"), (p) => p === "approval.view")).toBeNull();
-        expect(tujuanDashboard(kartu("reset", "P-67"), () => true)).toBeNull();
+        expect(tujuanDashboard(kartu("reset", "P-67"), (p) => p === "user.reset_password")).toBe("/permintaan-reset-password");
+        expect(tujuanDashboard(kartu("reset", "P-67"), (p) => p === "dashboard.view")).toBeNull();
         // P-73 terdaftar sejak PR-01-25 (#167): bertaut hanya bagi pemegang activity_log.view.
         expect(tujuanDashboard(kartu("log", "P-73"), (p) => p === "activity_log.view")).toBe("/activity-log");
         expect(tujuanDashboard(kartu("log", "P-73"), (p) => p === "dashboard.view")).toBeNull();

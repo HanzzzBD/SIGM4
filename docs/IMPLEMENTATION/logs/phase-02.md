@@ -88,6 +88,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 | 11 Oktober 2026 | `PR-02-46` di `feature/PR-02-46-ui-tambah-ubah-kategori` dari `develop` (tidak bertumpuk, keputusan 93d): `PUT /assets/{id}` (keputusan 93e/93f — baris keputusan 93 tercatat lewat #159) + P-16 Tambah (1–N unit, hasil berkode), P-19 Ubah (atribut + kondisi beralasan atomik, konfirmasi batal), P-21 Kategori (pohon dua tingkat, tambah/ubah/hapus). Salinan identik `asset-detail.ts` (#158) dan `katalog.ts` (#159). API integrasi 7/7 + mutasi 5/5; web 12/12 + mutasi 5/5. | `PR-02-46` |
 | 12 Oktober 2026 | `#170` (`PR-02-50`) digabung PM ke `develop` (merge `f05dd31`). | `PR-02-50` |
 | 12 Oktober 2026 | `PR-02-48` + `PR-02-49` + `PR-02-51` di `feature/PR-02-48-51-mutasi-penjaga-csv` dari `develop` `e9114b6`, dipecah dari pekerjaan gabungan lokal pascademo (bersama `PR-02-40`…`42`, `PR-02-47`, `PR-01-26`, `PR-00-19` yang masing-masing menjadi PR sendiri). Acceptance PostgreSQL yang sebelumnya dilewati dijalankan pada database uji terpisah `sigm4_uji` (DB dev `sigm4` berisi data demo, tidak disentuh); satu uji baru diperbaiki karena menghitung audit lintas iterasi `it.each`. | `PR-02-48`, `PR-02-49`, `PR-02-51` |
+| 12 Oktober 2026 | `PR-02-40` + `PR-02-41` + `PR-02-42` di `feature/PR-02-40-42-auth-profil` dari `develop`, dipecah dari pekerjaan gabungan lokal pascademo. Acceptance PostgreSQL/Redis yang semula dilewati (79) dijalankan pada database uji terpisah `sigm4_uji`: 13 berkas auth / 242 uji lulus, suite integrasi penuh 92 berkas / 1.101 uji lulus. | `PR-02-40`, `PR-02-41`, `PR-02-42` |
 
 ## 2. Keputusan yang diambil
 
@@ -235,6 +236,7 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 | `PR-02-46` kompleksitas `M` | `L`: **+866 / −2** baris produksi (`apps/web/src` + `apps/api/src`, termasuk komentar) + salinan identik `asset-detail.ts` (#158) dan `katalog.ts` (#159); uji +397 | Tiga layar berformulir (P-16 ±200, P-19 ±210, P-21 ±190) + klien tulis (±110) + `PUT` (±130) yang tak dimiliki PR mana pun sebelumnya (keputusan 93c). | Tidak ada. |
 | UX §7.5 drawer "Ubah Kondisi" di P-18 | Perubahan kondisi beralasan lewat P-19 (satu PUT atomik, keputusan 93f); drawer `?aksi=` P-18 belum dibuat. | P-18 lahir di #159 yang belum tergabung saat cabang ini dibuat. | Drawer menyusul — butir §10. |
 | `PR-02-48`, `PR-02-49`, `PR-02-51`: tiga PR | Satu PR (kode produksi 93 baris, skala S) | Ketiganya gap kecil backend M-04/M-02 yang dikerjakan bersama; gabungan tetap di bawah batas S sehingga dapat ditinjau sekali duduk | — |
+| `PR-02-40`, `PR-02-41`, `PR-02-42`: tiga PR (`42` berskala `L`) | Satu PR; kode produksi 265 baris (`M`) | API status 2FA dan gerbang password adalah prasyarat langsung layar P-77/P-04; dikerjakan bersama agar kontraknya diuji dari layar yang memakainya | — |
 
 ## 4. PR di luar rencana
 

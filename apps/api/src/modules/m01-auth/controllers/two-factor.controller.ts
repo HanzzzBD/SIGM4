@@ -16,6 +16,12 @@ import { ACCESS_TOKEN_TTL_DETIK } from "../../../shared/security/index.js";
 import { EnrollBodySchema, EnrollConfirmBodySchema } from "../schemas/two-factor.schema.js";
 import type { KlienPermintaan } from "../services/klien.js";
 import type { TwoFactorService } from "../services/two-factor.service.js";
+export function statusDuaFaktorHandler(service: TwoFactorService): RequestHandler {
+    return async (_req, res) => {
+        res.setHeader("Cache-Control", "no-store");
+        res.status(200).json({ success: true, data: await service.status(requireAuthContext(res)), meta: null });
+    };
+}
 
 function klienDari(req: Request): KlienPermintaan {
     return { ip: req.ip, userAgent: req.get("user-agent") };

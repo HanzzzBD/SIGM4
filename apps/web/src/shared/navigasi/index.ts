@@ -10,6 +10,7 @@ export const HALAMAN_TERDAFTAR: Readonly<Record<string, string>> = {
     "P-01": "/login",
     "P-02": "/login/2fa",
     "P-03": "/login/2fa/aktivasi",
+    "P-04": "/lupa-password",
     "P-05": "/ganti-password",
     "P-06": "/a/$uuid",
     "P-08": "/tidak-punya-akses",
@@ -49,6 +50,7 @@ export const HALAMAN_TERDAFTAR: Readonly<Record<string, string>> = {
     "P-64": "/pengguna/kenaikan-kelas",
     "P-65": "/role",
     "P-66": "/role/$id",
+    "P-67": "/permintaan-reset-password",
     "P-68": "/approval-rules",
     "P-69": "/approval-rules/$id",
     "P-70": "/pengaturan",
@@ -57,6 +59,9 @@ export const HALAMAN_TERDAFTAR: Readonly<Record<string, string>> = {
     "P-73": "/activity-log",
     "P-74": "/activity-log/$id",
     "P-78": "/profil/notifikasi",
+    "P-76": "/profil",
+    "P-77": "/profil/keamanan",
+    "P-79": "/profil/keamanan#perangkat",
 };
 
 export interface EntriNav {

@@ -16,7 +16,8 @@ export interface OpsiKonfirmasi {
     readonly labelAksi: string;
     readonly varian?: "primary" | "danger";
     /** Diisi = alasan wajib (UX §7.2); nilainya diteruskan ke `onKonfirmasi`. */
-    readonly labelAlasan?: string;
+    readonly labelAlasan?: string | undefined;
+    readonly aksiNonaktif?: boolean;
     readonly sibuk?: boolean;
     readonly galat?: string | undefined;
     readonly onKonfirmasi: (alasan: string) => void;
@@ -24,7 +25,7 @@ export interface OpsiKonfirmasi {
     readonly onFokusKembali?: () => void;
 }
 
-export function DialogKonfirmasi({ buka, onTutup, judul, children, labelAksi, varian = "primary", labelAlasan, sibuk = false, galat, onKonfirmasi, onFokusKembali }: OpsiKonfirmasi) {
+export function DialogKonfirmasi({ buka, onTutup, judul, children, labelAksi, varian = "primary", labelAlasan, sibuk = false, galat, onKonfirmasi, onFokusKembali, aksiNonaktif = false }: OpsiKonfirmasi) {
     const [alasan, setAlasan] = useState("");
     const idAlasan = useId();
     const kurangAlasan = labelAlasan !== undefined && alasan.trim() === "";
@@ -72,7 +73,7 @@ export function DialogKonfirmasi({ buka, onTutup, judul, children, labelAksi, va
                                 Batal
                             </Tombol>
                         </Dialog.Close>
-                        <Tombol varian={varian} sibuk={sibuk} disabled={kurangAlasan} onClick={() => onKonfirmasi(alasan.trim())}>
+                        <Tombol varian={varian} sibuk={sibuk} disabled={kurangAlasan || aksiNonaktif} onClick={() => onKonfirmasi(alasan.trim())}>
                             {labelAksi}
                         </Tombol>
                     </footer>

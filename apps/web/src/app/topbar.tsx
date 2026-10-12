@@ -9,6 +9,8 @@ import { useEffect, useState } from "react";
 import { logout, logoutSemua } from "../modules/m01-auth";
 import { Lonceng } from "../modules/m17-notifications";
 import { useCan, useSesi } from "../shared/auth";
+import { ApiError } from "../shared/api";
+import { DialogKonfirmasi } from "../shared/ui/dialog";
 import { jalurTerdaftar } from "../shared/navigasi";
 import { Ikon } from "../shared/ui/icon";
 import { Logo } from "../shared/ui/logo";
@@ -49,6 +51,9 @@ function PencarianGlobal() {
 }
 
 export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; readonly menuLabel: string }) {
+    const [confirmAll, setConfirmAll] = useState(false);
+    const [sibuk, setSibuk] = useState(false);
+    const [galat, setGalat] = useState<string | undefined>();
     const sesi = useSesi();
     const can = useCan();
     const queryClient = useQueryClient();
@@ -56,13 +61,14 @@ export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; rea
     const keluar = async (semua: boolean) => {
         try {
             await (semua ? logoutSemua() : logout());
-        } catch {
+        } catch (error) {
+            if (semua && !(error instanceof ApiError && error.status === 401)) throw error;
             // Kegagalan tersering: sesi sudah berakhir (401) — keluar lokal tetap dijalankan agar
             // pengguna tidak terjebak di shell; server menolak sesi yang tak sah pada permintaan berikutnya.
         }
         // Cache klien dikosongkan agar data sesi lama tak tertinggal di tab ini.
-        queryClient.clear();
         await navigate({ to: "/login" });
+        queryClient.clear();
     };
     return (
         <header role="banner" className="flex min-h-topbar items-center gap-2 border-b border-border-subtle bg-surface-default px-4 sm:gap-4">
@@ -83,6 +89,9 @@ export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; rea
                         <Menu.Content align="end" sideOffset={4} className="z-40 flex min-w-sidebar flex-col rounded-md border border-border-subtle bg-surface-default p-1 shadow-1">
                             <Menu.Label className="px-4 py-2 text-sm text-text-secondary">{sesi.user.email}</Menu.Label>
                             <Menu.Separator className="my-1 h-px bg-border-subtle" />
+                            <Menu.Item className={ITEM} onSelect={() => void navigate({ to: "/profil" })}>Profil</Menu.Item>
+                            <Menu.Item className={ITEM} onSelect={() => void navigate({ to: "/profil/keamanan" })}>Keamanan &amp; 2FA</Menu.Item>
+                            <Menu.Item className={ITEM} onSelect={() => void navigate({ to: "/profil/keamanan", hash: "perangkat" })}>Perangkat Terhubung</Menu.Item>
                             {can("notification.manage_own") && (
                                 <Menu.Item className={ITEM} onSelect={() => void navigate({ to: "/profil/notifikasi" })}>
                                     <Ikon nama="notifikasi" />
@@ -93,7 +102,7 @@ export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; rea
                                 <Ikon nama="keluar" />
                                 Keluar
                             </Menu.Item>
-                            <Menu.Item className={ITEM} onSelect={() => void keluar(true)}>
+                            <Menu.Item className={ITEM} onSelect={() => { setGalat(undefined); setConfirmAll(true); }}>
                                 <Ikon nama="keluar" />
                                 Keluar dari semua perangkat
                             </Menu.Item>
@@ -101,6 +110,7 @@ export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; rea
                     </Menu.Portal>
                 </Menu.Root>
             </div>
+            <DialogKonfirmasi buka={confirmAll} onTutup={() => setConfirmAll(false)} judul="Keluar dari semua perangkat?" labelAksi="Keluar semua" sibuk={sibuk} galat={galat} onKonfirmasi={async () => { setSibuk(true); setGalat(undefined); try { await keluar(true); } catch { setGalat("Belum dapat mencabut semua perangkat. Coba lagi."); } finally { setSibuk(false); } }}><p>Anda akan keluar dari perangkat ini dan semua perangkat lain.</p></DialogKonfirmasi>
         </header>
     );
 }

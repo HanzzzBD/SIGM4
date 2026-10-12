@@ -3,6 +3,8 @@
 // bukan berhenti (UX-05, UX §5.6).
 
 import { Link } from "@tanstack/react-router";
+import { loadForgotPasswordPage, loadProfilePage, loadSecurityPage, loadResetRequestsPage } from "../modules/m01-auth";
+import type { StatusReset } from "../modules/m01-auth";
 import { Suspense, lazy } from "react";
 import { loadLocationTreePage, loadRoomDetailPage } from "../modules/m03-locations";
 import type { Filters as LocationFilters } from "../modules/m03-locations";
@@ -58,6 +60,14 @@ export const HalamanLokasi = (props: { readonly q: string; readonly status: stri
 export const HalamanDetailRuangan = (props: { readonly id: string; readonly filters: LocationFilters; readonly tab: "aset" | "jadwal"; readonly onFilters: (f: LocationFilters) => void; readonly onTab: (t: "aset" | "jadwal") => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat ruangan" />}><RoomDetailPage {...props} /></Suspense>;
 const AssetImportPage = lazy(loadAssetImportPage);
 const DocumentListPage = lazy(loadDocumentListPage);
+const ForgotPasswordPage = lazy(loadForgotPasswordPage);
+const ProfilePage = lazy(loadProfilePage);
+const SecurityPage = lazy(loadSecurityPage);
+const ResetRequestsPage = lazy(loadResetRequestsPage);
+export const HalamanLupaPassword = () => <Suspense fallback={<KeadaanMemuat label="Memuat halaman" />}><ForgotPasswordPage /></Suspense>;
+export const HalamanProfil = () => <Suspense fallback={<KeadaanMemuat label="Memuat profil" />}><ProfilePage /></Suspense>;
+export const HalamanKeamanan = () => <Suspense fallback={<KeadaanMemuat label="Memuat keamanan" />}><SecurityPage /></Suspense>;
+export const HalamanPermintaanReset = (props: { readonly status: StatusReset; readonly page: number; readonly onFilter: (status: StatusReset, page: number) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat permintaan reset" />}><ResetRequestsPage {...props} /></Suspense>;
 export const HalamanDokumenAset = (props: { readonly filter: FilterDokumen; readonly onFilter: (f: Partial<FilterDokumen>) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat dokumen aset" />}><DocumentListPage {...props} /></Suspense>;
 const AssetMovementPage = lazy(loadAssetMovementPage);
 const RoomCalendarPage = lazy(loadRoomCalendarPage);
