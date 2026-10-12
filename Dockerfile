@@ -118,7 +118,8 @@ USER app
 
 # TZ=UTC dipaksa di sini dan diverifikasi lagi saat startup (SDD-INF-09, INF-07).
 # Konversi ke WIB adalah urusan lapisan penyajian (NFR-C-10).
-ENV NODE_ENV=production TZ=UTC CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ARG APP_REVISION=development
+ENV NODE_ENV=production TZ=UTC CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser APP_REVISION=${APP_REVISION}
 
 EXPOSE 3000
 CMD ["node", "apps/api/dist/api/index.js"]

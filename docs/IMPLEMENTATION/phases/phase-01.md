@@ -157,7 +157,7 @@ Tidak ada milestone yang **tertutup** oleh phase ini. `M1` menunggu M-01, M-04 (
 - [x] Uji otorisasi tergenerate lulus untuk keempat modul (`SEC-T-01`)
 - [x] Impor 500 pengguna dengan laporan galat per baris (`IMPT-02`)
 - [x] Perubahan matriks permission berlaku ≤ 60 detik tanpa restart melalui PermissionCache (`PM-05`); gerbang memakai authPalsu
-- [ ] Bukti PM-05 melalui JWT/sesi nyata — GAP-01-AUTH-E2E, QA/Backend auth; auth sudah tersedia #62/#66
+- [x] Bukti teknis PM-05 melalui JWT/sesi nyata — `PR-01-26`: login HTTP + Ed25519, PostgreSQL/Redis nyata, 5 acceptance lulus tanpa authPalsu; [audit](../audits/pr-01-26-pr-00-19-2026-10-12.md). QA staging masih terbuka
 - [x] Setiap operasi tulis menghasilkan entri activity log (`AL-01`)
 - [x] Akun siswa tanpa `consent_guardian_at` tidak dapat diaktifkan (`DP-02`)
 

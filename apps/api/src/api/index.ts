@@ -19,6 +19,8 @@ import { closeRedis, getRedis } from "../shared/cache/index.js";
 import type { Clock } from "../shared/clock/index.js";
 import { SystemClock } from "../shared/clock/index.js";
 import { readApiConfig, zonaProses } from "../shared/config/index.js";
+import type { DocumentationConfig } from "../shared/config/index.js";
+import { documentationRouter } from "./documentation.js";
 import type { PembangkitPdf } from "../shared/pdf/index.js";
 import { objectStorageCheck, PenyimpananS3 } from "../shared/storage/index.js";
 import type { PenyimpananObjek } from "../shared/storage/index.js";
@@ -352,6 +354,8 @@ export function bootstrap(): RouteRegistry {
 }
 
 export interface AppDeps {
+    /** PR-00-19: konfigurasi absent/production tidak memasang /api/docs. */
+    readonly documentation?: DocumentationConfig;
     readonly health: HealthRegistry;
     readonly limiter: RateLimiter;
     readonly security: SecurityConfig;
@@ -401,6 +405,7 @@ export function createApp(deps: AppDeps): Express {
     // adalah IP klien — kunci rate limit bagi permintaan tanpa pengguna.
     app.set("trust proxy", 1);
     app.use(awalRantai(deps));
+    app.use(documentationRouter(registry, deps.documentation, deps.limiter, deps.logger));
     // SDD-AUTH-09: authenticate → gerbang ganti password → (per route) permission.
     app.use(
         authenticate({
@@ -688,6 +693,7 @@ export async function start(
     });
     const hub = buatHubSse(clock, logger);
     const server = createApp({
+        documentation: config.documentation,
         notifikasi: { hub },
         health,
         limiter: new RedisRateLimiter(getRedis(), clock),
