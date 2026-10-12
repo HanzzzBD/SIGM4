@@ -1,12 +1,26 @@
 // Skema Zod dokumen aset (SDD-API-01, FR-06.1; PR-03-06).
 
 import { z } from "zod";
-import { ScanStatusSchema } from "./file.schema.js";
+import { DaftarDokumenLintasAsetResponseSchema, JenisDokumenAsetSchema } from "@sigm4/schemas";
+export { DaftarDokumenLintasAsetResponseSchema };
+export { DaftarDokumenAsetResponseSchema as ListDocumentsResponseSchema, DokumenAsetResponseSchema as DocumentResponseSchema } from "@sigm4/schemas";
 
 /** Bab 11.3 "Jenis Dokumen Aset" (FR-06.1 langkah 2). */
-const JenisDokumenSchema = z.enum(["FAKTUR", "GARANSI", "SERTIFIKAT", "MANUAL", "BERITA_ACARA", "LAINNYA"]);
-const Tanggal = z.iso.date();
+const JenisDokumenSchema = JenisDokumenAsetSchema;
 const Id = z.coerce.number().int().positive();
+export const ListAllDocumentsQuerySchema = z.object({
+    q: z.string().trim().max(200).optional(), jenis: JenisDokumenSchema.optional(),
+    kategori_id: Id.optional(), garansi: z.enum(["AKTIF", "BERAKHIR_30_HARI", "BERAKHIR"]).optional(),
+    sort: z.enum(["-diunggah_pada", "garansi_selesai"]).default("-diunggah_pada"),
+    page: z.coerce.number().int().positive().default(1), per_page: z.coerce.number().pipe(z.union([z.literal(25), z.literal(50), z.literal(100)])).default(25),
+});
+const Tanggal = z.iso.date();
+/** Nama query publik diturunkan dari field validator yang sama untuk OpenAPI. */
+export const ListAllDocumentsHttpQuerySchema = z.object({
+    q: ListAllDocumentsQuerySchema.shape.q, "filter[jenis]": ListAllDocumentsQuerySchema.shape.jenis,
+    "filter[kategori_id]": ListAllDocumentsQuerySchema.shape.kategori_id, "filter[garansi]": ListAllDocumentsQuerySchema.shape.garansi,
+    sort: ListAllDocumentsQuerySchema.shape.sort, page: ListAllDocumentsQuerySchema.shape.page, per_page: ListAllDocumentsQuerySchema.shape.per_page,
+});
 
 export const AssetIdParamSchema = z.object({ id: Id });
 export const DocumentParamSchema = z.object({ id: Id, docId: Id });
@@ -35,23 +49,5 @@ export const CreateDocumentBodySchema = z
         }
     });
 
-const DokumenSchema = z.object({
-    id: z.string(),
-    jenis: JenisDokumenSchema,
-    nama_berkas: z.string(),
-    keterangan: z.string().nullable(),
-    garansi_mulai: z.string().nullable(),
-    garansi_selesai: z.string().nullable(),
-    mime: z.string(),
-    ukuran: z.number(),
-    // SDD-09 §5: UI menampilkan "sedang diperiksa" selama PENDING; unduh hanya CLEAN.
-    scan_status: ScanStatusSchema,
-    diunggah_oleh: z.string().nullable(),
-    diunggah_pada: z.string(),
-    jumlah_aset: z.number(),
-});
-
-export const ListDocumentsResponseSchema = z.object({ success: z.literal(true), data: z.array(DokumenSchema), meta: z.null() });
-export const DocumentResponseSchema = z.object({ success: z.literal(true), data: DokumenSchema, meta: z.null() });
 export const DeleteDocumentResponseSchema = z.object({ success: z.literal(true), data: z.object({ dokumen_dihapus: z.boolean() }), meta: z.null() });
 export const DownloadResponseSchema = z.object({ success: z.literal(true), data: z.object({ url: z.string(), expires_at: z.string() }), meta: z.null() });

@@ -2,7 +2,7 @@
 // entrypoint `api/`.
 export { registerMovementPdf } from "./services/generated-pdf.js";
 export type { FilesModuleDeps } from "./routes.js";
-export { confirmRoute, createDocumentRoute, deleteDocumentRoute, downloadDocumentRoute, filesRouter, listDocumentsRoute, presignRoute } from "./routes.js";
+export { confirmRoute, createDocumentRoute, deleteDocumentRoute, downloadDocumentRoute, filesRouter, listDocumentsRoute, listAllDocumentsRoute, presignRoute } from "./routes.js";
 /** Penjaga unduh SDD-FS-03 — dipakai seluruh penerbit URL unduhan (PR-03-06 dst.). */
 export type { TampilanFoto } from "./services/file.service.js";
 export { buatPengelolaFotoProfil, tautkanFotoKerusakan, urlUnduhBerkas } from "./services/file.service.js";

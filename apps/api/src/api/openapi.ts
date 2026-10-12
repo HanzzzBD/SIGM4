@@ -93,8 +93,8 @@ export function buildOpenApiDocument(
                 ...Object.fromEntries((route.additionalSuccessStatuses ?? []).map((status) => [String(status), { description: "Diterima untuk diproses", content: { [route.contentType ?? "application/json"]: { schema: route.response } } }])),
             },
         };
-        if (route.params !== undefined)
-            operation["requestParams"] = { path: route.params };
+        if (route.params !== undefined || route.query !== undefined)
+            operation["requestParams"] = { ...(route.params === undefined ? {} : { path: route.params }), ...(route.query === undefined ? {} : { query: route.query }) };
         if (route.body !== undefined) {
             operation["requestBody"] = {
                 content: { "application/json": { schema: route.body } },

@@ -69,6 +69,7 @@ interface RouteBase {
     readonly rateLimitClass: RateLimitClass;
     /** Skema parameter path/query. `SDD-API-01`: Zod adalah satu-satunya definisi. */
     readonly params?: ZodType;
+    readonly query?: ZodType;
     readonly body?: ZodType;
     readonly response: ZodType;
     /** Status HTTP sukses bila BUKAN bawaan (POST → 201, lainnya → 200); `204` tanpa badan. */

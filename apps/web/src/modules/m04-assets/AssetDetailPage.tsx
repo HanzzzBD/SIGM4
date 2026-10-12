@@ -1,13 +1,13 @@
 // P-18 Detail Aset (UX §6, §7.1 B, §7.6.3; FR-04.2 langkah 5 & A1, BR-073, BR-065d; PR-02-45). Tab di URL
 // sebagai segmen (`/aset/{id}` Informasi · `/aset/{id}/riwayat`, UXP-01). Blok finansial hanya dirender
 // bila server mengirimnya (SDD-AUTH-06). Tab Foto/Dokumen/Peminjaman/Pemeliharaan dan aksi Ubah/Ubah
-// Kondisi/Cetak QR milik PR berikutnya — ditampilkan begitu route-nya terdaftar (`jalurTerdaftar`).
+// Kondisi/Cetak QR mengikuti route yang terdaftar; tab Dokumen dimuat malas oleh M-06 (PR-03-29).
 
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { LABEL_KONDISI_ASET, LABEL_STATUS_ASET } from "@sigm4/schemas";
 import type { AssetDetail } from "@sigm4/schemas";
-import { useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { KodeQr } from "../m01-auth";
 import { ApiError } from "../../shared/api";
@@ -16,9 +16,11 @@ import { jalurTerdaftar } from "../../shared/navigasi";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
 import { Lencana, Peringatan, gabung } from "../../shared/ui/primitives";
 import { LinimasaAset } from "./LinimasaAset";
+import { loadDocumentPanel } from "../m06-documents";
 import { VARIAN_KONDISI, VARIAN_STATUS, detailAsetQuery, rupiah } from "./katalog";
 
-export type TabAset = "informasi" | "riwayat";
+export type TabAset = "informasi" | "riwayat" | "dokumen";
+const DokumenPanel = lazy(loadDocumentPanel);
 
 const SUMBER: Record<NonNullable<AssetDetail["sumber_perolehan"]>, string> = {
     PEMBELIAN: "Pembelian",
@@ -169,15 +171,16 @@ export default function AssetDetailPage({ id, tab, riwayatPage, onRiwayatPage }:
                 </Peringatan>
             )}
 
-            <nav aria-label="Bagian detail aset" className="flex border-b border-border-subtle">
+            <nav aria-label="Bagian detail aset" className="flex flex-wrap border-b border-border-subtle">
                 <Link to="/aset/$id" params={{ id }} className={tabKelas(tab === "informasi")} aria-current={tab === "informasi" ? "page" : undefined}>
                     Informasi
                 </Link>
                 <Link to="/aset/$id/riwayat" params={{ id }} className={tabKelas(tab === "riwayat")} aria-current={tab === "riwayat" ? "page" : undefined}>
                     Riwayat
                 </Link>
+                {can("asset_document.view") && <Link to="/aset/$id/dokumen" params={{ id }} className={tabKelas(tab === "dokumen")} aria-current={tab === "dokumen" ? "page" : undefined}>Dokumen</Link>}
             </nav>
-            {tab === "informasi" ? <Informasi d={d} /> : <LinimasaAset id={id} page={riwayatPage} onPage={onRiwayatPage} />}
+            {tab === "informasi" ? <Informasi d={d} /> : tab === "dokumen" ? (can("asset_document.view") && <Suspense fallback={<KeadaanMemuat label="Memuat dokumen aset" />}><DokumenPanel id={id} /></Suspense>) : <LinimasaAset id={id} page={riwayatPage} onPage={onRiwayatPage} />}
         </div>
     );
 }

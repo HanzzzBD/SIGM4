@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **181** baris, dikumpulkan dari 22 berkas modul.
+> Total: **182** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -25,6 +25,7 @@
 | GET | `/asset-categories` | `asset.view` | Daftar kategori | [M-04](../02-modules/m04-assets.md) |
 | GET | `/asset-disposals/{id}/report` | `disposal.view` | Unduh berita acara penghapusan PDF | [M-21](../02-modules/m21-disposal.md) |
 | GET | `/asset-disposals` | `disposal.view` | Daftar & arsip penghapusan | [M-21](../02-modules/m21-disposal.md) |
+| GET | `/asset-documents` | `asset_document.view` | Daftar lintas aset terpagina untuk P-26; satu baris per tautan dokumen-aset aktif | [M-06](../02-modules/m06-documents.md) |
 | GET | `/assets/availability` | `reservation.view` | Ketersediaan unit aset pada rentang waktu | [M-08](../02-modules/m08-reservation-item.md) |
 | GET | `/assets/by-uuid/{uuid}` | `asset.view` | Detail aset dari hasil scan QR | [M-05](../02-modules/m05-qr.md) |
 | GET | `/assets/export` | `asset.export` | Ekspor XLSX/PDF | [M-04](../02-modules/m04-assets.md) |

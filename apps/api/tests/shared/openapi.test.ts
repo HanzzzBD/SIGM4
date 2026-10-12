@@ -58,6 +58,12 @@ function dokumen(...routes: readonly RouteDefinition[]) {
 }
 
 describe("buildOpenApiDocument", () => {
+    it("query terdokumentasi terpisah dari parameter path", () => {
+        const route = defineRoute({ ...showAsset, query: z.object({ "filter[jenis]": z.enum(["GARANSI", "FAKTUR"]).optional(), page: z.coerce.number().int().positive().default(1) }) });
+        const op = dokumen(route).paths["/api/v1/assets/{id}"]!["get"]!;
+        const params = op["parameters"] as { name: string; in: string }[];
+        expect(params).toEqual(expect.arrayContaining([expect.objectContaining({ name: "id", in: "path" }), expect.objectContaining({ name: "filter[jenis]", in: "query" }), expect.objectContaining({ name: "page", in: "query" })]));
+    });
     it("memberi awalan /api/v1 dan mengubah :id menjadi {id}", () => {
         expect(Object.keys(dokumen(showAsset).paths)).toEqual([
             "/api/v1/assets/{id}",

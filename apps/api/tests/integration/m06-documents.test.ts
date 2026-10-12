@@ -36,7 +36,8 @@ describe.skipIf(!ADA)("PR-03-06 — dokumen aset (acceptance, PostgreSQL & MinIO
     const k: KonfigurasiPenyimpanan = {
         endpoint: new URL(env["S3_ENDPOINT"] ?? "http://x").origin,
         publicEndpoint: new URL(env["S3_ENDPOINT"] ?? "http://x").origin,
-        region: env["S3_REGION"] ?? "",
+        // describe.skip still evaluates the callback without an integration environment.
+        region: env["S3_REGION"] ?? "us-east-1",
         bucket: env["S3_BUCKET"] ?? "",
         accessKey: env["S3_ACCESS_KEY"] ?? "",
         secretKey: env["S3_SECRET_KEY"] ?? "",
@@ -181,6 +182,24 @@ describe.skipIf(!ADA)("PR-03-06 — dokumen aset (acceptance, PostgreSQL & MinIO
     });
 
     describe("hak akses (PM-02, BR-073, FR-06.1 AC)", () => {
+        it("PR-03-29: daftar lintas aset tersaring; own/assigned tidak membocorkan tautan atau unduhan", async () => {
+            const fileId = await berkas();
+            const doc = (await minta("POST", `/assets/${aset[0]!}/documents`, PETUGAS, { file_id: fileId, jenis: "GARANSI", nama_berkas: "Garansi-PR-03-29.pdf", garansi_mulai: "2020-01-01", garansi_selesai: "2099-01-01", asset_ids_tambahan: [Number(aset[1])] })).json.data as Dok;
+            await kueri(`UPDATE assets SET penanggung_jawab_id = ${String(pengguna.B)} WHERE id = ${aset[1]!}`);
+            const path = `/asset-documents?q=Garansi-PR-03-29&filter[jenis]=GARANSI&filter[kategori_id]=${kategori}&filter[garansi]=AKTIF`;
+            const all = await minta("GET", path, GURU);
+            expect(all.status).toBe(200);
+            expect(all.json.data).toHaveLength(2);
+            const assigned = await minta("GET", path, ["asset_document.view:assigned"], undefined, "B");
+            expect(assigned.json.data).toHaveLength(1);
+            expect((assigned.json.data as { jumlah_aset: number; aset: { id: string } }[])[0]).toMatchObject({ jumlah_aset: 1, aset: { id: aset[1] } });
+            expect((await minta("GET", path, ["asset_document.view:own"], undefined, "B")).json.data).toEqual([]);
+            expect((await minta("GET", `/assets/${aset[0]!}/documents/${doc.id}/download`, ["asset_document.view:assigned"], undefined, "B")).status).toBe(404);
+            expect((await minta("DELETE", `/assets/${aset[0]!}/documents/${doc.id}`, ["asset_document.manage:own"], undefined, "B")).status).toBe(404);
+            expect((await minta("GET", path, SISWA)).status).toBe(403);
+            // Galat skema Zod → 400 INVALID_REQUEST (error-mapper), bukan 422.
+            expect((await minta("GET", "/asset-documents?per_page=200", GURU)).status).toBe(400);
+        });
         it("tanpa asset_document.manage → 403 untuk tautkan & hapus; Siswa tanpa asset_document.view → 403 untuk daftar & unduh", async () => {
             const fileId = await berkas();
             expect((await minta("POST", `/assets/${aset[0]!}/documents`, GURU, { file_id: fileId, jenis: "FAKTUR", nama_berkas: "a.pdf" })).status).toBe(403);

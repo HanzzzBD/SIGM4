@@ -4,7 +4,7 @@
 import type { RequestHandler } from "express";
 import { requireAuthContext } from "../../../shared/auth/index.js";
 import type { DokumenRow } from "../repositories/asset-document.repository.js";
-import { AssetIdParamSchema, CreateDocumentBodySchema, DocumentParamSchema } from "../schemas/document.schema.js";
+import { AssetIdParamSchema, CreateDocumentBodySchema, DocumentParamSchema, ListAllDocumentsQuerySchema } from "../schemas/document.schema.js";
 import type { DocumentService } from "../services/document.service.js";
 
 function tampilkan(d: DokumenRow) {
@@ -29,6 +29,18 @@ export function listDocumentsHandler(service: DocumentService): RequestHandler {
         const { id } = AssetIdParamSchema.parse(req.params);
         const daftar = await service.daftar(requireAuthContext(res), id);
         res.status(200).json({ success: true, data: daftar.map(tampilkan), meta: null });
+    };
+}
+
+export function listAllDocumentsHandler(service: DocumentService): RequestHandler {
+    return async (req, res) => {
+        const q = ListAllDocumentsQuerySchema.parse({ q: req.query["q"], jenis: req.query["filter[jenis]"], kategori_id: req.query["filter[kategori_id]"], garansi: req.query["filter[garansi]"], sort: req.query["sort"], page: req.query["page"], per_page: req.query["per_page"] });
+        const result = await service.daftarSemua(requireAuthContext(res), {
+            ...(q.q === undefined ? {} : { q: q.q }), ...(q.jenis === undefined ? {} : { jenis: q.jenis }),
+            ...(q.kategori_id === undefined ? {} : { kategoriId: q.kategori_id }), ...(q.garansi === undefined ? {} : { garansi: q.garansi }),
+            sort: q.sort, page: q.page, perPage: q.per_page,
+        });
+        res.status(200).json({ success: true, data: result.rows.map((r) => ({ ...tampilkan(r), aset: { id: r.asset_id, kode_barang: r.kode_barang, nama: r.asset_nama } })), meta: { page: q.page, per_page: q.per_page, total: result.total, total_pages: Math.ceil(result.total / q.per_page) } });
     };
 }
 
