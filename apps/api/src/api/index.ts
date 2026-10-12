@@ -99,6 +99,8 @@ import {
     createBuildingRoute,
     createRoomRoute,
     getLocationTreeRoute,
+    getRoomRoute,
+    exportLocationRoute,
     locationsRouter,
     updateBuildingStatusRoute,
     updateRoomRoute,
@@ -243,6 +245,8 @@ export const registry = new RouteRegistry().register(
     updateRolePermissionsRoute,
     listPermissionsRoute,
     getLocationTreeRoute,
+    getRoomRoute,
+    exportLocationRoute,
     createBuildingRoute,
     createAreaRoute,
     createRoomRoute,
@@ -464,6 +468,8 @@ export function createApp(deps: AppDeps): Express {
         locationsRouter(
             {
                 db: deps.db,
+                clock: deps.clock,
+                pdf: deps.pdf ?? new PembangkitPdfChromium(null),
                 auditLogger: new AuditLogger({
                     clock: deps.clock,
                     logger: deps.logger,

@@ -191,7 +191,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
-| GET | `/rooms/{id}/assets` | `asset.view` | Aset dalam satu ruangan |
+| GET | `/rooms/{id}/assets` | `asset.view` | Daftar aset terpaginasi dan ringkasan seluruh ruangan (`FR-03.2`); `q` digabung saringan lokasi |
 | GET | `/assets` | `asset.view` | Daftar aset (filter & pencarian); tiap item membawa nama kategori dan lokasi (ruang, gedung) |
 | POST | `/assets` | `asset.create` | Buat aset (mendukung `jumlah_unit` untuk N record) |
 | GET | `/assets/{id}` | `asset.view` | Detail aset — identitas lengkap, QR, kategori & lokasi (FR-04.2 langkah 5) |

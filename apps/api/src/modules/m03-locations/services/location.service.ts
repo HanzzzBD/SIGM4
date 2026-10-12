@@ -20,11 +20,14 @@ import { createLocationRepository } from "../repositories/location.repository.js
 
 const MODUL = "m03-locations";
 
+export interface LocationTreeRoom extends RoomRow { readonly jumlah_aset: number }
 export interface LocationTreeArea extends AreaRow {
-    readonly rooms: readonly RoomRow[];
+    readonly jumlah_aset: number;
+    readonly rooms: readonly LocationTreeRoom[];
 }
 
 export interface LocationTreeBuilding extends BuildingRow {
+    readonly jumlah_aset: number;
     readonly areas: readonly LocationTreeArea[];
 }
 
@@ -204,30 +207,40 @@ export class LocationService {
     /** FR-03.1 langkah 1 — pohon lokasi lengkap, tanpa penyaringan status. */
     async getTree(ctx: AuthContext): Promise<readonly LocationTreeBuilding[]> {
         const repo = createLocationRepository(this.db);
-        const [buildings, areas, rooms] = await Promise.all([
+        const [buildings, areas, rooms, counts] = await Promise.all([
             repo.listAllBuildings(ctx),
             repo.listAllAreas(ctx),
             repo.listAllRooms(ctx),
+            repo.assetCounts(ctx),
         ]);
 
-        const roomsByArea = new Map<string, RoomRow[]>();
+        const countByRoom = new Map(counts.map((r) => [r.room_id, Number(r.jumlah)]));
+        const roomsByArea = new Map<string, LocationTreeRoom[]>();
         for (const room of rooms) {
             const daftar = roomsByArea.get(room.area_id) ?? [];
-            daftar.push(room);
+            daftar.push({ ...room, jumlah_aset: countByRoom.get(room.id) ?? 0 });
             roomsByArea.set(room.area_id, daftar);
         }
 
         const areasByBuilding = new Map<string, LocationTreeArea[]>();
         for (const area of areas) {
             const daftar = areasByBuilding.get(area.building_id) ?? [];
-            daftar.push({ ...area, rooms: roomsByArea.get(area.id) ?? [] });
+            const children = roomsByArea.get(area.id) ?? [];
+            daftar.push({ ...area, rooms: children, jumlah_aset: children.reduce((n, r) => n + r.jumlah_aset, 0) });
             areasByBuilding.set(area.building_id, daftar);
         }
 
         return buildings.map((building) => ({
             ...building,
+            jumlah_aset: (areasByBuilding.get(building.id) ?? []).reduce((n, a) => n + a.jumlah_aset, 0),
             areas: areasByBuilding.get(building.id) ?? [],
         }));
+    }
+
+    async getRoom(ctx: AuthContext, id: number): Promise<RoomRow> {
+        const room = await createLocationRepository(this.db).findRoomById(ctx, id);
+        if (room === undefined) throw new NotFoundError("Ruangan tidak ditemukan.");
+        return room;
     }
 
     /**

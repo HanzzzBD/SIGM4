@@ -4,6 +4,8 @@
 
 import { Link } from "@tanstack/react-router";
 import { Suspense, lazy } from "react";
+import { loadLocationTreePage, loadRoomDetailPage } from "../modules/m03-locations";
+import type { Filters as LocationFilters } from "../modules/m03-locations";
 import type { ReactNode } from "react";
 import { AktivasiDuaFaktorPage, GantiPasswordPage, LoginPage, VerifikasiDuaFaktorPage } from "../modules/m01-auth";
 import type { AlasanLogin } from "../modules/m01-auth";
@@ -48,6 +50,10 @@ export const HalamanAktivasiDuaFaktor = ({ tujuan }: Tujuan) => <AktivasiDuaFakt
 export const HalamanGantiPassword = ({ tujuan }: Tujuan) => <GantiPasswordPage tujuan={tujuan} />;
 
 const DashboardPage = lazy(muatDashboardPage);
+const LocationTreePage = lazy(loadLocationTreePage);
+const RoomDetailPage = lazy(loadRoomDetailPage);
+export const HalamanLokasi = (props: { readonly q: string; readonly status: string; readonly onSearch: (q: string, status: string) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat lokasi" />}><LocationTreePage {...props} /></Suspense>;
+export const HalamanDetailRuangan = (props: { readonly id: string; readonly filters: LocationFilters; readonly tab: "aset" | "jadwal"; readonly onFilters: (f: LocationFilters) => void; readonly onTab: (t: "aset" | "jadwal") => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat ruangan" />}><RoomDetailPage {...props} /></Suspense>;
 const AssetImportPage = lazy(loadAssetImportPage);
 const AssetMovementPage = lazy(loadAssetMovementPage);
 const RoomCalendarPage = lazy(loadRoomCalendarPage);
@@ -140,9 +146,9 @@ const AddAssetPage = lazy(loadAddAssetPage);
 const EditAssetPage = lazy(loadEditAssetPage);
 const CategoryPage = lazy(loadCategoryPage);
 /** P-16 Tambah Aset (FR-04.1; PR-02-46). */
-export const HalamanTambahAset = () => (
+export const HalamanTambahAset = ({ initialRoom }: { readonly initialRoom?: string | undefined }) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat formulir aset" baris={6} />}>
-        <AddAssetPage />
+        <AddAssetPage initialRoom={initialRoom} />
     </Suspense>
 );
 /** P-19 Ubah Aset (FR-04.3; PR-02-46). */

@@ -173,10 +173,10 @@ function FormulirBlokade({ roomId, onSelesai }: { readonly roomId: string; reado
     );
 }
 
-export default function RoomBlocksPanel({ roomId, onRuangan, onTutup }: { readonly roomId: string | null; readonly onRuangan: (id: string) => void; readonly onTutup: () => void }) {
+export default function RoomBlocksPanel({ roomId, onRuangan, onTutup, tetap = false }: { readonly roomId: string | null; readonly onRuangan: (id: string) => void; readonly onTutup: () => void; readonly tetap?: boolean }) {
     const qc = useQueryClient();
     const hari = hariIniWib();
-    const ruangan = useQuery(ketersediaanQuery(`${hari}T00:00:00+07:00`, `${hari}T23:59:59+07:00`, {}));
+    const ruangan = useQuery({ ...ketersediaanQuery(`${hari}T00:00:00+07:00`, `${hari}T23:59:59+07:00`, {}), enabled: !tetap });
     const daftar = useQuery({ ...daftarBlokadeQuery(roomId ?? ""), enabled: roomId !== null });
     const [info, setInfo] = useState<string | null>(null);
     const [nonaktif, setNonaktif] = useState<{ jenis: "JADWAL_TETAP" | "BLOKADE_MANUAL"; id: string; label: string } | null>(null);
@@ -204,7 +204,7 @@ export default function RoomBlocksPanel({ roomId, onRuangan, onTutup }: { readon
                     Tutup
                 </Tombol>
             </header>
-            {ruangan.isPending ? (
+            {tetap ? null : ruangan.isPending ? (
                 <KeadaanMemuat baris={1} label="Memuat ruangan" />
             ) : ruangan.isError ? (
                 <KeadaanGalat galat={ruangan.error} onCobaLagi={() => void ruangan.refetch()} />

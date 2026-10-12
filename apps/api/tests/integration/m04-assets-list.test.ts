@@ -6,6 +6,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { registry } from "../../src/api/index.js";
 import { AssetService } from "../../src/modules/m04-assets/services/asset.service.js";
+import { LocationService } from "../../src/modules/m03-locations/services/location.service.js";
 import { createAuthContext } from "../../src/shared/auth/index.js";
 import type { AuthContext, Scope } from "../../src/shared/auth/index.js";
 import { AuditLogger } from "../../src/shared/audit/index.js";
@@ -92,6 +93,30 @@ function buatService(): AssetService {
 }
 
 describe.skipIf(!ADA_DB)("PR-02-12 — katalog aset: pencarian, filter, paginasi (acceptance)", () => {
+    it("PR-01-21: 500 unit ≤ 2 detik; q AND lokasi/kategori/kondisi/status; hitungan mengabaikan aset dihapuskan", async () => {
+        const category = await seedKategori();
+        const room = await seedRoom();
+        const other = await seedRoom();
+        await kueri(`INSERT INTO assets (kode_barang,nama,category_id,tahun_perolehan,sumber_perolehan,room_id,kondisi,status,dapat_dipinjam,boleh_dipinjam_siswa) SELECT 'PERF-' || n, 'Komputer', ${category}, 2026, 'PEMBELIAN', ${room}, 'BAIK', 'TERSEDIA', true, false FROM generate_series(1,500) n`);
+        await seedAset({ kategoriId: category, roomId: room, nama: "Komputer", dihapuskan: true });
+        await seedAset({ kategoriId: category, roomId: other, nama: "Komputer" });
+        const ctx = buatCtx("R-01", new Map([["asset.view", "all"], ["location.view", "all"]]));
+        const start = performance.now();
+        const result = await buatService().listByRoom(ctx, Number(room), { q: "Komputer", kategoriId: Number(category), kondisi: "BAIK", status: "TERSEDIA", page: 1, perPage: 100 });
+        expect(performance.now() - start).toBeLessThanOrEqual(2000);
+        expect(result.total).toBe(500);
+        expect(result.assets).toHaveLength(100);
+        expect(result.ringkasan.total).toBe(500);
+        const clock = new FixedClock(new Date("2026-10-11T00:00:00Z"));
+        const tree = await new LocationService(getDb(), new AuditLogger({ clock })).getTree(ctx);
+        const building = tree.find((b) => b.areas.some((a) => a.rooms.some((r) => r.id === room)))!;
+        expect(building.jumlah_aset).toBe(500);
+        expect(building.areas[0]?.jumlah_aset).toBe(500);
+        expect(building.areas[0]?.rooms[0]?.jumlah_aset).toBe(500);
+        const noMatch = await buatService().listByRoom(ctx, Number(room), { q: "Komputer", kondisi: "HILANG", page: 1, perPage: 25 });
+        expect(noMatch.total).toBe(0);
+        expect(noMatch.ringkasan.total).toBe(500);
+    });
     beforeAll(() => {
         dbmate("up");
     });

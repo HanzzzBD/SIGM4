@@ -93,6 +93,7 @@ export function rakitKodeBarang(
 }
 
 export interface ListRoomAssetsFilter {
+    readonly q?: string;
     readonly page: number;
     readonly perPage: number;
     readonly kategoriId?: number;
@@ -280,6 +281,7 @@ export class AssetService {
 
         const { rows, total } = await repo.list(ctx, {
             roomId,
+            ...(filter.q === undefined ? {} : { q: filter.q }),
             page: filter.page,
             perPage: filter.perPage,
             sort: "-created_at",

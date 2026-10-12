@@ -7,6 +7,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { STATUS_RESERVASI } from "@sigm4/schemas";
+import { HalamanLokasi, HalamanDetailRuangan } from "../pages";
 import type { RouterHistory } from "@tanstack/react-router";
 import { Link, Outlet, createRootRouteWithContext, createRoute, createRouter, redirect, useNavigate } from "@tanstack/react-router";
 // zod/mini: API skema yang sama dengan bundel jauh lebih kecil (NFR-P-03, SDD-11 §4.7).
@@ -493,7 +494,7 @@ const riwayatAsetRoute = createRoute({
 });
 
 /** P-16 Tambah Aset (FR-04.1, UX §6 `/aset/baru`; PR-02-46). */
-const tambahAsetRoute = createRoute({ getParentRoute: () => shellRoute, path: "/aset/baru", beforeLoad: butuhIzin("asset.create"), component: HalamanTambahAset });
+const tambahAsetRoute = createRoute({ getParentRoute: () => shellRoute, path: "/aset/baru", beforeLoad: butuhIzin("asset.create"), validateSearch: z.object({ ruang: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined) }), component: function TambahDariLokasi() { return <HalamanTambahAset initialRoom={tambahAsetRoute.useSearch().ruang} />; } });
 
 /** P-19 Ubah Aset (FR-04.3, UX §6 `/aset/{id}/ubah`; PR-02-46). Selesai/batal kembali ke P-18 bila terdaftar. */
 const ubahAsetRoute = createRoute({
@@ -750,6 +751,24 @@ const detailLogRoute = createRoute({
     },
 });
 
+const lokasiRoute = createRoute({
+    getParentRoute: () => shellRoute, path: "/lokasi", beforeLoad: butuhIzin("location.view"),
+    validateSearch: z.object({ q: z.catch(z.optional(z.coerce.string()), undefined), status: z.catch(z.optional(z.enum(["AKTIF", "NONAKTIF"])), undefined) }),
+    component: function LokasiRoute() {
+        const s = lokasiRoute.useSearch(); const navigate = useNavigate({ from: lokasiRoute.fullPath });
+        return <HalamanLokasi q={s.q ?? ""} status={s.status ?? ""} onSearch={(q, status) => void navigate({ search: { q: q || undefined, status: status === "AKTIF" || status === "NONAKTIF" ? status : undefined } })} />;
+    },
+});
+const ruanganRoute = createRoute({
+    getParentRoute: () => shellRoute, path: "/lokasi/ruangan/$id",
+    beforeLoad: async (a) => { await butuhIzin("location.view")(a); if (!/^[1-9]\d*$/.test(a.params.id)) throw redirect({ to: "/tidak-ditemukan" }); },
+    validateSearch: z.object({ q: z.catch(z.optional(z.coerce.string().check(z.maxLength(200))), undefined), kategori: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined), kondisi: z.catch(z.optional(z.enum(KONDISI)), undefined), status: z.catch(z.optional(z.enum(STATUS)), undefined), page: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1))), undefined), tab: z.catch(z.optional(z.enum(["aset", "jadwal"])), undefined) }),
+    component: function RuanganRoute() {
+        const { tab, ...filters } = ruanganRoute.useSearch(); const { id } = ruanganRoute.useParams(); const navigate = useNavigate({ from: ruanganRoute.fullPath });
+        return <HalamanDetailRuangan id={id} filters={filters} tab={tab ?? "aset"} onFilters={(f) => void navigate({ search: { ...f, kondisi: KONDISI.find((k) => k === f.kondisi), status: STATUS.find((s) => s === f.status), tab } })} onTab={(t) => void navigate({ search: { ...filters, tab: t } })} />;
+    },
+});
+
 export const routeTree = rootRoute.addChildren([
     loginRoute,
     verifikasiDuaFaktorRoute,
@@ -758,7 +777,7 @@ export const routeTree = rootRoute.addChildren([
     gangguanRoute,
     tidakDitemukanRoute,
     publikAsetRoute,
-    shellRoute.addChildren([dashboardRoute, parameterRoute, kalenderAkademikRoute, unitKerjaRoute, activityLogRoute, detailLogRoute, penggunaRoute, tambahPenggunaRoute, imporPenggunaRoute, kenaikanKelasRoute, detailPenggunaRoute, roleRoute, matriksRoute, daftarKerusakanRoute, laporKerusakanRoute, detailKerusakanRoute, inventarisRoute, detailAsetRoute, riwayatAsetRoute, tambahAsetRoute, ubahAsetRoute, kategoriAsetRoute, labelQrRoute, scanRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    shellRoute.addChildren([lokasiRoute, ruanganRoute, dashboardRoute, parameterRoute, kalenderAkademikRoute, unitKerjaRoute, activityLogRoute, detailLogRoute, penggunaRoute, tambahPenggunaRoute, imporPenggunaRoute, kenaikanKelasRoute, detailPenggunaRoute, roleRoute, matriksRoute, daftarKerusakanRoute, laporKerusakanRoute, detailKerusakanRoute, inventarisRoute, detailAsetRoute, riwayatAsetRoute, tambahAsetRoute, ubahAsetRoute, kategoriAsetRoute, labelQrRoute, scanRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {

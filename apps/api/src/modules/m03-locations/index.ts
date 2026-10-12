@@ -7,6 +7,8 @@ export {
     createBuildingRoute,
     createRoomRoute,
     getLocationTreeRoute,
+    getRoomRoute,
+    exportLocationRoute,
     locationsRouter,
     updateBuildingStatusRoute,
     updateRoomRoute,
