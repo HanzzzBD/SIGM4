@@ -3,6 +3,14 @@
 
 import { z } from "zod";
 
+export const LocationExportQuerySchema = z.object({
+    format: z.enum(["xlsx", "pdf"]),
+    q: z.string().trim().max(200).optional(),
+    kategori_id: z.coerce.number().int().positive().optional(),
+    kondisi: z.enum(["BAIK", "RUSAK_RINGAN", "RUSAK_BERAT", "HILANG"]).optional(),
+    status: z.enum(["TERSEDIA", "DIRESERVASI", "DIPINJAM", "DALAM_PERBAIKAN", "TIDAK_TERSEDIA"]).optional(),
+});
+
 export const RoomTypeSchema = z.enum([
     "KELAS",
     "LABORATORIUM",
@@ -126,8 +134,9 @@ export const UpdateLocationStatusBodySchema = z.object({
     status: LocationStatusSchema,
 });
 
-const AreaWithRoomsSchema = AreaSchema.extend({ rooms: z.array(RoomSchema) });
-const BuildingWithTreeSchema = BuildingSchema.extend({ areas: z.array(AreaWithRoomsSchema) });
+const CountSchema = z.number().int().nonnegative();
+const AreaWithRoomsSchema = AreaSchema.extend({ jumlah_aset: CountSchema, rooms: z.array(RoomSchema.extend({ jumlah_aset: CountSchema })) });
+const BuildingWithTreeSchema = BuildingSchema.extend({ jumlah_aset: CountSchema, areas: z.array(AreaWithRoomsSchema) });
 
 /** `GET /locations/tree` (FR-03.1 langkah 1) — tanpa penyaringan status. */
 export const LocationTreeResponseSchema = z.object({

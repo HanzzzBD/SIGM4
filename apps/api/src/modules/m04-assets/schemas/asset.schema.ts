@@ -119,6 +119,7 @@ export const MoveAssetsResponseSchema = z.object({
 
 /** `GET /rooms/{id}/assets` (FR-03.2 langkah 4). */
 export const ListRoomAssetsQuerySchema = z.object({
+    q: z.string().trim().max(200).optional(),
     page: z.coerce.number().int().positive().default(1),
     per_page: z.coerce.number().int().positive().max(100).default(25),
     kategori_id: z.coerce.number().int().positive().optional(),

@@ -20,9 +20,11 @@ export interface OpsiKonfirmasi {
     readonly sibuk?: boolean;
     readonly galat?: string | undefined;
     readonly onKonfirmasi: (alasan: string) => void;
+    /** Pemicu di luar Dialog.Trigger: kembalikan fokus setelah modal ditutup. */
+    readonly onFokusKembali?: () => void;
 }
 
-export function DialogKonfirmasi({ buka, onTutup, judul, children, labelAksi, varian = "primary", labelAlasan, sibuk = false, galat, onKonfirmasi }: OpsiKonfirmasi) {
+export function DialogKonfirmasi({ buka, onTutup, judul, children, labelAksi, varian = "primary", labelAlasan, sibuk = false, galat, onKonfirmasi, onFokusKembali }: OpsiKonfirmasi) {
     const [alasan, setAlasan] = useState("");
     const idAlasan = useId();
     const kurangAlasan = labelAlasan !== undefined && alasan.trim() === "";
@@ -38,7 +40,7 @@ export function DialogKonfirmasi({ buka, onTutup, judul, children, labelAksi, va
         >
             <Dialog.Portal>
                 <Dialog.Overlay className="fixed inset-0 bg-overlay" />
-                <Dialog.Content className="fixed top-1/2 left-1/2 flex w-full max-w-modal-sm -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-lg border border-border-subtle bg-surface-default p-6 shadow-2">
+                <Dialog.Content onCloseAutoFocus={(event) => { if (onFokusKembali) { event.preventDefault(); onFokusKembali(); } }} className="fixed top-1/2 left-1/2 flex w-full max-w-modal-sm -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-lg border border-border-subtle bg-surface-default p-6 shadow-2">
                     <Dialog.Title className="text-lg font-semibold text-text-heading">{judul}</Dialog.Title>
                     <Dialog.Description asChild>
                         <div className="text-base text-text-secondary">{children}</div>

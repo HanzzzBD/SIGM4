@@ -3,7 +3,14 @@
 import express from "express";
 import type { RequestHandler, Router } from "express";
 import type { Kysely } from "kysely";
+import { z } from "zod";
 import type { AuditLogger } from "../../shared/audit/index.js";
+import { requireAuthContext } from "../../shared/auth/index.js";
+import { SystemClock } from "../../shared/clock/index.js";
+import type { Clock } from "../../shared/clock/index.js";
+import { PembangkitPdfChromium } from "../../shared/pdf/index.js";
+import type { PembangkitPdf } from "../../shared/pdf/index.js";
+import { exportLocation } from "./services/location-export.js";
 import type { Database } from "../../shared/db/index.js";
 import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
@@ -12,6 +19,7 @@ import {
     createBuildingHandler,
     createRoomHandler,
     getLocationTreeHandler,
+    getRoomHandler,
     updateBuildingStatusHandler,
     updateRoomHandler,
     updateRoomStatusHandler,
@@ -22,6 +30,7 @@ import {
     CreateRoomBodySchema,
     IdParamSchema,
     LocationTreeResponseSchema,
+    LocationExportQuerySchema,
     SingleAreaResponseSchema,
     SingleBuildingResponseSchema,
     SingleRoomResponseSchema,
@@ -32,6 +41,9 @@ import { LocationService } from "./services/location.service.js";
 
 /** Pemilik katalog endpoint M-03 (m03-locations.md §7). */
 const MODUL = "m03-locations";
+
+export const getRoomRoute = defineRoute({ method: "GET", path: "/rooms/:id", permission: "location.view", rateLimitClass: "default", module: MODUL, summary: "Detail ruangan", params: IdParamSchema, response: SingleRoomResponseSchema });
+export const exportLocationRoute = defineRoute({ method: "GET", path: "/rooms/:id/assets/export", permission: "report.export", rateLimitClass: "export", module: MODUL, summary: "Ekspor inventaris ruangan XLSX/PDF", response: z.string(), contentType: "application/octet-stream", params: IdParamSchema });
 
 /** FR-03.1 langkah 1: pohon lokasi lengkap, dapat diperluas/diciutkan di klien. */
 export const getLocationTreeRoute = defineRoute({
@@ -120,6 +132,8 @@ export const updateRoomStatusRoute = defineRoute({
 });
 
 export interface LocationsModuleDeps {
+    readonly clock?: Clock;
+    readonly pdf?: PembangkitPdf;
     readonly db: Kysely<Database>;
     readonly auditLogger: AuditLogger;
 }
@@ -135,6 +149,15 @@ export function locationsRouter(
 ): Router {
     const service = new LocationService(deps.db, deps.auditLogger);
     const router = express.Router();
+
+    // Jangan menangkap endpoint statis M-07 `/rooms/availability`.
+    router.get(getRoomRoute.path, (req, _res, next) => /^[1-9]\d*$/.test(String(req.params["id"])) ? next() : next("route"), batasi(getRoomRoute), otorisasi(getRoomRoute.permission), getRoomHandler(service));
+    router.get(exportLocationRoute.path, batasi(exportLocationRoute), otorisasi(exportLocationRoute.permission), async (req, res) => {
+        const { id } = IdParamSchema.parse(req.params);
+        const filter = LocationExportQuerySchema.parse({ format: req.query["format"], q: req.query["q"], kategori_id: req.query["filter[kategori_id]"], kondisi: req.query["filter[kondisi]"], status: req.query["filter[status]"] });
+        const buffer = await exportLocation(deps.db, deps.auditLogger, deps.clock ?? new SystemClock(), deps.pdf ?? new PembangkitPdfChromium(null), requireAuthContext(res), id, filter);
+        res.type(filter.format === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet").attachment(`inventaris-ruangan-${id}.${filter.format}`).send(buffer);
+    });
 
     router.get(
         getLocationTreeRoute.path,

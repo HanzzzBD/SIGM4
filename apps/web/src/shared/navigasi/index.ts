@@ -27,6 +27,8 @@ export const HALAMAN_TERDAFTAR: Readonly<Record<string, string>> = {
     "P-19": "/aset/$id/ubah",
     "P-20": "/aset/mutasi",
     "P-21": "/kategori-aset",
+    "P-22": "/lokasi",
+    "P-23": "/lokasi/ruangan/$id",
     "P-24": "/label-qr",
     "P-25": "/scan",
     "P-27": "/kalender-ruangan",

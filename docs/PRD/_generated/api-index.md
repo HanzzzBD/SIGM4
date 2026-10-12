@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **179** baris, dikumpulkan dari 22 berkas modul.
+> Total: **181** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -73,8 +73,10 @@
 | GET | `/reservations` | `reservation.view` | Daftar reservasi (tersaring sesuai role): satu baris per pengajuan; scope `restricted` hanya miliknya sendiri | [M-07](../02-modules/m07-reservation-room.md) |
 | GET | `/roles` | `role.view` | Daftar role | [M-02](../02-modules/m02-users.md) |
 | GET | `/rooms/availability` | `reservation.view` | Ketersediaan ruangan pada rentang waktu | [M-07](../02-modules/m07-reservation-room.md) |
-| GET | `/rooms/{id}/assets` | `asset.view` | Aset dalam satu ruangan | [M-04](../02-modules/m04-assets.md) |
+| GET | `/rooms/{id}/assets/export` | `report.export` | Inventaris ruangan XLSX/PDF, tercatat `AL-10` | [M-03](../02-modules/m03-locations.md) |
+| GET | `/rooms/{id}/assets` | `asset.view` | Daftar aset terpaginasi dan ringkasan seluruh ruangan (`FR-03.2`); `q` digabung saringan lokasi | [M-04](../02-modules/m04-assets.md) |
 | GET | `/rooms/{id}/blocks` | `reservation.fixed_schedule` | Jadwal tetap & blokade manual sebuah ruangan, aktif maupun nonaktif (`FR-07.5`) | [M-07](../02-modules/m07-reservation-room.md) |
+| GET | `/rooms/{id}` | `location.view` | Detail ruangan | [M-03](../02-modules/m03-locations.md) |
 | GET | `/settings` | `setting.view` | Baca parameter sistem | [M-20](../02-modules/m20-settings.md) |
 | GET | `/users/import/template` | `user.create` | Unduh template XLSX E.5.2 beserta petunjuk dan contoh isian (`IMPT-05`) | [M-02](../02-modules/m02-users.md) |
 | GET | `/users/import/{id}` | `user.create` | Status dan laporan per baris sebuah pekerjaan impor (`IMPT-02`) | [M-02](../02-modules/m02-users.md) |

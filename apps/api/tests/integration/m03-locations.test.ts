@@ -92,7 +92,8 @@ describe.skipIf(!ADA_DB)("PR-01-05 — skema lokasi + CRUD (acceptance)", () => 
     it("katalog endpoint: POST /buildings, /areas, /rooms dan PUT /rooms/:id berpermission location.manage", () => {
         const rute = registry
             .all()
-            .filter((r) => ["/buildings", "/areas", "/rooms", "/rooms/:id"].includes(r.path));
+            // Hanya route TULIS: `GET /rooms/:id` (detail ruangan, PR-01-23) berpermission location.view.
+            .filter((r) => r.method !== "GET" && ["/buildings", "/areas", "/rooms", "/rooms/:id"].includes(r.path));
         expect(rute.map((r) => `${r.method} ${r.path}`)).toEqual(
             expect.arrayContaining(["POST /buildings", "POST /areas", "POST /rooms", "PUT /rooms/:id"]),
         );
