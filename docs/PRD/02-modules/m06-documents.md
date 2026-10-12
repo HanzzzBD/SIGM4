@@ -73,6 +73,7 @@ _Tidak ada aturan bisnis yang dimiliki modul ini._
 |---|---|---|---|
 | POST | `/files/presign` | Bearer | Minta URL unggah bertanda tangan ke object storage |
 | POST | `/files/confirm` | Bearer | Daftarkan berkas terunggah & antrekan pemindaian AV |
+| GET | `/asset-documents` | `asset_document.view` | Daftar lintas aset terpagina untuk P-26; satu baris per tautan dokumen-aset aktif |
 | GET | `/assets/{id}/documents` | `asset_document.view` | Daftar dokumen aset beserta status pemindaian (tab Dokumen, langkah 1) |
 | POST | `/assets/{id}/documents` | `asset_document.manage` | Tautkan dokumen aset dari berkas terdaftar; `asset_ids_tambahan` untuk A3 |
 | DELETE | `/assets/{id}/documents/{docId}` | `asset_document.manage` | Hapus dokumen dari aset (A2): melepas tautan aset ini; tautan terakhir → dokumen dihapus, berkas dipertahankan |
@@ -80,6 +81,10 @@ _Tidak ada aturan bisnis yang dimiliki modul ini._
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
+
+**Kontrak P-26 (PR-03-29, disetujui pengguna 11 Oktober 2026).** `GET /asset-documents` menerima `q` (nama berkas/kode/nama aset), `filter[jenis]`, `filter[kategori_id]`, `filter[garansi]` (`AKTIF`, `BERAKHIR_30_HARI`, `BERAKHIR`), `sort` (`-diunggah_pada` bawaan atau `garansi_selesai`), `page` dan `per_page` (25/50/100). Filter digabung AND; pencarian literal, parameterized. Garansi memakai tanggal WIB: aktif mencakup hari ini, akan berakhir mencakup hari ini sampai 30 hari ke depan dan sudah dimulai, berakhir sebelum hari ini. Respons membawa metadata dokumen per-aset yang sama dengan endpoint lama ditambah `aset: {id,kode_barang,nama}`, dan meta paginasi standar. Dokumen multi-aset muncul sekali untuk tiap tautan yang dapat dilihat; tidak ada object key atau URL penyimpanan di respons daftar.
+
+Scope `asset_document.view/manage` diterapkan sebelum daftar/unduh/lepas: `all` seluruh dokumen, `own` dokumen yang diunggah sendiri, `assigned` tautan pada aset dengan `penanggung_jawab_id` pemanggil, `restricted` tidak mendapat dokumen. Siswa/OSIS tidak mendapat dokumen (`BR-073`). Hitungan tautan hanya mencakup aset dalam scope tersebut; tautan tidak aktif/dokumen dihapus dikecualikan. Penautan aset tambahan dengan scope `assigned` hanya menerima aset yang ditugaskan; scope `restricted` ditolak. Aset dihapuskan tetap boleh mempunyai dokumen (BR-008).
 
 ## 8. Database Entity
 

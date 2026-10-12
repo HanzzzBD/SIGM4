@@ -12,7 +12,7 @@ import type { AssetDocumentType, Database, QueryExecutor } from "../../../shared
 import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
 import type { PenyimpananObjek } from "../../../shared/storage/index.js";
 import { createAssetDocumentRepository } from "../repositories/asset-document.repository.js";
-import type { DokumenRow } from "../repositories/asset-document.repository.js";
+import type { DokumenRow, FilterDokumen } from "../repositories/asset-document.repository.js";
 import { createStoredFileRepository } from "../repositories/stored-file.repository.js";
 import { urlUnduhBerkas } from "./file.service.js";
 
@@ -47,9 +47,20 @@ export class DocumentService {
         return createAssetDocumentRepository(this.db).daftarUntukAset(ctx, assetId);
     }
 
+    async daftarSemua(ctx: AuthContext, filter: Omit<FilterDokumen, "hariIni" | "batasGaransi">) {
+        // Geser UTC ke tanggal sipil WIB; penambahan hari tidak bergantung zona host.
+        const wib = new Date(this.clock.now().getTime() + 7 * 60 * 60 * 1000);
+        const hariIni = wib.toISOString().slice(0, 10);
+        const batasGaransi = new Date(wib.getTime() + 30 * 86400000).toISOString().slice(0, 10);
+        return createAssetDocumentRepository(this.db).daftarLintasAset(ctx, { ...filter, hariIni, batasGaransi });
+    }
+
     /** `POST /assets/{id}/documents` (SDD-09 §4.2 langkah 5): berkas terdaftar → dokumen bertaut. */
     async unggah(ctx: AuthContext, assetId: number, input: InputDokumen): Promise<DokumenRow> {
         const asetIds = [...new Set([assetId, ...input.assetIdsTambahan])];
+        const luarScope = await createAssetDocumentRepository(this.db).asetDiLuarScope(ctx, asetIds);
+        if (luarScope.includes(assetId)) throw new NotFoundError();
+        if (luarScope.length > 0) throw galatValidasi("asset_ids_tambahan", "Aset tambahan tidak ditemukan atau tidak dapat Anda kelola.");
         const hilang = await asetTidakTerdaftar(this.db, ctx, asetIds);
         if (hilang.includes(assetId)) throw new NotFoundError();
         if (hilang.length > 0) throw galatValidasi("asset_ids_tambahan", `Aset tidak ditemukan: ${hilang.join(", ")}.`);
@@ -76,7 +87,7 @@ export class DocumentService {
             },
             this.db,
         );
-        const baru = (await createAssetDocumentRepository(this.db).daftarUntukAset(ctx, assetId)).find((d) => d.id === id);
+        const baru = (await createAssetDocumentRepository(this.db).daftarUntukAset(ctx, assetId, "asset_document.manage")).find((d) => d.id === id);
         if (baru === undefined) throw new Error("Dokumen tidak ditemukan setelah disimpan.");
         return baru;
     }

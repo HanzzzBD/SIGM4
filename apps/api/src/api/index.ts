@@ -145,6 +145,7 @@ import {
     downloadDocumentRoute,
     filesRouter,
     listDocumentsRoute,
+    listAllDocumentsRoute,
     presignRoute,
 } from "../modules/m06-documents/index.js";
 import { cancelReservationRoute, createBlockRoute, createReservationRoute, deactivateFixedScheduleRoute, deactivateManualBlockRoute, listBlocksRoute, previewBlockRoute, getReservationRoute, listReservationsRoute, previewReservationRoute, recordUsageRoute, reservationsRouter, roomAvailabilityRoute } from "../modules/m07-reservation-room/index.js";
@@ -270,6 +271,7 @@ export const registry = new RouteRegistry().register(
     presignRoute,
     confirmRoute,
     listDocumentsRoute,
+    listAllDocumentsRoute,
     createDocumentRoute,
     deleteDocumentRoute,
     downloadDocumentRoute,

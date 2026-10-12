@@ -9,7 +9,8 @@ import type { Database } from "../../shared/db/index.js";
 import { defineRoute } from "../../shared/http/index.js";
 import type { RouteDefinition } from "../../shared/http/index.js";
 import type { PenyimpananObjek } from "../../shared/storage/index.js";
-import { createDocumentHandler, deleteDocumentHandler, downloadDocumentHandler, listDocumentsHandler } from "./controllers/document.controller.js";
+import { createDocumentHandler, deleteDocumentHandler, downloadDocumentHandler, listDocumentsHandler, listAllDocumentsHandler } from "./controllers/document.controller.js";
+import { DaftarDokumenLintasAsetResponseSchema, ListAllDocumentsHttpQuerySchema } from "./schemas/document.schema.js";
 import { confirmHandler, presignHandler } from "./controllers/file.controller.js";
 import { AssetIdParamSchema, CreateDocumentBodySchema, DeleteDocumentResponseSchema, DocumentParamSchema, DocumentResponseSchema, DownloadResponseSchema, ListDocumentsResponseSchema } from "./schemas/document.schema.js";
 import { DocumentService } from "./services/document.service.js";
@@ -19,6 +20,11 @@ import { daftarkanSumberLinimasaDokumen } from "./services/timeline-source.js";
 
 /** Pemilik katalog endpoint M-06 (m06-documents.md §7). */
 const MODUL = "m06-documents";
+
+export const listAllDocumentsRoute = defineRoute({
+    method: "GET", path: "/asset-documents", permission: "asset_document.view", rateLimitClass: "default", module: MODUL,
+    summary: "Daftar dokumen lintas aset terpagina dan tersaring (P-26, FR-06.1)", response: DaftarDokumenLintasAsetResponseSchema, query: ListAllDocumentsHttpQuerySchema,
+});
 
 /** Bab 17.5 poin 6, SDD-FS-01: Bearer — otorisasi jenis berkas terjadi saat penautan ke entitas. */
 export const presignRoute = defineRoute({
@@ -114,6 +120,7 @@ export function filesRouter(
     const service = new FileService(deps.db, deps.penyimpanan, deps.auditLogger, deps.clock);
     const dokumen = new DocumentService(deps.db, deps.penyimpanan, deps.auditLogger, deps.clock);
     const router = express.Router();
+    router.get(listAllDocumentsRoute.path, batasi(listAllDocumentsRoute), otorisasi(listAllDocumentsRoute.permission), listAllDocumentsHandler(dokumen));
     router.get(listDocumentsRoute.path, batasi(listDocumentsRoute), otorisasi(listDocumentsRoute.permission), listDocumentsHandler(dokumen));
     router.post(createDocumentRoute.path, batasi(createDocumentRoute), otorisasi(createDocumentRoute.permission), createDocumentHandler(dokumen));
     router.delete(deleteDocumentRoute.path, batasi(deleteDocumentRoute), otorisasi(deleteDocumentRoute.permission), deleteDocumentHandler(dokumen));

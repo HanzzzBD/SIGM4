@@ -20,6 +20,7 @@ import { STATUS_TIKET, URGENSI_TIKET } from "../modules/m11-damage-reports";
 import { STATUS_PENGGUNA } from "../modules/m02-users";
 import { JENIS_UNIT, KELOMPOK as KELOMPOK_PARAMETER, STATUS_UNIT } from "../modules/m20-settings";
 import { RENTANG } from "../modules/m15-dashboard";
+import { GARANSI as GARANSI_DOKUMEN, JENIS as JENIS_DOKUMEN } from "../modules/m06-documents";
 import { KELOMPOK, TAMPILAN_NOTIFIKASI } from "../modules/m17-notifications";
 import {
     HalamanAktivasiDuaFaktor,
@@ -27,6 +28,7 @@ import {
     HalamanDashboard,
     HalamanDataTidakTersedia,
     HalamanDetailAset,
+    HalamanDokumenAset,
     HalamanInventaris,
     HalamanDaftarReservasi,
     HalamanDetailReservasi,
@@ -480,6 +482,37 @@ const detailAsetRoute = createRoute({
         return <HalamanDetailAset key={id} id={id} tab="informasi" riwayatPage={1} onRiwayatPage={() => undefined} />;
     },
 });
+const dokumenAsetRoute = createRoute({
+    getParentRoute: () => shellRoute, path: "/aset/$id/dokumen",
+    beforeLoad: async (a) => {
+        if (!/^[1-9]\d*$/.test(a.params.id)) throw redirect({ to: "/tidak-ditemukan" });
+        await butuhIzin("asset.view")(a);
+        await butuhIzin("asset_document.view")(a);
+    },
+    component: function RouteDokumenAset() {
+        const { id } = dokumenAsetRoute.useParams();
+        return <HalamanDetailAset key={id} id={id} tab="dokumen" riwayatPage={1} onRiwayatPage={() => undefined} />;
+    },
+});
+const daftarDokumenRoute = createRoute({
+    getParentRoute: () => shellRoute, path: "/dokumen-aset", beforeLoad: butuhIzin("asset_document.view"),
+    validateSearch: z.object({
+        q: z.catch(z.optional(z.string().check(z.maxLength(200))), undefined),
+        jenis: z.catch(z.optional(z.enum(JENIS_DOKUMEN)), undefined),
+        garansi: z.catch(z.optional(z.enum(GARANSI_DOKUMEN)), undefined),
+        "filter[garansi_berakhir_hari]": z.catch(z.optional(z.coerce.number().check(z.minimum(30), z.maximum(30))), undefined),
+        kategori: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined),
+        urut: z.catch(z.optional(z.literal("garansi_selesai")), undefined),
+        page: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(2))), undefined),
+        per: z.catch(z.optional(z.union([z.literal(50), z.literal(100)])), undefined),
+    }),
+    component: function RouteDaftarDokumen() {
+        const search = daftarDokumenRoute.useSearch();
+        const navigate = useNavigate({ from: daftarDokumenRoute.fullPath });
+        const { "filter[garansi_berakhir_hari]": legacy, ...filter } = search;
+        return <HalamanDokumenAset filter={{ ...filter, garansi: filter.garansi ?? (legacy === 30 ? "BERAKHIR_30_HARI" : undefined) }} onFilter={(f) => void navigate({ search: (lama) => ({ ...lama, garansi: lama.garansi ?? (legacy === 30 ? "BERAKHIR_30_HARI" : undefined), "filter[garansi_berakhir_hari]": undefined, ...f }) })} />;
+    },
+});
 const riwayatAsetRoute = createRoute({
     getParentRoute: () => shellRoute,
     path: "/aset/$id/riwayat",
@@ -777,7 +810,7 @@ export const routeTree = rootRoute.addChildren([
     gangguanRoute,
     tidakDitemukanRoute,
     publikAsetRoute,
-    shellRoute.addChildren([lokasiRoute, ruanganRoute, dashboardRoute, parameterRoute, kalenderAkademikRoute, unitKerjaRoute, activityLogRoute, detailLogRoute, penggunaRoute, tambahPenggunaRoute, imporPenggunaRoute, kenaikanKelasRoute, detailPenggunaRoute, roleRoute, matriksRoute, daftarKerusakanRoute, laporKerusakanRoute, detailKerusakanRoute, inventarisRoute, detailAsetRoute, riwayatAsetRoute, tambahAsetRoute, ubahAsetRoute, kategoriAsetRoute, labelQrRoute, scanRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    shellRoute.addChildren([lokasiRoute, ruanganRoute, dashboardRoute, parameterRoute, kalenderAkademikRoute, unitKerjaRoute, activityLogRoute, detailLogRoute, penggunaRoute, tambahPenggunaRoute, imporPenggunaRoute, kenaikanKelasRoute, detailPenggunaRoute, roleRoute, matriksRoute, daftarKerusakanRoute, laporKerusakanRoute, detailKerusakanRoute, inventarisRoute, detailAsetRoute, dokumenAsetRoute, daftarDokumenRoute, riwayatAsetRoute, tambahAsetRoute, ubahAsetRoute, kategoriAsetRoute, labelQrRoute, scanRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {
