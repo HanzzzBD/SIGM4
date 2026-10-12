@@ -23,6 +23,7 @@ import type { Database } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
 import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
 import { publish } from "../../../shared/events/index.js";
+import { detectCsvDelimiter } from "../../../shared/import/index.js";
 import type { Logger } from "../../../shared/observability/index.js";
 import { createUserImportRepository } from "../repositories/user-import.repository.js";
 import type { ImportFailure, ImportJobRow } from "../repositories/user-import.repository.js";
@@ -55,7 +56,7 @@ interface BarisMentah {
     readonly data: Readonly<Record<string, string | undefined>>;
 }
 
-async function bacaBerkas(
+export async function readUserImportFile(
     filename: string,
     buffer: Buffer,
 ): Promise<readonly BarisMentah[]> {
@@ -69,6 +70,7 @@ async function bacaBerkas(
             // menjadi boolean/`Date`. Isian impor (NIP/NIS, kode unit) adalah teks; hanya
             // sel kosong yang tetap `null`.
             worksheet = await workbook.csv.read(Readable.from(buffer), {
+                parserOptions: { delimiter: detectCsvDelimiter(buffer) },
                 map: (nilai: string) => (nilai === "" ? null : nilai),
             });
         } else {
@@ -163,7 +165,7 @@ export class UserImportService {
         const buffer = Buffer.from(input.contentBase64, "base64");
         // Berkas rusak / header kurang ditolak SEBELUM pekerjaan tercatat: yang
         // tercatat hanya impor yang benar-benar dapat diproses.
-        const baris = await bacaBerkas(input.filename, buffer);
+        const baris = await readUserImportFile(input.filename, buffer);
         const fileHash = createHash("sha256").update(buffer).digest("hex");
         const asinkron = baris.length > BATAS_BARIS_IMPOR;
 
@@ -238,7 +240,7 @@ export class UserImportService {
             await this.gagalkan(ctx, id, "Isi berkas impor tidak tersedia.");
             return;
         }
-        const baris = await bacaBerkas(job.nama_berkas, berkas);
+        const baris = await readUserImportFile(job.nama_berkas, berkas);
         await this.proses(ctx, job, baris);
     }
 
