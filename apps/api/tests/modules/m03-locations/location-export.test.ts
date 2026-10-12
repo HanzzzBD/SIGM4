@@ -41,4 +41,8 @@ describe("PR-01-22 — ekspor pendukung lokasi", () => {
         expect(html).toContain("Lab &lt;script&gt;");
         expect(html).not.toContain("Lab <script>");
     });
+    it("audit fail-soft false tetap menolak ekspor", async () => {
+        vi.spyOn(audit, "write").mockResolvedValue(false);
+        await expect(exportLocation(db, audit, clock, { render: vi.fn() }, ctx, 3, { format: "xlsx" })).rejects.toMatchObject({ kode: "INTERNAL_ERROR" });
+    });
 });

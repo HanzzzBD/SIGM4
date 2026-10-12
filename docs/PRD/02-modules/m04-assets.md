@@ -185,6 +185,10 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 
 ## 7. API Endpoints
 
+**Ekspor katalog (PR-02-47).** `GET /assets/export` dipetakan ke satu permission `report.export` (PM-01). `format=xlsx|pdf`; pencarian, seluruh `filter[...]` dan sort sama dengan GET /assets, tanpa page/per_page: seluruh hasil tersaring diekspor. Scope report.export diterapkan dan diiriskan dengan asset.view bila dimiliki: all seluruh aset aktif, own aset dibuat pemanggil, assigned aset dengan penanggung_jawab_id pemanggil, restricted hanya boleh_dipinjam_siswa. Aset dihapuskan tidak masuk. Filter pekerjaan impor hanya bagi pengunggahnya (404 untuk milik orang lain).
+
+Kolom sumber/nilai perolehan tidak dipilih atau diekspor tanpa asset.view_financial, bagi scope restricted, atau Siswa/OSIS (BR-073). Scope finansial own/assigned hanya menampilkan nilai pada baris yang dibuat/menjadi tanggung jawab pemanggil; baris lainnya kosong. Nilai desimal dipertahankan sebagai teks agar tidak kehilangan presisi. Metadata memuat tanggal WIB, pencetak, saringan dan jumlah baris. Semua teks berkas sebagai teks XLSX/HTML di-escape, PDF tidak memuat sumber daya luar. DATA_EXPORTED wajib berhasil sebelum berkas dikirim; respons no-store dan attachment. Ekspor gagal tidak mengirim berkas.
+
 **Filter drill-down QR (PR-02-50).** `GET /assets` menerima query opsional `filter[qr_terpasang]=true|false`, digabungkan dengan filter katalog lain menggunakan AND. Nilai selain boolean tersebut ditolak (422); parameter yang tidak diberikan tidak menyaring status label. `false` mempertahankan scope `asset.view` (termasuk `restricted`) dan pengecualian aset dihapuskan. P-24 memakai URL web `?belum=true` untuk memuat daftar ini tanpa pencarian manual, dengan paginasi 25 aset.
 
 ### Endpoint
@@ -204,7 +208,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | POST | `/assets/import` | `asset.create` | Impor CSV/XLSX (`filename`, `content_base64`): ≤200 baris sinkron, >200 asinkron; replay hash 24 jam per pengunggah (`IMPT-03/04`) |
 | GET | `/assets/import/template` | `asset.create` | Unduh template XLSX E.5.1 beserta contoh (`IMPT-05`) |
 | GET | `/assets/import/{id}` | `asset.create` | Status, hitungan baris sukses/gagal, unit dibuat, alasan dan isian asli baris gagal untuk koreksi (`IMPT-02`); hanya pengunggah |
-| GET | `/assets/export` | `asset.export` | Ekspor XLSX/PDF |
+| GET | `/assets/export` | `report.export` | Ekspor seluruh katalog tersaring XLSX/PDF; scope dan kolom finansial sesuai hak akses |
 | GET | `/asset-categories` | `asset.view` | Daftar kategori |
 | POST | `/asset-categories` | `category.manage` | Buat kategori |
 | PUT | `/asset-categories/{id}` | `category.manage` | Perbarui kategori |

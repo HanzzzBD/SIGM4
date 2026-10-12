@@ -108,7 +108,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 
 Daftar aset ruangan menerima `q` (trim, maksimal 200 karakter; pencarian kode, nama, merek, nomor seri), `filter[kategori_id]`, `filter[kondisi]`, `filter[status]`, `page` dan `per_page` (1–100, bawaan 25). Semua saringan digabung AND dengan ID ruangan; ringkasan tetap mencakup seluruh ruangan tanpa saringan/paginasi. Respons memakai `{ data: { room_id, assets, ringkasan }, meta: { page, per_page, total, total_pages } }`.
 
-Ekspor menerima saringan yang sama dan `format=xlsx|pdf`; mengekspor seluruh hasil tersaring tanpa paginasi. Identitas gedung/area/ruangan, tanggal cetak WIB, serta nama/ID pencetak disertakan. `report.export` dan `location.view` wajib; tanpa izin ditolak sebelum membaca data. Konten pengguna ditulis sebagai teks (XLSX) atau HTML yang di-escape (PDF). Aksi `DATA_EXPORTED` dicatat sebelum berkas dikirim.
+Ekspor menerima saringan yang sama dan `format=xlsx|pdf`; mengekspor seluruh hasil tersaring tanpa paginasi. Identitas gedung/area/ruangan, tanggal cetak WIB, serta nama/ID pencetak disertakan. Satu gerbang permission `report.export` mengikuti implementasi tergabung #169 (PM-01); location.view bukan gerbang kedua. Scope report.export diiriskan dengan asset.view bila dimiliki: all seluruh aset aktif ruangan, own aset dibuat pemanggil, assigned aset dengan penanggung_jawab_id pemanggil, restricted hanya boleh_dipinjam_siswa. Konten pengguna ditulis sebagai teks (XLSX) atau HTML yang di-escape (PDF). Aksi `DATA_EXPORTED` dicatat sebelum berkas dikirim.
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
