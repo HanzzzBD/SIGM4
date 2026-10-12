@@ -92,6 +92,8 @@ Registri route dipindai saat *bootstrap* untuk: memvalidasi kelengkapan deklaras
 
 ### 4.2 Susunan middleware
 
+**Publikasi kontrak (PR-00-19).** `GET /api/docs` menyajikan JSON OpenAPI tanpa amplop data bisnis di luar `/api/v1`, dari registri yang sama ketika aplikasi dirakit. Route ini merupakan unduhan artefak dokumentasi, berdeklarasi publik dan dikenai rate limit default serta header keamanan, `no-store` dan `noindex`. Ia dipasang hanya untuk `APP_ENV=development|staging`; `production` atau konfigurasi yang tidak diberikan menghasilkan 404. `NODE_ENV` tidak mengaktifkannya. `APP_REVISION` mengisi `info.version`; pipeline menyuntikkan SHA commit ke image dan menerbitkan JSON versi commit/tag sebagai artefak. Nginx staging meneruskan `/api/docs` melalui `/api/` yang sudah tersedia. URL dan pemeriksaan ada di [runbook OpenAPI](../IMPLEMENTATION/runbooks/openapi.md).
+
 ```
 requestId → logger → cors → helmet(header keamanan NFR-S-11)
    → appVersionGate (426)                       MOB-VER-02

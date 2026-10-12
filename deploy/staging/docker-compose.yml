@@ -29,6 +29,7 @@ x-app: &app
         - ${SIGM4_ENV_FILE:-/etc/sigm4/staging.env}
     environment:
         TZ: UTC # SDD-INF-09 — divalidasi lagi saat startup
+        APP_ENV: staging # PR-00-19: dokumentasi di staging; produksi tetap tertutup.
         REDIS_URL: redis://redis:6379
         # Bukan rahasia; WAJIB bagi api & worker (SDD-16 §4.7, keputusan 8a log phase-03).
         CLAMAV_URL: tcp://clamav:3310

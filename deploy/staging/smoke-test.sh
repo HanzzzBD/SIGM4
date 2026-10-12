@@ -50,6 +50,21 @@ periksa "readiness API (DB + Redis)" "/api/v1/health/ready" 200
 header_ada "X-Request-Id"                 # SDD-OBS-03
 header_ada "Content-Security-Policy"      # NFR-S-11 — dari aplikasi
 header_ada "Strict-Transport-Security"    # INF-06 — dari proxy
+periksa "dokumen OpenAPI staging" "/api/docs" 200
+if grep -q '"openapi":"3.1.0"' "$KERJA/body" && grep -q '"paths"' "$KERJA/body"; then
+    echo "  ok    kontrak OpenAPI tersedia"
+else
+    echo "  GAGAL respons dokumentasi bukan OpenAPI" >&2
+    GAGAL=1
+fi
+if [[ -n "${SMOKE_EXPECTED_REVISION:-}" ]]; then
+    if grep -Fq "\"version\":\"$SMOKE_EXPECTED_REVISION\"" "$KERJA/body"; then
+        echo "  ok    OpenAPI sesuai commit image"
+    else
+        echo "  GAGAL versi OpenAPI berbeda dari commit deployment" >&2
+        GAGAL=1
+    fi
+fi
 periksa "route tak dikenal → 404 berformat Bab 17.2" "/api/v1/tidak-ada" 404
 if grep -q '"code"' "$KERJA/body"; then
     echo "  ok    amplop galat ber-code"

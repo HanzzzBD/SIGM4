@@ -76,6 +76,19 @@ const bentukDatabase = {
 
 const bentukRedis = { REDIS_URL: wajib("REDIS_URL") };
 
+const bentukDokumentasi = {
+    APP_ENV: z.enum(["development", "staging", "production"], { error: pesan("APP_ENV", "harus development, staging, atau production") }).default("production"),
+    APP_REVISION: z.string().trim().min(1).max(128).default("development"),
+};
+export interface DocumentationConfig {
+    readonly environment: "development" | "staging" | "production";
+    readonly version: string;
+}
+export function parseDocumentationEnv(env: NodeJS.ProcessEnv = process.env): DocumentationConfig {
+    const d = urai(z.object(bentukDokumentasi), env);
+    return { environment: d.APP_ENV, version: d.APP_REVISION };
+}
+
 const bentukLog = {
     LOG_LEVEL: z
         .string()
@@ -337,6 +350,7 @@ export function readProcessConfig(
 }
 
 export interface ApiConfig extends ProcessConfig {
+    readonly documentation: DocumentationConfig;
     /** `null` = push tidak dikonfigurasi (keputusan 80a). */
     readonly fcm: KredensialFcm | null;
     readonly objectStoragePublicOrigin: string;
@@ -441,6 +455,7 @@ export function readApiConfig(
             ...bentukAntivirus,
             ...bentukJwt,
             ...bentukTotp,
+            ...bentukDokumentasi,
         }),
         env,
         [...periksaZona(zona), ...jwt.masalah, ...totp.masalah, ...fcm.masalah],
@@ -462,6 +477,7 @@ export function readApiConfig(
             secretKey: d.S3_SECRET_KEY,
         },
         appBaseUrl: d.APP_BASE_URL,
+        documentation: { environment: d.APP_ENV, version: d.APP_REVISION },
         chromiumExecutablePath: d.CHROMIUM_EXECUTABLE_PATH,
         antivirus: urlClamd(d.CLAMAV_URL)!,
         // `periksaKunciJwt` tidak melaporkan masalah bila kedua variabel sah, jadi kunci ada.
