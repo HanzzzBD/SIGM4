@@ -126,6 +126,33 @@ export async function daftarSlotTerpakai(
     return hasil.rows;
 }
 
+/** Transaksi reservasi/pinjaman yang masih memegang aset pada tanggal mutasi (FR-04.4 A1). */
+export interface SlotPenghalangMutasi {
+    readonly id: string;
+    readonly resource_id: string;
+    readonly mulai: Date;
+    readonly selesai: Date;
+    readonly origin: "reservation" | "loan";
+    readonly status: Exclude<StatusSlot, "RELEASED">;
+    readonly reservation_id: string | null;
+    readonly loan_id: string | null;
+}
+
+/** Pemanggil memegang row lock seluruh aset sebelum membaca dan hingga mutasi commit. */
+export async function slotPenghalangMutasi(executor: QueryExecutor, ids: readonly number[], rentang: RentangWaktu): Promise<readonly SlotPenghalangMutasi[]> {
+    if (ids.length === 0) return [];
+    const result = await sql<SlotPenghalangMutasi>`
+        SELECT id::text AS id, resource_id::text AS resource_id, lower(slot_range) AS mulai, upper(slot_range) AS selesai,
+               origin, status, reservation_id::text AS reservation_id, loan_id::text AS loan_id
+          FROM booking_slots
+         WHERE resource_type = 'asset' AND resource_id = ANY(${ids.map(String)}::bigint[])
+           AND status IN ('TENTATIVE', 'CONFIRMED', 'ACTIVE') AND origin IN ('reservation', 'loan')
+           AND slot_range && tstzrange(${rentang.mulai}, ${rentang.selesai}, '[)')
+         ORDER BY resource_id, lower(slot_range), id
+    `.execute(executor);
+    return result.rows;
+}
+
 /** Slot milik sebuah blokade ruangan (PR-03-13) — bahan materialisasi idempoten & pelepasan (FR-07.5 A3/A4). */
 export interface SlotBlokade {
     readonly id: string;
