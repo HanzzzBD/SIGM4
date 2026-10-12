@@ -11,10 +11,10 @@ import type { RouteDefinition } from "../../shared/http/index.js";
 import type { PenyimpananObjek } from "../../shared/storage/index.js";
 import { createDocumentHandler, deleteDocumentHandler, downloadDocumentHandler, listDocumentsHandler, listAllDocumentsHandler } from "./controllers/document.controller.js";
 import { DaftarDokumenLintasAsetResponseSchema, ListAllDocumentsHttpQuerySchema } from "./schemas/document.schema.js";
-import { confirmHandler, presignHandler } from "./controllers/file.controller.js";
+import { confirmHandler, presignHandler, renewUploadHandler } from "./controllers/file.controller.js";
 import { AssetIdParamSchema, CreateDocumentBodySchema, DeleteDocumentResponseSchema, DocumentParamSchema, DocumentResponseSchema, DownloadResponseSchema, ListDocumentsResponseSchema } from "./schemas/document.schema.js";
 import { DocumentService } from "./services/document.service.js";
-import { ConfirmBodySchema, ConfirmResponseSchema, PresignBodySchema, PresignResponseSchema } from "./schemas/file.schema.js";
+import { ConfirmBodySchema, ConfirmResponseSchema, FileIdParamSchema, PresignBodySchema, PresignResponseSchema } from "./schemas/file.schema.js";
 import { FileService } from "./services/file.service.js";
 import { daftarkanSumberLinimasaDokumen } from "./services/timeline-source.js";
 
@@ -40,6 +40,11 @@ export const presignRoute = defineRoute({
 });
 
 /** SDD-09 §4.2 langkah 3: objek & ukuran diverifikasi, `FILE_UPLOADED` dicatat, `FileUploaded` terbit. */
+export const renewUploadRoute = defineRoute({
+    method: "POST", path: "/files/:id/presign", authenticated: true, rateLimitClass: "default", module: MODUL,
+    summary: "Perbarui URL unggah pesanan milik pemanggil yang belum dikonfirmasi", params: FileIdParamSchema, response: PresignResponseSchema, successStatus: 200,
+});
+
 export const confirmRoute = defineRoute({
     method: "POST",
     path: "/files/confirm",
@@ -125,6 +130,7 @@ export function filesRouter(
     router.post(createDocumentRoute.path, batasi(createDocumentRoute), otorisasi(createDocumentRoute.permission), createDocumentHandler(dokumen));
     router.delete(deleteDocumentRoute.path, batasi(deleteDocumentRoute), otorisasi(deleteDocumentRoute.permission), deleteDocumentHandler(dokumen));
     router.get(downloadDocumentRoute.path, batasi(downloadDocumentRoute), otorisasi(downloadDocumentRoute.permission), downloadDocumentHandler(dokumen));
+    router.post(renewUploadRoute.path, batasi(renewUploadRoute), terautentikasi(), renewUploadHandler(service));
     router.post(presignRoute.path, batasi(presignRoute), terautentikasi(), presignHandler(service));
     router.post(confirmRoute.path, batasi(confirmRoute), terautentikasi(), confirmHandler(service));
     return router;

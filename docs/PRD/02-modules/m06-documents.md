@@ -72,6 +72,7 @@ _Tidak ada aturan bisnis yang dimiliki modul ini._
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
 | POST | `/files/presign` | Bearer | Minta URL unggah bertanda tangan ke object storage |
+| POST | `/files/{id}/presign` | Bearer | URL unggah baru (300 detik) bagi pesanan milik pemanggil yang belum dikonfirmasi; object key, MIME dan ukuran tetap, tanpa baris baru. 200 respons presign; 404 berkas asing/tidak ada, 422 sudah dikonfirmasi |
 | POST | `/files/confirm` | Bearer | Daftarkan berkas terunggah & antrekan pemindaian AV |
 | GET | `/asset-documents` | `asset_document.view` | Daftar lintas aset terpagina untuk P-26; satu baris per tautan dokumen-aset aktif |
 | GET | `/assets/{id}/documents` | `asset_document.view` | Daftar dokumen aset beserta status pemindaian (tab Dokumen, langkah 1) |

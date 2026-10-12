@@ -3,7 +3,7 @@
 
 import type { RequestHandler } from "express";
 import { requireAuthContext } from "../../../shared/auth/index.js";
-import { ConfirmBodySchema, PresignBodySchema } from "../schemas/file.schema.js";
+import { ConfirmBodySchema, FileIdParamSchema, PresignBodySchema } from "../schemas/file.schema.js";
 import { BERLAKU_UNGGAH_DETIK } from "../services/file.service.js";
 import type { FileService } from "../services/file.service.js";
 
@@ -25,5 +25,14 @@ export function confirmHandler(service: FileService): RequestHandler {
         const body = ConfirmBodySchema.parse(req.body);
         const hasil = await service.konfirmasi(requireAuthContext(res), body.file_id, body.checksum);
         res.status(200).json({ success: true, data: { file_id: hasil.fileId, scan_status: hasil.scanStatus }, meta: null });
+    };
+}
+
+export function renewUploadHandler(service: FileService): RequestHandler {
+    return async (req, res) => {
+        const { id } = FileIdParamSchema.parse(req.params);
+        const result = await service.renewUpload(requireAuthContext(res), id);
+        res.setHeader("Cache-Control", "no-store");
+        res.status(200).json({ success: true, data: { upload_url: result.uploadUrl, object_key: result.objectKey, file_id: result.fileId, expires_in: BERLAKU_UNGGAH_DETIK }, meta: null });
     };
 }

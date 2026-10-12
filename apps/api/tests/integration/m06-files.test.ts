@@ -149,6 +149,21 @@ describe.skipIf(!ADA)("PR-03-25 — unggah berkas presigned + foto profil (accep
         });
     });
 
+    it("PR-04-15: URL ulang untuk pesanan sendiri, tanpa duplikat; anonim/asing/terkonfirmasi ditolak", async () => {
+        const d = await presign("A");
+        expect((await minta("POST", `/files/${d.file_id}/presign`, null)).status).toBe(401);
+        expect((await minta("POST", `/files/${d.file_id}/presign`, "B")).status).toBe(404);
+        expect((await minta("POST", "/files/999999999/presign", "A")).status).toBe(404);
+        const r = await minta("POST", `/files/${d.file_id}/presign`, "A");
+        expect(r.status).toBe(200);
+        expect(r.json.data).toMatchObject({ file_id: d.file_id, object_key: d.object_key, expires_in: 300 });
+        const renewed = r.json.data as typeof d;
+        expect((await kueri<{ n: string }>(`SELECT count(*)::text AS n FROM stored_files WHERE object_key = '${d.object_key}'`))[0]?.n).toBe("1");
+        expect((await unggah(renewed)).status).toBe(200);
+        expect((await minta("POST", "/files/confirm", "A", { file_id: d.file_id, checksum: sha(PNG) })).status).toBe(200);
+        expect((await minta("POST", `/files/${d.file_id}/presign`, "A")).status).toBe(422);
+    });
+
     describe("POST /files/confirm (SDD-09 §4.2 langkah 3)", () => {
         it("objek belum diunggah → 422; sesudah PUT → 200 PENDING, FILE_UPLOADED tanpa nama berkas, FileUploaded di outbox", async () => {
             const d = await presign("A");
