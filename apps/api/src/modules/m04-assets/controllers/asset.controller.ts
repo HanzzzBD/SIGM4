@@ -52,6 +52,7 @@ export function listRoomAssetsHandler(service: AssetService): RequestHandler {
         const ctx = requireAuthContext(res);
         const { id } = RoomIdParamSchema.parse(req.params);
         const query = ListRoomAssetsQuerySchema.parse({
+            q: req.query["q"],
             page: req.query["page"],
             per_page: req.query["per_page"],
             kategori_id: req.query["filter[kategori_id]"],
@@ -59,6 +60,7 @@ export function listRoomAssetsHandler(service: AssetService): RequestHandler {
             status: req.query["filter[status]"],
         });
         const hasil = await service.listByRoom(ctx, id, {
+            ...(query.q === undefined ? {} : { q: query.q }),
             page: query.page,
             perPage: query.per_page,
             ...(query.kategori_id === undefined ? {} : { kategoriId: query.kategori_id }),

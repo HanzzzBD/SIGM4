@@ -6,6 +6,9 @@
 // menunjuk areanya), bukan tiga domain independen.
 
 import type { AuthContext } from "../../../shared/auth/index.js";
+import { sql } from "kysely";
+import type { z } from "zod";
+import type { LocationExportQuerySchema } from "../schemas/location.schema.js";
 import { BaseRepository, defineRepository } from "../../../shared/db/index.js";
 import type { QueryExecutor } from "../../../shared/db/index.js";
 
@@ -108,6 +111,28 @@ export interface RoomFields {
 }
 
 export class LocationRepository extends BaseRepository {
+    async exportIdentity(ctx: AuthContext, id: number) {
+        return this.query(ctx).selectFrom("rooms as r").innerJoin("areas as a", "a.id", "r.area_id").innerJoin("buildings as b", "b.id", "a.building_id").select(["r.nama", "r.kode", "a.nama as area", "b.nama as gedung"]).where("r.id", "=", String(id)).executeTakeFirst();
+    }
+
+    async printer(ctx: AuthContext) {
+        return this.query(ctx).selectFrom("users").select("nama").where("id", "=", String(ctx.userId)).executeTakeFirstOrThrow();
+    }
+
+    async exportAssets(ctx: AuthContext, id: number, filter: z.infer<typeof LocationExportQuerySchema>) {
+        let query = this.query(ctx).selectFrom("assets").select(["kode_barang", "nama", "kondisi", "status"]).where("room_id", "=", String(id)).where("dihapuskan", "=", false);
+        if (filter.kategori_id !== undefined) query = query.where("category_id", "=", String(filter.kategori_id));
+        if (filter.kondisi !== undefined) query = query.where("kondisi", "=", filter.kondisi);
+        if (filter.status !== undefined) query = query.where("status", "=", filter.status);
+        if (ctx.can("asset.view") && ctx.scopeOf("asset.view") === "restricted") query = query.where("boleh_dipinjam_siswa", "=", true);
+        if (filter.q) query = query.where((eb) => eb.or([eb("kode_barang", "ilike", `%${filter.q}%`), eb("nama", "ilike", `%${filter.q}%`), eb("merek", "ilike", `%${filter.q}%`), eb("nomor_seri", "ilike", `%${filter.q}%`)]));
+        return query.orderBy("kode_barang").execute();
+    }
+    async assetCounts(ctx: AuthContext) {
+        let q = this.query(ctx).selectFrom("assets").select(["room_id", sql<string>`count(*)`.as("jumlah")]).where("dihapuskan", "=", false).groupBy("room_id");
+        if (ctx.can("asset.view") && ctx.scopeOf("asset.view") === "restricted") q = q.where("boleh_dipinjam_siswa", "=", true);
+        return q.execute();
+    }
     constructor(executor: QueryExecutor) {
         super(executor);
     }

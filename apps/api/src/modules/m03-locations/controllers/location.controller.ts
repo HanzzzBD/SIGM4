@@ -58,9 +58,11 @@ function keRoom(r: RoomRow) {
 function keTree(buildings: readonly LocationTreeBuilding[]) {
     return buildings.map((b) => ({
         ...keBuilding(b),
+        jumlah_aset: b.jumlah_aset,
         areas: b.areas.map((a) => ({
             ...keArea(a),
-            rooms: a.rooms.map(keRoom),
+            jumlah_aset: a.jumlah_aset,
+            rooms: a.rooms.map((r) => ({ ...keRoom(r), jumlah_aset: r.jumlah_aset })),
         })),
     }));
 }
@@ -70,6 +72,13 @@ export function getLocationTreeHandler(service: LocationService): RequestHandler
         const ctx = requireAuthContext(res);
         const tree = await service.getTree(ctx);
         res.status(200).json({ success: true, data: keTree(tree), meta: null });
+    };
+}
+
+export function getRoomHandler(service: LocationService): RequestHandler {
+    return async (req, res) => {
+        const { id } = IdParamSchema.parse(req.params);
+        res.json({ success: true, data: keRoom(await service.getRoom(requireAuthContext(res), id)), meta: null });
     };
 }
 

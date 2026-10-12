@@ -31,12 +31,12 @@ export function periksaAsetBaru(f: typeof AWAL): Readonly<Record<string, string>
     return g;
 }
 
-export default function AddAssetPage() {
+export default function AddAssetPage({ initialRoom }: { readonly initialRoom?: string | undefined }) {
     const can = useCan();
     const kategori = useQuery(kategoriQuery);
     const ruangan = useQuery({ ...ruanganQuery, enabled: can("location.view") });
     const pengguna = useQuery({ ...penggunaAktifQuery, enabled: can("user.view") });
-    const [f, setF] = useState(AWAL);
+    const [f, setF] = useState(() => ({ ...AWAL, ruangan: initialRoom ?? "" }));
     const [galat, setGalat] = useState<Readonly<Record<string, string>>>({});
     const [umum, setUmum] = useState<string | null>(null);
     const [sibuk, setSibuk] = useState(false);

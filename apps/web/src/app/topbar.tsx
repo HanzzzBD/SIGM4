@@ -21,7 +21,7 @@ function JamWib() {
         const t = setInterval(() => setJam(format()), 30_000);
         return () => clearInterval(t);
     }, []);
-    return <span className="text-sm tabular-nums text-text-secondary">WIB {jam}</span>;
+    return <span className="shrink-0 whitespace-nowrap text-sm tabular-nums text-text-secondary">WIB <span className="hidden sm:inline">{jam}</span></span>;
 }
 
 const ITEM = "flex min-h-touch cursor-pointer items-center gap-3 rounded-sm px-4 text-base text-text-primary outline-none data-highlighted:bg-neutral-50";
@@ -65,18 +65,18 @@ export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; rea
         await navigate({ to: "/login" });
     };
     return (
-        <header role="banner" className="flex min-h-topbar items-center gap-4 border-b border-border-subtle bg-surface-default px-4">
+        <header role="banner" className="flex min-h-topbar items-center gap-2 border-b border-border-subtle bg-surface-default px-4 sm:gap-4">
             <button type="button" onClick={onMenu} aria-label={menuLabel} className="flex size-touch items-center justify-center rounded-md text-icon-default hover:bg-neutral-50">
                 <Ikon nama="menu" />
             </button>
             <Logo ukuran="sm" className="md:hidden" />
             {can("asset.view") && jalurTerdaftar("/aset") && <PencarianGlobal />}
-            <div className="ml-auto flex items-center gap-4">
+            <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-4">
                 <JamWib />
                 {can("notification.manage_own") && <Lonceng />}
                 <Menu.Root>
-                    <Menu.Trigger className="flex min-h-touch items-center gap-2 rounded-md px-2 text-base font-medium text-text-primary hover:bg-neutral-50">
-                        {sesi.user.nama}
+                    <Menu.Trigger className="flex min-h-touch min-w-0 items-center gap-2 rounded-md px-2 text-base font-medium text-text-primary hover:bg-neutral-50">
+                        <span className="truncate">{sesi.user.nama}</span>
                         <Ikon nama="chevron" ukuran="sm" />
                     </Menu.Trigger>
                     <Menu.Portal>

@@ -206,7 +206,8 @@ describe("P-18 Detail Aset", () => {
         expect(screen.getByText("Kondisi Baik → Rusak Ringan")).toBeTruthy();
         // Dibatasi ke konten: grup sidebar "Sistem" ikut tampil sejak P-60 terdaftar (PR-01-19).
         expect(within(screen.getByRole("main")).getByText("Sistem")).toBeTruthy();
-        expect(screen.getAllByText(/WIB$/).length).toBe(4);
+        // Dibatasi ke konten: jam topbar kini "WIB <jam>" dengan jam dalam elemen tersendiri (PR-02-50, render responsif).
+        expect(within(screen.getByRole("main")).getAllByText(/WIB$/).length).toBe(4);
         expect(screen.getByRole("link", { name: "Riwayat" }).getAttribute("aria-current")).toBe("page");
     });
 });
