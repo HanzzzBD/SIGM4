@@ -46,11 +46,11 @@ export async function asetDariKode(kode: string): Promise<AsetRingkas | null> {
 }
 
 /** P-24: cari aset untuk ditambahkan ke lembar label. */
-export const cariAsetQuery = (q: string) =>
+export const cariAsetQuery = (q: string, belum = false, page = 1) =>
     queryOptions({
-        queryKey: ["assets", "label-qr", q],
-        enabled: q.trim() !== "",
-        queryFn: async () => Katalog.parse((await api.get("/assets", { params: { q: q.trim(), per_page: 25 } })).data).data,
+        queryKey: ["assets", "label-qr", q, belum, page],
+        enabled: q.trim() !== "" || belum,
+        queryFn: async () => Katalog.parse((await api.get("/assets", { params: { q: q.trim() || undefined, per_page: 25, page, ...(belum ? { "filter[qr_terpasang]": false } : {}) } })).data).data,
     });
 
 /** Aset terpilih lewat `?aset=` (P-16, P-18) — detail ringkas per id (PR-03-24). */

@@ -190,6 +190,7 @@ export const ListAssetsQuerySchema = z.object({
     status: AssetStatusSchema.optional(),
     tahun_perolehan: z.coerce.number().int().min(1900).max(2100).optional(),
     dapat_dipinjam: FilterBooleanSchema,
+    qr_terpasang: FilterBooleanSchema,
 });
 
 /**

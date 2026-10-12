@@ -105,6 +105,7 @@ export function listAssetsHandler(service: AssetService, dasarQr: string): Reque
             status: req.query["filter[status]"],
             tahun_perolehan: req.query["filter[tahun_perolehan]"],
             dapat_dipinjam: req.query["filter[dapat_dipinjam]"],
+            qr_terpasang: req.query["filter[qr_terpasang]"],
         });
         const hasil = await service.list(ctx, {
             ...(query.import_job_id === undefined ? {} : { importJobId: query.import_job_id }),
@@ -118,6 +119,7 @@ export function listAssetsHandler(service: AssetService, dasarQr: string): Reque
             ...(query.status === undefined ? {} : { status: query.status }),
             ...(query.tahun_perolehan === undefined ? {} : { tahunPerolehan: query.tahun_perolehan }),
             ...(query.dapat_dipinjam === undefined ? {} : { dapatDipinjam: query.dapat_dipinjam }),
+            ...(query.qr_terpasang === undefined ? {} : { qrTerpasang: query.qr_terpasang }),
         });
         res.status(200).json({
             success: true,

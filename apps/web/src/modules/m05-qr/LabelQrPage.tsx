@@ -4,12 +4,12 @@
 
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { KeadaanGalat } from "../../shared/states";
+import { KeadaanGalat, KeadaanMemuat } from "../../shared/states";
 import { Isian, KotakCentang, Lencana, Peringatan, Pilihan, Tombol } from "../../shared/ui/primitives";
 import type { AsetRingkas, TataLetak } from "./api";
 import { LABEL_TATA_LETAK, MAKS_LABEL, TATA_LETAK, asetRingkasQuery, cariAsetQuery, cetakLabel, tandaiTerpasang } from "./api";
 
-export default function LabelQrPage({ awal }: { readonly awal: readonly string[] }) {
+export default function LabelQrPage({ awal, belum = false }: { readonly awal: readonly string[]; readonly belum?: boolean }) {
     const qc = useQueryClient();
     const [pilihan, setPilihan] = useState<ReadonlyMap<string, AsetRingkas>>(new Map());
     const [kata, setKata] = useState("");
@@ -18,7 +18,8 @@ export default function LabelQrPage({ awal }: { readonly awal: readonly string[]
     const [elemen, setElemen] = useState({ kode_aset: true, nama: true });
     const [sibuk, setSibuk] = useState<"cetak" | "tandai" | null>(null);
     const [status, setStatus] = useState<{ readonly varian: "success" | "error"; readonly pesan: string } | null>(null);
-    const hasilCari = useQuery(cariAsetQuery(cari));
+    const [page, setPage] = useState(1);
+    const hasilCari = useQuery(cariAsetQuery(cari, belum, page));
     const awalan = useQueries({ queries: awal.slice(0, MAKS_LABEL).map((id) => asetRingkasQuery(id)) });
 
     // Aset bawaan URL masuk ke pilihan begitu termuat (sekali per id).
@@ -85,6 +86,7 @@ export default function LabelQrPage({ awal }: { readonly awal: readonly string[]
                 <p className="text-base text-text-secondary">Susun lembar label untuk dicetak. Satu cetakan memuat hingga {MAKS_LABEL} label; mencetak ulang tidak mengubah QR.</p>
             </header>
             {status !== null && <Peringatan varian={status.varian}>{status.pesan}</Peringatan>}
+            {belum && <div className="flex flex-col gap-3"><Peringatan varian="info">Menampilkan aset yang belum berlabel QR. Pilih aset yang akan dicetak.</Peringatan><nav aria-label="Halaman aset belum berlabel" className="flex flex-wrap items-center gap-3"><Tombol varian="secondary" disabled={page <= 1 || hasilCari.isFetching} onClick={() => setPage((p) => p - 1)}>Sebelumnya</Tombol><span>Halaman {page}</span><Tombol varian="secondary" disabled={hasilCari.isFetching || (hasilCari.data?.length ?? 0) < 25} onClick={() => setPage((p) => p + 1)}>Berikutnya</Tombol></nav></div>}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 <section aria-labelledby="judul-pilih" className="flex flex-col gap-4 lg:col-span-2">
                     <h2 id="judul-pilih" className="text-lg font-semibold text-text-primary">
@@ -95,9 +97,10 @@ export default function LabelQrPage({ awal }: { readonly awal: readonly string[]
                         onSubmit={(e) => {
                             e.preventDefault();
                             setCari(kata);
+                            setPage(1);
                         }}
                     >
-                        <div className="flex-1">
+                        <div className="min-w-0 flex-1">
                             <Isian label="Cari aset untuk ditambahkan (kode, nama, nomor seri)" type="search" value={kata} onChange={(e) => setKata(e.target.value)} />
                         </div>
                         <Tombol type="submit" varian="secondary">
@@ -105,12 +108,13 @@ export default function LabelQrPage({ awal }: { readonly awal: readonly string[]
                         </Tombol>
                     </form>
                     {hasilCari.isError && <KeadaanGalat galat={hasilCari.error} onCobaLagi={() => void hasilCari.refetch()} />}
+                    {hasilCari.isFetching && <KeadaanMemuat label="Memuat aset untuk label QR" />}
                     {hasilCari.data !== undefined && (
                         <ul aria-label="Hasil pencarian" className="flex flex-col rounded-md border border-border-subtle bg-surface-default">
                             {hasilCari.data.length === 0 && <li className="p-4 text-base text-text-secondary">Tidak ada aset yang cocok.</li>}
                             {hasilCari.data.map((a) => (
-                                <li key={a.id} className="flex items-center justify-between gap-3 border-b border-border-subtle p-3 last:border-b-0">
-                                    <span>
+                                <li key={a.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle p-3 last:border-b-0">
+                                    <span className="min-w-0 break-words">
                                         <span className="font-mono">{a.kode_barang}</span> · {a.nama}
                                     </span>
                                     <Tombol varian="secondary" disabled={pilihan.has(a.id) || penuh} aria-label={`Tambahkan ${a.kode_barang}`} onClick={() => tambah(a)}>

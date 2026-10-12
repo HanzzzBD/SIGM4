@@ -177,6 +177,7 @@ export interface AssetCatalogFilter {
     readonly status?: AssetStatus;
     readonly tahunPerolehan?: number;
     readonly dapatDipinjam?: boolean;
+    readonly qrTerpasang?: boolean;
 }
 
 export interface ListAssetsFilter extends AssetCatalogFilter {
@@ -219,6 +220,7 @@ export class AssetRepository extends BaseRepository {
         if (filter.status !== undefined) q = q.where("status", "=", filter.status);
         if (filter.tahunPerolehan !== undefined) q = q.where("tahun_perolehan", "=", filter.tahunPerolehan);
         if (filter.dapatDipinjam !== undefined) q = q.where("dapat_dipinjam", "=", filter.dapatDipinjam);
+        if (filter.qrTerpasang !== undefined) q = q.where("qr_terpasang", "=", filter.qrTerpasang);
         if (filter.q !== undefined && filter.q.length > 0) {
             const kata = `%${filter.q}%`;
             q = q.where((eb) =>

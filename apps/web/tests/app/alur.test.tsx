@@ -148,8 +148,8 @@ describe("P-12 Dashboard + shell", () => {
         expect(screen.getByText("Siti Guru")).toBeTruthy();
         await waitFor(() => expect(screen.queryByText("Login Hari Ini")).toBeNull());
         expect(screen.queryByText("Efek Tertunda Gagal")).toBeNull();
-        // Drill-down hanya menjadi tautan bila halaman sasarannya terdaftar: P-60 sejak PR-01-19, P-73 sejak PR-01-25.
-        expect(screen.queryAllByRole("link", { name: /buka daftar sumbernya/ }).map((a) => a.getAttribute("href"))).toEqual(["/pengguna?filter[status]=AKTIF", "/activity-log"]);
+        // Drill-down hanya menjadi tautan bila halaman sasarannya terdaftar: P-60 sejak PR-01-19, sisanya belum.
+        expect(screen.queryAllByRole("link", { name: /buka daftar sumbernya/ }).map((a) => a.getAttribute("href"))).toEqual(["/pengguna?status=AKTIF"]);
     });
 
     it("grafik membawa tabel data alternatif bagi pembaca layar (C-23, NFR-AC-04)", async () => {

@@ -6,8 +6,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { ApiError } from "../../shared/api";
-import { KUNCI_ME } from "../../shared/auth";
-import { jalurDrilldown } from "../../shared/navigasi";
+import { KUNCI_ME, useCan } from "../../shared/auth";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
 import { Ikon } from "../../shared/ui/icon";
 import { Kartu, Tombol, gabung } from "../../shared/ui/primitives";
@@ -16,13 +15,16 @@ import type { KartuManifes } from "./api";
 import { LABEL_RENTANG, RENTANG } from "./rentang";
 import type { Rentang } from "./rentang";
 import { PENAMPIL, sembunyikan, waktuWib } from "./penampil";
+import { tujuanDashboard, rincianDashboard } from "./drilldown";
+import { DashboardLink } from "./DashboardLink";
 
 const ZONA: Record<1 | 2 | 3 | 4, string> = { 1: "Tindakan", 2: "Keadaan", 3: "Kecenderungan", 4: "Aksi Cepat" };
 
 function KartuDashboard({ kartu, rentang, versi }: { readonly kartu: KartuManifes; readonly rentang: Rentang; readonly versi: number }) {
     const queryClient = useQueryClient();
     const q = useQuery(kueriKartu(kartu.id, rentang, versi));
-    const tujuan = jalurDrilldown(kartu.drilldown);
+    const can = useCan();
+    const tujuan = tujuanDashboard(kartu, can);
     // Hak akses dicabut di tengah sesi: kartu hilang dan permission dimuat ulang (PM-04).
     const ditolak = q.error instanceof ApiError && q.error.status === 403;
     useEffect(() => {
@@ -32,15 +34,16 @@ function KartuDashboard({ kartu, rentang, versi }: { readonly kartu: KartuManife
     const isi = q.data?.isi as Record<string, unknown> | undefined;
     if (isi !== undefined && sembunyikan(kartu.id, isi)) return null;
     const tampil = PENAMPIL[kartu.id];
+    const rincian = rincianDashboard(kartu, isi ?? {}, can);
     return (
         <Kartu
-            judul={kartu.judul}
+            judul={kartu.jenis === "KPI" && tujuan !== null ? <DashboardLink href={tujuan} label={`${kartu.judul}, buka daftar sumbernya`} judul>{kartu.judul}</DashboardLink> : kartu.judul}
             status={kartu.jenis === "PERINGATAN" ? "warning" : undefined}
             aksi={
-                tujuan !== null && (
-                    <a href={tujuan} className="text-sm text-text-link hover:text-text-link-hover" aria-label={`${kartu.judul}, buka daftar sumbernya`}>
+                tujuan !== null && kartu.jenis !== "KPI" && (
+                    <DashboardLink href={tujuan} label={`${kartu.judul}, buka daftar sumbernya`}>
                         Lihat
-                    </a>
+                    </DashboardLink>
                 )
             }
         >
@@ -53,6 +56,7 @@ function KartuDashboard({ kartu, rentang, versi }: { readonly kartu: KartuManife
             ) : (
                 <>
                     {tampil(isi ?? {}, kartu.judul)}
+                    {rincian.length > 0 && <ul aria-label={`Telusuri ${kartu.judul}`} className="flex flex-col gap-1">{rincian.map((r) => <li key={r.href}><DashboardLink href={r.href} label={`${kartu.judul}, ${r.label}: ${r.jumlah} aset`}>{r.label} · {new Intl.NumberFormat("id-ID").format(r.jumlah)}</DashboardLink></li>)}</ul>}
                     <p className="text-sm text-text-secondary">Diperbarui {waktuWib(q.data.diperbarui_pada)}</p>
                 </>
             )}
@@ -111,7 +115,7 @@ export default function DashboardPage({ rentang, onRentang }: { readonly rentang
             ) : (
                 zona.map(({ z, kartu }) => {
                     const kisi = (
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3" data-dashboard-grid>
                             {kartu.map((k) => (
                                 <KartuDashboard key={k.id} kartu={k} rentang={rentang} versi={versi} />
                             ))}
@@ -121,7 +125,7 @@ export default function DashboardPage({ rentang, onRentang }: { readonly rentang
                         <details key={z} open={lebar} className="flex flex-col gap-4">
                             <summary className={gabung("flex min-h-control-md cursor-pointer items-center gap-2 text-xl font-semibold text-text-heading")}>
                                 <Ikon nama="chevron" />
-                                {ZONA[z]}
+                                <h2 className="text-xl font-semibold">{ZONA[z]}</h2>
                             </summary>
                             {kisi}
                         </details>

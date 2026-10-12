@@ -423,10 +423,10 @@ const labelQrRoute = createRoute({
     getParentRoute: () => shellRoute,
     path: "/label-qr",
     beforeLoad: butuhIzin("asset.qr_print"),
-    validateSearch: z.object({ aset: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*(,[1-9]\d*)*$/))), undefined) }),
+    validateSearch: z.object({ aset: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*(,[1-9]\d*)*$/))), undefined), belum: z.catch(z.optional(z.literal(true)), undefined) }),
     component: function RouteLabelQr() {
-        const { aset } = labelQrRoute.useSearch();
-        return <HalamanLabelQr awal={aset === undefined ? [] : [...new Set(aset.split(","))]} />;
+        const { aset, belum } = labelQrRoute.useSearch();
+        return <HalamanLabelQr awal={aset === undefined ? [] : [...new Set(aset.split(","))]} belum={belum} />;
     },
 });
 
