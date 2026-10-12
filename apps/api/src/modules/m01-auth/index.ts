@@ -40,6 +40,7 @@ export {
     lihatProfilRoute,
     listPermintaanResetRoute,
     listSesiRoute,
+    statusDuaFaktorRoute,
     loginRoute,
     logoutRoute,
     logoutSemuaRoute,

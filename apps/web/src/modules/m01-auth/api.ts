@@ -48,7 +48,7 @@ export interface PendaftaranDuaFaktor {
 
 /** FR-01.5 langkah 1-2; role wajib 2FA membawa kode aktivasi dari Administrator (BR-070d). */
 export function mulaiPendaftaran(kodeAktivasi: string): Promise<PendaftaranDuaFaktor> {
-    return ambilData<PendaftaranDuaFaktor>(api.post("/auth/2fa/enroll", { kode_aktivasi: kodeAktivasi }));
+    return ambilData<PendaftaranDuaFaktor>(api.post("/auth/2fa/enroll", kodeAktivasi.trim() ? { kode_aktivasi: kodeAktivasi } : {}));
 }
 
 /** FR-01.5 langkah 3: 6 digit pertama mengaktifkan 2FA; cookie akses baru membawa amr `otp`. */

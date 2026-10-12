@@ -179,7 +179,7 @@ Perlu diperhatikan: `material.view` menjaga **saldo dan kartu stok**, sedangkan 
 
 ```
 1. authenticate          -> 401 UNAUTHENTICATED / TOKEN_EXPIRED
-2. mustChangePassword    -> 403, hanya /auth/password/change & /me yang lolos   (FR-01.3)
+2. mustChangePassword    -> 403, hanya daftar POST eksplisit PRD m01 §7 yang lolos; /me diblokir (FR-01.3, PR-02-41)
 3. twoFactorVerified     -> 403 TWO_FACTOR_REQUIRED, bila role wajib 2FA & amr tanpa otp    (BR-070)
 4. permission            -> 403 INSUFFICIENT_PERMISSION                          (PM-02)
 5. rateLimit(kelas)      -> 429                                                  (NFR-S-07)

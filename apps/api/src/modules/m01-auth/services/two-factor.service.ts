@@ -67,6 +67,13 @@ function galatValidasi(field: string, pesan: string): DomainError {
 }
 
 export class TwoFactorService {
+    async status(ctx: AuthContext) {
+        const row = await createTwoFactorRepository(this.db).status(ctx);
+        if (!row) throw new NotFoundError();
+        const aktif = row.totp_enabled_at !== null;
+        const sisa = aktif ? Number(row.sisa) : 0;
+        return { aktif, diaktifkan_pada: row.totp_enabled_at?.toISOString() ?? null, sisa_kode_cadangan: sisa, kode_cadangan_menipis: aktif && sisa <= 2 };
+    }
     constructor(
         private readonly db: Kysely<Database>,
         private readonly jwt: JwtKeys,

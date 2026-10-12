@@ -9,3 +9,9 @@ export { ambilTantangan, login, logout, logoutSemua, perluDuaFaktor } from "./ap
 export type { HasilLogin, HasilLoginSesi, HasilLoginTantangan } from "./api";
 // Render QR SVG bertoken — dipakai juga P-18 (PR-02-45).
 export { KodeQr } from "./qr";
+export const loadForgotPasswordPage = () => import("./ForgotPasswordPage");
+export const loadProfilePage = () => import("./ProfilePage");
+export const loadSecurityPage = () => import("./SecurityPage");
+export const loadResetRequestsPage = () => import("./ResetRequestsPage");
+export { STATUS_RESET } from "./account-api";
+export type { StatusReset } from "./account-api";

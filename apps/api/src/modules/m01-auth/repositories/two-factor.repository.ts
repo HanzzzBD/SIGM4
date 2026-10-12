@@ -20,6 +20,9 @@ export class TwoFactorRepository extends BaseRepository {
     constructor(executor: QueryExecutor) {
         super(executor);
     }
+    async status(ctx: AuthContext) {
+        return this.query(ctx).selectFrom("users").select((eb) => ["totp_enabled_at", eb.selectFrom("totp_backup_codes as b").select((e) => e.fn.countAll<string>().as("n")).whereRef("b.user_id", "=", "users.id").where("b.used_at", "is", null).as("sisa")]).where("id", "=", String(ctx.userId)).executeTakeFirst();
+    }
 
     /** Mengunci baris pemanggil: pendaftaran/konfirmasi serentak diserialkan. */
     async kunciUser(ctx: AuthContext): Promise<DuaFaktorRow | undefined> {

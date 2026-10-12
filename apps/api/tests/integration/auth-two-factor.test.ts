@@ -276,6 +276,18 @@ describe.skipIf(!ADA)("PR-02-07 — 2FA TOTP (PostgreSQL + Redis nyata)", () => 
 
     // ---------------------------------------------------------------------------------------------------
     describe("POST /auth/2fa/verify — TOTP (FR-01.5, SDD-SESS-09)", () => {
+        it("PR-02-40 status hanya metadata akun sendiri; tanpa token ditolak dan kode terpakai tidak dihitung", async () => {
+            const a = await seedBer2fa("R-05");
+            const verified = await verifikasi(challengeDari(await login(a.email)), await kodeSegar(a.id, a.secret));
+            const headers = { authorization: `Bearer ${tokensDari(verified).access}` };
+            expect((await kirim("GET", "/auth/2fa/status")).status).toBe(401);
+            const status = await kirim("GET", "/auth/2fa/status?user_id=9999999", headers);
+            expect(status.headers.get("cache-control")).toBe("no-store");
+            expect(status.json.data).toMatchObject({ aktif: true, sisa_kode_cadangan: 10, kode_cadangan_menipis: false });
+            expect(Object.keys(status.json.data ?? {}).sort()).toEqual(["aktif", "diaktifkan_pada", "kode_cadangan_menipis", "sisa_kode_cadangan"]);
+            await kueri(`UPDATE totp_backup_codes SET used_at = '${T0.toISOString()}' WHERE user_id = ${String(a.id)} AND id IN (SELECT id FROM totp_backup_codes WHERE user_id = ${String(a.id)} ORDER BY id LIMIT 8)`);
+            expect((await kirim("GET", "/auth/2fa/status", headers)).json.data).toMatchObject({ sisa_kode_cadangan: 2, kode_cadangan_menipis: true });
+        });
         it("kode benar → sesi ber-amr [pwd, otp]; sisa kode cadangan; otp_verified; LOGIN_SUCCESS metode TOTP; penghitung di-reset", async () => {
             const a = await seedBer2fa("R-05");
             const l = await login(a.email);
