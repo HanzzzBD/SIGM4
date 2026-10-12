@@ -221,8 +221,9 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
 | `PR-04-01` … `PR-04-14` | `Not Started` | — | Rincian: [`phases/phase-04.md` §7](phases/phase-04.md) |
-| `PR-04-15` | `In Review` | [#178](https://github.com/HanzzzBD/SIGM4/pull/178) | `POST /files/{id}/presign` (`SDD-MOB-04`): URL unggah baru 300 detik bagi pesanan milik pemanggil yang belum dikonfirmasi; 401/404/422 teruji, tanpa baris baru |
-| `PR-04-16` … `PR-04-19` | `Not Started` | — | Rincian: [`phases/phase-04.md` §7](phases/phase-04.md) |
+| `PR-04-15` | `Done` | [#178](https://github.com/HanzzzBD/SIGM4/pull/178) | `POST /files/{id}/presign` (`SDD-MOB-04`): URL unggah baru 300 detik bagi pesanan milik pemanggil yang belum dikonfirmasi; 401/404/422 teruji, tanpa baris baru |
+| `PR-04-16` | `In Progress` | `feature/PR-04-16-fondasi-mobile` (menunggu #180) | Expo 57 / RN 0.86 / iOS 16.4: sesi aman, antrean unggah SQLite, 15 uji mobile + export Hermes Android/iOS lulus. SCA: `zod` runtime mobile ditambal ke 4.6.7; `node-forge` dan `zod` milik `@expo/cli` (tanpa tambalan upstream, hanya perkakas build) dikecualikan terbatas `SDD-SEC-13`. QA perangkat nyata belum berjalan |
+| `PR-04-17` … `PR-04-19` | `Not Started` | — | Rincian: [`phases/phase-04.md` §7](phases/phase-04.md) |
 
 ### Phase 05 — Penutupan Siklus · `Not Started`
 

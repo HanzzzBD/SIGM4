@@ -63,7 +63,7 @@ expo-router menghapus daftarnya: path **adalah** letak berkas rutenya, sehingga 
 
 **SDD-MOB-10 — Expo + EAS Update.** Dua pertanyaan yang terlihat terpisah — versi React Native dan strategi OTA — sebenarnya satu, karena lini Expo menetapkan keduanya sekaligus.
 
-Batas kerasnya adalah `NFR-C-03` (Android 8.0/API 26 dan iOS 14). Rilis React Native maupun Expo menaikkan lantai OS minimumnya dari waktu ke waktu, jadi versi tidak dapat dipilih sekarang lalu dianggap aman: verifikasi terhadap `NFR-C-03` adalah bagian dari keputusan ini, bukan langkah opsional sesudahnya. Bila lantai lini yang diinginkan sudah berada di atas `NFR-C-03`, jalannya bukan menurunkan diam-diam dukungan perangkat, melainkan menaikkan persoalan itu sebagai perubahan requirement.
+Batas kerasnya adalah `NFR-C-03` (Android 8.0/API 26 dan iOS 16.4). Rilis React Native maupun Expo menaikkan lantai OS minimumnya dari waktu ke waktu, jadi versi tidak dapat dipilih sekarang lalu dianggap aman: verifikasi terhadap `NFR-C-03` adalah bagian dari keputusan ini, bukan langkah opsional sesudahnya. Bila lantai lini yang diinginkan sudah berada di atas `NFR-C-03`, jalannya bukan menurunkan diam-diam dukungan perangkat, melainkan menaikkan persoalan itu sebagai perubahan requirement.
 
 **Bare React Native tanpa OTA** ditolak, meski ia paling bersih: setiap perbaikan lapangan menunggu peninjauan store (`MOB-REL-05`, `GL-11`), padahal alur yang dilayani aplikasi ini adalah alur lapangan yang gagal secara eksplisit saat bermasalah (`SDD-MOB-07`) — jarak antara bug dan perbaikannya berbiaya nyata. **OTA swa-kelola** ditolak karena mempertahankan kepemilikan (`MOB-REL-02`) dengan cara yang mahal: sekolah harus mengoperasikan server pembaruan, tepat berlawanan dengan risiko kapasitas operasional yang sudah dicatat [SDD-16 §6](16-infrastructure-deployment.md).
 
@@ -236,3 +236,11 @@ _Tidak ada titik terbuka._
 | ID | Ditutup | Keputusan |
 |---|---|---|
 | **TBD-MOB-B** | 22 Agustus 2026 | **Tablet mendapat tata letak dua panel** pada tiga layar (`UXD-11`). Rancangannya di §4.8. |
+
+### Lini SDK dan integrasi antrean (PR-04-16, 12 Oktober 2026)
+
+Keputusan pemilik produk: Expo SDK 57, React Native 0.86.0, React 19.2.3; minimum OS sesuai NFR-C-03 yang diperbarui (Android 8/API 26, iOS 16.4). Versi diteliti dari dokumentasi resmi https://docs.expo.dev/versions/latest/ dan bundledNativeModules.json pada paket expo 57.0.0. Modul native mengikuti lini itu dan lockfile mengunci patch terpilih.
+
+`SDD-MOB-02/04/11`: preparePhoto mengompresi/membuang EXIF sebelum presign dan transaksi server pemilik foto. Enqueue dilakukan setelah transaksi server menautkan file_id. Drain hanya mengirim berkas; confirm idempoten dengan checksum yang sama dicoba lebih dulu untuk menangani respons confirm yang hilang, baru meminta URL ulang PR-04-15 jika objek belum terunggah. Metadata antrean menyertakan pemilik akun agar login akun berbeda tidak mengambil unggahannya. Batas usia/jumlah berlaku per perangkat. Perubahan baris diserialkan lalu memakai transaksi eksklusif SQLite. Proses mati setelah penghapusan baris tidak mempertahankan berkas yatim: adapter membersihkan direktori antrean saat startup.
+
+SecureStore menyimpan pasangan token dalam satu rekaman; revision mencegah respons refresh lama menghidupkan sesi sesudah logout. Refresh 401 diserialkan, login/verifikasi tidak memicu refresh; gangguan jaringan tidak menghapus token. Profil/permission/challenge tetap di memori. Gerbang password/2FA mengikuti kode server. App switcher dilindungi sebelum layar berdata pribadi ditampilkan. EAS tidak dipublikasikan; OTA aktif hanya jika ID proyek sekolah dikonfigurasi. Pengerasan pinning/root serta distribusi tetap PR-08-13.

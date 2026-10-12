@@ -437,7 +437,7 @@ Diambil dari Bab 30.6 — tidak ditetapkan ulang di sini.
 | Android batas bawah | Android 8, RAM 2GB (`NFR-C-03`) |
 | Android kelas menengah | Android 12+, RAM 4GB (definisi `NFR-P-10`) |
 | Android kelas atas | Android 14+, RAM ≥8GB |
-| iOS | iOS 14 batas bawah dan iOS terbaru |
+| iOS | iOS 16.4 batas bawah dan iOS terbaru |
 | Tablet | Satu perangkat per platform (**UXD-11**) |
 | Resolusi web | 320 · 768 · 1366 · 1920px |
 | Pembaca layar | NVDA (Windows) · VoiceOver (iOS/macOS) · TalkBack (Android) |
