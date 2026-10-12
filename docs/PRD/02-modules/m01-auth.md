@@ -284,6 +284,10 @@ sequenceDiagram
 
 ### Endpoint
 
+**PR-02-40/41 (12 Oktober 2026).** `GET /auth/2fa/status` berautentikasi (gerbang 2FA tetap berlaku) membaca hanya akun pemanggil. Respons `{aktif,diaktifkan_pada,sisa_kode_cadangan,kode_cadangan_menipis}`; bila belum aktif, tanggal null, sisa 0 dan peringatan false. Saat aktif, sisa menghitung kode belum terpakai; peringatan bila ≤2. Tidak mengembalikan secret TOTP, hash, kode cadangan, atau kode aktivasi; `Cache-Control: no-store`.
+
+Saat `must_change_password=true`, hanya POST `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/logout-all`, `/auth/password/change`, `/auth/2fa/verify`, `/auth/2fa/enroll`, `/auth/2fa/enroll/confirm` yang melewati gerbang password. Middleware autentikasi/2FA route tetap berlaku. Pendaftaran 2FA diperlukan untuk role wajib yang belum terdaftar sebelum ganti password; `/me`, sesi, status 2FA, buat ulang kode cadangan, forgot, dan antrean/reset administratif tetap diblokir. Reset administratif menghapus `locked_until`, penghitung dan jendela kegagalan login bersama penerbitan password sementara.
+
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
 | POST | `/auth/login` | Publik | Login email + password + `platform` (`WEB`, `ANDROID`, `IOS`) | 200 `{tokens, expires_in, user, permissions}` (`tokens` null pada WEB: token hanya di cookie httpOnly) atau `{requires_2fa, challenge_token, expires_in}` (akun ber-2FA: sesi belum terbit) | 400, 401, 403, 429 |
@@ -291,6 +295,7 @@ sequenceDiagram
 | POST | `/auth/2fa/enroll` | Bearer | Mulai pendaftaran 2FA: secret TOTP, URI `otpauth://`, dan 10 kode cadangan — tampil **satu kali**. Terjangkau oleh sesi yang belum lolos 2FA. Role wajib 2FA: body memuat `kode_aktivasi` (`BR-070d`) | 200 `{secret, otpauth_uri, kode_cadangan}` | 401, 422 |
 | POST | `/auth/2fa/enroll/confirm` | Bearer | Konfirmasi pendaftaran dengan kode 6 digit; 2FA berlaku dan sesi ini naik ke `amr` `["pwd","otp"]`. Terjangkau oleh sesi yang belum lolos 2FA. Mencabut seluruh sesi lain pemilik akun (`BR-070e`) | 200 `{access_token}` (null pada WEB) | 400, 401, 422 |
 | POST | `/auth/2fa/backup-codes/regenerate` | Bearer (2FA terverifikasi) | Membuat ulang seluruh kode cadangan; yang lama, terpakai atau tidak, tak berlaku lagi | 200 `{kode_cadangan}` | 401, 403, 422 |
+| GET | `/auth/2fa/status` | Bearer | Status 2FA dan jumlah kode cadangan sendiri tanpa rahasia | 200 `{aktif,diaktifkan_pada,sisa_kode_cadangan,kode_cadangan_menipis}` | 401, 403 |
 | POST | `/auth/refresh` | Refresh token | Menukar refresh token (rotasi; refresh token baru ikut diterbitkan, pemakaian ulang mencabut seluruh rantai) | 200 `{tokens, expires_in}` (`tokens` null pada WEB) | 401 |
 | POST | `/auth/logout` | Bearer | Mencabut sesi yang membawa permintaan ini | 204 | 401 |
 | POST | `/auth/logout-all` | Bearer | Keluar dari semua perangkat: mencabut seluruh sesi pengguna | 204 | 401 |

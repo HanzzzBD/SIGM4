@@ -26,6 +26,7 @@ import {
 } from "./controllers/profile.controller.js";
 import {
     buatUlangKodeCadanganHandler,
+    statusDuaFaktorHandler,
     enrollHandler,
     konfirmasiEnrollHandler,
 } from "./controllers/two-factor.controller.js";
@@ -69,6 +70,7 @@ import {
     EnrollConfirmResponseSchema,
     EnrollResponseSchema,
     KodeCadanganResponseSchema,
+    StatusDuaFaktorResponseSchema,
 } from "./schemas/two-factor.schema.js";
 import { AuthService } from "./services/auth.service.js";
 import { BreakGlassService } from "./services/break-glass.service.js";
@@ -83,6 +85,7 @@ import { TwoFactorService } from "./services/two-factor.service.js";
 
 /** Pemilik katalog endpoint M-01 (m01-auth.md §7). */
 const MODUL = "m01-auth";
+export const statusDuaFaktorRoute = defineRoute({ method: "GET", path: "/auth/2fa/status", authenticated: true, rateLimitClass: "default", module: MODUL, response: StatusDuaFaktorResponseSchema, summary: "Status 2FA dan jumlah kode cadangan sendiri tanpa rahasia (P-77)" });
 
 /**
  * FR-01.1. Kelas `login` (SDD-13 §4.3): hanya percobaan gagal yang dihitung — login
@@ -359,6 +362,7 @@ export function authRouter(
     const reset = new PasswordResetService(deps.db, deps.auditLogger, deps.clock, deps.logger);
     const profil = new ProfileService(deps.db, deps.jwtKeys, deps.permissionCache, deps.auditLogger, deps.clock, deps.fotoProfil);
     const router = express.Router();
+    router.get(statusDuaFaktorRoute.path, batasi(statusDuaFaktorRoute), terautentikasi(), statusDuaFaktorHandler(duaFaktor));
     router.post(loginRoute.path, batasi(loginRoute), loginHandler(service));
     router.post(refreshRoute.path, batasi(refreshRoute), refreshHandler(service));
     router.post(verifyDuaFaktorRoute.path, batasi(verifyDuaFaktorRoute), verifikasiDuaFaktorHandler(service));

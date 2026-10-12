@@ -60,7 +60,8 @@ describe("registri navigasi", () => {
     it("HALAMAN_TERDAFTAR identik dengan route yang benar-benar ada di router", () => {
         const router = buatRouter(new QueryClient());
         const path = Object.keys(router.routesByPath).map((x) => (x.length > 1 && x.endsWith("/") ? x.slice(0, -1) : x));
-        expect([...new Set(path)].sort()).toEqual(Object.values(HALAMAN_TERDAFTAR).sort());
+        // P-79 adalah anchor Perangkat pada P-77, bukan route kedua.
+        expect([...new Set(path)].sort()).toEqual([...new Set(Object.values(HALAMAN_TERDAFTAR).map((p) => p.split("#")[0]))].sort());
     });
 
     it("drill-down hanya menjadi tautan bila halaman sasarannya terdaftar; filter URL dipertahankan", () => {

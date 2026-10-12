@@ -2,6 +2,7 @@
 // Verifikasi saat login (`/auth/2fa/verify`) ada di `auth.schema.ts`, sebab ia langkah kedua login.
 
 import { z } from "zod";
+export const StatusDuaFaktorResponseSchema = z.object({ success: z.literal(true), data: z.object({ aktif: z.boolean(), diaktifkan_pada: z.string().nullable(), sisa_kode_cadangan: z.number().int().nonnegative(), kode_cadangan_menipis: z.boolean() }), meta: z.null() });
 
 /**
  * `POST /auth/2fa/enroll`. `kode_aktivasi` wajib bagi role wajib 2FA (`BR-070d`) dan diabaikan bagi role lain. Sengaja

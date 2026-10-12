@@ -9,6 +9,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { ApiError } from "../../shared/api";
 import { KUNCI_ME } from "../../shared/auth";
+import type { Sesi } from "../../shared/auth";
 import { Isian, Kartu, KotakCentang, Peringatan, Tombol } from "../../shared/ui/primitives";
 import { konfirmasiPendaftaran, mulaiPendaftaran } from "./api";
 import type { PendaftaranDuaFaktor } from "./api";
@@ -30,7 +31,7 @@ function unduhTeks(nama: string, isi: string): void {
     URL.revokeObjectURL(url);
 }
 
-function LangkahKodeAktivasi({ onTerdaftar }: { readonly onTerdaftar: (p: PendaftaranDuaFaktor) => void }) {
+function LangkahKodeAktivasi({ onTerdaftar, opsional = false }: { readonly onTerdaftar: (p: PendaftaranDuaFaktor) => void; readonly opsional?: boolean }) {
     const [kode, setKode] = useState("");
     const [galat, setGalat] = useState<{ readonly isian?: string; readonly umum?: string }>({});
     const [sibuk, setSibuk] = useState(false);
@@ -51,10 +52,10 @@ function LangkahKodeAktivasi({ onTerdaftar }: { readonly onTerdaftar: (p: Pendaf
     return (
         <Kartu>
             <form className="flex flex-col gap-5" onSubmit={(ev) => void kirim(ev)} noValidate>
-                <p className="text-base text-text-primary">Akun Anda wajib memakai verifikasi dua langkah. Masukkan kode aktivasi yang Anda terima langsung dari Administrator.</p>
+                <p className="text-base text-text-primary">{opsional ? "Aktifkan perlindungan akun dengan aplikasi authenticator. Kode aktivasi Administrator tidak diperlukan untuk role Anda." : "Akun Anda wajib memakai verifikasi dua langkah. Masukkan kode aktivasi yang Anda terima langsung dari Administrator."}</p>
                 {galat.umum !== undefined && <Peringatan varian="error">{galat.umum}</Peringatan>}
-                <Isian label="Kode aktivasi" autoComplete="off" required value={kode} galat={galat.isian} onChange={(e) => setKode(e.target.value)} />
-                <Tombol type="submit" sibuk={sibuk} disabled={kode.trim() === ""}>
+                {!opsional && <Isian label="Kode aktivasi" autoComplete="off" required value={kode} galat={galat.isian} onChange={(e) => setKode(e.target.value)} />}
+                <Tombol type="submit" sibuk={sibuk} disabled={!opsional && kode.trim() === ""}>
                     {sibuk ? "Memproses…" : "Lanjutkan"}
                 </Tombol>
             </form>
@@ -152,6 +153,8 @@ function LangkahPendaftaran({ data, onAktif, onKodeAktivasiHangus }: { readonly 
 export function AktivasiDuaFaktorPage({ tujuan }: { readonly tujuan?: string | undefined }) {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const akun = queryClient.getQueryData<Sesi>(KUNCI_ME);
+    const opsional = akun !== undefined && !["R-01", "R-03"].includes(akun.user.role_kode);
     const [data, setData] = useState<PendaftaranDuaFaktor | null>(null);
     const [hangus, setHangus] = useState<string | null>(null);
     return (
@@ -159,6 +162,7 @@ export function AktivasiDuaFaktorPage({ tujuan }: { readonly tujuan?: string | u
             {hangus !== null && <Peringatan varian="error">{hangus}</Peringatan>}
             {data === null ? (
                 <LangkahKodeAktivasi
+                    opsional={opsional}
                     onTerdaftar={(p) => {
                         setHangus(null);
                         setData(p);
