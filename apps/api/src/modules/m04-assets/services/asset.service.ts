@@ -21,6 +21,7 @@ import { DomainError, ForbiddenError, NotFoundError } from "../../../shared/erro
 import { publish } from "../../../shared/events/index.js";
 import { movementDocumentRepository } from "../repositories/movement-document.repository.js";
 import { EVENT_MOVEMENT_DOCUMENT_REQUESTED } from "./movement-document.service.js";
+import { assertNoMovementConflicts } from "./movement-conflicts.js";
 import type {
     AtributAset,
     AssetFields,
@@ -482,9 +483,9 @@ export class AssetService {
      * status aset wajib `TERSEDIA`/`DALAM_PERBAIKAN` (Preconditions — mencakup
      * BR-010 `Dipinjam` dan A1 `Direservasi`).
      *
-     * **TERBUKA:** A1 memeriksa pinjaman/reservasi PADA `tanggal` mutasi — itu
-     * Pemeriksaan `booking_slots` pada tanggal mutasi masih GAP-02-MOVE-SLOT;
-     * yang diperiksa di sini hanya `status` SAAT INI. Validasi kapasitas lokasi tujuan (langkah 3)
+     * A1 memeriksa slot reservasi/pinjaman sepanjang tanggal mutasi dalam WIB, setelah
+     * seluruh aset dikunci terurut dan sebelum ada perubahan batch (PR-02-48).
+     * Validasi kapasitas lokasi tujuan (langkah 3)
      * ditunda — tidak ada konsep kapasitas aset di skema (`rooms.kapasitas` adalah
      * kapasitas orang); dikonfirmasi pemilik produk. PDF dijadwalkan melalui
      * outbox dalam transaksi yang sama (PR-02-39, SDD-FS-12).
@@ -548,6 +549,7 @@ export class AssetService {
                         penanggung_jawab_baru: baru === null ? null : { id: baru.id, nama: baru.nama } });
                     sumber.push(aset);
                 }
+                await assertNoMovementConflicts(scope.tx, sumber, input.tanggal);
                 const key = `asset-movement-document/${String(now.getUTCFullYear())}/${String(now.getUTCMonth() + 1).padStart(2, "0")}/${randomUUID()}.pdf`;
                 const documentId = await documents.create(ctx, snapshot, key);
                 const dipindah: AssetRow[] = [];

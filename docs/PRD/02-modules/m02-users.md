@@ -51,6 +51,8 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 - **A4 — Impor massal:** Administrator mengunggah CSV/XLSX; sistem memvalidasi baris per baris dan menampilkan laporan sukses/gagal. Berkas > 200 baris diproses asinkron oleh worker dan Administrator diberi tahu saat selesai (`IMPT-04`, `NT-52`); status dan laporan per baris dapat diambil kapan saja lewat pekerjaan impornya. Berkas identik yang diunggah ulang dalam 24 jam tidak diproses ulang — hasil pekerjaan sebelumnya dikembalikan (`IMPT-03`).
 - **A5 — Akun siswa tanpa persetujuan wali:** Sistem menolak membuat, mengaktifkan kembali, atau mengganti role menjadi Siswa/OSIS bila penanda `consent_guardian_at` belum terekam (`DP-02`, `SL-06`). Administrator merekam persetujuan yang dikumpulkan sekolah secara luring (`consent_wali`); penanda hanya direkam sekali dan tidak dicabut.
 
+**Deteksi CSV (PR-02-51).** Impor pengguna dan aset memakai deteksi koma/titik koma yang sama dari header logis pertama, hanya menghitung pemisah di luar kutipan; jumlah seri atau nol memakai koma. BOM UTF-8, CRLF, kutipan yang di-escape dan data berkutip tetap diproses parser CSV. Semua sel CSV tetap teks untuk mempertahankan NIP/NIS panjang dan nol di depan. Aturan berlaku pada submit sinkron dan pembacaan berkas oleh worker, tanpa pilihan pemisah manual.
+
 **Post Conditions** — Data pengguna tersimpan; pengguna nonaktif tidak dapat login namun riwayat transaksinya tetap utuh.
 
 **Acceptance Criteria**

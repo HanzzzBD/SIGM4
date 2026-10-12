@@ -28,6 +28,7 @@ export default function AssetMovementPage({ documentId, onDocument }: { readonly
     } });
     const download = useMutation({ mutationFn: () => downloadMovementDocument(documentId!) });
     const fieldError = (field: string) => errors[field] ?? (move.error instanceof ApiError ? move.error.details.find((detail) => detail.field === field)?.message : undefined);
+    const conflicts = move.error instanceof ApiError && move.error.kode === "ASSET_NOT_AVAILABLE" ? move.error.details.filter((detail) => detail.field === "asset_ids") : [];
     const usersOptions = users.data?.data ?? [];
     const selectedPerson = person !== null && !usersOptions.some((value) => value.id === person.id) ? [person, ...usersOptions] : usersOptions;
     function submit(event: FormEvent): void {
@@ -67,7 +68,7 @@ export default function AssetMovementPage({ documentId, onDocument }: { readonly
                 </fieldset>
                 <p id="selected-count" role="status" className="text-sm text-text-primary">{selected.length} dari maksimal 50 aset dipilih.</p>
                 {selected.length > 0 && <ul aria-label="Aset terpilih" className="flex flex-col gap-1">{selected.map((asset) => <li key={asset.id} className="flex flex-wrap items-center justify-between gap-2 text-sm text-text-primary"><span>{asset.kode_barang} — {asset.nama}</span><Tombol varian="tertiary" disabled={move.isPending} aria-label={`Hapus ${asset.kode_barang} dari pilihan`} onClick={() => setSelected((previous) => previous.filter((item) => item.id !== asset.id))}>Hapus</Tombol></li>)}</ul>}
-                {fieldError("asset_ids") && <p role="alert" className="text-sm text-error-base">{fieldError("asset_ids")}</p>}
+                {conflicts.length === 0 && fieldError("asset_ids") && <p role="alert" className="text-sm text-error-base">{fieldError("asset_ids")}</p>}
                 <nav aria-label="Halaman daftar aset" className="flex flex-wrap items-center gap-2"><Tombol varian="secondary" disabled={page <= 1 || assets.isFetching || move.isPending} onClick={() => setPage(page - 1)}>Aset sebelumnya</Tombol><span className="text-sm text-text-secondary">Halaman {page} dari {Math.max(1, assets.data?.meta.total_pages ?? 1)}</span><Tombol varian="secondary" disabled={page >= (assets.data?.meta.total_pages ?? 1) || assets.isFetching || move.isPending} onClick={() => setPage(page + 1)}>Aset berikutnya</Tombol></nav>
                 {rooms.isPending && <KeadaanMemuat label="Memuat lokasi tujuan" baris={2} />}
                 {rooms.isError && <KeadaanGalat galat={rooms.error} onCobaLagi={() => void rooms.refetch()} />}
@@ -79,6 +80,7 @@ export default function AssetMovementPage({ documentId, onDocument }: { readonly
                     {can("user.view") && <><Pilihan label="Penanggung jawab baru" kosong="Pertahankan penanggung jawab tiap aset" opsi={selectedPerson.map((value) => ({ nilai: value.id, label: value.nama }))} value={person?.id ?? ""} galat={fieldError("penanggung_jawab_baru_id")} disabled={move.isPending || users.isPending || users.isError} onChange={(event) => setPerson(selectedPerson.find((value) => value.id === event.currentTarget.value) ?? null)} />
                         <div className="flex flex-wrap gap-2"><Tombol varian="tertiary" disabled={userPage <= 1 || users.isFetching || move.isPending} onClick={() => setUserPage(userPage - 1)}>Pengguna sebelumnya</Tombol><Tombol varian="tertiary" disabled={userPage >= (users.data?.meta.total_pages ?? 1) || users.isFetching || move.isPending} onClick={() => setUserPage(userPage + 1)}>Pengguna berikutnya</Tombol></div></>}
                     {move.isError && <KeadaanGalat galat={move.error} onCobaLagi={() => move.reset()} />}
+                    {conflicts.length > 0 && <Peringatan varian="error" judul="Transaksi yang menghalangi mutasi"><ul className="list-disc pl-5">{conflicts.map((conflict, index) => <li key={index}>{conflict.message}</li>)}</ul></Peringatan>}
                     <div><Tombol type="submit" sibuk={move.isPending} disabled={!daring || rooms.isPending || rooms.isError || assets.isPending || selected.length === 0}>Simpan mutasi</Tombol></div>
                 </form>
             </>}

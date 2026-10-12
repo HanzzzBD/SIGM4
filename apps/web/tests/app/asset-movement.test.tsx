@@ -85,6 +85,21 @@ describe("P-20 — mutasi dan berita acara", () => {
         expect(app.router.state.location.search).toEqual({});
         expect(requests.some((request) => request.url.includes("/movements/"))).toBe(false);
     });
+    it("PR-02-48 menampilkan seluruh transaksi penghalang dan mempertahankan pilihan serta tanggal", async () => {
+        const details = [{ field: "asset_ids", message: "AST-1: Reservasi #31 (CONFIRMED), 19/10/2026 10.00 sampai 19/10/2026 12.00 WIB." },
+            { field: "asset_ids", message: "AST-1: Pinjaman #45 (ACTIVE), 19/10/2026 14.00 sampai 19/10/2026 15.00 WIB." }];
+        const requests = pasangServer((request) => request.method === "POST" ? { status: 409, data: { success: false, error: { code: "ASSET_NOT_AVAILABLE", message: "Mutasi ditolak karena konflik pada tanggal yang dipilih.", details } } } : masters(request));
+        const app = await renderAplikasi("/aset/mutasi"), user = await fill();
+        await user.click(screen.getByRole("button", { name: "Simpan mutasi" }));
+        expect(await screen.findByText("Transaksi yang menghalangi mutasi")).toBeTruthy();
+        for (const detail of details) expect(screen.getAllByText(detail.message).length).toBeGreaterThan(0);
+        expect((screen.getByLabelText(/Tanggal mutasi/) as HTMLInputElement).value).toBe("2026-10-08");
+        expect((screen.getByRole("checkbox", { name: "AST-1 — Kursi" }) as HTMLButtonElement).getAttribute("aria-checked")).toBe("true");
+        expect(requests.filter((request) => request.method === "POST")).toHaveLength(1);
+        expect(requests.some((request) => request.url.includes("/movements/"))).toBe(false);
+        expect(app.router.state.location.search).toEqual({});
+        expect(await pelanggaranAxe(app.container)).toEqual([]);
+    });
     it("status dipantau hingga siap; tidak memanggil mutasi lagi", async () => {
         let polls = 0;
         const requests = pasangServer((request) => {

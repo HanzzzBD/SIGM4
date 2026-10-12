@@ -38,7 +38,7 @@ const tag = randomUUID().slice(0, 8);
 const catCode = `IC${tag}`, roomCode = `IR${tag}`;
 const ctx = (id = admin, permissions = ["asset.create", "asset.view"]) => createAuthContext({ userId: id, roleCode: "R-01", scopes: new Map(permissions.map((p) => [p, "all"] as const)) });
 const row = (override: Record<string, string> = {}) => ({ nama_barang: "Kursi", kode_kategori: catCode, kode_ruangan: roomCode, tahun_perolehan: "2026", sumber_perolehan: "Pembelian", kondisi: "Baik", dapat_dipinjam: "true", boleh_dipinjam_siswa: "false", jumlah_unit: "1", ...override });
-const input = (rows: Record<string, string>[], blank = false) => ({ filename: "aset.csv", contentBase64: Buffer.from([ASSET_IMPORT_COLUMNS.join(","), ...(blank ? [""] : []), ...rows.map((r) => ASSET_IMPORT_COLUMNS.map((c) => r[c] ?? "").join(","))].join("\n")).toString("base64") });
+const input = (rows: Record<string, string>[], blank = false, delimiter: "," | ";" = ",") => ({ filename: "aset.csv", contentBase64: Buffer.from([ASSET_IMPORT_COLUMNS.join(delimiter), ...(blank ? [""] : []), ...rows.map((r) => ASSET_IMPORT_COLUMNS.map((c) => r[c] ?? "").join(delimiter))].join("\n")).toString("base64") });
 const assetsCount = async () => Number((await kueri<{ n: string }>(`SELECT count(*)::text n FROM assets WHERE room_id=${room}`))[0]?.n);
 const runner = (allow = true) => new AssetImportRunner(getDb(), { load: async (): Promise<EffectivePermissions> => ({ roleId: "1", roleCode: "R-01", roleVersion: "1", userStatus: "AKTIF", scopes: new Map(allow ? [["asset.create", "all"]] : []) }) }, service());
 
@@ -74,8 +74,8 @@ describe.skipIf(!process.env["DATABASE_URL"])("PR-02-38 — impor aset", () => {
         await kueri(`DELETE FROM asset_categories WHERE kode='${catCode}'`);
         await kueri(`DELETE FROM users WHERE id IN (${admin},${other})`);
     });
-    it("IMPT-01/02: laporan per baris fisik, unit berbeda, nomor seri tetap teks, audit dan buffer dibersihkan", async () => {
-        const { job } = await service().submit(ctx(), input([row({ jumlah_unit: "3" }), row({ nomor_seri: "00001234567890123456" }), row({ nomor_seri: "00001234567890123456" }), row({ kode_ruangan: "TIDAK_ADA" })], true));
+    it.each([",", ";"] as const)("PR-02-51 CSV %s: laporan per baris fisik, unit berbeda, nomor seri tetap teks, audit dan buffer dibersihkan", async (delimiter) => {
+        const { job } = await service().submit(ctx(), input([row({ jumlah_unit: "3" }), row({ nomor_seri: "00001234567890123456" }), row({ nomor_seri: "00001234567890123456" }), row({ kode_ruangan: "TIDAK_ADA" })], true, delimiter));
         expect(job).toMatchObject({ status: "SELESAI", total_baris: 4, sukses: 2, gagal: 2, unit_dibuat: 4 });
         expect(job.laporan_gagal.map((f) => f.baris)).toEqual([5, 6]);
         expect(job.laporan_gagal[0]?.data["nomor_seri"]).toBe("00001234567890123456");
@@ -85,7 +85,7 @@ describe.skipIf(!process.env["DATABASE_URL"])("PR-02-38 — impor aset", () => {
         expect(units.find((v) => v.nomor_seri !== null)?.nomor_seri).toBe("00001234567890123456");
         expect(await kueri(`SELECT berkas FROM asset_import_jobs WHERE id=${job.id}`)).toEqual([{ berkas: null }]);
         expect(await kueri(`SELECT aksi FROM activity_logs WHERE entitas='asset_import_jobs' AND entitas_id='${job.id}' AND aksi='ASSET_IMPORT_ROW_PROCESSED'`)).toHaveLength(4);
-        expect(await kueri(`SELECT aksi FROM activity_logs WHERE entitas='assets' AND nilai_sesudah->>'room_id'='${room}' AND aksi='ASSET_CREATED'`)).toHaveLength(4);
+        expect(await kueri(`SELECT aksi FROM activity_logs WHERE entitas='assets' AND entitas_id IN (SELECT id FROM assets WHERE import_job_id='${job.id}') AND aksi='ASSET_CREATED'`)).toHaveLength(4);
     });
     it("hash identik bersamaan menghasilkan satu job dan unit, replay hanya milik pengunggah selama 24 jam", async () => {
         const file = input([row({ jumlah_unit: "2" })]);

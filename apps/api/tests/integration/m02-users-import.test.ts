@@ -66,10 +66,10 @@ const UNIT_BAWAAN = "TU-01";
 const sel = (b: Record<string, string>, k: (typeof HEADER)[number]): string =>
     k === "kode_unit_kerja" && !(k in b) ? UNIT_BAWAAN : (b[k] ?? "");
 
-function csvBase64(baris: readonly Record<string, string>[]): string {
+function csvBase64(baris: readonly Record<string, string>[], delimiter: "," | ";" = ","): string {
     const teks = [
-        HEADER.join(","),
-        ...baris.map((b) => HEADER.map((k) => sel(b, k)).join(",")),
+        HEADER.join(delimiter),
+        ...baris.map((b) => HEADER.map((k) => sel(b, k)).join(delimiter)),
     ].join("\n");
     return Buffer.from(teks, "utf8").toString("base64");
 }
@@ -183,7 +183,7 @@ describe.skipIf(!ADA_DB)("PR-01-03 — impor massal pengguna (acceptance)", () =
         }
     }
 
-    it("CSV valid: seluruh baris sukses, USER_CREATED + USER_IMPORTED tercatat (IMPT-01, IMPT-02, AL-01)", async () => {
+    it.each([",", ";"] as const)("PR-02-51: CSV %s valid, seluruh baris sukses dan USER_CREATED + USER_IMPORTED tercatat", async (delimiter) => {
         const adminId = await seedAdmin();
         const e1 = emailUnik("a");
         const e2 = emailUnik("b");
@@ -200,7 +200,7 @@ describe.skipIf(!ADA_DB)("PR-01-03 — impor massal pengguna (acceptance)", () =
                 nip_nis: nipUnik(),
                 kode_role: "R-05",
             },
-        ]);
+        ], delimiter);
 
         const { status, body } = await impor(buatCtx(adminId), "pengguna.csv", csv);
         expect(status).toBe(200);

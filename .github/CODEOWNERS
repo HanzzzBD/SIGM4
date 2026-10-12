@@ -43,10 +43,17 @@
 # (SDD-AVL-01 … SDD-AVL-14)
 /apps/api/src/modules/m07-reservation-room/ @HanzzzBD @PM-Codexpert
 
-# CATATAN: `SlotService` disebut BRANCHING §3.1 dan PR-02-17, tetapi letak kodenya
-# TIDAK ditetapkan SDD mana pun. Path-nya ditambahkan di sini pada PR-02-17, saat
-# lokasinya diputuskan. Sampai itu terjadi, ia tercakup sebagian lewat baris
-# m07-reservation-room dan migrations di atas.
+# Shared kernel SlotService (SDD-SYS-10) dan penulis assets.status (SDD-AVL-11, PR-02-49).
+/apps/api/src/shared/booking/                                      @HanzzzBD @PM-Codexpert
+/apps/api/src/modules/m04-assets/repositories/asset.repository.ts   @HanzzzBD @PM-Codexpert
+/apps/api/src/modules/m04-assets/repositories/reservation-status.repository.ts @HanzzzBD @PM-Codexpert
+/apps/api/src/modules/m04-assets/services/asset.service.ts          @HanzzzBD @PM-Codexpert
+/apps/api/src/modules/m04-assets/services/reservation-status.ts     @HanzzzBD @PM-Codexpert
+/apps/api/src/worker/slot-jobs.ts                                   @HanzzzBD @PM-Codexpert
+/apps/api/src/modules/m09-loans/repositories/loan.repository.ts     @HanzzzBD @PM-Codexpert
+/apps/api/src/modules/m12-maintenance/repositories/maintenance.repository.ts @HanzzzBD @PM-Codexpert
+/apps/api/tests/helpers/asset-status-writers.ts                     @HanzzzBD @PM-Codexpert
+/apps/api/tests/shared/asset-status-writers.test.ts                  @HanzzzBD @PM-Codexpert
 
 # ---------------------------------------------------------------------------
 # Tata kelola & kontrak lintas pohon

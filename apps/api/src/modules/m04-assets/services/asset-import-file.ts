@@ -3,6 +3,7 @@ import { Readable } from "node:stream";
 import ExcelJS from "exceljs";
 import { ASSET_IMPORT_COLUMNS, ASSET_IMPORT_REQUIRED_COLUMNS } from "@sigm4/schemas";
 import { DomainError } from "../../../shared/errors/index.js";
+import { detectCsvDelimiter } from "../../../shared/import/index.js";
 
 export interface RawAssetImportRow {
     readonly number: number;
@@ -13,7 +14,7 @@ export async function readAssetImportFile(filename: string, buffer: Buffer): Pro
     const workbook = new ExcelJS.Workbook();
     let sheet: ExcelJS.Worksheet;
     try {
-        if (/\.csv$/i.test(filename)) sheet = await workbook.csv.read(Readable.from(buffer), { map: (v: string) => v === "" ? null : v });
+        if (/\.csv$/i.test(filename)) sheet = await workbook.csv.read(Readable.from(buffer), { parserOptions: { delimiter: detectCsvDelimiter(buffer) }, map: (v: string) => v === "" ? null : v });
         else {
             // @ts-expect-error exceljs@4.4.0 mendeklarasikan Buffer sebagai ArrayBuffer.
             await workbook.xlsx.load(buffer);
