@@ -15,6 +15,7 @@ export {
     listCategoriesRoute,
     updateCategoryRoute,
     listAssetsRoute,
+    exportAssetsRoute,
     listRoomAssetsRoute,
     moveAssetsRoute,
     updateAssetConditionRoute,

@@ -115,6 +115,7 @@ import {
     listCategoriesRoute,
     updateCategoryRoute,
     listAssetsRoute,
+    exportAssetsRoute,
     listRoomAssetsRoute,
     moveAssetsRoute,
     updateAssetConditionRoute,
@@ -260,6 +261,7 @@ export const registry = new RouteRegistry().register(
     createAssetRoute,
     importAssetsRoute, getAssetImportRoute, assetImportTemplateRoute, movementDocumentRoute, movementDocumentDownloadRoute,
     listAssetsRoute,
+    exportAssetsRoute,
     getAssetRoute,
     assetTimelineRoute,
     updateAssetRoute,
@@ -488,6 +490,7 @@ export function createApp(deps: AppDeps): Express {
         assetsRouter(
             {
                 penyimpanan,
+                pdf: deps.pdf ?? new PembangkitPdfChromium(null),
                 db: deps.db,
                 auditLogger: new AuditLogger({
                     clock: deps.clock,

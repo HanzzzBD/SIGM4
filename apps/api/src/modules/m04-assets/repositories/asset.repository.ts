@@ -210,7 +210,7 @@ export class AssetRepository extends BaseRepository {
      * Scope `restricted` (Siswa/OSIS, `SDD-AUTH-03 §4.2`) hanya melihat
      * `boleh_dipinjam_siswa = true` (`BR-073`, `FR-04.2 A1`).
      */
-    private dasarKatalog(ctx: AuthContext, filter: AssetCatalogFilter) {
+    private dasarKatalog(ctx: AuthContext, filter: AssetCatalogFilter, permission = "asset.view") {
         let q = this.query(ctx)
             .selectFrom("assets")
             .where("dihapuskan", "=", false);
@@ -232,10 +232,37 @@ export class AssetRepository extends BaseRepository {
                 ]),
             );
         }
-        if (ctx.scopeOf("asset.view") === "restricted") {
-            q = q.where("boleh_dipinjam_siswa", "=", true);
-        }
+        const scope = ctx.scopeOf(permission);
+        if (scope === "restricted") q = q.where("boleh_dipinjam_siswa", "=", true);
+        if (scope === "own") q = q.where("created_by", "=", String(ctx.userId));
+        if (scope === "assigned") q = q.where("penanggung_jawab_id", "=", String(ctx.userId));
         return q;
+    }
+
+    async exportRows(ctx: AuthContext, filter: Omit<ListAssetsFilter, "page" | "perPage">, financial: boolean): Promise<readonly Record<string, unknown>[]> {
+        if (filter.importJobId !== undefined) {
+            const job = await this.query(ctx).selectFrom("asset_import_jobs").select("id").where("id", "=", String(filter.importJobId)).where("created_by", "=", String(ctx.userId)).executeTakeFirst();
+            if (!job) throw new NotFoundError("Pekerjaan impor aset tidak ditemukan.");
+        }
+        let base = this.dasarKatalog(ctx, filter, ctx.can("asset.view") ? "asset.view" : "report.export")
+            .$if(filter.importJobId !== undefined, (q) => q.where("import_job_id", "=", String(filter.importJobId)));
+        // PM-03: export scope tidak dapat memperluas scope katalog.
+        const scope = ctx.scopeOf("report.export");
+        if (scope === "restricted") base = base.where("boleh_dipinjam_siswa", "=", true);
+        if (scope === "own") base = base.where("created_by", "=", String(ctx.userId));
+        if (scope === "assigned") base = base.where("penanggung_jawab_id", "=", String(ctx.userId));
+        const selected = base.select([...KOLOM_KATALOG_BASE, ...KOLOM_KATALOG_NAMA, "model"]).orderBy(KOLOM_URUT[filter.sort], arahUrut(filter.sort)).orderBy("id", arahUrut(filter.sort));
+        if (!financial || !ctx.can("asset.view_financial") || ctx.scopeOf("asset.view_financial") === "restricted" || ctx.scopeOf("report.export") === "restricted" || (ctx.can("asset.view") && ctx.scopeOf("asset.view") === "restricted") || ctx.roleCode === "R-07") return selected.execute();
+        const moneyScope = ctx.scopeOf("asset.view_financial");
+        const visible = moneyScope === "own" ? sql<boolean>`assets.created_by = ${String(ctx.userId)}` : moneyScope === "assigned" ? sql<boolean>`assets.penanggung_jawab_id = ${String(ctx.userId)}` : sql<boolean>`true`;
+        return selected.select([
+            sql<string | null>`case when ${visible} then assets.nilai_perolehan::text else null end`.as("nilai_perolehan"),
+            sql<string | null>`case when ${visible} then assets.sumber_perolehan::text else null end`.as("sumber_perolehan"),
+        ]).execute();
+    }
+
+    async exportPrinter(ctx: AuthContext) {
+        return this.query(ctx).selectFrom("users").select("nama").where("id", "=", String(ctx.userId)).executeTakeFirstOrThrow();
     }
 
     /**
@@ -278,15 +305,9 @@ export class AssetRepository extends BaseRepository {
      * keseluruhan isi ruangan, bukan hasil filter yang sedang ditampilkan.
      */
     async ringkasanRuangan(ctx: AuthContext, roomId: number): Promise<readonly RingkasanBarisRow[]> {
-        let q = this.query(ctx)
-            .selectFrom("assets")
+        const q = this.dasarKatalog(ctx, { roomId })
             .select(["kondisi", "status", sql<string>`count(*)`.as("jumlah")])
-            .where("room_id", "=", String(roomId))
-            .where("dihapuskan", "=", false)
             .groupBy(["kondisi", "status"]);
-        if (ctx.scopeOf("asset.view") === "restricted") {
-            q = q.where("boleh_dipinjam_siswa", "=", true);
-        }
         return q.execute();
     }
 

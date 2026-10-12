@@ -192,6 +192,14 @@ export const ListAssetsQuerySchema = z.object({
     dapat_dipinjam: FilterBooleanSchema,
     qr_terpasang: FilterBooleanSchema,
 });
+export const AssetExportQuerySchema = ListAssetsQuerySchema.omit({ page: true, per_page: true }).extend({ format: z.enum(["xlsx", "pdf"]) }).strict();
+export const AssetExportHttpQuerySchema = z.object({
+    format: AssetExportQuerySchema.shape.format, q: AssetExportQuerySchema.shape.q, sort: AssetExportQuerySchema.shape.sort,
+    "filter[import_job_id]": AssetExportQuerySchema.shape.import_job_id, "filter[kategori_id]": AssetExportQuerySchema.shape.kategori_id,
+    "filter[lokasi_id]": AssetExportQuerySchema.shape.lokasi_id, "filter[kondisi]": AssetExportQuerySchema.shape.kondisi,
+    "filter[status]": AssetExportQuerySchema.shape.status, "filter[tahun_perolehan]": AssetExportQuerySchema.shape.tahun_perolehan,
+    "filter[dapat_dipinjam]": AssetExportQuerySchema.shape.dapat_dipinjam, "filter[qr_terpasang]": AssetExportQuerySchema.shape.qr_terpasang,
+}).strict();
 
 /**
  * Item katalog (FR-04.2). `sumber_perolehan`/`nilai_perolehan` OPSIONAL —
