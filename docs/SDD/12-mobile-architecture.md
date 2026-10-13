@@ -299,3 +299,27 @@ Generation/AbortSignal mencegah registrasi/respons sesi lama kembali; login dibl
 Kontrak response dashboard/notifikasi dipakai bersama API/mobile lewat packages/schemas,
 tanpa endpoint baru atau perubahan permission/mesin approval. Push cloud nyata dan association
 files/binary tetap menuntut konfigurasi sekolah dan QA perangkat.
+
+
+### Implementasi PR-05-35 (13 Oktober 2026)
+
+MS-20 dibuka dari Tugas, aksi cepat atau path /persetujuan/{instance_id} pada NT-01/NT-05.
+Kotak masuk mengikuti urutan server dan pagination; delegasi/SLA memakai hasil backend.
+Kontrak pending/decide dipindah ke packages/schemas tanpa mengubah endpoint atau mesin approval.
+Linimasa lengkap memakai kontrak FR-10.3, termasuk langkah dilewati, eskalasi, delegasi, SYSTEM
+dan durasi menit kerja. Rincian reservasi ruangan serta ketersediaan dimuat ulang sebelum
+keputusan; identitas instance, objek, pemohon dan langkah aktif harus cocok.
+
+Keputusan pemilik produk melalui pertanyaan: FR-10.2 langkah 3 dan UX 7.6.4 tetap mengikat.
+API role pemohon serta riwayat keterlambatan/kewajiban belum tersedia; reader tidak menganggap
+kosong atau nol. Seluruh keputusan tetap nonaktif dengan alasan sampai semua konteks wajib
+tersedia, termasuk reservasi ruangan yang detail dasarnya sudah dapat dibaca. Jenis objek lain
+tetap terlihat di inbox/linimasa, tanpa mengaktifkan keputusan dari ringkasan atau payload push.
+Tidak menambah backend domain, endpoint, migration, permission atau pengecualian requirement.
+
+Konfirmasi native, catatan wajib Tolak/Perlu Revisi dan tombol keputusan tetap di bagian bawah
+layar. Satu niat memakai UUID idempotency di memori; retry manual hasil belum pasti mempertahankan
+body/key, termasuk REQUEST_IN_PROGRESS. Tidak ada antrean keputusan luring atau retry latar
+belakang. RE-09 menampilkan pelaku/waktu dan menyegarkan linimasa. Abort saat blur/background
+atau logout mencegah respons menulis layar akun lain. Pengujian gerbang memakai fixture konteks
+lengkap; fixture tidak berada pada jalur produksi.

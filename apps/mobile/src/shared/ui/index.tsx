@@ -4,8 +4,8 @@ import type { TextInputProps } from "react-native";
 import { tokens as t } from "./tokens";
 export { tokens } from "./tokens";
 
-export function Screen({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
-    return <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled"><View style={styles.content}><View style={styles.header}><Text accessibilityRole="header" style={styles.heading}>{title}</Text>{action}</View>{children}</View></ScrollView>;
+export function Screen({ title, children, action, footer }: { title: string; children: ReactNode; action?: ReactNode; footer?: ReactNode }) {
+    return <View style={styles.frame}><ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled"><View style={styles.content}><View style={styles.header}><Text accessibilityRole="header" style={styles.heading}>{title}</Text>{action}</View>{children}</View></ScrollView>{footer && <View style={styles.footer}><View style={styles.content}>{footer}</View></View>}</View>;
 }
 export function Card({ children }: { children: ReactNode }) { return <View style={styles.card}>{children}</View>; }
 export function Label({ children }: { children: ReactNode }) { return <Text style={styles.text}>{children}</Text>; }
@@ -15,6 +15,8 @@ export function Button({ title, onPress, disabled = false, busy = false, seconda
     return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: disabled || busy, busy }} disabled={disabled || busy} onPress={onPress} style={[styles.button, secondary && styles.secondary, (disabled || busy) && styles.disabled]}>{busy ? <ActivityIndicator color={secondary ? t.color.primary : t.color.surface} /> : <Text style={[styles.buttonText, secondary && styles.secondaryText]}>{title}</Text>}</Pressable>;
 }
 export const styles = StyleSheet.create({
+    frame: { flex: 1, backgroundColor: t.color.page },
+    footer: { padding: t.space.md, borderTopWidth: 1, borderColor: t.color.border, backgroundColor: t.color.surface },
     page: { padding: t.space.md, backgroundColor: t.color.page, flexGrow: 1 },
     content: { gap: t.space.lg, width: "100%", maxWidth: t.size.content, alignSelf: "center" },
     heading: { fontSize: t.font.heading, fontWeight: "600", color: t.color.heading },

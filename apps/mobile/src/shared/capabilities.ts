@@ -1,2 +1,2 @@
 /** Aktivasi hanya ketika layar dan kontrak pembacaannya tersedia. */
-export const approvalScreensReady: boolean = false;
+export const approvalScreensReady: boolean = true;

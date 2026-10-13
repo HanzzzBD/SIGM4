@@ -137,3 +137,33 @@ lulus lagi setelah pemulihan. Suite unit API lengkap: 1.292 uji/84 berkas lulus 
 (timeout dan file probe sementara hilang); diulang tanpa checker berjalan bersamaan.
 Introspect konfigurasi native lulus: Android minSdk26, iOS deployment16.4, izin kamera ada,
 NSMicrophoneUsageDescription tidak ada, Android RECORD_AUDIO bertanda remove.
+
+
+### PR-05-35: Persetujuan Saya mobile - 13 Oktober 2026
+
+Cabang lokal feature/PR-05-35-persetujuan-mobile mengikuti PR-04-17 (52ef938c), sesuai pilihan
+pemilik produk. Keputusan melalui pertanyaan: hanya API tersedia, tidak menambah backend domain;
+keputusan aktif hanya jika konteks lengkap. Gap tambahan role pemohon dan riwayat keterlambatan/
+kewajiban (FR-10.2 langkah 3, UX 7.6.4) dipilih tetap memblokir seluruh keputusan, tanpa pengecualian.
+Detail reservasi ruangan berhasil dibaca tidak dianggap cukup; tidak ada role atau kewajiban nol
+yang diasumsikan. Scope/status/kewenangan tetap ditegakkan backend.
+
+Implementasi: inbox berpaginasi/SLA/delegasi, jalur push ke stack Tugas, detail reservasi dan
+ketersediaan termasuk tanggal berulang, linimasa langkah/eskalasi/dilewati/SYSTEM, tombol tetap
+di bawah, alasan nonaktif, dialog konfirmasi dan catatan wajib. Gerbang memeriksa izin, instance/
+referensi/pemohon dan langkah aktif. Niat keputusan memakai satu key UUID/body di memori, retry
+manual untuk hasil hilang/5xx/REQUEST_IN_PROGRESS, lock tap ganda, abort lifecycle dan konflik RE-09
+menampilkan pemutus/waktu. Tidak mengantre atau mengirim keputusan di latar belakang/luring.
+Kontrak response/input existing dipakai bersama, tanpa perubahan endpoint/mesin/permission/migration.
+
+Skala L karena layar konteks/linimasa, kontrak bersama, gerbang dan uji retry adalah satu alur MS-20;
+pemisahan backend domain sengaja tidak dilakukan sesuai scope yang dipilih pengguna.
+Validasi lokal: 43 uji mobile (14 kasus konteks/keputusan tambahan), 30 integrasi PostgreSQL
+approval-decision/approval-history pada DB terisolasi dan 1.292 unit API/84 berkas lulus.
+TypeScript produksi/uji dan lint API/mobile lulus. Fixture konteks lengkap hanya berada pada uji;
+reader produksi selalu mengembalikan konteks pemohon belum lengkap. APK/IPA, aksesibilitas native,
+push cloud/perangkat nyata tetap memerlukan QA development build. SCA upstream fondasi yang
+tercatat di log phase-04 belum hijau. Tidak ada push GitHub, EAS/store atau deployment.
+
+Export Hermes Android (4,3 MB)/iOS (4 MB), 13 kasus batas impor, audit docs dan validate_impl lulus.
+Bundel JS bukan bukti instalasi APK/IPA atau interaksi native pada perangkat.

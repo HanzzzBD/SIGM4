@@ -77,3 +77,6 @@ export { NotificationSchema, NotificationsResponseSchema, NotificationGroupSchem
 export type { Notification } from "./notifications.js";
 export { JENIS_DOKUMEN_ASET, JenisDokumenAsetSchema, DokumenAsetSchema, DaftarDokumenAsetResponseSchema, DokumenAsetResponseSchema, DokumenLintasAsetSchema, DaftarDokumenLintasAsetResponseSchema } from "./asset-documents.js";
 export type { DokumenAset, DokumenLintasAset } from "./asset-documents.js";
+
+export { DecideBodySchema, DecideResponseSchema, ListPendingQuerySchema, ListPendingResponseSchema } from "./approval-decisions.js";
+export type { ApprovalPending, ApprovalDecision, ApprovalDecisionResult } from "./approval-decisions.js";
