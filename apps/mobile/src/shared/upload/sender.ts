@@ -7,7 +7,9 @@ export function createUploadSender(api: AxiosInstance, queue: UploadQueue, curre
     return async (entry: UploadEntry, signal: AbortSignal) => {
         const guard = () => { if (signal.aborted || currentAccount() !== entry.accountId) throw new Error("Sesi berubah atau unggahan dibatalkan."); };
         guard();
-        if (entry.ownerId === null || entry.fileId === null) throw new Error("Foto belum ditautkan ke transaksi server.");
+        // PR-05-34: DAMAGE_PHOTO dipersistensi sebelum POST tiket agar crash tidak membuang byte.
+        // Konfirmasi tetap menguji kepemilikan file_id server; jenis lain menuntut transaksi tertaut.
+        if (entry.fileId === null || (entry.ownerId === null && entry.ownerType !== "DAMAGE_PHOTO")) throw new Error("Foto belum ditautkan ke transaksi server.");
         if (entry.fileId) {
             // Confirm idempoten menutup kasus respons hilang setelah commit, tanpa menimpa berkas CLEAN.
             try { await api.post("/files/confirm", { file_id: Number(entry.fileId), checksum: entry.checksum }, { signal }); guard(); return; }

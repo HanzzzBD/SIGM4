@@ -7,7 +7,7 @@ export function quickActions(permissions: Permissions) {
         { permission: "asset.view", label: "Scan aset", path: "/scan" },
         { permission: "approval.decide", label: "Persetujuan saya", path: approvalScreensReady ? "/persetujuan" : null },
         { permission: "reservation.create", label: "Ajukan reservasi", path: null },
-        { permission: "damage.create", label: "Lapor kerusakan", path: null },
+        { permission: "damage.create", label: "Lapor kerusakan", path: "/kerusakan/lapor" },
         { permission: "chatbot.use", label: "Chatbot", path: null },
     ];
     return actions.filter((action) => Object.hasOwn(permissions, action.permission));

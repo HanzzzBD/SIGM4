@@ -9,6 +9,10 @@ import { UploadQueue } from "./queue";
 import type { QueueDatabase } from "./queue";
 
 const directory = new Directory(Paths.document, "sigm4-upload-queue");
+export async function discardPreparedPhoto(photo: PreparedPhoto): Promise<void> {
+    if (!new URL(photo.path).href.startsWith(directory.uri.replace(/\/?$/, "/"))) throw new Error("Berkas bukan milik antrean.");
+    const file = new File(photo.path); if (file.exists) file.delete();
+}
 export async function openUploadQueue(notice: (count: number) => void): Promise<UploadQueue> {
     directory.create({ idempotent: true, intermediates: true });
     const db = await openDatabaseAsync("sigm4-uploads.db");

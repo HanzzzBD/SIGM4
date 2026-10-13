@@ -33,13 +33,13 @@ export type Permissions = Readonly<Record<string, string>>;
 export function allowed(permissions: Permissions, permission: string) { return Object.hasOwn(permissions, permission); }
 export function contextualActions(asset: Pick<AssetDetail, "status" | "dihapuskan" | "dapat_dipinjam">, permissions: Permissions) {
     if (asset.dihapuskan || asset.status === "TIDAK_TERSEDIA") return [];
-    const actions: { label: string; reason: string }[] = [];
-    const add = (permission: string, label: string, context = "") => {
-        if (allowed(permissions, permission)) actions.push({ label, reason: `${context}Layar ${label.toLowerCase()} belum tersedia di aplikasi.` });
+    const actions: { label: string; reason: string; available: boolean }[] = [];
+    const add = (permission: string, label: string, context = "", available = false) => {
+        if (allowed(permissions, permission)) actions.push({ label, available, reason: available ? "" : `${context}Layar ${label.toLowerCase()} belum tersedia di aplikasi.` });
     };
     if (asset.status === "DIRESERVASI") add("loan.manage", "Serah terima", "Memerlukan reservasi yang disetujui. ");
     if (asset.status === "DIPINJAM") add("loan.manage", "Pengembalian", "Memerlukan peminjaman aktif. ");
-    add("damage.create", "Lapor kerusakan");
+    add("damage.create", "Lapor kerusakan", "", true);
     add("audit.execute", "Catat opname", "Memerlukan sesi opname aktif dan penugasan Anda. ");
     if (asset.status === "DALAM_PERBAIKAN") add("workorder.execute", "Perbarui work order", "Memerlukan work order yang ditugaskan kepada Anda. ");
     if (asset.status === "TERSEDIA" && asset.dapat_dipinjam) add("reservation.create", "Ajukan reservasi");

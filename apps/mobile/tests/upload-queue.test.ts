@@ -30,6 +30,14 @@ function open(path: string): QueueDatabase {
 const entry = (id: string, createdAt = 1000, accountId = "1"): NewUpload => ({ id, accountId, path: `file:///queue/${id}.jpg`, ownerType: "DAMAGE_PHOTO", ownerId: "4", fileId: null, checksum: "a".repeat(64), size: 100, createdAt });
 
 describe("PR-04-16 antrean persisten SQLite", () => {
+    it("PR-05-34: foto sebelum respons tiket bertahan saat restart; owner diperbarui hanya untuk akun sendiri", async () => {
+        const folder = mkdtempSync(join(tmpdir(), "sigm4-mobile-queue-")); folders.push(folder);
+        const path = join(folder, "uploads.db"); const queue = new UploadQueue(open(path), { remove: async () => undefined }, () => 1000, () => undefined);
+        await queue.initialize(); await queue.enqueue({ ...entry("before-post"), ownerId: null, fileId: "42" }); handles.pop()?.close();
+        const restored = new UploadQueue(open(path), { remove: async () => undefined }, () => 1000, () => undefined); await restored.initialize();
+        expect((await restored.list("1"))[0]).toMatchObject({ fileId: "42", ownerId: null }); await restored.setOwner("before-post", "2", "99"); expect((await restored.list("1"))[0]?.ownerId).toBeNull();
+        await restored.setOwner("before-post", "1", "9"); expect((await restored.list("1"))[0]?.ownerId).toBe("9");
+    });
     it("baris, file_id dan backoff bertahan saat koneksi ditutup lalu dibuka ulang", async () => {
         const folder = mkdtempSync(join(tmpdir(), "sigm4-mobile-queue-")); folders.push(folder);
         const path = join(folder, "uploads.db");

@@ -38,7 +38,12 @@ describe("PR-04-16 unggah berkas tertunda", () => {
         await expect(send(item, new AbortController().signal)).rejects.toThrow("Sesi berubah");
         const valid = setup(post); const controller = new AbortController(); controller.abort();
         await expect(valid.send(item, controller.signal)).rejects.toThrow("dibatalkan");
-        await expect(valid.send({ ...item, ownerId: null }, new AbortController().signal)).rejects.toThrow("transaksi server");
+        await expect(valid.send({ ...item, ownerId: null, ownerType: "HANDOVER_PHOTO" }, new AbortController().signal)).rejects.toThrow("transaksi server");
         expect(post).not.toHaveBeenCalled();
+    });
+    it("DAMAGE_PHOTO yang dipersistensi sebelum POST tiket boleh dikonfirmasi tanpa ownerId", async () => {
+        const post = vi.fn(async () => ({ data: {} })); const { send } = setup(post);
+        await send({ ...item, ownerId: null }, new AbortController().signal);
+        expect(post).toHaveBeenCalledExactlyOnceWith("/files/confirm", { file_id: 5, checksum: item.checksum }, expect.anything());
     });
 });

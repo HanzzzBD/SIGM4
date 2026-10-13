@@ -1,1 +1,2 @@
-export { UploadProvider, useUploads, preparePhoto, enqueuePreparedPhoto } from "./Provider";
+export { UploadProvider, useUploads, preparePhoto, enqueuePreparedPhoto, discardPreparedPhoto } from "./Provider";
+export type { PreparedPhoto } from "./Provider";

@@ -69,6 +69,18 @@ export class UploadQueue {
         });
     }
 
+    async setOwner(id: string, accountId: string, ownerId: string): Promise<void> {
+        await this.write(async (tx) => { await tx.runAsync("UPDATE uploads SET ownerId = ? WHERE id = ? AND accountId = ?", [ownerId, id, accountId]); });
+    }
+
+    stop(accountId: string): void {
+        for (const [key, controller] of this.active) if (key.startsWith(`${accountId}:`)) controller.abort();
+    }
+
+    async retry(accountId: string): Promise<void> {
+        await this.write(async (tx) => { await tx.runAsync("UPDATE uploads SET nextAttemptAt = ? WHERE accountId = ?", [this.now(), accountId]); });
+    }
+
     async cancel(id: string, accountId: string): Promise<void> {
         this.active.get(`${accountId}:${id}`)?.abort();
         let removed: UploadEntry[] = [];

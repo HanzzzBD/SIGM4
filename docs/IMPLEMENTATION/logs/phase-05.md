@@ -167,3 +167,46 @@ tercatat di log phase-04 belum hijau. Tidak ada push GitHub, EAS/store atau depl
 
 Export Hermes Android (4,3 MB)/iOS (4 MB), 13 kasus batas impor, audit docs dan validate_impl lulus.
 Bundel JS bukan bukti instalasi APK/IPA atau interaksi native pada perangkat.
+
+
+### PR-05-34: Lapor Kerusakan MS-15 - 13 Oktober 2026
+
+Cabang feature/PR-05-34-laporan-kerusakan-mobile dibuat dari PR-05-35 (54afbfe2), sesuai pilihan
+pemilik produk melalui fitur pertanyaan. Pengguna memilih: formulir di memori, POST bisnis hanya
+online setelah file_id; foto boleh menyusul. Perbaikan fondasi diizinkan: enqueue foto sebelum
+POST tiket/catatan lalu perbarui ownerId sesudah respons. Hanya byte dan metadata berkas yang
+dipersistensi. Kasus SQLite nyata membuktikan foto dengan ownerId null bertahan setelah restart.
+Tidak menambah backend domain, migration, permission atau endpoint. Skala L: satu alur MS-15
+memerlukan pemilih objek/foto, tiket eksisting, receipt/detail/status dan pengelola antrean, serta
+uji crash/retry/akun; fondasi tambahan terbatas pada checkpoint berkas yang dibutuhkan alur ini.
+
+Laporan dari Beranda, hasil scan dan detail aset; pencarian aset/ruangan mengikuti permission.
+Foto JPEG native <=1600px/500KB, kualitas80, kompresi fondasi. expo-image-picker57.0.20 dipilih
+sesuai dokumentasi Expo SDK57 (https://docs.expo.dev/versions/latest/sdk/imagepicker/). Runtime0.3.0,
+izin kamera/galeri saat dibutuhkan, mikrofon tidak diminta. Tiket terbuka menawarkan notes (A1);
+receipt penulis tiket lain tidak membuka detail yang ditolak scope own. Kamera/galeri, urutan foto,
+progres/cancel, indikator foto belum terunggah, tiket saya/detail/catatan dan URL CLEAN terpasang.
+Antrean mengikuti akun, 72jam/50berkas/backoff; cleanup menghentikan unggahan akun lama.
+
+Gap idempotensi API M-11 ditanyakan: pengguna memilih hasil belum pasti dan pemeriksaan tiket,
+bukan retry POST otomatis atau PR backend pendahulu. Lock tap ganda dan memo hasil sukses
+mencegah transaksi berulang; timeout/5xx/lost response tidak membuat niat kedua. Retry otomatis
+hanya untuk byte/confirm berkas. Draf belum dikirim tidak dijanjikan bertahan setelah aplikasi mati.
+
+Validasi lokal: 57 uji mobile/7 berkas (termasuk 12 kasus laporan, checkpoint SQLite dan sender),
+37 integrasi PostgreSQL/MinIO (laporan, notes, monitoring dan files) pada DB terisolasi lulus.
+TypeScript produksi/uji dan lint mobile lulus. Export Hermes Android4,4MB/iOS4MB lulus.
+Introspect native: minSdk26/iOS16.4, izin kamera+galeri ada, NSMicrophoneUsageDescription tidak ada
+dan Android RECORD_AUDIO remove. Bukan bukti APK/IPA, hasil JPEG/EXIF di hardware, dialog izin,
+force-stop native atau interaksi aksesibilitas. Development build/perangkat nyata masih diperlukan.
+
+Audit npm semula ditolak auto-review karena ekspor metadata dependency belum diizinkan. Pengguna
+kemudian secara eksplisit mengizinkan nama/versi dependency ke registry.npmjs.org; audit selesai:
+23 HIGH/12 moderate/0 critical, HIGH berasal dari braces dan node-forge upstream yang sama dengan
+fondasi, bukan advisory baru pada image-picker. Tidak melakukan audit fix --force. Paket lama
+pada lockfile tidak berubah versi; hanya image-picker ditambahkan. Tidak menyatakan SCA/CI hijau.
+Konfigurasi Expo dan .env.example yang diubah pengguna dipertahankan; hanya hunk plugin/izin/
+runtime fitur dimasukkan ke commit. Tidak ada publikasi EAS/store/GitHub atau deployment.
+
+Audit docs, validate_impl dan 13 kasus batas impor lulus. Bundel akhir diulang setelah guard UI
+dan penanganan izin diperbarui; TypeScript produksi/uji dan 57 uji mobile tetap lulus.

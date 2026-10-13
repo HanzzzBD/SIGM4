@@ -323,3 +323,34 @@ body/key, termasuk REQUEST_IN_PROGRESS. Tidak ada antrean keputusan luring atau 
 belakang. RE-09 menampilkan pelaku/waktu dan menyegarkan linimasa. Abort saat blur/background
 atau logout mencegah respons menulis layar akun lain. Pengujian gerbang memakai fixture konteks
 lengkap; fixture tidak berada pada jalur produksi.
+
+
+### Implementasi PR-05-34 (13 Oktober 2026)
+
+MS-15 memakai kontrak M-11 yang tersedia: objek dari hasil scan/detail aset atau pencarian aset/
+ruangan, deskripsi, urgensi dan foto. Kamera/galeri memakai expo-image-picker 57.0.20; kompresi
+MOB-MED-01/02 tetap melalui fondasi native. Izin diminta saat dibutuhkan; mikrofon dinonaktifkan.
+Runtime menjadi 0.3.0 karena dependency native baru. Pilihan kamera ditolak tetap menyediakan
+galeri. Identitas objek dari deep link dibaca ulang, bukan mempercayai label pada query.
+
+Keputusan produk: cabang terpisah sesudah PR-05-35; isian hanya di memori. Laporan/catatan dikirim
+saat online setelah file_id diperoleh. Foto baru dipersistensi setelah presign dan SEBELUM POST
+bisnis, ownerId boleh null untuk DAMAGE_PHOTO; setelah respons ownerId diperbarui. Drain boleh
+mengirim DAMAGE_PHOTO yang file_id-nya telah diperoleh meskipun respons penautan belum diketahui,
+karena server tetap menegakkan kepemilikan berkas. Jenis foto lain tetap menuntut ownerId.
+Checkpoint ini menutup kehilangan antrean saat proses mati antara POST dan respons. Draf yang
+belum memperoleh file_id tidak menjadi antrean transaksi. URL/token/isian tidak masuk SQLite.
+
+Pemeriksaan tiket terbuka memakai ringkasan /damage-reports/open sesuai damage.view. Alternatif
+A1 menawarkan informasi tambahan, 0-5 foto, tanpa membuka detail tiket pihak lain pada scope own.
+Pemegang damage.create tanpa damage.view masih dapat mengirim laporan baru; server tetap mencegah
+duplikat dan UI menjelaskan keterbatasan baca. Status/detail tiket mengikuti scope backend dan
+foto hanya dibaca setelah CLEAN; URL privat tidak dipersistensi. Daftar dan catatan ditampilkan
+dalam halaman kecil, antrean memiliki progres per berkas, retry manual dan pembatalan eksplisit.
+
+API laporan/catatan belum mendukung idempotency key. Pilihan produk: tidak mengulang POST saat
+respons hilang/5xx/timeout; niat ditahan sebagai hasil belum pasti sampai pengguna memeriksa tiket.
+Tidak menganggap tiket hasil pemeriksaan pasti milik niat itu. Byte foto saja tetap memakai retry
+backoff, 72 jam/50 berkas. Respons sukses diingat sebelum memperbarui metadata owner; kegagalan
+metadata tidak mengulang transaksi. Abort/guard akun dan lock tap ganda membatasi respons lama.
+Tidak ada perubahan backend domain, migration, permission atau kontrak M-11.
