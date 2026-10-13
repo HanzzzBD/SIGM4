@@ -91,6 +91,16 @@ describe("PR-04-16 SecureStore dan sesi mobile", () => {
         const controller = new SessionController(api, store, "IOS", () => 1000, (state) => states.push(state));
         const restore = controller.restore(); await started; await controller.logout();
         complete({ data: envelope({ user, permissions: { "asset.view": "all" } }) }); await restore;
-        expect(states).toEqual([{ kind: "LOGIN" }]); expect(await store.read()).toBeNull();
+        expect(states).toEqual([{ kind: "LOGOUT" }, { kind: "LOGIN" }]); expect(await store.read()).toBeNull();
+    });
+    it("logout langsung menyembunyikan data privat, mencabut push sebelum HTTP dan menolak login paralel", async () => {
+        const order: string[] = []; server(() => { order.push("http-logout"); return { data: envelope({}) }; });
+        const { store } = vault(); await store.save(tokens); const states: AuthState[] = [];
+        const controller = new SessionController(createApi("https://sekolah.test/api/v1", "IOS", "0.2.0", store, () => undefined), store, "IOS", () => 1000, (state) => states.push(state));
+        let finish!: () => void;
+        controller.setBeforeLogout(() => { order.push("push"); return new Promise((resolve) => { finish = resolve; }); });
+        const logout = controller.logout(); expect(states.at(-1)).toEqual({ kind: "LOGOUT" });
+        await expect(controller.login(user.email, "Password-Lama-12")).rejects.toThrow("Sesi sedang diakhiri");
+        finish(); await logout; expect(order).toEqual(["push", "http-logout"]); expect(states.at(-1)).toEqual({ kind: "LOGIN" });
     });
 });

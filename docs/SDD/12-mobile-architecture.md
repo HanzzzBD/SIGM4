@@ -268,3 +268,34 @@ Keputusan produk: tombol transaksi per permission/status nonaktif dengan alasan 
 serah terima, pengembalian, opname, work order, reservasi dan laporan kerusakan belum tersedia.
 Tidak ada transaksi atau konteks aktif yang diasumsikan berhasil. Izin aktual adalah loan.manage,
 audit.execute, workorder.execute, damage.create dan reservation.create dari katalog RBAC.
+
+
+### Implementasi PR-04-17 (13 Oktober 2026)
+
+Keputusan pemilik produk: PR berurutan sesudah PR-05-32; API/domain yang belum tersedia tidak
+ditambahkan di PR ini, bagian/aksi diberi alasan dan nonaktif. Beranda memakai manifest kartu
+server dan rentang yang ada; tren baru dimuat ketika dibuka, data grafik punya bentuk tekstual
+aksesibel. Tugas mengikuti gabungan permission UXD-03, tidak nama role. Notifikasi in-app dibaca
+berpaginasi, hitungan disegarkan saat foreground/push dan interval 30 detik selama aktif.
+
+Navigasi lima tab memakai route groups expo-router; path pengajuan/aset tidak diterjemahkan
+ke nama layar. Stack Tugas/Scan mengikat deep link ke tab induk. Payload push hanya membuka
+path relatif kanonik; tujuan sebelum login ditahan di memori dan event terikat akun lama dibuang.
+Layar belum tersedia memiliki jalan kembali; data operasional tidak disimpan lokal.
+
+React Native Firebase app/messaging/installations 26.4.0 memakai FID melalui getId sesuai
+keputusan 80e backend, setelah registrasi transport FCM native. expo-notifications 57.0.22 hanya
+mengelola izin, kanal dan tray; tidak memakai Expo Push Service atau mendaftarkan token APNs.
+SDK minimum Firebase iOS15/Android23 tetap di bawah iOS16.4/Android26 aplikasi. Kedua file konfigurasi
+Firebase sekolah wajib tersedia untuk mengaktifkan plugin, jika tidak fallback in-app. Framework
+CocoaPods static; runtime aplikasi 0.2.0 karena ada dependency native baru. APNs environment lokal
+development, profil EAS internal/store production sesuai provisioning yang dipilih.
+
+Auto-init Firebase mati sampai sesi/izin siap. Foreground memicu banner generik dan refresh,
+background handler tidak menjalankan transaksi atau menyimpan payload, headless iOS tidak memuat
+UI/auth/dashboard. Logout lebih dulu mengganti gerbang ke LOGOUT sehingga layar privat/kamera
+lepas; hook mencabut FID backend, token/installation native dan tray, lalu sesi API dan SecureStore.
+Generation/AbortSignal mencegah registrasi/respons sesi lama kembali; login diblokir selama logout.
+Kontrak response dashboard/notifikasi dipakai bersama API/mobile lewat packages/schemas,
+tanpa endpoint baru atau perubahan permission/mesin approval. Push cloud nyata dan association
+files/binary tetap menuntut konfigurasi sekolah dan QA perangkat.

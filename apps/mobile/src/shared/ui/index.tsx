@@ -4,8 +4,8 @@ import type { TextInputProps } from "react-native";
 import { tokens as t } from "./tokens";
 export { tokens } from "./tokens";
 
-export function Screen({ title, children }: { title: string; children: ReactNode }) {
-    return <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled"><View style={styles.content}><Text accessibilityRole="header" style={styles.heading}>{title}</Text>{children}</View></ScrollView>;
+export function Screen({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
+    return <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled"><View style={styles.content}><View style={styles.header}><Text accessibilityRole="header" style={styles.heading}>{title}</Text>{action}</View>{children}</View></ScrollView>;
 }
 export function Card({ children }: { children: ReactNode }) { return <View style={styles.card}>{children}</View>; }
 export function Label({ children }: { children: ReactNode }) { return <Text style={styles.text}>{children}</Text>; }
@@ -18,6 +18,7 @@ export const styles = StyleSheet.create({
     page: { padding: t.space.md, backgroundColor: t.color.page, flexGrow: 1 },
     content: { gap: t.space.lg, width: "100%", maxWidth: t.size.content, alignSelf: "center" },
     heading: { fontSize: t.font.heading, fontWeight: "600", color: t.color.heading },
+    header: { flexDirection: "row", flexWrap: "wrap", gap: t.space.sm, alignItems: "center", justifyContent: "space-between" },
     text: { fontSize: t.font.body, color: t.color.text },
     notice: { fontSize: t.font.body, color: t.color.error },
     card: { padding: t.space.lg, gap: t.space.md, borderColor: t.color.border, borderWidth: 1, borderRadius: t.radius.md, backgroundColor: t.color.surface },

@@ -3,3 +3,5 @@ dist/
 android/
 ios/
 .env.local
+google-services.json
+GoogleService-Info.plist

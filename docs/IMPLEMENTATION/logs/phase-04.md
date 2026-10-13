@@ -120,3 +120,31 @@ PostgreSQL/MinIO dan 11 registry/OpenAPI lulus. Uji registry memakai maxWorkers2
 integrasi testTimeout30000. Tidak ada publish, merge atau deployment. Status PR tetap lokal.
 
 Typecheck API (termasuk source uji) dan lint m06-documents lulus setelah pengujian ulang.
+
+
+### PR-04-17: beranda, tugas, push dan deep link - 13 Oktober 2026
+
+Keputusan produk melalui fitur pertanyaan: cabang sesudah PR-05-32, dua PR terpisah berurutan;
+API tersedia dipakai, antrean/tujuan yang belum ada nonaktif dengan alasan; Firebase native
+Android/iOS dan fallback in-app jika konfigurasi sekolah belum ada. Konteks keputusan PR-05-35
+harus berhasil dimuat sebelum aksi aktif. Tidak menambahkan backend domain, migration atau
+mengubah permission/mesin approval. Skala produksi L: lima tab, lifecycle SDK push/auth, tiga
+layar dan kontrak bersama adalah satu fondasi navigasi/push; pemisahan fungsional berikutnya
+ada di PR-05-35 sesuai keputusan pengguna, bukan menambah PR domain tanpa permintaan.
+
+Implementasi: manifest/rentang dashboard dan tren lazy, antrean berbasis permission, notifikasi
+berpaginasi/read-all/badge, React Native Firebase26.4/ExpoNotifications57, FID sesuai backend,
+kanal/izin, listener foreground/background/initial tap, headless guard, logout hook/gerbang LOGOUT,
+route groups/tab induk, tujuan relatif tervalidasi dan memori akun. Runtime 0.2.0 untuk modul native.
+Konfigurasi native diuji memakai fixture sintetis lokal,
+bukan kredensial atau pengiriman Google. SDK minimum tetap Android8/iOS16.4.
+
+Validasi: 29 uji mobile, 48 integrasi PostgreSQL dashboard/push/in-app, 11 registry/OpenAPI,
+TypeScript produksi/uji mobile dan lint lulus. Export Hermes Android/iOS lulus; introspect konfigurasi
+native tanpa Firebase dan dengan fixture Firebase lulus (minSdk26, iOS16.4, static frameworks).
+Bukan bukti APK/IPA/perangkat atau delivery cloud. SCA Firebase awal membawa gRPC1.9.16
+(GHSA-m9gg-hp2v-232j, fixed1.13.6/1.14.5); scoped override Firestore ~1.14.5 dan resolusi npm
+membuang versi rentan, memakai1.14.6. Dua HIGH fondasi braces/node-forge tetap tanpa patch,
+SCA belum hijau. Tidak melakukan audit fix --force, publishing Firebase/EAS/GitHub atau deploy.
+
+Audit setelah patch menghapus advisory gRPC; HIGH upstream braces/node-forge tetap tercatat. File .env mobile muncul selama pekerjaan dan tidak disentuh/dimasukkan commit; validasi cloud tetap tidak dilakukan.

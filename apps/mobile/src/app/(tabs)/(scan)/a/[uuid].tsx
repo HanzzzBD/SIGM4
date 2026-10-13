@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { useAuth } from "../../features/auth";
-import { allowed, resolveQr } from "../../features/scanner";
-import { Button, Label, Notice, Screen } from "../../shared/ui";
+import { useAuth } from "../../../../features/auth";
+import { allowed, resolveQr } from "../../../../features/scanner";
+import { Button, Label, Notice, Screen } from "../../../../shared/ui";
 export default function AssetLink() {
     const { uuid } = useLocalSearchParams<{ uuid: string }>(); const { state, api } = useAuth();
     const [error, setError] = useState<string | null>(null); const [attempt, setAttempt] = useState(0);

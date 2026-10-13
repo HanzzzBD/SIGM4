@@ -12,6 +12,7 @@ export function AuthScreen() {
     const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [newPassword, setNewPassword] = useState(""); const [confirm, setConfirm] = useState("");
     const [code, setCode] = useState(""); const [activation, setActivation] = useState(""); const [enrollment, setEnrollment] = useState<z.infer<typeof EnrollmentSchema> | null>(null); const [saved, setSaved] = useState(false);
     const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null);
+    if (state.kind === "LOGOUT") return <Screen title="Keluar"><Label>Mengakhiri sesi dan mencabut notifikasi perangkat…</Label></Screen>;
     const submit = async () => {
         setBusy(true); setError(null);
         try {

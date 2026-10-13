@@ -68,3 +68,24 @@ sekolah pada deployment PR-08-02; konfigurasi domain saja belum membuktikan inte
 - Antrean foto bertahan force-stop, reconnect, backoff, pembatalan, retensi dan pemisahan akun.
 - App/Universal Link setelah login; lakukan pada binary sekolah dengan association files terpasang.
 - TalkBack/VoiceOver, skala font, rotasi/tablet, minimum Android8 dan iOS16.4.
+
+
+## Beranda, Tugas dan push (PR-04-17)
+
+Lima tab: Beranda/Tugas/Scan/Notifikasi/Profil. Beranda mengikuti manifest server; Tugas mengikuti
+permission /me. Antrean atau layar belum tersedia mempunyai alasan dan aksi nonaktif.
+Notifikasi in-app tetap berfungsi saat push tidak dikonfigurasi/ditolak. App switcher dilindungi,
+operasi dibatalkan ketika layar/background/akun berubah, dan logout langsung melepas layar privat.
+
+Firebase native memakai FID seperti kontrak backend (bukan Expo Push token atau APNs token).
+Siapkan GOOGLE_SERVICES_JSON dan GOOGLE_SERVICE_INFO_PLIST milik sekolah untuk package/bundle
+id id.sch.sigm4.mobile. Kedua path berkas harus tersedia; tanpa keduanya plugin Firebase tidak
+aktif. Berkas tidak di-commit. Masukkan lewat file env EAS sekolah saat binary dibangun.
+APNs environment lokal development, EAS internal/store production; sesuaikan dengan provisioning.
+Runtime 0.2.0 membutuhkan binary baru; OTA tidak dapat menambahkan modul Firebase native.
+
+Menguji push nyata membutuhkan service account backend pada proyek yang sama, APNs credentials,
+binary sekolah dan perangkat/Google Play Services. QA: izin pertama/ditolak/setting, foreground,
+background/terminated tap, headless iOS, refresh identitas, logout online/luring, ganti akun,
+association files, tab induk dan badge. Fixture introspect hanya memeriksa assembly konfigurasi,
+bukan delivery cloud. gRPC Firestore di-override ke seri patched1.14; SCA fondasi masih terbuka.

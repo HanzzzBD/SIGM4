@@ -1,0 +1,1 @@
+export const formatTime = (iso: string) => { const date = new Date(iso); return Number.isNaN(date.getTime()) ? "Waktu belum tersedia" : `${new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(date)} WIB`; };

@@ -39,6 +39,9 @@
   "overrides": {
     "eslint-plugin-import": {
       "eslint": "$eslint"
+    },
+    "@firebase/firestore": {
+      "@grpc/grpc-js": "~1.14.5"
     }
   }
 }
