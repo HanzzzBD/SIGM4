@@ -245,7 +245,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
 | `PR-08-01` … `PR-08-16` | `Not Started` | — | Rincian: [`phases/phase-08.md` §7](phases/phase-08.md) |
-| `PR-08-17` | `In Progress` | — | Pipeline rilis production ke server sekolah (`SDD-INF-14`, di luar rencana — [log phase-08 §4](logs/phase-08.md)). Cabang `feature/PR-08-17-deploy-produksi-sekolah`. Belum pernah berjalan pada runner nyata: server, runner, environment `production`/`production-smoke`, dan ruleset tag belum disetel ([runbook](runbooks/produksi-server-sekolah.md)). Smoke produksi menunggu `--full` dari `PR-03-36` |
+| `PR-08-17` | `In Review` | [#176](https://github.com/HanzzzBD/SIGM4/pull/176) | Pipeline rilis production ke server sekolah (`SDD-INF-14`, di luar rencana — [log phase-08 §4](logs/phase-08.md)). Cabang `feature/PR-08-17-deploy-produksi-sekolah`. Belum pernah berjalan pada runner nyata: server, runner, environment `production`/`production-smoke`, dan ruleset tag belum disetel ([runbook](runbooks/produksi-server-sekolah.md)). Smoke produksi menunggu `--full` dari `PR-03-36` |
 
 **Cara memakai tabel ini.** Saat sebuah phase dimulai, ganti barisnya menjadi satu baris per PR. Selama phase belum dimulai, satu baris ringkas lebih jujur daripada 163 baris `Not Started` yang tidak ada yang membacanya.
 
