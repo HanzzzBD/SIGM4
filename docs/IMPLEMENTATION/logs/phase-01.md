@@ -18,6 +18,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 
 | Tanggal | Yang terjadi | PR terkait |
 |---|---|---|
+| 15 Oktober 2026 | PR-01-26: delapan bukti PM-05 lokal dengan cookie WEB/Bearer ANDROID, dua instance API, PostgreSQL/Redis nyata, cache lama masih hidup dan JWT yang sama. Cabut/pulihkan izin, scope, role versi sama, status, gerbang OTP dan logout lulus. Tidak mengubah produksi atau memakai authPalsu; review/CI/staging tetap terbuka. [Audit](../audits/pr-01-26-pr-03-36-local-2026-10-15.md). | `PR-01-26` |
 | 12 Oktober 2026 | `PR-01-21`, `PR-01-22`, `PR-01-23` dikirim sebagai **satu PR** di `feature/PR-01-21-23-lokasi` (dari `develop` `1e17e4d`), dipecah dari pekerjaan gabungan lokal bersama `PR-02-50` dan `PR-03-29` (masing-masing PR sendiri). Pengujian sebelum PR menemukan dan memperbaiki: endpoint `GET /rooms/{id}/assets` tercatat ganda di PRD m03 dan m04 (`audit_docs.py` gagal), ekspor ruangan menuntut dua permission (`report.export` + `location.view`) sehingga matriks `SEC-T-01` gerbang Phase 01 gagal, uji katalog m03 yang tidak mengenal `GET /rooms/{id}`, dan uji P-18 yang ikut menghitung jam topbar. Acceptance PostgreSQL 500 unit ≤ 2 detik dijalankan pada DB uji lokal sekali pakai dan lulus (bukan staging). | `PR-01-21`, `PR-01-22`, `PR-01-23` |
 
 | 11 Oktober 2026 | `PR-01-24` tergabung ([#166](https://github.com/HanzzzBD/SIGM4/pull/166), `6041092`). `PR-01-25` (#167) di-rebase ke `develop` sesudahnya: konflik penyisipan berdampingan di router, halaman, navigasi, status, dan log diselesaikan dengan mempertahankan keduanya; teks keputusan 38 diambil dari `develop` (versi yang sudah diperbaiki). | `PR-01-24`, `PR-01-25` |
@@ -139,7 +140,7 @@ Kolom ketiga adalah yang paling berharga di seluruh log ini. Pola yang berulang 
 
 ## 5. Butir yang wajib tercatat pada phase ini
 
-- [ ] Titik ekstensi `SL-04` — di mana ia ditinggalkan terbuka (`PR-01-13`); **ditutup di Phase 05 `PR-05-09`**
+- [x] Titik ekstensi `SL-04` lokal — di mana ia ditinggalkan terbuka (`PR-01-13`); **ditutup di Phase 05 `PR-05-09`**
 - [ ] Migrasi `users.unit_kerja` → `work_unit_id`: tahap expand & migrate selesai; **contract ditunda ke `PR-08-11`**
 - [ ] Penerapan `SDD-AUTH-11` (uji tiga syarat) dan `SDD-EVT-10` (kartu dead letter baca-saja) — keduanya ditutup 25 Agustus 2026, sebelum phase dimulai
 
@@ -292,7 +293,7 @@ Hal yang sengaja ditinggalkan terbuka, beserta di mana ia akan ditutup.
 | **SELESAI** NT-48 create/update/status + NT-40 | PR-02-25 (#101), consumers.ts, notifications-publish.test.ts | NT-48 per baris import di luar gerbang ini masih keputusan produk |
 | Pencabutan persetujuan wali; akun siswa lama tanpa `consent_guardian_at` | Belum didefinisikan `DP-02` — perlu keputusan pemilik produk bila diperlukan | Tidak ada jalur mencabut penanda; siswa yang dibuat sebelum gerbang tetap aktif tanpa penanda dan hanya terblokir saat dinonaktifkan lalu diaktifkan kembali |
 | **SELESAI** konsumen UserImportCompleted/NT-52 | PR-02-25 (#101), notifications-publish.test.ts | Tidak lagi menunggu M-17 |
-| Masa simpan **laporan impor** (`user_import_jobs.laporan_gagal` memuat email baris gagal; barisnya tidak dihapus) | Pemilik produk — tidak didefinisikan PRD; kandidat digabung ke pseudonimisasi `PR-05-26` (`DP-04`) | Berkas mentah sudah dikosongkan saat berakhir (`DP-03`), tetapi laporannya tetap |
+| **SELESAI LOKAL — retensi laporan impor** | PR-05-26, keputusan produk 15 Oktober 2026 pada M-02/M-04 | 30 hari sejak terminal; API/UI menutup rincian dan worker membersihkan data tanpa menghapus job/hitungan/audit |
 | Batas atas jumlah baris jalur asinkron | Kalibrasi Phase 07–08 (kelompok B) | Kini hanya dibatasi ukuran body 8 MB (`BATAS_BODY_JSON`); pekerjaan yang sangat besar memakan waktu proporsional dengan hashing Argon2id per baris |
 | Celah pemulihan `JOB-06`: crash tepat di antara commit `UserService.create` dan `catatBaris` | Tidak dikerjakan — satu baris paling banyak, dan menutupnya menuntut `UserService.create` menerima transaksi luar | Baris itu dilaporkan "sudah digunakan" pada percobaan ulang, padahal berhasil dibuat |
 | `docs/UX/USER-FLOWS.md` masih menulis `NT-42` untuk impor asinkron | Koreksi lapisan UX — bukan bagian PR ini | `NT-42` milik `m16-analytics`; keputusan 19(a) hanya memperbaiki PRD dan SDD-14 |
@@ -302,12 +303,29 @@ Hal yang sengaja ditinggalkan terbuka, beserta di mana ia akan ditutup.
 | **Gap bukti gate:** PM-05 melalui JWT/sesi nyata | GAP-01-AUTH-E2E, owner QA/Backend auth, dependency #62/#66 | Auth nyata sudah ada; gerbang masih authPalsu. Uji sesi hidup saat izin/role berubah belum dibuktikan oleh gerbang lama |
 | Acceptance/DoD yang belum selesai setelah re-audit | GAP-01-WEB-*, LOCATION-DATA/EXPORT, SCHOOL-DATA, AUTH-E2E, SETTINGS-AC; reservasi deferred PR-03-09/10 | Audit §4/6 menggantikan daftar blocker 19 September; tabel assets/job lulusan/notifikasi sudah tersedia |
 | Dukungan CSV berpemisah titik koma / deteksi pemisah | Belum ditetapkan — putuskan sebelum `IMP-02` (templat diserahkan ke sekolah) | Lihat §7; sementara petunjuk pada templat |
-| **SELESAI** worker student-graduation | PR-02-32 (#96), src/worker/student-graduation.ts, worker-student-graduation.test.ts | SL-04 masih deferred PR-05-09 (API dan worker) |
-| **Mendaftarkan pemeriksa kewajiban siswa** (peminjaman aktif, denda belum lunas) ke `studentObligations`, di proses API **dan** worker | `PR-05-09` (penutupan `SL-04`) — tugasnya kini memuat pendaftaran di proses API **dan** worker (keputusan 31) | Definisi kewajiban baru ada setelah peminjaman dan denda ada (Phase 05); sampai itu registri kosong dan `SL-04` belum memblokir apa pun |
-| `SL-05` (pseudonimisasi akun siswa nonaktif setelah 2 tahun, `DP-10`) dan `DP-04` (hak penghapusan) | **`PR-05-26`** (Phase 05, setelah `PR-05-09`) — keputusan 31 | DP-10 mengecualikan akun yang masih berkewajiban, dan definisi kewajiban baru ada di `PR-05-09`; bukan bagian task breakdown `PR-01-13` (hanya `SL-01`…`SL-04`) |
+| **SELESAI** worker student-graduation | PR-02-32 (#96), src/worker/student-graduation.ts, worker-student-graduation.test.ts | SL-04 terisi lokal PR-05-09 pada API dan worker; review/CI/staging terbuka |
+| **SELESAI LOKAL — pemeriksa kewajiban siswa** (peminjaman aktif, denda belum lunas) ke `studentObligations`, di proses API **dan** worker | `PR-05-09` (penutupan `SL-04`) — tugasnya kini memuat pendaftaran di proses API **dan** worker (keputusan 31) | Pemeriksa M-09 dan bukti API/worker tersedia pada audit PR-05-09/26 tanggal 15 Oktober 2026; review/CI/staging terbuka |
+| **SELESAI LOKAL —** `SL-05` (retensi dua tahun) dan `DP-04` (hak penghapusan) | **`PR-05-26`** (Phase 05, setelah `PR-05-09`) — keputusan 31 | PR-05-26 tersedia lokal dengan pemeriksaan kewajiban PR-05-09; audit 15 Oktober 2026 dan runbook privasi, review/CI/staging terbuka |
 | **Menjalankan `map_users_unit_kerja()`** setelah master `work_units` terisi, dan menutup daftar tak terpetakannya | Operator, sebelum `PR-08-11` (contract) — [runbook](../runbooks/master-data-awal.md) bagian 3 (keputusan 29) | `work_units` lahir kosong; migration hanya menjalankannya sekali (no-op). Tidak ada penebakan — sisa tak terpetakan diputuskan manusia |
 | `procurements.unit_kerja` → `work_unit_id` (`WU-01`) | Phase 05 (`M-14`, tabel `procurements` belum ada) | Tabel belum ada; pola `SDD-DB-19` berlaku |
 
 ---
 
 *Log ini mencatat pelaksanaan. Requirement tetap milik [PRD](../../PRD/), keputusan desain tetap milik [SDD](../../SDD/).*
+
+
+### Penutupan lokal SL-04/SL-05 dan DP-04 — PR-05-09/26, 15 Oktober 2026
+
+Titik ekstensi PR-01-13 terisi nyata pada API dan worker. Penolakan pinjaman/denda
+belum lunas serta keberhasilan sesudah lunas diuji pada penonaktifan manual dan
+kelulusan. Kunci akun juga digunakan check-out; definisi dan keputusan lengkap
+berada pada PRD M-02. SL-04 ditutup lokal, menunggu review/CI/staging.
+
+Pseudonimisasi permanen, retensi siswa dua tahun WIB, pencabutan akses/pemulihan
+serta retensi laporan impor pengguna/aset 30 hari tersedia melalui PR-05-26.
+Tanggal awal memakai bukti audit terakhir atau waktu migration, bukan updated_at.
+Foto/transaksi/audit lama tetap. 289 uji backend/web dan 16 browser lulus pada
+batch ini; [audit](../audits/pr-05-09-26-local-2026-10-15.md) memuat perincian.
+[Runbook](../runbooks/permintaan-privasi.md) menetapkan pelayanan permintaan.
+Status Phase 01/milestone keseluruhan tetap mengikuti status kanonik; database
+aplikasi belum dimigrasi dan tidak ada deployment.

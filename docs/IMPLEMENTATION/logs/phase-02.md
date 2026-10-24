@@ -551,3 +551,29 @@ Hal yang sengaja ditinggalkan terbuka, beserta di mana ia akan ditutup.
 ---
 
 *Log ini mencatat pelaksanaan. Requirement tetap milik [PRD](../../PRD/), keputusan desain tetap milik [SDD](../../SDD/).*
+
+### Implementasi lokal PR-02-47 — 15 Oktober 2026
+
+Dua jawaban AskUserQuestion menetapkan ekspor katalog melalui worker dan kolom
+lengkap/finansial berizin; keputusan dinaikkan ke PRD M-04, SDD storage dan UX
+P-15. GET pengajuan 202 idempoten, riwayat/status/unduh katalog, sumber M-04
+scoped, adaptor ekspor M-16 dan kontrol P-15 tersedia lokal. Izin asset.view/
+asset.export beririsan tanpa mensyaratkan report.export. Finansial dihilangkan
+dari SELECT bila tidak cukup, dan membership/izin dibaca ulang sebelum unduh.
+
+19 integration PostgreSQL, 57 unit/kontrak serta 30 web lulus (106 unik);
+delapan pemeriksaan browser produksi pada 320/768/1024/1440px lulus, termasuk
+keyboard, status siap dan tanpa overflow/pageerror. Coverage inti ekspor 89,01%
+statements/99,52% lines/77,54% branches. PDF nyata dibaca kembali, XLSX 36 aset
+melampaui pagination diverifikasi, dan pencabutan izin di tengah PUT menutup
+publikasi. Typecheck web/tests/build Vite, lint fitur dan 14 batas impor lulus.
+Root TypeScript masih menampilkan kontrak nip_nis nullable/alur pseudonimisasi
+sesi lain yang belum selesai; handoff merinci diagnostik. Fresh migration 0072
+sempat menghalangi uji karena bigint dibanding text; koreksi satu baris
+memungkinkan kedua suite lulus. Database uji sementara port 55447 terpisah.
+
+[Audit](../audits/pr-02-47-local-2026-10-15.md) memuat rincian, batas validasi dan
+perbaikan fixture. Skala L karena satu alur API/policy/worker/UI harus utuh;
+infrastruktur existing dipakai ulang. Status In Progress sampai review/CI/staging;
+tidak membuat commit/push/PR remote, merge atau deployment. Perubahan sesi lain
+dipertahankan; tidak menjalankan migration database aplikasi.

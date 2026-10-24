@@ -12,12 +12,15 @@ Log ini mencatat **apa yang benar-benar terjadi** selama phase berjalan: keputus
 
 Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru. Bila selama phase muncul kebutuhan akan salah satunya, ia dinaikkan ke PRD atau SDD lebih dulu, dan log ini hanya mencatat bahwa hal itu terjadi.
 
+
 ---
 
 ## 1. Catatan harian
 
 | Tanggal | Yang terjadi | PR terkait |
 |---|---|---|
+| 15 Oktober 2026 | PR-03-36: tiga jawaban AskUserQuestion dinaikkan ke CD-07/SDD-16; fixture staging khusus, mode penuh gagal bila konfigurasi kosong, tiket ditutup Perbaikan Ringan tanpa perubahan kondisi. Driver Python standar, script Bash, secrets workflow dan runbook tersedia. Enam integrasi API/JWT/DB/Redis nyata dan tujuh kontrak Python lulus; dua run sukses, pembersihan ketika unggah gagal/balasan POST hilang, kondisi aset dan audit terbukti. Review/CI/staging terbuka. Skala S/S dikoreksi M/M untuk lima alur + upload/pemulihan/cleanup. Batch bersama PR-01-26 mengikuti permintaan pengguna. [Audit](../audits/pr-01-26-pr-03-36-local-2026-10-15.md). | `PR-03-36` |
+| 15 Oktober 2026 | Implementasi lokal sesudah tiga jawaban AskUserQuestion: bentrok gagal per baris tanpa pembatalan dan duplikat aktif dicegah; panel P-27/CSV/worker/retensi 30 hari; durasi per kemunculan ruangan termasuk mendesak dan gabungan, tanpa mengubah pengajuan lama. Requirement dinaikkan ke PRD M-07/M-20, E.5.3, SDD dan UX. Migration 0073 hanya diuji di PostgreSQL sementara. Review/CI/staging belum selesai; [audit](../audits/pr-03-35-38-local-2026-10-15.md). | PR-03-35, PR-03-38 |
 | 1 Oktober 2026 | Phase 03 dimulai selagi Phase 02 `In Review` (gerbang keluar `#119`, pola Phase 01 → 02). `PR-03-01` dikerjakan (`feature/PR-03-01-pembuatan-qr`, dari `develop` pasca `#118`) — keputusan 1; PRD m05 §7 (+2 endpoint) dan rencana `phase-03.md` §7 disunting sebelum kode. | `PR-03-01` |
 | 1 Oktober 2026 | `#120` (`PR-03-01`) digabung PM ke `develop` (merge `ae6d7e0`). | `PR-03-01` |
 | 2 Oktober 2026 | `PR-03-02` dikerjakan (`feature/PR-03-02-cetak-qr-massal`, dari `develop` pasca `#120`) — keputusan 2 (lima keputusan pemilik produk via `AskUserQuestion` sebelum kode); PRD m05 §7 (permission cetak), SDD-16 §4.7 (`CHROMIUM_EXECUTABLE_PATH`), dan rencana `phase-03.md` §7 disunting. | `PR-03-02` |
@@ -46,6 +49,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 | 11 Oktober 2026 | `#158` (`PR-03-24`) digabung PM ke `develop` (`8b613bf`). `PR-03-28` (UI QR) dikerjakan di `feature/PR-03-28-ui-qr` dari `develop` `8b613bf` (keputusan 24e/24f): P-06 Halaman Publik Aset di luar shell (tanpa sesi, `noindex`), P-24 Label QR (aset dari `?aset=` atau dicari, tiga preset A4, elemen, unduh PDF, tandai terpasang), P-25 Scan QR web (kamera `getUserMedia` + `jsqr` 1.4.0 dimuat malas, input kode manual selalu terlihat, izin ditolak → panduan). Web 9/9 + mutasi 5/5. | `PR-03-24`, `PR-03-28` |
 | 11 Oktober 2026 | `#161` (`PR-03-28`) tergabung (`39acb4e`). Batch `PR-03-31` + `PR-03-32` (keputusan 25). `PR-03-31` di `feature/PR-03-31-catatan-kerusakan` dari `develop` `39acb4e`: migration `0051` (expand) — `damage_report_notes`, `damage_report_note_photos`, `damage_reports.reservation_id`; `POST /damage-reports/{id}/notes`; `reservation_id` opsional pada pelaporan; detail memuat catatan + reservasi. Integrasi M-07/M-11 + gerbang 129/130 di DB uji terpisah (satu merah = `migrations.test` down total terhalang role `sigm4_app` se-cluster, bukan migration ini — `down`/`up` 0051 diuji langsung, §7); mutasi 5/5. `PR-03-32` di `feature/PR-03-32-ui-kerusakan` (P-39/P-40/P-41 + tautan P-31/P-18): uji web 13 baru, suite web 253/253, lint web/schemas bersih, mutasi 6/6 (validasi foto BR-044, `reservation_id`, alasan TOLAK, `melampaui_sla`, tiket terbuka → tambah informasi, tautan P-31); basis dipindah ke atas `PR-03-31` (§7). `#162` (`PR-03-31`) tergabung lewat squash (`a0d9941`, isi identik `8a05f0e`); #163 konflik karena membawa commit asli `PR-03-31` → dua commit `PR-03-32` dipindah (`git rebase --onto origin/develop 8a05f0e`). | `PR-03-28`, `PR-03-31`, `PR-03-32` |
 | 12 Oktober 2026 | `PR-03-29` dibuka di `feature/PR-03-29-dokumen-aset` (dari `develop` `1e17e4d`), dipecah dari pekerjaan gabungan lokal bersama `PR-01-21`…`23` (#169) dan `PR-02-50` (#170): P-26 `/dokumen-aset` lintas aset (endpoint baru `GET /asset-documents`, `asset_document.view`, PRD m06 §7) + tab Dokumen P-18, unggah presigned multi-aset, unduh hanya CLEAN, konfirmasi lepas, penanda garansi. UX P-26/tab Dokumen dikoreksi ke permission kanonis `asset_document.view`. Saat pengujian sebelum PR: `per_page` di atas batas kini ditolak 400 `INVALID_REQUEST` (pemetaan ZodError yang berlaku), uji integrasi disesuaikan. `DialogKonfirmasi.onFokusKembali` juga dibawa #169 dengan isi identik. Integrasi m06 8/8 pada PostgreSQL & MinIO lokal (catatan audit 11 Oktober mencatat 8 dilewati karena layanan belum tersedia saat itu). | `PR-03-29` |
+| 14 Oktober 2026 | Implementasi lokal `PR-03-17/18/19/33`: M-14 API, P-51–P-54, approval parsial web/mobile, migration 0062, penerimaan → aset/dokumen, serta notifikasi. Tiga jawaban AskUserQuestion dicatat pada PRD M-14 §7: Aset saja, kuantitas tidak naik, barang ditolak dapat diganti. Workspace bersama; 0059 milik preventif dan 0061 milik opname dipertahankan. Belum commit/PR/merge atau migration database aplikasi. | `PR-03-17`, `PR-03-18`, `PR-03-19`, `PR-03-33` |
 
 ## 2. Keputusan yang diambil
 
@@ -170,6 +174,7 @@ Angka nyata, bukan perkiraan. Kosongkan bila belum diukur — jangan diisi tebak
 
 | Yang diukur | Target | Hasil | Rujukan |
 |---|---|---|---|
+| Pengadaan lokal PR-03-17/18/19/33 | FR-14.1–14.3, BR-060–065 | PostgreSQL 11/11; regresi M-10 65/65; UI pengadaan 8/8; mobile 78/78; Chrome 320/768/1024/1440; build web + ekspor Android/iOS lulus. Sapuan luas dan rerun timeout/fixture dicatat terpisah, belum CI/QA staging. | [Audit lokal](../audits/pr-03-17-18-19-33-local-2026-10-14.md) |
 | Mutasi pada QR `PR-03-01` | seluruhnya terdeteksi | **10/10** pada putaran pertama (serial, cadangan berkas, dibandingkan byte-per-byte): jalur `/a/`, tingkat koreksi M, zona tenang, validasi https `APP_BASE_URL`, `qr_url` katalog, UUID benar diganti, aksi log regenerasi, hanya yang berubah ditulis, atomik, permission regenerasi. `qr.test.ts` 5/5, `config.test.ts` 41/41, `m05-qr.test.ts` 8/8, sapuan AL-01 `phase-01-gate` 10/10 (kini memuat dua route M-05) | `logs/phase-03.md` §1 |
 
 | Cetak 200 label `PR-03-02` (A4 3×8, HTTP penuh, Chrome terpasang, mesin dev Windows) | ≤ 30 detik (`NFR-P-07`); ≤ 5 detik jalur sinkron (`SDD-PERF-06`) | **2.193 ms**, PDF 546.508 byte, 9 halaman A4, header `%PDF-1.7` (uji integrasi `m05-qr.test.ts`). Spike awal 200 elemen sederhana: 1.043 ms (header asli `%PDF-1.4`). | keputusan 2 |
@@ -253,7 +258,7 @@ Hal yang sengaja ditinggalkan terbuka, beserta di mana ia akan ditutup.
 | Ekstraksi komponen bersama C-15 Table | PR halaman daftar berikutnya yang memakainya | Ekstraksi menunggu pemakai kedua agar bentuknya tak ditebak. **Tabel lokal P-30 sudah memenuhi spesifikasi C-15** (sudut tegas, kepala 48px melekat `surface.subtle`, baris 44px, urut lewat kepala kolom ikon + `aria-sort`, klik baris membuka detail, kosong di dalam badan tabel, galat + Coba lagi, kartu ≥ 48px < 48rem, halaman bernomor + ukuran halaman di URL) — diuji `reservation-list-detail.test.tsx` "P-30 — tabel C-15". |
 | Tautan P-31 → P-34 Detail Peminjaman (UX P-31 "Detail Peminjaman bila sudah diserahkan") | **`PR-05-01`** (keputusan 18) | Koreksi atas catatan sebelumnya (`PR-04-02` / Phase 04): Phase 04 membangun reservasi **aset**, sedangkan serah terima dan peminjaman berada di **Phase 05 mulai `PR-05-01`** (check-out dari reservasi) — tautan lahir saat peminjaman dibentuk dari reservasi. |
 | Layar P-34 Detail Peminjaman + `GET /loans/{id}` | **→ `PR-05-27` (keputusan 23)** · **PR baru di luar rencana Phase 05** (keputusan 18) — dibuat saat Phase 05 dikerjakan; hitungan rencana dinaikkan saat PR itu benar-benar dibuat | Tak satu pun PR rencana memetakan P-34 (pola `PR-03-24`/`PR-03-27`). |
-| Impor CSV jadwal tetap ruangan (FR-07.5 A2, E.5.3; IMPT-01…05, kode NT impor sendiri) | **→ `PR-03-35` (keputusan 23)** · **PR baru di luar rencana** sesudah `PR-03-13` (keputusan 19h) | Memakai `BlockService` per baris; mesin impor aset (`PR-02-38`) sebagai pola. |
+| Impor CSV jadwal tetap ruangan (FR-07.5 A2, E.5.3; IMPT-01…05, NT-56) | **→ `PR-03-35` (keputusan 23), terpenuhi lokal 15 Oktober 2026**; [audit](../audits/pr-03-35-38-local-2026-10-15.md) | Memakai `BlockService` per baris; mesin impor aset (`PR-02-38`) sebagai pola. Review/CI/staging belum selesai. |
 | P-23 Detail Ruangan (`FR-03.2`) termasuk tab Jadwal Tetap | **→ `PR-01-23` (keputusan 23)** · **PR baru di luar rencana** (keputusan 19a) | Tak satu pun PR rencana memetakan P-23; tab memakai komponen `RoomBlocksPanel` dari `PR-03-13`. |
 | Layar web laporan kerusakan P-39 Daftar · P-40 Lapor · P-41 Detail (`FR-11.1`…`FR-11.3`) | **Ditutup `PR-03-32`** · ~~→ `PR-03-32` (keputusan 23)~~ · **PR UI baru, belum masuk rencana** — setelah `PR-03-16` (pola `PR-03-27`) | Keputusan 20a: `PR-03-14`/`15`/`16` API; P-40 bermuara ke P-41. |
 | MS-15 Lapor Kerusakan + antrean unggah expo-sqlite (`SDD-MOB-02/03/04/11`, MOB-OFF-02…04) | **→ `PR-04-16` (antrean) + `PR-05-34` (keputusan 23)** · Fondasi mobile `GAP-05-MOBILE` (paling lambat akhir Phase 05) | Keputusan 20a: Expo belum dipasang. |
@@ -271,3 +276,36 @@ Hal yang sengaja ditinggalkan terbuka, beserta di mana ia akan ditutup.
 ---
 
 *Log ini mencatat pelaksanaan. Requirement tetap milik [PRD](../../PRD/), keputusan desain tetap milik [SDD](../../SDD/).*
+
+
+## Implementasi lokal M-19 — 14 Oktober 2026
+
+Batch PR-03-20/21/22/23/34 + PR-05-25/36 diminta langsung pengguna.
+Enam keputusan AskUserQuestion dinaikkan ke M-19 §7, M-20,
+ai-features, data-model, SDD-05/10/12/16 dan UX sebelum catatan ini.
+Migration expand 0069; 0067/0068 sesi M-22 dipertahankan. Tidak ada migration
+pada database aplikasi, commit/PR remote, merge atau deployment.
+
+Implementasi mencakup orchestrator/12 tool baca, tools Bahan, SSE web/mobile,
+kuota WIB, laporan dengan izin berbagi, agregat tanpa teks/ID dan retensi.
+10 integrasi PostgreSQL (termasuk 700 kombinasi SQL/role), 95 unit API terpilih,
+18 uji web dan 90 mobile lulus. Coverage M-19 integrasi statements 73,90%,
+lines 82,63%; 14 pemeriksaan batas impor dan 24 pemeriksaan browser lulus.
+Rincian cakupan/verifikasi dan artefak: [audit](../audits/pr-03-20-21-22-23-34-pr-05-25-36-local-2026-10-14.md).
+
+CONTRACT tidak menjadi skor Gemini. Evaluasi LIVE/cache/4500 token/latensi
+belum terbukti karena konfigurasi LIVE tidak tersedia pada proses uji.
+Workflow LIVE manual disediakan dengan fixture anonim sekali pakai.
+Status tujuh PR tetap In Progress; tinjauan arsitek, CI remote/staging dan
+QA perangkat belum selesai. Batch besar mengikuti permintaan eksplisit
+pengguna dan menjaga satu kontrak utuh untuk API/dua klien.
+
+SCA runtime lokal: 23 High/12 Moderate/0 Critical pada pohon dependensi
+modul lain (Expo/Firebase/ExcelJS). SDK Gemini baru tidak berada pada nodes
+rentan laporan; gerbang SCA CD-02 tetap terbuka. Rincian pada audit M-19.
+
+## 15 Oktober 2026 - Perbaikan QR label PDF pada origin pengembangan
+
+Permintaan pengguna: QR cetakan PDF ditolak pada scanner localhost. Akar masalah: pemindai membandingkan domain label dengan origin halaman, sedangkan PDF memakai APP_BASE_URL. Ditambahkan metadata publik domain QR dari konfigurasi runtime M-05; scanner web dan scanner native memakai nilai tersebut, tetap menolak domain asing, query, fragment, dan kredensial. Kontrak ditambahkan pada PRD M-05 dan SDD-06; tidak mengubah payload label atau UUID aset.
+
+Validasi: 16 tes web QR/Bahan, 7 tes backend QR/metadata, dan 7 tes mobile scanner lulus; build API/web, typecheck web/mobile/test API, dan lint file yang diubah lulus. Chromium mencetak PDF melalui API lokal, mendekode QR dari raster PDF, lalu mengalirkannya sebagai kamera uji ke /scan di localhost:5173. Aset dikenali dan tidak ada galat JavaScript; bukti lokal tmp/demo/qr-check.json dan tmp/demo/qr-scan-fixed.png. API lokal dimulai ulang untuk mengaktifkan route. Ini perubahan lokal atas permintaan pengguna, belum commit/push/PR atau deployment remote.
