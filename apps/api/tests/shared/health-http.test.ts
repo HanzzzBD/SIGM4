@@ -219,6 +219,7 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "POST /assets/:id/qr/regenerate",
             "PATCH /assets/qr-terpasang",
             "POST /files/presign",
+            "POST /files/:id/presign",
             "POST /files/confirm",
             "GET /assets/:id/documents",
             "GET /asset-documents",
@@ -310,6 +311,7 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "PUT /me",
             "POST /auth/password/change",
             "POST /files/presign",
+            "POST /files/:id/presign",
             "POST /files/confirm",
         ]);
         // BR-070: pengecualian gerbang 2FA adalah lubang yang disengaja — daftarnya dikunci di sini. Menambah
@@ -494,6 +496,7 @@ describe("sigm4-api — /api/v1/health/*", () => {
             "/api/v1/assets/{id}/qr/regenerate",
             "/api/v1/assets/qr-terpasang",
             "/api/v1/files/presign",
+            "/api/v1/files/{id}/presign",
             "/api/v1/files/confirm",
             "/api/v1/assets/{id}/documents",
             "/api/v1/asset-documents",

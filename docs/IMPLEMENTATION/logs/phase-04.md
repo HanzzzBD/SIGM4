@@ -92,3 +92,7 @@ Hal yang sengaja ditinggalkan terbuka, beserta di mana ia akan ditutup.
 ---
 
 *Log ini mencatat pelaksanaan. Requirement tetap milik [PRD](../../PRD/), keputusan desain tetap milik [SDD](../../SDD/).*
+
+### PR-04-15: URL unggah ulang - 12 Oktober 2026
+
+Pendahulu PR-04-16 disetujui pemilik produk melalui fitur pertanyaan. Kontrak POST /files/{id}/presign ditetapkan dalam PRD m06 sebelum kode: 200 presign 300 detik pada object key/MIME/ukuran lama, tidak membuat baris baru; hanya milik pemanggil yang checksum-nya masih null. Anonim 401, berkas asing/tidak ada 404, sudah dikonfirmasi 422. Tidak ada perubahan data atau entri aktivitas baru; log unggah tetap saat confirm. Tanpa migration. TypeScript API dan uji lulus; 13 uji integrasi file dengan PostgreSQL/MinIO nyata pada DB terisolasi lulus. Cabang lokal feature/PR-04-15-url-unggah-ulang; belum dipublikasikan.
