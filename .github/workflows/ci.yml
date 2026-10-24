@@ -313,13 +313,21 @@ jobs:
             - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
               with:
                   node-version: ${{ env.NODE_VERSION }}
+            # SDD-SEC-13: GHSA yang dikecualikan dibaca dari daftar yang sama dengan gerbang
+            # seluruh pohon; pengunciannya ke path paket ditegakkan langkah terakhir.
+            - name: GHSA berpengecualian
+              id: pengecualian
+              run: echo "ghsa=$(node -p "require('./.github/sca-pengecualian.json').pengecualian.map(e => e.ghsa).join(',')")" >> "$GITHUB_OUTPUT"
             - name: Dependensi baru ber-High/Critical ditolak
               if: github.event_name == 'pull_request'
               uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
               with:
                   fail-on-severity: high
-            - name: Seluruh pohon dependensi tanpa High/Critical
-              run: npm audit --audit-level=high
+                  allow-ghsas: ${{ steps.pengecualian.outputs.ghsa }}
+            - name: Uji gerbang SCA berpengecualian
+              run: node --test scripts/sca-gerbang.test.mjs
+            - name: Seluruh pohon dependensi tanpa High/Critical di luar pengecualian
+              run: node scripts/sca-gerbang.mjs
 
     # Pemindaian image (CD-01) atas artefak tahap build.
     image-scan:

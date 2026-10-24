@@ -1,0 +1,4 @@
+{
+    "$catatan": "Pengecualian gerbang SCA High/Critical (SDD-SEC-13). Hanya untuk advisory TANPA tambalan upstream, dikunci ke GHSA + path paket persis, dengan tinjau_ulang paling lambat 30 hari (High) / 7 hari (Critical) sejak dicatat (ST-02). Setiap entri disetujui pemilik produk dan dicatat di log phase. Dibaca scripts/sca-gerbang.mjs dan job dependency-review.",
+    "pengecualian": []
+}
