@@ -4,11 +4,11 @@ import { LABEL_JENIS_PENGAJUAN, LABEL_KONDISI_ASET, LABEL_STATUS_ASET, LABEL_STA
 type Permissions = Readonly<Record<string, string>>;
 export function quickActions(permissions: Permissions) {
     const actions = [
-        { permission: "asset.view", label: "Scan aset", path: "/scan" },
+        { permission: Object.hasOwn(permissions,"asset.view")?"asset.view":"material.view", label: Object.hasOwn(permissions,"material.view")?"Scan aset atau bahan":"Scan aset", path: "/scan" },
         { permission: "approval.decide", label: "Persetujuan saya", path: approvalScreensReady ? "/persetujuan" : null },
         { permission: "reservation.create", label: "Ajukan reservasi", path: null },
         { permission: "damage.create", label: "Lapor kerusakan", path: "/kerusakan/lapor" },
-        { permission: "chatbot.use", label: "Chatbot", path: null },
+        { permission: "chat.use", label: "Chatbot", path: "/chat" },
     ];
     return actions.filter((action) => Object.hasOwn(permissions, action.permission));
 }
@@ -21,6 +21,7 @@ export function cardLines(id: string, value: unknown): readonly string[] {
     const n = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? new Intl.NumberFormat("id-ID").format(value) : "—";
     const map = (key: string, labels: Readonly<Record<string, string>>) => typeof data[key] === "object" && data[key] !== null ? Object.entries(data[key] as Record<string, unknown>).map(([code, value]) => `${labelEnum(labels, code)}: ${n(value)}`) : [];
     switch (id) {
+        case "pekerjaan-teknisi": return [`${n(data.aktif)} pekerjaan aktif`,`${n(data.terlambat)} melewati target selesai`,...Array.isArray(data.berikutnya)?data.berikutnya.map(row=>{const w=row as Record<string,unknown>;return `${String(w.nomor)} · ${String(w.deskripsi)} · Target ${new Date(String(w.target_selesai)+"T00:00:00Z").toLocaleDateString("id-ID",{timeZone:"UTC"})}`;}):[]];
         case "total-aset": return [`${n(data.total)} unit aset aktif`];
         case "ringkasan-aset": return [`${n(data.total)} unit aset aktif`, `Nilai perolehan: ${typeof data.total_nilai === "number" || typeof data.total_nilai === "string" ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(Number(data.total_nilai)) : "—"}`];
         case "aset-belum-berlabel-qr": return [`${n(data.jumlah)} aset belum berlabel QR`];

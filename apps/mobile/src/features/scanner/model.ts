@@ -1,6 +1,7 @@
 import type { AxiosInstance } from "axios";
 import { z } from "zod";
 import type { AssetDetail } from "@sigm4/schemas";
+import { MaterialDetailResponseSchema,parseMaterialQr } from "@sigm4/schemas";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export function parseAssetQr(value: string, trustedOrigin: string): string {
@@ -14,6 +15,18 @@ export function parseAssetQr(value: string, trustedOrigin: string): string {
 const Id = z.object({ id: z.string().regex(/^\d+$/) });
 export async function resolveQr(api: AxiosInstance, value: string, origin: string, signal: AbortSignal): Promise<string> {
     return Id.parse((await api.get(`/assets/by-uuid/${parseAssetQr(value, origin)}`, { signal })).data.data).id;
+}
+export async function resolveQrTarget(api:AxiosInstance,value:string,origin:string,signal:AbortSignal,permissions:Permissions){
+ const materialUuid=parseMaterialQr(value,origin);
+ if(materialUuid){
+  if(!allowed(permissions,"material.view"))throw new Error("Anda tidak memiliki izin melihat bahan.");
+  const material=MaterialDetailResponseSchema.parse((await api.get(`/materials/by-uuid/${materialUuid}`,{signal})).data).data;
+  return {jenis:"BAHAN" as const,id:material.id,nama:material.nama,label:`Bahan / ${material.satuan.simbol}`};
+ }
+ // UUID dari namespace /b/ tidak pernah diteruskan ke resolver aset.
+ parseAssetQr(value,origin);
+ if(!allowed(permissions,"asset.view"))throw new Error("Anda tidak memiliki izin melihat aset.");
+ return {jenis:"ASET" as const,id:await resolveQr(api,value,origin,signal)};
 }
 export async function resolveCode(api: AxiosInstance, value: string, signal: AbortSignal): Promise<string> {
     const code = value.trim();
@@ -32,7 +45,7 @@ export async function resolveCode(api: AxiosInstance, value: string, signal: Abo
 export type Permissions = Readonly<Record<string, string>>;
 export function allowed(permissions: Permissions, permission: string) { return Object.hasOwn(permissions, permission); }
 export function contextualActions(asset: Pick<AssetDetail, "status" | "dihapuskan" | "dapat_dipinjam">, permissions: Permissions) {
-    if (asset.dihapuskan || asset.status === "TIDAK_TERSEDIA") return [];
+    if (asset.dihapuskan || asset.status === "TIDAK_TERSEDIA") return allowed(permissions,"workorder.view")?[{label:"Riwayat servis",available:true,reason:""}]:[];
     const actions: { label: string; reason: string; available: boolean }[] = [];
     const add = (permission: string, label: string, context = "", available = false) => {
         if (allowed(permissions, permission)) actions.push({ label, available, reason: available ? "" : `${context}Layar ${label.toLowerCase()} belum tersedia di aplikasi.` });
@@ -41,9 +54,9 @@ export function contextualActions(asset: Pick<AssetDetail, "status" | "dihapuska
     if (asset.status === "DIPINJAM") add("loan.manage", "Pengembalian", "Memerlukan peminjaman aktif. ");
     add("damage.create", "Lapor kerusakan", "", true);
     add("audit.execute", "Catat opname", "Memerlukan sesi opname aktif dan penugasan Anda. ");
-    if (asset.status === "DALAM_PERBAIKAN") add("workorder.execute", "Perbarui work order", "Memerlukan work order yang ditugaskan kepada Anda. ");
+    if (asset.status === "DALAM_PERBAIKAN") add("workorder.execute", "Perbarui work order", "",true);
     if (asset.status === "TERSEDIA" && asset.dapat_dipinjam) add("reservation.create", "Ajukan reservasi");
-    if (allowed(permissions, "workorder.view")) add("workorder.view", "Riwayat servis");
+    if (allowed(permissions, "workorder.view")) add("workorder.view", "Riwayat servis","",true);
     return actions;
 }
 /** Satu permintaan kamera pada satu waktu; duplikat sukses diabaikan selama sesi. */

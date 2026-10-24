@@ -11,8 +11,8 @@ import { deviceIdentity, firebaseEnabled, listenPush, notificationPermission, re
 interface NotificationContext { unread: number; refresh: () => void; status: string; enablePush: () => Promise<void>; banner: boolean; dismissBanner: () => void }
 const Context = createContext<NotificationContext | null>(null);
 export function NotificationsProvider({ children }: { children: ReactNode }) {
-    const { state, api, controller } = useAuth(); const navigation = useRootNavigationState();
-    const account = state.kind === "READY" ? state.session.user.id : null;
+    const { state, api, controller, offlineOnly } = useAuth(); const navigation = useRootNavigationState();
+    const account = state.kind === "READY" && !offlineOnly ? state.session.user.id : null;
     const permitted = state.kind === "READY" && Object.hasOwn(state.session.permissions, "notification.manage_own");
     const currentAccount = useRef(account); currentAccount.current = account;
     const inbox = useRef(new NavigationInbox()); const paused = useRef(false);

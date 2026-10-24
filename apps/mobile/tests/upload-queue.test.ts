@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { MAX_AGE_MS, UploadQueue } from "../src/shared/upload/queue.js";
 import type { NewUpload, QueueDatabase, SqliteConnection } from "../src/shared/upload/queue.js";
+import { queueWorkOrderPhoto } from "../src/features/workorders/model.js";
 
 const folders: string[] = [];
 const handles: DatabaseSync[] = [];
@@ -30,6 +31,11 @@ function open(path: string): QueueDatabase {
 const entry = (id: string, createdAt = 1000, accountId = "1"): NewUpload => ({ id, accountId, path: `file:///queue/${id}.jpg`, ownerType: "DAMAGE_PHOTO", ownerId: "4", fileId: null, checksum: "a".repeat(64), size: 100, createdAt });
 
 describe("PR-04-16 antrean persisten SQLite", () => {
+    it("PR-04-08: foto hasil sebelum presign bertahan setelah restart; SQLite hanya memuat antrean",async()=>{
+        const folder=mkdtempSync(join(tmpdir(),"sigm4-mobile-queue-"));folders.push(folder);const path=join(folder,"uploads.db");
+        const queue=new UploadQueue(open(path),{remove:async()=>undefined},()=>1000,()=>undefined);await queue.initialize();const photo={id:"wo-photo",path:"file:///queue/wo.jpg",checksum:"a".repeat(64),size:100,createdAt:1000};await queueWorkOrderPhoto(queue,photo,"4","10");handles.pop()?.close();
+        const database=open(path),restored=new UploadQueue(database,{remove:async()=>undefined},()=>1000,()=>undefined);await restored.initialize();expect(await restored.list("4")).toMatchObject([{ownerType:"WORK_ORDER_PHOTO",ownerId:"10",fileId:null}]);expect(await restored.list("5")).toEqual([]);expect((await database.getAllAsync<{name:string}>("SELECT name FROM sqlite_master WHERE type='table'")).map(r=>r.name)).toEqual(["uploads"]);expect(Object.keys((await restored.list("4"))[0]!)).not.toContain("catatan_teknisi");
+    });
     it("PR-05-34: foto sebelum respons tiket bertahan saat restart; owner diperbarui hanya untuk akun sendiri", async () => {
         const folder = mkdtempSync(join(tmpdir(), "sigm4-mobile-queue-")); folders.push(folder);
         const path = join(folder, "uploads.db"); const queue = new UploadQueue(open(path), { remove: async () => undefined }, () => 1000, () => undefined);

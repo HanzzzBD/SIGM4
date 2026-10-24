@@ -11,9 +11,11 @@ export type AuthState = { kind: "LOGIN" } | { kind: "LOGOUT" } | { kind: "CHALLE
 const LoginSchema = z.union([z.object({ requires_2fa: z.literal(true), challenge_token: z.string(), expires_in: z.number() }), SessionSchema.extend({ tokens: TokensSchema })]);
 
 export class SessionController {
-    private beforeLogout: (() => Promise<void>) | null = null;
+    private readonly beforeLogout = new Set<() => Promise<void>>();
+    private readonly logoutGuards = new Set<(discardPending: boolean) => Promise<void>>();
     private loggingOut = false;
-    setBeforeLogout(hook: () => Promise<void>) { this.beforeLogout = hook; return () => { if (this.beforeLogout === hook) this.beforeLogout = null; }; }
+    setBeforeLogout(hook: () => Promise<void>) { this.beforeLogout.add(hook); return () => { this.beforeLogout.delete(hook); }; }
+    setLogoutGuard(hook: (discardPending: boolean) => Promise<void>) { this.logoutGuards.add(hook); return () => { this.logoutGuards.delete(hook); }; }
     constructor(private readonly api: AxiosInstance, private readonly vault: TokenVault, private readonly platform: "ANDROID" | "IOS", private readonly now: () => number, private readonly changed: (state: AuthState) => void) {}
     async restore(): Promise<void> {
         if (this.loggingOut) return;
@@ -64,12 +66,16 @@ export class SessionController {
             else throw error;
         }
     }
-    async logout(): Promise<void> {
+    async logout(options: { discardPending?: boolean } = {}): Promise<void> {
         if (this.loggingOut) return;
-        this.loggingOut = true; this.changed({ kind: "LOGOUT" });
+        this.loggingOut = true;
+        try { for (const guard of this.logoutGuards) await guard(options.discardPending === true); }
+        catch (error) { this.loggingOut = false; throw error; }
+        const hooks = [...this.beforeLogout];
+        this.changed({ kind: "LOGOUT" });
         const revision = this.vault.revision;
         try {
-            await this.beforeLogout?.();
+            for (const hook of hooks) await hook();
             if (revision !== this.vault.revision) return;
             await this.api.post("/auth/logout");
         } finally {

@@ -1,34 +1,47 @@
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import type { ReactNode } from "react";
-import type { TextInputProps } from "react-native";
+import type { StyleProp, TextInputProps, ViewStyle } from "react-native";
 import { tokens as t } from "./tokens";
+import { Icon } from "./Icon";
+import type { IconName } from "./Icon";
 export { tokens } from "./tokens";
+export { Icon } from "./Icon";
+export type { IconName } from "./Icon";
+export { Screen } from "./Screen";
 
-export function Screen({ title, children, action, footer }: { title: string; children: ReactNode; action?: ReactNode; footer?: ReactNode }) {
-    return <View style={styles.frame}><ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled"><View style={styles.content}><View style={styles.header}><Text accessibilityRole="header" style={styles.heading}>{title}</Text>{action}</View>{children}</View></ScrollView>{footer && <View style={styles.footer}><View style={styles.content}>{footer}</View></View>}</View>;
+export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) { return <View style={[styles.card, style]}>{children}</View>; }
+export function Label({ children, tone = "default", strong = false }: { children: ReactNode; tone?: "default" | "muted"; strong?: boolean }) { return <Text style={[styles.text, tone === "muted" && styles.muted, strong && styles.strong]}>{children}</Text>; }
+export function Notice({ message, tone = "error" }: { message: string; tone?: "error" | "info" | "success" }) {
+    const color = tone === "error" ? t.color.error : tone === "success" ? t.color.success : t.color.primary;
+    return <View style={[styles.notice, { backgroundColor: tone === "error" ? t.color.errorSoft : tone === "success" ? t.color.successSoft : t.color.primarySoft }]}><Icon name={tone === "error" ? "alert" : tone === "success" ? "checkCircle" : "info"} color={color}/><Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={[styles.noticeText, { color }]}>{message}</Text></View>;
 }
-export function Card({ children }: { children: ReactNode }) { return <View style={styles.card}>{children}</View>; }
-export function Label({ children }: { children: ReactNode }) { return <Text style={styles.text}>{children}</Text>; }
-export function Notice({ message }: { message: string }) { return <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.notice}>{message}</Text>; }
-export function Input({ label, ...props }: TextInputProps & { label: string }) { return <View style={styles.field}><Text style={styles.text}>{label}</Text><TextInput accessibilityLabel={label} placeholderTextColor={t.color.muted} style={styles.input} {...props} /></View>; }
-export function Button({ title, onPress, disabled = false, busy = false, secondary = false }: { title: string; onPress: () => void; disabled?: boolean; busy?: boolean; secondary?: boolean }) {
-    return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: disabled || busy, busy }} disabled={disabled || busy} onPress={onPress} style={[styles.button, secondary && styles.secondary, (disabled || busy) && styles.disabled]}>{busy ? <ActivityIndicator color={secondary ? t.color.primary : t.color.surface} /> : <Text style={[styles.buttonText, secondary && styles.secondaryText]}>{title}</Text>}</Pressable>;
+export function Input({ label, icon, ...props }: TextInputProps & { label: string; icon?: IconName }) {
+    return <View style={styles.field}><Text style={styles.fieldLabel}>{label}</Text><View style={styles.inputRow}>{icon && <Icon name={icon} color={t.color.muted}/>}<TextInput accessibilityLabel={label} placeholderTextColor={t.color.muted} style={[styles.input, props.multiline && styles.multiline]} {...props}/></View></View>;
 }
+export function Button({ title, onPress, disabled = false, busy = false, secondary = false, icon, compact = false }: { title: string; onPress: () => void; disabled?: boolean; busy?: boolean; secondary?: boolean; icon?: IconName; compact?: boolean }) {
+    const color = secondary ? t.color.primary : t.color.inverse;
+    return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: disabled || busy, busy }} disabled={disabled || busy} onPress={onPress} style={({ pressed }) => [styles.button, secondary && styles.secondary, compact && styles.compact, pressed && (secondary ? styles.secondaryPressed : styles.pressed), (disabled || busy) && styles.disabled]}>{busy ? <ActivityIndicator color={color}/> : <>{icon && <Icon name={icon} color={color}/>}<Text style={[styles.buttonText, secondary && styles.secondaryText]}>{title}</Text></>}</Pressable>;
+}
+export function SectionHeading({ title, description, action }: { title: string; description?: string; action?: ReactNode }) { return <View style={styles.section}><View style={styles.sectionText}><Text accessibilityRole="header" style={styles.sectionTitle}>{title}</Text>{description && <Text style={styles.caption}>{description}</Text>}</View>{action}</View>; }
+export function Badge({ label, tone = "info" }: { label: string; tone?: "info" | "warning" | "success" | "neutral" }) {
+    const color = tone === "warning" ? t.color.warning : tone === "success" ? t.color.success : tone === "neutral" ? t.color.muted : t.color.primary;
+    return <View style={[styles.badge, { backgroundColor: tone === "warning" ? t.color.warningSoft : tone === "success" ? t.color.successSoft : tone === "neutral" ? t.color.neutralSoft : t.color.primarySoft }]}><Icon name={tone === "warning" ? "clock" : tone === "success" ? "checkCircle" : "info"} size={t.size.iconSmall} color={color}/><Text style={[styles.badgeText, { color }]}>{label}</Text></View>;
+}
+export function ListRow({ title, subtitle, icon, onPress }: { title: string; subtitle?: string; icon: IconName; onPress?: () => void }) {
+    const content = <><View style={styles.rowIcon}><Icon name={icon} color={t.color.primary}/></View><View style={styles.rowText}><Text style={styles.rowTitle}>{title}</Text>{subtitle && <Text style={styles.caption}>{subtitle}</Text>}</View>{onPress && <Icon name="chevronRight" color={t.color.muted}/>}</>;
+    return onPress ? <Pressable accessibilityRole="button" accessibilityLabel={title} onPress={onPress} style={({ pressed }) => [styles.row, pressed && styles.secondaryPressed]}>{content}</Pressable> : <View style={styles.row}>{content}</View>;
+}
+export function EmptyState({ icon = "tasks", title, description }: { icon?: IconName; title: string; description: string }) { return <View style={styles.empty}><View style={styles.emptyIcon}><Icon name={icon} size={t.size.iconLarge} color={t.color.primary}/></View><Text style={styles.sectionTitle}>{title}</Text><Text style={[styles.caption, styles.center]}>{description}</Text></View>; }
 export const styles = StyleSheet.create({
-    frame: { flex: 1, backgroundColor: t.color.page },
-    footer: { padding: t.space.md, borderTopWidth: 1, borderColor: t.color.border, backgroundColor: t.color.surface },
-    page: { padding: t.space.md, backgroundColor: t.color.page, flexGrow: 1 },
-    content: { gap: t.space.lg, width: "100%", maxWidth: t.size.content, alignSelf: "center" },
-    heading: { fontSize: t.font.heading, fontWeight: "600", color: t.color.heading },
-    header: { flexDirection: "row", flexWrap: "wrap", gap: t.space.sm, alignItems: "center", justifyContent: "space-between" },
-    text: { fontSize: t.font.body, color: t.color.text },
-    notice: { fontSize: t.font.body, color: t.color.error },
-    card: { padding: t.space.lg, gap: t.space.md, borderColor: t.color.border, borderWidth: 1, borderRadius: t.radius.md, backgroundColor: t.color.surface },
-    field: { gap: t.space.sm },
-    input: { minHeight: t.size.control, borderWidth: 1, borderColor: t.color.border, borderRadius: t.radius.sm, padding: t.space.md, fontSize: t.font.body, color: t.color.text, backgroundColor: t.color.surface },
-    button: { minHeight: t.size.touch, padding: t.space.md, backgroundColor: t.color.primary, borderRadius: t.radius.md, justifyContent: "center", alignItems: "center" },
-    buttonText: { color: t.color.surface, fontSize: t.font.body, fontWeight: "600" },
-    secondary: { backgroundColor: t.color.surface, borderColor: t.color.border, borderWidth: 1 },
-    secondaryText: { color: t.color.primary },
-    disabled: { opacity: 0.5 },
+    text: { fontSize: t.font.body, lineHeight: 24, color: t.color.text }, muted: { color: t.color.muted, fontSize: t.font.small, lineHeight: 21 }, strong: { fontWeight: "600", color: t.color.heading },
+    card: { padding: t.space.md, gap: t.space.ms, borderColor: t.color.border, borderWidth: 1, borderRadius: t.radius.lg, backgroundColor: t.color.surface },
+    notice: { padding: t.space.ms, borderRadius: t.radius.md, flexDirection: "row", alignItems: "flex-start", gap: t.space.sm }, noticeText: { flex: 1, fontSize: t.font.small, lineHeight: 21 },
+    field: { gap: t.space.sm }, fieldLabel: { fontSize: t.font.small, fontWeight: "600", color: t.color.heading }, inputRow: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: t.color.borderStrong, borderRadius: t.radius.md, backgroundColor: t.color.surface, paddingHorizontal: t.space.ms, gap: t.space.sm },
+    input: { minHeight: t.size.control, paddingVertical: t.space.ms, flex: 1, minWidth: 0, fontSize: t.font.body, color: t.color.heading }, multiline: { minHeight: t.size.control * 2, textAlignVertical: "top" },
+    button: { minHeight: t.size.control, paddingHorizontal: t.space.md, paddingVertical: t.space.ms, gap: t.space.sm, flexDirection: "row", backgroundColor: t.color.primary, borderRadius: t.radius.md, justifyContent: "center", alignItems: "center" }, buttonText: { color: t.color.inverse, fontSize: t.font.small, fontWeight: "600", flexShrink: 1, textAlign: "center" },
+    secondary: { backgroundColor: t.color.surface, borderColor: t.color.border, borderWidth: 1 }, secondaryText: { color: t.color.primary }, compact: { paddingHorizontal: t.space.ms, paddingVertical: t.space.sm, minHeight: t.size.touch }, pressed: { backgroundColor: t.color.primaryPressed }, secondaryPressed: { backgroundColor: t.color.primarySoft }, disabled: { opacity: 0.45 },
+    section: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: t.space.ms }, sectionText: { flex: 1, gap: t.space.xs }, sectionTitle: { color: t.color.heading, fontSize: t.font.title, fontWeight: "600" }, caption: { color: t.color.muted, fontSize: t.font.small, lineHeight: 21 },
+    badge: { alignSelf: "flex-start", flexDirection: "row", gap: t.space.xs, alignItems: "center", borderRadius: t.radius.full, paddingHorizontal: t.space.sm, paddingVertical: t.space.xs }, badgeText: { fontSize: t.font.caption, fontWeight: "600" },
+    row: { flexDirection: "row", alignItems: "center", gap: t.space.ms, minHeight: t.size.touch, paddingVertical: t.space.sm }, rowIcon: { width: t.size.touch, height: t.size.touch, borderRadius: t.radius.md, backgroundColor: t.color.primarySoft, alignItems: "center", justifyContent: "center" }, rowText: { flex: 1, gap: t.space.xs }, rowTitle: { color: t.color.heading, fontSize: t.font.body, fontWeight: "500" },
+    empty: { alignItems: "center", gap: t.space.ms, paddingVertical: t.space.lg }, emptyIcon: { width: t.size.avatar, height: t.size.avatar, borderRadius: t.radius.full, alignItems: "center", justifyContent: "center", backgroundColor: t.color.primarySoft }, center: { textAlign: "center" },
 });

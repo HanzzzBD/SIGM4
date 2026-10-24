@@ -11,6 +11,10 @@ import { Button, Card, Label, Notice, Screen, tokens as t } from "../../shared/u
 
 function timelineSummary(entry: EntriLinimasaAset): string {
     switch (entry.jenis) {
+        case "PENGHAPUSAN": return `${entry.nomor}: ${entry.aksi === "DIPULIHKAN" ? "aset dipulihkan" : "aset dihapuskan"}. ${entry.alasan}`;
+        case "PREVENTIF_DILEWATI":return `${entry.nama}: jadwal ${entry.jatuh_tempo} dilewati. ${entry.alasan}`;
+        case "PEMELIHARAAN":return `${entry.nomor}: ${entry.status.replaceAll("_"," ")}${entry.biaya===null?"":` · Biaya Rp${entry.biaya}`}`;
+        case "PEMINJAMAN": return `${entry.nomor}: ${entry.status.toLowerCase().replaceAll("_", " ")}`;
         case "KONDISI": return `${entry.kondisi_lama} → ${entry.kondisi_baru}: ${entry.alasan}`;
         case "MUTASI": return `${entry.ruang_asal.nama} → ${entry.ruang_tujuan.nama}: ${entry.alasan}`;
         case "DOKUMEN": return `${entry.aksi}: ${entry.nama_berkas}`;
@@ -56,7 +60,7 @@ export function AssetScreen({ id, detail = false }: { id: string; detail?: boole
     }, [api, asset, detail, permitted, id, accountId, photoPage, timelinePage, focused]);
     if (!permitted) return <Screen title="Detail aset"><Notice message="Anda tidak memiliki izin melihat aset." /><Button title="Beranda" onPress={() => router.replace("/")} /></Screen>;
     return <Screen title={detail ? "Detail aset" : "Hasil scan"}>
-        {loading && <Label>Memuat aset…</Label>}{error && <><Notice message={error} /><Button title="Coba lagi" onPress={() => setRetry((value) => value + 1)} /></>}
+        {loading && <Label>Memuat aset…</Label>}{error && <><Notice message={error} /><Button icon="refresh" title="Coba lagi" onPress={() => setRetry((value) => value + 1)} /></>}
         {asset && <><Card><Label>{asset.kode_barang}</Label><Label>{asset.nama}</Label><Label>Kategori: {asset.kategori.nama}</Label>
             <Label>Lokasi: {asset.lokasi.gedung} · {asset.lokasi.area} · {asset.lokasi.ruang}</Label><Label>Kondisi: {asset.kondisi.replaceAll("_", " ")}</Label><Label>Status: {asset.status.replaceAll("_", " ")}</Label>
             {asset.dihapuskan && <Notice message="Aset tidak aktif: sudah dihapuskan. Aksi transaksi tidak tersedia." />}
@@ -64,18 +68,18 @@ export function AssetScreen({ id, detail = false }: { id: string; detail?: boole
             {detail && <><Label>Merek / model: {asset.merek ?? "—"} / {asset.model ?? "—"}</Label><Label>Nomor seri: {asset.nomor_seri ?? "—"}</Label><Label>Tahun perolehan: {asset.tahun_perolehan}</Label><Label>Penanggung jawab: {asset.penanggung_jawab?.nama ?? "Belum ditentukan"}</Label><Label>Label QR: {asset.qr_terpasang ? "Terpasang" : "Belum terpasang"}</Label></>}
             {detail && allowed(permissions, "asset.view_financial") && asset.sumber_perolehan !== undefined && <><Label>Sumber perolehan: {asset.sumber_perolehan.replaceAll("_", " ")}</Label><Label>Nilai perolehan: {asset.nilai_perolehan === null || asset.nilai_perolehan === undefined ? "Belum dicatat" : new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(Number(asset.nilai_perolehan))}</Label></>}
         </Card>
-        {!detail && <Button title="Lihat detail aset" onPress={() => router.push(`/aset/${asset.id}`)} />}
-        {contextualActions(asset, permissions).map((action) => <Card key={action.label}><Button title={action.label} disabled={!action.available} onPress={() => { if (action.available) router.push(`/kerusakan/lapor?asset_id=${id}` as "/scan"); }} />{action.reason && <Label>{action.reason}</Label>}</Card>)}
+        {!detail && <Button icon="history" title="Lihat detail aset" onPress={() => router.push(`/aset/${asset.id}`)} />}
+        {contextualActions(asset, permissions).map((action) => <Card key={action.label}><Button title={action.label} disabled={!action.available} onPress={() => { if (action.available) router.push((action.label==="Perbarui work order"?`/work-order?asset_id=${id}`:action.label==="Riwayat servis"?`/aset/${id}/servis`:`/kerusakan/lapor?asset_id=${id}`) as "/scan"); }} />{action.reason && <Label>{action.reason}</Label>}</Card>)}
         {detail && <><Card><Label>Foto aset</Label>{mediaBusy && <Label>Memuat foto…</Label>}
             {!mediaBusy && photos.length === 0 && <Label>Belum ada foto aset.</Label>}
             {photos.map((photo) => <Card key={photo.id}>{photo.is_primary && <Label>Foto utama</Label>}{photo.status === "CLEAN" && photo.url !== null && !failedPhotos.includes(photo.id) ? <Image source={{ uri: photo.url }} contentFit="contain" cachePolicy="none" style={styles.photo} accessibilityLabel={`Foto ${asset.nama}${photo.is_primary ? ", utama" : ""}`} onError={() => setFailedPhotos((items) => [...items, photo.id])} /> : <Label>{photo.status === "PENDING" ? "Foto sedang diperiksa atau belum terunggah." : photo.status === "INFECTED" ? "Foto tidak lolos pemeriksaan keamanan." : "Foto belum dapat ditampilkan. Muat ulang untuk memperoleh URL baru."}</Label>}</Card>)}
             {photoPages > 1 && <><Label>Halaman foto {photoPage} dari {photoPages}</Label><Button title="Foto sebelumnya" secondary disabled={mediaBusy || photoPage === 1} onPress={() => setPhotoPage((page) => page - 1)} /><Button title="Foto berikutnya" secondary disabled={mediaBusy || photoPage >= photoPages} onPress={() => setPhotoPage((page) => page + 1)} /></>}
         </Card><Card><Label>Riwayat aset</Label>{mediaBusy && <Label>Memuat riwayat…</Label>}{!mediaBusy && entries.length === 0 && <Label>Belum ada riwayat.</Label>}
             {entries.map((entry) => <Card key={`${entry.jenis}:${entry.id}`}><Label>{entry.jenis} · {new Date(entry.waktu).toLocaleString("id-ID")}</Label><Label>{timelineSummary(entry)}</Label></Card>)}
-            {timelinePages > 1 && <><Label>Halaman riwayat {timelinePage} dari {timelinePages}</Label><Button title="Riwayat sebelumnya" secondary disabled={mediaBusy || timelinePage === 1} onPress={() => setTimelinePage((page) => page - 1)} /><Button title="Riwayat berikutnya" secondary disabled={mediaBusy || timelinePage >= timelinePages} onPress={() => setTimelinePage((page) => page + 1)} /></>}
-        </Card>{mediaError && <Notice message={mediaError} />}<Button title="Muat ulang foto dan riwayat" secondary disabled={mediaBusy} onPress={() => setRetry((value) => value + 1)} /></>}
+            {timelinePages > 1 && <><Label>Halaman riwayat {timelinePage} dari {timelinePages}</Label><Button icon="history" title="Riwayat sebelumnya" secondary disabled={mediaBusy || timelinePage === 1} onPress={() => setTimelinePage((page) => page - 1)} /><Button icon="history" title="Riwayat berikutnya" secondary disabled={mediaBusy || timelinePage >= timelinePages} onPress={() => setTimelinePage((page) => page + 1)} /></>}
+        </Card>{mediaError && <Notice message={mediaError} />}<Button icon="refresh" title="Muat ulang foto dan riwayat" secondary disabled={mediaBusy} onPress={() => setRetry((value) => value + 1)} /></>}
         </>}
-        <Button title="Pindai lagi" onPress={() => router.replace("/scan")} /><Button title="Beranda" secondary onPress={() => router.replace("/")} />
+        <Button icon="scan" title="Pindai lagi" onPress={() => router.replace("/scan")} /><Button title="Beranda" secondary onPress={() => router.replace("/")} />
     </Screen>;
 }
 const styles = StyleSheet.create({ photo: { width: "100%", height: t.size.camera, backgroundColor: t.color.page, borderRadius: t.radius.sm } });

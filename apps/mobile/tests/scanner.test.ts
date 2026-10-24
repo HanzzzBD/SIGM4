@@ -1,11 +1,26 @@
 import axios from "axios";
 import type { AxiosAdapter } from "axios";
 import { describe, expect, it } from "vitest";
-import { contextualActions, parseAssetQr, resolveCode, resolveQr, ScanGate } from "../src/features/scanner/model";
+import { contextualActions, parseAssetQr, resolveCode, resolveQr,resolveQrTarget, ScanGate } from "../src/features/scanner/model";
+import { parseMaterialQr } from "@sigm4/schemas";
 
 const origin = "https://sigm4.sekolah.test";
 const uuid = "93a2d3fe-1c97-40fb-98fe-b4ad03ecf479";
 const apiWith = (adapter: AxiosAdapter) => axios.create({ adapter });
+
+describe("QR Bahan: namespace dan saldo privat",()=>{
+ it("hanya menerima /b/ UUIDv4 persis pada origin sekolah",()=>{
+  expect(parseMaterialQr(`${origin}/b/${uuid.toUpperCase()}`,origin)).toBe(uuid);
+  for(const value of [`${origin}/a/${uuid}`,`https://evil.test/b/${uuid}`,`http://sigm4.sekolah.test/b/${uuid}`,`${origin}/b/${uuid}/`,`${origin}/b/${uuid}?stock=1`,`${origin}/b/${uuid}#x`,`https://user@sigm4.sekolah.test/b/${uuid}`,uuid])expect(parseMaterialQr(value,origin)).toBeNull();
+ });
+ it("Bahan tidak pernah memanggil assets, meskipun UUID sama; izin dicek sebelum HTTP",async()=>{
+  const calls:string[]=[],api=apiWith(config=>{calls.push(config.url!);return Promise.resolve({data:{success:true,meta:null,data:{id:"42",uuid,nama:"Kertas",kategori:{id:"1",nama:"ATK"},satuan:{id:"1",nama:"Rim",simbol:"rim"},stok_minimum:2,saldo_total:3,stok_menipis:false,lokasi_bawaan:{id:"1",nama:"Gudang"},status:"AKTIF",keterangan:null,qr_url:`${origin}/b/${uuid}`,saldo_lokasi:[{room_id:"1",lokasi:"Gudang",saldo:3}],satuan_terkunci:true}},status:200,statusText:"OK",headers:{},config});});
+  const signal=new AbortController().signal;
+  await expect(resolveQrTarget(api,`${origin}/b/${uuid}`,origin,signal,{"asset.view":"all"})).rejects.toThrow("izin melihat bahan");expect(calls).toEqual([]);
+  expect(await resolveQrTarget(api,`${origin}/b/${uuid}`,origin,signal,{"material.view":"all"})).toMatchObject({jenis:"BAHAN",id:"42",nama:"Kertas"});expect(calls).toEqual([`/materials/by-uuid/${uuid}`]);
+  await expect(resolveQrTarget(api,`${origin}/a/${uuid}`,origin,signal,{"material.view":"all"})).rejects.toThrow("izin melihat aset");expect(calls).toHaveLength(1);
+ });
+});
 describe("pemindai native: batas kepercayaan dan resolusi aset", () => {
     it("hanya menerima HTTPS origin sekolah, path UUIDv4 persis tanpa query, kredensial atau fragment", () => {
         expect(parseAssetQr(`${origin}/a/${uuid.toUpperCase()}`, `${origin}/api/v1`)).toBe(uuid);
@@ -41,6 +56,6 @@ describe("pemindai native: batas kepercayaan dan resolusi aset", () => {
         expect(contextualActions({ ...asset, status: "DIPINJAM" }, { "loan.manage": "all" })[0]!.label).toBe("Pengembalian");
         expect(contextualActions({ ...asset, dihapuskan: true }, { "loan.manage": "all" })).toEqual([]);
         expect(contextualActions({ ...asset, status: "TIDAK_TERSEDIA" }, { "damage.create": "own" })).toEqual([]);
-        expect(contextualActions({ ...asset, status: "DALAM_PERBAIKAN" }, { "workorder.execute": "assigned" })[0]!.reason).toContain("ditugaskan");
+        expect(contextualActions({ ...asset, status: "DALAM_PERBAIKAN" }, { "workorder.execute": "assigned" })[0]).toMatchObject({label:"Perbarui work order",available:true});
     });
 });

@@ -6,7 +6,7 @@ import { Button, Card, Label, Notice, tokens as t } from "../../shared/ui";
 import { discardPreparedPhoto, preparePhoto } from "../uploads";
 import type { PreparedPhoto } from "../uploads";
 
-export function PhotoPicker({ photos, disabled, onAdd, onRemove, isCurrent }: { photos: readonly PreparedPhoto[]; disabled: boolean; onAdd: (photo: PreparedPhoto) => void; onRemove: (id: string) => void; isCurrent: () => boolean }) {
+export function PhotoPicker({ photos, disabled, onAdd, onRemove, isCurrent,title="Foto kerusakan",help="Laporan baru wajib 1–5 foto. Informasi tambahan dapat dikirim tanpa foto. Foto diperkecil sebelum dikirim." }: { photos: readonly PreparedPhoto[]; disabled: boolean; onAdd: (photo: PreparedPhoto) => void; onRemove: (id: string) => void; isCurrent: () => boolean;title?:string;help?:string }) {
     const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null);
     const picking = useRef(false);
     const pick = async (camera: boolean) => {
@@ -24,9 +24,9 @@ export function PhotoPicker({ photos, disabled, onAdd, onRemove, isCurrent }: { 
         } catch (e) { if (isCurrent()) setError(e instanceof Error ? e.message : "Foto belum dapat dipilih. Coba kamera atau galeri."); }
         finally { picking.current = false; setBusy(false); }
     };
-    return <Card><Label>Foto kerusakan ({photos.length}/5)</Label><Label>Laporan baru wajib 1–5 foto. Informasi tambahan dapat dikirim tanpa foto. Foto diperkecil sebelum dikirim.</Label><Button title="Ambil foto dengan kamera" busy={busy} disabled={disabled || photos.length >= 5} onPress={() => { void pick(true); }} /><Button title="Pilih foto dari galeri" secondary disabled={busy || disabled || photos.length >= 5} onPress={() => { void pick(false); }} />
-        {error && <><Notice message={error} /><Button title="Buka pengaturan izin" secondary onPress={() => { void Linking.openSettings().catch(() => setError("Pengaturan belum dapat dibuka.")); }} /></>}
-        {photos.map((photo, index) => <Card key={photo.id}><Image source={{ uri: photo.path }} cachePolicy="none" style={styles.photo} accessibilityLabel={`Foto kerusakan ${index + 1}`} /><Label>Foto {index + 1} · {Math.ceil(photo.size / 1024)} KB</Label><Button title={`Hapus foto ${index + 1}`} secondary disabled={disabled || busy} onPress={() => onRemove(photo.id)} /></Card>)}
+    return <Card><Label>{title} ({photos.length}/5)</Label><Label>{help}</Label><Button icon="plus" title="Ambil foto dengan kamera" busy={busy} disabled={disabled || photos.length >= 5} onPress={() => { void pick(true); }} /><Button title="Pilih foto dari galeri" secondary disabled={busy || disabled || photos.length >= 5} onPress={() => { void pick(false); }} />
+        {error && <><Notice message={error} /><Button icon="arrowRight" title="Buka pengaturan izin" secondary onPress={() => { void Linking.openSettings().catch(() => setError("Pengaturan belum dapat dibuka.")); }} /></>}
+        {photos.map((photo, index) => <Card key={photo.id}><Image source={{ uri: photo.path }} cachePolicy="none" style={styles.photo} accessibilityLabel={`${title} ${index + 1}`} /><Label>Foto {index + 1} · {Math.ceil(photo.size / 1024)} KB</Label><Button title={`Hapus foto ${index + 1}`} secondary disabled={disabled || busy} onPress={() => onRemove(photo.id)} /></Card>)}
     </Card>;
 }
 const styles = StyleSheet.create({ photo: { width: "100%", height: t.size.qr, borderRadius: t.radius.sm, backgroundColor: t.color.page } });

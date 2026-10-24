@@ -1,4 +1,5 @@
-import { DecideBodySchema, LABEL_JENIS_PENGAJUAN, LABEL_STATUS_INSTANCE_APPROVAL } from "@sigm4/schemas";
+import { DecideBodySchema, ProcurementPartialSchema, LABEL_JENIS_PENGAJUAN, LABEL_STATUS_INSTANCE_APPROVAL } from "@sigm4/schemas";
+import type { ProcurementDetail } from "@sigm4/schemas";
 import type { ApprovalDecision, ApprovalDecisionResult, ApprovalPending, LinimasaPersetujuan, ReservationDetail } from "@sigm4/schemas";
 import { MobileApiError } from "../../shared/api/client";
 
@@ -10,6 +11,7 @@ export interface ApprovalReview {
     availability: AvailabilityReview | null;
     contextError: string | null;
     requesterContextComplete: boolean;
+    procurement?: ProcurementDetail | null;
 }
 export function decisionBlockers(review: ApprovalReview, permissions: Readonly<Record<string, string>>): string[] {
     const reasons: string[] = [];
@@ -17,6 +19,13 @@ export function decisionBlockers(review: ApprovalReview, permissions: Readonly<R
     if (review.history.status !== "MENUNGGU") reasons.push("Pengajuan sudah tidak menunggu keputusan.");
     const item = review.pending;
     if (!item || item.instance_id !== review.history.instance_id || item.urutan !== review.history.langkah_aktif || item.jenis_pengajuan !== review.history.jenis_pengajuan || item.referensi_id !== review.history.referensi_id || item.pemohon.id !== review.history.pemohon.id || !review.history.langkah.some((step) => step.urutan === item.urutan && step.status === "AKTIF")) reasons.push("Langkah ini tidak lagi berada pada kewenangan Anda. Muat ulang untuk memeriksa antrean.");
+    if (review.history.jenis_pengajuan === "PENGADAAN_BARANG") {
+        if (!Object.hasOwn(permissions, "procurement.approve")) reasons.push("Anda tidak memiliki izin menyetujui pengadaan.");
+        const proposal = review.procurement;
+        if (!proposal || proposal.id !== String(review.history.referensi_id) || proposal.approval_instance_id !== review.history.instance_id || Number(proposal.pengusul.id) !== review.history.pemohon.id || proposal.status !== "MENUNGGU_PERSETUJUAN") reasons.push("Rincian pengadaan tidak cocok dengan langkah yang menunggu. Muat ulang.");
+        if (review.contextError) reasons.push(review.contextError);
+        return reasons;
+    }
     if (review.history.jenis_pengajuan !== "RESERVASI_RUANGAN" || !review.room) reasons.push("Rincian objek untuk jenis pengajuan ini belum tersedia.");
     else if (review.room.jenis !== "RUANGAN" || review.room.id !== String(review.history.referensi_id) || review.room.approval_instance_id !== review.history.instance_id || Number(review.room.pemohon.id) !== review.history.pemohon.id || review.room.status !== "MENUNGGU_PERSETUJUAN") reasons.push("Rincian objek tidak lagi cocok dengan pengajuan yang menunggu. Muat ulang.");
     if (!review.availability) reasons.push("Ketersediaan objek belum berhasil diperiksa.");
@@ -24,6 +33,15 @@ export function decisionBlockers(review: ApprovalReview, permissions: Readonly<R
     if (!review.requesterContextComplete) reasons.push("Role pemohon serta riwayat keterlambatan dan kewajiban belum tersedia. Keputusan menunggu seluruh konteks wajib tersedia.");
     if (review.contextError) reasons.push(review.contextError);
     return reasons;
+}
+export function procurementDecision(proposal: ProcurementDetail, urutan: number, keputusan: ApprovalDecision["keputusan"], catatan: string, quantities?: Readonly<Record<string, string>>): ApprovalDecision {
+    if (!catatan.trim()) throw new Error("Catatan keputusan pengadaan wajib diisi.");
+    if (keputusan === "DISETUJUI" && proposal.lampiran.some(file => file.status !== "CLEAN" || !file.url)) throw new Error("Lampiran harus selesai diperiksa sebelum disetujui.");
+    const parsed = quantities ? ProcurementPartialSchema.safeParse({ items: proposal.items.map(item => ({ item_id: Number(item.id), jumlah_disetujui: Number(quantities[item.id]) })) }) : undefined;
+    if (parsed && !parsed.success) throw new Error("Isi jumlah setiap item dengan bilangan bulat nol atau positif dalam batas persetujuan sebelumnya.");
+    const rincian = parsed?.success ? parsed.data : undefined;
+    if (rincian && (rincian.items.every(item => item.jumlah_disetujui === 0) || rincian.items.some((item, index) => !quantities![String(item.item_id)]?.trim() || item.jumlah_disetujui > (proposal.items[index]!.jumlah_disetujui ?? proposal.items[index]!.jumlah_diusulkan)))) throw new Error("Jumlah harus tetap atau berkurang, dan minimal satu item disetujui.");
+    return { urutan, keputusan, catatan: catatan.trim(), ...(rincian ? { rincian_keputusan: rincian } : {}) };
 }
 export function approvalConflict(error: unknown): { name: string; at: string | null } | null {
     if (!(error instanceof MobileApiError) || error.code !== "APPROVAL_ALREADY_DECIDED") return null;
