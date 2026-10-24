@@ -32,7 +32,7 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 
 | Yang direncanakan | Yang dikerjakan | Sebab | Dampak pada phase berikutnya |
 |---|---|---|---|
-| — | — | — | — |
+| Satu PR per PR rencana (`CLAUDE.md`, `BRANCHING §2`) | `PR-04-16`, `PR-05-32`, `PR-04-17`, `PR-05-35`, `PR-05-34` sebagai satu PR paket rantai mobile (#181), commit per PR rencana tetap terpisah | Keputusan pemilik produk 24 Oktober 2026: pekerjaan lokal Phase 03–06 dikerjakan Codex beberapa PR sekaligus dan dipecah **per paket**; lima PR mobile ini berurutan dan saling bergantung | Sisa pekerjaan lokal Phase 03–06 juga masuk per paket (peta pemecahan); tiap PR paket mencatat baris ini |
 
 ## 4. PR di luar rencana
 
