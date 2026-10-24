@@ -6,9 +6,8 @@ import { preparePhoto } from "./photo-preparation";
 /** C-29 / DP-05a: pratinjau lokal saja; URL storage hanya diterbitkan backend setelah CLEAN. */
 export function EvidenceInput({ label, ids, onChange, signature = false, disabled = false, onBusyChange, galat, fieldPath }: { readonly galat?: string | undefined; readonly fieldPath?: string | undefined; readonly label: string; readonly ids: readonly number[]; readonly onChange: (ids: readonly number[]) => void; readonly signature?: boolean; readonly disabled?: boolean; readonly onBusyChange?: (busy: boolean) => void }) {
     const id = useId(), alive = useRef(true), cancel = useRef<AbortController | null>(null), uploading = useRef(false);
-    const [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null), [previews, setPreviews] = useState<readonly { id: number; url: string; name: string }[]>([]), [failed, setFailed] = useState<readonly File[]>([]);
-    const urls = useRef<string[]>([]);
-    useEffect(() => { alive.current = true; return () => { alive.current = false; cancel.current?.abort(); for (const url of urls.current) URL.revokeObjectURL(url); }; }, []);
+    const [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null), [previews, setPreviews] = useState<readonly { id: number; file: File; name: string }[]>([]), [failed, setFailed] = useState<readonly File[]>([]);
+    useEffect(() => { alive.current = true; return () => { alive.current = false; cancel.current?.abort(); }; }, []);
     const upload = async (files: readonly File[]) => {
         if (uploading.current) return;
         if (files.length + ids.length > (signature ? 1 : 5)) { setError(signature ? "Gunakan satu tanda tangan." : "Maksimal lima foto per unit."); return; }
@@ -20,19 +19,32 @@ export function EvidenceInput({ label, ids, onChange, signature = false, disable
                 const prepared = signature ? file : await preparePhoto(file);
                 const uploaded = await uploadEvidence(prepared, controller.signal);
                 if (!alive.current) return;
-                const url = URL.createObjectURL(file); urls.current.push(url); images.push({ id: uploaded, url, name: file.name }); next.push(uploaded);
+                images.push({ id: uploaded, file, name: file.name }); next.push(uploaded);
                 setPreviews([...images]); onChange([...next]);
                 remaining.shift();
             }
         } catch (failure) { if (alive.current && !controller.signal.aborted) { setFailed(remaining); setError(failure instanceof Error ? failure.message : "Unggahan gagal. Coba lagi."); } }
         finally { uploading.current = false; if (alive.current) { setBusy(false); onBusyChange?.(false); } }
     };
-    return <div className="flex flex-col gap-3"><label htmlFor={id} className="text-base font-medium">{label} (wajib)</label><input id={id} data-field={fieldPath} aria-invalid={galat!==undefined||undefined} aria-describedby={galat?`${id}-error`:undefined} type="file" accept={signature ? "image/png" : "image/jpeg,image/png"} multiple={!signature} disabled={disabled || busy} onChange={(e) => { const files = Array.from(e.target.files ?? []); e.target.value = ""; void upload(files); }} className="w-full min-w-0 text-base" />{galat&&<p id={`${id}-error`} className="text-sm text-error-base">{galat}</p>}<p role="status" className="text-sm text-text-secondary">{busy ? "Mengunggah bukti…" : `${ids.length} berkas berhasil diunggah. Bukti tersimpan privat dan menunggu pemindaian sebelum ditampilkan.`}</p>{error && <Peringatan varian="error">{error}</Peringatan>}{failed.length > 0 && <Tombol varian="secondary" disabled={disabled || busy} onClick={() => void upload(failed)}>Coba unggah lagi</Tombol>}<div className="flex flex-wrap gap-3">{previews.filter((p) => ids.includes(p.id)).map((p) => <div key={p.id} className="flex flex-col gap-2"><img src={pratinjauLokal(p.url)} alt={`Pratinjau ${p.name}`} className="h-24 w-24 rounded-sm border border-border-subtle object-contain" /><Tombol varian="secondary" disabled={disabled || busy} onClick={() => { URL.revokeObjectURL(p.url); setPreviews((old) => old.filter((f) => f.id !== p.id)); onChange(ids.filter((file) => file !== p.id)); }}>Lepas {p.name}</Tombol></div>)}</div></div>;
+    return <div className="flex flex-col gap-3"><label htmlFor={id} className="text-base font-medium">{label} (wajib)</label><input id={id} data-field={fieldPath} aria-invalid={galat!==undefined||undefined} aria-describedby={galat?`${id}-error`:undefined} type="file" accept={signature ? "image/png" : "image/jpeg,image/png"} multiple={!signature} disabled={disabled || busy} onChange={(e) => { const files = Array.from(e.target.files ?? []); e.target.value = ""; void upload(files); }} className="w-full min-w-0 text-base" />{galat&&<p id={`${id}-error`} className="text-sm text-error-base">{galat}</p>}<p role="status" className="text-sm text-text-secondary">{busy ? "Mengunggah bukti…" : `${ids.length} berkas berhasil diunggah. Bukti tersimpan privat dan menunggu pemindaian sebelum ditampilkan.`}</p>{error && <Peringatan varian="error">{error}</Peringatan>}{failed.length > 0 && <Tombol varian="secondary" disabled={disabled || busy} onClick={() => void upload(failed)}>Coba unggah lagi</Tombol>}<div className="flex flex-wrap gap-3">{previews.filter((p) => ids.includes(p.id)).map((p) => <div key={p.id} className="flex flex-col gap-2"><PratinjauBerkas file={p.file} label={`Pratinjau ${p.name}`} /><Tombol varian="secondary" disabled={disabled || busy} onClick={() => { setPreviews((old) => old.filter((f) => f.id !== p.id)); onChange(ids.filter((file) => file !== p.id)); }}>Lepas {p.name}</Tombol></div>)}</div></div>;
 }
 
-/** Pratinjau hanya dari object URL lokal (`blob:`), tidak pernah URL lain. */
-function pratinjauLokal(url: string): string | undefined {
-    return url.startsWith("blob:") ? url : undefined;
+/** Pratinjau lokal digambar langsung dari berkas ke kanvas — tanpa URL apa pun yang berasal dari masukan (DP-05a). */
+function PratinjauBerkas({ file, label }: { readonly file: File; readonly label: string }) {
+    const kanvas = useRef<HTMLCanvasElement>(null);
+    useEffect(() => {
+        let aktif = true;
+        if (typeof createImageBitmap !== "function") return;
+        void createImageBitmap(file).then((gambar) => {
+            const c = kanvas.current, ctx = c?.getContext("2d");
+            if (!aktif || !c || !ctx) { gambar.close(); return; }
+            const skala = Math.min(c.width / gambar.width, c.height / gambar.height, 1), w = gambar.width * skala, h = gambar.height * skala;
+            ctx.clearRect(0, 0, c.width, c.height); ctx.drawImage(gambar, (c.width - w) / 2, (c.height - h) / 2, w, h); gambar.close();
+        }).catch(() => undefined);
+        return () => { aktif = false; };
+    }, [file]);
+    // width/height = resolusi bitmap (2× ukuran tampil h-24), bukan gaya; ukuran tampil tetap token.
+    return <canvas ref={kanvas} width={192} height={192} role="img" aria-label={label} className="h-24 w-24 rounded-sm border border-border-subtle" />;
 }
 
 /** UX 31.6: bitmap 600×300, penunjuk sentuh/mouse; unggah PNG sebagai alternatif papan ketik. */
