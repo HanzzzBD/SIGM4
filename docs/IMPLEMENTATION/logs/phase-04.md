@@ -22,6 +22,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 | 14 Oktober 2026 | Implementasi lokal work order korektif dan jembatan verifikasi; teknisi/tenggat dipilih saat verifikasi, prioritas mengikuti urgensi tiket. Rincian dan validasi pada catatan PR-04-05/06 di bawah. | `PR-04-05`, `PR-04-06` |
 | 14 Oktober 2026 | Jadwal preventif, job H-7 dan P-45/P-46 diimplementasikan lokal; pembagian dua sesi dan keputusan tanggal/kategori/akses dikonfirmasi melalui pertanyaan interaktif. Rincian pada catatan PR-04-07 di bawah. | `PR-04-07` |
 | 14 Oktober 2026 | Eksekusi WO mobile/API, verifikasi atomik, riwayat servis dan P-42/P-43/P-44 diimplementasikan bersama. Keputusan pengguna: transaksi daring/foto luring, ambang estimasi wajib diisi dan persetujuan Petugas/Admin, perluasan NT-24. | `PR-04-08`, `PR-04-09`, `PR-04-10`, `PR-04-18` |
+| 24 Oktober 2026 | PR Phase 04 dari pekerjaan lokal dibuka bersama Phase 03–06 sebagai satu PR [#182](https://github.com/HanzzzBD/SIGM4/pull/182) — penyimpangan, keputusan, masalah, dan hasil ukur dicatat sekali di [log phase-03](phase-03.md) §1–§3, §7, §8 (keputusan 26–29). | #182 |
 
 ## 2. Keputusan yang diambil
 

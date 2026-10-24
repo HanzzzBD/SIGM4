@@ -21,6 +21,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 | — | — | — |
 | 13 Oktober 2026 | Pemantauan, pengingat, blokir, pelunasan/pembebasan, nilai penggantian dan perpanjangan; UI P-32/P-35/P-36 serta P-34/P-38 | PR-05-05 sampai PR-05-08 (UI PR-05-27/28) |
 | 13 Oktober 2026 | Implementasi lokal check-out, bukti digital, check-in dan pemulihan aset; backend dan web P-33/P-34 sesuai jawaban pengguna | PR-05-01 sampai PR-05-04 |
+| 24 Oktober 2026 | PR Phase 05 dari pekerjaan lokal dibuka bersama Phase 03–06 sebagai satu PR [#182](https://github.com/HanzzzBD/SIGM4/pull/182) — penyimpangan, keputusan, masalah, dan hasil ukur dicatat sekali di [log phase-03](phase-03.md) §1–§3, §7, §8 (keputusan 26–29). | #182 |
 
 ## 2. Keputusan yang diambil
 
