@@ -19,7 +19,9 @@
     "test": "npm run test --workspaces --if-present",
     "db:migrate": "node scripts/migrate.mjs up",
     "db:rollback": "node scripts/migrate.mjs down",
-    "db:status": "node scripts/migrate.mjs status"
+    "db:status": "node scripts/migrate.mjs status",
+    "demo:seed": "npm run build --workspace=@sigm4/api && node scripts/seed-demo.mjs && node scripts/seed-demo-files.mjs",
+    "demo:verify": "node scripts/verify-demo.mjs"
   },
   "dependencies": {
     "dbmate": "^2.35.1"

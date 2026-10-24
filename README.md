@@ -65,3 +65,7 @@ python scripts/validate_impl.py  # validasi docs/IMPLEMENTATION
 ```
 
 Perintah npm workspaces (`npm ci`, `npm run lint`) ditetapkan [`SDD-17 §4.4`](docs/SDD/17-repo-layout.md). Jalankan setelah dependensi terpasang dengan `npm ci`.
+
+## Demonstrasi lokal
+
+Dataset dan alur presentasi tersedia di [Panduan Demonstrasi SIGM4](docs/DEMO/ALUR-DEMONSTRASI.md). Jalankan `npm run demo:seed` pada lingkungan lokal yang sudah dimigrasikan, lalu `npm run demo:verify`. Akun/password dan tautan objek dihasilkan ke `tmp/demo/` (diabaikan Git).

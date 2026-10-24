@@ -14,6 +14,8 @@ const BERKAS = '__batas_impor__.ts';
 
 /** cwd: akar tempat konfigurasi lint dicari. tolak: apakah impor ini harus gagal. */
 const kasus = [
+  { nama: 'SDK Gemini di luar adapter ChatProvider dilarang (SDD-AI-12)', cwd: apiRoot, tolak: true,
+    file: 'apps/api/src/api/__batas_gemini__.ts', isi: "import '@google/genai';\n" },
   { nama: 'mobile shared -> features dilarang', cwd: mobileRoot, tolak: true,
     file: 'apps/mobile/src/shared/api/__batas_mobile__.ts', isi: "import '../../features/auth/index';\n" },
   { nama: 'mobile app -> internal feature dilarang', cwd: mobileRoot, tolak: true,

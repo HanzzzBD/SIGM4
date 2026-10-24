@@ -7,22 +7,25 @@
 #
 #     ./smoke-test.sh https://staging.contoh.sch.id
 #
-# Alur kritis CD-07 — login, cari aset, ajukan reservasi, scan QR, buat tiket
-# kerusakan — belum ada endpoint-nya. Setiap alur ditambahkan ke berkas ini oleh PR
-# yang membangun endpoint tersebut; sampai itu, yang dibuktikan adalah jalur
-# pengirimannya: API hidup, siap, dan berada di belakang proxy yang benar.
+# PR-03-36: mode penuh adalah default; --health-only harus diminta eksplisit.
+# Konfigurasi fixture dan rahasia: docs/IMPLEMENTATION/runbooks/smoke-test.md.
 #
 # SMOKE_CURL_OPTS dipakai HANYA oleh staging tiruan bersertifikat self-signed (-k).
 # SMOKE_LINGKUNGAN=produksi (PR-08-17): /api/docs wajib TERTUTUP (PR-00-19), bukan terbuka.
 
+set +x
 set -euo pipefail
+umask 077
 
-BASE="${1:?Pemakaian: smoke-test.sh <base-url>}"
+BASE="${1:?Pemakaian: smoke-test.sh <base-url> [--full|--health-only]}"
 BASE="${BASE%/}"
-# Opsi yang belum dikenal berkas ini ditolak, bukan diabaikan: `--full` yang diam-diam
-# menjadi pemeriksaan kesehatan saja tidak memenuhi CD-07.
-if (( $# > 1 )); then
-    echo "Opsi tidak dikenal: ${*:2}" >&2
+if [[ ! "$BASE" =~ ^https?://[^/@?#[:space:]]+$ ]]; then
+    echo "Base URL harus berupa origin HTTP(S), tanpa kredensial/path/query." >&2
+    exit 2
+fi
+MODE="${2:---full}"
+if [[ "$#" -gt 2 || ( "$MODE" != --full && "$MODE" != --health-only ) ]]; then
+    echo "Mode tidak sah: gunakan --full atau --health-only." >&2
     exit 2
 fi
 PRODUKSI=0
@@ -84,4 +87,9 @@ else
     GAGAL=1
 fi
 
-exit "$GAGAL"
+if [[ "$GAGAL" != 0 ]]; then exit "$GAGAL"; fi
+if [[ "$MODE" == --health-only ]]; then
+    echo "Hanya kesehatan diperiksa; lima alur CD-07 belum diuji."
+    exit 0
+fi
+"${SMOKE_PYTHON:-python3}" "$(dirname "${BASH_SOURCE[0]}")/smoke-critical.py" "$BASE"
