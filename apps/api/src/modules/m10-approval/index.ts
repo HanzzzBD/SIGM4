@@ -41,3 +41,6 @@ export {
 } from "./services/notification-sources.js";
 export type { StatusPengajuan } from "./services/dashboard-source.js";
 export { pengajuanSayaPerStatus, ringkasanAturan } from "./services/dashboard-source.js";
+
+export { HistoryService } from "./services/history.service.js";
+export { chatRequests } from "./repositories/chat.repository.js";

@@ -33,7 +33,7 @@ export function rencanakanPembatalan(kelompok: readonly BarisPengajuan[], akarId
     const turunan = kelompok.filter((b) => b.parent_id !== null);
     const indukBerulang = target.id === akar.id && turunan.length > 0;
     const kandidat = indukBerulang ? turunan : [target];
-    const dapat = (b: BarisPengajuan) => DAPAT_DIBATALKAN.has(b.status) && b.waktu_mulai.getTime() > sekarang.getTime();
+    const dapat = (b: BarisPengajuan) => DAPAT_DIBATALKAN.has(b.status) && (b.jenis === "ASET" || b.waktu_mulai.getTime() > sekarang.getTime());
     const terpilih = kandidat.filter(dapat);
 
     if (terpilih.length === 0) {

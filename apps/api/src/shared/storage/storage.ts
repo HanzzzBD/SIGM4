@@ -17,7 +17,7 @@ export interface PenyimpananObjek {
     /** Presigned PUT (SDD-FS-01). `mime` dan `ukuran` ikut ditandatangani — klien tak bisa menukarnya. */
     urlUnggah(kunci: string, mime: string, ukuran: number, berlakuDetik: number): Promise<string>;
     /** Presigned GET (SDD-FS-05). Pemeriksaan permission & `scan_status` milik PEMANGGIL (SDD-FS-03). */
-    urlUnduh(kunci: string, berlakuDetik: number): Promise<string>;
+    urlUnduh(kunci: string, berlakuDetik: number, filename?: string): Promise<string>;
     /** HEAD objek; `null` bila belum/tidak ada (verifikasi `confirm`, SDD-09 §4.2 langkah 3). */
     info(kunci: string): Promise<InfoObjek | null>;
     /** Isi objek bagi pemindai AV (SDD-FS-04); `null` bila tidak ada. Hanya dipakai worker. */
@@ -62,8 +62,8 @@ export class PenyimpananS3 implements PenyimpananObjek {
         return getSignedUrl(this.penanda, perintah, { expiresIn: berlakuDetik, signingDate: this.clock.now(), signableHeaders: new Set(["content-type", "content-length"]) });
     }
 
-    urlUnduh(kunci: string, berlakuDetik: number): Promise<string> {
-        return getSignedUrl(this.penanda, new GetObjectCommand({ Bucket: this.konfigurasi.bucket, Key: kunci }), { expiresIn: berlakuDetik, signingDate: this.clock.now() });
+    urlUnduh(kunci: string, berlakuDetik: number, filename?: string): Promise<string> {
+        return getSignedUrl(this.penanda, new GetObjectCommand({ Bucket: this.konfigurasi.bucket, Key: kunci, ...(filename ? { ResponseContentDisposition: `attachment; filename="${filename.replace(/[^a-zA-Z0-9_.-]/g, "_")}"` } : {}) }), { expiresIn: berlakuDetik, signingDate: this.clock.now() });
     }
 
     async info(kunci: string): Promise<InfoObjek | null> {

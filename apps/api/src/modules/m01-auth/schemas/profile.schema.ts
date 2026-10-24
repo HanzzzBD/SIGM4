@@ -22,6 +22,8 @@ const ProfilSchema = z.object({
     telepon: z.string().nullable(),
     role_kode: z.string(),
     must_change_password: z.boolean(),
+    two_factor_enabled: z.boolean().optional(),
+    remaining_backup_codes: z.number().int().nonnegative().optional(),
     // Keputusan 7c log phase-03: `foto_url` hanya bila `CLEAN` (SDD-FS-03); status agar UI dapat
     // menampilkan "sedang diperiksa" (SDD-09 §5). Keduanya null bila tanpa foto.
     foto_status: z.enum(["PENDING", "CLEAN", "INFECTED", "FAILED"]).nullable(),

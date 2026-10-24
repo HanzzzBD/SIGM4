@@ -31,9 +31,11 @@ export interface PengaturanPengajuan {
     readonly kuotaSiswa: number;
     readonly jarakMinimumHari: number;
     readonly granularitasMenit: number;
+    readonly durasiMaksimumJam: number;
 }
 
 const KUNCI_PENGATURAN = {
+    durasiMaksimumJam: "reservasi.durasi_maksimum_jam",
     ttlJam: "reservasi.ttl_tentative_jam",
     horizonHari: "reservasi.horizon_hari",
     kuotaGuruStaf: "reservasi.kuota_tertunda_guru_staf",
@@ -44,6 +46,7 @@ const KUNCI_PENGATURAN = {
 
 /** Satu baris kelompok pengajuan (induk + turunan, atau reservasi tunggal). */
 export interface BarisPengajuan {
+    readonly jenis?: "RUANGAN" | "ASET";
     readonly id: string;
     readonly nomor: string;
     readonly parent_id: string | null;
@@ -102,6 +105,7 @@ export class ReservationRepository extends BaseRepository {
             return v;
         };
         return {
+            durasiMaksimumJam: angka(KUNCI_PENGATURAN.durasiMaksimumJam),
             ttlJam: angka(KUNCI_PENGATURAN.ttlJam),
             horizonHari: angka(KUNCI_PENGATURAN.horizonHari),
             kuotaGuruStaf: angka(KUNCI_PENGATURAN.kuotaGuruStaf),
@@ -141,7 +145,7 @@ export class ReservationRepository extends BaseRepository {
     async kunciKelompok(ctx: AuthContext, akarId: number): Promise<readonly BarisPengajuan[]> {
         return this.query(ctx)
             .selectFrom("reservations")
-            .select(["id", "nomor", "parent_id", "pemohon_id", "status", "waktu_mulai"])
+            .select(["id", "nomor", "jenis", "parent_id", "pemohon_id", "status", "waktu_mulai"])
             .where((eb) => eb.or([eb("id", "=", String(akarId)), eb("parent_id", "=", String(akarId))]))
             .orderBy("id")
             .forUpdate()
@@ -221,10 +225,32 @@ export class ReservationRepository extends BaseRepository {
     }
 
     /** Reservasi yang dirujuk laporan kerusakan pasca-kegiatan (FR-07.4 A2, PR-03-31) — dibaca M-11 lewat `index.ts`. */
-    async untukLaporanKerusakan(ctx: AuthContext, id: number): Promise<{ readonly id: string; readonly nomor: string; readonly jenis: "RUANGAN" | "ASET"; readonly room_id: string | null; readonly status: StatusReservasi } | undefined> {
-        return this.query(ctx).selectFrom("reservations").select(["id", "nomor", "jenis", "room_id", "status"]).where("id", "=", String(id)).executeTakeFirst();
+    async untukLaporanKerusakan(ctx: AuthContext, id: number): Promise<{ readonly id: string; readonly nomor: string; readonly jenis: "RUANGAN" | "ASET"; readonly room_id: string | null; readonly status: StatusReservasi; readonly status_penggunaan_ruangan: StatusReservasi | null } | undefined> {
+        return this.query(ctx).selectFrom("reservations").select(["id", "nomor", "jenis", "room_id", "status", "status_penggunaan_ruangan"]).where("id", "=", String(id)).executeTakeFirst();
     }
 
+    async loanRecord(ctx: AuthContext, id: number) {
+        return this.query(ctx).selectFrom("reservations").selectAll().where("id", "=", String(id)).executeTakeFirst();
+    }
+    async directLoan(ctx: AuthContext, input: { nomor: string; borrower: number; start: Date; end: Date; purpose: string; location: string; reason: string; assets: readonly number[] }) {
+        const row = await this.query(ctx).insertInto("reservations").values({ nomor: input.nomor, jenis: "ASET", pemohon_id: input.borrower, room_id: null, parent_id: null, nama_kegiatan: null, jenis_kegiatan: null, jumlah_peserta: null, keperluan: input.purpose, lokasi_penggunaan: input.location, kebutuhan_tambahan: null, keterangan: null, waktu_mulai: input.start, waktu_selesai: input.end, status: "DISETUJUI", bypass_approval: true, alasan_bypass: input.reason, created_by: ctx.userId, updated_by: ctx.userId }).returning("id").executeTakeFirstOrThrow();
+        await this.query(ctx).insertInto("reservation_items").values(input.assets.map((asset) => ({ reservation_id: row.id, asset_id: asset, jumlah: 1, confirmed_at: input.start }))).execute();
+        return row.id;
+    }
+    async loanStatus(ctx: AuthContext, id: number, status: "BERLANGSUNG" | "SELESAI") {
+        const row = await this.loanRecord(ctx, id);
+        await this.query(ctx).updateTable("reservations").set({ status, updated_by: ctx.userId }).where("id", "=", String(id)).execute();
+        if (row?.parent_id !== null && row?.parent_id !== undefined) {
+            const children = await this.query(ctx).selectFrom("reservations").select("status").where("parent_id", "=", row.parent_id).execute();
+            const allClosed = children.every((c) => ["SELESAI", "DIBATALKAN", "KEDALUWARSA", "DITOLAK", "TIDAK_DIGUNAKAN"].includes(c.status));
+            await this.query(ctx).updateTable("reservations").set({ status: allClosed ? "SELESAI" : "BERLANGSUNG", updated_by: ctx.userId }).where("id", "=", row.parent_id).execute();
+        }
+    }
+    async completeLoanParent(ctx: AuthContext, parentId: string) {
+        const children = await this.query(ctx).selectFrom("reservations").select("status").where("parent_id", "=", parentId).execute();
+        if (children.length === 0 || children.some((r) => ["MENUNGGU_PERSETUJUAN", "DISETUJUI", "BERLANGSUNG"].includes(r.status))) return false;
+        return (await this.query(ctx).updateTable("reservations").set({ status: "SELESAI", updated_by: pelakuId(ctx) }).where("id", "=", parentId).where("jenis", "=", "ASET").where("status", "=", "BERLANGSUNG").executeTakeFirst()).numUpdatedRows > 0n;
+    }
     /** `{nomor}`/`{objek}`/`{tanggal}` notifikasi approval (SDD-08 §4.2a). */
     async rincian(ctx: AuthContext, id: number): Promise<RincianReservasi | undefined> {
         return this.query(ctx)

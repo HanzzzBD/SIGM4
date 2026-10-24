@@ -9,6 +9,8 @@
 import type { Kysely } from "kysely";
 import { sinkronkanStatusDireservasi } from "../modules/m04-assets/index.js";
 import { sinkronkanStatusReservasi } from "../modules/m07-reservation-room/index.js";
+import { expireUncollectedAssets } from "../modules/m07-reservation-room/index.js";
+import { syncCombinedRoomUsage } from "../modules/m08-reservation-item/index.js";
 import { AuditLogger } from "../shared/audit/index.js";
 import { BATCH_KEDALUWARSA, SlotService } from "../shared/booking/index.js";
 import type { Clock } from "../shared/clock/index.js";
@@ -46,8 +48,10 @@ export async function jalankanAktivasiSlot(db: Kysely<Database>, clock: Clock): 
         const { ditetapkan, dikembalikan } = await withTransaction(ctx, (scope) => sinkronkanStatusDireservasi(scope, audit, clock.now()), db);
         // Transaksi terpisah: kegagalan satu sisi tak membatalkan sisi lainnya; keduanya diulang putaran berikut (JOB-03).
         const r = await withTransaction(ctx, (scope) => sinkronkanStatusReservasi(scope, audit, clock), db);
+        const combined = await withTransaction(ctx, (scope) => syncCombinedRoomUsage(scope, clock, audit), db);
+        const expired = await withTransaction(ctx, (scope) => expireUncollectedAssets(scope, clock, audit), db);
         return {
-            diproses: ditetapkan.length + dikembalikan.length + r.berlangsung + r.selesai + r.indukSelesai,
+            diproses: ditetapkan.length + dikembalikan.length + r.berlangsung + r.selesai + r.indukSelesai + combined + expired,
             galat: 0,
             rincian: { ditetapkan: ditetapkan.length, dikembalikan: dikembalikan.length, reservasi_berlangsung: r.berlangsung, reservasi_selesai: r.selesai, induk_selesai: r.indukSelesai },
         };

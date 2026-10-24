@@ -64,6 +64,8 @@ const ImportFailureSchema = z.object({
 
 /** Representasi pekerjaan impor (IMPT-02): hitungan + alasan galat per nomor baris. */
 export const UserImportJobSchema = z.object({
+    report_expires_at: z.string().nullable(),
+    report_expired: z.boolean(),
     id: z.string(),
     status: z.enum(["MENUNGGU", "BERJALAN", "SELESAI", "GAGAL"]),
     nama_berkas: z.string(),

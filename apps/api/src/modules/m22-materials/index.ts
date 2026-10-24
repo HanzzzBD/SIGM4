@@ -1,0 +1,11 @@
+export { MaterialLedgerService } from "./services/ledger.service.js";
+export { registerMaterialRequests } from "./registration.js";
+export { materialBusinessRoutes, materialBusinessRouter } from "./business.routes.js";
+export { materialRequestNotification } from "./services/notification-source.js";
+export { materialLowStock } from "./services/dashboard-source.js";
+export { procurementMaterialOptions, procurementMaterial, receiveProcurementMaterial } from "./services/procurement-source.js";
+export type { MaterialLedgerInput } from "./services/ledger.service.js";
+export { materialsRouter,materialRoutes } from "./routes.js";
+export { materialQrTargets } from "./services/qr-targets.js";
+export { chatMaterials } from "./services/chat-source.js";
+export { allMaterialRequests as materialRequestReadScopeAll } from "./access.js";

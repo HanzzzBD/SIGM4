@@ -1,3 +1,6 @@
+import { jalankanPekerjaanSistem } from "./system-job.js";
+import { ReportExportService, createAnalyticsProviders, EXPORT_JOB, EXPORT_REQUESTED, EXPORT_CLEANUP_JOB } from "../modules/m16-analytics/index.js";
+import { registerDisposals, DisposalReportService, DISPOSAL_REPORT_JOB } from "../modules/m21-disposal/index.js";
 // Entrypoint job & queue consumer sigm4-worker (SDD-SYS-08).
 //
 // Worker berbagi basis kode dengan API namun berjalan sebagai proses terpisah
@@ -8,6 +11,13 @@
 // Yang dibangun PR-00-11 adalah kerangkanya: antrean, kunci terdistribusi, dan
 // penjadwal.
 
+import { installStudentObligations, registerLoans, installLoanConsumers } from "../modules/m09-loans/index.js";
+import { PERSONAL_DATA_RETENTION_JOB, runPersonalDataRetention } from "./personal-data-retention.js";
+import { registerMaterialRequests } from "../modules/m22-materials/index.js";
+import { registerProcurements,PROCUREMENT_POLICY } from "../modules/m14-procurement/index.js";
+import { installWorkOrderConsumers } from "../modules/m12-maintenance/index.js";
+import { MAINTENANCE_SCHEDULE_JOB, MAINTENANCE_SCHEDULE_CRON, runMaintenanceSchedules } from "./maintenance-schedule-jobs.js";
+import { LOAN_OVERDUE_JOB, LOAN_OVERDUE_CRON, runLoanMonitoring } from "./loan-jobs.js";
 import { pathToFileURL } from "node:url";
 import { getRedis } from "../shared/cache/index.js";
 import { AuditLogger } from "../shared/audit/index.js";
@@ -62,6 +72,7 @@ import { createSystemAuthContext } from "../shared/auth/system-context.js";
 import { ApprovalService } from "../modules/m10-approval/index.js";
 import { daftarkanReservasiRuangan, pasangKonsumenReservasi } from "../modules/m07-reservation-room/index.js";
 import type { Queue } from "bullmq";
+import { BlockService, CancellationService, RoomScheduleImportRunner, RoomScheduleImportService, ROOM_SCHEDULE_IMPORT_JOB, EVENT_ROOM_SCHEDULE_IMPORT_REQUESTED, roomScheduleImportQueueId } from "../modules/m07-reservation-room/index.js";
 import { AssetImportRunner, AssetImportService, ASSET_IMPORT_JOB_NAME, EVENT_ASSET_IMPORT_REQUESTED, assetImportQueueId } from "../modules/m04-assets/index.js";
 import { MovementDocumentService, MOVEMENT_DOCUMENT_JOB_NAME, EVENT_MOVEMENT_DOCUMENT_REQUESTED, movementDocumentQueueId } from "../modules/m04-assets/index.js";
 import { PembangkitPdfChromium } from "../shared/pdf/index.js";
@@ -93,6 +104,32 @@ export const idJobPush = (notifikasiId: number): string => `push-${String(notifi
  * menyusul Phase 02.
  */
 export const registry = new JobRegistry().register(
+    { name: PERSONAL_DATA_RETENTION_JOB, cron: wibCronToUtc(10, 1), handler: async () => { await runPersonalDataRetention(getDb(), new SystemClock()); } },
+    { name: EXPORT_JOB, handler: async job => {
+        if (!pemindaian) throw new Error("Penyimpanan worker belum tersedia.");
+        const clock = new SystemClock(), service = new ReportExportService(getDb(), clock, new AuditLogger({clock}), new PenyimpananS3(pemindaian.penyimpanan, clock), createAnalyticsProviders());
+        await service.run(createSystemAuthContext(EXPORT_JOB), String((job.data as {export_id: string}).export_id), new PembangkitPdfChromium(chromiumExecutablePath), job.attemptsMade + 1 >= (job.opts.attempts ?? 1));
+    } },
+    { name: EXPORT_CLEANUP_JOB, cron: "*/15 * * * *", handler: async () => {
+        if (!pemindaian) throw new Error("Penyimpanan worker belum tersedia.");
+        const clock = new SystemClock();
+        const audit = new AuditLogger({clock}), service = new ReportExportService(getDb(), clock, audit, new PenyimpananS3(pemindaian.penyimpanan, clock), createAnalyticsProviders());
+        await jalankanPekerjaanSistem({nama:EXPORT_CLEANUP_JOB,db:getDb(),clock,audit}, async ctx => ({diproses:await service.cleanup(ctx),galat:0}));
+    } },
+    { name: DISPOSAL_REPORT_JOB, handler: async job => {
+        if (!pemindaian) throw new Error("Penyimpanan worker belum tersedia.");
+        const clock = new SystemClock();
+        await new DisposalReportService(getDb(), clock, new AuditLogger({ clock }), new PenyimpananS3(pemindaian.penyimpanan, clock)).run(createSystemAuthContext(DISPOSAL_REPORT_JOB), String((job.data as { disposal_id: number }).disposal_id), new PembangkitPdfChromium(chromiumExecutablePath), job.attemptsMade + 1 >= (job.opts.attempts ?? 1));
+    } },
+    { name: AUDIT_REPORT_JOB, handler: async job => {
+        if (!pemindaian) throw new Error("Penyimpanan worker belum tersedia.");
+        const clock = new SystemClock();
+        const service = new StocktakeReportService(getDb(), clock, new AuditLogger({ clock }), new PenyimpananS3(pemindaian.penyimpanan, clock));
+        await service.run(createSystemAuthContext(AUDIT_REPORT_JOB), String((job.data as { session_id: number }).session_id), new PembangkitPdfChromium(chromiumExecutablePath), job.attemptsMade + 1 >= (job.opts.attempts ?? 1));
+    } },
+    { name:"chat-retention",cron:wibCronToUtc(50,1),handler:async()=>{await runChatRetention(getDb(),new SystemClock());} },
+    { name: MAINTENANCE_SCHEDULE_JOB, cron: MAINTENANCE_SCHEDULE_CRON, handler: async () => { await runMaintenanceSchedules(getDb(), new SystemClock()); } },
+    { name: LOAN_OVERDUE_JOB, cron: LOAN_OVERDUE_CRON, handler: async () => { await runLoanMonitoring(getDb(), new SystemClock()); } },
     {
         name: MOVEMENT_DOCUMENT_JOB_NAME,
         handler: async (job) => {
@@ -210,6 +247,16 @@ export const registry = new JobRegistry().register(
         },
     },
     {
+        name: ROOM_SCHEDULE_IMPORT_JOB,
+        handler: async (job) => {
+            const clock = new SystemClock(), db = getDb(), audit = new AuditLogger({ clock }), calendar = new BusinessCalendarService();
+            const approval = new ApprovalService(db, audit, clock, calendar);
+            const blocks = new BlockService(db, clock, calendar, audit, new CancellationService(db, clock, audit, approval));
+            const runner = new RoomScheduleImportRunner(db, new PermissionCache(db, getRedis()), new RoomScheduleImportService(db, audit, clock, blocks));
+            await runner.run(job.data, job.attemptsMade + 1 >= (job.opts.attempts ?? 1));
+        },
+    },
+    {
         name: ASSET_IMPORT_JOB_NAME,
         handler: async (job) => {
             const clock = new SystemClock();
@@ -251,9 +298,16 @@ export const registry = new JobRegistry().register(
  * setelah antrean ada — antrean tidak dapat dibuat pada saat modul dimuat.
  */
 export function pasangHandlerAntrean(handlers: EventHandlerRegistry, queue: Queue): void {
+    handlers.on(EXPORT_REQUESTED, async event => { const id = String((event.payload as {export_id: string}).export_id); await queue.add(EXPORT_JOB, {export_id: id}, {...RETRY_OPTIONS, jobId: `report-export-${id}`}); });
+    handlers.on("AssetDisposalReportRequested", async event => { const id = String((event.payload as { disposal_id: number }).disposal_id); await queue.add(DISPOSAL_REPORT_JOB, { disposal_id: Number(id) }, { ...RETRY_OPTIONS, jobId: `disposal-pdf-${id}-${event.id}` }); });
+    handlers.on("AuditReportRequested", async event => { const id = String((event.payload as { session_id: number }).session_id); await queue.add(AUDIT_REPORT_JOB, { session_id: Number(id) }, { ...RETRY_OPTIONS, jobId: `opname-pdf-${id}-${event.id}` }); });
     handlers.on(EVENT_MOVEMENT_DOCUMENT_REQUESTED, async (event) => {
         const id = String((event.payload as { document_id: string }).document_id);
         await queue.add(MOVEMENT_DOCUMENT_JOB_NAME, { document_id: id }, { ...RETRY_OPTIONS, jobId: movementDocumentQueueId(id) });
+    });
+    handlers.on(EVENT_ROOM_SCHEDULE_IMPORT_REQUESTED, async (event) => {
+        const payload = event.payload as { job_id: string | number; oleh: number };
+        await queue.add(ROOM_SCHEDULE_IMPORT_JOB, payload, { ...RETRY_OPTIONS, jobId: roomScheduleImportQueueId(payload.job_id) });
     });
     handlers.on(EVENT_ASSET_IMPORT_REQUESTED, async (event) => {
         const payload = event.payload as { job_id: string | number; oleh: number };
@@ -286,6 +340,13 @@ export function pasangHandlerAntrean(handlers: EventHandlerRegistry, queue: Queu
  * `SDD-07 §4.3` menempatkan hampir seluruhnya pada notifikasi (Phase 02+).
  */
 export const eventHandlers = new EventHandlerRegistry();
+const loanClock = new SystemClock(), loanAudit = new AuditLogger({ clock: loanClock });
+installStudentObligations();
+registerLoans(loanClock, loanAudit);
+registerProcurements(loanAudit,PROCUREMENT_POLICY);
+registerDisposals(loanAudit, loanClock);
+registerMaterialRequests(loanClock, loanAudit);
+installLoanConsumers(eventHandlers, { db: getDb, clock: loanClock, audit: loanAudit, ctx: () => createSystemAuthContext("loan-events") });
 
 // SDD-08 §4.2a (keputusan 78): konsumen penerbit notifikasi, pelaku SYSTEM (SDD-03 §5).
 // Dipasang saat modul dimuat — koneksi basis data baru dibuka saat event diproses.
@@ -322,6 +383,8 @@ pasangKonsumenNotifikasi(eventHandlers, {
 const jamReservasi = new SystemClock();
 const auditReservasi = new AuditLogger({ clock: jamReservasi, logger: new Logger({ clock: jamReservasi, modulBawaan: "reservasi" }) });
 const pelakuReservasi = createSystemAuthContext("outbox-reservasi");
+const pelakuWorkOrder = createSystemAuthContext("outbox-work-order");
+installWorkOrderConsumers(eventHandlers, { db: getDb, ctx: () => pelakuWorkOrder, clock: jamReservasi, audit: auditReservasi });
 daftarkanReservasiRuangan(jamReservasi, auditReservasi);
 pasangKonsumenReservasi(eventHandlers, {
     db: getDb,
@@ -406,3 +469,6 @@ if (
             process.exit(1);
         });
 }
+import { StocktakeReportService, AUDIT_REPORT_JOB } from "../modules/m13-audit-stocktake/index.js";
+import { runChatRetention } from "./chat-retention.js";
+import { BusinessCalendarService } from "../shared/calendar/index.js";

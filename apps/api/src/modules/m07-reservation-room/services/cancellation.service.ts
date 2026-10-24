@@ -20,6 +20,7 @@ import { DomainError, ForbiddenError, NotFoundError } from "../../../shared/erro
 import { publish } from "../../../shared/events/index.js";
 import { createReservationRepository } from "../repositories/reservation.repository.js";
 import { rencanakanPembatalan } from "./cancellation-plan.js";
+import { assertNotCheckedOut } from "../../m08-reservation-item/index.js";
 
 const MODUL = "m07-reservation-room";
 
@@ -42,7 +43,7 @@ export class CancellationService {
      * Inti pembatalan di transaksi PEMANGGIL — dipakai juga blokade ruangan yang membatalkan reservasi
      * bentrok atas keputusan eksplisit penggunanya (FR-07.5 A1, PR-03-13): aturan, NT-08, dan log sama.
      */
-    async batalkanDalam(scope: TransactionScope, reservationId: number, alasan: string): Promise<ReservationCancelled> {
+    async batalkanDalam(scope: TransactionScope, reservationId: number, alasan: string, automatic = false, maintenanceAsset?: string): Promise<ReservationCancelled> {
         const ctx = scope.ctx;
         const repo = createReservationRepository(scope.tx);
         const akarId = await repo.akarDari(scope.ctx, reservationId);
@@ -55,19 +56,21 @@ export class CancellationService {
         // m07 §7 (keputusan 15b): route menuntut `cancel_own`; reservasi pihak lain menuntut `cancel_any`.
         // Kepemilikan dibaca dari basis data, bukan disimpulkan dari role.
         const sepihak = akar.pemohon_id !== String(ctx.userId);
-        if (sepihak && !ctx.can("reservation.cancel_any")) throw new ForbiddenError(); // pesan seragam (SDD-AUTH-08)
+        if (sepihak && !ctx.can("reservation.cancel_any") && !automatic) throw new ForbiddenError(); // pesan seragam (SDD-AUTH-08)
 
         const rencana = rencanakanPembatalan(kelompok, akar.id, String(reservationId), this.clock.now());
         if (!rencana.sah) throw new DomainError("VALIDATION_ERROR", rencana.alasan, { errors: [{ field: "id", message: rencana.alasan }] });
 
         // FR-07.3 AC: slot dilepas di transaksi yang sama — langsung dapat dipesan pengguna lain.
         const ids = rencana.dibatalkan.map((b) => b.id);
+        if (akar.jenis === "ASET") await assertNotCheckedOut(scope, ids, this.clock.now());
         const milik = await slotMilikReservasi(scope.tx, ids.map(Number));
         await new SlotService(this.clock).release(scope, milik.filter((s) => s.status !== "RELEASED").map((s) => Number(s.id)));
         for (const dari of ["MENUNGGU_PERSETUJUAN", "DISETUJUI"] as const) {
             await repo.ubahStatus(scope.ctx, rencana.dibatalkan.filter((b) => b.status === dari).map((b) => b.id), dari, "DIBATALKAN");
         }
-        const tutup = rencana.akarTertutup && akar.status === "MENUNGGU_PERSETUJUAN" ? await this.approval.tutupKarenaObjek(scope, "RESERVASI_RUANGAN", akarId) : undefined;
+        const tutup = rencana.akarTertutup && akar.status === "MENUNGGU_PERSETUJUAN" ? await this.approval.tutupKarenaObjek(scope, akar.jenis === "ASET" ? "RESERVASI_ASET" : "RESERVASI_RUANGAN", akarId) : undefined;
+        if (akar.jenis === "ASET" && await repo.completeLoanParent(scope.ctx, akar.id)) await this.audit.write(scope, { modul: MODUL, aksi: "RESERVATION_UPDATED", entitas: "reservations", entitasId: akar.id, nilaiSebelum: { status: "BERLANGSUNG" }, nilaiSesudah: { status: "SELESAI", alasan: "Seluruh realisasi/tanggal turunan sudah ditutup" } });
 
         const target = kelompok.find((b) => b.id === String(reservationId)) ?? akar;
         const status = rencana.akarTertutup || target.id !== akar.id ? "DIBATALKAN" : target.status;
@@ -84,7 +87,7 @@ export class CancellationService {
             name: EVENT_RESERVASI_DIBATALKAN,
             aggregateType: "reservation",
             aggregateId: reservationId,
-            payload: { reservation_id: reservationId, nomor: target.nomor, pemohon_id: Number(akar.pemohon_id), pelaku_id: ctx.userId, alasan, sepihak, dibatalkan: ids.map(Number) },
+            payload: { reservation_id: reservationId, nomor: target.nomor, pemohon_id: Number(akar.pemohon_id), pelaku_id: ctx.userId, alasan, sepihak, dibatalkan: ids.map(Number), ...(maintenanceAsset === undefined ? {} : { kode_notifikasi: "NT-27", aset: maintenanceAsset }) },
         });
         return { id: target.id, nomor: target.nomor, status, dibatalkan: rencana.dibatalkan.map((b) => ({ id: b.id, nomor: b.nomor })) };
     }

@@ -111,6 +111,9 @@ export interface RoomFields {
 }
 
 export class LocationRepository extends BaseRepository {
+    async roomIdByCode(ctx: AuthContext, code: string) {
+        return this.query(ctx).selectFrom("rooms").select("id").where("kode", "=", code).executeTakeFirst();
+    }
     async exportIdentity(ctx: AuthContext, id: number) {
         return this.query(ctx).selectFrom("rooms as r").innerJoin("areas as a", "a.id", "r.area_id").innerJoin("buildings as b", "b.id", "a.building_id").select(["r.nama", "r.kode", "a.nama as area", "b.nama as gedung"]).where("r.id", "=", String(id)).executeTakeFirst();
     }

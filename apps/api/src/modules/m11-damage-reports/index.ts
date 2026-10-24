@@ -7,3 +7,7 @@ export { EVENT_KERUSAKAN_DIVERIFIKASI } from "./services/verification.service.js
 export type { TiketTerkunci } from "./repositories/damage-report.repository.js";
 /** Titik ekstensi work order (keputusan 21d) — dipanggil M-12 di Phase 04. */
 export { TitikWorkOrderKerusakan } from "./services/work-order-hook.js";
+export { reportLoanReturnDamage } from "./services/loan-return-damage.js";
+export { chatDamage } from "./repositories/chat.repository.js";
+
+export { damageExportRows } from "./services/export-source.js";

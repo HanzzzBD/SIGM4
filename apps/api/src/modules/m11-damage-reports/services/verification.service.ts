@@ -4,8 +4,11 @@
 // `DamageReportVerified` ke outbox — konsumen M-17 menerbitkan NT-21 ke pelapor (langkah 5).
 
 import type { DamageReportVerified } from "@sigm4/schemas";
+import type { WorkOrderAssignment } from "@sigm4/schemas";
+import { validateWorkOrderTechnician, validateWorkOrderTarget } from "../../m12-maintenance/index.js";
 import type { Kysely } from "kysely";
 import { AssetService } from "../../m04-assets/index.js";
+import { cancelReservationsForUnavailableAsset } from "../../m07-reservation-room/index.js";
 import type { AuditLogger } from "../../../shared/audit/index.js";
 import type { AuthContext } from "../../../shared/auth/index.js";
 import type { Clock } from "../../../shared/clock/index.js";
@@ -23,6 +26,7 @@ export const EVENT_KERUSAKAN_DIVERIFIKASI = "DamageReportVerified";
 export type KeputusanVerifikasi = "TINDAK_LANJUT" | "PERBAIKAN_RINGAN" | "TOLAK";
 
 export interface IsianVerifikasi {
+    readonly workOrder?: WorkOrderAssignment | undefined;
     readonly keputusan: KeputusanVerifikasi;
     readonly catatan: string | null;
     readonly kondisiAset: { readonly kondisi: "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT"; readonly alasan: string | null } | null;
@@ -54,6 +58,17 @@ export class VerificationService {
                 // FR-11.2 Preconditions: hanya tiket `DILAPORKAN`; verifikasi serentak kedua menunggu kunci lalu ditolak.
                 if (tiket.status !== "DILAPORKAN") throw galat("id", `Laporan ${tiket.nomor} sudah diverifikasi sebelumnya.`);
 
+                // Urutan kunci seragam dengan M-12: tiket, teknisi, lalu aset.
+                if (isian.keputusan === "TINDAK_LANJUT") {
+                    if (!isian.workOrder) throw galat("work_order", "Pilih teknisi dan target selesai untuk tindak lanjut.");
+                    if (!ctx.can("workorder.create")) throw new ForbiddenError();
+                    const hariIni = new Date(this.clock.now().getTime() + 7 * 3600000).toISOString().slice(0, 10);
+                    if (isian.workOrder.target_selesai < hariIni) throw galat("work_order.target_selesai", "Target selesai tidak boleh sebelum hari ini.");
+                    await validateWorkOrderTechnician(scope, isian.workOrder.teknisi_id);
+                    await validateWorkOrderTarget(scope, tiket.asset_id, tiket.room_id, isian.workOrder.nonaktifkan_aset);
+                    if (!isian.workOrder.nonaktifkan_aset && isian.kondisiAset?.kondisi === "RUSAK_BERAT") throw galat("work_order.nonaktifkan_aset", "Aset Rusak Berat tidak dapat dipertahankan Tersedia.");
+                    await scope.tx.updateTable("damage_reports").set({ work_order_assignment: JSON.stringify(isian.workOrder) }).where("id", "=", tiket.id).execute();
+                }
                 let kondisiAset: string | null = null;
                 if (isian.kondisiAset !== null) {
                     if (tiket.asset_id === null) throw galat("kondisi_aset", "Laporan atas ruangan tidak memiliki kondisi aset.");
@@ -66,6 +81,7 @@ export class VerificationService {
                         referensiId: id,
                     });
                     kondisiAset = aset.kondisi;
+                    if (aset.status === "TIDAK_TERSEDIA") await cancelReservationsForUnavailableAsset(scope, Number(tiket.asset_id), this.clock, this.audit);
                 }
 
                 const hasil = HASIL[isian.keputusan];
@@ -79,7 +95,7 @@ export class VerificationService {
                         entitasId: tiket.id,
                         ...(isian.catatan === null ? {} : { keterangan: isian.catatan }),
                         nilaiSebelum: { status: tiket.status },
-                        nilaiSesudah: { status: hasil.status, keputusan: isian.keputusan, kondisi_aset: kondisiAset },
+                        nilaiSesudah: { status: hasil.status, keputusan: isian.keputusan, kondisi_aset: kondisiAset, work_order: isian.workOrder ?? null },
                     });
                 }
                 await publish(scope, {

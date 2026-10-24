@@ -32,6 +32,7 @@ export interface LangkahRiwayat extends Target {
     readonly targetUserNama: string | null;
     readonly keputusan: "DISETUJUI" | "DITOLAK" | "PERLU_REVISI" | "DILEWATI" | null;
     readonly catatan: string | null;
+    readonly rincian?: unknown;
     readonly diputuskanOleh: Nama | null;
     readonly atasNama: Nama | null;
     readonly diputuskanPada: Date | null;
@@ -101,7 +102,7 @@ export class HistoryRepository extends BaseRepository {
                 "r.nama as role_nama",
                 "t.nama as target_nama",
                 "s.keputusan",
-                "s.catatan",
+                "s.catatan","s.rincian_keputusan",
                 "s.diputuskan_oleh",
                 "d.nama as pemutus_nama",
                 "s.atas_nama_user_id",
@@ -125,7 +126,7 @@ export class HistoryRepository extends BaseRepository {
             targetRoleNama: b.role_nama,
             targetUserNama: b.target_nama,
             keputusan: b.keputusan,
-            catatan: b.catatan,
+            catatan: b.catatan,rincian:b.rincian_keputusan,
             diputuskanOleh: nama(b.diputuskan_oleh, b.pemutus_nama),
             atasNama: nama(b.atas_nama_user_id, b.atas_nama_nama),
             diputuskanPada: b.diputuskan_pada,

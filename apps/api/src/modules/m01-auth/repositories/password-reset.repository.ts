@@ -30,7 +30,7 @@ export interface PermintaanRow {
 export interface PermintaanTampil extends PermintaanRow {
     readonly pemohon_nama: string;
     readonly pemohon_email: string;
-    readonly pemohon_nip_nis: string;
+    readonly pemohon_nip_nis: string | null;
     readonly pemohon_role_kode: string;
     readonly diproses_oleh_nama: string | null;
 }
@@ -39,7 +39,7 @@ export interface PenggunaSasaran {
     readonly id: string;
     readonly nama: string;
     readonly email: string;
-    readonly nip_nis: string;
+    readonly nip_nis: string | null;
     readonly status: "AKTIF" | "NONAKTIF";
 }
 

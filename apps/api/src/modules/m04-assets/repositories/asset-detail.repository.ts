@@ -13,6 +13,7 @@ const KOLOM_DETAIL = [
     "assets.uuid",
     "assets.kode_barang",
     "assets.nama",
+    "assets.procurement_id",
     "assets.category_id",
     "asset_categories.nama as kategori_nama",
     "assets.merek",

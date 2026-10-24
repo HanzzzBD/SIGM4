@@ -6,3 +6,4 @@ export type { DefinisiKartu, KonteksKartu, LayananKartu, RentangTerhitung } from
 export { KARTU, TEMPLAT } from "./services/cards.js";
 export type { DataKartu, KartuManifes, PenyimpanKartu } from "./services/dashboard.service.js";
 export { DashboardService, TTL_KARTU_DETIK } from "./services/dashboard.service.js";
+export { chatSummary } from "./repositories/chat.repository.js";

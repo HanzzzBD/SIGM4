@@ -1,5 +1,5 @@
-// Titik ekstensi work order (FR-11.2 → FR-12.1; PR-03-15, keputusan 21d log phase-03). Disiapkan, belum
-// dipanggil siapa pun: M-12 (Phase 04) memanggilnya lewat `index.ts` di dalam transaksinya sendiri.
+// Titik ekstensi work order (FR-11.2 → FR-12.1; PR-03-15, keputusan 21d log phase-03).
+// PR-04-05/06: M-12 memanggilnya lewat `index.ts` di dalam transaksi pembuatan work order.
 // Ketiganya mengunci tiket lebih dulu — dua work order serentak atas satu tiket tidak dapat lolos bersamaan.
 
 import type { AuditLogger } from "../../../shared/audit/index.js";

@@ -100,6 +100,7 @@ export class AuthRepository {
                 "u.totp_enabled_at",
             ])
             .where(sql<boolean>`lower(u.email) = lower(${email})`)
+            .where("u.pseudonymized_at", "is", null)
             .executeTakeFirst();
     }
 
@@ -117,6 +118,7 @@ export class AuthRepository {
                 "u.totp_enabled_at",
             ])
             .where("u.id", "=", id)
+            .where("u.pseudonymized_at", "is", null)
             .executeTakeFirst();
     }
 
@@ -184,6 +186,7 @@ export class AuthRepository {
             .selectFrom("users")
             .select(["failed_login_count", "failed_login_window_start", "locked_until"])
             .where("id", "=", userId)
+            .where("pseudonymized_at", "is", null)
             .forUpdate()
             .executeTakeFirst();
     }

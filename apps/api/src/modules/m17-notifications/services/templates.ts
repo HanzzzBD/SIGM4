@@ -10,6 +10,7 @@ export interface Templat {
     /** Kolom **Kanal** katalog: `true` = "In-app + Push"; "In-app" tak pernah dipush (keputusan 87b). */
     readonly push: boolean;
     readonly judul: string;
+    readonly judulSaat?: (p:Readonly<Record<string,unknown>>)=>string;
     render(p: Readonly<Record<string, unknown>>): string;
     /** Isi push bila isi in-app menyebut identitas pengguna lain — aman di layar terkunci (SDD-08 §4.2, keputusan 87c). */
     readonly isiPush?: string;
@@ -30,6 +31,19 @@ const PLATFORM: Readonly<Record<string, string>> = { WEB: "Web", ANDROID: "Andro
 const pengajuan = (p: Readonly<Record<string, unknown>>) => teks(p["label"]);
 
 export const TEMPLAT: Readonly<Record<string, Templat>> = {
+    "NT-42": { jenis: "AKUN_SISTEM", wajib: false, push: true, judul: "Ekspor siap diunduh", render: p => `Laporan ${teks(p["jenis"])} siap diunduh. File berlaku 24 jam.` },
+    "NT-49": { jenis: "OPNAME_PENGADAAN", wajib: true, push: true, judul: "Stok bahan menipis", render: p => `Stok ${teks(p["bahan"])} tersisa ${teks(p["saldo"])} ${teks(p["satuan"])}, minimum ${teks(p["ambang"])}.` },
+    "NT-50": { jenis: "OPNAME_PENGADAAN", wajib: false, push: true, judul: "Permintaan bahan disetujui", render: p => `Permintaan ${teks(p["nomor"])} siap diambil di ${teks(p["lokasi"])}. Saldo diperiksa saat penyerahan.` },
+    "NT-51": { jenis: "OPNAME_PENGADAAN", wajib: false, push: false, judul: "Bahan diserahkan", render: p => `${teks(p["ringkasan"])} telah diserahkan pada ${teks(p["tanggal"])} untuk permintaan ${teks(p["nomor"])}.` },
+    "NT-43": { jenis: "OPNAME_PENGADAAN", wajib: true, push: true, judul: "Usulan penghapusan menunggu persetujuan", render: p => `Usulan penghapusan ${teks(p["nomor"])} atas ${teks(p["n"])} unit aset menunggu persetujuan Anda.` },
+    "NT-44": { jenis: "OPNAME_PENGADAAN", wajib: true, push: true, judul: "Keputusan penghapusan aset", render: p => `Usulan penghapusan ${teks(p["nomor"])} ${teks(p["status"])}.` },
+    "NT-45": { jenis: "OPNAME_PENGADAAN", wajib: false, push: false, judul: "Penghapusan aset selesai", render: p => `${teks(p["n"])} unit aset telah dihapuskan. Berita acara ${teks(p["nomor"])} tersedia.` },
+    "NT-34":{jenis:"OPNAME_PENGADAAN",wajib:true,push:true,judul:"Usulan pengadaan menunggu persetujuan",render:p=>`Usulan pengadaan ${teks(p["nomor"])} senilai Rp${teks(p["total"])} menunggu persetujuan Anda.`},
+    "NT-35":{jenis:"OPNAME_PENGADAAN",wajib:true,push:true,judul:"Status usulan pengadaan berubah",render:p=>`Usulan ${teks(p["nomor"])} ${teks(p["status"])}.${p["catatan"]?` Catatan: ${teks(p["catatan"])}`:""}`},
+    "NT-36":{jenis:"OPNAME_PENGADAAN",wajib:false,push:false,judul:"Penerimaan barang tercatat",render:p=>`${teks(p["jumlah"])} barang diterima pada usulan ${teks(p["nomor"])}; ${teks(p["jumlah_ditolak"] ?? 0)} ditolak.${p["bahan"]?` Stok bahan: ${teks(p["bahan"])}.`:""}`},
+    "NT-10": { jenis: "RESERVASI_PEMINJAMAN", wajib: false, push: true, judul: "Serah terima tercatat", render: (p) => `${teks(p["jumlah"])} unit telah diserahkan atas ${teks(p["nomor"])}. Kembalikan sebelum ${waktuWib(p["tanggal"])}.` },
+    "NT-14": { jenis: "RESERVASI_PEMINJAMAN", wajib: false, push: true, judul: "Pengembalian tercatat", render: (p) => `Pengembalian ${teks(p["jumlah"])} unit atas ${teks(p["nomor"])} tercatat pada ${waktuWib(p["tanggal"])}.` },
+    "NT-15": { jenis: "DENDA_KEWAJIBAN", wajib: true, push: true, judul: "Kewajiban peminjaman terbit", render: (p) => p["menunggu_penetapan"] === true ? `Kewajiban ganti rugi atas ${teks(p["nomor"])} menunggu penetapan nilai.` : `${p["jenis"] === "GANTI_RUGI" ? "Ganti rugi" : "Denda keterlambatan"} Rp${teks(p["jumlah"])} terbit atas peminjaman ${teks(p["nomor"])}.` },
     // M-10 (m10-approval.md §9)
     "NT-01": {
         jenis: "PERSETUJUAN",
@@ -128,6 +142,11 @@ export const TEMPLAT: Readonly<Record<string, Templat>> = {
         judul: "Impor pengguna selesai",
         render: (p) => `Impor pengguna selesai: ${teks(p["sukses"])} berhasil, ${teks(p["gagal"])} gagal dari ${teks(p["total"])} baris.`,
     },
+    "NT-56": {
+        jenis: "AKUN_SISTEM", wajib: true, push: true,
+        judul: "Hasil impor jadwal tetap",
+        render: (p) => `Impor jadwal tetap ${teks(p["status"])}: ${teks(p["sukses"])} berhasil, ${teks(p["gagal"])} gagal dari ${teks(p["total"])} baris.`,
+    },
     "NT-55": {
         jenis: "AKUN_SISTEM", wajib: true, push: true,
         judul: "Hasil impor aset",
@@ -164,6 +183,26 @@ export const TEMPLAT: Readonly<Record<string, Templat>> = {
         push: true,
         judul: "Hasil verifikasi laporan kerusakan",
         render: (p) => `Laporan ${teks(p["nomor"])} telah ${teks(p["hasil"])}.${teks(p["catatan"]) === "" ? "" : ` ${teks(p["catatan"])}`}`,
+    },
+    "NT-22": { jenis: "KERUSAKAN_PERAWATAN", wajib: true, push: true, judul: "Work order ditugaskan", render: p => `Work order ${teks(p["nomor"])} ditugaskan kepada Anda. Prioritas: ${teks(p["prioritas"])}.` },
+    "NT-28": { jenis: "KERUSAKAN_PERAWATAN", wajib: false, push: true, judul: "Pemeliharaan preventif", render: p => `Pemeliharaan preventif ${teks(p["aset"])} dijadwalkan ${teks(p["tanggal"])}.` },
+    "NT-30": { jenis: "OPNAME_PENGADAAN", wajib: false, push: true, judul: "Sesi opname dimulai", render: p => `Sesi opname ${teks(p["nama"])} dimulai. Target ${teks(p["n"])} ${p["domain"]==="BAHAN"?"pasangan bahan/lokasi":"unit aset"}.` },
+    "NT-31": { jenis: "OPNAME_PENGADAAN", wajib: true, push: true, judul: "Rekonsiliasi menunggu persetujuan", render: p => `Laporan rekonsiliasi opname ${teks(p["nama"])} menunggu persetujuan Anda.` },
+    "NT-32": { jenis: "OPNAME_PENGADAAN", wajib: false, push: true, judul: "Keputusan opname", render: p => `Laporan opname ${teks(p["nama"])} telah ${p["keputusan"] === "SETUJU" ? "disetujui" : "ditolak"}. ${teks(p["catatan"])}` },
+    "NT-33": { jenis: "OPNAME_PENGADAAN", wajib: true, push: true, judul: "Aset dinyatakan hilang", render: p => `${teks(p["aset"])} dinyatakan hilang berdasarkan ${teks(p["referensi"])}.` },
+    "NT-27": { jenis: "KERUSAKAN_PERAWATAN", wajib: true, push: true, judul: "Reservasi dibatalkan karena perbaikan", render: p => `Reservasi ${teks(p["nomor"])} dibatalkan karena ${teks(p["aset"])} sedang diperbaiki.` },
+    "NT-24": {jenis:"KERUSAKAN_PERAWATAN",wajib:false,push:true,judul:"Work order memerlukan tindakan",judulSaat:p=>p["kejadian"]==="WorkOrderPaused"?"Work order tertunda":p["kejadian"]==="WorkOrderEstimateRequested"?"Persetujuan estimasi work order":"Work order menunggu verifikasi",render:p=>p["kejadian"]==="WorkOrderPaused"?`Work order ${teks(p["nomor"])} tertunda. Alasan: ${teks(p["alasan"])}`:p["kejadian"]==="WorkOrderEstimateRequested"?`Revisi estimasi work order ${teks(p["nomor"])} memerlukan persetujuan Anda.`:`Work order ${teks(p["nomor"])} selesai dikerjakan dan menunggu verifikasi.`},
+    "NT-25": {jenis:"KERUSAKAN_PERAWATAN",wajib:true,push:true,judul:"Work order dikembalikan",render:p=>`Work order ${teks(p["nomor"])} dikembalikan. Catatan: ${teks(p["catatan"])}`},
+    "NT-26": {jenis:"KERUSAKAN_PERAWATAN",wajib:false,push:true,judul:"Perbaikan diverifikasi",render:p=>`Perbaikan ${teks(p["aset"])} telah selesai dan diverifikasi.`},
+    "NT-11": { jenis: "RESERVASI_PEMINJAMAN", wajib: true, push: true, judul: "Pengembalian jatuh tempo besok", render: (p) => `Pengembalian ${teks(p["nomor"])} jatuh tempo besok, ${teks(p["tanggal"])}.` },
+    "NT-12": { jenis: "RESERVASI_PEMINJAMAN", wajib: true, push: true, judul: "Peminjaman terlambat", render: (p) => `${teks(p["nomor"])} terlambat ${teks(p["hari"])} hari. Estimasi denda berjalan Rp${teks(p["jumlah"])}.` },
+    "NT-13": { jenis: "RESERVASI_PEMINJAMAN", wajib: false, push: false, judul: "Rekap keterlambatan", render: (p) => `${teks(p["jumlah"])} peminjaman terlambat perlu ditindaklanjuti.` },
+    "NT-16": { jenis: "DENDA_KEWAJIBAN", wajib: false, push: false, judul: "Kewajiban lunas", render: (p) => `Kewajiban Rp${teks(p["jumlah"])} telah dinyatakan lunas.` },
+    "NT-17": { jenis: "DENDA_KEWAJIBAN", wajib: false, push: false, judul: "Kewajiban dibebaskan", render: (p) => `Kewajiban Rp${teks(p["jumlah_dibebaskan"])} dibebaskan. Sisa tagihan Rp${teks(p["sisa"])}. Alasan: ${teks(p["alasan"])}.` },
+    "NT-18": { jenis: "DENDA_KEWAJIBAN", wajib: true, push: true, judul: "Pengajuan diblokir", render: () => "Anda tidak dapat mengajukan reservasi/peminjaman baru hingga kewajiban diselesaikan." },
+    "NT-09": {
+        jenis: "RESERVASI_PEMINJAMAN", wajib: false, push: false, judul: "Reservasi kedaluwarsa",
+        render: (p) => `Reservasi ${teks(p["nomor"])} kedaluwarsa karena tidak diambil dalam 1×24 jam.`,
     },
     "NT-46": {
         jenis: "RESERVASI_PEMINJAMAN",

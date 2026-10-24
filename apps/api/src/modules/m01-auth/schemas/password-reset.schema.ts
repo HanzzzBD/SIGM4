@@ -38,7 +38,7 @@ const PermintaanSchema = z.object({
         id: z.string(),
         nama: z.string(),
         email: z.string(),
-        nip_nis: z.string(),
+        nip_nis: z.string().nullable(),
         role_kode: z.string(),
     }),
     /** Status efektif: `DITERBITKAN` yang lewat 72 jam tampil `KEDALUWARSA`. */

@@ -34,7 +34,16 @@ function foto(label: string): KebijakanJenis {
 }
 
 export const KEBIJAKAN: Readonly<Record<FileOwnerType, KebijakanJenis>> = {
+    REPORT_EXPORT: { label: "Ekspor laporan", mime: [], format: "keluaran sistem", maksByte: 0 },
+    MATERIAL_RECEIPT_DOCUMENT: { label: "Dokumen penerimaan bahan", mime: [MIME_PDF, MIME_JPG, MIME_PNG, MIME_DOCX, MIME_XLSX], format: "PDF, JPG, PNG, DOCX atau XLSX", maksByte: 10 * MB },
+    DISPOSAL_ATTACHMENT: { label: "Lampiran penghapusan", mime: [MIME_PDF, MIME_JPG, MIME_PNG, MIME_DOCX, MIME_XLSX], format: "PDF, JPG, PNG, DOCX atau XLSX", maksByte: 10 * MB },
+    DISPOSAL_EXECUTION_PHOTO: foto("Foto pelaksanaan penghapusan"),
+    DISPOSAL_REPORT: { label: "Berita acara penghapusan", mime: [], format: "keluaran sistem", maksByte: 0 },
+    PROCUREMENT_ATTACHMENT:{label:"Lampiran usulan",mime:[MIME_PDF,MIME_JPG,MIME_PNG,MIME_DOCX,MIME_XLSX],format:"PDF, JPG, PNG, DOCX, atau XLSX",maksByte:10*MB},
+    PROCUREMENT_RECEIPT_DOCUMENT:{label:"Dokumen penerimaan",mime:[MIME_PDF,MIME_JPG,MIME_PNG,MIME_DOCX,MIME_XLSX],format:"PDF, JPG, PNG, DOCX, atau XLSX",maksByte:10*MB},
+    PROCUREMENT_REJECTION_PHOTO:foto("Foto penolakan barang"),
     ASSET_MOVEMENT_DOCUMENT: { label: "Berita acara mutasi", mime: [], format: "keluaran sistem", maksByte: 0 },
+    STOCKTAKE_REPORT: { label: "Berita acara opname", mime: [], format: "keluaran sistem", maksByte: 0 },
     // FR-06.1
     ASSET_DOCUMENT: { label: "Dokumen aset", mime: [MIME_PDF, MIME_JPG, MIME_PNG, MIME_DOCX, MIME_XLSX], format: "PDF, JPG, PNG, DOCX, atau XLSX", maksByte: 10 * MB },
     // Keputusan 7a log phase-03: disamakan dengan foto lain.

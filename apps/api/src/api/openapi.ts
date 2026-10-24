@@ -9,6 +9,7 @@
 // dokumen, dan *shared kernel* tidak perlu tahu caranya (`SDD-SYS-12`).
 
 import { createDocument } from "zod-openapi";
+import { z } from "zod";
 import { ErrorEnvelopeSchema } from "../shared/errors/index.js";
 import type { RouteDefinition, RouteRegistry } from "../shared/http/index.js";
 
@@ -93,8 +94,9 @@ export function buildOpenApiDocument(
                 ...Object.fromEntries((route.additionalSuccessStatuses ?? []).map((status) => [String(status), { description: "Diterima untuk diproses", content: { [route.contentType ?? "application/json"]: { schema: route.response } } }])),
             },
         };
-        if (route.params !== undefined || route.query !== undefined)
-            operation["requestParams"] = { ...(route.params === undefined ? {} : { path: route.params }), ...(route.query === undefined ? {} : { query: route.query }) };
+        if (route.params !== undefined || route.query !== undefined || route.idempotent === true)
+            operation["requestParams"] = { ...(route.params === undefined ? {} : { path: route.params }), ...(route.query === undefined ? {} : { query: route.query }),
+                ...(route.idempotent === true ? { header: z.object({ "Idempotency-Key": z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i).describe("UUIDv4 untuk pengulangan pengiriman yang sama") }) } : {}) };
         if (route.body !== undefined) {
             operation["requestBody"] = {
                 content: { "application/json": { schema: route.body } },

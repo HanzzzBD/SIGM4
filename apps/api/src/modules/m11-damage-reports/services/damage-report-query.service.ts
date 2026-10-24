@@ -8,6 +8,7 @@ import type { DamageReportDetail, DamageReportListItem, DamageReportListQuerySch
 import type { Kysely } from "kysely";
 import type { z } from "zod";
 import { garansiAktifAset, urlUnduhBerkas } from "../../m06-documents/index.js";
+import { workOrderForTicket } from "../../m12-maintenance/index.js";
 import type { AuthContext } from "../../../shared/auth/index.js";
 import type { Clock } from "../../../shared/clock/index.js";
 import type { Database } from "../../../shared/db/index.js";
@@ -141,6 +142,7 @@ export class DamageReportQueryService {
             catatan: [...(await this.catatan(ctx, t.id))],
             reservasi: t.reservation_id === null ? null : { id: t.reservation_id, nomor: t.reservasi_nomor ?? "" },
             garansi,
+            work_order: await workOrderForTicket(this.db,ctx,id),
         };
     }
 }

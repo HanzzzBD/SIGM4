@@ -54,6 +54,7 @@ export function verifyDamageReportHandler(service: VerificationService): Request
         const { id } = DamageReportIdParamSchema.parse(req.params);
         const b = urai(DamageReportVerifySchema, req.body);
         const data = await service.verifikasi(requireAuthContext(res), id, {
+            workOrder: b.work_order,
             keputusan: b.keputusan,
             catatan: b.catatan ?? null,
             kondisiAset: b.kondisi_aset === undefined ? null : { kondisi: b.kondisi_aset.kondisi, alasan: b.kondisi_aset.alasan ?? null },

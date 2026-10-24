@@ -7,6 +7,7 @@
 //     dilepas (tidak dihitung waktu terpakai). Sekali per tanggal.
 
 import type { HasilPenggunaan, ReservationUsage } from "@sigm4/schemas";
+import { recordCombinedRoomUsage } from "../../m08-reservation-item/index.js";
 import type { Kysely } from "kysely";
 import type { AuditLogger } from "../../../shared/audit/index.js";
 import type { AuthContext } from "../../../shared/auth/index.js";
@@ -50,6 +51,7 @@ export class UsageService {
                 if (target === undefined) throw new NotFoundError("Reservasi tidak ditemukan.");
                 const tolak = (pesan: string) => new DomainError("VALIDATION_ERROR", pesan, { errors: [{ field: "id", message: pesan }] });
                 if (target.parent_id === null && kelompok.length > 1) throw tolak("Penggunaan reservasi berulang dicatat per tanggal.");
+                if (target.jenis === "ASET") return recordCombinedRoomUsage(scope, reservationId, hasil, catatan, this.clock, this.audit);
 
                 const alasan = alasanTolakPencatatan(target.status, (await repo.pencatatan(scope.ctx, reservationId)) !== null, hasil);
                 if (alasan !== null) throw tolak(alasan);

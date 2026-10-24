@@ -72,6 +72,8 @@ export function validasiNilai(definisi: DefinisiSetting, nilai: unknown): string
         case "BOOLEAN":
             return typeof nilai === "boolean" ? undefined : "Nilai harus berupa true atau false.";
         case "TEKS":
+            if (["sekolah.npsn", "sekolah.alamat"].includes(definisi.key ?? "") && typeof nilai === "string" && !nilai.trim()) return undefined;
+            if(definisi.key==="chat.model"&&(typeof nilai!=="string"||!/^gemini-\d+\.\d+-(flash|pro|flash-lite)$/.test(nilai)))return "Pilih nama model Gemini stabil berversi; latest, preview dan experimental tidak diizinkan.";
             if (typeof nilai !== "string" || nilai.trim().length === 0) return "Nilai harus berupa teks yang tidak kosong.";
             if ((definisi.key === KUNCI_JAM_MULAI || definisi.key === KUNCI_JAM_SELESAI) && !POLA_JAM.test(nilai)) {
                 return "Nilai harus berupa jam dengan format HH:MM, mis. 06:30.";

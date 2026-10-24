@@ -10,6 +10,8 @@ import { ringkasanAset } from "../../m04-assets/index.js";
 import { pengajuanSayaPerStatus, ringkasanAturan } from "../../m10-approval/index.js";
 import { aktivitasPerHari, aktivitasTerbaru, catatAksesLogDashboard, ringkasanLogin } from "../../m18-activity-log/index.js";
 import { kelengkapanKonfigurasi } from "../../m20-settings/index.js";
+import { materialLowStock } from "../../m22-materials/index.js";
+import { technicianDashboard } from "../../m12-maintenance/index.js";
 import type { AuditLogger } from "../../../shared/audit/index.js";
 import type { AuthContext } from "../../../shared/auth/index.js";
 import type { Database, TransactionScope } from "../../../shared/db/index.js";
@@ -70,6 +72,8 @@ const menunggu = async (k: KonteksKartu) => {
 };
 
 const DAFTAR: readonly DefinisiKartu[] = [
+    { id: "pekerjaan-teknisi", judul: "Pekerjaan Saya", zona: 1, jenis: "AKSI", permissions: ["workorder.view"], lingkup: "PENGGUNA", berperiode: false, drilldown: "P-42", muat: k => baca(k, scope => technicianDashboard(scope, k.sekarang)) },
+    { id: "stok-bahan-menipis", judul: "Stok Bahan Menipis", zona: 1, jenis: "PERINGATAN", permissions: ["material.view"], lingkup: "GLOBAL", berperiode: false, drilldown: "P-80?stok=MENIPIS", muat: k => baca(k, materialLowStock) },
     // --- 19.2 Administrator
     {
         id: "permintaan-reset-password", judul: "Permintaan Reset Password", zona: 1, jenis: "AKSI", permissions: ["user.reset_password"],
@@ -188,12 +192,12 @@ export const KARTU: ReadonlyMap<string, DefinisiKartu> = new Map(DAFTAR.map((d) 
  */
 export const TEMPLAT: Readonly<Record<string, readonly string[]>> = {
     "R-01": [
-        "permintaan-reset-password", "status-konfigurasi", "kesehatan-integrasi", "efek-tertunda-gagal",
+        "stok-bahan-menipis", "permintaan-reset-password", "status-konfigurasi", "kesehatan-integrasi", "efek-tertunda-gagal",
         "pengguna-aktif", "login-hari-ini", "distribusi-role", "aktivitas-sistem", "aktivitas-terbaru",
     ],
-    "R-02": ["pengajuan-menunggu", "aset-belum-berlabel-qr", "total-aset", "komposisi-kondisi-aset", "status-aset"],
+    "R-02": ["stok-bahan-menipis", "pengajuan-menunggu", "aset-belum-berlabel-qr", "total-aset", "komposisi-kondisi-aset", "status-aset"],
     "R-03": ["menunggu-persetujuan-saya", "ringkasan-aset", "kondisi-aset"],
-    "R-04": [],
+    "R-04": ["pekerjaan-teknisi"],
     "R-05": ["pengajuan-saya"],
     "R-06": ["pengajuan-saya"],
     "R-07": ["pengajuan-saya"],

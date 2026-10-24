@@ -3,7 +3,7 @@
 import { z } from "zod";
 
 /** Bab 11.3 "Jenis Pemilik Berkas" — jenis ditetapkan sejak presign (SDD-09 §4.3). */
-const JenisBerkasSchema = z.enum(["ASSET_DOCUMENT", "ASSET_PHOTO", "USER_PHOTO", "HANDOVER_PHOTO", "DAMAGE_PHOTO", "WORK_ORDER_PHOTO", "STOCKTAKE_PHOTO"]);
+const JenisBerkasSchema = z.enum(["MATERIAL_RECEIPT_DOCUMENT", "DISPOSAL_ATTACHMENT", "DISPOSAL_EXECUTION_PHOTO","ASSET_DOCUMENT", "ASSET_PHOTO", "USER_PHOTO", "HANDOVER_PHOTO", "DAMAGE_PHOTO", "WORK_ORDER_PHOTO", "STOCKTAKE_PHOTO","PROCUREMENT_ATTACHMENT","PROCUREMENT_RECEIPT_DOCUMENT","PROCUREMENT_REJECTION_PHOTO"]);
 
 /** Bab 11.3 "Status Pemindaian Berkas". */
 export const ScanStatusSchema = z.enum(["PENDING", "CLEAN", "INFECTED", "FAILED"]);

@@ -5,7 +5,7 @@ import type { AuthContext } from "../../../shared/auth/index.js";
 import { BaseRepository, defineRepository } from "../../../shared/db/index.js";
 import type { QueryExecutor } from "../../../shared/db/index.js";
 
-const SUMMARY = ["id", "nama_berkas", "status", "total_baris", "baris_terproses", "sukses", "gagal", "unit_dibuat", "laporan_gagal", "pesan_galat", "selesai_pada", "created_at", "created_by"] as const;
+const SUMMARY = ["id", "nama_berkas", "status", "total_baris", "baris_terproses", "sukses", "gagal", "unit_dibuat", "laporan_gagal", "pesan_galat", "selesai_pada", "created_at", "created_by", "report_purged_at"] as const;
 export class AssetImportRepository extends BaseRepository {
     constructor(executor: QueryExecutor) { super(executor); }
     async lockHash(ctx: AuthContext, hash: string): Promise<void> {

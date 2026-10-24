@@ -1,10 +1,8 @@
 // Titik ekstensi SL-04 (Lampiran E.4, SDD-05 §4.7d): "penonaktifan diblokir bila
 // siswa masih memiliki peminjaman aktif atau kewajiban belum lunas".
 //
-// Modul pengguna TIDAK mendefinisikan apa itu kewajiban — peminjaman dan denda
-// baru ada di Phase 05 (`PR-05-09`). Yang ia sediakan hanya tempat pemeriksa
-// mendaftar. Registri KOSONG berarti "belum ada yang mendefinisikan kewajiban",
-// bukan "siswa tidak berkewajiban": jangan menafsirkannya sebagai jaminan.
+// M-09 mendefinisikan pinjaman/denda; composition root API dan worker memasang
+// pemeriksanya (PR-05-09). Registri kosong bukan jaminan tanpa kewajiban.
 
 import type { TransactionScope } from "../../../shared/db/index.js";
 
@@ -24,6 +22,8 @@ export interface StudentObligationChecker {
 
 export class StudentObligationRegistry {
     private readonly checkers = new Map<string, StudentObligationChecker>();
+
+    has(nama: string): boolean { return this.checkers.has(nama); }
 
     register(...checkers: readonly StudentObligationChecker[]): this {
         for (const checker of checkers) {

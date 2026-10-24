@@ -8,7 +8,7 @@ import type { AuthContext } from "../../../shared/auth/index.js";
 import type { Clock } from "../../../shared/clock/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
 import type { Database, FileOwnerType, FileScanStatus, TransactionScope } from "../../../shared/db/index.js";
-import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
+import { DomainError, ForbiddenError,NotFoundError } from "../../../shared/errors/index.js";
 import { publish } from "../../../shared/events/index.js";
 import type { InfoObjek, PenyimpananObjek } from "../../../shared/storage/index.js";
 import { createStoredFileRepository } from "../repositories/stored-file.repository.js";
@@ -73,6 +73,11 @@ export class FileService {
 
     /** `POST /files/presign`. Tidak dicatat: pesanan yang tak dikonfirmasi dibersihkan SDD-FS-09 (keputusan 5c). */
     async presign(ctx: AuthContext, input: { jenis: FileOwnerType; mime: string; ukuran: number }): Promise<HasilPresign> {
+        if (input.jenis === "DISPOSAL_ATTACHMENT" && !ctx.can("disposal.create")) throw new ForbiddenError();
+        if (input.jenis === "MATERIAL_RECEIPT_DOCUMENT" && !ctx.can("material.receive")) throw new ForbiddenError();
+        if (input.jenis === "DISPOSAL_EXECUTION_PHOTO" && !ctx.can("disposal.execute")) throw new ForbiddenError();
+        if(input.jenis==="PROCUREMENT_ATTACHMENT"&&!ctx.can("procurement.create"))throw new ForbiddenError();
+        if(["PROCUREMENT_RECEIPT_DOCUMENT","PROCUREMENT_REJECTION_PHOTO"].includes(input.jenis)&&!ctx.can("procurement.receive"))throw new ForbiddenError();
         const pelanggaran = periksaKebijakan(input.jenis, input.mime, input.ukuran);
         if (pelanggaran !== null) throw galatValidasi(pelanggaran.field, pelanggaran.message);
 
@@ -153,6 +158,23 @@ export async function tautkanFotoKerusakan(scope: TransactionScope, fileIds: rea
     return berkas.filter((b) => b.checksum === null).length;
 }
 
+/** PR-05-02 / BR-027: bukti web harus sudah terunggah; URL tetap menunggu CLEAN. */
+export async function attachLoanEvidence(scope: TransactionScope, fileIds: readonly number[], loanId: number, signatureId?: number) {
+    if (new Set(fileIds).size !== fileIds.length) throw galatValidasi("foto_file_ids", "Berkas bukti tidak boleh dipakai berulang.");
+    const repo = createStoredFileRepository(scope.tx), files = await repo.lockHandoverFiles(scope.ctx, fileIds);
+    if (files.length !== fileIds.length) throw galatValidasi("foto_file_ids", "Bukti harus berupa foto unggahan Anda yang dikonfirmasi, belum digunakan, dan tidak gagal/terinfeksi.");
+    if (signatureId !== undefined && files.find((f) => f.id === String(signatureId))?.mime !== "image/png") throw galatValidasi("signature_file_id", "Tanda tangan harus berupa PNG.");
+    for (const file of files) await repo.tetapkanPemilik(scope.ctx, file.id, String(loanId));
+}
+/** PR-04-08: berkas hasil milik Teknisi, boleh tertunda; penutupan memerlukan foto CLEAN. */
+export async function attachWorkOrderPhotos(scope: TransactionScope,fileIds:readonly number[],workOrderId:number) {
+    if(new Set(fileIds).size!==fileIds.length) throw galatValidasi("foto_file_ids","Foto tidak boleh berulang.");
+    const repo=createStoredFileRepository(scope.tx),files=await repo.lockWorkOrderPhotos(scope.ctx,fileIds,String(workOrderId));
+    if(files.length!==fileIds.length) throw galatValidasi("foto_file_ids","Foto harus unggahan hasil pekerjaan Anda, belum dipakai WO lain, dan tidak terinfeksi/gagal diperiksa.");
+    for(const file of files) await repo.tetapkanPemilik(scope.ctx,file.id,String(workOrderId));
+}
+export async function detachWorkOrderPhoto(scope:TransactionScope,fileId:string,workOrderId:string){await createStoredFileRepository(scope.tx).detachWorkOrderPhoto(scope.ctx,fileId,workOrderId);}
+
 /** Keadaan foto profil bagi `GET /me` (keputusan 7c log phase-03): URL hanya bila `CLEAN`. */
 export interface TampilanFoto {
     readonly status: FileScanStatus;
@@ -181,4 +203,16 @@ export function buatPengelolaFotoProfil(db: Kysely<Database>, penyimpanan: Penyi
             return { status: "CLEAN", url: (await urlUnduhBerkas(penyimpanan, clock, berkas)).url };
         },
     };
+}
+/** Opname owns the observation; M-06 owns file ownership and validation. */
+export async function attachStocktakePhotos(scope: TransactionScope, fileIds: readonly number[], sessionId: string): Promise<string[]> {
+    const ids = [...new Set(fileIds)].map(String);
+    if (!ids.length) return [];
+    const files = await scope.tx.selectFrom("stored_files").select(["id", "owner_id"]).where("id", "in", ids).where("uploaded_by", "=", String(scope.ctx.userId)).where("owner_type", "=", "STOCKTAKE_PHOTO").where("mime", "in", ["image/jpeg", "image/png", "image/webp"]).where("scan_status", "in", ["PENDING", "CLEAN"]).where(eb => eb.or([eb("owner_id", "is", null), eb("owner_id", "=", sessionId)])).orderBy("id").forUpdate().execute();
+    if (files.length !== ids.length) throw galatValidasi("foto_file_ids", "Foto opname tidak sah atau bukan unggahan Anda.");
+    if (files.some(f => f.owner_id !== null)) throw galatValidasi("foto_file_ids", "Foto sudah digunakan untuk pemeriksaan lain.");
+    for (const f of files) {
+        await scope.tx.updateTable("stored_files").set({ owner_id: sessionId }).where("id", "=", f.id).execute();
+    }
+    return files.map(f => f.id);
 }

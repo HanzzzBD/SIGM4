@@ -29,6 +29,7 @@ export interface TiketTerbuka {
 }
 
 export interface TiketBaru extends ObjekLaporan {
+    readonly loanId?: number | undefined;
     readonly nomor: string;
     readonly deskripsi: string;
     readonly urgensi: UrgensiKerusakan;
@@ -116,8 +117,11 @@ export interface FotoTiket {
 /** FR-11.1 A1: tiket yang belum Selesai/Ditolak — cermin indeks unik parsial 0048. */
 const TERBUKA: readonly StatusLaporanKerusakan[] = ["DILAPORKAN", "DIVERIFIKASI", "DALAM_PERBAIKAN"];
 
-/** Scope `damage.view` selain `all` = tiket milik sendiri (FR-11.3 A1; Teknisi `own` sampai work order Phase 04). */
+/** FR-11.3 A1/A2: pelapor melihat miliknya; Teknisi melihat tiket work order penugasannya. */
 const milikSendiri = (ctx: AuthContext) => ctx.scopeOf("damage.view") !== "all";
+const cakupanTiket = (ctx: AuthContext) => ctx.roleCode === "R-04"
+    ? sql<boolean>`exists (select 1 from work_orders w where w.damage_report_id=k.id and w.teknisi_id=${String(ctx.userId)}::bigint)`
+    : sql<boolean>`k.pelapor_id=${String(ctx.userId)}::bigint`;
 
 /** `%`, `_`, dan `\` pada kata kunci dicari harfiah, bukan sebagai pola. */
 const pola = (q: string) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
@@ -171,6 +175,9 @@ export class DamageReportRepository extends BaseRepository {
         return q.executeTakeFirst();
     }
 
+    async linkLoanItem(ctx: AuthContext, itemId: string, reportId: string) {
+        await this.query(ctx).insertInto("loan_item_damage_reports").values({ loan_item_id: itemId, damage_report_id: reportId }).execute();
+    }
     async buat(ctx: AuthContext, t: TiketBaru): Promise<string> {
         const r = await this.query(ctx)
             .insertInto("damage_reports")
@@ -183,6 +190,7 @@ export class DamageReportRepository extends BaseRepository {
                 urgensi: t.urgensi,
                 batas_sla: t.batasSla,
                 reservation_id: t.reservationId ?? null,
+                  loan_id: t.loanId ?? null,
                 created_by: pelakuId(ctx),
                 updated_by: pelakuId(ctx),
             })
@@ -203,7 +211,7 @@ export class DamageReportRepository extends BaseRepository {
      * FR-11.3: daftar tersaring scope (SDD-AUTH-05) + jumlah per status dalam saringan yang sama minus
      * `status` (langkah 2, tab P-39).
      */
-    async daftar(ctx: AuthContext, s: SaringanDaftar): Promise<{ readonly baris: readonly BarisDaftar[]; readonly total: number; readonly perStatus: ReadonlyMap<StatusLaporanKerusakan, number> }> {
+    async daftar(ctx: AuthContext, s: SaringanDaftar, exportOnly = false): Promise<{ readonly baris: readonly BarisDaftar[]; readonly total: number; readonly perStatus: ReadonlyMap<StatusLaporanKerusakan, number> }> {
         let dasar = this.query(ctx)
             .selectFrom("damage_reports as k")
             .leftJoin("assets as s", "s.id", "k.asset_id")
@@ -211,7 +219,7 @@ export class DamageReportRepository extends BaseRepository {
             .leftJoin("rooms as r", (j) => j.on(sql<boolean>`r.id = coalesce(k.room_id, s.room_id)`))
             .leftJoin("areas as a", "a.id", "r.area_id")
             .leftJoin("buildings as g", "g.id", "a.building_id")
-            .$if(milikSendiri(ctx), (q) => q.where("k.pelapor_id", "=", String(ctx.userId)));
+            .$if(milikSendiri(ctx), (q) => q.where(cakupanTiket(ctx)));
         if (s.q !== undefined && s.q !== "") {
             const p = pola(s.q);
             dasar = dasar.where((eb) => eb.or([eb("k.nomor", "ilike", p), eb("s.kode_barang", "ilike", p)]));
@@ -221,13 +229,14 @@ export class DamageReportRepository extends BaseRepository {
         if (s.buildingId !== undefined) dasar = dasar.where("g.id", "=", String(s.buildingId));
         if (s.categoryId !== undefined) dasar = dasar.where("s.category_id", "=", String(s.categoryId));
         if (s.pelaporId !== undefined) dasar = dasar.where("k.pelapor_id", "=", String(s.pelaporId));
+        if (exportOnly && ctx.scopeOf("report.export") === "own") dasar = dasar.where("k.pelapor_id", "=", String(ctx.userId));
         if (s.dari !== undefined) dasar = dasar.where("k.created_at", ">=", s.dari);
         if (s.sampai !== undefined) dasar = dasar.where("k.created_at", "<", s.sampai);
         if (s.melampauiSla !== undefined) dasar = dasar.where(melampauiSla(s.sekarang), "=", s.melampauiSla);
 
-        const perStatus = await dasar.select(["k.status", (eb) => eb.fn.countAll<string>().as("n")]).groupBy("k.status").execute();
+        const perStatus = exportOnly ? [] : await dasar.select(["k.status", (eb) => eb.fn.countAll<string>().as("n")]).groupBy("k.status").execute();
         const berstatus = s.status === undefined ? dasar : dasar.where("k.status", "=", s.status);
-        const total = await berstatus.select((eb) => eb.fn.countAll<string>().as("n")).executeTakeFirstOrThrow();
+        const total = exportOnly ? null : await berstatus.select((eb) => eb.fn.countAll<string>().as("n")).executeTakeFirstOrThrow();
         const baris = await berstatus
             .innerJoin("users as p", "p.id", "k.pelapor_id")
             .select([
@@ -241,7 +250,7 @@ export class DamageReportRepository extends BaseRepository {
             .limit(s.perPage)
             .offset((s.page - 1) * s.perPage)
             .execute();
-        return { baris, total: Number(total.n), perStatus: new Map(perStatus.map((r) => [r.status, Number(r.n)])) };
+        return { baris, total: total === null ? baris.length : Number(total.n), perStatus: new Map(perStatus.map((r) => [r.status, Number(r.n)])) };
     }
 
     async kunci(ctx: AuthContext, id: number): Promise<TiketTerkunci | undefined> {
@@ -284,7 +293,7 @@ export class DamageReportRepository extends BaseRepository {
                 "p.nama as pelapor_nama", "v.nama as verifikator_nama", "s.nama as aset_nama", "s.kode_barang", "r.nama as ruangan", "g.nama as gedung",
             ])
             .where("k.id", "=", String(id));
-        if (ctx.scopeOf("damage.view") !== "all") q = q.where("k.pelapor_id", "=", String(ctx.userId));
+        if (ctx.scopeOf("damage.view") !== "all") q = q.where(cakupanTiket(ctx));
         return q.executeTakeFirst();
     }
 

@@ -19,6 +19,11 @@ export interface RuanganReservasi {
  * (BR-016), dan — bagi Siswa/OSIS — `boleh_direservasi_siswa` (BR-022). Ruangan yang tidak
  * memenuhi dijawab `undefined`, sama dengan yang tidak ada (tanpa mengonfirmasi keberadaan, SDD-AUTH-08).
  */
+export async function idRuanganDariKode(scope: TransactionScope, code: string): Promise<number | undefined> {
+    const row = await createLocationRepository(scope.tx).roomIdByCode(scope.ctx, code);
+    return row === undefined ? undefined : Number(row.id);
+}
+
 export async function ruanganUntukReservasi(scope: TransactionScope, roomId: number, untukSiswa: boolean): Promise<RuanganReservasi | undefined> {
     const r = await createLocationRepository(scope.tx).findRoomForReservation(scope.ctx, roomId);
     if (r === undefined || r.status !== "AKTIF" || r.status_gedung !== "AKTIF" || !r.dapat_direservasi) return undefined;

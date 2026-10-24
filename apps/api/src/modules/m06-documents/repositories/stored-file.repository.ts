@@ -30,6 +30,9 @@ export interface KunciBerkasRow {
 }
 
 export class StoredFileRepository extends BaseRepository {
+    async registerStocktakePdf(ctx: AuthContext, input: { objectKey: string; ownerId: string; creatorId: string; checksum: string; size: number; now: Date }) {
+        return this.query(ctx).insertInto("stored_files").values({ object_key: input.objectKey, mime: "application/pdf", ukuran: input.size, checksum: input.checksum, scan_status: "CLEAN", scanned_at: input.now, created_at: input.now, owner_type: "STOCKTAKE_REPORT", owner_id: input.ownerId, uploaded_by: input.creatorId }).returning("id").executeTakeFirstOrThrow();
+    }
     constructor(executor: QueryExecutor) {
         super(executor);
     }
@@ -114,6 +117,17 @@ export class StoredFileRepository extends BaseRepository {
             .execute();
     }
 
+    async lockHandoverFiles(ctx: AuthContext, ids: readonly number[]) {
+        return this.query(ctx).selectFrom("stored_files").select(["id", "mime", "scan_status"])
+            .where("id", "in", ids.map(String)).where("uploaded_by", "=", String(ctx.userId))
+            .where("owner_type", "=", "HANDOVER_PHOTO").where("owner_id", "is", null)
+            .where("checksum", "is not", null).where("scan_status", "in", ["PENDING", "CLEAN"])
+            .orderBy("id").forUpdate().execute();
+    }
+    async lockWorkOrderPhotos(ctx: AuthContext, ids: readonly number[], workOrderId: string) {
+        return this.query(ctx).selectFrom("stored_files").select(["id","checksum","scan_status"]).where("id","in",ids.map(String)).where("uploaded_by","=",String(ctx.userId)).where("owner_type","=","WORK_ORDER_PHOTO").where("mime","in",["image/jpeg","image/png","image/webp"]).where("scan_status","in",["PENDING","CLEAN"]).where(e=>e.or([e("owner_id","is",null),e("owner_id","=",workOrderId)])).orderBy("id").forUpdate().execute();
+    }
+    async detachWorkOrderPhoto(ctx:AuthContext,fileId:string,workOrderId:string){await this.query(ctx).updateTable("stored_files").set({owner_id:null}).where("id","=",fileId).where("owner_id","=",workOrderId).where("owner_type","=","WORK_ORDER_PHOTO").where("uploaded_by","=",String(ctx.userId)).execute();}
     /** Pemilik berkas = dokumen (SDD-FS-02) — berkas tak lagi yatim (SDD-FS-09). */
     async tetapkanPemilik(ctx: AuthContext, id: string, ownerId: string): Promise<void> {
         await this.query(ctx).updateTable("stored_files").set({ owner_id: ownerId }).where("id", "=", id).execute();

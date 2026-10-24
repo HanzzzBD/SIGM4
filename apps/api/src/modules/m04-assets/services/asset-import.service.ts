@@ -10,6 +10,7 @@ import type { Database, TransactionScope } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
 import { DomainError, ForbiddenError, NotFoundError } from "../../../shared/errors/index.js";
 import { publish } from "../../../shared/events/index.js";
+import { importReportView } from "../../../shared/import/index.js";
 import { createAssetImportRepository } from "../repositories/asset-import.repository.js";
 import type { AssetImportJobRow } from "../repositories/asset-import.repository.js";
 import { AssetService } from "./asset.service.js";
@@ -41,8 +42,9 @@ export class AssetImportService {
         this.authorize(ctx);
         const job = await createAssetImportRepository(this.db).find(ctx, id);
         if (job === undefined) throw missing();
-        return job;
+        return this.report(job);
     }
+    report(job: AssetImportJobRow) { return importReportView(job, this.clock.now()); }
     async submit(ctx: AuthContext, input: { filename: string; contentBase64: string }): Promise<{ job: AssetImportJobRow; replay: boolean }> {
         this.authorize(ctx);
         const content = Buffer.from(input.contentBase64, "base64");

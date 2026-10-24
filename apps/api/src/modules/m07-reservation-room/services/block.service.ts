@@ -142,67 +142,65 @@ export class BlockService {
         return withTransaction(ctx, async (scope) => (await this.kaji(scope, roomId, isian)).preview, this.db);
     }
 
-    async buat(ctx: AuthContext, roomId: number, isian: IsianBlokade, batalkan: { readonly alasan: string } | undefined): Promise<RoomBlockCreated> {
-        return withTransaction(
-            ctx,
-            async (scope) => {
-                const { preview, kemunculan, k } = await this.kaji(scope, roomId, isian);
-                if (preview.bentrok_lain.length > 0) {
-                    throw new DomainError("RESERVATION_CONFLICT", "Blokade beririsan dengan blokade atau pemeliharaan lain; sesuaikan rentangnya.", {
-                        errors: preview.bentrok_lain.map((b) => ({ field: "bentrok_lain", message: `${b.label ?? b.asal}: ${b.mulai}–${b.selesai}` })),
+    async buat(ctx: AuthContext, roomId: number, isian: IsianBlokade, batalkan: { readonly alasan: string } | undefined, transaction?: TransactionScope): Promise<RoomBlockCreated> {
+        const create = async (scope: TransactionScope): Promise<RoomBlockCreated> => {
+            await createBlockRepository(scope.tx).kunciRuangan(scope.ctx, roomId);
+            const { preview, kemunculan, k } = await this.kaji(scope, roomId, isian);
+            if (preview.bentrok_lain.length > 0) {
+                throw new DomainError("RESERVATION_CONFLICT", "Blokade beririsan dengan blokade atau pemeliharaan lain; sesuaikan rentangnya.", {
+                    errors: preview.bentrok_lain.map((b) => ({ field: "bentrok_lain", message: `${b.label ?? b.asal}: ${b.mulai}–${b.selesai}` })),
+                });
+            }
+            const dibatalkan: { id: string; nomor: string }[] = [];
+            if (preview.bentrok_reservasi.length > 0) {
+                // FR-07.5 A1: tak pernah membatalkan tanpa keputusan eksplisit penggunanya.
+                if (batalkan === undefined) {
+                    throw new DomainError("RESERVATION_CONFLICT", "Blokade beririsan dengan reservasi yang sudah diajukan. Batalkan reservasi tersebut atau sesuaikan blokade.", {
+                        errors: preview.bentrok_reservasi.map((r) => ({ field: "bentrok_reservasi", message: `${r.nomor} — ${r.nama_kegiatan ?? "tanpa nama"} (${r.pemohon})` })),
                     });
                 }
-                const dibatalkan: { id: string; nomor: string }[] = [];
-                if (preview.bentrok_reservasi.length > 0) {
-                    // FR-07.5 A1: tak pernah membatalkan tanpa keputusan eksplisit penggunanya.
-                    if (batalkan === undefined) {
-                        throw new DomainError("RESERVATION_CONFLICT", "Blokade beririsan dengan reservasi yang sudah diajukan. Batalkan reservasi tersebut atau sesuaikan blokade.", {
-                            errors: preview.bentrok_reservasi.map((r) => ({ field: "bentrok_reservasi", message: `${r.nomor} — ${r.nama_kegiatan ?? "tanpa nama"} (${r.pemohon})` })),
-                        });
-                    }
-                    // Pemeriksaan pembatalan (status, sudah dimulai, cancel_any bagi milik pihak lain) dan NT-08 milik CancellationService.
-                    for (const r of preview.bentrok_reservasi) {
-                        const h = await this.pembatalan.batalkanDalam(scope, Number(r.reservation_id), batalkan.alasan);
-                        dibatalkan.push(...h.dibatalkan);
-                    }
+                // Pemeriksaan pembatalan (status, sudah dimulai, cancel_any bagi milik pihak lain) dan NT-08 milik CancellationService.
+                for (const r of preview.bentrok_reservasi) {
+                    const h = await this.pembatalan.batalkanDalam(scope, Number(r.reservation_id), batalkan.alasan);
+                    dibatalkan.push(...h.dibatalkan);
                 }
-                const blk = createBlockRepository(scope.tx);
-                const slot = new SlotService(this.clock);
-                const ids: string[] = [];
-                let slotDibuat = 0;
-                if (isian.jenis === "JADWAL_TETAP") {
-                    for (const hari of [...isian.hari].sort((a, b) => a - b)) {
-                        const id = await blk.buatAturan(scope.ctx, { roomId, hari, jamMulai: isian.jam_mulai, jamSelesai: isian.jam_selesai, berlakuMulai: isian.berlaku_mulai, berlakuSampai: isian.berlaku_sampai, label: isian.label_kegiatan });
-                        ids.push(id);
-                        const dibuat = await slot.reserveRuanganBerulang(scope, { roomId, rentang: kemunculan.filter((y) => y.hari === hari), asal: "fixed_schedule", rujukan: { fixedScheduleId: Number(id) } });
-                        slotDibuat += dibuat.length;
-                        await this.audit.write(scope, {
-                            modul: MODUL,
-                            aksi: "ROOM_BLOCK_CREATED",
-                            entitas: "room_fixed_schedules",
-                            entitasId: id,
-                            nilaiSesudah: { room_id: roomId, hari, jam_mulai: isian.jam_mulai, jam_selesai: isian.jam_selesai, berlaku_mulai: isian.berlaku_mulai, berlaku_sampai: isian.berlaku_sampai, label_kegiatan: isian.label_kegiatan, horizon_sampai: k.horizonAkhir, reservasi_dibatalkan: dibatalkan.map((d) => d.id) },
-                        });
-                    }
-                } else {
-                    const mulai = new Date(isian.mulai);
-                    const selesai = new Date(isian.selesai);
-                    const id = await blk.buatBlokadeManual(scope.ctx, { roomId, mulai, selesai, label: isian.label_kegiatan });
+            }
+            const blk = createBlockRepository(scope.tx);
+            const slot = new SlotService(this.clock);
+            const ids: string[] = [];
+            let slotDibuat = 0;
+            if (isian.jenis === "JADWAL_TETAP") {
+                for (const hari of [...isian.hari].sort((a, b) => a - b)) {
+                    const id = await blk.buatAturan(scope.ctx, { roomId, hari, jamMulai: isian.jam_mulai, jamSelesai: isian.jam_selesai, berlakuMulai: isian.berlaku_mulai, berlakuSampai: isian.berlaku_sampai, label: isian.label_kegiatan });
                     ids.push(id);
-                    await slot.reserve(scope, { status: "CONFIRMED", sumberDaya: [{ jenis: "room", id: roomId }], rentang: { mulai, selesai }, asal: "manual_block", rujukan: { manualBlockId: Number(id) } });
-                    slotDibuat = 1;
+                    const dibuat = await slot.reserveRuanganBerulang(scope, { roomId, rentang: kemunculan.filter((y) => y.hari === hari), asal: "fixed_schedule", rujukan: { fixedScheduleId: Number(id) } });
+                    slotDibuat += dibuat.length;
                     await this.audit.write(scope, {
                         modul: MODUL,
                         aksi: "ROOM_BLOCK_CREATED",
-                        entitas: "room_manual_blocks",
+                        entitas: "room_fixed_schedules",
                         entitasId: id,
-                        nilaiSesudah: { room_id: roomId, mulai: isian.mulai, selesai: isian.selesai, label_kegiatan: isian.label_kegiatan, reservasi_dibatalkan: dibatalkan.map((d) => d.id) },
+                        nilaiSesudah: { room_id: roomId, hari, jam_mulai: isian.jam_mulai, jam_selesai: isian.jam_selesai, berlaku_mulai: isian.berlaku_mulai, berlaku_sampai: isian.berlaku_sampai, label_kegiatan: isian.label_kegiatan, horizon_sampai: k.horizonAkhir, reservasi_dibatalkan: dibatalkan.map((d) => d.id) },
                     });
                 }
-                return { jenis: isian.jenis, ids, slot_dibuat: slotDibuat, reservasi_dibatalkan: dibatalkan };
-            },
-            this.db,
-        );
+            } else {
+                const mulai = new Date(isian.mulai);
+                const selesai = new Date(isian.selesai);
+                const id = await blk.buatBlokadeManual(scope.ctx, { roomId, mulai, selesai, label: isian.label_kegiatan });
+                ids.push(id);
+                await slot.reserve(scope, { status: "CONFIRMED", sumberDaya: [{ jenis: "room", id: roomId }], rentang: { mulai, selesai }, asal: "manual_block", rujukan: { manualBlockId: Number(id) } });
+                slotDibuat = 1;
+                await this.audit.write(scope, {
+                    modul: MODUL,
+                    aksi: "ROOM_BLOCK_CREATED",
+                    entitas: "room_manual_blocks",
+                    entitasId: id,
+                    nilaiSesudah: { room_id: roomId, mulai: isian.mulai, selesai: isian.selesai, label_kegiatan: isian.label_kegiatan, reservasi_dibatalkan: dibatalkan.map((d) => d.id) },
+                });
+            }
+            return { jenis: isian.jenis, ids, slot_dibuat: slotDibuat, reservasi_dibatalkan: dibatalkan };
+        };
+        return transaction === undefined ? withTransaction(ctx, create, this.db) : create(transaction);
     }
 
     async daftar(ctx: AuthContext, roomId: number): Promise<RoomBlockList> {

@@ -15,6 +15,7 @@ const KOLOM_RINGKAS = [
     "sukses",
     "gagal",
     "laporan_gagal",
+    "report_purged_at",
     "pesan_galat",
     "selesai_pada",
     "created_at",
@@ -31,6 +32,7 @@ export type ImportStatus = "MENUNGGU" | "BERJALAN" | "SELESAI" | "GAGAL";
 
 /** Satu pekerjaan impor tanpa isi berkas (`berkas` dibaca terpisah, hanya worker). */
 export interface ImportJobRow {
+    readonly report_purged_at: Date | null;
     readonly id: string;
     readonly nama_berkas: string;
     readonly status: ImportStatus;

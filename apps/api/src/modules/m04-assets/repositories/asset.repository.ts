@@ -199,8 +199,37 @@ export interface RingkasanBarisRow {
 }
 
 export class AssetRepository extends BaseRepository {
+    async reconcileStocktakeStatus(ctx: AuthContext, id: string, status: "TERSEDIA" | "DIRESERVASI" | "DIPINJAM" | "DALAM_PERBAIKAN" | "TIDAK_TERSEDIA") {
+        await this.query(ctx).updateTable("assets").set({ status, updated_by: ctx.userId }).where("id", "=", id).execute();
+    }
     constructor(executor: QueryExecutor) {
         super(executor);
+    }
+
+    /** PR-02-47: filter identik katalog, irisan hak baca/ekspor sebelum LIMIT. */
+    private exportQuery(ctx: AuthContext, filter: AssetCatalogFilter) {
+        let query = this.dasarKatalog(ctx, filter);
+        if (ctx.scopeOf("asset.view") === "own" || ctx.scopeOf("asset.export") === "own") query = query.where("penanggung_jawab_id", "=", String(ctx.userId));
+        return query;
+    }
+    async exportRows(ctx: AuthContext, filter: Omit<ListAssetsFilter, "page" | "perPage">, limit: number, access: { readonly financial: boolean }) {
+        if (filter.importJobId !== undefined) {
+            const job = await this.query(ctx).selectFrom("asset_import_jobs").select("id").where("id", "=", String(filter.importJobId)).where("created_by", "=", String(ctx.userId)).executeTakeFirst();
+            if (!job) throw new NotFoundError("Pekerjaan impor aset tidak ditemukan.");
+        }
+        const base = this.exportQuery(ctx, filter)
+            .$if(filter.importJobId !== undefined, q => q.where("import_job_id", "=", String(filter.importJobId)))
+            .orderBy(KOLOM_URUT[filter.sort], arahUrut(filter.sort)).orderBy("id", arahUrut(filter.sort)).limit(limit + 1)
+            .select(["kode_barang", "nama", "merek", "model", "nomor_seri", "kondisi", "status", "tahun_perolehan", "dapat_dipinjam", "boleh_dipinjam_siswa", "qr_terpasang",
+                sql<string>`(select c.nama from asset_categories c where c.id=assets.category_id)`.as("kategori"),
+                sql<string>`(select r.nama from rooms r where r.id=assets.room_id)`.as("ruangan"),
+                sql<string>`(select b.nama from rooms r join areas ar on ar.id=r.area_id join buildings b on b.id=ar.building_id where r.id=assets.room_id)`.as("gedung"),
+                sql<string | null>`(select u.nama from users u where u.id=assets.penanggung_jawab_id)`.as("penanggung_jawab")]);
+        return access.financial ? base.select(["sumber_perolehan", "nilai_perolehan"]).execute() : base.execute();
+    }
+    async exportScopeHash(ctx: AuthContext) {
+        const query = this.exportQuery(ctx, {}).select("id");
+        return (await sql<{ hash: string }>`select encode(digest(coalesce(string_agg(id::text,',' order by id),''),'sha256'),'hex') hash from (${query}) visible`.execute(this.query(ctx))).rows[0]!.hash;
     }
 
     /**
@@ -210,7 +239,7 @@ export class AssetRepository extends BaseRepository {
      * Scope `restricted` (Siswa/OSIS, `SDD-AUTH-03 §4.2`) hanya melihat
      * `boleh_dipinjam_siswa = true` (`BR-073`, `FR-04.2 A1`).
      */
-    private dasarKatalog(ctx: AuthContext, filter: AssetCatalogFilter, permission = "asset.view") {
+    private dasarKatalog(ctx: AuthContext, filter: AssetCatalogFilter) {
         let q = this.query(ctx)
             .selectFrom("assets")
             .where("dihapuskan", "=", false);
@@ -232,37 +261,10 @@ export class AssetRepository extends BaseRepository {
                 ]),
             );
         }
-        const scope = ctx.scopeOf(permission);
-        if (scope === "restricted") q = q.where("boleh_dipinjam_siswa", "=", true);
-        if (scope === "own") q = q.where("created_by", "=", String(ctx.userId));
-        if (scope === "assigned") q = q.where("penanggung_jawab_id", "=", String(ctx.userId));
-        return q;
-    }
-
-    async exportRows(ctx: AuthContext, filter: Omit<ListAssetsFilter, "page" | "perPage">, financial: boolean): Promise<readonly Record<string, unknown>[]> {
-        if (filter.importJobId !== undefined) {
-            const job = await this.query(ctx).selectFrom("asset_import_jobs").select("id").where("id", "=", String(filter.importJobId)).where("created_by", "=", String(ctx.userId)).executeTakeFirst();
-            if (!job) throw new NotFoundError("Pekerjaan impor aset tidak ditemukan.");
+        if (ctx.scopeOf("asset.view") === "restricted") {
+            q = q.where("boleh_dipinjam_siswa", "=", true);
         }
-        let base = this.dasarKatalog(ctx, filter, ctx.can("asset.view") ? "asset.view" : "report.export")
-            .$if(filter.importJobId !== undefined, (q) => q.where("import_job_id", "=", String(filter.importJobId)));
-        // PM-03: export scope tidak dapat memperluas scope katalog.
-        const scope = ctx.scopeOf("report.export");
-        if (scope === "restricted") base = base.where("boleh_dipinjam_siswa", "=", true);
-        if (scope === "own") base = base.where("created_by", "=", String(ctx.userId));
-        if (scope === "assigned") base = base.where("penanggung_jawab_id", "=", String(ctx.userId));
-        const selected = base.select([...KOLOM_KATALOG_BASE, ...KOLOM_KATALOG_NAMA, "model"]).orderBy(KOLOM_URUT[filter.sort], arahUrut(filter.sort)).orderBy("id", arahUrut(filter.sort));
-        if (!financial || !ctx.can("asset.view_financial") || ctx.scopeOf("asset.view_financial") === "restricted" || ctx.scopeOf("report.export") === "restricted" || (ctx.can("asset.view") && ctx.scopeOf("asset.view") === "restricted") || ctx.roleCode === "R-07") return selected.execute();
-        const moneyScope = ctx.scopeOf("asset.view_financial");
-        const visible = moneyScope === "own" ? sql<boolean>`assets.created_by = ${String(ctx.userId)}` : moneyScope === "assigned" ? sql<boolean>`assets.penanggung_jawab_id = ${String(ctx.userId)}` : sql<boolean>`true`;
-        return selected.select([
-            sql<string | null>`case when ${visible} then assets.nilai_perolehan::text else null end`.as("nilai_perolehan"),
-            sql<string | null>`case when ${visible} then assets.sumber_perolehan::text else null end`.as("sumber_perolehan"),
-        ]).execute();
-    }
-
-    async exportPrinter(ctx: AuthContext) {
-        return this.query(ctx).selectFrom("users").select("nama").where("id", "=", String(ctx.userId)).executeTakeFirstOrThrow();
+        return q;
     }
 
     /**
@@ -305,9 +307,15 @@ export class AssetRepository extends BaseRepository {
      * keseluruhan isi ruangan, bukan hasil filter yang sedang ditampilkan.
      */
     async ringkasanRuangan(ctx: AuthContext, roomId: number): Promise<readonly RingkasanBarisRow[]> {
-        const q = this.dasarKatalog(ctx, { roomId })
+        let q = this.query(ctx)
+            .selectFrom("assets")
             .select(["kondisi", "status", sql<string>`count(*)`.as("jumlah")])
+            .where("room_id", "=", String(roomId))
+            .where("dihapuskan", "=", false)
             .groupBy(["kondisi", "status"]);
+        if (ctx.scopeOf("asset.view") === "restricted") {
+            q = q.where("boleh_dipinjam_siswa", "=", true);
+        }
         return q.execute();
     }
 
@@ -429,6 +437,12 @@ export class AssetRepository extends BaseRepository {
             .where("id", "=", String(id))
             .forUpdate()
             .executeTakeFirst();
+    }
+    async markDisposed(ctx: AuthContext, id: string, tanggal: Date) {
+        await this.query(ctx).updateTable("assets").set({ dihapuskan: true, tanggal_penghapusan: tanggal, status: "TIDAK_TERSEDIA", updated_by: ctx.userId }).where("id", "=", id).execute();
+    }
+    async reinstateDisposed(ctx: AuthContext, id: string, roomId: string, kondisi: "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT") {
+        await this.query(ctx).updateTable("assets").set({ dihapuskan: false, tanggal_penghapusan: null, room_id: roomId, kondisi, status: kondisi === "RUSAK_BERAT" ? "TIDAK_TERSEDIA" : "TERSEDIA", updated_by: ctx.userId }).where("id", "=", id).execute();
     }
 
     /** BR-003 pada penyuntingan: nomor seri unik di antara aset LAIN. */

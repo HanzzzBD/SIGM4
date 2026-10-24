@@ -10,6 +10,8 @@
 
 import type { Kysely } from "kysely";
 import type { AuthContext } from "../../../shared/auth/index.js";
+import type { Clock } from "../../../shared/clock/index.js";
+import { SystemClock } from "../../../shared/clock/index.js";
 import type { AuditLogger } from "../../../shared/audit/index.js";
 import type { Database } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
@@ -42,6 +44,7 @@ export class GraduationService {
         private readonly db: Kysely<Database>,
         private readonly audit: AuditLogger,
         private readonly obligations: StudentObligationRegistry = studentObligations,
+        private readonly clock: Clock = new SystemClock(),
     ) {}
 
     /** `hariIni` = hari WIB (`tanggalWib(clock.now())`); tahun ajaran berakhir bila `tanggal_selesai` < `hariIni`. */
@@ -56,14 +59,14 @@ export class GraduationService {
                 ctx,
                 async (scope) => {
                     const users = createUserRepository(scope.tx);
-                    const sebelum = await users.findById(scope.ctx, userId);
+                    const sebelum = await users.findById(scope.ctx, userId, true);
                     // Diperiksa ulang di dalam transaksi: dapat berubah sejak daftar dibaca.
-                    if (sebelum === undefined || sebelum.status !== "AKTIF") return "LEWAT" as const;
+                    if (sebelum === undefined || sebelum.status !== "AKTIF" || await users.findRoleKode(scope.ctx, userId) !== "R-07") return "LEWAT" as const;
 
                     const kewajiban = await this.obligations.cek(scope, userId);
                     if (kewajiban.length > 0) return { kewajiban };
 
-                    const sesudah = await users.updateStatus(scope.ctx, userId, "NONAKTIF");
+                    const sesudah = await users.updateStatus(scope.ctx, userId, "NONAKTIF", this.clock.now());
                     await this.audit.write(scope, {
                         modul: MODUL,
                         aksi: "STUDENT_GRADUATION_DEACTIVATED",

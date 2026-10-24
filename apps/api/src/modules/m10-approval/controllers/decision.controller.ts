@@ -23,7 +23,7 @@ export function decideHandler(db: Kysely<Database>, service: DecisionService): R
                 statusCode: 200,
                 body: {
                     success: true as const,
-                    data: await service.putuskan(scope, id, { urutan: b.urutan, keputusan: b.keputusan, catatan: b.catatan ?? null }),
+                    data: await service.putuskan(scope, id, { urutan: b.urutan, keputusan: b.keputusan, catatan: b.catatan ?? null,rincian_keputusan:b.rincian_keputusan }),
                     meta: null,
                 },
             }),

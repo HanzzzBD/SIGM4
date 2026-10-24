@@ -36,6 +36,8 @@ export interface AturanJadwal {
     /** Tanggal WIB → nama hari libur (Lampiran E). */
     readonly libur: ReadonlyMap<string, string>;
     readonly granularitasMenit: number;
+    /** Batas M-07; pemakai kalender M-08 memiliki aturan durasi aset tersendiri. */
+    readonly durasiMaksimumJam?: number;
     /** BR-020 dalam hari kalender WIB (keputusan 14c). */
     readonly jarakMinimumHari: number;
     /** Pemegang `reservation.urgent` dibebaskan dari BR-020 — tidak dari aturan lain. */
@@ -110,6 +112,7 @@ export function alasanTidakSah(k: Kemunculan, a: AturanJadwal): string | null {
     if (!Number.isInteger(m) || !Number.isInteger(s) || m % a.granularitasMenit !== 0 || s % a.granularitasMenit !== 0) {
         return `Jam mulai dan selesai harus kelipatan ${String(a.granularitasMenit)} menit.`;
     }
+    if (a.durasiMaksimumJam !== undefined && k.selesai.getTime() - k.mulai.getTime() > a.durasiMaksimumJam * JAM_MS) return `Durasi reservasi melebihi maksimum ${String(a.durasiMaksimumJam)} jam per kemunculan.`;
     return null;
 }
 
