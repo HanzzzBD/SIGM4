@@ -97,7 +97,7 @@ describe("P-66 Matriks Permission", () => {
         expect(await screen.findByRole("heading", { name: "Matriks Permission: Petugas Sarpras" })).toBeTruthy();
         const tabelRole = screen.getByRole("table", { name: "Role" });
         // FR-02.2 langkah 3: modul × aksi — aksi baku berurutan view → update.
-        expect(within(tabelRole).getAllByRole("row").slice(1).map((r) => (r as HTMLTableRowElement).cells[1]?.textContent)).toEqual(["view", "update"]);
+        expect(within(tabelRole).getAllByRole("row").slice(1).map((r) => (r as HTMLTableRowElement).cells[1]?.textContent)).toEqual(["Lihat", "Ubah"]);
         expect(await pelanggaranAxe(container)).toEqual([]);
         await user.click(screen.getByRole("checkbox", { name: "Melihat role & matriks permission" }));
         await user.selectOptions(screen.getByLabelText("Cakupan data: Melihat daftar & detail pengguna"), "OWN");

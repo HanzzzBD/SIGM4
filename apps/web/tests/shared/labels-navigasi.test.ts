@@ -53,8 +53,8 @@ describe("registri navigasi", () => {
     });
 
     it("entri dirender hanya bila halamannya terdaftar DAN permission dipegang; grup kosong hilang", () => {
-        expect(navigasiTerlihat(semua("dashboard.view", "loan.view", "material.view")).map((g) => [g.label, g.entri.map((e) => e.label)])).toEqual([["Beranda", ["Dashboard"]]]);
-        expect(navigasiTerlihat(semua("loan.view"))).toEqual([]);
+        expect(navigasiTerlihat(semua("dashboard.view", "loan.view", "material.view")).map((g) => [g.label, g.entri.map((e) => e.label)])).toEqual([["Beranda", ["Dashboard"]], ["Aset & Bahan", ["Bahan", "Scan QR"]], ["Pemanfaatan", ["Peminjaman", "Katalog Bahan", "Permintaan Bahan"]]]);
+        expect(navigasiTerlihat(semua("loan.view")).map((g) => g.entri.map((e) => e.label))).toEqual([["Peminjaman"]]);
     });
 
     it("HALAMAN_TERDAFTAR identik dengan route yang benar-benar ada di router", () => {
@@ -65,7 +65,7 @@ describe("registri navigasi", () => {
     });
 
     it("drill-down hanya menjadi tautan bila halaman sasarannya terdaftar; filter URL dipertahankan", () => {
-        expect(jalurDrilldown("P-75")).toBeNull();
+        expect(jalurDrilldown("P-75")).toBe("/monitoring-chatbot");
         expect(jalurDrilldown("P-73?filter[aksi]=LOGIN_SUCCESS")).toBe("/activity-log?filter[aksi]=LOGIN_SUCCESS");
         expect(jalurDrilldown("P-60?filter[status]=AKTIF")).toBe("/pengguna?filter[status]=AKTIF");
         expect(jalurDrilldown(null)).toBeNull();

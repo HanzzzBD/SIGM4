@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { AssetMovementDocument } from "@sigm4/schemas";
 import { ME_ADMIN, gagal, pasangServer, pelanggaranAxe, renderAplikasi, sukses } from "../helpers";
@@ -132,7 +132,10 @@ describe("P-20 — mutasi dan berita acara", () => {
         await renderAplikasi("/aset/mutasi");
         await screen.findByRole("checkbox", { name: "AST-1 — Aset" });
         for (let page = 1; page <= 2; page++) {
-            for (let n = (page - 1) * 25 + 1; n <= page * 25; n++) await user.click(screen.getByRole("checkbox", { name: `AST-${n} — Aset` }));
+            // Query the current page once; keep all 50 real user clicks and the original timeout.
+            const choices = within(screen.getByRole("group", { name: "Aset yang akan dipindahkan" })).getAllByRole("checkbox");
+            expect(choices).toHaveLength(25);
+            for (const choice of choices) await user.click(choice);
             await user.click(screen.getByRole("button", { name: "Aset berikutnya" }));
             await screen.findByRole("checkbox", { name: `AST-${page * 25 + 1} — Aset` });
         }

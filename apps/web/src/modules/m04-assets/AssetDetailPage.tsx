@@ -17,10 +17,12 @@ import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states"
 import { Lencana, Peringatan, gabung } from "../../shared/ui/primitives";
 import { LinimasaAset } from "./LinimasaAset";
 import { loadDocumentPanel } from "../m06-documents";
+import { muatServiceHistoryPanel } from "../m12-maintenance";
 import { VARIAN_KONDISI, VARIAN_STATUS, detailAsetQuery, rupiah } from "./katalog";
 
 export type TabAset = "informasi" | "riwayat" | "dokumen";
 const DokumenPanel = lazy(loadDocumentPanel);
+const ServiceHistoryPanel=lazy(muatServiceHistoryPanel);
 
 const SUMBER: Record<NonNullable<AssetDetail["sumber_perolehan"]>, string> = {
     PEMBELIAN: "Pembelian",
@@ -57,6 +59,7 @@ function Informasi({ d }: { readonly d: AssetDetail }) {
                         </Baris>
                         <Baris label="Penanggung jawab">{d.penanggung_jawab?.nama ?? "—"}</Baris>
                         <Baris label="Tahun perolehan">{d.tahun_perolehan}</Baris>
+                        {d.pengadaan&&<Baris label="Pengadaan asal"><a href={`/pengadaan/${d.pengadaan.id}`} className="text-text-link underline">{d.pengadaan.nomor}</a></Baris>}
                         <Baris label="Dapat dipinjam">{d.dapat_dipinjam ? (d.boleh_dipinjam_siswa ? "Ya, termasuk oleh siswa" : "Ya, kecuali oleh siswa") : "Tidak"}</Baris>
                     </dl>
                 </section>
@@ -141,12 +144,15 @@ export default function AssetDetailPage({ id, tab, riwayatPage, onRiwayatPage }:
                             <span className="text-sm text-text-secondary">Aset sedang dipinjam — mutasi menunggu pengembalian.</span>
                         </span>
                     ) : (
-                        <Link to="/aset/mutasi" className="inline-flex min-h-control-md items-center rounded-md border border-border-strong px-4 text-base font-medium text-text-primary hover:bg-neutral-50">
+                        <Link to="/aset/mutasi" search={{aset:Number(d.id)}} className="inline-flex min-h-control-md items-center rounded-md border border-border-strong px-4 text-base font-medium text-text-primary hover:bg-neutral-50">
                             Mutasi Lokasi
                         </Link>
                     )
                 )}
                 {/* UX §7.6.3 aksi sekunder: Lapor Kerusakan (P-40, PR-03-32). */}
+                {aksiTransaksi&&can("workorder.create")&&<a href={`/work-order/baru?aset=${id}`} className="inline-flex min-h-control-md items-center rounded-md border border-border-strong px-4 text-base font-medium text-text-primary hover:bg-neutral-50">Buat Work Order</a>}
+                {aksiTransaksi && can("disposal.create") && ["RUSAK_BERAT", "HILANG"].includes(d.kondisi) && <a href={`/penghapusan/baru?aset=${id}`} className="inline-flex min-h-control-md items-center rounded-md border border-border-strong px-4 text-base font-medium text-text-primary hover:bg-neutral-50">Usulkan Penghapusan</a>}
+                {aksiTransaksi&&d.kondisi==="RUSAK_BERAT"&&can("procurement.create")&&<a href={`/pengadaan/baru?aset=${id}`} className="inline-flex min-h-control-md items-center rounded-md border border-border-strong px-4 text-base font-medium text-text-primary hover:bg-neutral-50">Usulkan Penggantian</a>}
                 {aksiTransaksi && can("damage.create") && jalurTerdaftar("/kerusakan/baru") && (
                     <a href={`/kerusakan/baru?aset=${id}`} className="inline-flex min-h-control-md items-center rounded-md border border-border-strong px-4 text-base font-medium text-text-primary hover:bg-neutral-50">
                         Lapor Kerusakan
@@ -180,7 +186,7 @@ export default function AssetDetailPage({ id, tab, riwayatPage, onRiwayatPage }:
                 </Link>
                 {can("asset_document.view") && <Link to="/aset/$id/dokumen" params={{ id }} className={tabKelas(tab === "dokumen")} aria-current={tab === "dokumen" ? "page" : undefined}>Dokumen</Link>}
             </nav>
-            {tab === "informasi" ? <Informasi d={d} /> : tab === "dokumen" ? (can("asset_document.view") && <Suspense fallback={<KeadaanMemuat label="Memuat dokumen aset" />}><DokumenPanel id={id} /></Suspense>) : <LinimasaAset id={id} page={riwayatPage} onPage={onRiwayatPage} />}
+            {tab === "informasi" ? <Informasi d={d} /> : tab === "dokumen" ? (can("asset_document.view") && <Suspense fallback={<KeadaanMemuat label="Memuat dokumen aset" />}><DokumenPanel id={id} /></Suspense>) : <div className="flex flex-col gap-6">{can("workorder.view")&&<Suspense fallback={<KeadaanMemuat label="Memuat riwayat servis"/>}><ServiceHistoryPanel id={id}/></Suspense>}<LinimasaAset id={id} page={riwayatPage} onPage={onRiwayatPage} /></div>}
         </div>
     );
 }

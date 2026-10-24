@@ -1,3 +1,6 @@
+import { loadRequestCatalogPage,loadRequestFormPage,loadRequestListPage,loadRequestDetailPage } from "../modules/m22-materials";
+import { loadMaterialListPage,loadMaterialFormPage,loadMaterialDetailPage,loadMaterialCategoriesPage } from "../modules/m22-materials";
+import { DisposalDetailPage } from "../modules/m21-disposal/index";
 // Perakitan halaman (SDD-11 §4.1): route → komponen modul/keadaan. P-08…P-11 adalah
 // halaman keadaan global (UX §6.2, §7.3): setiap layar galat selalu kembali ke Dashboard,
 // bukan berhenti (UX-05, UX §5.6).
@@ -6,14 +9,25 @@ import { Link } from "@tanstack/react-router";
 import { loadForgotPasswordPage, loadProfilePage, loadSecurityPage, loadResetRequestsPage } from "../modules/m01-auth";
 import type { StatusReset } from "../modules/m01-auth";
 import { Suspense, lazy } from "react";
+import { muatWorkOrderListPage,muatWorkOrderCreatePage,muatWorkOrderDetailPage } from "../modules/m12-maintenance";
+import type { WorkOrderListQuery } from "@sigm4/schemas";
 import { loadLocationTreePage, loadRoomDetailPage } from "../modules/m03-locations";
 import type { Filters as LocationFilters } from "../modules/m03-locations";
 import { loadDocumentListPage } from "../modules/m06-documents";
+import { loadAssetAvailabilityPage, loadAssetReservationWizardPage } from "../modules/m08-reservation-item";
+import { loadLoanExtensionSummary, loadLoanListPage, loadFineListPage, loadFineDetailPage, loadCheckoutPage, loadLoanDetailPage } from "../modules/m09-loans";
+import type { AssetWizardInitial } from "../modules/m08-reservation-item";
+import type { AvailabilitySearch } from "../modules/m08-reservation-item";
 import type { FilterDokumen } from "../modules/m06-documents";
 import type { ReactNode } from "react";
+const WorkOrderListPage=lazy(muatWorkOrderListPage),WorkOrderCreatePage=lazy(muatWorkOrderCreatePage),WorkOrderDetailPage=lazy(muatWorkOrderDetailPage);
+export const HalamanWorkOrder=(props:{search:WorkOrderListQuery;onSearch:(value:Partial<WorkOrderListQuery>)=>void})=><Suspense fallback={<KeadaanMemuat label="Memuat work order"/>}><WorkOrderListPage {...props}/></Suspense>;
+export const HalamanBuatWorkOrder=(props:{ticketId?:string|undefined;assetId?:string|undefined;onCreated:(id:string)=>void})=><Suspense fallback={<KeadaanMemuat label="Memuat penugasan"/>}><WorkOrderCreatePage {...props}/></Suspense>;
+export const HalamanDetailWorkOrder=({id}:{id:string})=><Suspense fallback={<KeadaanMemuat label="Memuat detail work order"/>}><WorkOrderDetailPage key={id} id={id}/></Suspense>;
 import { AktivasiDuaFaktorPage, GantiPasswordPage, LoginPage, VerifikasiDuaFaktorPage } from "../modules/m01-auth";
 import type { AlasanLogin } from "../modules/m01-auth";
 import { muatApprovalInboxPage, muatApprovalRulesPage, muatDecisionPage, muatEditorAturanPage } from "../modules/m10-approval";
+import { loadProcurementListPage,loadProcurementForm,loadProcurementDetailPage,loadProcurementReceiptPage,loadProcurementApprovalPage } from "../modules/m14-procurement";
 import { muatDashboardPage } from "../modules/m15-dashboard";
 import { loadDamageDetailPage, loadDamageListPage, loadDamageReportPage } from "../modules/m11-damage-reports";
 import { loadCalendarPage, loadParameterPage, loadWorkUnitPage } from "../modules/m20-settings";
@@ -59,6 +73,13 @@ const RoomDetailPage = lazy(loadRoomDetailPage);
 export const HalamanLokasi = (props: { readonly q: string; readonly status: string; readonly onSearch: (q: string, status: string) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat lokasi" />}><LocationTreePage {...props} /></Suspense>;
 export const HalamanDetailRuangan = (props: { readonly id: string; readonly filters: LocationFilters; readonly tab: "aset" | "jadwal"; readonly onFilters: (f: LocationFilters) => void; readonly onTab: (t: "aset" | "jadwal") => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat ruangan" />}><RoomDetailPage {...props} /></Suspense>;
 const AssetImportPage = lazy(loadAssetImportPage);
+const AssetAvailabilityPage = lazy(loadAssetAvailabilityPage);
+const CheckoutPage = lazy(loadCheckoutPage), LoanDetailPage = lazy(loadLoanDetailPage);
+export const HalamanSerahTerima = (props: { readonly initialReservation?: string | undefined; readonly onCreated: (id: string) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat serah terima" />}><CheckoutPage {...props} /></Suspense>;
+export const HalamanDetailPeminjaman = (props: { readonly id: string }) => <Suspense fallback={<KeadaanMemuat label="Memuat peminjaman" />}><LoanDetailPage {...props} /></Suspense>;
+const AssetReservationWizardPage = lazy(loadAssetReservationWizardPage);
+export const HalamanWizardAset = (props: { readonly initial: AssetWizardInitial; readonly onCancel: () => void; readonly onCreated: (result: RoomReservationCreated) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat pengajuan aset" />}><AssetReservationWizardPage {...props} /></Suspense>;
+export const HalamanKatalogAset = (props: { readonly search: AvailabilitySearch; readonly onSearch: (patch: Partial<AvailabilitySearch>) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat katalog aset" />}><AssetAvailabilityPage {...props} /></Suspense>;
 const DocumentListPage = lazy(loadDocumentListPage);
 const ForgotPasswordPage = lazy(loadForgotPasswordPage);
 const ProfilePage = lazy(loadProfilePage);
@@ -104,7 +125,7 @@ export const HalamanWizardReservasi = (props: { readonly isianAwal: IsianWizard;
     </Suspense>
 );
 /** Panel blokade ruangan — aksi sekunder P-27 (FR-07.5, PR-03-13). */
-export const HalamanPanelBlokade = (props: { readonly roomId: string | null; readonly onRuangan: (id: string) => void; readonly onTutup: () => void }) => (
+export const HalamanPanelBlokade = (props: { readonly importJobId?: string | null; readonly onImportJob?: (id: string) => void; readonly roomId: string | null; readonly onRuangan: (id: string) => void; readonly onTutup: () => void }) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat blokade ruangan" baris={4} />}>
         <RoomBlocksPanel {...props} />
     </Suspense>
@@ -137,9 +158,9 @@ export const HalamanLabelQr = ({ awal, belum }: { readonly awal: readonly string
     </Suspense>
 );
 /** P-25 Scan QR web (FR-05.2; PR-03-28). */
-export const HalamanScanQr = ({ onBuka }: { readonly onBuka: (assetId: string) => void }) => (
+export const HalamanScanQr = ({ onBuka,onBukaBahan }: { readonly onBuka: (assetId: string) => void;readonly onBukaBahan:(id:string)=>void }) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat pemindai" baris={4} />}>
-        <ScanPage onBuka={onBuka} />
+        <ScanPage onBuka={onBuka} onBukaBahan={onBukaBahan}/>
     </Suspense>
 );
 const InventoryPage = lazy(loadInventoryPage);
@@ -230,7 +251,7 @@ const ParameterPage = lazy(loadParameterPage);
 const CalendarPage = lazy(loadCalendarPage);
 const WorkUnitPage = lazy(loadWorkUnitPage);
 /** P-70 Parameter Sistem (FR-20.1; PR-01-24). */
-export const HalamanParameter = (props: { readonly kelompok: Kelompok; readonly onKelompok: (k: Kelompok) => void }) => (
+export const HalamanParameter = (props: { readonly kelompok: Kelompok; readonly onKelompok: (k: Kelompok) => void;satuan?:boolean;onSatuan?:(open:boolean)=>void }) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat parameter sistem" baris={6} />}>
         <ParameterPage {...props} />
     </Suspense>
@@ -282,7 +303,7 @@ export const HalamanDetailKerusakan = (props: { readonly id: string; readonly ak
         <DamageDetailPage {...props} />
     </Suspense>
 );
-export const HalamanMutasiAset = (props: { readonly documentId: number | null; readonly onDocument: (id: number | null) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat mutasi aset" baris={4} />}><AssetMovementPage {...props} /></Suspense>;
+export const HalamanMutasiAset = (props: { readonly initialAsset?: number | undefined; readonly documentId: number | null; readonly onDocument: (id: number | null) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat mutasi aset" baris={4} />}><AssetMovementPage {...props} /></Suspense>;
 export const HalamanImporAset = (props: { readonly jobId: number | null; readonly onJob: (id: number) => void }) => <Suspense fallback={<KeadaanMemuat label="Memuat impor aset" baris={4} />}><AssetImportPage {...props} /></Suspense>;
 
 /** Dimuat malas (SDD-11 §4.7): skeleton seketika selama bundel halaman diunduh. */
@@ -326,6 +347,11 @@ export const HalamanEditorAturan = ({ id }: { readonly id: number | null }) => (
 
 const ApprovalInboxPage = lazy(muatApprovalInboxPage);
 const DecisionPage = lazy(muatDecisionPage);
+const ProcurementListPage=lazy(loadProcurementListPage),ProcurementForm=lazy(loadProcurementForm),ProcurementDetailPage=lazy(loadProcurementDetailPage),ProcurementReceiptPage=lazy(loadProcurementReceiptPage),ProcurementApprovalPage=lazy(loadProcurementApprovalPage);
+export const HalamanPengadaan=(props:React.ComponentProps<typeof ProcurementListPage>)=><Suspense fallback={<KeadaanMemuat label="Memuat pengadaan"/>}><ProcurementListPage {...props}/></Suspense>;
+export const HalamanBuatPengadaan=(props:React.ComponentProps<typeof ProcurementForm>)=><Suspense fallback={<KeadaanMemuat label="Memuat formulir usulan"/>}><ProcurementForm {...props}/></Suspense>;
+export const HalamanDetailPengadaan=(props:React.ComponentProps<typeof ProcurementDetailPage>)=><Suspense fallback={<KeadaanMemuat label="Memuat usulan"/>}><ProcurementDetailPage {...props}/></Suspense>;
+export const HalamanPenerimaanPengadaan=(props:React.ComponentProps<typeof ProcurementReceiptPage>)=><Suspense fallback={<KeadaanMemuat label="Memuat penerimaan"/>}><ProcurementReceiptPage {...props}/></Suspense>;
 
 /** P-37 Persetujuan Saya (FR-10.2; PR-02-44). */
 export const HalamanPersetujuanSaya = (props: { readonly page: number; readonly diputuskan?: string | undefined; readonly onPage: (page: number) => void }) => (
@@ -336,14 +362,15 @@ export const HalamanPersetujuanSaya = (props: { readonly page: number; readonly 
 
 /** Konteks objek P-38 per jenis pengajuan (keputusan 92c): hanya reservasi ruangan yang punya modul web kini. */
 function konteksPengajuan(jenis: string, referensiId: number): ReactNode {
-    if (jenis === "RESERVASI_RUANGAN") return <RingkasanReservasi id={String(referensiId)} />;
+    if (jenis === "PERPANJANGAN_PEMINJAMAN") return <Suspense fallback={<KeadaanMemuat label="Memuat konteks perpanjangan" />}><LoanExtensionSummary id={referensiId} /></Suspense>;
+    if (jenis === "RESERVASI_RUANGAN" || jenis === "RESERVASI_ASET") return <RingkasanReservasi id={String(referensiId)} />;
     return <p className="text-base text-text-secondary">Rincian objek untuk jenis pengajuan ini belum tersedia.</p>;
 }
 
 /** P-38 Detail Keputusan (FR-10.2 langkah 3–7, FR-10.3; PR-02-44). */
 export const HalamanDetailKeputusan = (props: { readonly id: number; readonly onSelesai: (label: string) => void }) => (
     <Suspense fallback={<KeadaanMemuat label="Memuat detail pengajuan" baris={8} />}>
-        <DecisionPage {...props} konteks={konteksPengajuan} />
+        <DecisionPage {...props} konteks={konteksPengajuan} khusus={(jenis,id,instance)=>jenis==="PERMINTAAN_BAHAN"?<HalamanDetailPermintaanBahan id={String(id)} onSaved={()=>props.onSelesai("Permintaan bahan")}/>:jenis==="PENGHAPUSAN_ASET"?<DisposalDetailPage id={String(id)}/>:jenis==="PENGADAAN_BARANG"?<Suspense fallback={<KeadaanMemuat label="Memuat usulan pengadaan"/>}><ProcurementApprovalPage id={id} instanceId={instance} onDone={()=>props.onSelesai("Usulan pengadaan")}/></Suspense>:null} />
     </Suspense>
 );
 
@@ -375,3 +402,22 @@ export const HalamanTidakDitemukan = () => (
         <KeadaanKosong judul="Halaman tidak ditemukan" pesan="Alamat yang Anda buka tidak dikenali. Periksa kembali tautannya." aksi={keDashboard} />
     </Tunggal>
 );
+
+const LoanListPage = lazy(loadLoanListPage), FineListPage = lazy(loadFineListPage), FineDetailPage = lazy(loadFineDetailPage);
+export const HalamanDaftarPeminjaman = (props: React.ComponentProps<typeof LoanListPage>) => <Suspense fallback={<KeadaanMemuat label="Memuat daftar peminjaman" />}><LoanListPage {...props} /></Suspense>;
+export const HalamanDaftarDenda = (props: React.ComponentProps<typeof FineListPage>) => <Suspense fallback={<KeadaanMemuat label="Memuat kewajiban" />}><FineListPage {...props} /></Suspense>;
+export const HalamanDetailDenda = (props: { readonly id: string }) => <Suspense fallback={<KeadaanMemuat label="Memuat kewajiban" />}><FineDetailPage {...props} /></Suspense>;
+
+const LoanExtensionSummary = lazy(loadLoanExtensionSummary);
+
+const MaterialListPage=lazy(loadMaterialListPage),MaterialFormPage=lazy(loadMaterialFormPage),MaterialDetailPage=lazy(loadMaterialDetailPage),MaterialCategoriesPage=lazy(loadMaterialCategoriesPage);
+export const HalamanBahan=(props:React.ComponentProps<typeof MaterialListPage>)=><Suspense fallback={<KeadaanMemuat label="Memuat Bahan"/>}><MaterialListPage {...props}/></Suspense>;
+export const HalamanFormBahan=(props:React.ComponentProps<typeof MaterialFormPage>)=><Suspense fallback={<KeadaanMemuat label="Memuat form Bahan"/>}><MaterialFormPage {...props}/></Suspense>;
+export const HalamanDetailBahan=(props:React.ComponentProps<typeof MaterialDetailPage>)=><Suspense fallback={<KeadaanMemuat label="Memuat detail Bahan"/>}><MaterialDetailPage {...props}/></Suspense>;
+export const HalamanKategoriBahan=()=><Suspense fallback={<KeadaanMemuat label="Memuat kategori Bahan"/>}><MaterialCategoriesPage/></Suspense>;
+
+const RequestCatalogPage=lazy(loadRequestCatalogPage),RequestFormPage=lazy(loadRequestFormPage),RequestListPage=lazy(loadRequestListPage),RequestDetailPage=lazy(loadRequestDetailPage);
+export const HalamanKatalogBahan=(props:React.ComponentProps<typeof RequestCatalogPage>)=><Suspense fallback={<KeadaanMemuat label="Memuat katalog bahan"/>}><RequestCatalogPage {...props}/></Suspense>;
+export const HalamanAjukanBahan=(props:React.ComponentProps<typeof RequestFormPage>)=><Suspense fallback={<KeadaanMemuat label="Memuat formulir permintaan bahan"/>}><RequestFormPage {...props}/></Suspense>;
+export const HalamanPermintaanBahan=(props:React.ComponentProps<typeof RequestListPage>)=><Suspense fallback={<KeadaanMemuat label="Memuat permintaan bahan"/>}><RequestListPage {...props}/></Suspense>;
+export const HalamanDetailPermintaanBahan=(props:React.ComponentProps<typeof RequestDetailPage>)=><Suspense fallback={<KeadaanMemuat label="Memuat detail permintaan bahan"/>}><RequestDetailPage {...props}/></Suspense>;

@@ -23,7 +23,9 @@ const Pengguna = z.object({
     id: z.string(),
     nama: z.string(),
     email: z.string(),
-    nip_nis: z.string(),
+    nip_nis: z.nullable(z.string()),
+    deactivated_at: z.optional(z.nullable(z.string())),
+    pseudonymized_at: z.optional(z.nullable(z.string())),
     role_id: z.string(),
     work_unit_id: z.nullable(z.string()),
     telepon: z.nullable(z.string()),
@@ -168,6 +170,8 @@ export async function terbitkanKodeAktivasi(id: string, metode: MetodeVerifikasi
 }
 
 const Impor = z.object({
+    report_expires_at: z.optional(z.nullable(z.string())),
+    report_expired: z.optional(z.boolean()),
     id: z.string(),
     status: z.enum(["MENUNGGU", "BERJALAN", "SELESAI", "GAGAL"]),
     nama_berkas: z.string(),

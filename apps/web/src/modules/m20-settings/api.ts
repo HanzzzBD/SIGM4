@@ -27,7 +27,7 @@ export const LABEL_KELOMPOK: Record<Kelompok, string> = {
 /** FR-20.1 A2/A3: perubahan yang tidak berlaku surut — diperingatkan sebelum disimpan. */
 export const PERINGATAN_DAMPAK: Partial<Record<Kelompok, string>> = {
     KODE_ASET: "Format kode baru hanya berlaku untuk aset yang didaftarkan sesudah perubahan; kode aset yang sudah ada tidak berubah.",
-    DENDA: "Tarif dan batas baru hanya berlaku untuk denda yang terbit sesudah perubahan; denda yang sudah terbit tidak dihitung ulang.",
+    DENDA: "Tarif dan batas baru berlaku untuk peminjaman yang diserahterimakan sesudah perubahan. Kebijakan peminjaman yang sudah berjalan dan denda yang sudah terbit tetap memakai nilai tersimpan.",
 };
 
 const Meta = z.object({ page: z.number(), per_page: z.number(), total: z.number(), total_pages: z.number() });

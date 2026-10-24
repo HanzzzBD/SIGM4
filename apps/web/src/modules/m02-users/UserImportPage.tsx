@@ -8,6 +8,7 @@ import { jalurDrilldown } from "../../shared/navigasi";
 import { KeadaanGalat, KeadaanMemuat } from "../../shared/states";
 import { Isian, Peringatan, Tombol } from "../../shared/ui/primitives";
 import { berjalan, imporQuery, kunciImpor, laporanCsv, simpanUnduhan, unduhTemplat, unggahImpor } from "./api";
+import { ImportReportRetention, useImportReportExpired } from "../../shared/ui/import-report-retention";
 
 const STATUS = { MENUNGGU: "Menunggu pemrosesan", BERJALAN: "Sedang diproses", SELESAI: "Selesai", GAGAL: "Pemrosesan terhenti" } as const;
 
@@ -24,6 +25,7 @@ export default function UserImportPage({ jobId, onJob }: { readonly jobId: numbe
     });
     const templat = useMutation({ mutationFn: unduhTemplat });
     const job = kueri.data;
+    const expired = useImportReportExpired(job?.report_expires_at, job?.report_expired);
     const jalan = berjalan(job);
     useEffect(() => {
         if (job !== undefined && !berjalan(job)) void queryClient.invalidateQueries({ queryKey: ["users", "daftar"] });
@@ -64,7 +66,8 @@ export default function UserImportPage({ jobId, onJob }: { readonly jobId: numbe
             {job !== undefined && (
                 <section aria-labelledby="judul-laporan" className="flex flex-col gap-4 rounded-md border border-border-subtle bg-surface-default p-4">
                     <h2 id="judul-laporan" className="text-lg font-semibold text-text-heading">Laporan impor</h2>
-                    <p className="break-all text-sm text-text-secondary">{job.nama_berkas}</p>
+                    <p className="break-all text-sm text-text-secondary">{expired ? `impor-${job.id}` : job.nama_berkas}</p>
+                    <ImportReportRetention expired={expired} expires={job.report_expires_at} />
                     <p role="status" aria-live="polite" className="text-base text-text-primary">
                         {STATUS[job.status]} — {job.terproses} dari {job.total} baris diproses.
                     </p>
@@ -74,8 +77,8 @@ export default function UserImportPage({ jobId, onJob }: { readonly jobId: numbe
                         <div><dt className="text-sm text-text-secondary">Baris gagal</dt><dd className="text-xl font-semibold text-text-primary">{job.gagal}</dd></div>
                     </dl>
                     {unggah.data?.meta?.idempotent_replay === true && <Peringatan varian="info" judul="Berkas sudah diterima">Hasil pekerjaan sebelumnya ditampilkan. Pengguna yang sudah dibuat tidak diproses ulang.</Peringatan>}
-                    {job.pesan_galat !== null && <Peringatan varian="error" judul="Pemrosesan terhenti">{job.pesan_galat}</Peringatan>}
-                    {job.laporan_gagal.length > 0 && (
+                    {!expired && job.pesan_galat !== null && <Peringatan varian="error" judul="Pemrosesan terhenti">{job.pesan_galat}</Peringatan>}
+                    {!expired && job.laporan_gagal.length > 0 && (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-sm text-text-primary">
                                 <caption className="mb-2 text-left font-medium">Baris yang perlu diperbaiki</caption>
@@ -90,7 +93,7 @@ export default function UserImportPage({ jobId, onJob }: { readonly jobId: numbe
                     )}
                     {!jalan && (
                         <div className="flex flex-wrap gap-2">
-                            <Tombol varian="secondary" onClick={() => simpanUnduhan(new Blob([laporanCsv(job)], { type: "text/csv;charset=utf-8" }), `laporan_impor_pengguna_${job.id}.csv`)}>Unduh laporan</Tombol>
+                            {!expired && <Tombol varian="secondary" onClick={() => simpanUnduhan(new Blob([laporanCsv(job)], { type: "text/csv;charset=utf-8" }), `laporan_impor_pengguna_${job.id}.csv`)}>Unduh laporan</Tombol>}
                             {daftar !== null && <a href={daftar} className="inline-flex min-h-control-md items-center rounded-md px-4 text-text-link">Kembali ke Pengguna</a>}
                         </div>
                     )}

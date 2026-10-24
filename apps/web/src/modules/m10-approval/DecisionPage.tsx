@@ -16,6 +16,7 @@ import { Lencana, Peringatan, Tombol } from "../../shared/ui/primitives";
 import { LinimasaPersetujuan, riwayatApprovalQuery, waktuWib } from "./linimasa";
 import type { Keputusan } from "./persetujuan";
 import { KUNCI_PENDING, labelPengajuan, pemutusLain, pendingQuery, putuskan, teksSisaSla } from "./persetujuan";
+import {DecisionContext} from "./DecisionContext";
 
 /** BR-042: catatan wajib bila menolak atau meminta revisi; opsional saat menyetujui. */
 const AKSI: Record<Keputusan, { readonly label: string; readonly judul: string; readonly isi: string; readonly alasan?: string; readonly varian: "primary" | "danger" }> = {
@@ -24,7 +25,7 @@ const AKSI: Record<Keputusan, { readonly label: string; readonly judul: string; 
     PERLU_REVISI: { label: "Perlu Revisi", judul: "Minta revisi?", isi: "Pemohon menyunting lalu mengajukan ulang; persetujuan dimulai lagi dari langkah pertama.", alasan: "Catatan revisi", varian: "primary" },
 };
 
-export default function DecisionPage({ id, konteks, onSelesai }: { readonly id: number; readonly konteks: (jenis: string, referensiId: number) => ReactNode; readonly onSelesai: (label: string) => void }) {
+export default function DecisionPage({ id, konteks, onSelesai,khusus }: { readonly id: number; readonly konteks: (jenis: string, referensiId: number) => ReactNode; readonly onSelesai: (label: string) => void;readonly khusus?:(jenis:string,referensiId:number,instanceId:number)=>ReactNode }) {
     const qc = useQueryClient();
     const riwayat = useQuery(riwayatApprovalQuery(id));
     // Kotak masuk = sumber "boleh memutus" (pemutus sah + langkah yang dilihat, keputusan 69).
@@ -33,7 +34,9 @@ export default function DecisionPage({ id, konteks, onSelesai }: { readonly id: 
     const [sibuk, setSibuk] = useState(false);
     const [galat, setGalat] = useState<string | undefined>(undefined);
     const [kalah, setKalah] = useState<{ readonly nama: string; readonly pada: string | null } | null>(null);
+    const submitting=useRef(false);
     const kunci = useRef<string | null>(null);
+    const isiPercobaan = useRef<string | null>(null);
     const judul = useRef<HTMLHeadingElement>(null);
     useEffect(() => judul.current?.focus(), [id]);
 
@@ -45,21 +48,31 @@ export default function DecisionPage({ id, konteks, onSelesai }: { readonly id: 
         return <KeadaanGalat galat={riwayat.error} onCobaLagi={() => void riwayat.refetch()} />;
     }
     const d = riwayat.data;
+    const halamanKhusus=khusus?.(d.jenis_pengajuan,d.referensi_id,id);if(halamanKhusus)return halamanKhusus;
     const label = labelPengajuan(d.jenis_pengajuan, d.referensi_id);
     const item = kotak.data?.data.find((p) => p.instance_id === id);
     const bolehPutus = d.status === "MENUNGGU" && item !== undefined && kalah === null;
     const langkahAktif = d.langkah.find((l) => l.status === "AKTIF");
 
     const kirim = async (keputusan: Keputusan, catatan: string) => {
-        if (item === undefined) return;
+        if (item === undefined || submitting.current) return;
+        const body = { urutan: item.urutan, keputusan, catatan: catatan === "" ? null : catatan };
+        const serialized = JSON.stringify(body);
+        if (isiPercobaan.current !== null && isiPercobaan.current !== serialized) {
+            setGalat("Hasil keputusan belum pasti. Ulangi dengan keputusan dan isian yang sama.");
+            return;
+        }
+        submitting.current=true;
         setSibuk(true);
         setGalat(undefined);
         kunci.current ??= crypto.randomUUID();
+        isiPercobaan.current = serialized;
         try {
-            await putuskan(id, { urutan: item.urutan, keputusan, catatan: catatan === "" ? null : catatan }, kunci.current);
+            await putuskan(id, body, kunci.current);
             void qc.invalidateQueries({ queryKey: KUNCI_PENDING });
-            onSelesai(label);
+            kunci.current=null;isiPercobaan.current=null;onSelesai(label);
         } catch (g) {
+            if(g instanceof ApiError&&g.status>=400&&g.status<500&&![408,429].includes(g.status)&&g.kode!=="REQUEST_IN_PROGRESS"){kunci.current=null;isiPercobaan.current=null;}
             const lain = pemutusLain(g);
             if (lain !== null) {
                 // RE-09: tampilkan SIAPA dan KAPAN, lalu arahkan ke linimasa yang mutakhir.
@@ -72,7 +85,7 @@ export default function DecisionPage({ id, konteks, onSelesai }: { readonly id: 
                 setGalat(g instanceof Error ? g.message : "Keputusan belum tersimpan. Coba lagi.");
             }
         } finally {
-            kunci.current = null;
+            submitting.current = false;
             setSibuk(false);
         }
     };
@@ -113,7 +126,7 @@ export default function DecisionPage({ id, konteks, onSelesai }: { readonly id: 
                 <h2 id="judul-riwayat-pemohon" className="text-lg font-semibold text-text-primary">
                     Riwayat pemohon & ketersediaan objek
                 </h2>
-                <p className="text-base text-text-secondary">Belum tersedia. Ketersediaan objek tetap diperiksa sistem saat Anda menyetujui.</p>
+                <DecisionContext kind={d.jenis_pengajuan} reference={d.referensi_id} requester={d.pemohon.id} />
             </section>
 
             <LinimasaPersetujuan instanceId={id} />

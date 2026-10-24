@@ -9,7 +9,7 @@ import { ApiError, api } from "../../shared/api";
 export const SCOPE = ["ALL", "OWN", "ASSIGNED", "RESTRICTED"] as const;
 export type Scope = (typeof SCOPE)[number];
 /** Bab 11.3 "Cakupan Data Permission". */
-export const LABEL_SCOPE: Record<Scope, string> = { ALL: "All", OWN: "Own", ASSIGNED: "Assigned", RESTRICTED: "Restricted" };
+export const LABEL_SCOPE: Record<Scope, string> = { ALL: "Semua data", OWN: "Data sendiri", ASSIGNED: "Data yang ditugaskan", RESTRICTED: "Data terbatas" };
 
 /** Role bawaan pemilik perilaku berbasis kode role — tak dapat dijadikan template (BR-069a); server tetap menolak. */
 export const BUKAN_TEMPLATE: ReadonlySet<string> = new Set(["R-01", "R-03", "R-07"]);

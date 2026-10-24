@@ -48,6 +48,7 @@ export interface SaringanKatalog {
     readonly pinjam?: boolean | undefined;
     /** Hasil impor P-17 (`filter[import_job_id]`, PR-02-38). */
     readonly impor?: number | undefined;
+    readonly ekspor?: string | undefined;
     readonly urut?: Urutan | undefined;
     readonly page?: number | undefined;
     /** Bawaan 25 (C-15) — hanya ukuran lain yang tercatat di URL. */
@@ -55,11 +56,6 @@ export interface SaringanKatalog {
 }
 
 /** FR-04.2 langkah 2–4: saringan dikirim sebagai `filter[...]` (SDD-API §4.5). */
-export const paramsKatalog = (s: SaringanKatalog) => ({
-    q: s.q, sort: s.urut ?? "kode_barang", "filter[kategori_id]": s.kategori, "filter[lokasi_id]": s.lokasi,
-    "filter[kondisi]": s.kondisi, "filter[status]": s.status, "filter[tahun_perolehan]": s.tahun,
-    "filter[dapat_dipinjam]": s.pinjam, "filter[import_job_id]": s.impor,
-});
 export const katalogQuery = (s: SaringanKatalog) =>
     queryOptions({
         queryKey: ["assets", "katalog", s],
@@ -68,9 +64,17 @@ export const katalogQuery = (s: SaringanKatalog) =>
                 (
                     await api.get("/assets", {
                         params: {
-                            ...paramsKatalog(s),
+                            q: s.q,
+                            sort: s.urut ?? "kode_barang",
                             page: s.page ?? 1,
                             per_page: s.per ?? 25,
+                            "filter[kategori_id]": s.kategori,
+                            "filter[lokasi_id]": s.lokasi,
+                            "filter[kondisi]": s.kondisi,
+                            "filter[status]": s.status,
+                            "filter[tahun_perolehan]": s.tahun,
+                            "filter[dapat_dipinjam]": s.pinjam,
+                            "filter[import_job_id]": s.impor,
                         },
                     })
                 ).data,

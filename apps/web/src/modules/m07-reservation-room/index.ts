@@ -12,6 +12,7 @@ export type { PencarianDaftar } from "./ReservationListPage";
 export const loadReservationDetailPage = () => import("./ReservationDetailPage");
 export { isianDariReservasi } from "./pengajuan";
 export { detailReservasiQuery } from "./api";
+export { ketersediaanQuery } from "./api";
 // Konteks objek bagi P-38 Detail Keputusan (PR-02-44).
 export { RingkasanReservasi } from "./RingkasanReservasi";
 // Panel blokade ruangan — aksi sekunder P-27 (PR-03-13), dimuat malas.

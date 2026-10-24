@@ -1,0 +1,27 @@
+import { useRef, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { FinePayBodySchema, FineWaiveBodySchema, CompensationWaiveBodySchema, CompensationProposalBodySchema, CompensationDecisionBodySchema } from "@sigm4/schemas";
+import type { FineDetail } from "@sigm4/schemas";
+import { DialogKonfirmasi } from "../../shared/ui/dialog";
+import { Isian, Peringatan, Tombol } from "../../shared/ui/primitives";
+import { mutateFine, proposeReplacement, decideReplacement } from "./management-api";
+import { hariIniWib } from "../m07-reservation-room";
+import { rupiah } from "./presentation";
+
+type Action = "pay" | "waive" | "waive-compensation" | "reopen" | "propose" | "approve" | "reject";
+const LABELS: Record<Action, string> = { pay: "Tandai Lunas", waive: "Bebaskan Denda", "waive-compensation": "Bebaskan Ganti Rugi", reopen: "Buka Kembali Kewajiban", propose: "Usulkan Nilai Penggantian", approve: "Setujui Nilai Penggantian", reject: "Tolak Nilai Penggantian" };
+export function FineActions({ fine, online, onFocusReturn }: { readonly fine: FineDetail; readonly online: boolean; readonly onFocusReturn: () => void }) {
+ const [action, setAction] = useState<Action | null>(null), [amount, setAmount] = useState(""), [date, setDate] = useState(hariIniWib()), [proof, setProof] = useState(""), [error, setError] = useState<string | undefined>(undefined), [saved, setSaved] = useState(false);
+ const client = useQueryClient(), intent = useRef<{ identity: string; key: string } | null>(null), pending = fine.usulan.find((p) => p.status === "MENUNGGU");
+ const mutation = useMutation({ mutationFn: ({ selected, body, key }: { selected: Action; body: unknown; key: string }) => selected === "propose" ? proposeReplacement(fine.id, body, key) : selected === "approve" || selected === "reject" ? decideReplacement(fine.id, pending!.id, body, key) : mutateFine(fine.id, selected, body, key), onSuccess: () => { setAction(null); setSaved(true); void client.invalidateQueries({ queryKey: ["fines"] }); void client.invalidateQueries({ queryKey: ["loans"] }); } });
+ const open = (selected: Action) => { mutation.reset(); intent.current = null; setError(undefined); setAction(selected); setAmount(fine.sisa ?? ""); };
+ const confirm = (reason: string) => {
+  if (!online || action === null) return;
+  const schema = action === "pay" ? FinePayBodySchema : action === "waive-compensation" ? CompensationWaiveBodySchema : action === "propose" ? CompensationProposalBodySchema : action === "approve" || action === "reject" ? CompensationDecisionBodySchema : FineWaiveBodySchema;
+  const body = action === "pay" ? { tanggal_bayar: `${date}T00:00:00+07:00`, nomor_bukti: proof } : action === "approve" || action === "reject" ? { keputusan: action === "approve" ? "DISETUJUI" : "DITOLAK", catatan: reason } : action === "waive-compensation" || action === "propose" ? { alasan: reason, jumlah: amount } : { alasan: reason };
+  const parsed = schema.safeParse(body); if (!parsed.success) { setError(parsed.error.issues.map((i) => i.message).join(" ")); return; }
+  const identity = JSON.stringify({ action, body: parsed.data }); if (intent.current?.identity !== identity) intent.current = { identity, key: crypto.randomUUID() };
+  setError(undefined); mutation.mutate({ selected: action, body: parsed.data, key: intent.current.key });
+ };
+ return <section aria-label="Pengelolaan kewajiban" className="flex flex-col gap-3">{saved && <Peringatan varian="success">Perubahan kewajiban tercatat.</Peringatan>}<div className="flex flex-wrap gap-3">{([["pay", fine.aksi.bayar], ["waive", fine.aksi.bebaskan], ["waive-compensation", fine.aksi.bebaskan_ganti_rugi], ["reopen", fine.aksi.buka_kembali], ["propose", fine.aksi.usulkan_nilai], ["approve", fine.aksi.putuskan_nilai], ["reject", fine.aksi.putuskan_nilai]] as const).filter(([, allowed]) => allowed).map(([selected]) => <Tombol key={selected} varian={selected === "pay" ? "primary" : "secondary"} disabled={!online} onClick={() => open(selected)}>{LABELS[selected]}</Tombol>)}</div>{action && <DialogKonfirmasi onFokusKembali={onFocusReturn} buka onTutup={() => { if (!mutation.isPending) setAction(null); }} judul={`${LABELS[action]}?`} labelAksi={LABELS[action]} {...(action === "pay" ? {} : { labelAlasan: "Alasan atau catatan" })} sibuk={mutation.isPending} galat={error ?? mutation.error?.message} onKonfirmasi={confirm}><p>{fine.kode_barang} · {fine.nomor_peminjaman} · Sisa {rupiah(fine.sisa)}</p>{action === "pay" && <><p>Konfirmasi setelah pembayaran luring diterima.</p><Isian label="Tanggal pembayaran (WIB)" type="date" required value={date} onChange={(e) => setDate(e.target.value)} /><Isian label="Nomor bukti pembayaran" required value={proof} onChange={(e) => setProof(e.target.value)} /></>}{(action === "waive-compensation" || action === "propose") && <Isian label={action === "propose" ? "Nilai penggantian (rupiah)" : "Nilai yang dibebaskan (rupiah)"} inputMode="decimal" required value={amount} onChange={(e) => setAmount(e.target.value)} />}{(action === "approve" || action === "reject") && <p>Usulan {rupiah(pending?.jumlah ?? null)} oleh {pending?.pengusul}: {pending?.alasan}</p>}{action === "waive-compensation" && <p>Pembebasan sebagian menyisakan tagihan dan dapat mempertahankan blokir pengajuan.</p>}{action === "reopen" && <p>Koreksi status lunas akan mengaktifkan kembali sisa kewajiban dan dapat memblokir pengajuan baru.</p>}</DialogKonfirmasi>}</section>;
+}

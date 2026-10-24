@@ -39,7 +39,9 @@ export function buatKlien(opsi: OpsiKlien): AxiosInstance {
     klien.interceptors.response.use(undefined, async (galat: AxiosError) => {
         const cfg = galat.config as ConfigUlang | undefined;
         if (galat.response === undefined) throw new GalatJaringan();
-        const { status, data, headers } = galat.response;
+        const { status, headers } = galat.response;
+        let data=galat.response.data;
+        if(typeof ReadableStream!=="undefined"&&data instanceof ReadableStream){try{data=await new Response(data).json();}catch{data=null;}}
         const jalur = cfg?.url ?? "";
         if (status === 401 && cfg !== undefined && cfg._sudahDiulang !== true && !TANPA_REFRESH.some((j) => jalur.startsWith(j))) {
             try {

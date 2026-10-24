@@ -2,9 +2,15 @@
 // `apps/api` M-05; pencarian kode manual memakai katalog M-04 (`GET /assets?q=`, FR-05.2 A1).
 
 import { queryOptions } from "@tanstack/react-query";
+import { QrConfigResponseSchema } from "@sigm4/schemas";
 // zod/mini: API skema yang sama dengan bundel jauh lebih kecil (NFR-P-03, SDD-11 §4.7).
 import { z } from "zod/mini";
 import { ApiError, api } from "../../shared/api";
+
+export const qrConfigurationQuery = queryOptions({
+    queryKey: ["qr-configuration"], staleTime: 300_000,
+    queryFn: async () => QrConfigResponseSchema.parse((await api.get("/public/qr/config")).data).data,
+});
 
 const KONDISI = ["BAIK", "RUSAK_RINGAN", "RUSAK_BERAT", "HILANG"] as const;
 const STATUS = ["TERSEDIA", "DIRESERVASI", "DIPINJAM", "DALAM_PERBAIKAN", "TIDAK_TERSEDIA"] as const;
@@ -25,7 +31,13 @@ const Pindaian = z.object({ id: z.string(), kode_barang: z.string(), nama: z.str
 export type AsetPindaian = z.infer<typeof Pindaian>;
 
 /** Payload QR permanen `https://{domain}/a/{uuid}` (FR-05.1 langkah 1) → UUID; selain itu `null`. */
-export function uuidDariQr(isi: string): string | null {
+export function uuidDariQr(isi: string,trustedOrigin?:string): string | null {
+    if(trustedOrigin!==undefined){
+        try{
+            const url=new URL(isi.trim()),match=/^\/a\/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.exec(url.pathname);
+            return url.protocol==="https:"&&url.origin===new URL(trustedOrigin).origin&&!url.username&&!url.password&&!url.search&&!url.hash?match?.[1]?.toLowerCase()??null:null;
+        }catch{return null;}
+    }
     const cocok = /\/a\/([0-9a-fA-F-]{36})\/?$/.exec(isi.trim());
     return cocok?.[1]?.toLowerCase() ?? null;
 }

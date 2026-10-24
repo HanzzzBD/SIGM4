@@ -1,3 +1,10 @@
+import { AnalyticsQuerySchema, AnalyticsTypeSchema } from "@sigm4/schemas";
+import { z as fullZod } from "zod";
+import { AnalyticsListPage, AnalyticsDetailPage } from "../modules/m16-analytics";
+import { MaterialListQuerySchema as CatalogQuerySchema, MaterialRequestQuerySchema } from "@sigm4/schemas";
+import { HalamanKatalogBahan,HalamanAjukanBahan,HalamanPermintaanBahan,HalamanDetailPermintaanBahan } from "../pages";
+import { MaterialListQuerySchema } from "@sigm4/schemas";
+import { HalamanBahan,HalamanFormBahan,HalamanDetailBahan,HalamanKategoriBahan } from "../pages";
 // Router (SDD-FE-15): TanStack Router; search param divalidasi Zod. Gerbang sesi mengikuti
 // urutan middleware server (SDD-AUTH-09, F-01): belum masuk → Login (tujuan tersimpan);
 // wajib ganti password → P-05; role wajib 2FA yang belum terdaftar → P-03 (keputusan 85).
@@ -5,8 +12,17 @@
 // Path literal di sini dijaga sama dengan `HALAMAN_TERDAFTAR` oleh uji.
 
 import type { QueryClient } from "@tanstack/react-query";
+import { ChatPage,ChatMonitorPage } from "../modules/m19-chatbot";
+import { DisposalListPage, DisposalFormPage, DisposalDetailPage } from "../modules/m21-disposal";
+import { DisposalQuerySchema } from "@sigm4/schemas";
+import { StocktakeListPage, StocktakeCreatePage, StocktakeDetailPage, StocktakeReconciliationPage } from "../modules/m13-audit-stocktake";
+import { ScheduleList, ScheduleDetail } from "../modules/m12-maintenance/schedule-pages";
 import { useQuery } from "@tanstack/react-query";
-import { STATUS_RESERVASI } from "@sigm4/schemas";
+import { LoanListQuerySchema, FineListQuerySchema, STATUS_RESERVASI } from "@sigm4/schemas";
+import { WorkOrderListQuerySchema } from "@sigm4/schemas";
+import { ProcurementListQuerySchema } from "@sigm4/schemas";
+import { HalamanPengadaan,HalamanBuatPengadaan,HalamanDetailPengadaan,HalamanPenerimaanPengadaan } from "../pages";
+import { HalamanWorkOrder,HalamanBuatWorkOrder,HalamanDetailWorkOrder } from "../pages";
 import { HalamanLokasi, HalamanDetailRuangan } from "../pages";
 import type { RouterHistory } from "@tanstack/react-router";
 import { Link, Outlet, createRootRouteWithContext, createRoute, createRouter, redirect, useNavigate } from "@tanstack/react-router";
@@ -18,6 +34,7 @@ import { HalamanLupaPassword, HalamanProfil, HalamanKeamanan, HalamanPermintaanR
 import { jalurTerdaftar } from "../shared/navigasi";
 import { TAMPILAN, detailReservasiQuery, hariIniWib, isianDariReservasi, isianDariSlot } from "../modules/m07-reservation-room";
 import { KONDISI, STATUS, URUTAN } from "../modules/m04-assets";
+import { assetWizardInitial } from "../modules/m08-reservation-item";
 import { STATUS_TIKET, URGENSI_TIKET } from "../modules/m11-damage-reports";
 import { STATUS_PENGGUNA } from "../modules/m02-users";
 import { JENIS_UNIT, KELOMPOK as KELOMPOK_PARAMETER, STATUS_UNIT } from "../modules/m20-settings";
@@ -25,6 +42,7 @@ import { RENTANG } from "../modules/m15-dashboard";
 import { GARANSI as GARANSI_DOKUMEN, JENIS as JENIS_DOKUMEN } from "../modules/m06-documents";
 import { KELOMPOK, TAMPILAN_NOTIFIKASI } from "../modules/m17-notifications";
 import {
+    HalamanDaftarPeminjaman, HalamanDaftarDenda, HalamanDetailDenda,
     HalamanAktivasiDuaFaktor,
     HalamanApprovalRules,
     HalamanDashboard,
@@ -43,6 +61,10 @@ import {
     HalamanTambahAset,
     HalamanUbahAset,
     HalamanKalenderRuangan,
+    HalamanKatalogAset,
+    HalamanWizardAset,
+    HalamanSerahTerima,
+    HalamanDetailPeminjaman,
     HalamanLabelQr,
     HalamanPublikAset,
     HalamanScanQr,
@@ -77,13 +99,14 @@ import { kueriMe, useSesi } from "../shared/auth";
 import { KeadaanGalat, KeadaanMemuat } from "../shared/states";
 import { Tombol } from "../shared/ui/primitives";
 import { Shell } from "./shell";
+import {PageTitle} from "./page-title";
 
 export interface KonteksRouter {
     readonly queryClient: QueryClient;
 }
 
 const rootRoute = createRootRouteWithContext<KonteksRouter>()({
-    component: Outlet,
+    component: function RootLayout(){return <><PageTitle/><Outlet/></>;},
     notFoundComponent: HalamanTidakDitemukan,
 });
 
@@ -92,7 +115,7 @@ const cariTujuan = z.object({ tujuan: z.catch(z.optional(z.string()), undefined)
 const loginRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: "/login",
-    validateSearch: z.object({ tujuan: z.catch(z.optional(z.string()), undefined), alasan: z.catch(z.optional(z.literal("idle")), undefined) }),
+    validateSearch: z.object({ tujuan: z.catch(z.optional(z.string()), undefined), alasan: z.catch(z.optional(z.enum(["idle","expired"])), undefined) }),
     component: function RouteLogin() {
         const { tujuan, alasan } = loginRoute.useSearch();
         return <HalamanLogin tujuan={tujuan} alasan={alasan} />;
@@ -227,15 +250,36 @@ const assetMovementRoute = createRoute({
         const sesi = await context.queryClient.ensureQueryData(kueriMe);
         if (sesi.permissions["asset.update"] === undefined && sesi.permissions["asset_movement_document.view"] === undefined) throw redirect({ to: "/tidak-punya-akses" });
     },
-    validateSearch: z.object({ document: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1))), undefined) }),
+    validateSearch: z.object({ document: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1))), undefined), aset: z.catch(z.optional(z.coerce.number().check(z.int(),z.minimum(1))),undefined) }),
     component: function MovementRoute() {
-        const { document } = assetMovementRoute.useSearch();
+        const { document, aset } = assetMovementRoute.useSearch();
         const navigate = useNavigate({ from: assetMovementRoute.fullPath });
-        return <HalamanMutasiAset documentId={document ?? null} onDocument={(id) => void navigate({ search: { document: id ?? undefined } })} />;
+        return <HalamanMutasiAset initialAsset={aset} documentId={document ?? null} onDocument={(id) => void navigate({ search: { document: id ?? undefined } })} />;
     },
 });
 
-/** P-27 Kalender Ruangan (FR-07.1, UX §7.6.1): tampilan, tanggal WIB, dan filter tersimpan di URL. */
+/** P-28 Katalog Aset (FR-08.1): rentang WIB dan saringan tersimpan di URL. */
+const katalogAsetRoute = createRoute({
+    getParentRoute: () => shellRoute,
+    path: "/katalog-aset",
+    beforeLoad: butuhIzin("reservation.view"),
+    validateSearch: z.object({
+        mulai: z.catch(z.optional(z.string().check(z.regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/))), undefined),
+        selesai: z.catch(z.optional(z.string().check(z.regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/))), undefined),
+        q: z.catch(z.optional(z.string().check(z.maxLength(100))), undefined),
+        kategori: z.catch(z.optional(z.string().check(z.regex(/^[1-9]\d*$/))), undefined),
+        tersedia: z.catch(z.optional(z.boolean()), undefined),
+        urut: z.catch(z.optional(z.enum(["nama", "-nama", "tersedia", "-tersedia"])), undefined),
+        page: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1))), undefined),
+    }),
+    component: function RouteKatalogAset() {
+        const search = katalogAsetRoute.useSearch();
+        const navigate = useNavigate({ from: katalogAsetRoute.fullPath });
+        return <HalamanKatalogAset search={{ ...search, mulai: search.mulai ?? `${hariIniWib()}T08:00`, selesai: search.selesai ?? `${hariIniWib()}T17:00` }} onSearch={(patch) => void navigate({ search: (previous) => ({ ...previous, ...patch }) })} />;
+    },
+});
+
+/** P-27 Kalender Ruangan (FR-07.1, UX §7.6.1). */
 const kalenderRuanganRoute = createRoute({
     getParentRoute: () => shellRoute,
     path: "/kalender-ruangan",
@@ -248,10 +292,11 @@ const kalenderRuanganRoute = createRoute({
         kapasitas: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1))), undefined),
         /** Aksi sekunder P-27 "Kelola Jadwal Tetap · Blokade Manual" (FR-07.5, PR-03-13): panel terbuka + ruangannya. */
         kelola: z.catch(z.optional(z.literal(true)), undefined),
+        impor: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined),
         ruang: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined),
     }),
     component: function RouteKalenderRuangan() {
-        const { kelola, ruang, ...cari } = kalenderRuanganRoute.useSearch();
+        const { kelola, ruang, impor, ...cari } = kalenderRuanganRoute.useSearch();
         const navigate = useNavigate({ from: kalenderRuanganRoute.fullPath });
         const izin = useSesi().permissions;
         // UX F-09: slot kosong terpilih → wizard P-29 langkah 1 terisi, hanya bagi pemegang reservation.create.
@@ -269,6 +314,8 @@ const kalenderRuanganRoute = createRoute({
                 panel={
                     bolehBlokade && kelola === true ? (
                         <HalamanPanelBlokade
+                            importJobId={impor ?? null}
+                            onImportJob={(id) => void navigate({ search: (lama) => ({ ...lama, impor: id }) })}
                             roomId={ruang ?? null}
                             onRuangan={(id) => void navigate({ search: (lama) => ({ ...lama, ruang: id }) })}
                             onTutup={() => void navigate({ search: (lama) => ({ ...lama, kelola: undefined, ruang: undefined }) })}
@@ -302,6 +349,16 @@ const wizardReservasiRoute = createRoute({
     path: "/reservasi/baru",
     beforeLoad: butuhIzin("reservation.create"),
     validateSearch: z.object({
+        mode: z.catch(z.optional(z.literal("aset")), undefined),
+        kategori: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined),
+        jumlah: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1))), undefined),
+        units: z.catch(z.optional(z.string().check(z.regex(/^[1-9]\d*(,[1-9]\d*)*$/))), undefined),
+        keperluan: z.catch(z.optional(z.string().check(z.maxLength(1000))), undefined),
+        kegiatan: z.catch(z.optional(z.string().check(z.maxLength(200))), undefined),
+        jenis_kegiatan: z.catch(z.optional(z.string().check(z.maxLength(100))), undefined),
+        peserta: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1))), undefined),
+        hari: z.catch(z.optional(z.array(z.number().check(z.int(), z.minimum(1), z.maximum(7)))) , undefined),
+        sampai: z.catch(z.optional(z.string().check(z.regex(/^\d{4}-\d{2}-\d{2}$/))), undefined),
         // `?ruangan=10` diurai router sebagai angka — dikoersi agar tautan tulisan tangan tetap sah.
         ruangan: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined),
         mulai: z.catch(z.optional(z.string()), undefined),
@@ -314,6 +371,11 @@ const wizardReservasiRoute = createRoute({
         const navigate = useNavigate({ from: wizardReservasiRoute.fullPath });
         const asal = useQuery({ ...detailReservasiQuery(cari.dari ?? ""), enabled: cari.dari !== undefined });
         if (cari.dari !== undefined && asal.isPending) return <KeadaanMemuat label="Memuat data reservasi" baris={6} />;
+        if (cari.mode === "aset" || asal.data?.jenis === "ASET") {
+            if (asal.isError) return <KeadaanGalat galat={asal.error} onCobaLagi={() => void asal.refetch()} />;
+            const initial = asal.data?.jenis === "ASET" ? assetWizardInitial(asal.data) : { category: cari.kategori, quantity: cari.jumlah, units: cari.units, room: cari.ruangan, start: cari.mulai, end: cari.selesai, purpose: cari.keperluan, name: cari.kegiatan, activity: cari.jenis_kegiatan, participants: cari.peserta, ...(cari.hari === undefined || cari.sampai === undefined ? {} : { pattern: { hari: cari.hari, sampai: cari.sampai } }) };
+            return <HalamanWizardAset key={cari.dari ?? "aset-baru"} initial={initial} onCancel={() => void navigate({ to: "/katalog-aset" })} onCreated={(h) => void navigate({ to: "/reservasi/$id", params: { id: h.id }, search: { terkirim: true } })} />;
+        }
         const isianAwal = asal.data === undefined ? isianDariSlot(cari.ruangan, cari.mulai, cari.selesai) : isianDariReservasi(asal.data);
         const keKalender = (tanggal: string) => void navigate({ to: "/kalender-ruangan", search: { tanggal: tanggal === "" ? undefined : tanggal } });
         return (
@@ -335,6 +397,7 @@ const daftarReservasiRoute = createRoute({
     path: "/reservasi",
     beforeLoad: butuhIzin("reservation.view"),
     validateSearch: z.object({
+        ekspor: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined),
         q: z.catch(z.optional(z.coerce.string()), undefined),
         status: z.catch(z.optional(z.enum(STATUS_RESERVASI)), undefined),
         saya: z.catch(z.optional(z.literal(true)), undefined),
@@ -387,6 +450,11 @@ const pusatNotifikasiRoute = createRoute({
 
 /** P-78 Preferensi Notifikasi (FR-17.3, UX §6 `/profil/notifikasi`; PR-02-43). */
 const preferensiNotifikasiRoute = createRoute({ getParentRoute: () => shellRoute, path: "/profil/notifikasi", beforeLoad: butuhIzin("notification.manage_own"), component: HalamanPreferensiNotifikasi });
+const daftarPeminjamanRoute = createRoute({ getParentRoute: () => shellRoute, path: "/peminjaman", beforeLoad: butuhIzin("loan.view"), validateSearch: (input) => LoanListQuerySchema.safeParse(input).data ?? LoanListQuerySchema.parse({}), component: function Loans() { const filter = daftarPeminjamanRoute.useSearch(), navigate = useNavigate({ from: daftarPeminjamanRoute.fullPath }); return <HalamanDaftarPeminjaman filter={filter} onFilter={(patch) => void navigate({ search: { ...filter, ...patch } })} />; } });
+const daftarDendaRoute = createRoute({ getParentRoute: () => shellRoute, path: "/denda", beforeLoad: butuhIzin("fine.view"), validateSearch: (input) => FineListQuerySchema.safeParse(input).data ?? FineListQuerySchema.parse({}), component: function Fines() { const filter = daftarDendaRoute.useSearch(), navigate = useNavigate({ from: daftarDendaRoute.fullPath }); return <HalamanDaftarDenda filter={filter} onFilter={(patch) => void navigate({ search: { ...filter, ...patch } })} />; } });
+const detailDendaRoute = createRoute({ getParentRoute: () => shellRoute, path: "/denda/$id", beforeLoad: async (args) => { await butuhIzin("fine.view")(args); if (!/^[1-9]\d*$/.test(args.params.id)) throw redirect({ to: "/tidak-ditemukan" }); }, component: function Fine() { return <HalamanDetailDenda id={detailDendaRoute.useParams().id} />; } });
+const serahTerimaRoute = createRoute({ getParentRoute: () => shellRoute, path: "/peminjaman/serah-terima", beforeLoad: butuhIzin("loan.manage"), validateSearch: z.object({ reservasi: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined) }), component: function SerahTerima() { const search = serahTerimaRoute.useSearch(), navigate = useNavigate({ from: serahTerimaRoute.fullPath }); return <HalamanSerahTerima initialReservation={search.reservasi} onCreated={(id) => void navigate({ to: "/peminjaman/$id", params: { id } })} />; } });
+const detailPeminjamanRoute = createRoute({ getParentRoute: () => shellRoute, path: "/peminjaman/$id", beforeLoad: async (args) => { await butuhIzin("loan.view")(args); if (!/^[1-9]\d*$/.test(args.params.id)) throw redirect({ to: "/tidak-ditemukan" }); }, component: function Peminjaman() { return <HalamanDetailPeminjaman id={detailPeminjamanRoute.useParams().id} />; } });
 
 /** P-37 Persetujuan Saya (FR-10.2, UX §6 `/persetujuan`; PR-02-44). `diputuskan` = umpan balik setelah P-38. */
 const persetujuanSayaRoute = createRoute({
@@ -445,10 +513,10 @@ const labelQrRoute = createRoute({
 const scanRoute = createRoute({
     getParentRoute: () => shellRoute,
     path: "/scan",
-    beforeLoad: butuhIzin("asset.view"),
+    beforeLoad:async({context})=>{const s=await context.queryClient.ensureQueryData(kueriMe);if(s.permissions["asset.view"]===undefined&&s.permissions["material.view"]===undefined)throw redirect({to:"/tidak-punya-akses"});},
     component: function RouteScan() {
         const navigate = useNavigate();
-        return <HalamanScanQr onBuka={(id) => void navigate({ href: jalurTerdaftar(`/aset/${id}`) ? `/aset/${id}` : "/" })} />;
+        return <HalamanScanQr onBuka={(id) => void navigate({ href: jalurTerdaftar(`/aset/${id}`) ? `/aset/${id}` : "/" })} onBukaBahan={id=>void navigate({to:"/bahan/$id",params:{id}})}/>;
     },
 });
 
@@ -466,6 +534,7 @@ const inventarisRoute = createRoute({
         tahun: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1900), z.maximum(2100))), undefined),
         pinjam: z.catch(z.optional(z.boolean()), undefined),
         impor: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1))), undefined),
+        ekspor: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined),
         urut: z.catch(z.optional(z.enum(URUTAN)), undefined),
         page: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(2))), undefined),
         per: z.catch(z.optional(z.union([z.literal(50), z.literal(100)])), undefined),
@@ -562,6 +631,7 @@ const daftarKerusakanRoute = createRoute({
     path: "/kerusakan",
     beforeLoad: butuhIzin("damage.view"),
     validateSearch: z.object({
+        ekspor: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined),
         q: z.catch(z.optional(z.coerce.string()), undefined),
         status: z.catch(z.optional(z.enum(STATUS_TIKET)), undefined),
         urgensi: z.catch(z.optional(z.enum(URGENSI_TIKET)), undefined),
@@ -716,11 +786,11 @@ const parameterRoute = createRoute({
     getParentRoute: () => shellRoute,
     path: "/pengaturan",
     beforeLoad: butuhIzin("setting.view"),
-    validateSearch: z.object({ kelompok: z.catch(z.optional(z.enum(KELOMPOK_PARAMETER)), undefined) }),
+    validateSearch: z.object({ kelompok: z.catch(z.optional(z.enum(KELOMPOK_PARAMETER)), undefined),tab:z.optional(z.literal("satuan-bahan")) }),
     component: function RouteParameter() {
-        const { kelompok } = parameterRoute.useSearch();
+        const { kelompok,tab } = parameterRoute.useSearch();
         const navigate = useNavigate({ from: parameterRoute.fullPath });
-        return <HalamanParameter kelompok={kelompok ?? KELOMPOK_PARAMETER[0]} onKelompok={(k) => void navigate({ search: { kelompok: k } })} />;
+        return <HalamanParameter satuan={tab==="satuan-bahan"} onSatuan={open=>void navigate({search:old=>({...old,tab:open?"satuan-bahan":undefined})})} kelompok={kelompok ?? KELOMPOK_PARAMETER[0]} onKelompok={(k) => void navigate({ search: { kelompok: k } })} />;
     },
 });
 
@@ -811,6 +881,49 @@ const ruanganRoute = createRoute({
     },
 });
 
+const maintenanceScheduleRoute = createRoute({
+    getParentRoute: () => shellRoute, path: "/jadwal-pemeliharaan", beforeLoad: butuhIzin("maintenance.manage"),
+    validateSearch: z.object({ page: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1))), undefined), status: z.catch(z.optional(z.enum(["AKTIF", "NONAKTIF"])), undefined), days: z.catch(z.optional(z.coerce.string().check(z.regex(/^\d{1,4}$/))), undefined) }),
+    component: function ScheduleRoute() {
+        const s = maintenanceScheduleRoute.useSearch(), navigate = useNavigate({ from: maintenanceScheduleRoute.fullPath });
+        return <ScheduleList page={s.page ?? 1} status={s.status ?? ""} days={s.days ?? ""} onFilter={(page, status, days) => void navigate({ search: { page, status: status === "AKTIF" || status === "NONAKTIF" ? status : undefined, days: days || undefined } })} />;
+    },
+});
+const maintenanceScheduleDetailRoute = createRoute({
+    getParentRoute: () => shellRoute, path: "/jadwal-pemeliharaan/$id", beforeLoad: async a => { await butuhIzin("maintenance.manage")(a); if (!/^[1-9]\d*$/.test(a.params.id)) throw redirect({ to: "/tidak-ditemukan" }); },
+    component: function ScheduleDetailRoute() { const { id } = maintenanceScheduleDetailRoute.useParams(); return <ScheduleDetail key={id} id={id} />; },
+});
+
+const workOrderRoute=createRoute({getParentRoute:()=>shellRoute,path:"/work-order",beforeLoad:butuhIzin("workorder.view"),validateSearch:WorkOrderListQuerySchema,component:function WorkOrderRoute(){const search=workOrderRoute.useSearch(),navigate=useNavigate({from:workOrderRoute.fullPath});return <HalamanWorkOrder search={search} onSearch={p=>void navigate({search:old=>({...old,...p})})}/>;}});
+const createWorkOrderRoute=createRoute({getParentRoute:()=>shellRoute,path:"/work-order/baru",beforeLoad:butuhIzin("workorder.create"),validateSearch:z.object({tiket:z.catch(z.optional(z.string().check(z.regex(/^[1-9]\d*$/))),undefined),aset:z.catch(z.optional(z.string().check(z.regex(/^[1-9]\d*$/))),undefined)}),component:function CreateWorkOrderRoute(){const search=createWorkOrderRoute.useSearch(),navigate=useNavigate();return <HalamanBuatWorkOrder ticketId={search.tiket} assetId={search.aset} onCreated={id=>void navigate({to:"/work-order/$id",params:{id}})}/>;}});
+const detailWorkOrderRoute=createRoute({getParentRoute:()=>shellRoute,path:"/work-order/$id",beforeLoad:async a=>{if(!/^[1-9]\d*$/.test(a.params.id))throw redirect({to:"/tidak-ditemukan"});await butuhIzin("workorder.view")(a);},component:function DetailWorkOrderRoute(){return <HalamanDetailWorkOrder id={detailWorkOrderRoute.useParams().id}/>;}});
+const stocktakeListRoute = createRoute({ getParentRoute: () => shellRoute, path: "/opname", beforeLoad: butuhIzin("audit.view"), validateSearch: z.object({ page: z.catch(z.optional(z.coerce.number().check(z.int(), z.minimum(1))), undefined), status: z.catch(z.optional(z.enum(["BERJALAN", "MENUNGGU_PERSETUJUAN", "SELESAI", "DIBATALKAN"])), undefined) }), component: function StocktakeListRoute() { const s = stocktakeListRoute.useSearch(), navigate = useNavigate({ from: stocktakeListRoute.fullPath }); return <StocktakeListPage page={s.page ?? 1} status={s.status ?? ""} onFilter={(page, status) => void navigate({ search: { page, status: status === "BERJALAN" || status === "MENUNGGU_PERSETUJUAN" || status === "SELESAI" || status === "DIBATALKAN" ? status : undefined } })} />; } });
+const stocktakeCreateRoute = createRoute({ getParentRoute: () => shellRoute, path: "/opname/baru", beforeLoad: butuhIzin("audit.manage"), component: StocktakeCreatePage });
+const stocktakeDetailRoute = createRoute({ getParentRoute: () => shellRoute, path: "/opname/$id", beforeLoad: async a => { await butuhIzin("audit.view")(a); if (!/^[1-9]\d*$/.test(a.params.id)) throw redirect({ to: "/tidak-ditemukan" }); }, component: function StocktakeDetailRoute() { return <StocktakeDetailPage key={stocktakeDetailRoute.useParams().id} id={stocktakeDetailRoute.useParams().id} />; } });
+const stocktakeReconciliationRoute = createRoute({ getParentRoute: () => shellRoute, path: "/opname/$id/rekonsiliasi", beforeLoad: async a => { const s = await a.context.queryClient.ensureQueryData(kueriMe); if (!s.permissions["audit.manage"] && !s.permissions["audit.approve"]) throw redirect({ to: "/tidak-punya-akses" }); if (!/^[1-9]\d*$/.test(a.params.id)) throw redirect({ to: "/tidak-ditemukan" }); }, component: function StocktakeReconciliationRoute() { const { id } = stocktakeReconciliationRoute.useParams(); return <StocktakeReconciliationPage key={id} id={id} />; } });
+
+const materialCatalogRoute=createRoute({getParentRoute:()=>shellRoute,path:"/katalog-bahan",beforeLoad:butuhIzin("material.view"),validateSearch:CatalogQuerySchema,component:function MaterialCatalog(){const search=materialCatalogRoute.useSearch(),navigate=useNavigate({from:materialCatalogRoute.fullPath});return <HalamanKatalogBahan search={search} onSearch={p=>void navigate({search:old=>({...old,...p})})}/>;}});
+const materialRequestListRoute=createRoute({getParentRoute:()=>shellRoute,path:"/permintaan-bahan",beforeLoad:butuhIzin("material.view"),validateSearch:MaterialRequestQuerySchema,component:function MaterialRequests(){const search=materialRequestListRoute.useSearch(),navigate=useNavigate({from:materialRequestListRoute.fullPath});return <HalamanPermintaanBahan search={search} onSearch={p=>void navigate({search:old=>({...old,...p})})}/>;}});
+const materialRequestCreateRoute=createRoute({getParentRoute:()=>shellRoute,path:"/permintaan-bahan/baru",beforeLoad:butuhIzin("material.request"),validateSearch:z.object({bahan:z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))),undefined)}),component:function MaterialRequestCreate(){const search=materialRequestCreateRoute.useSearch(),navigate=useNavigate();return <HalamanAjukanBahan sourceId={search.bahan} onSaved={id=>void navigate({to:"/permintaan-bahan/$id",params:{id}})}/>;}});
+const materialRequestDetailRoute=createRoute({getParentRoute:()=>shellRoute,path:"/permintaan-bahan/$id",beforeLoad:async a=>{await butuhIzin("material.view")(a);if(!/^[1-9]\d*$/.test(a.params.id))throw redirect({to:"/tidak-ditemukan"});},component:function MaterialRequestDetail(){const {id}=materialRequestDetailRoute.useParams(),navigate=useNavigate();return <HalamanDetailPermintaanBahan key={id} id={id} onSaved={next=>void navigate({to:"/permintaan-bahan/$id",params:{id:next}})}/>;}});
+const materialListRoute=createRoute({getParentRoute:()=>shellRoute,path:"/bahan",beforeLoad:butuhIzin("material.view"),validateSearch:MaterialListQuerySchema,component:function Materials(){const search=materialListRoute.useSearch(),navigate=useNavigate({from:materialListRoute.fullPath});return <HalamanBahan search={search} onSearch={f=>void navigate({search:old=>({...old,...f})})}/>;}});
+const materialCreateRoute=createRoute({getParentRoute:()=>shellRoute,path:"/bahan/baru",beforeLoad:butuhIzin("material.manage"),component:function CreateMaterial(){const navigate=useNavigate();return <HalamanFormBahan onSaved={id=>void navigate({to:"/bahan/$id",params:{id}})}/>;}});
+const materialDetailRoute=createRoute({getParentRoute:()=>shellRoute,path:"/bahan/$id",beforeLoad:async a=>{await butuhIzin("material.view")(a);if(!/^[1-9]\d*$/.test(a.params.id))throw redirect({to:"/tidak-ditemukan"});},component:function MaterialDetail(){return <HalamanDetailBahan id={materialDetailRoute.useParams().id}/>;}});
+const materialEditRoute=createRoute({getParentRoute:()=>shellRoute,path:"/bahan/$id/ubah",beforeLoad:async a=>{await butuhIzin("material.manage")(a);if(!/^[1-9]\d*$/.test(a.params.id))throw redirect({to:"/tidak-ditemukan"});},component:function EditMaterial(){const {id}=materialEditRoute.useParams(),navigate=useNavigate();return <HalamanFormBahan id={id} onSaved={next=>void navigate({to:"/bahan/$id",params:{id:next}})}/>;}});
+const materialQrRoute=createRoute({getParentRoute:()=>shellRoute,path:"/b/$uuid",beforeLoad:async a=>{await butuhIzin("material.view")(a);if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(a.params.uuid))throw redirect({to:"/tidak-ditemukan"});},component:function MaterialQr(){return <HalamanDetailBahan uuid={materialQrRoute.useParams().uuid}/>;}});
+const materialCategoriesRoute=createRoute({getParentRoute:()=>shellRoute,path:"/kategori-bahan",beforeLoad:butuhIzin("material.manage"),component:HalamanKategoriBahan});
+
+const procurementRoute=createRoute({getParentRoute:()=>shellRoute,path:"/pengadaan",beforeLoad:butuhIzin("procurement.view"),validateSearch:ProcurementListQuerySchema,component:function ProcurementRoute(){const search=procurementRoute.useSearch(),navigate=useNavigate({from:procurementRoute.fullPath});return <HalamanPengadaan search={search} onSearch={p=>void navigate({search:old=>({...old,...p})})}/>;}});
+const procurementCreateRoute=createRoute({getParentRoute:()=>shellRoute,path:"/pengadaan/baru",beforeLoad:butuhIzin("procurement.create"),validateSearch:z.object({aset:z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))),undefined)}),component:function ProcurementCreateRoute(){const s=procurementCreateRoute.useSearch(),navigate=useNavigate();return <HalamanBuatPengadaan sourceAssetId={s.aset} onSaved={id=>void navigate({to:"/pengadaan/$id",params:{id}})}/>;}});
+const procurementDetailRoute=createRoute({getParentRoute:()=>shellRoute,path:"/pengadaan/$id",beforeLoad:async a=>{if(!/^[1-9]\d*$/.test(a.params.id))throw redirect({to:"/tidak-ditemukan"});await butuhIzin("procurement.view")(a);},component:function ProcurementDetailRoute(){const {id}=procurementDetailRoute.useParams(),navigate=useNavigate();return <HalamanDetailPengadaan key={id} id={id} onReceipt={()=>void navigate({to:"/pengadaan/$id/penerimaan",params:{id}})}/>;}});
+const procurementReceiptRoute=createRoute({getParentRoute:()=>shellRoute,path:"/pengadaan/$id/penerimaan",beforeLoad:async a=>{if(!/^[1-9]\d*$/.test(a.params.id))throw redirect({to:"/tidak-ditemukan"});await butuhIzin("procurement.receive")(a);},component:function ProcurementReceiptRoute(){const {id}=procurementReceiptRoute.useParams(),navigate=useNavigate();return <HalamanPenerimaanPengadaan id={id} onSaved={()=>void navigate({to:"/pengadaan/$id",params:{id}})}/>;}});
+const disposalListRoute = createRoute({ getParentRoute: () => shellRoute, path: "/penghapusan", beforeLoad: butuhIzin("disposal.view"), validateSearch: input => DisposalQuerySchema.safeParse(input).data ?? DisposalQuerySchema.parse({}), component: function DisposalListRoute() { const search = disposalListRoute.useSearch(), navigate = useNavigate({ from: disposalListRoute.fullPath }); return <DisposalListPage search={search} onSearch={patch => void navigate({ search: { ...search, ...patch } })} />; } });
+const disposalCreateRoute = createRoute({ getParentRoute: () => shellRoute, path: "/penghapusan/baru", beforeLoad: butuhIzin("disposal.create"), validateSearch: z.object({ aset: z.catch(z.optional(z.coerce.string().check(z.regex(/^[1-9]\d*$/))), undefined) }), component: function DisposalCreateRoute() { const search = disposalCreateRoute.useSearch(); return <DisposalFormPage sourceAssetId={search.aset} />; } });
+const disposalDetailRoute = createRoute({ getParentRoute: () => shellRoute, path: "/penghapusan/$id", beforeLoad: async a => { await butuhIzin("disposal.view")(a); if (!/^[1-9]\d*$/.test(a.params.id)) throw redirect({ to: "/tidak-ditemukan" }); }, component: function DisposalDetailRoute() { const { id } = disposalDetailRoute.useParams(); return <DisposalDetailPage key={id} id={id} />; } });
+const chatRoute=createRoute({getParentRoute:()=>shellRoute,path:"/chat",beforeLoad:butuhIzin("chat.use"),component:ChatPage});
+const chatMonitorRoute=createRoute({getParentRoute:()=>shellRoute,path:"/monitoring-chatbot",beforeLoad:butuhIzin("chat.monitor"),component:ChatMonitorPage});
+const analyticsRoute = createRoute({ getParentRoute: () => shellRoute, path: "/analitik", beforeLoad: async a => { await butuhIzin("report.view")(a); const me = await a.context.queryClient.ensureQueryData(kueriMe); if (me.user.role_kode === "R-07") throw redirect({ to: "/tidak-punya-akses" }); }, component: AnalyticsListPage });
+const analyticsDetailRoute = createRoute({ getParentRoute: () => shellRoute, path: "/analitik/$jenis", beforeLoad: async a => { await butuhIzin("report.view")(a); const me = await a.context.queryClient.ensureQueryData(kueriMe); if (me.user.role_kode === "R-07") throw redirect({ to: "/tidak-punya-akses" }); if (!AnalyticsTypeSchema.safeParse(a.params.jenis).success) throw redirect({ to: "/tidak-ditemukan" }); }, validateSearch: (input: Record<string, unknown>) => { const { ekspor, ...fields } = input; return { ...AnalyticsQuerySchema.parse({ ...fields, bandingkan: typeof fields.bandingkan === "boolean" ? String(fields.bandingkan) : fields.bandingkan }), ekspor: fullZod.coerce.string().regex(/^[1-9]\d*$/).optional().parse(ekspor) }; }, component: function AnalyticsDetailRoute() { const { jenis } = analyticsDetailRoute.useParams(), search = analyticsDetailRoute.useSearch(), navigate = useNavigate({ from: analyticsDetailRoute.fullPath }); return <AnalyticsDetailPage key={jenis} jenis={AnalyticsTypeSchema.parse(jenis)} search={search} onSearch={q => void navigate({ search: { ...q, ekspor: search.ekspor } })} />; } });
 export const routeTree = rootRoute.addChildren([lupaPasswordRoute,
     loginRoute,
     verifikasiDuaFaktorRoute,
@@ -819,7 +932,7 @@ export const routeTree = rootRoute.addChildren([lupaPasswordRoute,
     gangguanRoute,
     tidakDitemukanRoute,
     publikAsetRoute,
-    shellRoute.addChildren([profilRoute, keamananRoute, permintaanResetRoute, lokasiRoute, ruanganRoute, dashboardRoute, parameterRoute, kalenderAkademikRoute, unitKerjaRoute, activityLogRoute, detailLogRoute, penggunaRoute, tambahPenggunaRoute, imporPenggunaRoute, kenaikanKelasRoute, detailPenggunaRoute, roleRoute, matriksRoute, daftarKerusakanRoute, laporKerusakanRoute, detailKerusakanRoute, inventarisRoute, detailAsetRoute, dokumenAsetRoute, daftarDokumenRoute, riwayatAsetRoute, tambahAsetRoute, ubahAsetRoute, kategoriAsetRoute, labelQrRoute, scanRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
+    shellRoute.addChildren([profilRoute, keamananRoute, permintaanResetRoute, analyticsRoute, analyticsDetailRoute,chatRoute,chatMonitorRoute,materialCatalogRoute,materialRequestListRoute,materialRequestCreateRoute,materialRequestDetailRoute,materialListRoute,materialCreateRoute,materialDetailRoute,materialEditRoute,materialQrRoute,materialCategoriesRoute,disposalListRoute, disposalCreateRoute, disposalDetailRoute, procurementRoute,procurementCreateRoute,procurementDetailRoute,procurementReceiptRoute,stocktakeListRoute, stocktakeCreateRoute, stocktakeDetailRoute, stocktakeReconciliationRoute, workOrderRoute,createWorkOrderRoute,detailWorkOrderRoute,maintenanceScheduleRoute, maintenanceScheduleDetailRoute, daftarPeminjamanRoute, daftarDendaRoute, detailDendaRoute, serahTerimaRoute, detailPeminjamanRoute, lokasiRoute, ruanganRoute, dashboardRoute, parameterRoute, kalenderAkademikRoute, unitKerjaRoute, activityLogRoute, detailLogRoute, penggunaRoute, tambahPenggunaRoute, imporPenggunaRoute, kenaikanKelasRoute, detailPenggunaRoute, roleRoute, matriksRoute, daftarKerusakanRoute, laporKerusakanRoute, detailKerusakanRoute, inventarisRoute, detailAsetRoute, dokumenAsetRoute, daftarDokumenRoute, riwayatAsetRoute, tambahAsetRoute, ubahAsetRoute, kategoriAsetRoute, labelQrRoute, scanRoute, approvalRulesRoute, editorAturanRoute, assetImportRoute, assetMovementRoute, katalogAsetRoute, kalenderRuanganRoute, wizardReservasiRoute, daftarReservasiRoute, detailReservasiRoute, pusatNotifikasiRoute, preferensiNotifikasiRoute, persetujuanSayaRoute, detailKeputusanRoute, tanpaAksesRoute, dataTidakTersediaRoute]),
 ]);
 
 export function buatRouter(queryClient: QueryClient, history?: RouterHistory) {

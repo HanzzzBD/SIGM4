@@ -4,7 +4,7 @@
 // galat rentang server (A1) tampil pada isiannya. Kode aset & denda diperingatkan dampaknya sebelum disimpan.
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { lazy,Suspense,useEffect, useState } from "react";
 import { useCan } from "../../shared/auth";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
 import { DialogKonfirmasi } from "../../shared/ui/dialog";
@@ -12,6 +12,7 @@ import { Isian, KotakCentang, Peringatan, Tombol, gabung } from "../../shared/ui
 import type { Kelompok, Parameter } from "./api";
 import { KELOMPOK, LABEL_KELOMPOK, PERINGATAN_DAMPAK, galatIsian, parameterQuery, simpanParameter, waktuWib } from "./api";
 import { NavPengaturan } from "./NavPengaturan";
+const MaterialUnitsPanel=lazy(()=>import("./MaterialUnitsPanel"));
 
 const tampil = (v: unknown): string => (v === null || v === undefined || v === "" ? "—" : typeof v === "boolean" ? (v ? "Ya" : "Tidak") : String(v));
 
@@ -136,9 +137,9 @@ function FormKelompok({ kelompok, data, bolehUbah, onSibuk }: { readonly kelompo
     );
 }
 
-export default function ParameterPage({ kelompok, onKelompok }: { readonly kelompok: Kelompok; readonly onKelompok: (k: Kelompok) => void }) {
+export default function ParameterPage({ kelompok, onKelompok,satuan=false,onSatuan }: { readonly kelompok: Kelompok; readonly onKelompok: (k: Kelompok) => void;satuan?:boolean;onSatuan?:(open:boolean)=>void }) {
     const can = useCan();
-    const kueri = useQuery(parameterQuery(kelompok));
+    const kueri = useQuery({...parameterQuery(kelompok),enabled:!satuan});
     // Tab dikunci selama simpan berjalan (A2): berpindah kelompok di tengah PUT menampilkan nilai lama.
     const [sibuk, setSibuk] = useState(false);
     return (
@@ -150,12 +151,13 @@ export default function ParameterPage({ kelompok, onKelompok }: { readonly kelom
             <NavPengaturan aktif="P-70" />
             <div role="tablist" aria-label="Kelompok parameter" className="flex flex-wrap gap-1">
                 {KELOMPOK.map((k) => (
-                    <button key={k} type="button" role="tab" aria-selected={k === kelompok} disabled={sibuk && k !== kelompok} onClick={() => onKelompok(k)} className={gabung("inline-flex min-h-touch items-center rounded-md px-3 text-sm font-medium", k === kelompok ? "bg-neutral-100 text-text-primary" : "text-text-secondary hover:text-text-primary")}>
+                    <button key={k} type="button" role="tab" aria-selected={!satuan&&k === kelompok} disabled={sibuk && k !== kelompok} onClick={() => onKelompok(k)} className={gabung("inline-flex min-h-touch items-center rounded-md px-3 text-sm font-medium", !satuan&&k === kelompok ? "bg-neutral-100 text-text-primary" : "text-text-secondary hover:text-text-primary")}>
                         {LABEL_KELOMPOK[k]}
                     </button>
                 ))}
+                <button type="button" role="tab" aria-selected={satuan} disabled={sibuk} onClick={()=>onSatuan?.(true)} className="inline-flex min-h-touch items-center rounded-md px-3 text-sm font-medium">Satuan Bahan</button>
             </div>
-            {kueri.isPending ? (
+            {satuan?<Suspense fallback={<KeadaanMemuat label="Memuat satuan bahan"/>}><MaterialUnitsPanel/></Suspense>:kueri.isPending ? (
                 <KeadaanMemuat baris={5} label="Memuat parameter" />
             ) : kueri.isError ? (
                 <KeadaanGalat galat={kueri.error} onCobaLagi={() => void kueri.refetch()} />

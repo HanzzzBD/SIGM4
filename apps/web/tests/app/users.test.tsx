@@ -230,7 +230,9 @@ describe("Temuan inspeksi PR-01-19", () => {
         await waitFor(() => expect(screen.getByRole("option", { name: "Guru" })).toBeTruthy());
         await user.selectOptions(screen.getByLabelText(/^Role/), "5");
         await user.click(screen.getByRole("button", { name: "Simpan pengguna" }));
-        await router.navigate({ to: "/pengguna" });
+        const leaving=router.navigate({ to: "/pengguna" });
+        await user.click(await screen.findByRole("button",{name:"Buang perubahan dan lanjutkan"}));
+        await leaving;
         lepas({ status: 201, data: { success: true, data: { ...PENGGUNA, id: "12", nama: "Pak Baru", password_sementara: "Terlambat-456" }, meta: null } });
         await new Promise((r) => setTimeout(r, 20));
         expect(router.state.location.pathname).toBe("/pengguna");

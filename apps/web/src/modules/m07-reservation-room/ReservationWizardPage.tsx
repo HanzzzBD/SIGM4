@@ -5,6 +5,7 @@
 import { RoomReservationBodySchema } from "@sigm4/schemas";
 import type { RoomReservationCreated, RoomReservationPreview, TanggalPengajuanRuangan } from "@sigm4/schemas";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ApiError } from "../../shared/api";
@@ -334,7 +335,7 @@ export default function ReservationWizardPage({
                     <TeksPanjang label="Keperluan" value={isian.keperluan} galat={galat.keperluan} onChange={(v) => ubah({ keperluan: v })} />
                     <TeksPanjang label="Kebutuhan tambahan" value={isian.kebutuhan_tambahan} galat={galat.kebutuhan_tambahan} onChange={(v) => ubah({ kebutuhan_tambahan: v })} />
                     <TeksPanjang label="Keterangan" value={isian.keterangan} galat={galat.keterangan} onChange={(v) => ubah({ keterangan: v })} />
-                    <p className="text-sm text-text-secondary">Aset pendukung belum dapat diajukan bersama reservasi ruangan.</p>
+                    <p className="text-sm text-text-secondary">Untuk memesan aset pendukung bersama ruangan ini, pilih Gabungkan dengan aset pendukung. Ruangan, jadwal, kegiatan, peserta, dan keperluan dibawa ke pengajuan aset dalam satu persetujuan.</p>
                 </Kartu>
                 <Kartu judul="Pengulangan">
                     <KotakCentang label="Ulangi setiap minggu" checked={isian.berulang} onCheckedChange={(v) => ubah({ berulang: v, hari: v && isian.hari.length === 0 && isian.tanggal !== "" ? [((new Date(`${isian.tanggal}T00:00:00Z`).getUTCDay() + 6) % 7) + 1] : isian.hari, lewati: [] })} />
@@ -441,6 +442,7 @@ export default function ReservationWizardPage({
                     Ajukan Reservasi Ruangan
                 </h1>
                 <IndikatorLangkah aktif={langkah} />
+                {langkah === 2 && isian.ruangan !== "" && <Link to="/reservasi/baru" search={{ mode: "aset", ruangan: isian.ruangan, mulai: `${isian.tanggal}T${isian.mulai}:00+07:00`, selesai: `${isian.tanggal}T${isian.selesai}:00+07:00`, keperluan: isian.keperluan, kegiatan: isian.nama_kegiatan, jenis_kegiatan: isian.jenis_kegiatan, peserta: Number(isian.jumlah_peserta) || undefined, ...(isian.berulang ? { hari: [...isian.hari], sampai: isian.sampai } : {}) }} className="text-base text-text-link hover:underline">Gabungkan dengan aset pendukung</Link>}
             </header>
 
             {blokir !== null ? (

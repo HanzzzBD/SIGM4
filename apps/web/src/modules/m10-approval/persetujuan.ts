@@ -36,11 +36,12 @@ export const pendingQuery = (page: number, perPage = 25) =>
     });
 
 export type Keputusan = "DISETUJUI" | "DITOLAK" | "PERLU_REVISI";
+export const pendingInstanceQuery=(id:number)=>queryOptions({queryKey:[...KUNCI_PENDING,"instance",id],staleTime:0,queryFn:async()=>{for(let page=1;;page++){const r=PendingSchema.parse((await api.get("/approvals/pending",{params:{page,per_page:100}})).data),item=r.data.find(i=>i.instance_id===id);if(item)return item;if(page>=r.meta.total_pages)return null;}}});
 
 const DecideSchema = z.object({ data: z.object({ instance_id: z.number(), keputusan: z.enum(["DISETUJUI", "DITOLAK", "PERLU_REVISI"]), status: z.string() }) });
 
 /** ID-01: satu kunci per niat keputusan — ketuk ganda tidak menghasilkan dua keputusan. */
-export async function putuskan(instanceId: number, body: { readonly urutan: number; readonly keputusan: Keputusan; readonly catatan: string | null }, kunci: string) {
+export async function putuskan(instanceId: number, body: { readonly urutan: number; readonly keputusan: Keputusan; readonly catatan: string | null; readonly rincian_keputusan?:Readonly<Record<string,unknown>>|undefined }, kunci: string) {
     return DecideSchema.parse((await api.post(`/approvals/${String(instanceId)}/decide`, body, { headers: { "Idempotency-Key": kunci } })).data).data;
 }
 

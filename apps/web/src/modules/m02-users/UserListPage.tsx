@@ -39,7 +39,7 @@ export default function UserListPage({ saringan, onSaringan }: { readonly saring
     const kenaikan = can("user.update") ? jalurDrilldown("P-64") : null;
 
     return (
-        <div className="flex flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-6">
             <header className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex flex-col gap-1">
                     <h1 className="text-2xl font-semibold text-text-heading">Pengguna</h1>
@@ -71,8 +71,9 @@ export default function UserListPage({ saringan, onSaringan }: { readonly saring
                 />
             ) : (
                 <>
-                    <div className="overflow-auto border border-border-subtle bg-surface-default">
-                        <table className="w-full border-collapse">
+                    <p id="petunjuk-tabel-pengguna" className="text-sm text-text-secondary lg:hidden">Gulir tabel ke samping untuk melihat seluruh kolom pengguna.</p>
+                    <div role="region" aria-label="Tabel pengguna yang dapat digulir" aria-describedby="petunjuk-tabel-pengguna" tabIndex={0} className="min-w-0 max-w-full overflow-auto border border-border-subtle bg-surface-default">
+                        <table className="w-full min-w-md border-collapse">
                             <caption className="sr-only">Daftar pengguna</caption>
                             <thead>
                                 <tr>
@@ -92,7 +93,7 @@ export default function UserListPage({ saringan, onSaringan }: { readonly saring
                                             </a>
                                         </th>
                                         <td className={`${TD} break-all`}>{u.email}</td>
-                                        <td className={`${TD} font-mono`}>{u.nip_nis}</td>
+                                        <td className={`${TD} font-mono`}>{u.nip_nis ?? "—"}</td>
                                         {can("role.view") && <td className={TD}>{namaRole.get(u.role_id) ?? "—"}</td>}
                                         {can("setting.view") && <td className={TD}>{u.work_unit_id === null ? "—" : (namaUnit.get(u.work_unit_id) ?? "—")}</td>}
                                         <td className={TD}>
@@ -105,7 +106,7 @@ export default function UserListPage({ saringan, onSaringan }: { readonly saring
                         </table>
                     </div>
                     {kueri.data.meta.total_pages > 1 && (
-                        <nav aria-label="Halaman pengguna" className="flex items-center justify-between gap-3 text-sm text-text-secondary tabular-nums">
+                        <nav aria-label="Halaman pengguna" className="flex flex-wrap items-center justify-between gap-3 text-sm text-text-secondary tabular-nums">
                             <Tombol varian="secondary" disabled={page <= 1} onClick={() => onSaringan({ page: page - 1 === 1 ? undefined : page - 1 })}>
                                 Sebelumnya
                             </Tombol>

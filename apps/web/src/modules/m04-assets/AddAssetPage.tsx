@@ -1,3 +1,4 @@
+import {useUnsavedChanges} from "../../shared/ui/unsaved-changes";
 // P-16 Tambah Aset (UX §6, §7.1 C; FR-04.1 langkah 2–6, A1, A4; PR-02-46). Mendaftarkan 1–N unit sekaligus;
 // hasilnya daftar unit berkode unik + jalan ke Cetak Label QR (P-24) bila terdaftar. Label di atas isian,
 // "wajib" tertulis, galat server per isian (`error.details`), tombol nonaktif selama permintaan berjalan.
@@ -41,6 +42,7 @@ export default function AddAssetPage({ initialRoom }: { readonly initialRoom?: s
     const [umum, setUmum] = useState<string | null>(null);
     const [sibuk, setSibuk] = useState(false);
     const [hasil, setHasil] = useState<readonly AsetDibuat[] | null>(null);
+    const guard=useUnsavedChanges(hasil===null&&JSON.stringify(f)!==JSON.stringify({...AWAL,ruangan:initialRoom??""}));
     const atur = <K extends keyof typeof AWAL>(k: K, v: (typeof AWAL)[K]) => setF((l) => ({ ...l, [k]: v }));
 
     const kirim = async (e: SyntheticEvent) => {
@@ -117,7 +119,7 @@ export default function AddAssetPage({ initialRoom }: { readonly initialRoom?: s
 
     const jumlahLebih = Number(f.jumlah) > 1;
     return (
-        <form noValidate onSubmit={(e) => void kirim(e)} className="flex max-w-prose flex-col gap-6">
+        <>{guard.prompt}<form noValidate onSubmit={(e) => void kirim(e)} className="flex max-w-prose flex-col gap-6">
             <header className="flex flex-col gap-1">
                 <h1 className="text-2xl font-semibold text-text-heading">Tambah Aset</h1>
                 <p className="text-base text-text-secondary">Daftarkan satu atau beberapa unit sekaligus. Kode aset dan QR dibuat otomatis untuk setiap unit.</p>
@@ -159,6 +161,6 @@ export default function AddAssetPage({ initialRoom }: { readonly initialRoom?: s
                     Batal
                 </a>
             </div>
-        </form>
+        </form></>
     );
 }

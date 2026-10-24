@@ -1,3 +1,4 @@
+import { ReportExportPanel } from "../m16-analytics";
 // P-30 Daftar Reservasi (UX §6, §7.4; FR-07.3 langkah 1; PR-03-27, keputusan 17 log phase-03).
 // Satu baris per pengajuan; scope ditegakkan server (Siswa/OSIS hanya miliknya). Tabel lokal yang
 // memenuhi spesifikasi C-15 (ekstraksi menjadi komponen bersama menunggu pemakai kedua, log §10):
@@ -23,6 +24,7 @@ export const UKURAN_HALAMAN = [25, 50, 100] as const;
 export type UkuranHalaman = (typeof UKURAN_HALAMAN)[number];
 
 export interface PencarianDaftar {
+    readonly ekspor?: string | undefined;
     readonly q?: string | undefined;
     readonly status?: StatusReservasi | undefined;
     readonly saya?: true | undefined;
@@ -80,6 +82,7 @@ export default function ReservationListPage({ pencarian, onPencarian }: { readon
         ...(pencarian.sampai === undefined ? {} : { sampai: pencarian.sampai }),
     };
     const kueri = useQuery(daftarReservasiQuery(query));
+    const exportFilter = Object.fromEntries(Object.entries(query).filter(([key]) => key !== "page" && key !== "per_page"));
     // Kata kunci dikirim saat formulir dikirim, bukan per ketukan.
     const [kata, setKata] = useState(pencarian.q ?? "");
     const tersaring = pencarian.q !== undefined || pencarian.status !== undefined || pencarian.saya === true || pencarian.dari !== undefined || pencarian.sampai !== undefined;
@@ -117,6 +120,7 @@ export default function ReservationListPage({ pencarian, onPencarian }: { readon
                     </Link>
                 )}
             </header>
+            <ReportExportPanel path="/reservations/export" jenis="reservations" filter={exportFilter} exportId={pencarian.ekspor} />
 
             <section aria-label="Saringan reservasi" className="grid grid-cols-1 gap-3 rounded-md border border-border-subtle bg-surface-default p-4 md:grid-cols-2">
                 <form
@@ -126,7 +130,7 @@ export default function ReservationListPage({ pencarian, onPencarian }: { readon
                         ubah({ q: kata.trim() === "" ? undefined : kata.trim() });
                     }}
                 >
-                    <div className="flex-1">
+                    <div className="min-w-0 flex-1">
                         <Isian label="Cari nomor pengajuan atau nama kegiatan" type="search" value={kata} onChange={(e) => setKata(e.target.value)} />
                     </div>
                     <Tombol type="submit" varian="secondary">

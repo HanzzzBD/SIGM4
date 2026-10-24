@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ME_ADMIN, gagal, pasangServer, pelanggaranAxe, renderAplikasi, sukses } from "../helpers";
 import type { Jawaban, Permintaan } from "../helpers";
 
-const ME = { ...ME_ADMIN, permissions: { ...ME_ADMIN.permissions, "damage.view": "all", "damage.create": "all", "damage.verify": "all", "asset.update_condition": "all", "location.view": "all", "asset.view": "all", "reservation.view": "all" } };
+const ME = { ...ME_ADMIN, permissions: { ...ME_ADMIN.permissions, "damage.view": "all", "damage.create": "all", "damage.verify": "all", "workorder.create": "all", "asset.update_condition": "all", "location.view": "all", "asset.view": "all", "reservation.view": "all" } };
 
 const BARIS: DamageReportListItem = {
     id: "7",
@@ -55,6 +55,7 @@ function server(o: { me?: unknown; daftar?: (p: Permintaan) => Jawaban; detail?:
         if (p.url === "/damage-reports" && p.method === "GET") return o.daftar?.(p) ?? daftar([BARIS]);
         if (p.url === "/damage-reports" && p.method === "POST") return o.lapor?.(p) ?? { status: 201, data: { success: true, data: { id: "8", nomor: "KRS-2027-0008", status: "DILAPORKAN", foto_tertunda: 0 }, meta: null } };
         if (p.url === "/damage-reports/open") return sukses(o.terbuka ?? null);
+        if (p.url === "/work-orders/technicians") return sukses([{ id: "14", nama: "Pak Teknisi", work_order_aktif: "3" }]);
         if (p.url === "/damage-reports/7") return o.detail ?? sukses(DETAIL);
         if (p.url === "/damage-reports/8") return sukses({ ...DETAIL, id: "8", nomor: "KRS-2027-0008", catatan: [], reservasi: null, garansi: null });
         if (p.url === "/damage-reports/7/notes") return { status: 201, data: { success: true, data: { id: "4", keterangan: "x", penulis: { id: "1", nama: "Admin Uji" }, dibuat_pada: "2027-11-08T05:00:00.000Z", foto: [] }, meta: null } };
@@ -77,6 +78,22 @@ afterEach(() => vi.unstubAllGlobals());
 const fotoUji = () => new File(["\x89PNG"], "retak.png", { type: "image/png" });
 
 describe("P-39 Laporan Kerusakan", () => {
+    it("verifikasi tindak lanjut memilih teknisi dan tenggat, menampilkan beban serta prioritas tiket", async () => {
+        const log = server({ verify: () => sukses({ id: "7", nomor: "KRS-2027-0007", status: "DIVERIFIKASI", diverifikasi_pada: "2027-11-08T06:00:00.000Z", kondisi_aset: null }) });
+        const user = userEvent.setup();
+        const { container } = await renderAplikasi("/kerusakan/7?aksi=verifikasi");
+        const panel = await screen.findByRole("dialog", { name: /Verifikasi laporan/ });
+        await user.selectOptions(within(panel).getByLabelText(/Tindak lanjut/), "TINDAK_LANJUT");
+        await user.click(within(panel).getByRole("button", { name: "Simpan verifikasi" }));
+        expect(await within(panel).findByText("Pilih teknisi dan target selesai.")).toBeTruthy();
+        await user.selectOptions(await within(panel).findByLabelText(/Teknisi penanggung jawab/), "14");
+        expect(within(panel).getByText("Prioritas work order: Kritis.")).toBeTruthy();
+        const date = within(panel).getByLabelText(/Target selesai/) as HTMLInputElement;
+        await user.type(date, "2027-11-20");
+        expect(await pelanggaranAxe(container)).toEqual([]);
+        await user.click(within(panel).getByRole("button", { name: "Simpan verifikasi" }));
+        await waitFor(() => expect(log.find(p => p.url === "/damage-reports/7/verify")?.data).toEqual({ keputusan: "TINDAK_LANJUT", work_order: { teknisi_id: 14, target_selesai: "2027-11-20", estimasi_biaya: 0, nonaktifkan_aset: true } }));
+    });
     it("tab status berjumlah, nomor bertaut ke P-41, penanda melewati batas waktu bertulisan; tanpa pelanggaran axe", async () => {
         server();
         const { container } = await renderAplikasi("/kerusakan");

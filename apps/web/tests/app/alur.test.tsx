@@ -187,7 +187,7 @@ describe("P-12 Dashboard + shell", () => {
         server((p) => (p.url === "/me" ? sukses({ ...ME_ADMIN, permissions: { "loan.view": "all" } }) : undefined));
         await renderAplikasi("/");
         const kosong = (await screen.findAllByRole("navigation", { name: "Navigasi utama" })).at(-1)!;
-        expect(within(kosong).queryAllByRole("link")).toEqual([]);
+        expect(within(kosong).getAllByRole("link").map((a) => a.textContent)).toEqual(["Peminjaman"]);
     });
 
     it("Keluar → POST /auth/logout, cache dibersihkan, kembali ke Login", async () => {

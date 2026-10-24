@@ -61,7 +61,8 @@ function server(izin: Record<string, string> = IZIN_ADMIN, rute: (p: Permintaan)
         if (p.url === "/roles") return sukses(ROLES);
         if (p.url === "/users/44") return sukses({ id: "44", nama: "Bu Kepala", role_id: "3", status: "NONAKTIF" });
         if (p.url === "/users/45") return sukses({ id: "45", nama: "Pak Wakil", role_id: "3", status: "AKTIF" });
-        if (p.url === "/users") return sukses([{ id: "45", nama: "Pak Wakil", role_id: "3", status: "AKTIF" }]);
+        if (p.url === "/users") return {status:200,data:{data:[{id:"12",nama:"Pemohon Uji",email:"pemohon@school.test",role_id:"7",status:"AKTIF"},{ id: "45", nama: "Pak Wakil", role_id: "3", status: "AKTIF" }],meta:{total_pages:1}}};
+        if (p.url === "/users/12") return sukses({id:"12",nama:"Pemohon Uji",email:"pemohon@school.test",role_id:"7",status:"AKTIF"});
         return gagal(404, "NOT_FOUND", `Tidak ada: ${p.method} ${p.url}`);
     });
 }
@@ -241,7 +242,7 @@ describe("P-69 Editor Approval Rule", () => {
         await userEvent.selectOptions(await screen.findByLabelText("Jenis pengajuan (wajib)"), "PENGADAAN_BARANG");
         await userEvent.selectOptions(screen.getByLabelText(/^Role approver/), "R-03");
         const panel = screen.getByRole("complementary", { name: "Pratinjau aturan" });
-        await userEvent.type(within(panel).getByLabelText(/^ID pengguna pemohon/), "12");
+        await userEvent.selectOptions(await within(panel).findByLabelText("Pemohon (opsional)"), "12");
         await userEvent.type(within(panel).getByLabelText("Total nilai (Rp)"), "7500000");
         await userEvent.selectOptions(within(panel).getByLabelText("Prioritas usulan"), "TINGGI");
         await userEvent.click(within(panel).getByRole("button", { name: "Jalankan pratinjau" }));
@@ -258,7 +259,7 @@ describe("P-69 Editor Approval Rule", () => {
         expect((kirim?.data as { aturan_draf: object }).aturan_draf).not.toHaveProperty("id");
         expect(within(panel).getByText("Aturan #2 · prioritas 10")).toBeTruthy();
         expect(within(panel).getByText("Dilewati — konflik kepentingan")).toBeTruthy();
-        expect(within(panel).getByText("Approver cadangan (RE-11)")).toBeTruthy();
+        expect(within(panel).getByText("Approver cadangan")).toBeTruthy();
         expect(tulis("POST").filter((p) => p.url === "/approval-rules")).toHaveLength(0);
 
         await userEvent.clear(screen.getByLabelText("Prioritas (wajib)"));
