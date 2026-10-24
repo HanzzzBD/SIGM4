@@ -37,7 +37,7 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 | [01](phases/phase-01.md) | Master Data Independen | 4 | 26 | `In Review` | 18/26 | BR-015, daftar/summary aset ruangan, student-graduation dan NT-40/48/52 sudah tertutup. UI/demo/template unduh, kalender riil, count/pencarian/ekspor lokasi dan QA masih gap scope. [Audit §4](audits/closure-phase-00-02-2026-10-07.md#4-closure-phase-01) |
 | [02](phases/phase-02.md) | Inti Sistem | 5 | 49 | `In Review` | 37/49 | PR-02-38/39 tergabung (#133, #136, #138), termasuk P-17 dan P-20; QA staging pending; QR unik dan backend foto sudah terbukti. Ekspor katalog, layar lain, mutasi berbasis tanggal/slot, invariant status, FCM/peramban/QA belum lengkap. Preventif/drill deferred PR-04-07/PR-08-08. [Audit §5](audits/closure-phase-00-02-2026-10-07.md#5-closure-phase-02) |
 | [03](phases/phase-03.md) | Layanan Aset & Reservasi | 6 | 38 | `In Progress` | 16/38 | Menutup `M1`. Dimulai selagi Phase 02 `In Review` (pola Phase 01 → 02) |
-| [04](phases/phase-04.md) | Siklus Hidup Aset | 3 | 19 | `Not Started` | 0/19 | Menutup `M2` |
+| [04](phases/phase-04.md) | Siklus Hidup Aset | 3 | 19 | `In Progress` | 0/19 | Menutup `M2` |
 | [05](phases/phase-05.md) | Penutupan Siklus | 3 | 36 | `Not Started` | 0/36 | Menutup `M3` & `M4` |
 | [06](phases/phase-06.md) | Analitik | 1 | 11 | `Not Started` | 0/11 | Menutup `M5` |
 | [07](phases/phase-07.md) | Integrasi & UAT | — | 14 | `Not Started` | 0/14 | |
@@ -220,9 +220,9 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
-| `PR-04-01` sampai `PR-04-14` | `Not Started` | - | Rincian phases/phase-04.md |
+| `PR-04-01` … `PR-04-14` | `Not Started` | — | Rincian: [`phases/phase-04.md` §7](phases/phase-04.md) |
 | `PR-04-15` | `In Progress` | `feature/PR-04-15-url-unggah-ulang` (lokal) | Implementasi dan uji lokal selesai; belum ada PR remote |
-| `PR-04-16` sampai `PR-04-19` | `Not Started` | - | Rincian phases/phase-04.md |
+| `PR-04-16` … `PR-04-19` | `Not Started` | — | Rincian: [`phases/phase-04.md` §7](phases/phase-04.md) |
 
 ### Phase 05 — Penutupan Siklus · `Not Started`
 
