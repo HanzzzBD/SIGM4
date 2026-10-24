@@ -1,0 +1,253 @@
+# Rilis produksi ke server sekolah — PR-08-17 (SDD-16 §4.3 "tag rilis", SDD-INF-14).
+#
+# Pengembang TIDAK memiliki akses ke server sekolah. Karena itu deploy tidak
+# didorong lewat SSH seperti staging, melainkan ditarik oleh self-hosted runner
+# yang dipasang IT sekolah di server itu (koneksi keluar saja, tanpa port masuk).
+#
+#   tag vX.Y.Z di main
+#    ├─ validasi            semver + tag menunjuk commit di main (CD-03)
+#    ├─ ci                  seluruh gerbang CD-01/CD-02 (ci.yml, dipanggil ulang)
+#    ├─ terbit              image yang SAMA dengan yang dipindai Trivy → GHCR :vX.Y.Z;
+#    │                      GitHub Release berisi web-dist + openapi.json (SDD-API-12)
+#    ├─ deploy              environment `production` — menunggu persetujuan reviewer;
+#    │                      gerbang jam operasional (CD-06) → deploy.sh di server sekolah
+#    └─ smoke               dari runner GitHub terhadap domain publik (CD-07)
+#
+#   workflow_dispatch tag=vX.Y.Z   rollback / ulang deploy rilis yang sudah terbit (CD-05):
+#                                  validasi → ambil-rilis → deploy → smoke, tanpa build ulang.
+#
+# Setelan manual yang dibutuhkan (environment, secret, label runner) ada di
+# docs/IMPLEMENTATION/runbooks/produksi-server-sekolah.md.
+
+name: Rilis produksi
+
+on:
+    push:
+        tags: ["v*.*.*"]
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: "Tag rilis yang sudah terbit (rollback atau ulang deploy, CD-05)"
+                required: true
+                type: string
+            paksa_jam_operasional:
+                description: "Paksa deploy di jam operasional (CD-06) — wajib isi alasan"
+                type: boolean
+                default: false
+            alasan:
+                description: "Alasan deploy paksa (tercatat di log job)"
+                type: string
+                default: ""
+
+permissions:
+    contents: read
+
+# Satu rilis produksi pada satu waktu; yang belakangan menunggu, tidak membatalkan.
+concurrency:
+    group: rilis-produksi
+    cancel-in-progress: false
+
+jobs:
+    validasi:
+        name: Validasi tag
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        outputs:
+            tag: ${{ steps.tag.outputs.tag }}
+            sha: ${{ steps.tag.outputs.sha }}
+            baru: ${{ steps.tag.outputs.baru }}
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  fetch-depth: 0
+            - id: tag
+              env:
+                  TAG_INPUT: ${{ inputs.tag }}
+              run: |
+                  if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+                      tag="$GITHUB_REF_NAME"; baru=true
+                  else
+                      tag="$TAG_INPUT"; baru=false
+                  fi
+                  # CD-03 — tag bersemantik vMAJOR.MINOR.PATCH, tanpa sufiks.
+                  if [[ ! "$tag" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+                      echo "Tag '$tag' bukan vMAJOR.MINOR.PATCH (CD-03)." >&2; exit 1
+                  fi
+                  sha="$(git rev-list -n 1 "refs/tags/$tag")" || { echo "Tag '$tag' tidak ada." >&2; exit 1; }
+                  # CD-03 — `main` adalah cabang produksi; tag di luar main ditolak.
+                  if ! git merge-base --is-ancestor "$sha" origin/main; then
+                      echo "Tag '$tag' ($sha) tidak berada di main (CD-03)." >&2; exit 1
+                  fi
+                  {
+                      echo "tag=$tag"
+                      echo "sha=$sha"
+                      echo "baru=$baru"
+                  } >> "$GITHUB_OUTPUT"
+
+    ci:
+        name: Gerbang CI
+        needs: [validasi]
+        if: needs.validasi.outputs.baru == 'true'
+        uses: ./.github/workflows/ci.yml
+        # Izin maksimum yang diminta job di dalam ci.yml (sast, publikasi-image).
+        permissions:
+            contents: read
+            actions: read
+            security-events: write
+            packages: write
+
+    terbit:
+        name: Terbitkan rilis
+        needs: [validasi, ci]
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        permissions:
+            contents: write
+            packages: write
+        env:
+            TAG: ${{ needs.validasi.outputs.tag }}
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: ${{ needs.validasi.outputs.sha }}
+            # Image hasil job `build` pada run INI — artefak yang sama dengan yang dipindai Trivy.
+            - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+              with:
+                  name: image
+            - name: Dorong image ke GHCR
+              env:
+                  GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  SHA: ${{ needs.validasi.outputs.sha }}
+              run: |
+                  repo="ghcr.io/${GITHUB_REPOSITORY,,}"
+                  docker load --input image.tar
+                  echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+                  for t in "$TAG" "$SHA"; do
+                      docker tag "sigm4:$SHA" "$repo:$t"
+                      docker push "$repo:$t"
+                  done
+            # OpenAPI bertag dari job `build` run ini (SDD-API-12) — bukan dibangkitkan ulang.
+            - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+              with:
+                  name: openapi-${{ needs.validasi.outputs.sha }}
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: "22"
+                  cache: npm
+            - run: npm ci
+            - run: npm run build -w apps/web
+            - name: Paket web (SDD-FE-14)
+              run: tar -C apps/web/dist -czf web-dist.tar.gz .
+            # Rilis GitHub adalah tempat permanen aset web per tag, sehingga rollback
+            # (workflow_dispatch) memakai aset yang persis sama tanpa build ulang.
+            - name: GitHub Release
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: gh release create "$TAG" web-dist.tar.gz openapi.json --verify-tag --title "$TAG" --generate-notes
+            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: web-dist
+                  path: web-dist.tar.gz
+                  retention-days: 3
+
+    ambil-rilis:
+        name: Ambil rilis terbit
+        needs: [validasi]
+        if: needs.validasi.outputs.baru == 'false'
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        permissions:
+            contents: read
+            packages: read
+        env:
+            TAG: ${{ needs.validasi.outputs.tag }}
+        steps:
+            - name: Image GHCR dan aset web tersedia
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+                  docker manifest inspect "ghcr.io/${GITHUB_REPOSITORY,,}:$TAG" >/dev/null
+                  gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern web-dist.tar.gz
+            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: web-dist
+                  path: web-dist.tar.gz
+                  retention-days: 3
+
+    deploy:
+        name: Deploy produksi
+        needs: [validasi, terbit, ambil-rilis]
+        if: ${{ !cancelled() && needs.validasi.result == 'success' && (needs.terbit.result == 'success' || needs.ambil-rilis.result == 'success') }}
+        # Runner dipasang IT sekolah di server produksi (SDD-INF-14); label khusus
+        # memastikan job ini tidak pernah jatuh ke runner lain.
+        runs-on: [self-hosted, linux, sigm4-produksi]
+        timeout-minutes: 45
+        # Required reviewers pada environment ini adalah gerbang persetujuan rilis.
+        environment:
+            name: production
+            url: https://${{ vars.PRODUCTION_DOMAIN }}
+        permissions:
+            contents: read
+            packages: read
+        env:
+            TAG: ${{ needs.validasi.outputs.tag }}
+            DIR_SERVER: ${{ vars.PRODUCTION_DIR || '/opt/sigm4/production' }}
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: ${{ needs.validasi.outputs.sha }}
+            # Dinilai SETELAH persetujuan: waktu yang menentukan adalah saat deploy berjalan.
+            - name: Gerbang jam operasional (CD-06)
+              env:
+                  JENDELA_PAKSA: ${{ inputs.paksa_jam_operasional || false }}
+                  JENDELA_ALASAN: ${{ inputs.alasan }}
+              run: bash deploy/production/jendela-deploy.sh
+            - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+              with:
+                  name: web-dist
+            - name: Siapkan direktori deploy
+              run: |
+                  mkdir -p "$DIR_SERVER/nginx" "$DIR_SERVER/web-dist"
+                  cp deploy/production/docker-compose.yml deploy/production/deploy.sh "$DIR_SERVER/"
+                  cp deploy/staging/nginx/sigm4.conf.template "$DIR_SERVER/nginx/"
+                  find "$DIR_SERVER/web-dist" -mindepth 1 -delete
+                  tar -C "$DIR_SERVER/web-dist" -xzf web-dist.tar.gz
+            - name: Migration + rolling deploy
+              env:
+                  GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  SIGM4_DOMAIN: ${{ vars.PRODUCTION_DOMAIN }}
+              run: |
+                  # Kredensial registry hanya hidup selama job ini (GITHUB_TOKEN).
+                  echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+                  kode=0
+                  bash "$DIR_SERVER/deploy.sh" "ghcr.io/${GITHUB_REPOSITORY,,}:$TAG" "$DIR_SERVER/web-dist" || kode=$?
+                  docker logout ghcr.io >/dev/null
+                  exit "$kode"
+
+    # Dari LUAR server, jalur yang sama dengan pengguna: DNS → TLS → Nginx → API.
+    # Environment terpisah tanpa reviewer agar tidak meminta persetujuan kedua.
+    smoke:
+        name: Smoke test produksi (CD-07)
+        needs: [validasi, deploy]
+        if: ${{ !cancelled() && needs.deploy.result == 'success' }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        environment:
+            name: production-smoke
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: ${{ needs.validasi.outputs.sha }}
+            # Lima alur CD-07 dengan fixture [SMOKE] (keputusan pemilik produk 24 Oktober 2026);
+            # opsi --full disediakan PR-03-36. Gagal = rollback, bukan perbaikan di tempat
+            # (RELEASE-PLAN §3).
+            - name: Smoke test penuh
+              env:
+                  SMOKE_LINGKUNGAN: produksi
+                  SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+                  SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+                  SMOKE_TOTP_SECRET: ${{ secrets.SMOKE_TOTP_SECRET }}
+                  SMOKE_ROOM_ID: ${{ vars.SMOKE_ROOM_ID }}
+                  SMOKE_ASSET_UUID: ${{ vars.SMOKE_ASSET_UUID }}
+              run: bash deploy/staging/smoke-test.sh "https://${{ vars.PRODUCTION_DOMAIN }}" --full

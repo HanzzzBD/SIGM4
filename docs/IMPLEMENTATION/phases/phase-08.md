@@ -107,6 +107,7 @@ Keluaran phase ini bukan kode, melainkan **keputusan bahwa sistem boleh dipakai*
 | `PR-08-13` | Pengerasan mobile + versi paksa + berkas rilis store | M | M | Ph07 | `GL-11`, `SDD-MOB-08/09/10` | Lolos tinjauan kedua store. *Rekonsiliasi (keputusan 23 log phase-03):* layar MS-04 |
 | `PR-08-14` | Uji rencana rollback pada staging berdata produksi tiruan | M | M | 07 | `GL-12`, `CD-05` | Rollback dijalankan sungguhan dan terukur waktunya |
 | `PR-08-15` | Dokumen serah terima `IMP-08` | L | L | seluruhnya | `IMP-08` | Delapan dokumen lengkap dan terbaca pihak sekolah; **GAP-08-INSTALL (deferred FR-01.6 AC 4):** prosedur/validasi instalasi menolak satu Administrator, rehearsal dua akun beserta aktivasi 2FA; owner DevOps/Backend/dokumentasi |
+| `PR-08-17` | Pipeline rilis production ke server sekolah — self-hosted runner, PostgreSQL container, gerbang `CD-06` *(di luar rencana, 24 Okt — log §4)* | L | S | PR-00-18 | `SDD-INF-14`, `CD-03` … `CD-07`, `SDD-INF-03/04/05` | Tag `vX.Y.Z` di `main` → CI penuh → GHCR + GitHub Release → persetujuan `production` → deploy di runner sekolah → smoke dari luar; rollback = dispatch tag lama tanpa build ulang; deploy di jam operasional ditolak kecuali dipaksa beralasan |
 | `PR-08-16` | DAST OWASP ZAP *baseline scan* terhadap staging per kandidat rilis | S | S | Ph00 | `ST-03`, `SDD-SEC-11` | Dijalankan pipeline setelah smoke test staging; temuan High/Critical menggagalkan kandidat rilis; laporan tersimpan sebagai artefak |
 
 ## 8. Task Breakdown
