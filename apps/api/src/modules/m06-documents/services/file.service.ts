@@ -86,6 +86,15 @@ export class FileService {
         return { fileId, objectKey, uploadUrl };
     }
 
+    /** PR-04-15 / SDD-MOB-04: perbarui URL pesanan sendiri, tanpa membuat baris baru. */
+    async renewUpload(ctx: AuthContext, fileId: number): Promise<HasilPresign> {
+        const file = await createStoredFileRepository(this.db).milikPengunggah(ctx, fileId);
+        if (file === undefined) throw new NotFoundError();
+        if (file.checksum !== null) throw galatValidasi("file_id", "Berkas sudah dikonfirmasi; URL unggah tidak dapat diperbarui.");
+        const uploadUrl = await this.penyimpanan.urlUnggah(file.object_key, file.mime, Number(file.ukuran), BERLAKU_UNGGAH_DETIK);
+        return { fileId: file.id, objectKey: file.object_key, uploadUrl };
+    }
+
     /** `POST /files/confirm` (SDD-09 §4.2 langkah 3). Berkas orang lain tampak tidak ada (17.5 poin 3). */
     async konfirmasi(ctx: AuthContext, fileId: number, checksum: string): Promise<HasilKonfirmasi> {
         const berkas = await createStoredFileRepository(this.db).milikPengunggah(ctx, fileId);
