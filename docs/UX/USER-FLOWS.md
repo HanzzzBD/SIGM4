@@ -530,7 +530,7 @@ flowchart TD
 
     L -->|"Tidak valid"| M["Drawer Tolak, alasan WAJIB<br/>terlihat oleh pelapor · NT-21"] --> Z2([Selesai])
     L -->|"Perbaikan ringan langsung"| N["Tiket ditutup Selesai + catatan"] --> Z2
-    L -->|"Perlu work order"| O["P-43 Buat Work Order:<br/>teknisi, prioritas, target selesai, estimasi biaya"]
+    L -->|"Perlu work order"| O["Drawer P-41: pilih teknisi, target selesai, estimasi biaya<br/>prioritas mengikuti urgensi tiket<br/>WO dibentuk dari event setelah verifikasi<br/>P-43 untuk kebutuhan korektif manual"]
 
     O --> P["Status aset jadi Dalam Perbaikan<br/>slot mendatang DIBATALKAN OTOMATIS<br/>pemohon dinotifikasi NT-27 · BR-048"]
     P --> Q["NT-22 ke teknisi, status Ditugaskan"]
@@ -903,3 +903,14 @@ flowchart TD
 ```
 
 Satu sesi hanya mencakup **satu domain** — memilih bahan dan aset sekaligus ditolak (`BR-093`). Alur aset yang sepadan adalah `F-18`.
+
+### Penghapusan aset — PR-05-10..14/29
+
+Petugas/Admin: P-55 → P-56 (atau Detail Aset/WO → P-56?aset=) → snapshot kandidat,
+bukti/justifikasi/garansi → aturan aktif M-10 → P-57. Approver: inbox/notifikasi
+→ P-38/P-57 → keputusan per aset dengan catatan → level berikutnya → keputusan
+akhir Pimpinan → Petugas mencatat pelaksanaan → worker PDF → NT-45 → arsip.
+Ditolak/dibatalkan melepaskan klaim; revisi mempertahankan snapshot dan membuka
+siklus M-10 baru. Aset Hilang hasil opname disetujui otomatis menjadi kandidat,
+tetapi pengajuannya tetap manual. Hilang yang ditemukan: Admin → P-57 → alasan,
+lokasi aktif/kondisi → dialog pemulihan → UUID/kode lama aktif, BA tetap utuh.

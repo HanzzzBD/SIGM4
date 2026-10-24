@@ -27,16 +27,16 @@ Basis teknologi ditetapkan Keputusan #3: **React Native** (Android & iOS).
 | ID | Keputusan |
 |---|---|
 | **SDD-MOB-01** | Aplikasi berbagi **paket skema dan peta enum** dengan web ([SDD-FE-05](11-frontend-architecture.md), `SDD-FE-08`); yang tidak dibagi adalah komponen UI. |
-| **SDD-MOB-02** | Antrean unggah berkas **dipersistensi ke penyimpanan perangkat**, bukan hanya di memori — satu-satunya state yang bertahan lintas sesi (`MOB-OFF-02`, `MOB-SEC-06`). |
+| **SDD-MOB-02** | Antrean unggah berkas **dipersistensi ke penyimpanan perangkat**, bukan hanya di memori — bersama pengecualian opname Aset/Bahan pada §4.2.1, state yang bertahan lintas sesi (`MOB-OFF-02`, `MOB-SEC-06`). |
 | **SDD-MOB-03** | Kompresi foto dilakukan **sebelum masuk antrean**, bukan saat unggah — antrean menyimpan berkas yang sudah kecil (`MOB-MED-01`). |
 | **SDD-MOB-04** | Unggah memakai **presigned URL langsung ke object storage** ([SDD-09 §4.2](09-file-storage-design.md)); antrean menyimpan `file_id` hasil presign, bukan URL-nya. |
 | **SDD-MOB-05** | Gerbang versi paksa dipasang sebagai **interceptor global**; `426` memicu layar yang tidak dapat dilewati (`MOB-VER-03`). |
 | **SDD-MOB-06** | Pemindaian opname mengirim hasil **per pemindaian**, bukan menumpuk sampai akhir sesi (`MOB-PERF-03`). |
-| **SDD-MOB-07** | Aksi yang mengubah data **gagal eksplisit** saat luring — tidak pernah diantrekan (`MOB-OFF-05`). |
+| **SDD-MOB-07** | Aksi yang mengubah data **gagal eksplisit** saat luring — hanya scan/temuan Aset dan hitungan Bahan boleh diantrekan (§4.2.1; `MOB-OFF-05`). |
 | **SDD-MOB-08** | Token disimpan di Keychain/Keystore melalui satu modul `SecureStore`; tidak ada jalur lain yang boleh menulis token. |
 | **SDD-MOB-09** | Refresh token diserialisasi dengan *mutex* pada interceptor, sama alasannya dengan web (`SDD-FE-07`). |
 | **SDD-MOB-10** | Aplikasi dibangun di atas **Expo SDK** (*dev build*, bukan Expo Go) dan memakai **EAS Update** untuk pembaruan OTA. Versi React Native mengikuti lini Expo yang dipilih dan **wajib diverifikasi memenuhi `NFR-C-03` sebelum dikunci**. Kanal OTA hanya mengirim bundel JavaScript; perubahan yang menyentuh kode native tetap lewat store dan gerbang `426` (`SDD-MOB-05`). |
-| **SDD-MOB-11** | Antrean unggah `SDD-MOB-02` dipersistensi ke **expo-sqlite**. Setiap perubahan status antrean adalah transaksi SQLite, sehingga aplikasi yang mati di tengah unggah tidak merusak antrean. Basis data ini menyimpan **hanya** antrean unggah — batas `MOB-SEC-06` dapat diperiksa dengan membaca isinya. |
+| **SDD-MOB-11** | Antrean unggah `SDD-MOB-02` dipersistensi ke **expo-sqlite**. Setiap perubahan status antrean adalah transaksi SQLite, sehingga aplikasi yang mati di tengah unggah tidak merusak antrean. Basis data ini menyimpan antrean unggah; database opname terpisah memuat pengecualian §4.2.1 — batas `MOB-SEC-06` dapat diperiksa dengan membaca isinya. |
 | **SDD-MOB-12** | Navigasi memakai **expo-router**. `deep_link` `SDD-NTF-09` berupa path relatif aplikasi dipetakan **langsung** ke rute berbasis berkas; tidak ada tabel penerjemah path → nama layar yang harus dijaga sinkron. |
 
 ---
@@ -47,7 +47,7 @@ Basis teknologi ditetapkan Keputusan #3: **React Native** (Android & iOS).
 
 **MMKV** dan **AsyncStorage** ditolak pada sifat itu, bukan pada kinerjanya. Keduanya penyimpanan kunci–nilai, sehingga antrean berurut menjadi satu blob yang diserialisasi ulang setiap perubahan — dan proses yang mati di tengah penulisan blob merusak seluruh antrean, bukan satu barisnya. Itu kegagalan yang persis terjadi di keadaan yang antrean ini ada untuk melayaninya: jaringan lemah, aplikasi lama di latar, baterai habis.
 
-SQLite memberi penulisan atomik per baris dan kueri "ambil yang belum terkirim" apa adanya. Ia juga membuat `MOB-SEC-06` — tidak ada data operasional permanen di perangkat selain antrean dan token — menjadi klaim yang **dapat diperiksa**: satu berkas basis data yang isinya dapat dibuka dan dihitung, bukan sebaran kunci yang harus dipercaya. Karena `SDD-MOB-10` sudah memilih Expo, `expo-sqlite` tidak menambah modul native di luar lini yang dipakai.
+SQLite memberi penulisan atomik per baris dan kueri "ambil yang belum terkirim" apa adanya. Ia juga membuat `MOB-SEC-06` — tidak ada data operasional permanen di perangkat selain antrean, token dan pengecualian opname §4.2.1 — menjadi klaim yang **dapat diperiksa**: basis data antrean umum dan opname terpisah yang isinya dapat dibuka dan dihitung, bukan sebaran kunci yang harus dipercaya. Karena `SDD-MOB-10` sudah memilih Expo, `expo-sqlite` tidak menambah modul native di luar lini yang dipakai.
 
 **SDD-MOB-12 — path notifikasi adalah path rute.** `SDD-NTF-09` sengaja menyimpan `deep_link` sebagai path relatif aplikasi agar satu nilai berlaku sama di web dan mobile. **React Navigation** memenuhi itu lewat konfigurasi `linking` — sebuah daftar pemetaan tersendiri yang wajib ikut berubah setiap kali rute bertambah. Daftar seperti itu gagal secara diam: bila ia tertinggal, notifikasi berhenti membuka layarnya dan tidak ada satu pun uji yang merah, karena tidak ada yang bertugas membandingkan daftar itu dengan rute yang benar-benar ada.
 
@@ -120,6 +120,28 @@ kebijakan:
 
 Entitas yang fotonya masih tertunda ditandai jelas di UI ("Foto belum terunggah") dan muncul pada daftar tindak lanjut Petugas Sarpras (`MOB-OFF-04`).
 
+### 4.2.1 Pengecualian opname Aset dan Bahan (14 Oktober 2026)
+
+Keputusan pengguna pada PRD M-13 §6 memperluas SDD-MOB-02/07/11 khusus opname.
+`sigm4-stocktake.db` memuat antrean hasil, cache target/kategori per akun/sesi/lokasi,
+dan identitas/izin minimum terakhir yang telah terverifikasi. Cache dan akses luring
+maksimal 72 jam; hasil belum tersinkron tidak dibuang karena cache kedaluwarsa. Token
+tetap di SecureStore; hanya fingerprint refresh token berada di SQLite. Saat restart
+luring, gerbang sesi hanya menampilkan opname lokal. Logout menunggu penulisan cache
+dan menghapus data/foto akun, bersama hook pencabutan push yang sudah ada.
+
+Setiap hasil diberi UUID sebelum transaksi SQLite; payload/file_id tetap sepanjang
+retry. Sinkronisasi FIFO pada daring/foreground/timer mengecek akun di setiap batas
+asinkron, permission/penugasan diperiksa ulang server. UUID berbeda untuk aset sama
+mengembalikan hasil pertama server sebagai duplikat. Galat permanen diblokir dan
+ditampilkan untuk tindak lanjut. Foto memakai direktori terpisah dari antrean umum;
+batas 50 foto menolak tambahan tanpa membuang pemeriksaan. Semua penyelesaian lokasi,
+finalisasi, submit serta persetujuan tetap daring. Rekonsiliasi tetap web P-50.
+
+Hitungan Bahan memperluas pengecualian yang sama melalui PR-05-24 di bawah:
+target dipisah per pasangan bahan/lokasi; konflik memakai revision dan basis
+saldo/ledger terakhir. Cache tidak memberi wewenang persetujuan atau transaksi stok.
+
 ### 4.3 Kamera & pemindaian
 
 | Aspek | Implementasi |
@@ -168,7 +190,7 @@ Urutan ini mencerminkan gerbang middleware server (`SDD-AUTH-09`) sehingga klien
 | `MOB-SEC-03` | Deteksi root/jailbreak; peringatan dapat dilewati hanya pada build uji |
 | `MOB-SEC-04` | Layar berdata pribadi disembunyikan di *app switcher* |
 | `MOB-SEC-05` | Token FCM dicabut saat logout |
-| `MOB-SEC-06` | Tidak ada data operasional tersimpan permanen selain antrean unggah & token |
+| `MOB-SEC-06` | Tidak ada data operasional tersimpan permanen selain antrean unggah & token dan pengecualian opname §4.2.1 |
 
 ### 4.7 Performa
 
@@ -199,7 +221,7 @@ Konsekuensi: satu kelas perangkat uji baru pada Bab 30.6, dan satu set wireframe
 - Sekolah wajib memiliki domain HTTPS sendiri (`AS-15b`) — App/Universal Links tidak dapat diverifikasi tanpa itu.
 - Akun Google Play dan Apple Developer berbayar menjadi prasyarat rilis (`MOB-REL-01`, `AS-15a`), dan kepemilikannya pada sekolah, bukan vendor (`MOB-REL-02`).
 - Antrean unggah adalah satu-satunya penyimpanan lokal berisi data; ia masuk lingkup perlindungan data (Bab 28) meski berumur pendek.
-- Karena aksi tulis gagal eksplisit saat luring, alur lapangan di area tanpa sinyal (gudang) tetap terhambat. Ini konsekuensi `NO-07` yang diterima; `FE-01` menawarkan penyelesaiannya di rilis berikutnya.
+- Karena aksi tulis gagal eksplisit saat luring, alur lapangan di area tanpa sinyal (gudang) tetap terhambat. Pengecualian opname aset §4.2.1 menutup kendala pemindaian; aksi operasional lain tetap mengikuti `NO-07`; `FE-01` menawarkan penyelesaiannya di rilis berikutnya.
 - Akun Expo/EAS tunduk pada aturan yang sama dengan akun store: kepemilikannya pada **sekolah, bukan vendor** (`MOB-REL-02`). Tanpa itu, ketergantungan yang `MOB-REL-02` cegah hanya berpindah tempat.
 - EAS Update menjadi langganan pihak ketiga dan karena itu baris biaya operasional baru yang belum ada pada PRD 27.9 — perlu dianggarkan bersama `MOB-REL-01`.
 - Versi React Native tidak lagi dipilih sendiri; ia mengikuti lini Expo. Konsekuensinya, pemutakhiran lini Expo adalah pekerjaan terjadwal yang setiap kalinya wajib diperiksa ulang terhadap `NFR-C-03` sebelum dirilis.
@@ -354,3 +376,37 @@ Tidak menganggap tiket hasil pemeriksaan pasti milik niat itu. Byte foto saja te
 backoff, 72 jam/50 berkas. Respons sukses diingat sebelum memperbarui metadata owner; kegagalan
 metadata tidak mengulang transaksi. Abort/guard akun dan lock tap ganda membatasi respons lama.
 Tidak ada perubahan backend domain, migration, permission atau kontrak M-11.
+
+### Persetujuan pengadaan — PR-03-18 (14 Oktober 2026)
+
+MS-20 memakai history dan pending M-10, lalu konteks M-14 `/review` bagi pemutus
+aktif. Gerbang memeriksa instance/referensi/pemohon/langkah serta permission
+procurement.approve. Kuantitas dan lampiran mengikuti kontrak FR-14.2. Authorize
+membaca ulang konteks sebelum POST; DecisionAttempt mempertahankan body/key hanya
+di memori saat hasil belum pasti. Abort, guard akun dan larangan pengiriman bisnis
+luring tetap berlaku. Jenis pengajuan lain tetap memakai gerbang konteksnya sendiri.
+
+### PR-05-24 — perluasan antrean hitungan Bahan
+
+Mengikuti keputusan PRD M-13 §6, SQLite stocktake_pending menambah jenis
+material tanpa mengubah antrean Aset. Entity key meliputi material, lokasi
+dan versi hitungan; UUID/payload/basis tetap pada retry. Cache lokasi menyimpan
+material_items terpisah dari items Aset, tetap terikat akun dan TTL 72 jam.
+Target pertama saat luring dipilih dari lokasi yang sudah diunduh. UUID QR
+/b/ hanya memilih jenis pada lokasi tersebut; jumlah nol harus diisi eksplisit.
+Server menolak basis ledger usang dan versi lama tidak menimpa hasil pertama.
+Hasil ditolak tetap terlihat sampai ditangani pengguna; logout membersihkan
+cache/antrean akun. Token tetap SecureStore dan izin luring minimum audit.
+
+
+### Implementasi MS-21 — 14 Oktober 2026
+
+Chatbot menggunakan client autentikasi bersama dan Expo fetch untuk POST SSE.
+Riwayat/pesan hanya di memori, tanpa SQLite maupun antrean transaksi luring.
+Disconnect retry menggunakan UUID/body sama sampai hasil pasti;
+logout/unmount menghentikan stream. Form maksimum 500 karakter, pemberitahuan
+pemrosesan Gemini dan izin memahami privasi tampil sebelum pengiriman pertama.
+Kuota akun/reset WIB, riwayat berhalaman, feedback, laporan dengan izin berbagi,
+dan hapus permanen memakai kontrak M-19 §7. Tautan server ke detail native
+Aset/Kerusakan/Persetujuan diperiksa permission; halaman lainnya membuka origin
+HTTPS aplikasi tepercaya. Teks model tidak dijadikan tautan aktif.

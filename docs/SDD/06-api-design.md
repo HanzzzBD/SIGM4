@@ -224,3 +224,36 @@ mXX-nama/
 Bab 17.1 – 17.3, 17.5 · `PM-01` `PM-02` `PM-03` `PM-04` · `ID-01` … `ID-05` · `CI-04` ·
 `NFR-P-01` `NFR-P-02` `NFR-M-05` `NFR-R-10` `NFR-S-05` `NFR-S-06` `NFR-S-07` `NFR-S-11` `NFR-C-09` `NFR-C-10` ·
 `BR-073` · `MOB-VER-01` … `MOB-VER-05` · `MOB-PERF-02` · `SEC-T-01` `SEC-T-02`
+
+### M-16 PR-06-01 — kontrak laporan bersama
+
+GET /analytics adalah katalog terbatas delapan jenis FR-16.1; GET /analytics/:jenis
+memakai Zod di packages/schemas/analytics.ts dan registri route tunggal. Permission
+route report.view dilanjutkan izin/scope sumber pada service. Data produksi hanya
+tersedia ketika provider benar-benar didaftarkan; tanpa provider 503
+SERVICE_NOT_READY, tanpa hak sumber 403. POST export belum diaktifkan PR ini.
+
+Provider prepare menerima periode kanonik (batas start UTC dan endExclusive UTC
+dari hari WIB), query tanpa tanggal mentah dan capability akses. Laporan pembanding
+memakai capability yang sama dan periode sebelumnya, sehingga tidak mengulang
+filter tanggal utama. Provider mengembalikan rowset SQL penuh yang telah scoped,
+satu baris ringkasan dan metadata/sensitivitas/tipe kolom, key grup unik dan sort.
+Metadata ringkasan pembanding harus sama dengan periode utama.
+
+Framework menghitung total grup dan halaman dari rowset yang SAMA dalam satu
+statement CTE dengan ringkasan/pembanding. Satu statement memakai satu snapshot;
+transaksi tetap READ COMMITTED dan ditandai READ ONLY. Mutasi oleh fungsi/CTE
+provider ditolak database. Tidak ada perubahan isolation untuk domain tulis.
+Sort hanya key metadata tervalidasi, dengan key grup sebagai tie-breaker;
+LIMIT/OFFSET selalu dibind parameter. Tidak ada SQL dari nilai filter klien.
+
+Respons memakai amplop daftar dan report metadata (periode/filter/WIB/Clock,
+kolom tabel/ringkasan, nilai ringkasan, pembanding nullable). DECIMAL string
+mempertahankan presisi. Cache lintas scope belum dibuat; private/no-store wajib.
+Skema input ekspor XLSX/PDF disiapkan tanpa pagination; orkestrasi/asinkron/
+penyimpanan/audit dimiliki PR-06-08. Range langsung dibatasi 366 hari; anggaran
+latensi dan rencana indeks baru ditutup PR-06-09 dengan EXPLAIN data berskala.
+
+### Konfigurasi origin pemindai QR
+
+Untuk FR-05.1/FR-05.2, pemindai membaca konfigurasi publik milik M-05 sebelum memvalidasi payload QR. Nilai berasal dari konfigurasi runtime pencetak label yang sama, bukan origin halaman web atau base URL transport mobile. Resolver tetap memvalidasi HTTPS, namespace, UUIDv4, dan penolakan query/fragment/kredensial; izin membaca aset/bahan tetap ditegakkan pada endpoint resolver masing-masing. Kontrak endpoint dimiliki [M-05 bagian 7](../PRD/02-modules/m05-qr.md#7-api-endpoints).

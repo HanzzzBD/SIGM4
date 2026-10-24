@@ -53,6 +53,7 @@ Berkas ini menetapkan **bagaimana** rantai sebab-akibat itu dijalankan tanpa mem
 |---|---|---|
 | Tiket kerusakan dari pengembalian rusak (`BR-032`) | **Sinkron** | Aset tidak boleh berstatus rusak tanpa tiketnya; keduanya satu kebenaran |
 | Pembatalan slot saat aset masuk perbaikan (`BR-048`) | **Sinkron** | Bila gagal, aset "dalam perbaikan" masih bisa dipesan — pelanggaran `BR-047` |
+| Pembentukan WO dari tiket terverifikasi (`FR-11.2`, `FR-12.1`) | Asinkron | Penugasan tahan restart disimpan saat verifikasi; worker membaca ulang dan membentuk tepat satu WO dengan unique `damage_report_id` |
 | Penutupan tiket saat WO ditutup (`BR-050`) | **Sinkron** | Konsistensi status antar dua entitas |
 | Pembentukan aset dari penerimaan (`BR-064`) | **Sinkron** | Penerimaan tanpa aset = data menggantung |
 | Penerapan penyesuaian opname (`BR-057`) | **Sinkron** | Satu persetujuan = satu perubahan atomik |
@@ -149,6 +150,8 @@ Konsekuensinya, event yang gagal **menahan** event sesudahnya pada agregat yang 
 | `DamageReportVerified` | M-11 | Notifikasi `NT-21` (pelapor; bukan bila ia sendiri pemverifikasinya) |
 | `WorkOrderAssigned` | M-12 | Notifikasi `NT-22` |
 | `WorkOrderClosed` | M-12 | Notifikasi `NT-26` |
+| `PreventiveWorkOrderCreated` | M-12 (job) | Notifikasi `NT-28` kepada Teknisi + Petugas; payload `work_order_id`, `nomor`, `teknisi_id`, `aset`, `tanggal`; agregat `work_order`. Terbit satu transaksi dengan WO dan pointer siklus (PR-04-07) |
+| `PreventiveAssetAvailable` | M-12 (job) | Notifikasi `NT-28` kepada teknisi WO yang sudah terbit; payload `work_order_id`, `teknisi_id`, `aset`; agregat `work_order`. Terbit bersama penghapusan penanda menunggu, juga bagi jadwal nonaktif (PR-04-07) |
 | `ReservationCancelledByMaintenance` | M-12 | Notifikasi `NT-27` |
 | `AuditSessionSubmitted` | M-13 | Notifikasi `NT-31` |
 | `AssetMarkedLost` | M-09 / M-13 | Notifikasi `NT-33` |
@@ -156,7 +159,7 @@ Konsekuensinya, event yang gagal **menahan** event sesudahnya pada agregat yang 
 | `AssetsGenerated` | M-14 | Notifikasi `NT-36` |
 | `DisposalExecuted` | M-21 | Notifikasi `NT-45` |
 | `MaterialIssued` | M-22 | Notifikasi `NT-51` |
-| `MaterialStockLow` | M-22 | Notifikasi `NT-49` |
+| `MaterialLowStock` | M-22 | Notifikasi `NT-49` |
 | `MaterialRequestReady` | M-22 | Notifikasi `NT-50` |
 | `FileUploaded` | M-06 | Pemindaian AV, pembuatan thumbnail; payload `file_id`; agregat `stored_file`. Terbit dalam transaksi `POST /files/confirm` (`PR-03-25`); konsumen memasukkan pekerjaan `file-scan` (`jobId` per berkas) ke antrean (`PR-03-05`) |
 | `FileScanned` | M-06 | Turunan gambar (`SDD-FS-07`) — konsumen menjadwalkan pekerjaan `file-derivatives` hanya bila `hasil = CLEAN`; payload `file_id`, `hasil`; agregat `stored_file`. Terbit dalam transaksi putusan pindai (`PR-03-07`) |
@@ -205,21 +208,21 @@ Rantai ini dipilih sebagai contoh karena memuat keduanya sekaligus — efek yang
 POST /material-requests/{id}/issue
 │
 ├─ BEGIN ─────────────────────────────────────────────── sinkron, satu transaksi
-│   1. SELECT … FOR UPDATE material_balances            (SDD-DB-14)
+│   1. lock request → materials terurut → material_balances            (SDD-DB-14)
 │   2. periksa kecukupan saldo                          (BR-083)  -> tolak bila kurang
 │   3. periksa jumlah <= jumlah_disetujui                (BR-089)  -> tolak bila lebih
-│   4. UPDATE material_balances                          (saldo baru)
-│   5. INSERT material_transactions (saldo_sesudah)      (BR-081, BR-092)
-│   6. UPDATE material_requests -> Diserahkan
+│   4. INSERT ledger; trigger UPDATE material_balances    (saldo baru)
+│   5. ledger menyimpan saldo_sesudah, lalu issue/items      (BR-081, BR-092)
+│   6. UPDATE material_requests -> Diserahkan / Diserahkan Sebagian
 │   7. INSERT activity_logs MATERIAL_ISSUED              (BR-071, AL-01)
 │   8. INSERT event_outbox: MaterialIssued
 │   9. evaluasi stok minimum atas SUM(saldo) bahan       (BR-085)
-│      └─ bila menembus ambang: INSERT event_outbox: MaterialStockLow
+│      └─ bila menembus ambang: INSERT event_outbox: MaterialLowStock
 └─ COMMIT ────────────────────────────────────────────────────────────────────
     │
     └─ worker (setelah commit)                            SDD-EVT-03, SDD-EVT-04
         ├─ MaterialIssued   -> NT-51 ke pemohon
-        └─ MaterialStockLow -> NT-49 ke Petugas Sarpras + Administrator
+        └─ MaterialLowStock -> NT-49 ke Petugas Sarpras + Administrator
 ```
 
 **Yang membuat urutan ini mengikat.** Langkah 9 berada **di dalam** transaksi meskipun akibatnya hanya sebuah notifikasi: bila evaluasi stok minimum dilakukan setelah `COMMIT`, ia membaca saldo yang mungkin sudah diubah transaksi lain, dan peringatan bisa terbit dua kali atau tidak terbit sama sekali. Yang ditunda ke worker hanyalah **pengiriman**-nya, bukan **keputusan**-nya — persis pembagian yang `SDD-EVT-03` tetapkan.
@@ -274,3 +277,60 @@ Sebaliknya, langkah 4 dan 5 tidak boleh dipisah ke worker dengan alasan apa pun:
 | **TBD-EVT-A** | Retensi baris `event_outbox` yang sudah diproses. Berkas ini menyarankan mengikuti pola retensi umum, tetapi durasinya belum ditetapkan — berkaitan dengan **TBD-AVL-A**. |
 
 **Tertutup 25 Agustus 2026:** `TBD-EVT-B` → `SDD-EVT-10`.
+
+### Opname aset — 14 Oktober 2026
+
+AuditSessionCreated → NT-30 pelaksana; AuditSessionSubmitted → NT-31 Pimpinan;
+AuditSessionDecided → NT-32 pelaksana; AssetMarkedLost → NT-33 Petugas/Pimpinan.
+AuditReportRequested → stocktake-report-generate, job ID per session/event agar
+retry permintaan sesudah gagal menghasilkan pekerjaan baru. Semua event dipublikasikan
+dalam transaksi opname, konsumen notifikasi melakukan deduplikasi per event/penerima.
+
+### Siklus penghapusan M-21 — 14 Oktober 2026
+
+Transaksi domain menerbitkan AssetDisposalProposed/Decided melalui outbox untuk
+NT-43/44. Eksekusi atomik menulis snapshot, menandai aset terminal, melepas klaim,
+dan menerbitkan AssetDisposalReportRequested. Worker asset-disposal-report-generate
+mengunci usulan, melewati report SIAP, membuat dua PDF per percobaan (finansial
+dan redaksi), mendaftarkan M-06, lalu menulis SIAP dan AssetDisposalExecuted untuk
+NT-45. Nama job memakai ID usulan/event agar retry manual baru bisa berjalan.
+Kompensasi hanya menghapus objek UUID percobaan yang gagal; kegagalan terakhir
+menulis GAGAL dan API retry tetap idempoten. Berita acara lama tetap immutable
+sesudah ASSET_REINSTATED. Konsumen notifikasi menduplikasi nol saat event diulang.
+
+### Event Bahan PR-05-18…22
+
+MaterialLowStock: aggregate material, payload material_id/bahan/saldo/ambang/satuan/
+transaction_id. Emisi hanya downward crossing aktif atas total semua lokasi,
+di dalam row lock material yang juga dipakai koreksi dan OPNAME. Pemulihan total
+di atas minimum mengaktifkan kembali. Minimum 0 dan bahan nonaktif tidak memicu.
+NT-49 wajib in-app/push Petugas/Admin, dedupe event. Dashboard membaca saldo langsung.
+
+MaterialRequestReady: aggregate material_request, request_id/pemohon_id/revision,
+terbit untuk autoapproval atau keputusan akhir M-10. Consumer memakai snapshot
+lokasi; event siklus lama tidak mengumumkan kesiapan siklus baru. MaterialIssued:
+request_id/issue_id/pemohon_id/tanggal; NT-51 merinci jumlah aktual dengan satuan
+masing-masing jenis. NT-50/51 mengikuti preferensi dan dedupe event. Penerimaan
+BAHAN M-14 menambahkan ringkasan bahan ke ProcurementReceived/NT-36, bukan pesan
+bahwa stok bahan telah terdaftar sebagai aset. Semua event bertransaksi bersama audit.
+
+
+### Ekspor laporan — PR-06-08
+
+ExportRequested membawa export_id, commit bersama job/pengajuan. Consumer worker
+menambahkan report-export-{id} ke BullMQ dengan retry tetap; session advisory
+lock menyerialkan eksekusi/replay perjob selama I/O. Worker membaca ulang actor
+aktif dan izin/scope dari SQL, menjalankan provider yang sama dengan HTTP dalam
+transaksi read-only, membatasi limit+1, lalu render/PUT. Transaksi akhir memeriksa
+akses kembali dan menyimpan registri file/SIAP/REPORT_EXPORTED/ExportReady bersama.
+ExportReady membawa ID saja; M-17 membaca status/pemohon/deeplink terkini dan
+menerbitkan NT-42 dedupe event. Worker replay terminal tidak menggandakan efek.
+
+### Impor jadwal tetap (PR-03-35)
+
+RoomScheduleImportRequested (M-07) → outbox → BullMQ room-schedule-import,
+jobId room-schedule-import-{id}, RETRY_OPTIONS. Worker memuat izin terbaru dan
+memeriksa akun aktif, memproses cursor per baris; percobaan sistem terakhir
+menutup GAGAL dan membuang berkas. RoomScheduleImportCompleted hanya untuk
+>200 baris → M-17 NT-56 wajib In-app/Push, dedupe per event, deep link
+/kalender-ruangan?kelola=true&impor={id}. Proses selesai dan event atomik.

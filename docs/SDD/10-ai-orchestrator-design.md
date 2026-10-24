@@ -260,6 +260,16 @@ Tiap butir dinilai empat dimensi (`AI-EV-03`) dan dijalankan untuk **ketujuh rol
 
 ## 7. Requirement Terkait
 
+### Implementasi lokal — 14 Oktober 2026
+
+Keputusan M-19 §7 memperjelas startup bersyarat CHAT_ENABLED, kuota harian,
+pelaporan dengan izin eksplisit, 429 tanpa retry, dan penghapusan isi saat retensi.
+Migration expand 0069 memisahkan chat_sessions/chat_messages dari chat_usage_daily
+tanpa identitas, serta chat_evaluations dengan mode LIVE atau CONTRACT. Evaluasi
+CONTRACT menguji batas implementasi; tidak menjadi bukti akurasi model SC-10.
+CI menjalankan kontrak/golden set; validasi LIVE, token prefiks dan cache positif
+memerlukan koneksi Gemini. Kegagalan verifikasi tersebut tidak boleh dilaporkan lulus.
+
 `FR-19.1` `FR-19.2` · `BR-075` `BR-076` `BR-077` `BR-078` `BR-079` ·
 `AI-CTL-01` … `AI-CTL-10` · `AI-EV-01` … `AI-EV-07` · `AI-SEC-01` … `AI-SEC-08` · `AI-L-01` … `AI-L-12` ·
 `DP-AI-01` … `DP-AI-05` · `NFR-A-05` `NFR-S-07` `NFR-S-14` · `SC-10` `PO-08` · `RS-08` `RS-09` `RS-10` `RS-21` · `ST-06` · `GL-07` · Bab 22.3–22.5

@@ -128,7 +128,7 @@ flowchart TD
 
 | Aspek | Uraian |
 |---|---|
-| **Description** | Mencatat barang yang telah diterima dari usulan yang disetujui. Item **berjenis Aset** dikonversi menjadi record aset per unit lengkap dengan kode aset dan QR; item **berjenis Bahan** menambah saldo bahan (`BR-064`). Alur penerimaan bahan dimiliki M-22 dan **belum ditulis**. |
+| **Description** | Mencatat barang yang telah diterima dari usulan yang disetujui. Item **berjenis Aset** dikonversi menjadi record aset per unit lengkap dengan kode aset dan QR; item **berjenis Bahan** menambah saldo bahan (`BR-064`). Alur penerimaan bahan dimiliki M-22 dan diaktifkan lokal oleh PR-05-18. |
 | **Actor** | Petugas Sarana Prasarana |
 | **Preconditions** | Terdapat usulan berstatus `Disetujui` atau `Disetujui Sebagian`; barang telah tiba secara fisik |
 
@@ -172,12 +172,29 @@ flowchart TD
 
 ## 7. API Endpoints
 
+### Kontrak implementasi FR-14.1–FR-14.3 (keputusan pemilik produk, 14 Oktober 2026)
+
+- PR-05-18 mengaktifkan item **Bahan**: material_id master aktif wajib sejak pengajuan dan material_satuan_id disnapshot. Satuan harus sama dengan master tanpa konversi. Penerimaan membutuhkan procurement.receive + material.receive, memanggil service M-22 dalam transaksi M-14 dan menautkan ledger ke receipt_item. Dokumen penerimaan M-14 dipakai bersama. Bahan menambah saldo tepat sejumlah diterima dan tidak membuat aset; item Aset tetap didaftarkan per unit. Options menyediakan materials aktif. Perubahan satuan sebelum penerimaan menolak transaksi agar tidak mengubah arti jumlah.
+- Draf hanya terlihat dan dapat disunting oleh pembuatnya, termasuk terhadap pembaca berscope `all`. Draf dapat belum berisi item/justifikasi/unit; `BR-060` wajib dipenuhi saat pengajuan. Unit kerja dipilih dari master aktif dan total estimasi mengikuti `BR-061`.
+- Keputusan bertingkat wajib memiliki catatan. Persetujuan sebagian mencatat jumlah **setiap item** (termasuk nol), minimal satu item positif. Pada langkah berikutnya jumlah hanya boleh tetap atau berkurang dari keputusan sebelumnya. Snapshot jumlah dan nama barang disimpan per langkah; enum keputusan M-10 tetap `DISETUJUI`, `DITOLAK`, `PERLU_REVISI`.
+- Revisi yang diajukan ulang membuat instance approval baru dari langkah pertama dan mengosongkan jumlah disetujui. Riwayat instance sebelumnya tetap tersedia.
+- Approver langkah aktif dapat membaca konteks melalui endpoint `/review` meskipun scope pembacaan usulan `own`; kewenangan diperiksa terhadap antrean M-10, termasuk delegasi. Endpoint ini tidak membuka draf atau usulan di luar langkah aktif pemanggil.
+- Penerimaan wajib memakai dokumen terkonfirmasi, milik penerima, dan lolos pemeriksaan. Barang ditolak memerlukan alasan serta foto dan tidak mengurangi sisa jumlah yang boleh diterima: penggantinya dapat diterima pada pencatatan berikutnya. Jumlah diterima kumulatif tetap mengikuti `BR-063`.
+- Aset, nomor/UUID QR, tautan dokumen, jumlah kumulatif, audit, dan event penerimaan dicatat atomik. Aset manual/impor lama tetap sah dengan `procurement_id = NULL`. Penutupan Tidak Direalisasikan tersedia sesudah tahun anggaran berakhir dan memerlukan alasan.
+- Setiap perubahan status memberitahu pengusul lewat `NT-35`; pencatatan penerimaan, termasuk penolakan, juga memakai `NT-36` dengan jumlah diterima dan ditolak. Persetujuan web/mobile harus daring; niat pengiriman ulang hanya disimpan di memori dengan body dan kunci idempotensi yang sama.
+
 ### Endpoint
 
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
 | POST | `/procurements` | `procurement.create` | Buat usulan pengadaan |
 | GET | `/procurements` | `procurement.view` | Daftar usulan |
+| GET | `/procurements/options` | `procurement.view` | Kategori aset dan unit kerja aktif |
+| GET | `/procurements/{id}` | `procurement.view` | Detail usulan sesuai scope |
+| GET | `/procurements/{id}/review` | `procurement.approve` | Konteks pemutus langkah aktif; juga memerlukan `approval.decide` |
+| PUT | `/procurements/{id}` | `procurement.create` | Sunting draf/revisi milik sendiri, simpan atau ajukan |
+| POST | `/procurements/{id}/submit` | `procurement.create` | Ajukan draf/revisi; instance baru dari awal |
+| POST | `/procurements/{id}/close` | `procurement.receive` | Tutup usulan Tidak Direalisasikan dengan alasan |
 | POST | `/procurements/{id}/receipts` | `procurement.receive` | Catat penerimaan & buat aset |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
@@ -189,9 +206,13 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **procurements** | Usulan pengadaan | id, nomor, judul, pengusul_id, unit_kerja, tahun_anggaran, prioritas, justifikasi, total_estimasi, status | ± 100 |
+| **procurements** | Usulan pengadaan | id, nomor, judul, pengusul_id, work_unit_id, tahun_anggaran, prioritas, justifikasi, total_estimasi, status, approval_instance_id, source_asset_id | ± 100 |
 | **procurement_items** | Item dalam usulan | id, procurement_id, jenis (Aset/Bahan — Keputusan #27), nama_barang, category_id, spesifikasi, jumlah_diusulkan, jumlah_disetujui, jumlah_diterima, satuan, estimasi_harga_satuan | ± 500 |
 | **procurement_receipts** | Catatan penerimaan barang | id, procurement_id, tanggal_terima, nomor_dokumen, diterima_oleh, catatan | ± 120 |
+| **procurement_attachments** | Lampiran pendukung | procurement_id, file_id, nama_berkas | Referensi registri M-06 |
+| **procurement_receipt_items** | Hasil pemeriksaan per item | receipt_id, item_id, jumlah, status, alasan | Barang ditolak tidak menghasilkan aset |
+| **procurement_receipt_files** | Dokumen dan foto penerimaan | receipt_id, receipt_item_id, file_id, document_id | Dokumen bersama ditautkan melalui M-06 |
+| **procurement_receipt_assets** | Unit aset hasil penerimaan | receipt_item_id, asset_id | Satu unit satu aset |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
 
@@ -202,8 +223,8 @@ Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-archit
 | Kode | Event Pemicu | Penerima | Kanal | Wajib | Contoh Isi |
 |---|---|---|---|:---:|---|
 | **NT-34** | Usulan pengadaan diajukan | Approver | In-app + Push | ✅ | "Usulan pengadaan {nomor} senilai Rp{total} menunggu persetujuan." |
-| **NT-35** | Keputusan usulan pengadaan | Pengusul | In-app + Push | ✅ | "Usulan {nomor} {disetujui/disetujui sebagian/ditolak}." |
-| **NT-36** | Barang pengadaan diterima & didaftarkan | Pengusul + Petugas Sarpras | In-app | ❌ | "{n} unit dari usulan {nomor} telah diterima dan terdaftar sebagai aset." |
+| **NT-35** | Perubahan status usulan pengadaan | Pengusul | In-app + Push | ✅ | "Usulan {nomor} {status}. {catatan}" |
+| **NT-36** | Pencatatan penerimaan barang | Pengusul + Petugas Sarpras/Admin | In-app | ❌ | "{n} unit diterima dan terdaftar; {ditolak} unit ditolak saat penerimaan usulan {nomor}." |
 
 Ketentuan umum kanal, latensi, dan preferensi: [`m17-notifications.md`](m17-notifications.md).
 
@@ -227,6 +248,8 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | Aksi | Keterangan |
 |---|---|
 | `PROCUREMENT_CREATED` / `SUBMITTED` / `DECIDED` | Siklus usulan |
+| `PROCUREMENT_UPDATED` | Penyuntingan draf atau revisi |
+| `PROCUREMENT_CLOSED` | Penutupan Tidak Direalisasikan dengan alasan |
 | `PROCUREMENT_RECEIVED` | Penerimaan barang beserta jumlah |
 | `PROCUREMENT_ASSETS_GENERATED` | Pembentukan aset dari penerimaan |
 

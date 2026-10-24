@@ -52,15 +52,20 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | **Bahan** | Ambang permintaan bahan yang mewajibkan approval — di bawahnya permintaan langsung dilayani Petugas (`BR-086`) |
 | **Notifikasi** | Waktu pengingat jatuh tempo (H-n), jam pengiriman ringkasan harian |
 | **Keamanan** | Kebijakan password, durasi sesi, ambang penguncian akun, role yang wajib 2FA |
-| **Chatbot AI** | Model yang dipakai, batas percakapan harian per pengguna, pengalih aktif/nonaktif |
+| **Chatbot AI** | Model versi tetap (awal gemini-3.6-flash), batas harian awal 50 pesan/akun dengan reset 00.00 WIB, pengalih aktif/nonaktif, ambang token harian alarm (0 sebelum dikalibrasi TBD-AI-C; tidak memberi kesan alarm aktif) — keputusan pengguna 14 Oktober 2026, M-19 §7 |
 
 3. Administrator menyimpan; sistem memvalidasi rentang nilai yang wajar.
 4. Perubahan berlaku pada transaksi berikutnya.
 
+Durasi ruangan memakai `reservasi.durasi_maksimum_jam`, bilangan bulat 1–24,
+bawaan 12 (PR-03-38). Batas per kemunculan, termasuk mendesak, berulang dan
+gabungan ruangan/aset; perubahan tidak mengubah pengajuan yang sudah tersimpan.
+P-70 menampilkan deskripsi, bawaan dan rentang dari metadata parameter.
+
 **Alternative Flow**
 - **A1 — Nilai di luar rentang wajar:** Sistem menolak dengan penjelasan batas yang diizinkan.
 - **A2 — Perubahan format kode aset:** Hanya berlaku untuk aset baru; kode aset yang sudah ada tidak berubah, dan sistem menampilkan peringatan atas hal ini.
-- **A3 — Perubahan tarif denda:** Hanya berlaku untuk denda yang terbit setelah perubahan; denda yang sudah terbit tidak dihitung ulang.
+- **A3 — Perubahan tarif denda:** Kebijakan peminjaman mengikuti snapshot BR-029; denda yang sudah terbit tidak dihitung ulang.
 
 **Post Conditions** — Parameter tersimpan dan diterapkan; seluruh perubahan tercatat di activity log.
 
@@ -84,6 +89,9 @@ _Tidak ada aturan bisnis yang dimiliki modul ini._
 |---|---|---|---|
 | GET | `/settings` | `setting.view` | Baca parameter sistem |
 | PUT | `/settings` | `setting.manage` | Perbarui parameter sistem |
+| GET | `/material-units` | `setting.view` | Daftar satuan Bahan beserta status |
+| POST | `/material-units` | `setting.manage` | Administrator menambah satuan Bahan |
+| PATCH | `/material-units/{id}/status` | `setting.manage` | Administrator mengaktifkan/nonaktifkan satuan Bahan |
 | GET | `/academic-years` | `setting.view` | Daftar tahun ajaran beserta semesternya (Lampiran E.2) |
 | POST | `/academic-years` | `setting.manage` | Buat tahun ajaran beserta semesternya; tahun ajaran pertama otomatis aktif (`AC-YR-01`) |
 | PUT | `/academic-years/{id}` | `setting.manage` | Sunting nama, rentang tanggal, dan semester tahun ajaran |
@@ -104,6 +112,22 @@ _Tidak ada aturan bisnis yang dimiliki modul ini._
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
+
+Parameter M-12 (keputusan pengguna 14 Oktober 2026):
+`maintenance.ambang_persetujuan_estimasi` dalam rupiah (0–999999999999) dan
+`maintenance.ambang_penggantian_persen` (0–1000). Keduanya DESIMAL kelompok MAINTENANCE,
+nilai awal null, harus diisi Administrator sebelum fitur terkait dipakai. Tidak ada ambang
+operasional buatan; perilaku tanpa konfigurasi dirujuk ke FR-12.3 A3 dan FR-12.5 A1.
+
+Keputusan pengguna PR-05-15/30 (14 Oktober 2026): satuan awal rim, pcs, botol,
+liter dan dus tersedia dari migration expand. Administrator mengelolanya pada
+tab **Satuan Bahan**, `/pengaturan?tab=satuan-bahan`; Pimpinan dengan
+`setting.view` hanya membaca. Nama/simbol tidak diubah dan satuan tidak dihapus;
+satuan berbeda ditambahkan sebagai master baru agar riwayat tetap bermakna.
+Write memerlukan `Idempotency-Key`. M-22 memperoleh pilihan satuan lewat
+`/materials/options`, sehingga pengguna `material.view` tidak membutuhkan
+`setting.view`. Satuan nonaktif tetap terbaca pada bahan lama tetapi tidak dapat
+dipilih untuk bahan baru.
 
 ## 8. Database Entity
 
@@ -150,6 +174,7 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | `WORK_DAYS_UPDATED` | Perubahan hari kerja sekolah, nilai lama/baru |
 | `WORK_UNIT_CREATED` / `WORK_UNIT_UPDATED` | Pembuatan atau perubahan unit kerja |
 | `WORK_UNIT_DEACTIVATED` / `WORK_UNIT_REACTIVATED` | Perubahan status unit kerja (`WU-02`) |
+| `MATERIAL_UNIT_CREATED` / `MATERIAL_UNIT_UPDATED` | Penambahan atau perubahan status satuan Bahan, nilai sebelum/sesudah |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
 
@@ -172,3 +197,29 @@ _Tidak bergantung pada modul lain._
 ## 15. Open Issues
 
 _Tidak ada isu terbuka._
+
+### Ambang permintaan Bahan — keputusan 14 Oktober 2026
+
+Key bahan.ambang_permintaan_default: BILANGAN_BULAT kelompok BAHAN, 0–2147483647,
+awal/bawaan null sampai Administrator mengisi. Tidak ada nominal atau harga asumsi.
+Override material_approval_thresholds milik M-20, jumlah per jenis lintas lokasi;
+0 berarti setiap permintaan positif memakai M-10. Nilai bawaan wajib dikonfigurasi
+meskipun jenis tertentu memiliki override. Perubahan diberi audit SETTING_UPDATED.
+
+| Method | Endpoint | Permission | Deskripsi |
+|---|---|---|---|
+| GET | `/materials/{id}/request-threshold` | `setting.view` | Batas bawaan, override dan batas efektif |
+| PUT | `/materials/{id}/request-threshold` | `setting.manage` | Override batas bulat nonnegatif dengan body batas |
+| DELETE | `/materials/{id}/request-threshold` | `setting.manage` | Kembali ke batas bawaan, body kosong |
+
+Router proses Bahan memanggil API publik M-20; semua write memakai Idempotency-Key.
+
+
+### Kop laporan — PR-06-08
+
+AskUserQuestion15Oktober2026: sekolah.nama (nama, wajib sebelum PDF), sekolah.npsn
+(NPSN, opsional) dan sekolah.alamat (alamat, opsional) ditambahkan pada Identitas
+Sekolah dengan nilai awal kosong. Tidak mengarang identitas sekolah. NPSN/alamat
+boleh dikosongkan kembali; nama mengikuti validasi TEKS tidak kosong saat diubah.
+XLSX tetap dapat diproses jika nama belum dikonfigurasi. Kop membaca hanya tiga
+kunci publik ini, bukan seluruh parameter sistem.

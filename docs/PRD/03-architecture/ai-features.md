@@ -132,8 +132,8 @@ SC-10 menargetkan akurasi ≥ 85%, namun sebelumnya tidak ada cara mengukurnya. 
 | AI-EV-03 | Rubrik penilaian empat dimensi: **kebenaran fakta**, **kelengkapan**, **kepatuhan hak akses**, dan **kepatuhan format** (menyertakan rujukan & tautan). Jawaban dinilai benar hanya bila keempatnya terpenuhi |
 | AI-EV-04 | Evaluasi dijalankan otomatis pada setiap perubahan *system prompt*, definisi tool, atau model. Penurunan akurasi > 5% dibanding basis sebelumnya adalah penghambat rilis |
 | AI-EV-05 | **Uji kebocoran hak akses**: setiap pertanyaan golden set dijalankan untuk ketujuh role; jawaban yang memuat data di luar hak akses role tersebut dihitung sebagai **kegagalan kritis**, bukan sekadar penurunan akurasi. Target: **nol** kebocoran (PO-08) |
-| AI-EV-06 | Pertanyaan yang memperoleh umpan balik 👎 dan pertanyaan yang gagal dijawab ditinjau berkala dan menjadi kandidat penambahan golden set |
-| AI-EV-07 | Hasil evaluasi terakhir ditampilkan pada menu Monitoring Chatbot (FR-19.2) sebagai bukti pemenuhan SC-10 |
+| AI-EV-06 | Pola kegagalan/umpan balik 👎 ditinjau berkala untuk kandidat golden set; isi sesi hanya ditinjau Admin R-01 setelah pengguna mengizinkan berbagi lewat Laporkan masalah (keputusan pengguna 14 Oktober 2026, M-19 §7) |
+| AI-EV-07 | Hasil evaluasi terakhir ditampilkan pada menu Monitoring Chatbot (FR-19.2); hanya mode LIVE menjadi bukti SC-10, CONTRACT diberi penanda sebagai uji batas implementasi |
 
 ## 22.8 Kendali Kuota, Performa & Keandalan
 
@@ -143,7 +143,7 @@ SC-10 menargetkan akurasi ≥ 85%, namun sebelumnya tidak ada cara mengukurnya. 
 | AI-CTL-02 | **Anggaran token per pesan** ditetapkan: masukan maksimum ±16.000 token, keluaran maksimum ±1.000 token. Melebihi batas, konteks riwayat dipangkas dari yang terlama. Batas masukan dinaikkan dari ±8.000 pada 2 September 2026 karena ambang caching model (SDD-10) menuntut prefiks statis yang lebih panjang; tanpa kenaikan itu jendela 10 pesan tidak lagi muat |
 | AI-CTL-03 | **Batas iterasi tool: maksimum 5 panggilan per pesan pengguna.** Setelah batas tercapai, model wajib menjawab dengan data yang telah diperoleh atau menyatakan tidak dapat menjawab |
 | AI-CTL-04 | **Timeout**: 20 detik per panggilan ke penyedia LLM; 5 detik per eksekusi tool. Melewati batas → jalur *fallback* (FR-19.1 A4) |
-| AI-CTL-05 | **Retry**: maksimum 2 percobaan ulang untuk galat sementara (429, 5xx) dengan *exponential backoff*; galat permanen tidak diulang |
+| AI-CTL-05 | **Retry**: maksimum 2 percobaan ulang untuk koneksi/5xx dengan *exponential backoff*; galat permanen tidak diulang. Keputusan 14 Oktober 2026: 429 tidak diulang dalam giliran yang sama; waktu coba lagi disampaikan kepada pengguna |
 | AI-CTL-06 | **Rate limit per pengguna: 10 pesan per menit**, melengkapi batas harian yang sudah ada, agar kuota harian tidak habis dalam satu menit dan sistem tidak terbebani |
 | AI-CTL-07 | **Streaming respons** diaktifkan agar jawaban tampil bertahap; ini membuat latensi hingga 8 detik (AI-L-08) terasa responsif, bukan menggantung |
 | AI-CTL-08 | Penggunaan token per pengguna dan konsumsi kuota penyedia dicatat dan ditampilkan pada Dashboard Administrator, dengan alarm bila melewati ambang (OBS-05). Sejak tier gratis diizinkan (DP-AI-04) tidak ada biaya harian yang diambang-batasi; yang dipantau adalah kuota dan batas laju penyedia |

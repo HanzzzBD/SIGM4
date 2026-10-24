@@ -124,6 +124,8 @@ Sebelumnya impor massal disebut pada FR-02.1 A4, FR-04.1 A2, dan FR-07.5 A2 tanp
 | `label_kegiatan` | ✅ | ≤100 karakter |
 | `berlaku_mulai` / `berlaku_sampai` | ✅ | Dalam rentang tahun ajaran aktif |
 
+**Ketentuan jadwal tetap (PR-03-35).** CSV UTF-8 maksimal 6 MB; `,`/`;` dideteksi otomatis. `hari` berupa satu nama Senin–Minggu (tidak peka kapital); tanggal `YYYY-MM-DD`. Header wajib hilang/duplikat atau CSV rusak menolak berkas sebelum job dibuat. Template berisi contoh; kode ruangan disesuaikan dengan master. Validasi BlockService, kebijakan bentrok/duplikat dan retensi laporan mengikuti M-07 FR-07.5 A2.
+
 **Ketentuan umum impor**
 
 | Kode | Requirement |

@@ -187,10 +187,6 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 
 ## 7. API Endpoints
 
-**Ekspor katalog (PR-02-47).** `GET /assets/export` dipetakan ke satu permission `report.export` (PM-01). `format=xlsx|pdf`; pencarian, seluruh `filter[...]` dan sort sama dengan GET /assets, tanpa page/per_page: seluruh hasil tersaring diekspor. Scope report.export diterapkan dan diiriskan dengan asset.view bila dimiliki: all seluruh aset aktif, own aset dibuat pemanggil, assigned aset dengan penanggung_jawab_id pemanggil, restricted hanya boleh_dipinjam_siswa. Aset dihapuskan tidak masuk. Filter pekerjaan impor hanya bagi pengunggahnya (404 untuk milik orang lain).
-
-Kolom sumber/nilai perolehan tidak dipilih atau diekspor tanpa asset.view_financial, bagi scope restricted, atau Siswa/OSIS (BR-073). Scope finansial own/assigned hanya menampilkan nilai pada baris yang dibuat/menjadi tanggung jawab pemanggil; baris lainnya kosong. Nilai desimal dipertahankan sebagai teks agar tidak kehilangan presisi. Metadata memuat tanggal WIB, pencetak, saringan dan jumlah baris. Semua teks berkas sebagai teks XLSX/HTML di-escape, PDF tidak memuat sumber daya luar. DATA_EXPORTED wajib berhasil sebelum berkas dikirim; respons no-store dan attachment. Ekspor gagal tidak mengirim berkas.
-
 **Filter drill-down QR (PR-02-50).** `GET /assets` menerima query opsional `filter[qr_terpasang]=true|false`, digabungkan dengan filter katalog lain menggunakan AND. Nilai selain boolean tersebut ditolak (422); parameter yang tidak diberikan tidak menyaring status label. `false` mempertahankan scope `asset.view` (termasuk `restricted`) dan pengecualian aset dihapuskan. P-24 memakai URL web `?belum=true` untuk memuat daftar ini tanpa pencarian manual, dengan paginasi 25 aset.
 
 ### Endpoint
@@ -211,7 +207,10 @@ Kolom sumber/nilai perolehan tidak dipilih atau diekspor tanpa asset.view_financ
 | POST | `/assets/import` | `asset.create` | Impor CSV/XLSX (`filename`, `content_base64`): ≤200 baris sinkron, >200 asinkron; replay hash 24 jam per pengunggah (`IMPT-03/04`) |
 | GET | `/assets/import/template` | `asset.create` | Unduh template XLSX E.5.1 beserta contoh (`IMPT-05`) |
 | GET | `/assets/import/{id}` | `asset.create` | Status, hitungan baris sukses/gagal, unit dibuat, alasan dan isian asli baris gagal untuk koreksi (`IMPT-02`); hanya pengunggah |
-| GET | `/assets/export` | `report.export` | Ekspor seluruh katalog tersaring XLSX/PDF; scope dan kolom finansial sesuai hak akses |
+| GET | `/assets/export` | `asset.export` | Ekspor XLSX/PDF |
+| GET | `/assets/exports` | `asset.export` | 25 pekerjaan ekspor katalog terbaru milik pemanggil; juga mensyaratkan `asset.view`, izin dibaca ulang dari data pengguna saat ini |
+| GET | `/assets/exports/{id}` | `asset.export` | Status pekerjaan ekspor katalog milik pemanggil |
+| GET | `/assets/exports/{id}/download` | `asset.export` | URL privat berkas siap setelah pemeriksaan ulang izin dan scope |
 | GET | `/asset-categories` | `asset.view` | Daftar kategori |
 | POST | `/asset-categories` | `category.manage` | Buat kategori |
 | PUT | `/asset-categories/{id}` | `category.manage` | Perbarui kategori |
@@ -289,8 +288,11 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | `ASSET_MOVEMENT_DOCUMENT_READY` / `ASSET_MOVEMENT_DOCUMENT_FAILED` | Hasil akhir worker; mutasi tetap tersimpan |
 | `ASSET_MOVEMENT_DOCUMENT_DOWNLOADED` | Setiap penerbitan URL PDF privat, termasuk pelaku dan ID operasi |
 | `ASSET_IMPORTED` | Impor massal |
+| `ASSET_EXPORT_REQUESTED` | Pengajuan ekspor katalog, format dan filter; atomik dengan job/outbox |
+| `ASSET_EXPORTED` | Berkas katalog siap, format/filter/jumlah baris dan referensi berkas |
 | `ASSET_IMPORT_REQUESTED` | Penerimaan pekerjaan sinkron/asinkron beserta outbox dalam satu transaksi |
 | `ASSET_IMPORT_ROW_PROCESSED` | Progres satu baris, jumlah unit atau alasan gagal; atomik dengan aset yang dibuat |
+| `ASSET_IMPORT_REPORT_PURGED` | Rincian galat/nama berkas impor melewati retensi 30 hari dibersihkan; ID/status/hitungan tetap tersimpan |
 | `CATEGORY_CREATED` / `CATEGORY_UPDATED` / `CATEGORY_DELETED` | Perubahan kategori |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
@@ -316,3 +318,50 @@ Strategi pengujian: [`../06-quality/test-strategy.md`](../06-quality/test-strate
 ## 15. Open Issues
 
 _Tidak ada isu terbuka._
+
+### Keputusan pengguna PR-02-47 — 15 Oktober 2026
+
+Dua jawaban AskUserQuestion menetapkan ekspor katalog:
+
+- Seluruh ekspor melalui worker dengan status/unduh pada P-15, memakai
+  infrastruktur ekspor yang ada. Hak `asset.export` bersama `asset.view` cukup;
+  tidak memerlukan `report.export` atau `report.view`.
+- Kolom lengkap: kode/nama/merek/model/nomor seri, kategori, gedung/ruangan,
+  kondisi/status, tahun, kelayakan pinjam/siswa, penanggung jawab dan QR terpasang.
+  Sumber/nilai perolehan hanya sesuai izin finansial. Tidak memuat dokumen,
+  foto, histori transaksi, data kontak atau biaya pemeliharaan.
+
+GET /assets/export menerima format=XLSX|PDF serta q, sort dan filter katalog
+yang sama (kategori/lokasi/kondisi/status/tahun/kelayakan/QR/hasil impor), tanpa
+page/per_page. Seluruh hasil filter diekspor, bukan halaman aktif. Parameter
+tak dikenal ditolak. Respons 202 berisi job; Idempotency-Key UUIDv4 wajib agar
+pengulangan pengiriman tidak membuat job ganda. Respons private/no-store.
+Worker memakai keadaan data saat pemrosesan, bukan snapshot saat tombol ditekan.
+
+Scope baca all/own/restricted dan ekspor all/own beririsan sebelum query; own
+adalah penanggung jawab aset. Restricted mengikuti boleh_dipinjam_siswa. Scope
+lain tanpa aturan ditolak. Aset dihapuskan tidak masuk katalog/ekspor biasa.
+Filter hasil impor hanya milik pengunggah. Nilai/sumber tidak dipilih SQL jika
+izin finansial tidak cukup: all membuka kolom, own hanya jika seluruh dataset
+sudah dibatasi ke aset pemanggil; selainnya kedua kolom dihilangkan. R-07 tidak
+mendapat field finansial sekalipun permission itu diberikan secara kustom.
+
+Batas infrastruktur yang dipakai ulang: XLSX 100.000/PDF 5.000 baris; hasil lebih
+besar gagal dengan penjelasan untuk mempersempit filter, tanpa berkas terpotong.
+PDF memerlukan Nama sekolah terkonfigurasi dan memuat filter/waktu WIB/pencetak.
+Teks spreadsheet tetap teks, nilai DECIMAL tetap presisi. Job/audit/outbox atomik;
+berkas siap terdaftar privat dan NT-42 menautkan /aset?ekspor={id}. File berlaku
+24 jam, URL unduh paling lama lima menit. Izin akun dan keanggotaan scope dibaca
+ulang saat pemrosesan/unduh; perubahan membatalkan akses file lama. Pemanggil
+lain, termasuk Admin, tidak membaca pekerjaan milik pengguna lain.
+### Retensi laporan impor aset — PR-05-26
+
+Keputusan AskUserQuestion 15 Oktober 2026 menetapkan retensi 30×24 jam sejak job
+SELESAI/GAGAL bagi laporan galat pengguna dan aset. API menutup rincian pada
+tenggat tanpa bergantung jadwal cleanup. Worker personal-data-retention menghapus
+rincian galat, pesan galat dan isi berkas tersisa, mengganti nama berkas dengan
+penanda serta mengisi report_purged_at. ID/status/hitungan dan audit tetap;
+aset hasil impor tidak disentuh. Job berjalan tidak dipurge. Waktu terminal lama
+yang tidak diketahui dihitung konservatif sejak migration. Respons menyediakan
+report_expires_at/report_expired; P-17 menampilkan tenggat WIB dan tidak menawarkan
+laporan/koreksi yang telah kedaluwarsa.

@@ -8,11 +8,11 @@ Audit menemukan kontradiksi: NO-07 dan Keputusan #15 menyatakan mobile **online 
 
 | Kode | Ketetapan |
 |---|---|
-| MOB-OFF-01 | **Seluruh data operasional tetap online only.** Tidak ada replikasi basis data lokal, tidak ada sinkronisasi dua arah, tidak ada penyelesaian konflik. NO-07 tetap berlaku untuk data. |
-| MOB-OFF-02 | **Pengecualian tunggal: antrean unggah berkas.** Foto yang gagal terunggah karena jaringan lemah disimpan sementara pada perangkat dan dicoba ulang otomatis. Ini bukan mode luring — transaksi bisnisnya sendiri sudah tercatat di server. |
-| MOB-OFF-03 | Antrean unggah bertahan maksimum 72 jam atau 50 berkas; melebihi itu, berkas tertua dibuang dan pengguna diberi tahu |
+| MOB-OFF-01 | **Data operasional online only, kecuali hasil pemeriksaan opname Aset dan Bahan yang ditetapkan pada M-13.** Tidak ada replikasi basis data lokal, tidak ada sinkronisasi dua arah, konflik scan opname diselesaikan dengan hasil pertama server. NO-07 berlaku di luar pengecualian M-13. |
+| MOB-OFF-02 | **Antrean unggah berkas dan pengecualian opname Aset dan Bahan.** Untuk opname, hasil scan/temuan Aset, hitungan Bahan dan foto dipersistensi sebelum sinkronisasi (M-13 §6). Foto yang gagal terunggah karena jaringan lemah disimpan sementara pada perangkat dan dicoba ulang otomatis. Antrean unggah umum mengacu pada transaksi bisnis yang sudah tercatat di server; antrean opname merupakan pengecualian eksplisit. |
+| MOB-OFF-03 | Antrean unggah bertahan maksimum 72 jam atau 50 berkas (antrean foto opname terpisah: batas 50 foto menolak tambahan, hasil/foto yang belum tersinkron dipertahankan sampai diterima atau logout; cache/akses luring tetap 72 jam); melebihi itu, berkas tertua dibuang dan pengguna diberi tahu |
 | MOB-OFF-04 | Entitas yang fotonya masih tertunda ditandai jelas pada antarmuka ("Foto belum terunggah") dan muncul pada daftar tindak lanjut Petugas Sarpras |
-| MOB-OFF-05 | Aksi yang mengubah data (ajukan, setujui, serah terima, catat opname) **wajib** online dan gagal secara eksplisit bila tidak ada koneksi — tidak pernah diantrekan |
+| MOB-OFF-05 | Aksi yang mengubah data (ajukan, setujui, serah terima, finalisasi/pengiriman opname) **wajib** online dan gagal secara eksplisit bila tidak ada koneksi — tidak pernah diantrekan. Hanya scan/temuan opname boleh diantrekan sesuai M-13 |
 
 ## 32.2 Spesifikasi Media & Kamera
 
@@ -78,7 +78,7 @@ Seluruh izin diminta **saat pertama kali dibutuhkan** disertai penjelasan tujuan
 | MOB-SEC-03 | Aplikasi menolak berjalan pada perangkat *rooted*/*jailbroken* dengan peringatan yang dapat dilewati Administrator pada perangkat uji |
 | MOB-SEC-04 | Layar yang memuat data pribadi disembunyikan pada pratinjau aplikasi (*app switcher*) |
 | MOB-SEC-05 | Token perangkat FCM dicabut saat logout (FR-01.2 AC) |
-| MOB-SEC-06 | Tidak ada data operasional yang disimpan permanen di perangkat selain antrean unggah (MOB-OFF-02) dan token sesi |
+| MOB-SEC-06 | Tidak ada data operasional yang disimpan permanen di perangkat selain antrean unggah (MOB-OFF-02), token sesi dan pengecualian opname M-13: target/identitas minimum 72 jam serta hasil yang belum tersinkron. Logout menghapus data lokal akun; izin diperiksa ulang saat daring |
 
 ## 32.8 Distribusi & Rilis Store
 
@@ -92,3 +92,9 @@ Seluruh izin diminta **saat pertama kali dibutuhkan** disertai penjelasan tujuan
 | MOB-REL-06 | Distribusi alternatif berupa berkas APK langsung diizinkan hanya untuk perangkat internal sekolah pada masa uji coba |
 
 ---
+
+PR-05-24 (keputusan pengguna 14 Oktober 2026): hitungan Bahan memakai
+pengecualian luring M-13 §6 dengan cache terverifikasi 72 jam per akun/sesi.
+Basis saldo/ledger dan versi hitungan tetap pada retry; konflik stok ditolak
+server dan perlu hitung ulang. Target dimuat per lokasi dan hitungan dipersistensi
+per baris (MOB-PERF-06); finalisasi/pengiriman/persetujuan tetap daring.

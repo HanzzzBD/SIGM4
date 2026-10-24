@@ -212,6 +212,8 @@ sekali: `users.status` dibaca ulang setiap panggilan (`PM-05`).
 
 Karena kunci memuat `role_version`, perubahan matriks membuat kunci lama tidak pernah terbaca lagi — tidak perlu penghapusan kunci per pengguna.
 
+Bukti `PM-05` pada `PR-01-26` memakai cookie WEB dan Bearer ANDROID hasil login produksi, dua instance API serta PostgreSQL/Redis nyata. Cookie/token yang sama dipakai sesudah perubahan matriks, scope, role dan status lewat endpoint administrasi. Cache lama tetap hidup dan waktu uji tidak dimajukan; tidak ada injeksi AuthContext, login ulang, refresh token, ataupun penghapusan cache untuk memaksakan hasil. Perpindahan role dengan versi yang sama juga diuji agar kunci yang kehilangan `role_id` pasti gagal.
+
 ### 4.6 Otorisasi tool chatbot
 
 ```
@@ -318,3 +320,50 @@ Tafsir ini hanya menetapkan **bawaan**. Administrator tetap dapat menyesuaikanny
 | **TBD-AUTH-B** | Rotasi kunci penanda tangan JWT setiap 6 bulan (`SEC-CFG-02`) memerlukan masa tumpang tindih dua kunci. Panjang masa tumpang tindih dan mekanisme distribusinya belum ditetapkan. |
 
 **Tertutup 25 Agustus 2026:** `TBD-AUTH-C` → `SDD-AUTH-11`.
+
+### PR-06-02 — scope agregat M-16
+
+authorizeAnalytics(ctx, jenis, action) mewajibkan AuthContext dan report.view +
+izin semua sumber. Scope report own mengikuti primary/subjek dalam definisi
+laporan; masing-masing sumber memakai scope domainnya. Untuk action export,
+report.export menjadi irisan tambahan. Tidak ada default scope all, bypass
+Administrator, atau SYSTEM yang menggantikan konteks pengguna. Catalog/hasil
+HTTP tidak memakai cache bersama dan mengirim Cache-Control private, no-store.
+
+Alias SQL penjaga sumber: assets a (penanggung_jawab_id), reservations r
+(pemohon_id), loans l (peminjam_id), damage_reports d (pelapor_id), work_orders w
+(teknisi_id), procurements p / asset_disposals ds (pengusul_id), material_requests
+mr (pemohon_id). Predicate wajib dipasang pada baris SEBELUM agregasi. Pemakaian
+sumber yang tidak dideklarasikan pada jenis laporan ditolak.
+
+Report scope all/own didukung; assigned/restricted untuk report belum memiliki
+aturan dan ditolak. Domain asset restricted mengikuti boleh_dipinjam_siswa;
+damage assigned mengikuti EXISTS work_orders teknisi; maintenance assigned
+mengikuti teknisi_id. Domain assigned/restricted lain ditolak. Private draf
+pengadaan tetap hanya terlihat oleh pengusul. Konsumsi Bahan juga menggunakan
+scope baca permintaan M-22, agar material.view all tidak membuka permintaan
+pengguna lain kepada pemohon biasa.
+
+Hak finansial diperiksa sebelum pemilihan kolom SQL. asset.view_financial own
+hanya membuka kolom ketika predicate aset sudah own; scope lainnya yang belum
+terdefinisi tidak membuka kolom. Schema kolom wajib menyebut sensitivitas;
+provider yang mencoba kolom tanpa hak ditolak sebelum eksekusi. Nilai JSON
+harus sesuai tipe/kolom yang dideklarasikan, tanpa kolom tambahan tersembunyi.
+Uji memakai total/ringkasan/pembanding/pagination nyata untuk R-01/R-02/R-03,
+join pinjaman-aset milik pihak berbeda dan filter dengan hasil kosong.
+
+### PR-06-03…07 — sumber tambahan dan indikator global
+
+Sesuai keputusan pengguna pada [M-16](../PRD/02-modules/m16-analytics.md),
+optionalPredicate(procurement/disposal) menghasilkan null jika permission atau
+scope domain tidak didukung; provider menghilangkan SELECT dan metadata sumber
+tambahan itu. Predicate tambahan tetap beririsan dengan report own dan predicate
+aset, termasuk privasi draf. Ini tidak menambah izin sumber wajib ke jenis lain.
+
+restrictedSubjects/restrictedAssets menandai apakah data utama/dimensi telah
+dipersempit. Frekuensi minimum Bahan hanya membangun SQL ledger global ketika
+scope subjek penuh dan tidak ada filter pemohon/unit kerja. Selainnya indikator
+null beserta alasan; tidak mengambil agregat global lalu menyembunyikannya di
+serializer. Utilisasi pada scope subjek terbatas hanya membentuk populasi objek
+dari penggunaan yang terlihat, sehingga objek tanpa transaksi milik pihak lain
+tidak muncul lewat baris pemakaian nol.

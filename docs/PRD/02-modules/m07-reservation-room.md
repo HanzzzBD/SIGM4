@@ -152,6 +152,8 @@ sequenceDiagram
 - **A4 — Reservasi berulang (mis. setiap Senin selama 8 minggu):** Pengguna memilih pola pengulangan; sistem memvalidasi seluruh tanggal sekaligus dan menampilkan tanggal yang bentrok untuk disesuaikan atau dilewati.
 - **A5 — Pemohon memiliki denda belum lunas atau sedang diblokir:** Sistem menolak pengajuan disertai alasan.
 
+**Durasi ruangan (PR-03-38, FR-20.1).** `reservasi.durasi_maksimum_jam` adalah bilangan bulat 1–24, bawaan 12. Selisih waktu mulai–selesai setiap kemunculan diperiksa tanpa pembulatan, termasuk pengajuan mendesak, berulang dan gabungan ruangan/aset. Tepat batas sah. Pratinjau menandai tanggal `TIDAK_SAH` dengan batas jam; pengajuan menolak 422 sebelum menulis reservasi/slot/approval. Parameter dibaca ulang setiap permintaan dan hanya berlaku bagi pengajuan/pratinjau baru. Jadwal tetap, blokade manual dan reservasi aset tanpa ruangan memakai aturan masing-masing.
+
 **Post Conditions** — Reservasi tercatat berstatus `Menunggu Persetujuan`; slot ditandai *tentative* pada kalender; approval instance aktif.
 
 **Acceptance Criteria**
@@ -230,7 +232,7 @@ sequenceDiagram
 
 **Alternative Flow**
 - **A1 — Blokade bentrok dengan reservasi yang sudah disetujui:** Sistem menampilkan daftar reservasi terdampak dan meminta keputusan eksplisit: batalkan reservasi tersebut (dengan notifikasi ke pemohon) atau sesuaikan blokade.
-- **A2 — Impor massal jadwal:** Pengguna mengunggah CSV berisi ruangan, hari, jam, dan label (Lampiran E) — jalur cepat pada tahap implementasi awal.
+- **A2 — Impor massal jadwal:** Dari panel Kelola Jadwal Tetap P-27, pemegang `reservation.fixed_schedule` mengunggah CSV UTF-8 E.5.3 (maksimal 6 MB, pemisah koma/titik koma, satu nama hari Indonesia per baris). Validasi dan pembuatan per baris memakai BlockService; baris bentrok gagal tanpa pembatalan reservasi/blokade, baris lain tetap diproses. Jadwal AKTIF identik (ruangan, hari, jam, masa berlaku, label) dicatat gagal sebagai duplikat, termasuk berkas berbeda atau sesudah 24 jam. IMPT-01…05: ≤200 baris sinkron, >200 melalui worker/outbox dan NT-56. Replay hash isi berkas per pengunggah dalam 24 jam mengembalikan job sebelumnya. Progres, jadwal, slot dan audit atomik per baris; retry melanjutkan cursor. Laporan hanya pengunggah, menyimpan isian/alasan baris gagal untuk koreksi. Retensi rincian/nama berkas 30×24 jam sejak selesai/gagal, batas API berlaku sebelum cleanup; ID/status/hitungan/audit tetap. Berkas dibuang ketika proses berakhir.
 - **A3 — Blokade dinonaktifkan:** Slot mendatang dilepas; slot yang telah lewat tetap tersimpan sebagai arsip utilisasi.
 - **A4 — Hari libur sekolah:** Blokade berulang otomatis dilewati pada tanggal yang terdaftar sebagai hari libur (Lampiran E).
 
@@ -274,14 +276,24 @@ sequenceDiagram
 | POST | `/reservations` | `reservation.create` | Ajukan reservasi ruangan/aset |
 | POST | `/reservations/preview` | `reservation.create` | Pratinjau pengajuan tanpa menyimpan apa pun: tanggal turunan beserta yang bentrok atau tidak sah, kuota pengajuan tertunda (`BR-023a`), dan jalur persetujuan yang akan berlaku (`RE-07`) — bahan langkah Tinjau wizard (UXD-04) |
 | GET | `/reservations` | `reservation.view` | Daftar reservasi (tersaring sesuai role): satu baris per pengajuan; scope `restricted` hanya miliknya sendiri |
+| POST | `/reservations/export` | `report.export` | Ekspor P-30 melalui worker M-16, irisan reservation.view |
 | GET | `/reservations/{id}` | `reservation.view` | Detail reservasi + riwayat approval: tanggal turunan, penggunaan, aksi yang tersedia bagi pemanggil, dan riwayat perubahan dari activity log (penyajiannya tercatat, `AL-10`); di luar scope → 404 |
 | POST | `/reservations/{id}/cancel` | `reservation.cancel_own` · `reservation.cancel_any` | Batalkan reservasi + alasan. Pemilik reservasi cukup `cancel_own`; membatalkan reservasi pihak lain wajib `cancel_any` (`FR-07.3 A2`). Kepemilikan diperiksa di server, bukan disimpulkan dari role |
 | GET | `/rooms/{id}/blocks` | `reservation.fixed_schedule` | Jadwal tetap & blokade manual sebuah ruangan, aktif maupun nonaktif (`FR-07.5`) |
 | POST | `/rooms/{id}/blocks/preview` | `reservation.fixed_schedule` | Pratinjau blokade tanpa efek: kemunculan dalam horizon, hari libur yang dilewati (A4), reservasi yang beririsan (A1), dan blokade/pemeliharaan lain yang beririsan |
 | POST | `/rooms/{id}/blocks` | `reservation.fixed_schedule` | Buat jadwal tetap (pola mingguan; satu aturan per hari) atau blokade manual (rentang tunggal). Beririsan reservasi → ditolak kecuali pengguna memilih eksplisit membatalkannya beserta alasan (A1, NT-08); beririsan blokade lain → ditolak |
+| POST | `/room-fixed-schedules/import` | `reservation.fixed_schedule` | CSV E.5.3 (`filename`, `content_base64`), 200 selesai / 202 menunggu, replay hash per pengunggah 24 jam |
+| GET | `/room-fixed-schedules/import/template` | `reservation.fixed_schedule` | Template CSV dengan contoh (IMPT-05) |
+| GET | `/room-fixed-schedules/import/{id}` | `reservation.fixed_schedule` | Laporan hanya pengunggah, status/hitungan, alasan/isian baris gagal, tenggat retensi 30 hari |
 | PATCH | `/room-fixed-schedules/{id}/status` | `reservation.fixed_schedule` | Nonaktifkan jadwal tetap; slot yang belum dimulai dilepas (A3). Aturan tidak dapat disunting — nonaktifkan lalu buat baru |
 | PATCH | `/room-manual-blocks/{id}/status` | `reservation.fixed_schedule` | Nonaktifkan blokade manual; slot yang belum dimulai dilepas (A3) |
 | POST | `/reservations/{id}/usage` | `reservation.record_usage` | Catat penggunaan ruangan pasca-kegiatan per tanggal, sekali (`FR-07.4` langkah 3, A1): kondisi `Baik`/`Perlu Perhatian` + catatan bagi yang `Selesai`, atau `Tidak Digunakan` dari `Berlangsung`/`Selesai` — slotnya dilepas |
+
+Kontrak pengajuan aset (`FR-08.2`, implementasi PR-04-02): `jenis: "ASET"`, `aset: [{category_id, jumlah, asset_ids?}]`, `waktu_mulai`, `waktu_selesai`, `keperluan`, dan `lokasi_penggunaan`. `asset_ids` berisi unit fisik unik sebanyak `jumlah`; tanpa ID, sistem mengalokasikan otomatis sekategori. Pemilihan manual memerlukan `reservation.cancel_any` selain `reservation.create`, mengikuti hak pengelola Admin/Petugas dan role salinannya. Setiap kategori dicantumkan sekali; seluruh kategori memakai mode otomatis atau manual yang sama.
+
+Ruangan pendukung opsional memakai `room_id`, `nama_kegiatan`, `jenis_kegiatan`, `jumlah_peserta`. Muatan ruangan dengan `aset_pendukung` berbentuk pilihan aset yang sama dinormalisasi menjadi jenis `ASET`. Kedua bentuk menghasilkan satu instance `RESERVASI_ASET`; slot ruangan dan seluruh unit dialokasikan atomik. `pengulangan: {hari, sampai}` dan `lewati` mengikuti kontrak berulang yang ada. Pengajuan memakai `Idempotency-Key`; pratinjau memakai kontrak sama tanpa menyimpan.
+
+Detail menambahkan `lokasi_penggunaan`, `status_penggunaan_ruangan`, dan `aset` per tanggal. `asset_id`/`kode_barang` bernilai null sebelum unit tanggal tersebut disetujui, termasuk tanggal yang dibatalkan sebelum persetujuan kelompok. Status utama gabungan mengikuti serah terima aset; aktivasi waktu ruangan dan pencatatan `/usage` hanya mengubah status penggunaan ruangan. Pembatalan aset diizinkan selama belum diserahkan; gabungan yang ruangannya sudah digunakan tidak dapat dibatalkan seluruhnya. Slot yang dilepas tetap tersimpan `RELEASED`. Kedaluwarsa tidak diambil 24 jam menghasilkan NT-09; TTL persetujuan menghasilkan NT-46.
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
@@ -292,9 +304,10 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **reservations** | Pengajuan reservasi ruangan & aset | id, nomor, jenis (`RUANGAN`/`ASET`), pemohon_id, room_id, nama_kegiatan, jenis_kegiatan, waktu_mulai, waktu_selesai, jumlah_peserta, keperluan, kebutuhan_tambahan, keterangan, status, parent_id (untuk berulang), kondisi_ruangan, catatan_penggunaan, penggunaan_dicatat_oleh, penggunaan_dicatat_pada (`FR-07.4`) | ± 3.000 |
-| **reservation_items** | Unit aset yang dialokasikan pada reservasi | id, reservation_id, asset_id, jumlah | ± 6.000 |
+| **reservations** | Pengajuan reservasi ruangan & aset | id, nomor, jenis (`RUANGAN`/`ASET`), pemohon_id, room_id, nama_kegiatan, jenis_kegiatan, waktu_mulai, waktu_selesai, jumlah_peserta, keperluan, lokasi_penggunaan, status_penggunaan_ruangan, kebutuhan_tambahan, keterangan, status, parent_id (untuk berulang), kondisi_ruangan, catatan_penggunaan, penggunaan_dicatat_oleh, penggunaan_dicatat_pada (`FR-07.4`) | ± 3.000 |
+| **reservation_items** | Unit aset yang dialokasikan pada reservasi | id, reservation_id, asset_id, jumlah (= 1 per unit fisik), confirmed_at | ± 6.000 |
 | **room_fixed_schedules** | Blokade jadwal tetap ruangan (FR-07.5) | id, room_id, hari, jam_mulai, jam_selesai, label_kegiatan, berlaku_mulai, berlaku_sampai, status | Petugas Sarpras |
+| **room_schedule_import_jobs** | Job impor CSV, replay per pengunggah, cursor dan laporan retensi 30 hari | id, file_hash, nama_berkas, status, total_baris, baris_terproses, sukses, gagal, laporan_gagal, berkas, pesan_galat, selesai_pada, report_purged_at | Pengunggah saja |
 | **room_manual_blocks** | Blokade manual ruangan — satu rentang menerus (FR-07.5 langkah 3) | id, room_id, mulai, selesai, label_kegiatan, status | Petugas Sarpras |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
@@ -305,6 +318,7 @@ Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-archit
 
 | Kode | Event Pemicu | Penerima | Kanal | Wajib | Contoh Isi |
 |---|---|---|---|:---:|---|
+| **NT-56** | Impor jadwal tetap >200 baris berakhir, termasuk gagal sistem | Pengunggah | In-app + Push | ✅ | "Impor jadwal tetap {status}: {sukses} berhasil, {gagal} gagal dari {total} baris." |
 | **NT-08** | Reservasi dibatalkan sepihak | Pemohon | In-app + Push | ✅ | "Reservasi {nomor} dibatalkan oleh {pelaku}. Alasan: {alasan}." |
 | **NT-09** | Reservasi kedaluwarsa (tidak diambil) | Pemohon | In-app | ❌ | "Reservasi {nomor} kedaluwarsa karena tidak diambil dalam 1×24 jam." |
 | **NT-46** | Slot pengajuan tertunda kedaluwarsa (TTL) | Pemohon + Approver aktif | In-app + Push | ✅ | "Pengajuan {nomor} kedaluwarsa karena belum diputuskan hingga batas waktu." |
@@ -334,6 +348,10 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | Aksi | Keterangan |
 |---|---|
 | `RESERVATION_CREATED` / `RESERVATION_UPDATED` / `RESERVATION_CANCELLED` / `RESERVATION_EXPIRED` | Termasuk alasan pembatalan |
+| `ROOM_SCHEDULE_IMPORT_REQUESTED` | Job impor diterima, hash/replay per pengunggah dan outbox atomik |
+| `ROOM_SCHEDULE_IMPORT_ROW_PROCESSED` | Progres baris, nomor baris gagal dan alasan; atomik dengan jadwal/slot |
+| `ROOM_SCHEDULE_IMPORTED` | Hasil akhir sinkron/asinkron, jumlah berhasil/gagal; berkas dibuang |
+| `ROOM_SCHEDULE_IMPORT_REPORT_PURGED` | Rincian/nama berkas lewat 30 hari dibersihkan, ringkasan dan audit tetap |
 | `ROOM_BLOCK_CREATED` / `ROOM_BLOCK_DEACTIVATED` / `ROOM_BLOCK_SYNCED` | Blokade jadwal tetap & manual (FR-07.5): pembuatan (termasuk reservasi yang dibatalkan karenanya), penonaktifan (jumlah slot dilepas), dan materialisasi horizon oleh job (slot dibuat, dilepas karena libur, kemunculan bentrok) |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
@@ -360,3 +378,16 @@ Strategi pengujian: [`../06-quality/test-strategy.md`](../06-quality/test-strate
 
 - Endpoint `/reservations`, `/reservations/{id}`, dan `/reservations/{id}/cancel` melayani reservasi ruangan **dan** aset. Untuk menjaga aturan satu-pemilik, seluruh baris tersebut ditempatkan di modul ini dan dirujuk oleh M-08. **Ditutup 25 Agustus 2026** (`TBD-AVL-B`, `UXD-15`): endpoint tetap satu rumpun `/reservations`; pemisahan per jenis tidak dilakukan karena `BR-017` … `BR-025` berlaku identik bagi kedua jenis.
 - BR-017 … BR-025 berlaku untuk reservasi ruangan maupun aset; dimiliki modul ini dan dirujuk oleh M-08.
+
+
+### Ekspor P-30 — PR-06-11
+
+Keputusan AskUserQuestion 14 Oktober 2026: POST /reservations/export memakai
+report.export + reservation.view, irisan scope, XLSX/PDF melalui pipeline M-16.
+Seluruh hasil filter q/jenis/status/pemohon/dari/sampai dan urut daftar dipakai,
+bukan hanya halaman aktif. Kolom: Nomor, Jenis, Kegiatan, Ruangan, Pemohon,
+Mulai WIB, Selesai WIB, Status, Diajukan WIB, Jumlah tanggal berulang (jumlah
+anak, sama dengan P-30). Satu baris per pengajuan induk/tunggal, mengikuti P-30.
+Tanpa foto/dokumen/nilai finansial. Batas XLSX100000/PDF5000 tanpa truncation,
+kop/filter/pencetak, HTTP202, file24jam/URL5menit, NT-42 dan REPORT_EXPORTED
+mengikuti kontrak ekspor M-16. Revalidasi izin/scope tetap berlaku saat unduh.

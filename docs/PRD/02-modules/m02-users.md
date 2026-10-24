@@ -117,6 +117,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | GET | `/users/import/{id}` | `user.create` | Status dan laporan per baris sebuah pekerjaan impor (`IMPT-02`) |
 | GET | `/users/import/template` | `user.create` | Unduh template XLSX E.5.2 beserta petunjuk dan contoh isian (`IMPT-05`) |
 | POST | `/class-promotions` | `user.update` | Kenaikan kelas massal: tetapkan kelas atau tandai lulus per siswa pada satu tahun ajaran (`SL-02`) |
+| POST | `/users/{id}/pseudonymize` | `user.update` | Khusus Administrator R-01 berscope all: pseudonimisasi permanen akun lain yang NONAKTIF dan tanpa kewajiban; alasan, referensi permintaan terverifikasi dan metode verifikasi wajib (`DP-04`, `SL-05`) |
 | POST | `/users/{id}/reset-password` | `user.reset_password` | Terbitkan password sementara langsung dari detail pengguna (`FR-01.3 A5`); `metode_verifikasi` wajib; password tampil satu kali; sesi dicabut dan kunci login dibuka. Logikanya milik M-01 |
 | POST | `/users/{id}/reset-2fa` | `user.reset_2fa` | Reset 2FA pengguna (`FR-01.5 A3`): menonaktifkan 2FA, menghapus kode cadangan, mencabut seluruh sesi; `metode_verifikasi` wajib; untuk role wajib 2FA menerbitkan kode aktivasi baru, tampil satu kali (`BR-070d`) |
 | POST | `/users/{id}/2fa-activation-code` | `user.reset_2fa` | Terbitkan kode aktivasi 2FA bagi akun role wajib yang belum ber-2FA (`FR-01.5 A7`, `BR-070d`); `metode_verifikasi` wajib; kode tampil satu kali; tidak untuk akun sendiri |
@@ -134,7 +135,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, work_unit_id, telepon, foto, status, totp_enabled_at, must_change_password, login_terakhir_pada, failed_login_count, failed_login_window_start, locked_until, consent_guardian_at | Administrator |
+| **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, work_unit_id, telepon, foto, status, deactivated_at, pseudonymized_at, totp_enabled_at, must_change_password, login_terakhir_pada, failed_login_count, failed_login_window_start, locked_until, consent_guardian_at | Administrator |
 | **student_enrollments** | Kelas siswa per tahun ajaran (Lampiran E.4, `SL-01`) — bukan atribut permanen akun | id, user_id, academic_year_id, kelas_id (unit kerja berjenis Kelas), lulus | Administrator |
 | **user_import_jobs** | Pekerjaan impor pengguna — setiap impor, sinkron maupun asinkron (`IMPT-02`, `IMPT-03`, `IMPT-04`) | id, file_hash, nama_berkas, status, total_baris, baris_terproses, sukses, gagal, laporan_gagal (hanya baris gagal: nomor baris, email, alasan), pesan_galat, selesai_pada | Administrator |
 | **roles** | Peran pengguna | id, nama, deskripsi, is_system | Administrator |
@@ -179,6 +180,8 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 |---|---|
 | `USER_CREATED` / `USER_UPDATED` / `USER_DEACTIVATED` / `USER_REACTIVATED` | Manajemen akun |
 | `USER_IMPORT_REQUESTED` | Berkas impor diterima dan tercatat sebagai pekerjaan impor (sinkron atau dijadwalkan asinkron, `IMPT-04`) |
+| `USER_PSEUDONYMIZED` | Identitas akun diganti permanen; alasan/referensi/metode atau sumber retensi otomatis tercatat tanpa menyalin identitas lama |
+| `USER_IMPORT_REPORT_PURGED` | Rincian laporan impor dihapus setelah retensi 30 hari; ID job dan jumlah tetap tercatat |
 | `USER_IMPORTED` | Impor massal beserta ringkasan hasil; pelaku = Administrator pengunggah, juga bila dijalankan worker |
 | `STUDENT_ENROLLMENT_SET` | Kelas siswa pada suatu tahun ajaran ditetapkan atau diubah (`SL-01`, `SL-02`), nilai lama/baru |
 | `STUDENT_MARKED_GRADUATED` | Siswa ditandai lulus pada suatu tahun ajaran (`SL-02`) |
@@ -207,3 +210,49 @@ _Tidak ada._
 ## 15. Open Issues
 
 _Tidak ada isu terbuka._
+### Penutupan SL-04 dan pseudonimisasi — keputusan AskUserQuestion 15 Oktober 2026
+
+Pemeriksa M-09 didaftarkan pada proses API dan worker. Kewajiban aktif adalah
+pinjaman yang belum selesai atau masih memiliki unit BELUM_KEMBALI, termasuk
+pengembalian sebagian, serta denda/ganti rugi BELUM_DIBAYAR atau
+DIBEBASKAN_SEBAGIAN. Nominal yang menunggu penetapan tetap merupakan kewajiban;
+tidak memakai ambang nominal blokir reservasi. LUNAS/DIBEBASKAN tidak memblokir.
+Hilang yang belum tuntas tetap tertahan oleh pinjaman terbuka atau ganti rugi.
+Penolakan menampilkan nomor pinjaman/ID kewajiban spesifik kepada Administrator.
+SL-04 membatasi penonaktifan Siswa/OSIS R-07, baik manual maupun kelulusan.
+Pemeriksaan sebelum pseudonimisasi mencakup seluruh role.
+
+DP-04 dilayani Administrator melalui detail akun nonaktif. Body memuat alasan
+3–500 karakter, referensi_permintaan 3–200 karakter dan metode_verifikasi dari
+kamus verifikasi identitas yang sudah ada. Akun sendiri, role selain R-01,
+scope selain all, akun aktif dan akun berkewajiban ditolak. Izin Administrator
+dibaca ulang dari database. Permintaan ulang untuk akun yang sudah diproses
+mengembalikan waktu pseudonimisasi yang sama tanpa menggandakan audit.
+
+Nama menjadi Pengguna Terhapus #id, email deleted+id@invalid.local; NIP/NIS,
+telepon, unit kerja dan teks unit lama dikosongkan. ID/role/relasi transaksi tetap.
+Sesi, password, secret/kode 2FA, perangkat push dan pemulihan password dicabut.
+Akun tidak dapat diaktifkan, disunting atau dipulihkan; denda lunasnya tidak
+dapat dibuka kembali. Foto profil maupun foto bukti tidak dihapus/dikaburkan.
+Audit lama dan snapshot transaksi tetap sesuai AL-03/DP-05a; operasi ini tidak
+menjanjikan penghilangan identitas dari bukti atau audit historis tersebut.
+
+SL-05 diproses harian pada 01:10 WIB, berpelaku SYSTEM, untuk akun siswa NONAKTIF
+yang telah mencapai dua tahun kalender dari deactivated_at terakhir menurut WIB.
+Kewajiban diperiksa ulang dalam transaksi yang mengunci akun. Pengaktifan ulang
+mengosongkan jangkar; penonaktifan berikutnya memulai masa baru. Editing profil
+tidak mengubah jangkar. Saat migration, akun lama memakai keputusan status
+terakhir yang berhasil pada audit; tanpa bukti penonaktifan terakhir yang sah,
+masa retensi dimulai konservatif dari waktu migration, bukan updated_at.
+
+Laporan galat impor pengguna disimpan 30×24 jam sejak selesai/gagal. API menutup
+rincian/nama berkas pada tenggat walau worker belum membersihkannya. Worker
+mengosongkan laporan_gagal, pesan galat dan berkas mentah tersisa; nama berkas
+menjadi penanda impor-ID, report_purged_at menandai cleanup. Job/status/hitungan
+dan audit tidak dihapus. Respons menyediakan report_expires_at/report_expired;
+UI menyebut tenggat WIB dan menutup unduhan/rincian setelah tenggat. Job yang
+masih berjalan tidak dipurge. Terminal lama tanpa waktu selesai memulai retensi
+konservatif dari migration. Impor aset mengikuti kebijakan yang sama pada M-04.
+
+Prosedur verifikasi, respons maksimum 3×24 jam dan batas pemrosesan ada pada
+[runbook permintaan privasi](../../IMPLEMENTATION/runbooks/permintaan-privasi.md).

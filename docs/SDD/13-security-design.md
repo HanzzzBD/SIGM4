@@ -184,6 +184,32 @@ WHERE id = :id;
 
 Operasi ini tercatat di activity log dan hanya dapat dijalankan Administrator dengan alasan wajib.
 
+PR-05-26 memperjelas pelaksanaan (§7 M-02, keputusan 15 Oktober 2026): sasaran
+harus NONAKTIF tanpa kewajiban, bukan akun sendiri; Administrator R-01/user.update
+scope all diverifikasi ulang dari SQL. Referensi permintaan dan metode verifikasi
+wajib. Satu transaksi mengunci akun, memeriksa kewajiban, mengganti identitas dan
+kredensial, mencabut refresh token/2FA/perangkat/pemulihan, lalu mencatat
+USER_PSEUDONYMIZED tanpa salinan identitas lama. Hash password lama juga dibuang
+dari password_history. Foto profil/bukti dan audit/transaksi historis dipertahankan.
+
+deactivated_at merekam penonaktifan terakhir; pseudonymized_at menandai operasi
+permanen. Trigger database menolak pengubahan akun yang sudah dipseudonimkan
+selain metadata pembaruan. Guard service memberi pesan bisnis sebelum trigger.
+Pencarian login/refresh dan penguncian penghitung gagal mengecualikan akun yang
+telah diproses; percobaan login ditolak seragam tanpa memutasi akun permanen.
+Penonaktifan/pseudonimisasi dan check-out memakai kunci baris users yang sama;
+pembukaan ulang denda mengunci peminjam serta menolak akun yang telah diproses.
+Pending reset yang ditolak SYSTEM ditandai privacy_revoked_at dengan
+diproses_oleh NULL; identitas pelaku SYSTEM tersedia pada audit pekerjaan,
+tanpa membuat pengguna/pelaku palsu. Down migration ditolak jika operasi satu
+arah sudah pernah dijalankan; perbaikan setelah itu harus maju.
+
+Retensi otomatis siswa nonaktif dua tahun kalender WIB diproses pada 01:10 WIB
+setelah pemeriksaan ulang kewajiban. Cleanup laporan impor pengguna/aset memakai
+batch terkunci/skip locked; API tetap menyembunyikan rincian setelah 30×24 jam
+sekalipun worker tertunda. Register permintaan dan respons maksimum 3×24 jam
+mengikuti [runbook](../IMPLEMENTATION/runbooks/permintaan-privasi.md).
+
 **SDD-SEC-11 — perkakas yang tinggal di tempat pull request dinilai.** `ST-01`…`ST-03` menetapkan tahapnya sejak awal tanpa satu nama pun, sehingga `PR-00-17` tidak dapat menulis pipeline-nya. Kriteria pemilihannya bukan kedalaman analisis melainkan tempat temuannya muncul: temuan keamanan yang berada di sistem lain dari tempat merge diputuskan adalah temuan yang dibaca belakangan, dan `ST-02` justru menuntutnya menghentikan pipeline.
 
 Karena `SDD-INF-12` sudah mengunci GitHub Actions, CodeQL dan Dependabot berada persis di sana — tanpa langganan, tanpa token pihak ketiga, dan tanpa data dependensi meninggalkan penyedia yang sudah dipakai. Itu sekaligus menjawab `SDD-SEC-10`: perkakas yang mengirim kode atau daftar dependensi ke vendor ketiga akan menambah pihak yang tunduk pada batasan residensi, dan **Snyk ditolak** justru pada titik itu, bukan pada kemampuannya. **Semgrep** ditolak lebih tipis — aturan kustomnya menarik, tetapi penegakan aturan repo ini sendiri sudah menjadi milik lint (`SDD-SYS-02`, `SDD-REPO-08`) dan dibuktikan uji negatif; memindahkannya menjadi temuan keamanan hanya memindahkan tempat gagalnya.

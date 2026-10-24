@@ -286,6 +286,18 @@ CREATE INDEX approval_rules_active
 
 ## 7. Requirement Terkait
 
+### Integrasi rincian keputusan pemilik domain (PR-03-18)
+
+`PenanganHasil.saatKeputusan` adalah hook opsional bagi pemilik pengajuan, mengikuti
+`SDD-APR-17`. M-10 mengunci objek melalui `kunciObjek`, mengklaim langkah dengan
+conditional UPDATE (`BR-041`), lalu menjalankan hook dalam transaksi yang sama.
+Hook memvalidasi `rincian_keputusan` dan mengembalikan snapshot JSON untuk
+`approval_steps.rincian_keputusan`; galat membatalkan klaim dan seluruh perubahan.
+Jenis tanpa hook menolak payload rincian. Pembacaan linimasa mengembalikan snapshot
+opsional, sehingga kontrak lama tanpa rincian tetap berlaku. M-10 tidak menghitung
+kuantitas atau mengubah enum keputusan berdasarkan kebutuhan M-14; aturan jumlah
+dan status domain mengikuti kontrak `FR-14.2` pada PRD M-14 §7.
+
 `BR-035` `BR-036` `BR-037` `BR-038` `BR-039` `BR-039a` `BR-040` `BR-041` `BR-042` `BR-043` ·
 `RE-01` … `RE-12` · `FR-10.1` `FR-10.2` `FR-10.3` · `FR-07.2` `FR-08.2` `FR-09.5` `FR-14.1` `FR-14.2` `FR-21.1` `FR-21.2` ·
 `NT-01` … `NT-07` `NT-47` · `CAL-01` · `CC-03` · `NFR-M-03` `NFR-R-06` · `RS-05` `RS-06` · `SC-03`
@@ -298,3 +310,17 @@ CREATE INDEX approval_rules_active
 |---|---|
 
 **Tertutup 25 Agustus 2026:** `TBD-APR-A` → `SDD-APR-13` · `TBD-APR-B` → `SDD-APR-15` · `TBD-APR-C` → `SDD-APR-14`. Seluruh TBD berkas ini tertutup.
+
+### PERMINTAAN_BAHAN — keputusan PR-05-19 (14 Oktober 2026)
+
+Jumlah per jenis dibandingkan batas M-20, tepat batas langsung disetujui tanpa
+instance. Bila salah satu melewati batas, rules aktif yang cocok atau fallback
+Petugas digunakan. Fakta material_qty_total, material_category_id, item_count,
+requester_role/requester_has_overdue tersedia; material_value_total dinonaktifkan
+pada DSL sampai ada harga referensi sah, tanpa fallback nilai nol.
+Keputusan sebagian mengikat setiap item tepat sekali dengan jumlah bulat nol…batas
+sebelumnya dan minimal satu positif. Level berikutnya hanya mempertahankan/mengurangi.
+Adapter M-22 mengunci domain sebelum instance, menyimpan snapshot keputusan per
+langkah dan menerbitkan kesiapan hanya pada keputusan akhir. Revisi/cancel tetap
+menggunakan penutupan M-10, cycle baru tidak menimpa yang lama. Izin dan larangan
+kepentingan sendiri/pemutus sah tetap ditegakkan M-10.
