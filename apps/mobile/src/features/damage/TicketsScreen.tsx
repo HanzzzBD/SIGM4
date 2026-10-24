@@ -1,0 +1,22 @@
+import { useCallback, useState } from "react";
+import { router } from "expo-router";
+import { DamageReportListResponseSchema } from "@sigm4/schemas";
+import { useAuth } from "../auth";
+import { useResource } from "../../shared/api/useResource";
+import { formatTime } from "../../shared/time";
+import { Button, Card, Label, Notice, Screen } from "../../shared/ui";
+import { statusLabels, urgencyLabels } from "./model";
+
+export function DamageTicketsScreen() {
+    const { state, api } = useAuth(); const [page, setPage] = useState(1);
+    const permissions = state.kind === "READY" ? state.session.permissions : {}; const account = state.kind === "READY" ? state.session.user.id : "";
+    const permitted = Object.hasOwn(permissions, "damage.view");
+    const load = useCallback(async (signal: AbortSignal) => permitted ? DamageReportListResponseSchema.parse((await api.get("/damage-reports", { params: { page, per_page: 10, pelapor: "saya" }, signal })).data) : null, [api, page, permitted]);
+    const resource = useResource(`${account}:my-damage:${page}`, load);
+    return <Screen title="Tiket Kerusakan Saya"><Button title="Lapor kerusakan" disabled={!Object.hasOwn(permissions, "damage.create")} onPress={() => router.push("/kerusakan/lapor" as "/scan")} /><Button title="Antrean foto" secondary onPress={() => router.push("/kerusakan/unggahan" as "/scan")} />
+        {!permitted && <Notice message="Anda tidak memiliki izin membaca tiket kerusakan." />}{permitted && <><Button title="Muat ulang" secondary onPress={resource.reload} />{resource.loading && <Label>Memuat tiket...</Label>}{resource.error && <><Notice message={resource.error} /><Button title="Coba lagi" onPress={resource.reload} /></>}
+            {resource.data?.data.length === 0 && <Label>Belum ada tiket yang Anda laporkan.</Label>}{resource.data?.data.map((ticket) => <Card key={ticket.id}><Label>{ticket.nomor} · {ticket.objek.label}</Label><Label>{statusLabels[ticket.status]} · {urgencyLabels[ticket.urgensi]}</Label><Label>{ticket.objek.lokasi} · {formatTime(ticket.dilaporkan_pada)}</Label>{ticket.melampaui_sla && <Notice message="Melewati tenggat tindak lanjut" />}<Button title={`Buka tiket ${ticket.nomor}`} secondary onPress={() => router.push(`/kerusakan/${ticket.id}` as "/scan")} /></Card>)}
+            {resource.data && resource.data.meta.total_pages > 1 && <><Label>Halaman {page} dari {resource.data.meta.total_pages}</Label><Button title="Tiket sebelumnya" secondary disabled={page === 1 || resource.loading} onPress={() => setPage((value) => value - 1)} /><Button title="Tiket berikutnya" secondary disabled={page >= resource.data!.meta.total_pages || resource.loading} onPress={() => setPage((value) => value + 1)} /></>}
+        </>}
+    </Screen>;
+}

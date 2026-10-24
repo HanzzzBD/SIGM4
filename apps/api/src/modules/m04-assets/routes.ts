@@ -7,7 +7,9 @@ import type { AuditLogger } from "../../shared/audit/index.js";
 import type { Clock } from "../../shared/clock/index.js";
 import type { PenyimpananObjek } from "../../shared/storage/index.js";
 import { AssetDetailResponseSchema, AssetMovementDocumentResponseSchema, AssetMovementDownloadResponseSchema, AssetTimelineResponseSchema } from "@sigm4/schemas";
-import { assetTimelineHandler, getAssetHandler } from "./controllers/asset-detail.controller.js";
+import { assetPhotosHandler, assetTimelineHandler, getAssetHandler } from "./controllers/asset-detail.controller.js";
+import { AssetPhotoService } from "./services/asset-photo.service.js";
+import { AssetPhotosResponseSchema } from "@sigm4/schemas";
 import { AssetDetailService } from "./services/asset-detail.service.js";
 import { MovementDocumentService } from "./services/movement-document.service.js";
 import { movementDocumentHandler, MovementDocumentParamsSchema } from "./controllers/movement-document.controller.js";
@@ -228,6 +230,8 @@ export const assetTimelineRoute = defineRoute({
     response: AssetTimelineResponseSchema,
 });
 
+export const assetPhotosRoute = defineRoute({ method: "GET", path: "/assets/:id/photos", permission: "asset.view", rateLimitClass: "default", module: MODUL, summary: "Foto aset sesuai scope; URL hanya setelah CLEAN", params: AssetIdParamSchema, response: AssetPhotosResponseSchema });
+
 export interface AssetsModuleDeps {
     readonly pdf?: PembangkitPdf;
     readonly penyimpanan: PenyimpananObjek;
@@ -314,6 +318,7 @@ export function assetsRouter(
     );
 
     // Didaftarkan TERAKHIR: `/assets/:id` tak boleh mendahului path bersegmen literal di bawah `/assets`.
+    router.get(assetPhotosRoute.path, batasi(assetPhotosRoute), otorisasi(assetPhotosRoute.permission), assetPhotosHandler(new AssetPhotoService(deps.db, deps.penyimpanan, deps.clock)));
     const detail = new AssetDetailService(deps.db, deps.appBaseUrl);
     router.get(assetTimelineRoute.path, batasi(assetTimelineRoute), otorisasi(assetTimelineRoute.permission), assetTimelineHandler(detail));
     router.get(getAssetRoute.path, batasi(getAssetRoute), otorisasi(getAssetRoute.permission), getAssetHandler(detail));

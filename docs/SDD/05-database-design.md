@@ -517,3 +517,14 @@ Baris `material_balances` dibuat saat bahan pertama kali bertransaksi di suatu l
 | ID | Pertanyaan |
 |---|---|
 | **TBD-AVL-A** *(dari SDD-01)* | Kebijakan arsip/partisi `booking_slots`. Berkas ini menyiapkan polanya (mengikuti `activity_logs`) namun tidak menetapkannya. |
+
+
+### Expand PR-05-32: asset_photos (0052)
+
+Keputusan pemilik produk 12 Oktober 2026: tabel baru asset_photos dengan bigserial id,
+asset_id FK assets, file_id FK stored_files, urutan integer nonnegatif default 0,
+is_primary boolean default false, diunggah_oleh FK users. Pasangan asset_id/file_id unik;
+partial unique index menjaga satu foto utama per aset, indeks asset_id/urutan/id mendukung baca.
+Tidak mengubah tabel/baris yang ada. Down hanya untuk rollback migration baru sebelum ada
+penautan; pengelolaan unggah/tautan bukan cakupan PR-05-32. Tinjauan arsitek skema tetap
+wajib sebelum merge sesuai aturan repository. Tes integrasi membuktikan constraint PostgreSQL.

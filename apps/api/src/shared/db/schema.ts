@@ -891,6 +891,14 @@ export interface AssetDocumentLinksTable {
 }
 
 export interface Database {
+    asset_photos: {
+        id: Generated<string>;
+        asset_id: ColumnType<string, string | number, never>;
+        file_id: ColumnType<string, string | number, never>;
+        urutan: Generated<number>;
+        is_primary: Generated<boolean>;
+        diunggah_oleh: ColumnType<string, string | number, never>;
+    };
     asset_documents: AssetDocumentsTable;
     asset_document_links: AssetDocumentLinksTable;
     document_counters: DocumentCountersTable;

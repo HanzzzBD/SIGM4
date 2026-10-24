@@ -69,5 +69,14 @@ export {
 export type { DamageReportCreate, DamageReportCreated, DamageReportDetail, DamageReportListItem, DamageReportListQuery, DamageReportNote, DamageReportNoteCreate, DamageReportOpen, DamageReportVerified, DamageReportVerify } from "./damage-reports.js";
 export { AssetDetailResponseSchema, AssetDetailSchema, AssetTimelineQuerySchema, AssetTimelineResponseSchema, EntriLinimasaAsetSchema, JENIS_LINIMASA_ASET } from "./asset-detail.js";
 export type { AssetDetail, EntriLinimasaAset } from "./asset-detail.js";
+export { AssetPhotoSchema, AssetPhotosResponseSchema } from "./asset-photos.js";
+export type { AssetPhoto } from "./asset-photos.js";
+export { DashboardManifestResponseSchema, DashboardCardResponseSchema, DashboardPeriodSchema } from "./dashboard.js";
+export type { DashboardCard, DashboardPeriod } from "./dashboard.js";
+export { NotificationSchema, NotificationsResponseSchema, NotificationGroupSchema } from "./notifications.js";
+export type { Notification } from "./notifications.js";
 export { JENIS_DOKUMEN_ASET, JenisDokumenAsetSchema, DokumenAsetSchema, DaftarDokumenAsetResponseSchema, DokumenAsetResponseSchema, DokumenLintasAsetSchema, DaftarDokumenLintasAsetResponseSchema } from "./asset-documents.js";
 export type { DokumenAset, DokumenLintasAset } from "./asset-documents.js";
+
+export { DecideBodySchema, DecideResponseSchema, ListPendingQuerySchema, ListPendingResponseSchema } from "./approval-decisions.js";
+export type { ApprovalPending, ApprovalDecision, ApprovalDecisionResult } from "./approval-decisions.js";

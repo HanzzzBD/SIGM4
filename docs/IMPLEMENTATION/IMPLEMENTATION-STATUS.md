@@ -38,7 +38,7 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 | [02](phases/phase-02.md) | Inti Sistem | 5 | 49 | `In Review` | 37/49 | PR-02-38/39 tergabung (#133, #136, #138), termasuk P-17 dan P-20; QA staging pending; QR unik dan backend foto sudah terbukti. Ekspor katalog, layar lain, mutasi berbasis tanggal/slot, invariant status, FCM/peramban/QA belum lengkap. Preventif/drill deferred PR-04-07/PR-08-08. [Audit §5](audits/closure-phase-00-02-2026-10-07.md#5-closure-phase-02) |
 | [03](phases/phase-03.md) | Layanan Aset & Reservasi | 6 | 38 | `In Progress` | 16/38 | Menutup `M1`. Dimulai selagi Phase 02 `In Review` (pola Phase 01 → 02) |
 | [04](phases/phase-04.md) | Siklus Hidup Aset | 3 | 19 | `In Progress` | 0/19 | Menutup `M2` |
-| [05](phases/phase-05.md) | Penutupan Siklus | 3 | 36 | `Not Started` | 0/36 | Menutup `M3` & `M4` |
+| [05](phases/phase-05.md) | Penutupan Siklus | 3 | 36 | `In Progress` | 0/36 | Menutup `M3` & `M4` |
 | [06](phases/phase-06.md) | Analitik | 1 | 11 | `Not Started` | 0/11 | Menutup `M5` |
 | [07](phases/phase-07.md) | Integrasi & UAT | — | 14 | `Not Started` | 0/14 | |
 | [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 17 | `Not Started` | 0/17 | Menutup `M6` |
@@ -221,14 +221,21 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
 | `PR-04-01` … `PR-04-14` | `Not Started` | — | Rincian: [`phases/phase-04.md` §7](phases/phase-04.md) |
-| `PR-04-15` | `In Review` | [#178](https://github.com/HanzzzBD/SIGM4/pull/178) | `POST /files/{id}/presign` (`SDD-MOB-04`): URL unggah baru 300 detik bagi pesanan milik pemanggil yang belum dikonfirmasi; 401/404/422 teruji, tanpa baris baru |
-| `PR-04-16` … `PR-04-19` | `Not Started` | — | Rincian: [`phases/phase-04.md` §7](phases/phase-04.md) |
+| `PR-04-15` | `Done` | [#178](https://github.com/HanzzzBD/SIGM4/pull/178) | `POST /files/{id}/presign` (`SDD-MOB-04`): URL unggah baru 300 detik bagi pesanan milik pemanggil yang belum dikonfirmasi; 401/404/422 teruji, tanpa baris baru |
+| `PR-04-16` | `In Review` | [#181](https://github.com/HanzzzBD/SIGM4/pull/181) | Paket rantai mobile (keputusan pemilik produk 24 Oktober 2026). Expo 57 / RN 0.86 / iOS 16.4: sesi aman, antrean unggah SQLite, 15 uji mobile + export Hermes Android/iOS lulus. SCA: `zod` runtime mobile ditambal ke 4.6.7; `node-forge` dan `zod` milik `@expo/cli` (tanpa tambalan upstream, hanya perkakas build) dikecualikan terbatas `SDD-SEC-13`. QA perangkat nyata belum berjalan |
+| `PR-04-17` | `In Review` | [#181](https://github.com/HanzzzBD/SIGM4/pull/181) | Paket rantai mobile (keputusan pemilik produk 24 Oktober 2026): Beranda MS-05, Tugas MS-06, push native Firebase dan deep link |
+| `PR-04-18` … `PR-04-19` | `Not Started` | — | Rincian: [`phases/phase-04.md` §7](phases/phase-04.md) |
 
-### Phase 05 — Penutupan Siklus · `Not Started`
+### Phase 05 — Penutupan Siklus · `In Progress`
 
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
-| `PR-05-01` … `PR-05-36` | `Not Started` | — | Rincian: [`phases/phase-05.md` §7](phases/phase-05.md) |
+| `PR-05-01` … `PR-05-31` | `Not Started` | — | Rincian: [`phases/phase-05.md` §7](phases/phase-05.md) |
+| `PR-05-32` | `In Review` | [#181](https://github.com/HanzzzBD/SIGM4/pull/181) | Paket rantai mobile (keputusan pemilik produk 24 Oktober 2026): pemindai QR MS-07…MS-09, foto aset hanya CLEAN, migration expand 0052 |
+| `PR-05-33` | `Not Started` | — | Rincian: [`phases/phase-05.md` §7](phases/phase-05.md) |
+| `PR-05-34` | `In Review` | [#181](https://github.com/HanzzzBD/SIGM4/pull/181) | Paket rantai mobile (keputusan pemilik produk 24 Oktober 2026): Lapor Kerusakan MS-15, 1–5 foto dengan checkpoint persisten sebelum POST |
+| `PR-05-35` | `In Review` | [#181](https://github.com/HanzzzBD/SIGM4/pull/181) | Paket rantai mobile (keputusan pemilik produk 24 Oktober 2026): Persetujuan Saya MS-20; keputusan nonaktif sampai konteks pemohon tersedia |
+| `PR-05-36` | `Not Started` | — | Rincian: [`phases/phase-05.md` §7](phases/phase-05.md) |
 
 ### Phase 06 — Analitik · `Not Started`
 
@@ -247,7 +254,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
 | `PR-08-01` … `PR-08-16` | `Not Started` | — | Rincian: [`phases/phase-08.md` §7](phases/phase-08.md) |
-| `PR-08-17` | `In Review` | [#176](https://github.com/HanzzzBD/SIGM4/pull/176) | Pipeline rilis production ke server sekolah (`SDD-INF-14`, di luar rencana — [log phase-08 §4](logs/phase-08.md)). Cabang `feature/PR-08-17-deploy-produksi-sekolah`. Belum pernah berjalan pada runner nyata: server, runner, environment `production`/`production-smoke`, dan ruleset tag belum disetel ([runbook](runbooks/produksi-server-sekolah.md)). Smoke produksi menunggu `--full` dari `PR-03-36` |
+| `PR-08-17` | `Done` | [#176](https://github.com/HanzzzBD/SIGM4/pull/176) | Pipeline rilis production ke server sekolah (`SDD-INF-14`, di luar rencana — [log phase-08 §4](logs/phase-08.md)). Cabang `feature/PR-08-17-deploy-produksi-sekolah`. Belum pernah berjalan pada runner nyata: server, runner, environment `production`/`production-smoke`, dan ruleset tag belum disetel ([runbook](runbooks/produksi-server-sekolah.md)). Smoke produksi menunggu `--full` dari `PR-03-36` |
 
 **Cara memakai tabel ini.** Saat sebuah phase dimulai, ganti barisnya menjadi satu baris per PR. Selama phase belum dimulai, satu baris ringkas lebih jujur daripada 163 baris `Not Started` yang tidak ada yang membacanya.
 

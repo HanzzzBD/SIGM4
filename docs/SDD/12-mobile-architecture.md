@@ -63,7 +63,7 @@ expo-router menghapus daftarnya: path **adalah** letak berkas rutenya, sehingga 
 
 **SDD-MOB-10 — Expo + EAS Update.** Dua pertanyaan yang terlihat terpisah — versi React Native dan strategi OTA — sebenarnya satu, karena lini Expo menetapkan keduanya sekaligus.
 
-Batas kerasnya adalah `NFR-C-03` (Android 8.0/API 26 dan iOS 14). Rilis React Native maupun Expo menaikkan lantai OS minimumnya dari waktu ke waktu, jadi versi tidak dapat dipilih sekarang lalu dianggap aman: verifikasi terhadap `NFR-C-03` adalah bagian dari keputusan ini, bukan langkah opsional sesudahnya. Bila lantai lini yang diinginkan sudah berada di atas `NFR-C-03`, jalannya bukan menurunkan diam-diam dukungan perangkat, melainkan menaikkan persoalan itu sebagai perubahan requirement.
+Batas kerasnya adalah `NFR-C-03` (Android 8.0/API 26 dan iOS 16.4). Rilis React Native maupun Expo menaikkan lantai OS minimumnya dari waktu ke waktu, jadi versi tidak dapat dipilih sekarang lalu dianggap aman: verifikasi terhadap `NFR-C-03` adalah bagian dari keputusan ini, bukan langkah opsional sesudahnya. Bila lantai lini yang diinginkan sudah berada di atas `NFR-C-03`, jalannya bukan menurunkan diam-diam dukungan perangkat, melainkan menaikkan persoalan itu sebagai perubahan requirement.
 
 **Bare React Native tanpa OTA** ditolak, meski ia paling bersih: setiap perbaikan lapangan menunggu peninjauan store (`MOB-REL-05`, `GL-11`), padahal alur yang dilayani aplikasi ini adalah alur lapangan yang gagal secara eksplisit saat bermasalah (`SDD-MOB-07`) — jarak antara bug dan perbaikannya berbiaya nyata. **OTA swa-kelola** ditolak karena mempertahankan kepemilikan (`MOB-REL-02`) dengan cara yang mahal: sekolah harus mengoperasikan server pembaruan, tepat berlawanan dengan risiko kapasitas operasional yang sudah dicatat [SDD-16 §6](16-infrastructure-deployment.md).
 
@@ -236,3 +236,121 @@ _Tidak ada titik terbuka._
 | ID | Ditutup | Keputusan |
 |---|---|---|
 | **TBD-MOB-B** | 22 Agustus 2026 | **Tablet mendapat tata letak dua panel** pada tiga layar (`UXD-11`). Rancangannya di §4.8. |
+
+### Lini SDK dan integrasi antrean (PR-04-16, 12 Oktober 2026)
+
+Keputusan pemilik produk: Expo SDK 57, React Native 0.86.0, React 19.2.3; minimum OS sesuai NFR-C-03 yang diperbarui (Android 8/API 26, iOS 16.4). Versi diteliti dari dokumentasi resmi https://docs.expo.dev/versions/latest/ dan bundledNativeModules.json pada paket expo 57.0.0. Modul native mengikuti lini itu dan lockfile mengunci patch terpilih.
+
+`SDD-MOB-02/04/11`: preparePhoto mengompresi/membuang EXIF sebelum presign dan transaksi server pemilik foto. Enqueue dilakukan setelah transaksi server menautkan file_id. Drain hanya mengirim berkas; confirm idempoten dengan checksum yang sama dicoba lebih dulu untuk menangani respons confirm yang hilang, baru meminta URL ulang PR-04-15 jika objek belum terunggah. Metadata antrean menyertakan pemilik akun agar login akun berbeda tidak mengambil unggahannya. Batas usia/jumlah berlaku per perangkat. Perubahan baris diserialkan lalu memakai transaksi eksklusif SQLite. Proses mati setelah penghapusan baris tidak mempertahankan berkas yatim: adapter membersihkan direktori antrean saat startup.
+
+SecureStore menyimpan pasangan token dalam satu rekaman; revision mencegah respons refresh lama menghidupkan sesi sesudah logout. Refresh 401 diserialkan, login/verifikasi tidak memicu refresh; gangguan jaringan tidak menghapus token. Profil/permission/challenge tetap di memori. Gerbang password/2FA mengikuti kode server. App switcher dilindungi sebelum layar berdata pribadi ditampilkan. EAS tidak dipublikasikan; OTA aktif hanya jika ID proyek sekolah dikonfigurasi. Pengerasan pinning/root serta distribusi tetap PR-08-13.
+
+
+### Implementasi PR-05-32 (12 Oktober 2026)
+
+MS-07 memakai expo-camera 57.0.6, kamera belakang dan barcode QR saja. Izin diminta melalui tombol
+pada pemindai; penolakan menyediakan pengaturan sistem dan input manual. Kamera dilepas saat
+layar tidak fokus/aplikasi masuk latar belakang. Mode beruntun menyimpan maksimal 200 hasil ringkas
+hanya di memori layar (FlatList); duplikat sukses diabaikan, permintaan tunggal dapat dibatalkan.
+Pemindaian ulang QR gagal dibatasi 1,5 detik agar kamera tidak membanjiri API. Kode manual dicocokkan
+persis tanpa memilih hasil pencarian serupa, mengikuti seluruh halaman katalog yang diizinkan.
+
+QR harus HTTPS pada origin EXPO_PUBLIC_APP_URL (fallback origin API), path /a/UUIDv4 persis,
+tanpa kredensial/query/fragment. Tidak ada navigasi atau permintaan ke URL yang dipindai.
+App/Universal Links dikonfigurasi dari domain sekolah; association files dan sertifikat binary
+sekolah tetap perlu pemasangan/validasi di deployment PR-08-02. Tujuan /a/[uuid] tetap tersedia
+setelah autentikasi melalui SessionGate. Variabel publik runtime memakai dot notation agar Expo
+menginjeksi nilai saat bundling; URL API dan origin web dapat berbeda.
+
+MS-08/09 menggunakan API privat sesuai asset.view, menandai aset dihapuskan/tidak tersedia,
+memuat foto/linimasa berpaginasi tanpa cache operasional. BR-073 tetap difilter server dan UI.
+Keputusan produk: tombol transaksi per permission/status nonaktif dengan alasan karena layar
+serah terima, pengembalian, opname, work order, reservasi dan laporan kerusakan belum tersedia.
+Tidak ada transaksi atau konteks aktif yang diasumsikan berhasil. Izin aktual adalah loan.manage,
+audit.execute, workorder.execute, damage.create dan reservation.create dari katalog RBAC.
+
+
+### Implementasi PR-04-17 (13 Oktober 2026)
+
+Keputusan pemilik produk: PR berurutan sesudah PR-05-32; API/domain yang belum tersedia tidak
+ditambahkan di PR ini, bagian/aksi diberi alasan dan nonaktif. Beranda memakai manifest kartu
+server dan rentang yang ada; tren baru dimuat ketika dibuka, data grafik punya bentuk tekstual
+aksesibel. Tugas mengikuti gabungan permission UXD-03, tidak nama role. Notifikasi in-app dibaca
+berpaginasi, hitungan disegarkan saat foreground/push dan interval 30 detik selama aktif.
+
+Navigasi lima tab memakai route groups expo-router; path pengajuan/aset tidak diterjemahkan
+ke nama layar. Stack Tugas/Scan mengikat deep link ke tab induk. Payload push hanya membuka
+path relatif kanonik; tujuan sebelum login ditahan di memori dan event terikat akun lama dibuang.
+Layar belum tersedia memiliki jalan kembali; data operasional tidak disimpan lokal.
+
+React Native Firebase app/messaging/installations 26.4.0 memakai FID melalui getId sesuai
+keputusan 80e backend, setelah registrasi transport FCM native. expo-notifications 57.0.22 hanya
+mengelola izin, kanal dan tray; tidak memakai Expo Push Service atau mendaftarkan token APNs.
+SDK minimum Firebase iOS15/Android23 tetap di bawah iOS16.4/Android26 aplikasi. Kedua file konfigurasi
+Firebase sekolah wajib tersedia untuk mengaktifkan plugin, jika tidak fallback in-app. Framework
+CocoaPods static; runtime aplikasi 0.2.0 karena ada dependency native baru. APNs environment lokal
+development, profil EAS internal/store production sesuai provisioning yang dipilih.
+
+Auto-init Firebase mati sampai sesi/izin siap. Foreground memicu banner generik dan refresh,
+background handler tidak menjalankan transaksi atau menyimpan payload, headless iOS tidak memuat
+UI/auth/dashboard. Logout lebih dulu mengganti gerbang ke LOGOUT sehingga layar privat/kamera
+lepas; hook mencabut FID backend, token/installation native dan tray, lalu sesi API dan SecureStore.
+Generation/AbortSignal mencegah registrasi/respons sesi lama kembali; login diblokir selama logout.
+Kontrak response dashboard/notifikasi dipakai bersama API/mobile lewat packages/schemas,
+tanpa endpoint baru atau perubahan permission/mesin approval. Push cloud nyata dan association
+files/binary tetap menuntut konfigurasi sekolah dan QA perangkat.
+
+
+### Implementasi PR-05-35 (13 Oktober 2026)
+
+MS-20 dibuka dari Tugas, aksi cepat atau path /persetujuan/{instance_id} pada NT-01/NT-05.
+Kotak masuk mengikuti urutan server dan pagination; delegasi/SLA memakai hasil backend.
+Kontrak pending/decide dipindah ke packages/schemas tanpa mengubah endpoint atau mesin approval.
+Linimasa lengkap memakai kontrak FR-10.3, termasuk langkah dilewati, eskalasi, delegasi, SYSTEM
+dan durasi menit kerja. Rincian reservasi ruangan serta ketersediaan dimuat ulang sebelum
+keputusan; identitas instance, objek, pemohon dan langkah aktif harus cocok.
+
+Keputusan pemilik produk melalui pertanyaan: FR-10.2 langkah 3 dan UX 7.6.4 tetap mengikat.
+API role pemohon serta riwayat keterlambatan/kewajiban belum tersedia; reader tidak menganggap
+kosong atau nol. Seluruh keputusan tetap nonaktif dengan alasan sampai semua konteks wajib
+tersedia, termasuk reservasi ruangan yang detail dasarnya sudah dapat dibaca. Jenis objek lain
+tetap terlihat di inbox/linimasa, tanpa mengaktifkan keputusan dari ringkasan atau payload push.
+Tidak menambah backend domain, endpoint, migration, permission atau pengecualian requirement.
+
+Konfirmasi native, catatan wajib Tolak/Perlu Revisi dan tombol keputusan tetap di bagian bawah
+layar. Satu niat memakai UUID idempotency di memori; retry manual hasil belum pasti mempertahankan
+body/key, termasuk REQUEST_IN_PROGRESS. Tidak ada antrean keputusan luring atau retry latar
+belakang. RE-09 menampilkan pelaku/waktu dan menyegarkan linimasa. Abort saat blur/background
+atau logout mencegah respons menulis layar akun lain. Pengujian gerbang memakai fixture konteks
+lengkap; fixture tidak berada pada jalur produksi.
+
+
+### Implementasi PR-05-34 (13 Oktober 2026)
+
+MS-15 memakai kontrak M-11 yang tersedia: objek dari hasil scan/detail aset atau pencarian aset/
+ruangan, deskripsi, urgensi dan foto. Kamera/galeri memakai expo-image-picker 57.0.20; kompresi
+MOB-MED-01/02 tetap melalui fondasi native. Izin diminta saat dibutuhkan; mikrofon dinonaktifkan.
+Runtime menjadi 0.3.0 karena dependency native baru. Pilihan kamera ditolak tetap menyediakan
+galeri. Identitas objek dari deep link dibaca ulang, bukan mempercayai label pada query.
+
+Keputusan produk: cabang terpisah sesudah PR-05-35; isian hanya di memori. Laporan/catatan dikirim
+saat online setelah file_id diperoleh. Foto baru dipersistensi setelah presign dan SEBELUM POST
+bisnis, ownerId boleh null untuk DAMAGE_PHOTO; setelah respons ownerId diperbarui. Drain boleh
+mengirim DAMAGE_PHOTO yang file_id-nya telah diperoleh meskipun respons penautan belum diketahui,
+karena server tetap menegakkan kepemilikan berkas. Jenis foto lain tetap menuntut ownerId.
+Checkpoint ini menutup kehilangan antrean saat proses mati antara POST dan respons. Draf yang
+belum memperoleh file_id tidak menjadi antrean transaksi. URL/token/isian tidak masuk SQLite.
+
+Pemeriksaan tiket terbuka memakai ringkasan /damage-reports/open sesuai damage.view. Alternatif
+A1 menawarkan informasi tambahan, 0-5 foto, tanpa membuka detail tiket pihak lain pada scope own.
+Pemegang damage.create tanpa damage.view masih dapat mengirim laporan baru; server tetap mencegah
+duplikat dan UI menjelaskan keterbatasan baca. Status/detail tiket mengikuti scope backend dan
+foto hanya dibaca setelah CLEAN; URL privat tidak dipersistensi. Daftar dan catatan ditampilkan
+dalam halaman kecil, antrean memiliki progres per berkas, retry manual dan pembatalan eksplisit.
+
+API laporan/catatan belum mendukung idempotency key. Pilihan produk: tidak mengulang POST saat
+respons hilang/5xx/timeout; niat ditahan sebagai hasil belum pasti sampai pengguna memeriksa tiket.
+Tidak menganggap tiket hasil pemeriksaan pasti milik niat itu. Byte foto saja tetap memakai retry
+backoff, 72 jam/50 berkas. Respons sukses diingat sebelum memperbarui metadata owner; kegagalan
+metadata tidak mengulang transaksi. Abort/guard akun dan lock tap ganda membatasi respons lama.
+Tidak ada perubahan backend domain, migration, permission atau kontrak M-11.

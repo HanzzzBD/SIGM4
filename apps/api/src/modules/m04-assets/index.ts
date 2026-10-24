@@ -21,6 +21,7 @@ export {
     updateAssetConditionRoute,
     getAssetRoute,
     assetTimelineRoute,
+    assetPhotosRoute,
     updateAssetRoute,
 } from "./routes.js";
 // Titik perluasan linimasa aset (PR-03-24): modul pemilik riwayat mendaftarkan sumbernya.

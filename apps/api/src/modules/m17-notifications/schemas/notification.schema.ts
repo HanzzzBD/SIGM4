@@ -17,25 +17,7 @@ export const ListNotificationsQuerySchema = z.object({
 
 export const NotificationIdParamSchema = z.object({ id: z.coerce.number().int().positive() });
 
-const Notifikasi = z.object({
-    id: z.number(),
-    kode: z.string(),
-    jenis: z.enum(KELOMPOK),
-    judul: z.string(),
-    isi: z.string(),
-    referensi_jenis: z.string().nullable(),
-    referensi_id: z.number().nullable(),
-    deep_link: z.string().nullable(),
-    wajib: z.boolean(),
-    dibaca_pada: z.string().nullable(),
-    created_at: z.string(),
-});
-
-export const ListNotificationsResponseSchema = z.object({
-    success: z.literal(true),
-    data: z.array(Notifikasi),
-    meta: z.object({ page: z.number(), per_page: z.number(), total: z.number(), total_pages: z.number(), unread_count: z.number() }),
-});
+export { NotificationsResponseSchema as ListNotificationsResponseSchema } from "@sigm4/schemas";
 
 export const MarkReadResponseSchema = z.object({
     success: z.literal(true),

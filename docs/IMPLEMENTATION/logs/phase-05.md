@@ -5,7 +5,7 @@
 | **Phase** | [`phases/phase-05.md`](../phases/phase-05.md) |
 | **Milestone PRD** | `M3 & M4 — **menutup keduanya**` |
 | **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
-| **Mulai** | — |
+| **Mulai** | 12 Oktober 2026 (PR-05-32 lokal) |
 | **Selesai** | — |
 
 Log ini mencatat **apa yang benar-benar terjadi** selama phase berjalan: keputusan yang diambil, hal yang berbeda dari rencana, dan angka hasil pengukuran. Ia bukan salinan rencana — rencananya ada di [`phases/phase-05.md`](../phases/phase-05.md).
@@ -95,3 +95,118 @@ Hal yang sengaja ditinggalkan terbuka, beserta di mana ia akan ditutup.
 ---
 
 *Log ini mencatat pelaksanaan. Requirement tetap milik [PRD](../../PRD/), keputusan desain tetap milik [SDD](../../SDD/).*
+
+
+### PR-05-32: pemindai native dan detail aset - 12 Oktober 2026
+
+Keputusan produk melalui fitur pertanyaan: pisah PR dari fondasi; aksi berizin sesuai status
+nonaktif dengan alasan bila layar tujuan belum tersedia; API foto aman ikut PR ini. Tabel fisik
+asset_photos memakai asset_id/file_id FK, urutan, is_primary dan diunggah_oleh; API baca
+GET /assets/{id}/photos mengikuti asset.view/scope, tidak mengirim identitas pengunggah atau
+object key tersendiri. Penautan/unggah tetap PR pengelolaan aset. PRD/SDD dan indeks API diperbarui.
+
+MS-07 memakai expo-camera, mode beruntun FlatList maksimal 200 hasil memori, deduplikasi,
+input kode manual persis, pengaturan izin, lampu, lifecycle fokus/foreground dan AbortSignal.
+MS-08/09 memuat identitas, status/kondisi/lokasi, foto privat CLEAN dan riwayat berpaginasi;
+BR-073 disaring server dan UI. QR asing tidak dipanggil atau dinavigasikan. Konfigurasi App Links
+mengikuti domain sekolah; association files/binary dan perangkat nyata belum diverifikasi.
+Token enrolment dan hasil /me terlambat dibatasi revision agar tidak memulihkan sesi lama.
+Konfigurasi EXPO_PUBLIC memakai dot notation; URL API terbukti tertanam pada Hermes Android.
+
+Validasi lokal: 21 uji mobile lulus, 12 integrasi detail/foto dan 17 integrasi QR PostgreSQL
+nyata lulus pada DB terisolasi; 13 uji file PostgreSQL/MinIO lulus; 11 uji registry/OpenAPI lulus.
+Migration 0052 dibuktikan oleh constraint FK, pasangan unik, satu primary dan urutan nonnegatif.
+Penandatangan URL pada uji foto memakai port storage; bukan bukti byte foto di perangkat.
+Tinjauan arsitek migration belum dilakukan. SCA HIGH upstream dari fondasi tetap terbuka;
+tidak menyatakan CI/deployment siap. Kamera 10-30 cm, target hasil 3 detik, APK/IPA, cold start,
+perangkat minimum, association files dan lifecycle native memerlukan development build.
+
+
+Bundel Hermes Android/iOS dengan expo-image cachePolicy none lulus; bukan APK/IPA.
+TypeScript produksi/uji, lint, audit docs dan 13 kasus batas impor (termasuk mobile) lulus.
+Percobaan npm ci lokal ditolak Windows saat menghapus DLL rolldown web yang sedang dipakai;
+bukan kesalahan kesesuaian lockfile. Dependency dipulihkan melalui npm install tanpa menghentikan
+proses pengguna. Dependency peer lama dipertahankan; versi paket lama tidak dinaikkan oleh PR ini.
+
+
+Pemulihan npm install selesai (exit 0); DLL sementara yang terkunci hanya menghasilkan warning
+cleanup Windows. Perbandingan lockfile terhadap fondasi: tidak ada paket lama dihapus atau
+versi lama berubah. Binding native argon2/sharp dapat dimuat. 21 uji mobile dan typecheck/lint
+lulus lagi setelah pemulihan. Suite unit API lengkap: 1.292 uji/84 berkas lulus memakai
+--maxWorkers=2 --testTimeout=30000. Percobaan paralel awal dengan checker batas impor gagal
+(timeout dan file probe sementara hilang); diulang tanpa checker berjalan bersamaan.
+Introspect konfigurasi native lulus: Android minSdk26, iOS deployment16.4, izin kamera ada,
+NSMicrophoneUsageDescription tidak ada, Android RECORD_AUDIO bertanda remove.
+
+
+### PR-05-35: Persetujuan Saya mobile - 13 Oktober 2026
+
+Cabang lokal feature/PR-05-35-persetujuan-mobile mengikuti PR-04-17 (52ef938c), sesuai pilihan
+pemilik produk. Keputusan melalui pertanyaan: hanya API tersedia, tidak menambah backend domain;
+keputusan aktif hanya jika konteks lengkap. Gap tambahan role pemohon dan riwayat keterlambatan/
+kewajiban (FR-10.2 langkah 3, UX 7.6.4) dipilih tetap memblokir seluruh keputusan, tanpa pengecualian.
+Detail reservasi ruangan berhasil dibaca tidak dianggap cukup; tidak ada role atau kewajiban nol
+yang diasumsikan. Scope/status/kewenangan tetap ditegakkan backend.
+
+Implementasi: inbox berpaginasi/SLA/delegasi, jalur push ke stack Tugas, detail reservasi dan
+ketersediaan termasuk tanggal berulang, linimasa langkah/eskalasi/dilewati/SYSTEM, tombol tetap
+di bawah, alasan nonaktif, dialog konfirmasi dan catatan wajib. Gerbang memeriksa izin, instance/
+referensi/pemohon dan langkah aktif. Niat keputusan memakai satu key UUID/body di memori, retry
+manual untuk hasil hilang/5xx/REQUEST_IN_PROGRESS, lock tap ganda, abort lifecycle dan konflik RE-09
+menampilkan pemutus/waktu. Tidak mengantre atau mengirim keputusan di latar belakang/luring.
+Kontrak response/input existing dipakai bersama, tanpa perubahan endpoint/mesin/permission/migration.
+
+Skala L karena layar konteks/linimasa, kontrak bersama, gerbang dan uji retry adalah satu alur MS-20;
+pemisahan backend domain sengaja tidak dilakukan sesuai scope yang dipilih pengguna.
+Validasi lokal: 43 uji mobile (14 kasus konteks/keputusan tambahan), 30 integrasi PostgreSQL
+approval-decision/approval-history pada DB terisolasi dan 1.292 unit API/84 berkas lulus.
+TypeScript produksi/uji dan lint API/mobile lulus. Fixture konteks lengkap hanya berada pada uji;
+reader produksi selalu mengembalikan konteks pemohon belum lengkap. APK/IPA, aksesibilitas native,
+push cloud/perangkat nyata tetap memerlukan QA development build. SCA upstream fondasi yang
+tercatat di log phase-04 belum hijau. Tidak ada push GitHub, EAS/store atau deployment.
+
+Export Hermes Android (4,3 MB)/iOS (4 MB), 13 kasus batas impor, audit docs dan validate_impl lulus.
+Bundel JS bukan bukti instalasi APK/IPA atau interaksi native pada perangkat.
+
+
+### PR-05-34: Lapor Kerusakan MS-15 - 13 Oktober 2026
+
+Cabang feature/PR-05-34-laporan-kerusakan-mobile dibuat dari PR-05-35 (54afbfe2), sesuai pilihan
+pemilik produk melalui fitur pertanyaan. Pengguna memilih: formulir di memori, POST bisnis hanya
+online setelah file_id; foto boleh menyusul. Perbaikan fondasi diizinkan: enqueue foto sebelum
+POST tiket/catatan lalu perbarui ownerId sesudah respons. Hanya byte dan metadata berkas yang
+dipersistensi. Kasus SQLite nyata membuktikan foto dengan ownerId null bertahan setelah restart.
+Tidak menambah backend domain, migration, permission atau endpoint. Skala L: satu alur MS-15
+memerlukan pemilih objek/foto, tiket eksisting, receipt/detail/status dan pengelola antrean, serta
+uji crash/retry/akun; fondasi tambahan terbatas pada checkpoint berkas yang dibutuhkan alur ini.
+
+Laporan dari Beranda, hasil scan dan detail aset; pencarian aset/ruangan mengikuti permission.
+Foto JPEG native <=1600px/500KB, kualitas80, kompresi fondasi. expo-image-picker57.0.20 dipilih
+sesuai dokumentasi Expo SDK57 (https://docs.expo.dev/versions/latest/sdk/imagepicker/). Runtime0.3.0,
+izin kamera/galeri saat dibutuhkan, mikrofon tidak diminta. Tiket terbuka menawarkan notes (A1);
+receipt penulis tiket lain tidak membuka detail yang ditolak scope own. Kamera/galeri, urutan foto,
+progres/cancel, indikator foto belum terunggah, tiket saya/detail/catatan dan URL CLEAN terpasang.
+Antrean mengikuti akun, 72jam/50berkas/backoff; cleanup menghentikan unggahan akun lama.
+
+Gap idempotensi API M-11 ditanyakan: pengguna memilih hasil belum pasti dan pemeriksaan tiket,
+bukan retry POST otomatis atau PR backend pendahulu. Lock tap ganda dan memo hasil sukses
+mencegah transaksi berulang; timeout/5xx/lost response tidak membuat niat kedua. Retry otomatis
+hanya untuk byte/confirm berkas. Draf belum dikirim tidak dijanjikan bertahan setelah aplikasi mati.
+
+Validasi lokal: 57 uji mobile/7 berkas (termasuk 12 kasus laporan, checkpoint SQLite dan sender),
+37 integrasi PostgreSQL/MinIO (laporan, notes, monitoring dan files) pada DB terisolasi lulus.
+TypeScript produksi/uji dan lint mobile lulus. Export Hermes Android4,4MB/iOS4MB lulus.
+Introspect native: minSdk26/iOS16.4, izin kamera+galeri ada, NSMicrophoneUsageDescription tidak ada
+dan Android RECORD_AUDIO remove. Bukan bukti APK/IPA, hasil JPEG/EXIF di hardware, dialog izin,
+force-stop native atau interaksi aksesibilitas. Development build/perangkat nyata masih diperlukan.
+
+Audit npm semula ditolak auto-review karena ekspor metadata dependency belum diizinkan. Pengguna
+kemudian secara eksplisit mengizinkan nama/versi dependency ke registry.npmjs.org; audit selesai:
+23 HIGH/12 moderate/0 critical, HIGH berasal dari braces dan node-forge upstream yang sama dengan
+fondasi, bukan advisory baru pada image-picker. Tidak melakukan audit fix --force. Paket lama
+pada lockfile tidak berubah versi; hanya image-picker ditambahkan. Tidak menyatakan SCA/CI hijau.
+Konfigurasi Expo dan .env.example yang diubah pengguna dipertahankan; hanya hunk plugin/izin/
+runtime fitur dimasukkan ke commit. Tidak ada publikasi EAS/store/GitHub atau deployment.
+
+Audit docs, validate_impl dan 13 kasus batas impor lulus. Bundel akhir diulang setelah guard UI
+dan penanganan izin diperbarui; TypeScript produksi/uji dan 57 uji mobile tetap lulus.

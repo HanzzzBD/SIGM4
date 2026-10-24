@@ -201,6 +201,7 @@ Kolom sumber/nilai perolehan tidak dipilih atau diekspor tanpa asset.view_financ
 | GET | `/assets` | `asset.view` | Daftar aset (filter & pencarian); tiap item membawa nama kategori dan lokasi (ruang, gedung) |
 | POST | `/assets` | `asset.create` | Buat aset (mendukung `jumlah_unit` untuk N record) |
 | GET | `/assets/{id}` | `asset.view` | Detail aset — identitas lengkap, QR, kategori & lokasi (FR-04.2 langkah 5) |
+| GET | `/assets/{id}/photos` | `asset.view` | Foto aset terpaginasi (page/per_page, maksimum 100), scope sama dengan detail; metadata id/file_id/urutan/is_primary/status; URL medium/thumbnail 15 menit hanya setelah berkas terkonfirmasi CLEAN, tanpa object key tersendiri atau identitas pengunggah (keputusan pemilik produk 12 Oktober 2026, PR-05-32) |
 | GET | `/assets/{id}/timeline` | `asset.view` | Linimasa riwayat aset terpaginasi: kondisi, mutasi, dan riwayat yang diisi modul lain (peminjaman, pemeliharaan, kerusakan, dokumen) — jenis sensitif disembunyikan bagi scope `restricted` (FR-04.2 langkah 5, A1) |
 | PUT | `/assets/{id}` | `asset.update` | Perbarui atribut deskriptif aset (nama, merek, model, nomor seri, tahun, kelayakan pinjam, penanggung jawab; perolehan hanya bagi `asset.view_financial`) — kategori, lokasi, kode, status tetap. `kondisi` opsional: bila berubah, `alasan` wajib, menuntut juga `asset.update_condition`, dan dijalankan atomik bersama atribut (FR-04.3) |
 | PATCH | `/assets/{id}/condition` | `asset.update` | Ubah kondisi + alasan |
@@ -230,7 +231,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 | **asset_movements** | Riwayat mutasi lokasi | id, document_id, asset_id, room_asal_id, room_tujuan_id, tanggal, alasan, dilakukan_oleh | ± 1.000; document_id nullable untuk riwayat lama |
 | **asset_movement_documents** | Satu berita acara per operasi mutasi | id, snapshot, object_key, status, file_id, pesan_galat, selesai_pada, kolom baku | Snapshot 1–50 unit disimpan bersama mutasi; PDF di `stored_files` |
 | **asset_condition_history** | Riwayat perubahan kondisi | id, asset_id, kondisi_lama, kondisi_baru, alasan, referensi_jenis, referensi_id, diubah_oleh, diubah_pada | ± 1.500 |
-| **asset_photos** | Foto aset (menggantikan field tunggal `assets.foto`) | id, asset_id, path, urutan, is_primary, diunggah_oleh | ± 6.000 |
+| **asset_photos** | Foto aset (menggantikan field tunggal `assets.foto`) | id, asset_id, file_id (FK stored_files), urutan, is_primary, diunggah_oleh | ± 6.000 |
 | **asset_import_jobs** | Pekerjaan impor aset sinkron/asinkron (`IMPT-02/03/04`) | id, file_hash, nama_berkas, status, total_baris, baris_terproses, sukses, gagal, unit_dibuat, laporan_gagal, pesan_galat, selesai_pada | Pengunggah; `assets.import_job_id` menautkan hasil |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).

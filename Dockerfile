@@ -32,7 +32,13 @@ COPY . .
 # tidak pernah berjalan dari proses Node (SDD-16 §4.2 — web disajikan sebagai
 # aset statis), sehingga membangunnya di sini hanya menambah waktu dan ukuran.
 # packages/schemas ikut terbangun sendiri lewat project reference apps/api.
-RUN npm run build -w apps/api && npm prune --omit=dev
+# node_modules runtime dipasang ulang HANYA untuk workspace yang dijalankan image
+# ini: `npm prune --omit=dev` atas seluruh workspace mempertahankan dependensi
+# produksi apps/mobile (Expo, termasuk node-forge tanpa tambalan) dan apps/web,
+# yang tidak pernah berjalan di sini (SDD-INF-01/02; Trivy merah pada #181).
+RUN npm run build -w apps/api \
+    && rm -rf node_modules apps/*/node_modules packages/*/node_modules \
+    && npm ci --omit=dev --workspace apps/api --workspace packages/schemas
 
 # ---------------------------------------------------------------------------
 # Tahap dbmate — biner migration dibangun dari sumber (keputusan 56)
