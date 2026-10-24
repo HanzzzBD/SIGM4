@@ -35,9 +35,10 @@ Keputusan platform sudah ditetapkan PRD Bab 27.1 dan tidak diulang. Berkas ini m
 | **SDD-INF-08** | Seluruh konfigurasi lewat **variabel lingkungan**, divalidasi skema saat *startup*; konfigurasi tidak valid mencegah proses berjalan. |
 | **SDD-INF-09** | Zona waktu container dan basis data **UTC** (`INF-07`). Container dipaksa lewat variabel lingkungan `TZ`; sesi basis data dipaksa lewat parameter sesi `TimeZone=UTC` pada setiap koneksi aplikasi dan jalur migration, sehingga tidak bergantung pada setelan penyedia. Keduanya diverifikasi saat startup api dan worker (keputusan pemilik produk, 15 September 2026). |
 | **SDD-INF-10** | Orkestrasi memakai **Docker Compose**, bawaan `INF-05`. *Rolling deploy* `SDD-INF-04` dicapai lewat **koreografi pipeline** — reverse proxy (`INF-06`) memeriksa kesehatan upstream, instance API diganti satu per satu — bukan lewat fitur platform. Pengecualian Kubernetes pada `INF-05` **tidak berlaku**: `SDD-INF-11` menetapkan sekolah tidak menjalankan klaster Kubernetes. |
-| **SDD-INF-11** | **Penyedia infrastruktur: VPS ber-region Indonesia** untuk API, worker, Redis, dan reverse proxy, ditambah **PostgreSQL sebagai layanan terkelola ber-region Indonesia** — bukan container PostgreSQL yang dipelihara sendiri. Object storage `INF-02` mengikuti batasan region yang sama (`SDD-SEC-10`). Menutup `TBD-INF-A` (keputusan pemilik produk, 25 Agustus 2026). Yang diputuskan **hanya penyedianya**; sizing dan biaya nyata (PRD 27.3, 27.9) tetap ditetapkan setelah uji beban `NFR-P-09` bersama `TBD-AVL-C`. |
+| **SDD-INF-11** | *(Sejak 24 Oktober 2026 berlaku bagi **staging** saja; production → `SDD-INF-14`.)* **Penyedia infrastruktur: VPS ber-region Indonesia** untuk API, worker, Redis, dan reverse proxy, ditambah **PostgreSQL sebagai layanan terkelola ber-region Indonesia** — bukan container PostgreSQL yang dipelihara sendiri. Object storage `INF-02` mengikuti batasan region yang sama (`SDD-SEC-10`). Menutup `TBD-INF-A` (keputusan pemilik produk, 25 Agustus 2026). Yang diputuskan **hanya penyedianya**; sizing dan biaya nyata (PRD 27.3, 27.9) tetap ditetapkan setelah uji beban `NFR-P-09` bersama `TBD-AVL-C`. |
 | **SDD-INF-12** | **Penyedia CI/CD adalah GitHub Actions.** Seluruh tahap §4.3 dijalankan sebagai *workflow* di `.github/workflows/` ([SDD-17 §4.1](17-repo-layout.md)). Gerbang `CD-01`/`CD-02` ditegakkan sebagai *required status check* pada `develop`, `staging`, dan `main`; penegakan itu adalah bagian dari keputusan ini, bukan setelan opsional sesudahnya. Pipeline dibangun `PR-00-17` dan `PR-00-18`. |
 | **SDD-INF-13** | *Reverse proxy* adalah **Nginx**, memilih satu dari dua nama yang `INF-06` sebut. Perpanjangan sertifikat Let's Encrypt (`INF-06`) dijalankan **certbot sebagai komponen tersendiri** pada topologi §4.2, bukan oleh proxy. Pemeriksaan kesehatan upstream `SDD-INF-04` memakai mekanisme **pasif** Nginx OSS (`max_fails`/`fail_timeout`) ditambah *readiness gate* pada skrip deploy milik kita (`SDD-INF-10`); *active health check* tidak dipakai karena hanya tersedia pada NGINX Plus. |
+| **SDD-INF-14** | **Production berjalan di server milik sekolah** (`INF-05`) dan **menggantikan `SDD-INF-11` untuk production**; staging tetap mengikuti `SDD-INF-11`. Tiga konsekuensi yang ditetapkan sekaligus (keputusan pemilik produk, 24 Oktober 2026): (a) **deploy ditarik, bukan didorong** — pengembang tidak memegang akses ke server, sehingga IT sekolah memasang **self-hosted runner GitHub Actions** berlabel `sigm4-produksi` (koneksi keluar saja) dan job deploy berjalan di sana di bawah environment `production` ber-*required reviewers*; (b) **PostgreSQL berjalan sebagai container** pada Compose production, bukan layanan terkelola; (c) object storage **tetap Backblaze B2** (`INF-02`). Server dapat diakses publik lewat domain, sehingga `INF-06`/`SDD-INF-13` (Let's Encrypt HTTP-01 + certbot) tetap berlaku. Pipeline dibangun `PR-08-17`. |
 
 ---
 
@@ -80,6 +81,14 @@ PostgreSQL gagal dengan **diam**. `SDD-INF-06` menuntut base backup harian + ars
 Menyerahkan PITR dan uji restore kepada penyedia memindahkan dua kewajiban itu dari disiplin ke kontrak. Harganya nyata dan ditanggung sadar — ia adalah baris biaya pada PRD 27.9, ditukar dengan satu-satunya komponen yang kehilangannya tidak dapat diperbaiki.
 
 Region Indonesia berlaku bagi seluruh komponen sebagai konsekuensi langsung `SDD-SEC-10`, bukan sebagai pilihan terpisah.
+
+**SDD-INF-14 — server sekolah, dan apa yang hilang karenanya.** Keputusan ini datang dari pemilik produk, bukan dari perbandingan teknis: server production milik sekolah dan pengembang tidak diberi akses. Yang ditetapkan di sini adalah cara menjalankannya tanpa akses itu.
+
+*Runner, bukan SSH.* Deploy staging didorong lewat SSH dari runner GitHub (`PR-00-18`) — jalur yang mustahil tanpa akses. Tiga alternatif ditimbang: paket rilis yang dijalankan manual oleh IT sekolah, agen *pull* swa-tulis bertimer, dan self-hosted runner. Paket manual membuat migration, readiness gate, dan smoke test bergantung pada disiplin operator di setiap rilis; agen swa-tulis adalah satu layanan lagi milik kita yang hasilnya tidak terlihat di GitHub. Runner mempertahankan `SDD-INF-12` utuh — gerbang, persetujuan, dan log rilis tetap di satu tempat — dengan biaya satu kali pemasangan oleh IT sekolah, dan tanpa membuka port masuk.
+
+*PostgreSQL container — alasan `SDD-INF-11` kini berbalik menjadi kewajiban.* `SDD-INF-11` memilih layanan terkelola justru karena PITR dan uji restore yang diswa-kelola "bertahan persis selama ada yang memeliharanya". Pada server sekolah tidak ada layanan terkelola yang dapat memikulnya, sehingga `SDD-INF-06` (base backup + arsip WAL) kembali menjadi skrip milik kita, dimiliki `PR-08-07`, dan alarm cadangan gagal (`OBS-05`) tidak lagi opsional. Dump pra-migration pada setiap deploy (`RELEASE-PLAN §3` langkah 2) bukan pengganti PITR; ia hanya jaring pengaman untuk satu rilis.
+
+*Staging tidak lagi identik dengan production* pada lapisan basis data (terkelola vs container). Selisih itu diterima sadar: perilaku aplikasi sama karena keduanya PostgreSQL 15 standar (`SDD-DB-12`), dan yang berbeda — cadangan — diuji `PR-08-07` langsung pada topologi production.
 
 **Kubernetes tidak dipakai.** `INF-05` membuka pengecualian hanya bila sekolah sudah menjalankannya; `SDD-INF-11` menetapkan tidak. `SDD-INF-10` karena itu berdiri tanpa syarat, dan §5 tidak lagi menyimpan cabang yang menunggu.
 
@@ -130,7 +139,9 @@ Web (hasil build Vite, `SDD-FE-14`) disajikan sebagai aset statis **oleh Nginx p
 
 **Pengiriman & job migration** (keputusan pemilik produk, 15 September 2026). Image yang lulus pipeline — artefak yang sama dengan yang dipindai Trivy — diterbitkan ke **GHCR** bertag SHA commit, lalu ditarik VPS. Job migration (`SDD-INF-03`) berjalan sebagai container sekali-jalan dari **image yang sama**, sehingga api, worker, dan skema berasal dari satu tag (`SDD-INF-01`); runtime image karena itu memuat `apps/api/migrations/`, `scripts/migrate.mjs`, dan dbmate, tetapi tidak npm. Topologi staging beserta koreografinya berada di `deploy/staging/` ([SDD-17 §4.1](17-repo-layout.md)).
 
-**Replika dan arsip WAL tidak lagi menjadi container pada topologi ini.** Keduanya adalah tanggung jawab layanan PostgreSQL terkelola (`SDD-INF-11`) dan tampil sebagai konfigurasi langganan, bukan sebagai proses yang di-*compose*. Redis tetap swa-kelola di VPS: kehilangannya berarti kehilangan cache dan *rate limit* — degradasi yang `SDD-SEC-05` dan §6 sudah antisipasi — bukan kehilangan data.
+**Production (`SDD-INF-14`)** memakai topologi yang sama di server sekolah dengan satu tambahan: `postgres` sebagai container tanpa port host, membaca berkas env migration (akun pemilik skema); `sigm4_app` tetap dibuat migration. Berkasnya di `deploy/production/`; template Nginx dipakai bersama dari `deploy/staging/nginx/`. Aset web per tag diterbitkan sebagai GitHub Release, sehingga rollback memakai aset yang persis sama.
+
+**Replika dan arsip WAL tidak lagi menjadi container pada topologi ini** (staging). Keduanya adalah tanggung jawab layanan PostgreSQL terkelola (`SDD-INF-11`) dan tampil sebagai konfigurasi langganan, bukan sebagai proses yang di-*compose*. Redis tetap swa-kelola di VPS: kehilangannya berarti kehilangan cache dan *rate limit* — degradasi yang `SDD-SEC-05` dan §6 sudah antisipasi — bukan kehilangan data.
 
 ### 4.3 Pipeline CI/CD
 
@@ -149,12 +160,17 @@ push / PR                     .github/workflows/ci.yml — required check `CI lu
  ├─ image scan                CD-01  Trivy — HIGH/CRITICAL → stop
  └─ deploy staging  →  DAST (ST-03, OWASP ZAP)  →  smoke test (CD-07)
 
-tag rilis
+tag rilis                      .github/workflows/rilis-produksi.yml (SDD-INF-14)
+ ├─ seluruh gerbang di atas   ci.yml dipanggil ulang; image hasil run itu → GHCR :vX.Y.Z
+ ├─ persetujuan + jendela     environment `production`; CD-06 dinilai saat deploy berjalan
+ ├─ dump pra-migration        RELEASE-PLAN §3 langkah 2
  ├─ migration job (akun DDL)                        CD-04
  ├─ rolling deploy api (readiness gate)             SDD-INF-04
  ├─ drain + ganti worker                            SDD-INF-05
- └─ smoke test produksi                             CD-07
+ └─ smoke test produksi                             CD-07  (dari runner GitHub, fixture [SMOKE])
 ```
+
+Job deploy berjalan di self-hosted runner server sekolah; smoke test berjalan dari runner GitHub terhadap domain publik. Rollback (`CD-05`) adalah `workflow_dispatch` dengan tag terdahulu: tanpa build ulang, image dari GHCR dan aset web dari GitHub Release tag itu.
 
 Deploy produksi berjalan di luar jam operasional dan diumumkan H-2 (`NFR-A-03`, `CD-06`).
 
@@ -244,7 +260,7 @@ Rahasia berasal dari *secret manager* (`SEC-CFG-01`), tidak pernah dari berkas d
 |---|---|---|---|
 | Development | Sintetis (`TD-01`) | Lokal | Docker Compose |
 | Staging | Salinan produksi **teranonimisasi** (`DP-08`) | Otomatis tiap merge | Menyerupai produksi untuk uji beban |
-| Production | Nyata | Manual pada tag rilis | Akses tercatat (`DP-11`) |
+| Production | Nyata | Tag rilis + persetujuan environment `production`; runner di server sekolah (`SDD-INF-14`) | Akses tercatat (`DP-11`); server dioperasikan IT sekolah |
 
 Menyalin data produksi ke staging tanpa anonimisasi dilarang keras; skrip anonimisasi adalah bagian dari pipeline penyegaran staging, bukan langkah manual.
 
@@ -270,6 +286,9 @@ Menyalin data produksi ke staging tanpa anonimisasi dilarang keras; skrip anonim
 - Akun DB ber-DDL yang terpisah dari akun aplikasi (`SDD-INF-03`, `SEC-CFG-03`) kini dibuat lewat antarmuka penyedia; batas hak istimewanya diverifikasi sekali saat penyediaan, bukan diasumsikan dari bawaan.
 - `DB_POOL_SIZE` (`TBD-AVL-C`) menjadi lebih terikat: batas koneksi ditetapkan tier langganan yang dipilih, bukan oleh konfigurasi PostgreSQL yang dapat kita ubah sendiri.
 - Residensi Indonesia (`SDD-SEC-10`) mengikat seluruh komponen §4.2 sekaligus, termasuk object storage `INF-02` dan lokasi cadangan `BR-DR-03`.
+- **`SDD-INF-14` memindahkan `SDD-INF-06` kembali ke kita untuk production.** Baris "disediakan layanan terkelola" pada §4.5 hanya berlaku bagi staging; base backup + arsip WAL production dibangun dan diuji `PR-08-07` pada server sekolah, dan cadangannya wajib keluar dari server itu (`BR-DR-03`).
+- **Gerbang rilis bergantung pada runner sekolah.** Runner yang mati atau server yang tidak menjangkau GitHub/GHCR menahan deploy di status *queued* — gagal dengan berisik, bukan diam. Pemasangan dan pemeliharaan runner masuk runbook serah terima (`IMP-08`).
+- Smoke test produksi memakai fixture `[SMOKE]` yang sama polanya dengan staging (`CD-07`); tiket uji dan auditnya tersimpan di data production (keputusan pemilik produk, 24 Oktober 2026).
 
 ---
 
@@ -282,7 +301,9 @@ Menyalin data produksi ke staging tanpa anonimisasi dilarang keras; skrip anonim
 | Uji restore bulanan tidak dijalankan | Cadangan tidak terbukti | Diotomasi dan menghasilkan metrik; ketiadaannya sendiri memicu alarm |
 | Rahasia bocor lewat log startup | Kredensial terekspos | Validasi mencetak nama, bukan nilai; redaction formatter (`SDD-OBS-04`) |
 | Sertifikat TLS kedaluwarsa | Layanan tidak dapat diakses | Pembaruan otomatis + alarm < 14 hari |
-| Deploy di jam operasional | Gangguan bagi pengguna | Dibatasi kebijakan (`CD-06`); pipeline menolak tag produksi di luar jendela kecuali dipaksa dan dicatat |
+| Deploy di jam operasional | Gangguan bagi pengguna | Dibatasi kebijakan (`CD-06`); pipeline menolak deploy produksi **di dalam** jam operasional (Senin–Sabtu 06.00–18.00 WIB) kecuali dipaksa dengan alasan yang tercatat di log job (`deploy/production/jendela-deploy.sh`) |
+| Repositori **publik** + self-hosted runner: workflow dari PR fork menarget label `sigm4-produksi` dan mengeksekusi kode di server sekolah (akses Docker ≈ root) | Server production disusupi | Risiko diterima sadar (keputusan pemilik produk, 24 Oktober 2026) dengan empat mitigasi wajib: workflow fork **selalu** menunggu persetujuan (*Require approval for all external contributors*); ruleset tag `v*` hanya untuk pemilik repo; environment `production` ber-*required reviewers* dan dibatasi cabang `main` + tag `v*`; runner berjalan dengan akun khusus tanpa sudo. Menyetujui run fork tanpa membaca diff `.github/workflows/` dilarang |
+| Runner sekolah mati atau dicabut | Rilis dan rollback tertahan | Runbook pemasangan ulang untuk IT sekolah; `deploy.sh` tetap dapat dijalankan manual dari server sebagai jalur darurat (`SDD-INF-14`) |
 | Sekolah tidak punya kapasitas operasional | Sistem tidak terpelihara | Pelatihan Administrator (`IMP-07`); runbook tertulis; hypercare 8 minggu (`IMP-06`) |
 | Ketergantungan pada satu penyedia PostgreSQL terkelola | Perpindahan mahal; kenaikan harga sulit ditolak | Skema dan migration memakai PostgreSQL standar (`SDD-DB-12`), tanpa ekstensi khusus penyedia; ekspor logis rutin memastikan data selalu dapat dibawa keluar |
 | Region penyedia berubah atau layanan dipindah | Residensi `SDD-SEC-10` terlanggar tanpa disadari | Region dinyatakan dalam kontrak; diperiksa ulang pada rotasi kredensial 6 bulanan ([SDD-13 §4.4](13-security-design.md)) |

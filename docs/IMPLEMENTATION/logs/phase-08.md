@@ -18,7 +18,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 
 | Tanggal | Yang terjadi | PR terkait |
 |---|---|---|
-| — | — | — |
+| 24 Oktober 2026 | Pemilik produk menetapkan production di **server milik sekolah**, tanpa akses bagi pengembang, lalu meminta pipeline CI/CD production disiapkan. Empat keputusan diambil lewat `AskUserQuestion` (keputusan 1–5). PRD `INF-05` dan SDD-16 (`SDD-INF-14`) disunting **sebelum** kode. Dikerjakan di worktree terpisah dari `origin/develop`, karena checkout utama memuat ±540 berkas tak ter-commit milik cabang `PR-04-01`. | `PR-08-17` |
 
 ## 2. Keputusan yang diambil
 
@@ -26,7 +26,14 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 
 | # | Keputusan | Alasan | Menaikkan ke PRD/SDD? |
 |:---:|---|---|:---:|
-| — | — | — | — |
+| 1 | Production di server sekolah. Deploy lewat **self-hosted runner** berlabel `sigm4-produksi` yang dipasang IT sekolah, di bawah environment `production` ber-reviewer (pemilik produk). | Tanpa akses SSH, deploy dorong `PR-00-18` mustahil; runner mempertahankan gerbang dan log di GitHub (`SDD-INF-12`) | Ya — PRD `INF-05`, `SDD-INF-14` |
+| 2 | PostgreSQL production sebagai **container** di server sekolah (pemilik produk). | Tidak ada layanan terkelola di server sekolah | Ya — `SDD-INF-14`; `SDD-INF-11` kini hanya staging |
+| 3 | Object storage production tetap **Backblaze B2**; server **publik via domain**, Let's Encrypt HTTP-01 tetap (pemilik produk). | `INF-02`, `INF-06` tidak berubah | Tidak — tercatat di `SDD-INF-14` |
+| 4 | Smoke produksi **penuh** dengan fixture `[SMOKE]`, pola staging `CD-07` (pemilik produk). | Pemeriksaan kesehatan saja tidak memenuhi `CD-07` | Ya — SDD-16 §5 |
+| 5 | Repositori **tetap publik** dengan empat mitigasi wajib untuk self-hosted runner (pemilik produk). | Repo private mematikan CodeQL/dependency-review tanpa langganan berbayar (gerbang `CD-01`/`CD-02`) | Ya — SDD-16 §6, risiko diterima |
+| 6 | `ci.yml` tidak lagi dipicu push tag `v*`; tag menjalankannya lewat `workflow_call` dari `rilis-produksi.yml`. | Tanpa ini setiap tag menjalankan CI dua kali; image yang diterbitkan adalah artefak `build` run yang sama dengan yang dipindai Trivy | Tidak |
+| 7 | Jam operasional WIB dihitung sebagai UTC+7 langsung, bukan `TZ=Asia/Jakarta`. | Uji `jendela-deploy.test.sh` gagal 7/11 di Git Bash: tanpa tzdata, `TZ=Asia/Jakarta` diam-diam jatuh ke UTC. Server tanpa paket tzdata akan menggeser gerbang 7 jam | Tidak |
+| 8 | Aset web per tag diterbitkan sebagai **GitHub Release** (`web-dist.tar.gz`, `openapi.json`). | Artefak run berumur pendek; rollback butuh aset yang persis sama tanpa build ulang (`CD-05`) | Ya — SDD-16 §4.2 |
 
 ## 3. Penyimpangan dari rencana
 
@@ -40,7 +47,7 @@ PR yang tidak ada pada daftar [`phase-08.md` §7](../phases/phase-08.md).
 
 | ID | Judul | Mengapa tidak terencana |
 |---|---|---|
-| — | — | — |
+| `PR-08-17` | Pipeline rilis production ke server sekolah | SDD-16 §4.3 sudah menggambar pipeline "tag rilis", tetapi tidak satu PR pun pada rencana memilikinya — `PR-00-18` hanya staging. Kekosongan itu baru terlihat ketika lokasi production berubah. Kompleksitas `L` (±600 baris kode/konfigurasi): compose, `deploy.sh`, dan workflow saling merujuk dan tidak dapat diuji terpisah — workflow tanpa skrip tidak berjalan, skrip tanpa topologi tidak dapat divalidasi |
 
 Kolom ketiga adalah yang paling berharga di seluruh log ini. Pola yang berulang di sana menunjukkan di mana perencanaan phase berikutnya perlu diperbaiki.
 
@@ -64,7 +71,9 @@ Setiap TBD yang tertutup wajib juga diperbarui di [`../../SDD/TBD-REGISTER.md`](
 
 | Masalah | Dampak | Penyelesaian | Terbuka? |
 |---|---|---|:---:|
-| — | — | — | — |
+| `smoke-test.sh` di `develop` belum memiliki `--full` (`PR-03-36` belum tergabung) | Smoke produksi tidak dapat membuktikan lima alur `CD-07` | Opsi tak dikenal kini ditolak (kode 2), tidak lagi diabaikan diam-diam, sehingga job smoke produksi **gagal** sampai `PR-03-36` tergabung | Ya — `PR-03-36` |
+| `actionlint` tidak dapat dijalankan (daemon Docker lokal mati) | Ekspresi dan izin `workflow_call` belum divalidasi alat | YAML diurai, `docker compose config` lolos; validasi nyata pada run CI pertama | Ya |
+| `deploy.sh` produksi menduplikasi `tunggu_sehat` dari staging | Dua salinan koreografi | Tidak disatukan di PR ini (aturan tanpa refactor sambil lalu); kandidat PR tersendiri | Ya |
 
 ## 8. Hasil pengukuran
 
@@ -90,7 +99,8 @@ Hal yang sengaja ditinggalkan terbuka, beserta di mana ia akan ditutup.
 
 | Yang ditinggalkan | Ditutup di | Alasan penundaan |
 |---|---|---|
-| — | — | — |
+| Base backup + arsip WAL PostgreSQL container, salinan keluar server, uji restore | `PR-08-07` | `SDD-INF-14` memindahkan `SDD-INF-06` kembali ke kita; dump pra-deploy bukan PITR |
+| Pemasangan runner, berkas env, sertifikat pertama, setelan GitHub | Operator / IT sekolah — [runbook](../runbooks/produksi-server-sekolah.md) | Pengembang tidak memiliki akses ke server sekolah |
 
 ---
 
