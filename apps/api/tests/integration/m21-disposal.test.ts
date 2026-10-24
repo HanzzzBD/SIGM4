@@ -45,7 +45,7 @@ describe.skipIf(!process.env["DATABASE_URL"])("PR-05-10..14/29 penghapusan aset"
         const building = await id(`INSERT INTO buildings(nama,kode) VALUES ('Penghapusan','H${marker}') RETURNING id::text`), area = await id(`INSERT INTO areas(building_id,nama,kode) VALUES (${building},'Penghapusan','H${marker}') RETURNING id::text`);
         room = await id(`INSERT INTO rooms(area_id,nama,kode,jenis) VALUES (${area},'Gudang','H${marker}','GUDANG') RETURNING id::text`); category = await id(`INSERT INTO asset_categories(nama,kode,umur_teknis_tahun) VALUES ('Hapus','H${marker}',5) RETURNING id::text`);
         const app = express(); app.use((req, res, next) => { setAuthContext(res, ctx({ id: Number(req.header("x-user")), role: req.header("x-role")!, permissions: (req.header("x-permissions") ?? "").split(",").filter(Boolean) })); setAmr(res, ["pwd", AMR_OTP]); next(); });
-        app.use(createApp({ appBaseUrl: "https://hps.test", db: getDb(), clock, logger: new Logger({ clock, tulis: () => undefined }), penyimpanan: storage, pdf: new PembangkitPdfChromium("C:/Program Files/Google/Chrome/Application/chrome.exe"), auth: authPalsu(), health: new HealthRegistry(30).register(fcmCheck(null)), security: { objectStorageOrigin: "https://storage.test" }, limiter: { hit: async () => ({ lolos: true, batas: 10000, sisa: 9999, resetDetik: 60 }) } })); server = createServer(app); await new Promise<void>(r => server.listen(0, "127.0.0.1", r)); base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/v1`;
+        app.use(createApp({ appBaseUrl: "https://hps.test", db: getDb(), clock, logger: new Logger({ clock, tulis: () => undefined }), penyimpanan: storage, pdf: new PembangkitPdfChromium(process.env["CHROMIUM_EXECUTABLE_PATH"] ?? (process.platform === "win32" ? "C:/Program Files/Google/Chrome/Application/chrome.exe" : null)), auth: authPalsu(), health: new HealthRegistry(30).register(fcmCheck(null)), security: { objectStorageOrigin: "https://storage.test" }, limiter: { hit: async () => ({ lolos: true, batas: 10000, sisa: 9999, resetDetik: 60 }) } })); server = createServer(app); await new Promise<void>(r => server.listen(0, "127.0.0.1", r)); base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/v1`;
     });
     afterAll(async () => { if (server) await new Promise<void>(r => server.close(() => r())); });
     it("requires configured principal route, known value and eligible assets; failure leaves no claim", async () => {
@@ -89,7 +89,7 @@ describe.skipIf(!process.env["DATABASE_URL"])("PR-05-10..14/29 penghapusan aset"
         expect((await send(`/assets/${disposed.items[0]!.asset_id}`, manager)).status).toBe(200); expect((await send(`/asset-disposals/${disposed.id}/execute`, manager, b)).status).toBe(422);
     });
     it("generates persistent financial and redacted PDF once; historic XLSX and archive totals are audited", async () => {
-        const service = new DisposalReportService(getDb(), clock, audit, storage), system = createSystemAuthContext("test-disposal"), renderer = new PembangkitPdfChromium("C:/Program Files/Google/Chrome/Application/chrome.exe");
+        const service = new DisposalReportService(getDb(), clock, audit, storage), system = createSystemAuthContext("test-disposal"), renderer = new PembangkitPdfChromium(process.env["CHROMIUM_EXECUTABLE_PATH"] ?? (process.platform === "win32" ? "C:/Program Files/Google/Chrome/Application/chrome.exe" : null));
         await service.run(system, disposed.id, renderer); await service.run(system, disposed.id, { render: async () => { throw new Error("Duplicate PDF"); } }); expect(objects.size).toBe(2); expect([...objects.values()].every(b=>b.subarray(0,8).toString()==="%PDF-1.7")).toBe(true);
         const full = await service.download(ctx(manager), disposed.id), hidden = await service.download(ctx(reviewer), disposed.id); expect(full.file_id).not.toBe(hidden.file_id); expect(full.status).toBe("SIAP");
         const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
@@ -202,7 +202,7 @@ describe.skipIf(!process.env["DATABASE_URL"])("PR-05-10..14/29 penghapusan aset"
         expect([...objects.keys()]).toEqual(before); expect((await send(`/asset-disposals/${proposal.id}`, manager)).json.data.report_status).toBe("GAGAL");
         expect((await send(`/asset-disposals/${proposal.id}/report/retry`, reviewer, {})).status).toBe(403);
         const key = randomUUID(); expect((await send(`/asset-disposals/${proposal.id}/report/retry`, manager, {}, key)).status).toBe(200); expect((await send(`/asset-disposals/${proposal.id}/report/retry`, manager, {}, key)).status).toBe(200);
-        await service.run(system, proposal.id, new PembangkitPdfChromium("C:/Program Files/Google/Chrome/Application/chrome.exe"));
+        await service.run(system, proposal.id, new PembangkitPdfChromium(process.env["CHROMIUM_EXECUTABLE_PATH"] ?? (process.platform === "win32" ? "C:/Program Files/Google/Chrome/Application/chrome.exe" : null)));
         const result = DisposalDetailResponseSchema.parse((await send(`/asset-disposals/${proposal.id}`, admin)).json).data; expect(result.report_status).toBe("SIAP"); expect(result.items[0]!.reinstated_at).not.toBeNull(); expect(result.items[0]!.dihapuskan).toBe(false);
         for (const key of before) expect(objects.has(key)).toBe(true);
     });

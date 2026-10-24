@@ -128,7 +128,7 @@ describe.skipIf(!process.env["DATABASE_URL"])("PR-04-11/12/13/14 stocktake", () 
     });
     it("generates persistent PDF once from frozen report; export includes identity and is audited", async () => {
         const report = new StocktakeReportService(getDb(), clock, audit, storage), system = createSystemAuthContext("test-opname-pdf");
-        const renderer = new PembangkitPdfChromium("C:/Program Files/Google/Chrome/Application/chrome.exe");
+        const renderer = new PembangkitPdfChromium(process.env["CHROMIUM_EXECUTABLE_PATH"] ?? (process.platform === "win32" ? "C:/Program Files/Google/Chrome/Application/chrome.exe" : null));
         await report.run(system, sessionId, renderer); await report.run(system, sessionId, { render: async () => { throw new Error("Duplicate render"); } });
         const downloaded = await report.download(context(leader), sessionId); expect(downloaded.status).toBe("SIAP"); expect(downloaded.url).toMatch(/^https:/);
         const bytes = [...objects.values()][0]!; expect(bytes.subarray(0, 8).toString()).toBe("%PDF-1.7");
