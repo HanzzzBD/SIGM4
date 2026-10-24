@@ -80,3 +80,31 @@ export type { DokumenAset, DokumenLintasAset } from "./asset-documents.js";
 
 export { DecideBodySchema, DecideResponseSchema, ListPendingQuerySchema, ListPendingResponseSchema } from "./approval-decisions.js";
 export type { ApprovalPending, ApprovalDecision, ApprovalDecisionResult } from "./approval-decisions.js";
+export { AssetAvailabilityQuerySchema, AssetAvailabilityGroupSchema, AssetAvailabilityResponseSchema } from "./asset-availability.js";
+export type { AssetAvailabilityQuery, AssetAvailabilityGroup, AssetAvailabilityResponse } from "./asset-availability.js";
+export { AssetReservationBodySchema, AssetReservationSelectionSchema, ReservationSubmissionBodySchema } from "./asset-reservation.js";
+export type { AssetReservationBody } from "./asset-reservation.js";
+export * from "./loans.js";
+export * from "./loan-management.js";
+export { WorkOrderAssignmentSchema, WorkOrderCreateSchema, WorkOrderQuerySchema, WorkOrderResponseSchema } from "./work-orders.js";
+export type { WorkOrderAssignment, WorkOrderCreate } from "./work-orders.js";
+export * from "./work-order-lifecycle.js";
+export * from "./procurement.js";
+export * from "./maintenance-schedules.js";
+export * from "./stocktake.js";
+export * from "./disposals.js";
+
+export * from "./materials.js";
+export * from "./material-operations.js";
+export * from "./material-requests.js";
+export * from "./material-stocktake.js";
+export * from "./chat.js";
+export * from "./chat-stream.js";
+export * from "./analytics.js";
+
+export * from "./report-exports.js";
+export * from "./asset-export.js";
+export * from "./user-privacy.js";
+export * from "./room-schedule-import.js";
+export { QrConfigResponseSchema } from "./qr.js";
+export { LABEL_ROLE, roleLabel } from "./role-labels.js";

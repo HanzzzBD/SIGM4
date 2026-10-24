@@ -16,6 +16,7 @@ export const AssetDetailSchema = z.object({
     uuid: z.string(),
     kode_barang: z.string(),
     nama: z.string(),
+    pengadaan: z.object({id:z.string(),nomor:z.string()}).nullable().optional(),
     kategori: z.object({ id: z.string(), nama: z.string() }),
     merek: z.string().nullable(),
     model: z.string().nullable(),
@@ -41,13 +42,17 @@ export type AssetDetail = z.infer<typeof AssetDetailSchema>;
 export const AssetDetailResponseSchema = z.object({ success: z.literal(true), data: AssetDetailSchema, meta: z.null() });
 
 /** Jenis entri linimasa (keputusan 4b & 24b). Modul pemilik riwayat lain menambah jenisnya sendiri. */
-export const JENIS_LINIMASA_ASET = ["KONDISI", "MUTASI", "DOKUMEN", "KERUSAKAN"] as const;
+export const JENIS_LINIMASA_ASET = ["KONDISI", "MUTASI", "DOKUMEN", "KERUSAKAN", "PEMELIHARAAN", "PEMINJAMAN", "PREVENTIF_DILEWATI", "PENGHAPUSAN"] as const;
 
 const Dasar = { id: z.string(), waktu: Waktu };
 /** `pelaku` `null` = Sistem (AL-06). */
 const Pelaku = Orang.nullable();
 
 export const EntriLinimasaAsetSchema = z.discriminatedUnion("jenis", [
+    z.object({ ...Dasar, jenis: z.literal("PENGHAPUSAN"), disposal_id: z.string(), nomor: z.string(), aksi: z.enum(["DIEKSEKUSI", "DIPULIHKAN"]), alasan: z.string() }),
+    z.object({ ...Dasar, jenis: z.literal("PREVENTIF_DILEWATI"), schedule_id: z.string(), nama: z.string(), jatuh_tempo: z.iso.date(), alasan: z.string() }),
+    z.object({...Dasar,jenis:z.literal("PEMELIHARAAN"),work_order_id:z.string(),nomor:z.string(),status:z.string(),jenis_pekerjaan:z.string(),biaya:z.string().nullable(),hasil:z.string().nullable()}),
+    z.object({ ...Dasar, jenis: z.literal("PEMINJAMAN"), loan_id: z.string(), nomor: z.string(), status: z.string(), dikembalikan_pada: z.string().nullable() }),
     z.object({
         ...Dasar,
         jenis: z.literal("KONDISI"),

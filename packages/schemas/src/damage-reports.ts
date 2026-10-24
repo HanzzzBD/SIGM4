@@ -1,6 +1,7 @@
 // Kontrak laporan kerusakan (FR-11.1; PR-03-14, keputusan 20 log phase-03). Satu definisi bagi API,
 // layar P-40 web, dan MS-15 mobile (SDD-FE-05, SDD-MOB-01).
 import { z } from "zod";
+import { WorkOrderAssignmentSchema } from "./work-orders.js";
 
 /** Bab 11.3 "Urgensi Kerusakan". */
 export const URGENSI_KERUSAKAN = ["RENDAH", "SEDANG", "TINGGI", "KRITIS"] as const;
@@ -77,6 +78,7 @@ export const KEPUTUSAN_VERIFIKASI_KERUSAKAN = ["TINDAK_LANJUT", "PERBAIKAN_RINGA
  */
 export const DamageReportVerifySchema = z
     .object({
+        work_order: WorkOrderAssignmentSchema.optional(),
         keputusan: z.enum(KEPUTUSAN_VERIFIKASI_KERUSAKAN, { error: "Pilih tindak lanjut: Buat Work Order, Perbaikan Ringan, atau Tolak." }),
         catatan: z.string().trim().min(1, { error: "Catatan tidak boleh kosong." }).max(1000, { error: "Catatan paling panjang 1000 karakter." }).optional(),
         kondisi_aset: z
@@ -88,6 +90,7 @@ export const DamageReportVerifySchema = z
             .optional(),
     })
     .strict()
+    .refine(v => v.keputusan === "TINDAK_LANJUT" || v.work_order === undefined, { path: ["work_order"], message: "Penugasan hanya untuk tindak lanjut." })
     .refine((v) => v.keputusan === "TINDAK_LANJUT" || v.catatan !== undefined, {
         error: (i) => ((i.input as { keputusan?: string }).keputusan === "TOLAK" ? "Alasan penolakan wajib diisi." : "Catatan perbaikan wajib diisi."),
         path: ["catatan"],
@@ -153,6 +156,8 @@ export const DamageReportDetailSchema = z.object({
     catatan: z.array(DamageReportNoteSchema),
     /** FR-07.4 A2 (PR-03-31): reservasi ruangan asal laporan; `null` bila tidak tertaut. */
     reservasi: z.object({ id: z.string(), nomor: z.string() }).nullable(),
+    /** P-41: null tanpa workorder.view atau di luar scope penugasan. */
+    work_order: z.object({id:z.string(),nomor:z.string()}).nullable().optional(),
     /**
      * BR-052 / A3: garansi aktif atas aset hari ini (WIB). `null` = tidak berlaku (tiket ruangan) atau
      * pemanggil tanpa `asset_document.view`.

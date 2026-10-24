@@ -1,0 +1,10 @@
+import { z } from "zod";
+import { StocktakeMetaSchema } from "./stocktake.js";
+const Id=z.number().int().positive(),Quantity=z.number().int().min(0).max(2147483647),Cursor=z.string().regex(/^(0|[1-9]\d*)$/);
+export const MaterialStocktakeCountSchema=z.object({client_scan_id:z.uuid(),material_id:Id,room_id:Id,jumlah_fisik:Quantity,basis:z.object({saldo:Quantity,ledger_id:Cursor}).strict(),revision:z.number().int().min(0).max(2147483646),keterangan:z.string().trim().max(2000).default(""),foto_file_ids:z.array(Id).max(0).default([])}).strict();
+export type MaterialStocktakeCount=z.output<typeof MaterialStocktakeCountSchema>;
+export const MaterialStocktakeNoteSchema=z.object({keterangan:z.string().trim().min(1).max(2000),revision:z.number().int().positive()}).strict();
+export const MaterialStocktakeItemSchema=z.object({id:z.string(),material_id:z.string(),room_id:z.string(),nama:z.string(),uuid:z.uuid(),satuan_id:z.string(),satuan_nama:z.string(),satuan_simbol:z.string(),lokasi:z.string(),saldo_sistem:Quantity,jumlah_fisik:Quantity.nullable(),basis_saldo:Quantity.nullable(),basis_ledger_id:Cursor.nullable(),selisih:z.number().int().nullable(),selisih_snapshot:z.number().int().nullable(),revision:z.number().int().nonnegative(),keterangan:z.string().nullable(),diperiksa_oleh:z.string().nullable(),diperiksa_pada:z.string().nullable(),saldo_sekarang:Quantity,ledger_id_sekarang:Cursor,satuan_berubah:z.boolean(),perlu_hitung_ulang:z.boolean()});
+export type MaterialStocktakeItem=z.infer<typeof MaterialStocktakeItemSchema>;
+export const MaterialStocktakeItemsSchema=z.object({success:z.literal(true),data:z.array(MaterialStocktakeItemSchema),meta:StocktakeMetaSchema});
+export const MaterialStocktakeItemResponseSchema=z.object({success:z.literal(true),data:MaterialStocktakeItemSchema,meta:z.null()});
