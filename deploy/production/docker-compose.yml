@@ -1,0 +1,170 @@
+# Topologi runtime PRODUKSI — PR-08-17 (SDD-16 §4.2, SDD-INF-10/13/14).
+#
+# Dijalankan di SERVER SEKOLAH oleh deploy.sh, yang dipanggil job `deploy` pada
+# .github/workflows/rilis-produksi.yml lewat self-hosted runner (SDD-INF-14).
+# Berbeda dari topologi staging:
+#   - PostgreSQL BERJALAN di sini sebagai container (SDD-INF-14 menggantikan
+#     layanan terkelola SDD-INF-11 untuk produksi). Port-nya tidak dibuka ke host.
+#   - Object storage tetap Backblaze B2 (INF-02); alamatnya datang dari berkas env.
+#   - Template Nginx dipakai bersama staging (deploy/staging/nginx/) — satu sumber;
+#     job deploy menyalinnya ke ./nginx/ di samping berkas ini.
+#
+# RAHASIA tidak pernah berada di sini (SEC-CFG-01). Dua berkas env disiapkan
+# IT sekolah di server, di luar repositori (runbook produksi-server-sekolah.md):
+#   ${SIGM4_ENV_FILE}            — api & worker: DATABASE_URL (akun sigm4_app),
+#                                  S3_*, JWT_*, TOTP_ENCRYPTION_KEY, APP_BASE_URL, …
+#   ${SIGM4_MIGRATION_ENV_FILE}  — HANYA postgres & job migration: POSTGRES_USER,
+#                                  POSTGRES_PASSWORD, POSTGRES_DB,
+#                                  MIGRATION_DATABASE_URL, APP_DB_PASSWORD.
+#                                  API dan worker tidak pernah menerimanya
+#                                  (SDD-16 §4.7, SEC-CFG-03).
+
+name: sigm4-production
+
+x-app: &app
+    # Satu tag untuk api, worker, dan migration (SDD-INF-01).
+    image: ${SIGM4_IMAGE:?SIGM4_IMAGE wajib diisi deploy.sh}
+    env_file:
+        - ${SIGM4_ENV_FILE:-/etc/sigm4/production.env}
+    environment:
+        TZ: UTC # SDD-INF-09 — divalidasi lagi saat startup
+        APP_ENV: production # PR-00-19: /api/docs tidak dipasang di produksi
+        REDIS_URL: redis://redis:6379
+        CLAMAV_URL: tcp://clamav:3310
+    restart: unless-stopped
+    depends_on:
+        postgres:
+            condition: service_healthy
+        redis:
+            condition: service_healthy
+
+services:
+    # INF-06, SDD-INF-13 — TLS + HSTS, satu origin untuk web statis dan /api/v1.
+    nginx:
+        image: nginx:1.29-alpine
+        environment:
+            SIGM4_DOMAIN: ${SIGM4_DOMAIN:?SIGM4_DOMAIN wajib diisi}
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./nginx/sigm4.conf.template:/etc/nginx/templates/default.conf.template:ro
+            - letsencrypt:/etc/letsencrypt:ro
+            - certbot-webroot:/var/www/certbot:ro
+            # Hasil build web (SDD-FE-14) dari GitHub Release tag yang sama, disalin deploy.sh.
+            - web:/usr/share/sigm4/web:ro
+        restart: unless-stopped
+
+    # SDD-INF-13 — perpanjangan sertifikat sebagai komponen tersendiri. Penerbitan
+    # pertama dijalankan sekali oleh IT sekolah (runbook §4).
+    certbot:
+        image: certbot/certbot:v4.2.0
+        entrypoint: ["/bin/sh", "-c", "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done"]
+        volumes:
+            - letsencrypt:/etc/letsencrypt
+            - certbot-webroot:/var/www/certbot
+        restart: unless-stopped
+
+    # SDD-INF-04 — dua instance agar penggantian bergulir tidak memutus layanan.
+    # Tenggat henti sama dengan staging (SDD-16 §5): API 25 s dari 30 s.
+    api-1:
+        <<: *app
+        stop_grace_period: 30s
+        healthcheck: &api-ready
+            test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/api/v1/health/ready"]
+            interval: 5s
+            timeout: 3s
+            retries: 3
+            start_period: 15s
+    api-2:
+        <<: *app
+        stop_grace_period: 30s
+        healthcheck: *api-ready
+
+    # SDD-SYS-08, SDD-INF-05 — tenggat drain worker 50 s dari 60 s.
+    worker:
+        <<: *app
+        command: ["node", "apps/api/dist/worker/index.js"]
+        stop_grace_period: 60s
+        healthcheck:
+            test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/health/ready"]
+            interval: 5s
+            timeout: 3s
+            retries: 3
+            start_period: 15s
+
+    # SDD-INF-03, CD-04 — container sekali-jalan dengan akun DDL, sebelum instance
+    # baru menerima trafik. Hanya berjalan lewat `--profile migrate`.
+    migrate:
+        image: ${SIGM4_IMAGE:?SIGM4_IMAGE wajib diisi deploy.sh}
+        command: ["node", "scripts/migrate.mjs", "up"]
+        env_file:
+            - ${SIGM4_MIGRATION_ENV_FILE:-/etc/sigm4/production-migration.env}
+        environment:
+            TZ: UTC
+        depends_on:
+            postgres:
+                condition: service_healthy
+        profiles: ["migrate"]
+        restart: "no"
+
+    # INF-01, SDD-INF-14 — PostgreSQL di server sekolah. POSTGRES_USER adalah akun
+    # migration pemilik skema; akun aplikasi sigm4_app dibuat migration 0007 dan
+    # kata sandinya disetel migrate.mjs dari APP_DB_PASSWORD. Base backup + arsip
+    # WAL (SDD-INF-06) milik PR-08-07; deploy.sh hanya membuat dump pra-migration.
+    postgres:
+        image: postgres:15-alpine
+        env_file:
+            - ${SIGM4_MIGRATION_ENV_FILE:-/etc/sigm4/production-migration.env}
+        environment:
+            TZ: UTC
+            PGTZ: UTC
+        volumes:
+            # Direktori data dapat dipindah IT sekolah ke disk khusus lewat SIGM4_PG_DATA.
+            - ${SIGM4_PG_DATA:-pg-data}:/var/lib/postgresql/data
+        # Checkpoint penutupan yang rapi lebih lama dari bawaan 10 s Docker.
+        stop_grace_period: 120s
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+            interval: 5s
+            timeout: 3s
+            retries: 12
+        restart: unless-stopped
+
+    # INF-03 — cache, rate limit, antrean, distributed lock (SDD-16 §4.2).
+    redis:
+        image: redis:7-alpine
+        environment:
+            TZ: UTC
+        volumes:
+            - redis-data:/data
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 5s
+            timeout: 3s
+            retries: 12
+        restart: unless-stopped
+
+    # SDD-FS-04 — ClamAV sebagai proses terpisah; bukan `depends_on` api/worker
+    # karena `av_scanner` tidak menentukan `ready` (SDD-15 §4.5).
+    clamav:
+        image: clamav/clamav:1.4
+        environment:
+            TZ: UTC
+        volumes:
+            - clamav-db:/var/lib/clamav
+        healthcheck:
+            test: ["CMD", "clamdcheck.sh"]
+            interval: 15s
+            timeout: 10s
+            retries: 20
+            start_period: 300s
+        restart: unless-stopped
+
+volumes:
+    letsencrypt:
+    certbot-webroot:
+    web:
+    pg-data:
+    redis-data:
+    clamav-db:

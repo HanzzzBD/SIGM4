@@ -13,11 +13,20 @@
 # pengirimannya: API hidup, siap, dan berada di belakang proxy yang benar.
 #
 # SMOKE_CURL_OPTS dipakai HANYA oleh staging tiruan bersertifikat self-signed (-k).
+# SMOKE_LINGKUNGAN=produksi (PR-08-17): /api/docs wajib TERTUTUP (PR-00-19), bukan terbuka.
 
 set -euo pipefail
 
 BASE="${1:?Pemakaian: smoke-test.sh <base-url>}"
 BASE="${BASE%/}"
+# Opsi yang belum dikenal berkas ini ditolak, bukan diabaikan: `--full` yang diam-diam
+# menjadi pemeriksaan kesehatan saja tidak memenuhi CD-07.
+if (( $# > 1 )); then
+    echo "Opsi tidak dikenal: ${*:2}" >&2
+    exit 2
+fi
+PRODUKSI=0
+[[ "${SMOKE_LINGKUNGAN:-staging}" == "produksi" ]] && PRODUKSI=1
 read -r -a OPSI <<< "${SMOKE_CURL_OPTS:-}"
 KERJA="$(mktemp -d)"
 trap 'rm -rf "$KERJA"' EXIT
@@ -50,8 +59,10 @@ periksa "readiness API (DB + Redis)" "/api/v1/health/ready" 200
 header_ada "X-Request-Id"                 # SDD-OBS-03
 header_ada "Content-Security-Policy"      # NFR-S-11 — dari aplikasi
 header_ada "Strict-Transport-Security"    # INF-06 — dari proxy
-periksa "dokumen OpenAPI staging" "/api/docs" 200
-if grep -q '"openapi":"3.1.0"' "$KERJA/body" && grep -q '"paths"' "$KERJA/body"; then
+if (( PRODUKSI )); then
+    periksa "dokumen OpenAPI tertutup di produksi" "/api/docs" 404
+elif periksa "dokumen OpenAPI staging" "/api/docs" 200 \
+    && grep -q '"openapi":"3.1.0"' "$KERJA/body" && grep -q '"paths"' "$KERJA/body"; then
     echo "  ok    kontrak OpenAPI tersedia"
 else
     echo "  GAGAL respons dokumentasi bukan OpenAPI" >&2

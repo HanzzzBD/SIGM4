@@ -92,9 +92,11 @@ Seluruh tahap berada di `.github/workflows/ci.yml` dan dirangkum job **`CI lulus
 |---|---|---|
 | Migration job terpisah sebelum instance baru menerima trafik | `CD-04` | Ditulis `PR-00-18` — container sekali-jalan dari image yang sama; terbukti pada staging tiruan |
 | `expand → migrate → contract`; `contract` hanya di `PR-08-11` | `CD-04`, [`DELIVERY-PLAN §6`](DELIVERY-PLAN.md) | Berlaku sejak migration pertama |
-| Image 5 rilis terakhir dipertahankan; rollback ≤ 15 menit | `CD-05` | Target — Phase 08 |
-| Deploy produksi di luar jam operasional, diumumkan H-2 | `CD-06` | Target — go-live |
+| Image 5 rilis terakhir dipertahankan; rollback ≤ 15 menit | `CD-05` | **Ditulis** `PR-08-17` — GHCR menyimpan setiap tag `vX.Y.Z`; `deploy/production/deploy.sh` mempertahankan 5 image + 5 dump terakhir di server; rollback = *Run workflow* **Rilis produksi** dengan tag lama, tanpa build ulang. Belum diukur (`PR-08-14`) |
+| Deploy produksi di luar jam operasional, diumumkan H-2 | `CD-06` | **Ditulis** `PR-08-17` — `jendela-deploy.sh` menolak Senin–Sabtu 06.00–18.00 WIB kecuali dipaksa beralasan; diuji `jendela-deploy.test.sh` (11 kasus). Pengumuman H-2 tetap prosedur manusia |
 | Smoke test pasca-deploy | `CD-07` | Ditulis `PR-00-18` — jalur pengiriman (live, ready, header, 404); alur kritis menyusul PR endpoint-nya |
+
+Production berjalan di **server sekolah** lewat self-hosted runner (`SDD-INF-14`); pipeline `rilis-produksi.yml` belum pernah berjalan — runner, environment `production`/`production-smoke`, dan ruleset tag `v*` belum disetel ([runbook](runbooks/produksi-server-sekolah.md) §6).
 
 Merge ke `main` mensyaratkan seluruh gerbang rilis `GL-01`…`GL-12` (`BRANCHING §3`). Gerbang itu bersifat go-live sekali, bukan per-PR.
 

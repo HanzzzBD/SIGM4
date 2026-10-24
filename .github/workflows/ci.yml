@@ -19,7 +19,10 @@ on:
         branches: [develop, staging, main]
     push:
         branches: [develop, staging, main]
-        tags: ["v*"]
+    # Tag rilis v* menjalankan pipeline ini lewat rilis-produksi.yml (PR-08-17), bukan
+    # lewat push langsung — satu run per tag, dan image yang diterbitkan ke produksi
+    # adalah artefak `build` run itu sendiri. `github.ref` tetap tag-nya (SDD-API-12).
+    workflow_call:
     workflow_dispatch:
 
 permissions:
@@ -62,7 +65,7 @@ jobs:
                   fi
                   berubah=$(git diff --name-only "$BASE" HEAD)
                   printf '%s\n' "$berubah"
-                  pola='^(apps/api/|packages/|scripts/|docs/PRD/|docs/SDD/|package(-lock)?\.json$|tsconfig[^/]*\.json$|eslint\.config\.js$|\.prettierrc\.json$|Dockerfile$|\.dockerignore$|docker-compose\.yml$|\.github/workflows/)'
+                  pola='^(apps/api/|packages/|scripts/|deploy/|docs/PRD/|docs/SDD/|package(-lock)?\.json$|tsconfig[^/]*\.json$|eslint\.config\.js$|\.prettierrc\.json$|Dockerfile$|\.dockerignore$|docker-compose\.yml$|\.github/workflows/)'
                   if printf '%s\n' "$berubah" | grep -qE "$pola"; then
                       echo "api=true" >> "$GITHUB_OUTPUT"
                   else
@@ -107,6 +110,15 @@ jobs:
             - run: npm ci
             # Seluruh workspace; untuk apps/api didahului tsc atas uji negatif @ts-expect-error.
             - run: npm run test
+            # Berkas deploy produksi (PR-08-17): gerbang CD-06 diuji, skrip dan topologi divalidasi.
+            - name: Berkas deploy produksi
+              run: |
+                  bash deploy/production/jendela-deploy.test.sh
+                  bash -n deploy/production/deploy.sh
+                  bash -n deploy/staging/smoke-test.sh
+                  SIGM4_IMAGE=sigm4:uji SIGM4_DOMAIN=contoh.sch.id \
+                  SIGM4_ENV_FILE=/dev/null SIGM4_MIGRATION_ENV_FILE=/dev/null \
+                      docker compose -f deploy/production/docker-compose.yml --profile migrate config --quiet
 
     # Pohon web (SDD-11, PR-02-30): uji (token & kontras NFR-AC-01/02, lint DS-P-07, alur aplikasi,
     # axe) lalu build Vite. Tanpa layanan eksternal — server HTTP tiruan pada adapter axios.

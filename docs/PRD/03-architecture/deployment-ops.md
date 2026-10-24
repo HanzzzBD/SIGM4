@@ -12,7 +12,7 @@ Menggantikan AS-14 dan AS-16 yang sebelumnya berstatus asumsi terbuka.
 | INF-02 | **Penyimpanan objek: S3-compatible** — produksi memakai **Backblaze B2** lewat API S3-compatible-nya (keputusan pemilik produk, 2 Oktober 2026); MinIO untuk dev/CI atau bila di-*hosting* mandiri; AWS S3 tetap kompatibel. Tidak diizinkan menyimpan berkas pada *filesystem* server aplikasi. |
 | INF-03 | **Cache & antrean: Redis 7+**, dipakai untuk cache agregat dashboard, *distributed lock* (JOB-02), *rate limiting*, dan antrean pekerjaan. |
 | INF-04 | **Runtime: Node.js LTS**, dikemas sebagai container OCI. |
-| INF-05 | **Model hosting: VPS terkelola dengan container orchestration sederhana** (Docker Compose untuk instalasi tunggal sekolah; Kubernetes hanya bila sekolah sudah memilikinya). |
+| INF-05 | **Model hosting: container orchestration sederhana** (Docker Compose untuk instalasi tunggal sekolah; Kubernetes hanya bila sekolah sudah memilikinya). **Production berjalan di server milik sekolah** yang dioperasikan IT sekolah; tim pengembang tidak memegang akses ke server itu, sehingga rilis dikirim lewat pipeline yang dijalankan di server tersebut. Staging tetap di VPS (keputusan pemilik produk, 24 Oktober 2026). |
 | INF-06 | **Reverse proxy & TLS**: Nginx/Caddy dengan sertifikat Let's Encrypt yang diperbarui otomatis; HTTP dialihkan permanen ke HTTPS (NFR-S-01). |
 | INF-07 | **Zona waktu server dan basis data ditetapkan UTC.** Konversi ke WIB dilakukan di lapisan penyajian (NFR-C-10). |
 
@@ -137,8 +137,8 @@ Dilarang keras menyalin data produksi ke staging tanpa anonimisasi (lihat DP-08)
 
 | Komponen | Estimasi | Catatan |
 |---|---|---|
-| VPS aplikasi + worker | Menengah | 2 API + 1 worker |
-| PostgreSQL terkelola | Menengah | Termasuk PITR |
+| VPS aplikasi + worker | Menengah | 2 API + 1 worker — staging saja; production memakai server sekolah (INF-05) |
+| PostgreSQL terkelola | Menengah | Termasuk PITR — staging saja; production berjalan sebagai container di server sekolah (INF-05) |
 | Redis | Rendah | |
 | Object storage + bandwidth | Rendah–menengah | Tumbuh seiring foto |
 | Firebase FCM | Gratis pada volume ini | |
