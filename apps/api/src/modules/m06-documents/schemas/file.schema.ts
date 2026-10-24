@@ -26,6 +26,8 @@ export const ConfirmBodySchema = z.object({
     checksum: z.string().trim().toLowerCase().regex(/^[0-9a-f]{64}$/, "Checksum harus SHA-256 heksadesimal."),
 });
 
+export const FileIdParamSchema = z.object({ id: z.coerce.number().int().positive() });
+
 export const ConfirmResponseSchema = z.object({
     success: z.literal(true),
     data: z.object({ file_id: z.string(), scan_status: ScanStatusSchema }),

@@ -213,3 +213,7 @@ Dibuat worker untuk MIME gambar (JPG/PNG) **setelah berkas diputus `CLEAN`** —
 | **TBD-FS-B** | Apakah berkas perlu disalin ke penyimpanan dingin setelah entitasnya tidak aktif bertahun-tahun, atau cukup satu kelas penyimpanan. Berkaitan dengan estimasi biaya (PRD 27.9). |
 
 **Tertutup 25 Agustus 2026:** `TBD-FS-A` → `SDD-FS-11` · `DP-05a`.
+
+### Pembaruan URL unggah (PR-04-15)
+
+`SDD-MOB-04` menggunakan `POST /files/{id}/presign` untuk mengambil URL baru bagi pesanan yang belum dikonfirmasi. Object key/MIME/ukuran berasal dari registri berkas, bukan masukan klien; tidak menulis baris baru atau mengubah entitas. Kegagalan kepemilikan tidak membedakan berkas asing dan berkas yang tidak ada. Bila respons confirm hilang, klien mencoba confirm idempoten dengan checksum yang sama sebelum meminta URL baru.

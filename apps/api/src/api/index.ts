@@ -151,6 +151,7 @@ import {
     listDocumentsRoute,
     listAllDocumentsRoute,
     presignRoute,
+    renewUploadRoute,
 } from "../modules/m06-documents/index.js";
 import { cancelReservationRoute, createBlockRoute, createReservationRoute, deactivateFixedScheduleRoute, deactivateManualBlockRoute, listBlocksRoute, previewBlockRoute, getReservationRoute, listReservationsRoute, previewReservationRoute, recordUsageRoute, reservationsRouter, roomAvailabilityRoute } from "../modules/m07-reservation-room/index.js";
 import { addDamageReportNoteRoute, createDamageReportRoute, damageReportsRouter, getDamageReportRoute, listDamageReportsRoute, openDamageReportRoute, verifyDamageReportRoute } from "../modules/m11-damage-reports/index.js";
@@ -275,6 +276,7 @@ export const registry = new RouteRegistry().register(
     regenerateQrRoute,
     qrTerpasangRoute,
     presignRoute,
+    renewUploadRoute,
     confirmRoute,
     listDocumentsRoute,
     listAllDocumentsRoute,

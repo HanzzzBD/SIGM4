@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **182** baris, dikumpulkan dari 22 berkas modul.
+> Total: **183** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -148,6 +148,7 @@
 | POST | `/device-tokens` | `notification.manage_own` | Daftarkan token perangkat FCM | [M-17](../02-modules/m17-notifications.md) |
 | POST | `/files/confirm` | Bearer | Daftarkan berkas terunggah & antrekan pemindaian AV | [M-06](../02-modules/m06-documents.md) |
 | POST | `/files/presign` | Bearer | Minta URL unggah bertanda tangan ke object storage | [M-06](../02-modules/m06-documents.md) |
+| POST | `/files/{id}/presign` | Bearer | URL unggah baru (300 detik) bagi pesanan milik pemanggil yang belum dikonfirmasi; object key, MIME dan ukuran tetap, tanpa baris baru. 200 respons presign; 404 berkas asing/tidak ada, 422 sudah dikonfirmasi | [M-06](../02-modules/m06-documents.md) |
 | POST | `/holidays` | `setting.manage` | Tambah hari libur | [M-20](../02-modules/m20-settings.md) |
 | POST | `/loans/checkout` | `loan.manage` | Proses serah terima | [M-09](../02-modules/m09-loans.md) |
 | POST | `/loans/{id}/checkin` | `loan.manage` | Proses pengembalian | [M-09](../02-modules/m09-loans.md) |
