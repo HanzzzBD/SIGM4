@@ -29,7 +29,8 @@ const tools=[
 export const TOOL_DECLARATIONS=tools.map(t=>({type:"function" as const,name:t.name,description:t.description,parameters:z.toJSONSchema(t.schema,{unrepresentable:"any"})}));
 export const TOOL_NAMES=tools.map(t=>t.name);
 const FIELDS=new Set(["id","kode_barang","nama","kategori","lokasi","kondisi","status","tersedia","ruangan","mulai","selesai","nomor","jenis","jatuh_tempo","diajukan","jumlah","saldo","satuan","stok_minimum","tautan","panduan","jumlah_perbaikan"]);
-export function sanitizeText(value:string){return [...value.replace(/(?:ignore|abaikan)\s+(?:all|semua|previous|instruksi)[^\n]{0,200}/gi,"[instruksi dihapus]").replace(/<\/?(?:system|script|assistant)[^>]*>/gi,"")].filter(c=>c.charCodeAt(0)>=32||c==="\n"||c==="\t").join("").slice(0,200);}
+// Diulang sampai stabil: pembuangan sekali jalan dapat menyusun ulang tag terlarang dari potongannya.
+export function sanitizeText(value:string){let text=value,before="";while(text!==before){before=text;text=text.replace(/(?:ignore|abaikan)\s+(?:all|semua|previous|instruksi)[^\n]{0,200}/gi,"[instruksi dihapus]").replace(/<\/?(?:system|script|assistant)[^>]*>/gi,"");}return [...text].filter(c=>c.charCodeAt(0)>=32||c==="\n"||c==="\t").join("").slice(0,200);}
 export function safeToolData(data:unknown):Record<string,unknown>[] {
  if(!Array.isArray(data))return [];
  return data.slice(0,40).filter(r=>typeof r==="object"&&r!==null).map(r=>Object.fromEntries(Object.entries(r as Record<string,unknown>).filter(([k,v])=>FIELDS.has(k)&&(v===null||["string","boolean","number"].includes(typeof v))).map(([k,v])=>[k,typeof v==="string"?sanitizeText(v):v])));
