@@ -502,6 +502,8 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 // PR-03-25 (M-06): presign tanpa log (keputusan 5c log phase-03); confirm mencatat FILE_UPLOADED.
                 const isiBerkas = Buffer.from("berkas uji gerbang AL-01");
                 const pesanan = (await langkah("POST /files/presign", "/files/presign", { jenis: "USER_PHOTO", mime: "image/png", ukuran: isiBerkas.length }, [])).json.data as { upload_url: string; file_id: string };
+                // PR-04-15 (SDD-MOB-04): URL unggah ulang pesanan sendiri — tanpa baris baru, tanpa log.
+                await langkah("POST /files/:id/presign", `/files/${pesanan.file_id}/presign`, undefined, []);
                 expect((await fetch(pesanan.upload_url, { method: "PUT", headers: { "content-type": "image/png" }, body: new Uint8Array(isiBerkas) })).status).toBe(200);
                 await langkah("POST /files/confirm", "/files/confirm", { file_id: pesanan.file_id, checksum: createHash("sha256").update(isiBerkas).digest("hex") }, ["FILE_UPLOADED"]);
                 // PR-03-06 (M-06): dokumen aset — berkas ASSET_DOCUMENT disiapkan lewat panggilan biasa
