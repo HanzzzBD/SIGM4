@@ -48,7 +48,8 @@ RUN npm run build -w apps/api && npm prune --omit=dev
 #
 # Toolchain ≥ 1.26.9 menutup CVE-2026-78667 (net/http) dan CVE-2026-97031
 # (crypto/tls) pada stdlib yang ikut tertaut ke biner.
-FROM golang:1.26.9-alpine AS dbmate
+# Go 1.26.10 menutup CVE-2026-111943 (stdlib crypto/x509, HIGH; merah pada #179).
+FROM golang:1.26.10-alpine AS dbmate
 RUN apk add --no-cache git build-base
 WORKDIR /src
 # v2.35.1 — dipatok ke commit, bukan tag yang dapat dipindahkan.
@@ -61,8 +62,10 @@ RUN git init -q . \
 # 1.83.2), dan CVE-2026-78669 (x/net ≥ 0.60.0, net/http2, HIGH; masuk basis data
 # Trivy 10 Oktober 2026 — merah pada #148). x/net 0.60.0 menuntut x/crypto 0.57.0
 # dan x/text 0.42.0, sehingga keduanya ikut naik melampaui batas tambalnya.
+# CVE-2026-63209 (klauspost/compress ≥ 1.18.7, HIGH; merah pada #179).
 RUN go get golang.org/x/crypto@v0.57.0 golang.org/x/net@v0.60.0 \
         golang.org/x/text@v0.42.0 google.golang.org/grpc@v1.83.2 \
+        github.com/klauspost/compress@v1.18.7 \
     && go mod tidy
 RUN CGO_ENABLED=1 go build -trimpath \
         -tags netgo,osusergo,sqlite_omit_load_extension,sqlite_fts5,sqlite_json \
