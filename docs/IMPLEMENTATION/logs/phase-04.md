@@ -26,7 +26,7 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 
 | # | Keputusan | Alasan | Menaikkan ke PRD/SDD? |
 |:---:|---|---|:---:|
-| — | — | — | — |
+| 1 | **Pengecualian SCA terbatas** (pemilik produk, 24 Oktober 2026): advisory tanpa tambalan upstream boleh dikecualikan per GHSA + path paket, paling lama 30 hari (High) / 7 hari (Critical). Mekanisme dibangun PR chore tersendiri dengan daftar kosong; entri pertama (`node-forge`, `zod` milik `@expo/cli`) ikut `PR-04-16` | Fondasi mobile Expo 57 (`SDD-MOB-10`) membawa `node-forge` GHSA-86w9-cpqp-85rv tanpa versi tertambal; `CD-02` tanpa pengecualian akan menahan seluruh rantai mobile tanpa tanggal | Ya — `CD-02`, `SDD-SEC-13` |
 
 ## 3. Penyimpangan dari rencana
 
