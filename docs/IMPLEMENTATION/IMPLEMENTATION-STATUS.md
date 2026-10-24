@@ -221,7 +221,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
 | `PR-04-01` … `PR-04-14` | `Not Started` | — | Rincian: [`phases/phase-04.md` §7](phases/phase-04.md) |
-| `PR-04-15` | `In Progress` | `feature/PR-04-15-url-unggah-ulang` (lokal) | Implementasi dan uji lokal selesai; belum ada PR remote |
+| `PR-04-15` | `In Review` | [#178](https://github.com/HanzzzBD/SIGM4/pull/178) | `POST /files/{id}/presign` (`SDD-MOB-04`): URL unggah baru 300 detik bagi pesanan milik pemanggil yang belum dikonfirmasi; 401/404/422 teruji, tanpa baris baru |
 | `PR-04-16` … `PR-04-19` | `Not Started` | — | Rincian: [`phases/phase-04.md` §7](phases/phase-04.md) |
 
 ### Phase 05 — Penutupan Siklus · `Not Started`
