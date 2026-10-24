@@ -207,10 +207,13 @@ describe.skipIf(!ADA_DB)("PR-02-10 — skema assets/asset_categories/asset_condi
             ).rejects.toMatchObject({ code: "23503" });
         });
 
-        it("procurement_id menerima nilai bebas TANPA FK aktif ke M-14 (BR-011)", async () => {
+        // Sebelum M-14 ada kolom ini bebas; expand M-14 (0062) menambah FK NOT VALID: aset lama
+        // tetap, penulisan baru wajib merujuk usulan yang ada (BR-011, SDD-05 expand M-14).
+        it("procurement_id nullable, penulisan baru wajib merujuk usulan pengadaan yang ada (BR-011)", async () => {
+            await expect(kueri(sqlAsetDasar({ kategoriId, roomId, kodeBarang: kodeUnik("BRG") }))).resolves.toBeDefined();
             await expect(
                 kueri(sqlAsetDasar({ kategoriId, roomId, kodeBarang: kodeUnik("BRG"), procurementId: 999999999 })),
-            ).resolves.toBeDefined();
+            ).rejects.toMatchObject({ code: "23503", constraint: "assets_procurement_fk" });
         });
     });
 

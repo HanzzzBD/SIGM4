@@ -235,7 +235,7 @@ describe.skipIf(!ADA)("PR-02-06 — ganti password + kelola profil sendiri (Post
 
             const r = await ubahProfil(auth(sesi), { nama: "Nama Baru", telepon: "082222222222", email: "lain@sekolah.sch.id", role_kode: "R-01" });
             expect(r.status).toBe(200);
-            expect(r.json.data).toEqual({ user: { id: String(id), nama: "Nama Baru", email, telepon: "082222222222", role_kode: "R-05", must_change_password: false, foto_status: null, foto_url: null } });
+            expect(r.json.data).toEqual({ user: { id: String(id), nama: "Nama Baru", email, telepon: "082222222222", role_kode: "R-05", must_change_password: false, foto_status: null, foto_url: null, two_factor_enabled: false, remaining_backup_codes: 0 } });
 
             const [baris] = await kueri<{ nama: string; email: string; role_kode: string }>(
                 `SELECT u.nama, u.email, r.kode AS role_kode FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = ${String(id)}`,

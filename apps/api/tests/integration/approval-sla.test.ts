@@ -1,3 +1,4 @@
+// Fixture M-10 generik memakai jenis tanpa adapter bisnis; pengadaan nyata diuji m14-procurement.test.ts.
 // Acceptance PR-02-22 — "SLA, pengingat, eskalasi (job terjadwal)" (FR-10.2 A2/A2a,
 // BR-039a, Lampiran D.5, SDD-02 §4.5, SDD-APR-06/07/15; keputusan 70 & 73) terhadap
 // PostgreSQL NYATA: "Perhitungan memakai jam operasional terkonfigurasi (CAL-01);
@@ -6,7 +7,7 @@
 
 import { randomUUID } from "node:crypto";
 import pg from "pg";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { ApprovalService, ApprovalSlaBreachedPayloadSchema, DecisionService, SlaTracker, penanganHasil } from "../../src/modules/m10-approval/index.js";
 import type { PenanganHasil } from "../../src/modules/m10-approval/index.js";
 import { AuditLogger } from "../../src/shared/audit/index.js";
@@ -57,7 +58,7 @@ interface LangkahUji {
 
 async function aturan(langkah: readonly LangkahUji[], terminal: "hold_and_alert" | "auto_reject" = "hold_and_alert"): Promise<void> {
     const [r] = await kueri<{ id: string }>(`INSERT INTO approval_rules (jenis_pengajuan, kondisi, prioritas, terminal_on_exhausted_escalation)
-                                             VALUES ('PENGADAAN_BARANG', '{}', 50, '${terminal}') RETURNING id::text`);
+                                             VALUES ('PERMINTAAN_BAHAN', '{}', 50, '${terminal}') RETURNING id::text`);
     for (const [i, l] of langkah.entries()) {
         await kueri(`INSERT INTO approval_rule_steps (rule_id, urutan, approver_type, approver_user_id, sla_jam, on_sla_breach, eskalasi_ke)
                      VALUES (${String(r?.id)}, ${String(i + 1)}, 'user', ${String(l.user)}, 8, '${l.breach ?? "remind"}', ${String(l.eskalasiKe ?? "NULL")})`);
@@ -70,7 +71,7 @@ async function ajukan(pemohonId: number): Promise<number> {
     const clock = new FixedClock(DIBUAT);
     const approval = new ApprovalService(getDb(), new AuditLogger({ clock }), clock);
     const ctx = createAuthContext({ userId: pemohonId, roleCode: "UJI", scopes: new Map() });
-    return (await withTransaction(ctx, (s) => approval.createInstance(s, { jenis: "PENGADAAN_BARANG", referensiId: 900_000 + ref, pemohonId, fakta: {} }), getDb()))
+    return (await withTransaction(ctx, (s) => approval.createInstance(s, { jenis: "PERMINTAAN_BAHAN", referensiId: 900_000 + ref, pemohonId, fakta: {} }), getDb()))
         .instanceId;
 }
 
@@ -229,7 +230,7 @@ describe.skipIf(!ADA_DB)("PR-02-22 — SLA, pengingat, eskalasi (acceptance)", (
         const id = await ajukan(pemohon);
         const dilepas: string[] = [];
         const penangan: PenanganHasil = {
-            jenis: "PENGADAAN_BARANG",
+            jenis: "PERMINTAAN_BAHAN",
             sebelumDisetujui: () => Promise.reject(new Error("tidak boleh disetujui")),
             setelahDitutup: (_s, referensiId, status) => {
                 dilepas.push(`${String(referensiId)}:${status}`);
@@ -277,7 +278,8 @@ describe.skipIf(!ADA_DB)("PR-02-22 — SLA, pengingat, eskalasi (acceptance)", (
         for (let i = 0; i < 15; i += 1) ids.push(await ajukan(pemohon));
         const audit = new AuditLogger({ clock: LEWAT });
         const approval = new ApprovalService(getDb(), audit, LEWAT);
-        const decision = new DecisionService(getDb(), audit, LEWAT, approval);
+        // Mesin generik: adapter modul pengaju di registri proses tidak ikut (SDD-APR-17).
+        const decision = new DecisionService(getDb(), audit, LEWAT, approval, []);
         const ctxApprover = createAuthContext({ userId: approver, roleCode: "UJI", scopes: new Map([["approval.decide", "all"]]) });
 
         const putus = ids.map((id) =>
@@ -305,7 +307,8 @@ describe.skipIf(!ADA_DB)("PR-02-22 — SLA, pengingat, eskalasi (acceptance)", (
         const id = await ajukan(pemohon);
         const audit = new AuditLogger({ clock: LEWAT });
         const approval = new ApprovalService(getDb(), audit, LEWAT);
-        const decision = new DecisionService(getDb(), audit, LEWAT, approval);
+        // Mesin generik: adapter modul pengaju di registri proses tidak ikut (SDD-APR-17).
+        const decision = new DecisionService(getDb(), audit, LEWAT, approval, []);
         const ctxApprover = createAuthContext({ userId: approver, roleCode: "UJI", scopes: new Map([["approval.decide", "all"]]) });
 
         // Koneksi ini memerankan transaksi job: kunci langkah lebih dulu (SlaRepository.kunci).
@@ -402,21 +405,24 @@ describe.skipIf(!ADA_DB)("PR-02-22 — SLA, pengingat, eskalasi (acceptance)", (
         expect(ringkasan?.nilai_sesudah).toMatchObject({ pekerjaan: PEKERJAAN_SLA, diproses: 1, galat: 0, pengingat: 1, eskalasi: 0 });
     });
 
-    // TERAKHIR di berkas: mendaftar ke registri PROSES (tidak dapat dicabut) — uji lain di atas
-    // berjalan dengan registri kosong, persis keadaan sebelum modul pengaju lahir.
+    // Registri PROSES kini diisi modul pengaju saat worker dimuat (M-22 untuk PERMINTAAN_BAHAN);
+    // uji ini memastikan penangan ASLI itu yang dipanggil auto_reject lewat jalur worker, dengan
+    // efek domainnya diganti pengintai karena referensi di sini tiruan.
     it("keputusan 75: penangan yang didaftarkan modul pengaju ke registri proses dipanggil auto_reject lewat JALUR WORKER", async () => {
         const kepala = await pengguna("R-03");
         await aturan([{ user: approver, breach: "escalate", eskalasiKe: kepala }], "auto_reject");
         const id = await ajukan(pemohon);
         const dilepas: string[] = [];
-        penanganHasil.daftar({
-            jenis: "PENGADAAN_BARANG",
-            sebelumDisetujui: () => Promise.resolve(),
-            setelahDitutup: (_s, referensiId, status) => {
+        const asli = penanganHasil.cari("PERMINTAAN_BAHAN");
+        expect(asli, "worker wajib mendaftarkan penangan M-22 ke registri proses").toBeDefined();
+        const pengintai = [
+            ...(asli!.kunciObjek ? [vi.spyOn(asli!, "kunciObjek").mockResolvedValue(undefined)] : []),
+            vi.spyOn(asli!, "setelahDitutup").mockImplementation((_s, referensiId, status) => {
                 dilepas.push(`${String(referensiId)}:${status}`);
                 return Promise.resolve();
-            },
-        });
+            }),
+        ];
+        onTestFinished(() => { for (const p of pengintai) p.mockRestore(); });
 
         await jalankanPemeriksaanSla(getDb(), LEWAT);
         await jalankanPemeriksaanSla(getDb(), SESUDAH_ESKALASI);

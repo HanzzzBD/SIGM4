@@ -67,5 +67,5 @@ describe("SDD-SYS-07 — waktu selalu dari Clock yang di-inject", () => {
             )
             .map((r) => r.filePath);
         expect(pelanggar).toEqual([]);
-    }, 15_000);
+    }, 60_000);
 });

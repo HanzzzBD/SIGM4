@@ -61,7 +61,7 @@ describe.skipIf(!ADA)("PR-03-15 — verifikasi & tindak lanjut laporan kerusakan
     let ruang = "";
     let ruangLapor = "";
     const aset: Record<"bergaransi" | "kursi" | "meja" | "lemari" | "papan" | "balap" | "rak" | "wo", string> = {} as never;
-    const pengguna: Record<"guru" | "guruLain" | "petugas" | "verifikatorTerbatas" | "tanpaIzin", Peran> = {} as never;
+    const pengguna: Record<"guru" | "guruLain" | "petugas" | "verifikatorTerbatas" | "tanpaIzin" | "teknisi", Peran> = {} as never;
 
     it("lingkungannya lengkap — REDIS_URL ada saat DATABASE_URL ada", () => {
         expect(process.env["REDIS_URL"], "REDIS_URL wajib diisi: lingkungan integrasi API memakai Redis.").toBeDefined();
@@ -101,9 +101,10 @@ describe.skipIf(!ADA)("PR-03-15 — verifikasi & tindak lanjut laporan kerusakan
         const PELAPOR = ["damage.create", "damage.view:own"];
         pengguna.guru = await buat("R-05", "Pak Budi Pelapor", PELAPOR);
         pengguna.guruLain = await buat("R-05", "Bu Ani Guru", PELAPOR);
-        pengguna.petugas = await buat("R-02", "Bu Sari Petugas", ["damage.create", "damage.view", "damage.verify", "asset.update_condition", "asset_document.view"]);
+        pengguna.petugas = await buat("R-02", "Bu Sari Petugas", ["damage.create", "damage.view", "damage.verify", "workorder.create", "asset.update_condition", "asset_document.view"]);
         // damage.verify TANPA asset.update_condition maupun asset_document.view.
-        pengguna.verifikatorTerbatas = await buat("R-02", "Pak Joko Petugas", ["damage.view", "damage.verify"]);
+        pengguna.verifikatorTerbatas = await buat("R-02", "Pak Joko Petugas", ["damage.view", "damage.verify", "workorder.create"]);
+        pengguna.teknisi = await buat("R-04", "Teknisi Uji", ["workorder.view:assigned"]);
         pengguna.tanpaIzin = await buat("R-05", "Tanpa Izin", ["damage.create"]);
 
         const [g] = await kueri<{ id: string }>(`INSERT INTO buildings (nama, kode) VALUES ('Gedung C Uji Verifikasi', '${unik("G")}') RETURNING id::text`);
@@ -177,7 +178,10 @@ describe.skipIf(!ADA)("PR-03-15 — verifikasi & tindak lanjut laporan kerusakan
         expect(r.status).toBe(201);
         return r.json.data;
     }
-    const verifikasi = (id: string, siapa: Peran, body: unknown) => kirim<DamageReportVerified>("POST", `/damage-reports/${id}/verify`, siapa, body);
+    const verifikasi = (id: string, siapa: Peran, body: unknown) => {
+        const input = body as { keputusan: string };
+        return kirim<DamageReportVerified>("POST", `/damage-reports/${id}/verify`, siapa, { ...input, ...(input.keputusan === "TINDAK_LANJUT" ? { work_order: { teknisi_id: pengguna.teknisi.id, target_selesai: "2027-11-20" } } : {}) });
+    };
     const detail = (id: string, siapa: Peran) => kirim<DamageReportDetail>("GET", `/damage-reports/${id}`, siapa);
     const status = async (id: string) => (await kueri<{ status: string }>(`SELECT status::text FROM damage_reports WHERE id = ${id}`))[0]?.status;
     const log = (id: string) => kueri<{ aksi: string; keterangan: string | null }>(`SELECT aksi, keterangan FROM activity_logs WHERE entitas = 'damage_reports' AND entitas_id = ${id} ORDER BY id`);
@@ -206,7 +210,7 @@ describe.skipIf(!ADA)("PR-03-15 — verifikasi & tindak lanjut laporan kerusakan
             const f = [await foto(pengguna.guru), await foto(pengguna.guru, { terkonfirmasi: true }), await foto(pengguna.guru, { terkonfirmasi: true, scan: "CLEAN", medium: true }), await foto(pengguna.guru, { terkonfirmasi: true, scan: "CLEAN" })];
             const t = await lapor(pengguna.guru, { asset_id: Number(aset.meja) }, f);
             const d = (await detail(t.id, pengguna.petugas)).json.data;
-            const kunci = await kueri<{ id: string; object_key: string; medium_key: string | null }>(`SELECT id::text, object_key, medium_key FROM stored_files WHERE id IN (${f.join(",")}) ORDER BY id`);
+            const kunci = await kueri<{ id: string; object_key: string; medium_key: string | null }>(`SELECT id::text, object_key, medium_key FROM stored_files WHERE id IN (${f.join(",")}) ORDER BY stored_files.id`);
             expect(d.foto).toEqual([
                 { file_id: String(f[0]), urutan: 1, status: "BELUM_TERUNGGAH", url: null },
                 { file_id: String(f[1]), urutan: 2, status: "PENDING", url: null },

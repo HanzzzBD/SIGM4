@@ -39,6 +39,10 @@ const SAH_API = {
     CLAMAV_URL: "tcp://clamav:3310",
 };
 
+describe("PR-03-20: konfigurasi chatbot",()=>{
+ it("disabled works without key; enabled requires key without exposing secret",()=>{expect(readApiConfig({...SAH_API,CHAT_ENABLED:"false"},"UTC").chat).toEqual({enabled:false,apiKey:null});expect(()=>readApiConfig({...SAH_API,CHAT_ENABLED:"true"},"UTC")).toThrow(/GEMINI_API_KEY/);expect(readApiConfig({...SAH_API,CHAT_ENABLED:"true",GEMINI_API_KEY:"test-key"},"UTC").chat.enabled).toBe(true);expect(()=>readApiConfig({...SAH_API,CHAT_ENABLED:"invalid"},"UTC")).toThrow(/CHAT_ENABLED/);});
+});
+
 /** Worker: S3 sisi server + clamd (PR-03-05) — tanpa JWT maupun S3_PUBLIC_ENDPOINT. */
 const S3_DAN_AV = {
     S3_ENDPOINT: "http://minio:9000/",

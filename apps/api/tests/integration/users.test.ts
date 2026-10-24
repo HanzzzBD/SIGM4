@@ -149,6 +149,9 @@ describe.skipIf(!ADA_DB)("0012 — users + kolom baku roles", () => {
             "totp_last_step",
             // 0038 (PR-03-04): foto profil FR-01.4 → stored_files(id) (keputusan 4 log phase-01).
             "foto_file_id",
+            // 0072 (PR-05-26): retensi dan pseudonimisasi akun siswa (DP, SL-04).
+            "deactivated_at",
+            "pseudonymized_at",
         ]);
     });
 

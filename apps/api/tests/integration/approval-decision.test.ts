@@ -1,3 +1,4 @@
+// Fixture M-10 generik memakai jenis tanpa adapter bisnis; pengadaan nyata diuji m14-procurement.test.ts.
 // Acceptance PR-02-21 — "Eksekusi persetujuan + first-responder-wins" (FR-10.2, BR-035 …
 // BR-039a, RE-09, SDD-APR-05/07/17; keputusan 69) terhadap PostgreSQL NYATA:
 // "Dua approver serentak → satu 200, satu 409". Layanan diuji langsung; kontrak HTTP
@@ -59,7 +60,7 @@ async function roleBaru(): Promise<number> {
 type LangkahUji = { role: number } | { user: number };
 
 async function aturan(langkah: readonly LangkahUji[]): Promise<void> {
-    const [r] = await kueri<{ id: string }>(`INSERT INTO approval_rules (jenis_pengajuan, kondisi, prioritas) VALUES ('PENGADAAN_BARANG', '{}', 50) RETURNING id::text`);
+    const [r] = await kueri<{ id: string }>(`INSERT INTO approval_rules (jenis_pengajuan, kondisi, prioritas) VALUES ('PERMINTAAN_BAHAN', '{}', 50) RETURNING id::text`);
     for (const [i, l] of langkah.entries()) {
         const [tipe, role, user] = "role" in l ? ["role", l.role, "NULL"] : ["user", "NULL", l.user];
         await kueri(`INSERT INTO approval_rule_steps (rule_id, urutan, approver_type, approver_role_id, approver_user_id, sla_jam)
@@ -74,7 +75,7 @@ async function ajukan(pemohonId: number): Promise<number> {
     refUrut += 1;
     const r = await withTransaction(
         ctxDari(pemohonId),
-        (s) => approval.createInstance(s, { jenis: "PENGADAAN_BARANG", referensiId: 700_000 + refUrut, pemohonId, fakta: {} }),
+        (s) => approval.createInstance(s, { jenis: "PERMINTAAN_BAHAN", referensiId: 700_000 + refUrut, pemohonId, fakta: {} }),
         getDb(),
     );
     return r.instanceId;
@@ -294,7 +295,7 @@ describe.skipIf(!ADA_DB)("PR-02-21 — eksekusi persetujuan (acceptance)", () =>
             const panggilan: string[] = [];
             let tolak = true;
             const penangan: PenanganHasil = {
-                jenis: "PENGADAAN_BARANG",
+                jenis: "PERMINTAAN_BAHAN",
                 sebelumDisetujui: (_s, ref) => {
                     panggilan.push(`setuju:${String(ref)}`);
                     return tolak ? Promise.reject(new DomainError("ASSET_NOT_AVAILABLE", "Objek tidak lagi tersedia.")) : Promise.resolve();
@@ -327,7 +328,7 @@ describe.skipIf(!ADA_DB)("PR-02-21 — eksekusi persetujuan (acceptance)", () =>
         });
 
         it("penangan ganda untuk satu jenis ditolak saat dirakit", () => {
-            const p = { jenis: "PENGADAAN_BARANG", sebelumDisetujui: () => Promise.resolve(), setelahDitutup: () => Promise.resolve() } as const;
+            const p = { jenis: "PERMINTAAN_BAHAN", sebelumDisetujui: () => Promise.resolve(), setelahDitutup: () => Promise.resolve() } as const;
             expect(() => layanan([p, p])).toThrow(/ganda/);
         });
     });
@@ -392,6 +393,9 @@ describe.skipIf(!ADA_DB)("PR-02-21 — eksekusi persetujuan (acceptance)", () =>
 
         beforeAll(async () => {
             const app = createApp({
+                // Mesin approval generik: PERMINTAAN_BAHAN di sini jenis tiruan tanpa objek; adapter
+                // domain M-22 (kunci objek, efek keputusan) tidak boleh ikut (SDD-APR-17).
+                penanganHasil: [],
                 appBaseUrl: "https://sigm4.sekolah.test",
                 health: new HealthRegistry(30),
                 limiter: { hit: () => Promise.resolve({ lolos: true, batas: 1000, sisa: 999, resetDetik: 60 }) },

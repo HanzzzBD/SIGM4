@@ -50,8 +50,11 @@ describe.skipIf(!ADA)("PR-03-27 — daftar & detail reservasi (acceptance)", () 
         expect(process.env["REDIS_URL"], "REDIS_URL wajib diisi: lingkungan integrasi API memakai Redis.").toBeDefined();
     });
 
+    let oldBlockThreshold: unknown;
     beforeAll(async () => {
         dbmate("up");
+        oldBlockThreshold = (await kueri<{ value: unknown }>("SELECT value FROM system_settings WHERE key='denda.ambang_blokir'"))[0]?.value;
+        await kueri("UPDATE system_settings SET value='100000000' WHERE key='denda.ambang_blokir'");
         const app = createApp({
             appBaseUrl: "https://sigm4.sekolah.test",
             health: new HealthRegistry(30).register(fcmCheck(null)),
@@ -110,6 +113,7 @@ describe.skipIf(!ADA)("PR-03-27 — daftar & detail reservasi (acceptance)", () 
     });
 
     afterAll(async () => {
+        if (oldBlockThreshold !== undefined) await kueri(`UPDATE system_settings SET value='${JSON.stringify(oldBlockThreshold)}' WHERE key='denda.ambang_blokir'`);
         await new Promise<void>((r) => server.close(() => r()));
         const ids = Object.values(pengguna).map((p) => p.id).join(",");
         const semua = Object.values(ruang).join(",");

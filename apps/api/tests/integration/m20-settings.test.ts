@@ -99,14 +99,19 @@ describe.skipIf(!ADA_DB)("PR-01-10 — parameter sistem (acceptance)", () => {
                         maks: null,
                     };
                 }
-                const rentang = /(\d+) – (\d+)/.exec(rentangMentah);
+                if (tipe === "BOOLEAN") {
+                    return { key: m[1], kelompok: m[2], tipe, bawaan: JSON.parse(bawaanMentah.replace(/^`|`$/g, "")) as boolean, min: null, maks: null };
+                }
+                // Bawaan "—" = belum ditetapkan (wajib diisi sekolah); "≥ n" = rentang terbuka ke atas.
+                const tertutup = /(\d+) – (\d+)/.exec(rentangMentah);
+                const terbuka = /≥ (\d+)/.exec(rentangMentah);
                 return {
                     key: m[1],
                     kelompok: m[2],
                     tipe,
-                    bawaan: Number(bawaanMentah),
-                    min: Number(rentang?.[1]),
-                    maks: Number(rentang?.[2]),
+                    bawaan: bawaanMentah.startsWith("—") ? null : Number(bawaanMentah),
+                    min: tertutup ? Number(tertutup[1]) : terbuka ? Number(terbuka[1]) : null,
+                    maks: tertutup ? Number(tertutup[2]) : null,
                 };
             },
         );
@@ -141,12 +146,13 @@ describe.skipIf(!ADA_DB)("PR-01-10 — parameter sistem (acceptance)", () => {
     it("list(): terpaginasi dan dapat disaring per kelompok (SDD-PERF-04, P-70)", async () => {
         const adminId = await seedAdmin();
         const reservasi = await buatService().list(buatCtx(adminId), { page: 1, perPage: 100, kelompok: "RESERVASI" });
-        expect(reservasi.total).toBe(8);
+        // 8 parameter awal + durasi_maksimum_jam (0073) + lima durasi_maksimum_r_0X_hari (0053) — SDD-05 §4.7a.
+        expect(reservasi.total).toBe(14);
         expect(reservasi.rows.every((s) => s.kelompok === "RESERVASI")).toBe(true);
 
         const halaman2 = await buatService().list(buatCtx(adminId), { page: 2, perPage: 5, kelompok: "RESERVASI" });
-        expect(halaman2.rows).toHaveLength(3);
-        expect(halaman2.totalPages).toBe(2);
+        expect(halaman2.rows).toHaveLength(5);
+        expect(halaman2.totalPages).toBe(3);
     });
 
     it("update(): nilai sah tersimpan dan terbaca pada permintaan berikutnya tanpa restart (AC 1)", async () => {

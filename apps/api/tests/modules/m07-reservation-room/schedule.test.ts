@@ -12,6 +12,7 @@ const aturan: AturanJadwal = {
     jam: { startMinute: 6 * 60, endMinute: 18 * 60 },
     hariKerja: new Set([1, 2, 3, 4, 5, 6]),
     libur: new Map([["2027-05-13", "Kenaikan"]]),
+    durasiMaksimumJam: 12,
     granularitasMenit: 30,
     jarakMinimumHari: 1,
     mendesak: false,

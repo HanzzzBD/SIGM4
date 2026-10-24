@@ -8,6 +8,11 @@ export const STATUS_WRITERS = {
     "modules/m12-maintenance/repositories/maintenance.repository.ts": "MaintenanceService",
 } as const;
 const WRITE_CALLERS: Readonly<Record<string, readonly string[]>> = {
+    markDisposed: ["modules/m04-assets/services/disposal-adjustment.ts"],
+    reinstateDisposed: ["modules/m04-assets/services/disposal-adjustment.ts"],
+    reconcileStocktakeStatus: ["modules/m04-assets/services/stocktake-adjustment.ts"],
+    restoreAfterRepair:["modules/m12-maintenance/services/execution.service.ts"],
+    setUnderRepair:["modules/m12-maintenance/services/work-order.service.ts"],
     updateKondisi: ["modules/m04-assets/services/asset.service.ts"],
     tetapkanDireservasi: ["modules/m04-assets/services/reservation-status.ts"],
     kembalikanTersedia: ["modules/m04-assets/services/reservation-status.ts"],

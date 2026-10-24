@@ -13,6 +13,9 @@ export default defineConfig({
         hookTimeout: 60_000,
         // Berbagi satu basis data: berkas uji tidak boleh berjalan paralel.
         fileParallelism: false,
+        // Isolasi antar-berkas: baris tabel transaksi Phase 03–06 dibersihkan setelah
+        // setiap berkas, agar pembersihan uji lama tidak tertahan FK (tests/helpers/bersihkan-domain.ts).
+        setupFiles: ["./tests/helpers/bersihkan-domain.ts"],
         // Cakupan diukur terpisah dari uji berkas: sebagian kode — koneksi DB
         // (PR-00-04) dan penerbitan nomor (PR-00-07) — hanya dapat dijalankan
         // terhadap PostgreSQL nyata. Menggabungkan kedua laporan menjadi satu

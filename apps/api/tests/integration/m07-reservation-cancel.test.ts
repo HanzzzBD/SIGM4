@@ -46,8 +46,11 @@ describe.skipIf(!ADA)("PR-03-11 — pembatalan reservasi ruangan (acceptance)", 
     let aturanId = "";
     const pengguna: Record<"guru" | "guru2" | "petugas" | "teknisi" | "approver", Peran> = {} as never;
 
+    let oldBlockThreshold: unknown;
     beforeAll(async () => {
         dbmate("up");
+        oldBlockThreshold = (await kueri<{ value: unknown }>("SELECT value FROM system_settings WHERE key='denda.ambang_blokir'"))[0]?.value;
+        await kueri("UPDATE system_settings SET value='100000000' WHERE key='denda.ambang_blokir'");
         await kueri("DELETE FROM event_outbox");
         const app = createApp({
             appBaseUrl: "https://sigm4.sekolah.test",
@@ -103,6 +106,7 @@ describe.skipIf(!ADA)("PR-03-11 — pembatalan reservasi ruangan (acceptance)", 
     });
 
     afterAll(async () => {
+        if (oldBlockThreshold !== undefined) await kueri(`UPDATE system_settings SET value='${JSON.stringify(oldBlockThreshold)}' WHERE key='denda.ambang_blokir'`);
         await new Promise<void>((r) => server.close(() => r()));
         const ids = Object.values(pengguna).map((p) => p.id).join(",");
         await kueri(`DELETE FROM notifications WHERE user_id IN (${ids})`);

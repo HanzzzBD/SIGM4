@@ -97,4 +97,9 @@ export default [
     files: ['src/shared/clock/**/*.ts'],
     rules: { 'no-restricted-syntax': 'off' },
   },
+  {
+    files:['src/**/*.ts'],
+    ignores:['src/modules/m19-chatbot/services/provider.ts'],
+    rules:{'no-restricted-imports':['error',{paths:[{name:'@google/genai',message:'SDK Gemini hanya di adapter ChatProvider (SDD-AI-12).'}],patterns:[{group:['**/apps/api/*','**/apps/web/*','**/apps/mobile/*'],message:'Impor lintas pohon apps/* dilarang (SDD-REPO-07).'}]}]},
+  },
 ];
