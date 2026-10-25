@@ -12,6 +12,7 @@ export { Screen } from "./Screen";
 export { Header, ChromeProvider, CountBadge, useChrome } from "./Header";
 export type { Chrome } from "./Header";
 export { BottomSheet } from "./BottomSheet";
+export { Chips, DateField, MultiChips, Toggle } from "./fields";
 export { ChatFab, EntityCard, MiniChart, ModuleTile, ProgressRing, StateIllustration, StatusBadge, Stepper } from "./visual";
 export type { StatusTone } from "./visual";
 export type { DomainGroup } from "./model";

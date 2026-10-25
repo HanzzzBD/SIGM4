@@ -55,7 +55,7 @@ export function contextualActions(asset: Pick<AssetDetail, "status" | "dihapuska
     add("damage.create", "Lapor kerusakan", "", true);
     add("audit.execute", "Catat opname", "Memerlukan sesi opname aktif dan penugasan Anda. ");
     if (asset.status === "DALAM_PERBAIKAN") add("workorder.execute", "Perbarui work order", "",true);
-    if (asset.status === "TERSEDIA" && asset.dapat_dipinjam) add("reservation.create", "Ajukan reservasi");
+    if (asset.status === "TERSEDIA" && asset.dapat_dipinjam) add("reservation.create", "Ajukan reservasi", "", true);
     if (allowed(permissions, "workorder.view")) add("workorder.view", "Riwayat servis","",true);
     return actions;
 }
