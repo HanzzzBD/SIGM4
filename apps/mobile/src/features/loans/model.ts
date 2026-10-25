@@ -1,6 +1,6 @@
 // Logika murni peminjaman & kewajiban mobile (FR-09.x) — label, nada status, dan isian yang sama dengan web P-32…P-36.
-import { LoanExtendBodySchema } from "@sigm4/schemas";
-import type { FineDetail, LoanDetail } from "@sigm4/schemas";
+import { CompensationDecisionBodySchema, CompensationProposalBodySchema, CompensationWaiveBodySchema, FinePayBodySchema, FineWaiveBodySchema, LoanCheckinBodySchema, LoanCheckoutBodySchema, LoanExtendBodySchema } from "@sigm4/schemas";
+import type { FineDetail, LoanCheckinBody, LoanCheckoutBody, LoanDetail } from "@sigm4/schemas";
 import type { StatusTone } from "../../shared/ui/status";
 import { isoWib, rupiah, validDate, validTime } from "../../shared/wib";
 
@@ -40,5 +40,54 @@ export function extensionBody(date: string, time: string, reason: string, curren
     const due = isoWib(date, time);
     if (Date.parse(due) <= Date.parse(currentDue)) return { error: "Jatuh tempo baru harus sesudah jatuh tempo saat ini." };
     const parsed = LoanExtendBodySchema.safeParse({ tanggal_jatuh_tempo: due, alasan: reason });
+    return parsed.success ? { body: parsed.data } : { error: parsed.error.issues.map((i) => i.message).join(" ") };
+}
+
+export interface HandoverUnit { key: string; allocated?: string; expected?: string; code: string; resolved: { asset_id: string; kode_barang: string; kondisi: string; layak: boolean } | null; reason: string; photos: readonly number[]; condition: "BAIK" | "RUSAK_RINGAN"; note: string }
+export interface DirectLoan { borrower: string; dueDate: string; dueTime: string; purpose: string; location: string; reason: string }
+/**
+ * MS-10 (FR-09.1, BR-027): seluruh unit terverifikasi & layak, ≥1 foto per unit, tanda tangan PNG terunggah;
+ * substitusi beralasan (A1); catatan bila kondisi berbeda dari data. Bukti diunggah sebelum transaksi (keputusan paket 2).
+ */
+export function checkoutBody(input: { reservationId: string | null; direct: DirectLoan | null; units: readonly HandoverUnit[]; recipient: string; proxy: boolean; signature: number | null }): { body: LoanCheckoutBody } | { error: string } {
+    if (input.units.some((u) => !u.resolved?.layak)) return { error: "Verifikasi seluruh unit dan pastikan unit layak dipinjam." };
+    if (input.units.some((u) => u.photos.length === 0)) return { error: "Unggah minimal satu foto kondisi per unit." };
+    if (input.signature === null) return { error: "Simpan tanda tangan penerima lebih dulu." };
+    if (input.direct && !input.direct.borrower) return { error: "Pilih peminjam aktif." };
+    const parsed = LoanCheckoutBodySchema.safeParse({
+        ...(input.direct ? { langsung: { peminjam_id: Number(input.direct.borrower), tanggal_jatuh_tempo: isoWib(input.direct.dueDate, input.direct.dueTime), keperluan: input.direct.purpose, lokasi_penggunaan: input.direct.location, alasan: input.direct.reason } } : { reservation_id: Number(input.reservationId) }),
+        nama_penerima: input.recipient, diwakilkan: input.proxy, signature_file_id: input.signature,
+        unit: input.units.map((u) => ({ asset_id: Number(u.resolved!.asset_id), ...(u.allocated ? { allocated_asset_id: Number(u.allocated) } : {}), verification_code: u.code.trim(), kondisi_awal: u.condition, ...(u.note.trim() ? { alasan_kondisi_awal: u.note.trim() } : {}), foto_file_ids: [...u.photos], ...(u.allocated && u.allocated !== u.resolved!.asset_id ? { alasan_substitusi: u.reason } : {}) })),
+    });
+    return parsed.success ? { body: parsed.data } : { error: parsed.error.issues.map((i) => i.message).join(" ") };
+}
+/** Unit berbeda dari alokasi menuntut alasan substitusi (FR-09.1 A1); kondisi berbeda dari data menuntut catatan. */
+export const needsSubstitutionReason = (u: Pick<HandoverUnit, "allocated" | "resolved">) => !!u.allocated && !!u.resolved && u.allocated !== u.resolved.asset_id;
+export const needsConditionNote = (u: Pick<HandoverUnit, "resolved" | "condition">) => !!u.resolved && u.condition !== u.resolved.kondisi;
+
+export const RETURN_CONDITIONS = [{ value: "BAIK", label: "Baik" }, { value: "RUSAK_RINGAN", label: "Rusak Ringan" }, { value: "RUSAK_BERAT", label: "Rusak Berat" }, { value: "TIDAK_LENGKAP", label: "Tidak Lengkap" }, { value: "HILANG", label: "Hilang" }] as const;
+export type ReturnCondition = (typeof RETURN_CONDITIONS)[number]["value"];
+export interface ReturnRow { id: string; selected: boolean; code: string; condition: ReturnCondition; photos: readonly number[]; note: string; negligence: boolean }
+/** MS-11 (FR-09.2): unit terpilih saja (pengembalian sebagian, A3); catatan wajib bila tidak Baik atau lalai. */
+export function checkinBody(rows: readonly ReturnRow[]): { body: LoanCheckinBody } | { error: string } {
+    const chosen = rows.filter((r) => r.selected);
+    if (chosen.length === 0) return { error: "Pilih minimal satu unit yang dikembalikan." };
+    const parsed = LoanCheckinBodySchema.safeParse({ unit: chosen.map((r) => ({ loan_item_id: Number(r.id), verification_code: r.code.trim(), kondisi_akhir: r.condition, foto_file_ids: [...r.photos], catatan: r.note, kelalaian: r.negligence })) });
+    if (parsed.success) return { body: parsed.data };
+    const issue = parsed.error.issues[0], index = Number(issue?.path[1] ?? 0) + 1, field = issue?.path.at(-1);
+    return { error: `Unit ${index}: ${field === "catatan" ? "isi catatan kondisi pengembalian." : field === "verification_code" ? "masukkan atau pindai kode aset." : field === "foto_file_ids" ? "unggah minimal satu foto." : issue?.message ?? "periksa isian."}` };
+}
+
+/** Aksi kewajiban MS-53 dari flag server (`aksi`) — petugas berwenang (FR-09.4). */
+export const FINE_ACTIONS = [["pay", "Tandai Lunas", "bayar"], ["waive", "Bebaskan Denda", "bebaskan"], ["waive-compensation", "Bebaskan Ganti Rugi", "bebaskan_ganti_rugi"], ["reopen", "Buka Kembali", "buka_kembali"], ["propose", "Usulkan Nilai Penggantian", "usulkan_nilai"], ["approve", "Setujui Nilai", "putuskan_nilai"], ["reject", "Tolak Nilai", "putuskan_nilai"]] as const;
+export type FineAction = (typeof FINE_ACTIONS)[number][0];
+export function fineActions(aksi: FineDetail["aksi"]) { return FINE_ACTIONS.filter(([, , flag]) => aksi[flag]).map(([action, label]) => ({ action, label })); }
+export function fineActionBody(action: FineAction, input: { date: string; proof: string; reason: string; amount: string }): { body: unknown } | { error: string } {
+    const [schema, body] = action === "pay" ? [FinePayBodySchema, { tanggal_bayar: isoWib(input.date, "00:00"), nomor_bukti: input.proof }] as const
+        : action === "approve" || action === "reject" ? [CompensationDecisionBodySchema, { keputusan: action === "approve" ? "DISETUJUI" : "DITOLAK", catatan: input.reason }] as const
+        : action === "waive-compensation" ? [CompensationWaiveBodySchema, { alasan: input.reason, jumlah: input.amount.trim() }] as const
+        : action === "propose" ? [CompensationProposalBodySchema, { alasan: input.reason, jumlah: input.amount.trim() }] as const
+        : [FineWaiveBodySchema, { alasan: input.reason }] as const;
+    const parsed = schema.safeParse(body);
     return parsed.success ? { body: parsed.data } : { error: parsed.error.issues.map((i) => i.message).join(" ") };
 }

@@ -1,13 +1,13 @@
 import {describe,expect,it} from "vitest";
 import {taskDestination,taskSections} from "../src/features/tasks/model.js";
 describe("UX-018 actionable task destinations",()=>{
- it("keeps supported detail actions native and hands unsupported tasks to the trusted school web",()=>{
+ it("opens every task queue natively since paket 2 (MOB-SCP-01), without needing the web origin",()=>{
   expect(taskDestination("workorder",{"workorder.execute":"assigned"},"https://school.test","12")).toEqual({native:"/work-order/12"});
-  expect(taskDestination("handover",{"loan.manage":"all"},"https://school.test/unused")).toEqual({web:"https://school.test/peminjaman/serah-terima"});
-  expect(taskDestination("returns",{"loan.manage":"all"},"https://school.test")).toEqual({web:"https://school.test/peminjaman"});
+  expect(taskDestination("handover",{"loan.manage":"all"},"")).toEqual({native:"/peminjaman/serah-terima"});
+  expect(taskDestination("returns",{"loan.manage":"all"},"","7")).toEqual({native:"/peminjaman/7"});
+  expect(taskDestination("requests",{"reservation.view":"own"},"")).toEqual({native:"/reservasi"});
  });
- it("rejects insecure origins, unsupported kinds, foreign URLs and missing permissions",()=>{
-  for(const origin of ["javascript:alert(1)","http://school.test","https://user:pass@school.test",""])expect(taskDestination("handover",{"loan.manage":"all"},origin)).toBeNull();
+ it("rejects unsupported kinds, foreign URLs and missing permissions",()=>{
   expect(taskDestination("approval",{},"https://school.test","1")).toBeNull();
   expect(taskDestination("workorder",{"workorder.execute":"assigned"},"https://school.test","//evil.test")).toBeNull();
   expect(taskDestination("https://evil.test",{"loan.manage":"all"},"https://school.test")).toBeNull();
