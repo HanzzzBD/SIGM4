@@ -107,7 +107,7 @@ Bila sebuah cacat integrasi baru ditemukan di Phase 08, artinya phase ini gagal.
 | `PR-07-28` | Mobile tahap B — jadwal pemeliharaan `MS-63`, `MS-64` | S | S | 07-17 | `FR-12.2` | Lewati/nonaktifkan beralasan |
 | `PR-07-29` | Mobile tahap B — opname: Buat Sesi `MS-65`, Rekonsiliasi `MS-66` | M | M | 07-17 | `FR-13.1`, `FR-13.3` | Siklus opname penuh tanpa web |
 | `PR-07-30` | Mobile tahap B — Catat Penerimaan `MS-70` + penghapusan `MS-71`…`MS-73` | M | M | 07-22 | `FR-14.3`, `FR-21.x` | Eksekusi penghapusan dengan foto & saksi dari ponsel |
-| `PR-07-31` | Mobile tahap C — analitik: `MS-74`, Laporan `MS-75` (Grafik Mini C-33, ekspor unduh) | M | M | 07-17 | `FR-16.x` | Ekspor berkas tersimpan di perangkat |
+| `PR-07-31` | Mobile tahap C — analitik: `MS-74`, Laporan `MS-75` (Grafik Mini C-33, ekspor unduh) + ekspor inventaris ruangan `MS-38` *(keputusan 14 log phase-07)* | M | M | 07-17 | `FR-16.x` | Ekspor berkas tersimpan di perangkat |
 | `PR-07-32` | Mobile tahap C — pengguna: `MS-76`…`MS-79`, Permintaan Reset Password `MS-82` | M | M | 07-17 | `FR-02.1`, `FR-01.3`, `FR-01.5` | Impor pengguna tampil sebagai entri ke web (`MOB-SCP-03`) |
 | `PR-07-33` | Mobile tahap C — role & approval rules: `MS-80`, `MS-81`, `MS-83`, `MS-84` | L | M | 07-17 | `FR-02.2`, `FR-10.1` | Penguncian izin inti Administrator tetap ditegakkan server |
 | `PR-07-34` | Mobile tahap C — pengaturan: Parameter Sistem `MS-85`, Kalender Akademik `MS-86`, Unit Kerja `MS-87` | M | M | 07-17 | `FR-20.x` | Satuan Bahan ikut tab Parameter |
