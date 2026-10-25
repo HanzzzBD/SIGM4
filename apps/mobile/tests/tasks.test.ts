@@ -7,7 +7,7 @@ describe("UX-018 actionable task destinations",()=>{
   expect(taskDestination("returns",{"loan.manage":"all"},"https://school.test")).toEqual({web:"https://school.test/peminjaman"});
  });
  it("rejects insecure origins, unsupported kinds, foreign URLs and missing permissions",()=>{
-  for(const origin of ["javascript:alert(1)","http://school.test","https://user:pass@school.test",""])expect(taskDestination("loans",{"loan.view":"own"},origin)).toBeNull();
+  for(const origin of ["javascript:alert(1)","http://school.test","https://user:pass@school.test",""])expect(taskDestination("handover",{"loan.manage":"all"},origin)).toBeNull();
   expect(taskDestination("approval",{},"https://school.test","1")).toBeNull();
   expect(taskDestination("workorder",{"workorder.execute":"assigned"},"https://school.test","//evil.test")).toBeNull();
   expect(taskDestination("https://evil.test",{"loan.manage":"all"},"https://school.test")).toBeNull();
