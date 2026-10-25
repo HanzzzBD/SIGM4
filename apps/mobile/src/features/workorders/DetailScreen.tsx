@@ -1,17 +1,18 @@
 import { ResumeDatePicker } from "./ResumeDatePicker";
 import {resumeDateError} from "./resume-date";
 import { useCallback,useEffect,useMemo,useRef,useState } from "react";
-import { AppState,StyleSheet,Switch } from "react-native";
+import { AppState,StyleSheet,Switch,View } from "react-native";
 import { router,useFocusEffect,useLocalSearchParams } from "expo-router";
 import { Image } from "expo-image";
 import { randomUUID } from "expo-crypto";
 import { useAuth } from "../auth";
 import { useResource } from "../../shared/api/useResource";
-import { Button,Card,Input,Label,Notice,Screen,tokens as t } from "../../shared/ui";
+import { Button,Card,EntityCard,Input,Label,Notice,ProgressRing,Screen,tokens as t } from "../../shared/ui";
+import { SupervisorPanel } from "./SupervisorPanel";
 import { useUploads,discardPreparedPhoto } from "../uploads";
 import type { PreparedPhoto } from "../uploads";
 import { PhotoPicker } from "../damage";
-import { loadWorkOrder,queueWorkOrderPhoto,WorkOrderAttempt,requireUploadedWorkOrderPhotos,workOrderStatuses,workOrderPriorities } from "./model";
+import { loadWorkOrder,queueWorkOrderPhoto,WorkOrderAttempt,requireUploadedWorkOrderPhotos,workOrderStatuses,workOrderPriorities,workOrderStatusTones,workOrderPriorityTones } from "./model";
 import { ServiceHistory } from "./ServiceHistoryScreen";
 
 export function WorkOrderExecution({id}:{id:string}){
@@ -36,7 +37,9 @@ export function WorkOrderExecution({id}:{id:string}){
  if(!canView)return <Screen title="Work Order"><Notice message="Anda tidak memiliki izin melihat pekerjaan ini."/><Button icon="arrowLeft" title="Kembali ke tugas" onPress={()=>router.replace("/tugas")}/></Screen>;
  return <Screen title={d?.nomor??"Eksekusi Work Order"}>
  {resource.loading&&<Label>Memuat pekerjaan…</Label>}{resource.error&&<><Notice message={resource.error}/><Button icon="refresh" title="Coba lagi" secondary onPress={resource.reload}/></>}{message&&<Notice message={message}/>}
- {d&&<><Card><Label>{workOrderStatuses[d.status]} · Prioritas {workOrderPriorities[d.prioritas]}</Label><Label>{d.objek.label}</Label><Label>{d.deskripsi}</Label><Label>Teknisi: {d.teknisi.nama}</Label><Label>Target selesai: {d.target_selesai}</Label><Label>Estimasi: {d.estimasi_biaya===null?"Tidak tersedia":`Rp${d.estimasi_biaya}`} · Biaya tercatat: {d.biaya===null?"Tidak tersedia":`Rp${d.biaya}`}</Label>{d.garansi_aktif&&<Notice message="Aset masih dalam masa garansi."/>}{d.catatan_verifikasi&&<Notice message={`Catatan Petugas: ${d.catatan_verifikasi}`}/>} {d.hasil&&<Label>Hasil: {d.hasil}</Label>}{d.alasan_tertunda&&<Label>Tertunda: {d.alasan_tertunda} · Lanjut {d.tanggal_lanjut}</Label>}</Card>
+ {d&&<><View style={{flexDirection:"row",alignItems:"center",gap:t.space.sm}}><ProgressRing value={d.checklist.filter(c=>c.selesai).length} max={Math.max(1,d.checklist.length)} format="fraction" label={`Checklist ${d.checklist.filter(c=>c.selesai).length} dari ${d.checklist.length}`}/><View style={{flex:1}}><EntityCard icon="wrench" title={d.objek.label} meta={[d.nomor,`Target ${d.target_selesai}`]} statuses={[{label:workOrderStatuses[d.status],tone:workOrderStatusTones[d.status]},{label:workOrderPriorities[d.prioritas],tone:workOrderPriorityTones[d.prioritas]}]}/></View></View>
+ <SupervisorPanel d={d} onDone={resource.reload}/>
+ <Card><Label>{d.deskripsi}</Label><Label>Teknisi: {d.teknisi.nama}</Label><Label>Target selesai: {d.target_selesai}</Label><Label>Estimasi: {d.estimasi_biaya===null?"Tidak tersedia":`Rp${d.estimasi_biaya}`} · Biaya tercatat: {d.biaya===null?"Tidak tersedia":`Rp${d.biaya}`}</Label>{d.garansi_aktif&&<Notice message="Aset masih dalam masa garansi."/>}{d.catatan_verifikasi&&<Notice message={`Catatan Petugas: ${d.catatan_verifikasi}`}/>} {d.hasil&&<Label>Hasil: {d.hasil}</Label>}{d.alasan_tertunda&&<Label>Tertunda: {d.alasan_tertunda} · Lanjut {d.tanggal_lanjut}</Label>}</Card>
  {d.foto_pelapor.length>0&&<Card><Label>Foto pelapor</Label>{d.foto_pelapor.map((p,i)=>p.url?<Image key={p.file_id} source={{uri:p.url}} cachePolicy="none" style={styles.photo} accessibilityLabel={`Foto pelapor ${i+1}`}/>:<Label key={p.file_id}>Foto pelapor {i+1} belum siap.</Label>)}</Card>}
  {d.menunggu_ketersediaan_aset&&<Notice message="Pekerjaan menunggu aset Tersedia. Notifikasi dikirim ketika pekerjaan dapat dimulai."/>}
  {canExecute&&["DITUGASKAN","TERTUNDA"].includes(d.status)&&<Button title={d.status==="TERTUNDA"?"Lanjutkan pekerjaan":"Mulai Kerjakan"} busy={busy} disabled={!!d.menunggu_ketersediaan_aset} onPress={()=>void send("start",{})}/>}

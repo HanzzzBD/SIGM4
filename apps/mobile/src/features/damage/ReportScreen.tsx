@@ -7,7 +7,7 @@ import { discardPreparedPhoto, useUploads } from "../uploads";
 import type { PreparedPhoto } from "../uploads";
 import { MobileApiError } from "../../shared/api/client";
 import { useResource } from "../../shared/api/useResource";
-import { Button, Card, Input, Label, Notice, Screen } from "../../shared/ui";
+import { Button, Card, Chips, EntityCard, Input, Label, Notice, Screen } from "../../shared/ui";
 import { formatTime } from "../../shared/time";
 import { DamageSubmission, openReport, statusLabels, urgencyLabels } from "./model";
 import type { DamageObject, SubmissionResult } from "./model";
@@ -69,16 +69,15 @@ export function DamageReportScreen() {
     };
     if (!canCreate) return <Screen title="Lapor Kerusakan"><Notice message="Anda tidak memiliki izin melaporkan kerusakan." /><Button title="Tugas" onPress={() => router.replace("/tugas" as "/scan")} /></Screen>;
     if (receipt) return <Screen title={receipt.note ? "Informasi Ditambahkan" : "Laporan Tersimpan"}><Card><Label>Tiket {receipt.number ?? existing.data?.nomor ?? `#${receipt.reportId}`}</Label><Label>{description.trim()}</Label><Label>{message}</Label></Card>{canView && (!receipt.note || existing.data?.milik_sendiri || permissions["damage.view"] === "all") && <Button icon="history" title="Lihat detail tiket" onPress={() => router.replace(`/kerusakan/${receipt.reportId}` as "/scan")} />}<Button title="Antrean foto" secondary onPress={() => router.replace("/kerusakan/unggahan" as "/scan")} /><Button title="Tiket saya" secondary onPress={() => router.replace("/kerusakan" as "/scan")} /></Screen>;
-    return <Screen title="Lapor Kerusakan" action={<Button title="Tiket saya" secondary disabled={busy} onPress={() => router.push("/kerusakan" as "/scan")} />}>
-        <Label>Laporan dikirim saat tersambung dan foto tertunda dilanjutkan antrean perangkat. Isi formulir belum tersimpan sampai laporan dikirim.</Label>
+    return <Screen title="Lapor Kerusakan" subtitle="Laporan dikirim saat tersambung dan foto tertunda dilanjutkan antrean perangkat. Isi formulir belum tersimpan sampai laporan dikirim." action={<Button title="Tiket saya" secondary disabled={busy} onPress={() => router.push("/kerusakan" as "/scan")} />}>
         {!canView && <Notice message="Laporan baru tetap dapat dikirim, tetapi izin membaca tiket belum tersedia. Server tetap mencegah tiket berulang." />}
         {prefillLoading && <Label>Memuat aset dari hasil scan...</Label>}
         {!locked && !prefillLoading && !object && <ObjectPicker onChoose={choose} />}
-        {object && <><Card><Label>{object.label}</Label><Label>Jenis: {object.kind === "ASET" ? "Aset" : "Ruangan"}</Label><Button title="Ganti objek" secondary disabled={locked || photos.length > 0} onPress={() => { setObject(null); setAddInfo(false); }} />{photos.length > 0 && <Label>Hapus foto sebelum mengganti objek.</Label>}</Card>
+        {object && <><Card><EntityCard icon={object.kind === "ASET" ? "package" : "mapPin"} title={object.label} meta={[object.kind === "ASET" ? "Aset" : "Ruangan"]}/><Button title="Ganti objek" secondary disabled={locked || photos.length > 0} onPress={() => { setObject(null); setAddInfo(false); }} />{photos.length > 0 && <Label>Hapus foto sebelum mengganti objek.</Label>}</Card>
             {existing.loading && <Label>Memeriksa tiket terbuka...</Label>}{existing.error && <Notice message={existing.error} />}<Button title={uncertain ? "Periksa tiket tanpa mengirim ulang" : "Periksa ulang tiket"} secondary disabled={busy || !canView} onPress={existing.reload} />
             {existing.data && <Card><Label>Sudah ada tiket {existing.data.nomor}</Label><Label>{statusLabels[existing.data.status]} · {urgencyLabels[existing.data.urgensi]} · {formatTime(existing.data.dilaporkan_pada)}</Label><Label>Tambahkan informasi ke tiket ini agar laporan tidak berulang.</Label><Button icon="plus" title="Tambahkan informasi ke tiket yang ada" disabled={locked} onPress={() => setAddInfo(true)} />{existing.data.milik_sendiri && <Button icon="history" title="Lihat tiket saya" secondary onPress={() => router.push(`/kerusakan/${existing.data!.id}` as "/scan")} />}</Card>}
             <Input label={addInfo ? "Informasi tambahan" : "Deskripsi kerusakan"} multiline maxLength={2000} value={description} editable={!locked} onChangeText={setDescription} />
-            {!addInfo && <Card><Label>Tingkat urgensi</Label>{(Object.keys(urgencyLabels) as Array<keyof typeof urgencyLabels>).map((value) => <Button key={value} title={`${urgency === value ? "Dipilih: " : ""}${urgencyLabels[value]}`} secondary={urgency !== value} disabled={locked} onPress={() => setUrgency(value)} />)}</Card>}
+            {!addInfo && <Chips label="Tingkat urgensi" value={urgency} disabled={locked} options={(Object.keys(urgencyLabels) as Array<keyof typeof urgencyLabels>).map((value) => ({ value, label: urgencyLabels[value] }))} onChange={setUrgency}/>}
             <PhotoPicker photos={photos} disabled={locked || !uploads.queue} isCurrent={isCurrent} onAdd={(photo) => setPhotos((value) => [...value, photo])} onRemove={(id) => { void remove(id); }} />
             <Button title={addInfo ? "Kirim informasi tambahan" : "Kirim laporan kerusakan"} busy={busy} disabled={uncertain || !attempt || existing.loading || !!existing.error || (!!existing.data && !addInfo) || !description.trim() || (!addInfo && photos.length < 1)} onPress={() => { void submit(); }} />
         </>}{uncertain && <Notice message="Hasil pengiriman belum pasti, jadi pengiriman ulang dihentikan agar informasi tidak berulang. Periksa tiket; bila bukan milik Anda, minta Petugas Sarpras memastikan catatan diterima." />}

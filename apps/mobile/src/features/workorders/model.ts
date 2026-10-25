@@ -1,3 +1,4 @@
+import { WorkOrderVerifySchema } from "@sigm4/schemas";
 import type { StatusTone } from "../../shared/ui/status";
 import type { AxiosInstance } from "axios";
 import { WorkOrderDetailResponseSchema,ServiceHistoryResponseSchema,WorkOrderListResponseSchema } from "@sigm4/schemas";
@@ -36,3 +37,14 @@ export async function queueWorkOrderPhoto(queue:UploadQueue,photo:Pick<NewUpload
 export async function requireUploadedWorkOrderPhotos(queue:Pick<UploadQueue,"list">,account:string,id:string){
  if((await queue.list(account)).some(p=>p.ownerType==="WORK_ORDER_PHOTO"&&p.ownerId===id))throw new Error("Foto hasil masih di antrean. Unggah atau batalkan foto sebelum mengajukan hasil pekerjaan.");
 }
+/** MS-61 (P-42): daftar seluruh WO bagi pengelola — saring status & kata kunci; teknisi tetap memakai `/mine`. */
+export const loadAll=async(api:AxiosInstance,q:{page:number;status?:string;q?:string;assetId?:string|undefined},signal:AbortSignal)=>WorkOrderListResponseSchema.parse((await api.get("/work-orders",{params:{page:q.page,per_page:20,...(q.status?{status:q.status}:{}),...(q.q?{q:q.q}:{}),...(q.assetId?{asset_id:q.assetId}:{})},signal})).data);
+/** Pengelola WO (verifikasi/pembuatan) melihat seluruh antrean; teknisi murni hanya penugasannya. */
+export const managesWorkOrders=(p:Readonly<Record<string,string>>)=>Object.hasOwn(p,"workorder.view")&&(Object.hasOwn(p,"workorder.verify")||Object.hasOwn(p,"workorder.create"));
+/** Body verifikasi FR-12.4: Tutup (kondisi pasca wajib bila objek aset) atau Kembalikan beralasan. */
+export function verifyWorkOrderBody(close: boolean, note: string, condition: string, isAsset: boolean): { body: unknown } | { error: string } {
+    if (close && isAsset && !condition) return { error: "Pilih kondisi aset sesudah perbaikan." };
+    const p = WorkOrderVerifySchema.safeParse({ keputusan: close ? "TUTUP" : "KEMBALIKAN", ...(note.trim() ? { catatan: note.trim() } : {}), ...(close && condition ? { kondisi_pasca: condition } : {}) });
+    return p.success ? { body: p.data } : { error: p.error.issues.map((i) => i.message).join(" ") };
+}
+
