@@ -1,0 +1,14 @@
+# Situs @DOMAIN@ sebelum sertifikat pertamanya terbit — dirender edge.sh (PR-08-18, SDD-INF-15).
+# Hanya tantangan HTTP-01 yang dilayani; aplikasi tidak pernah disajikan tanpa TLS (INF-06).
+server {
+    listen 80;
+    server_name @DOMAIN@;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 503;
+    }
+}

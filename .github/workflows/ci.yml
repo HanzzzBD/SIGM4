@@ -114,13 +114,16 @@ jobs:
               run: |
                   bash -n deploy/staging/smoke-test.sh
                   python3 scripts/qa/smoke-critical.test.py
-            # Berkas deploy produksi (PR-08-17): gerbang CD-06 diuji, skrip dan topologi divalidasi.
+            # Berkas deploy server sekolah (PR-08-17/18): gerbang CD-06 diuji, skrip dan topologi divalidasi.
             - name: Berkas deploy produksi
               run: |
                   bash deploy/production/jendela-deploy.test.sh
                   bash -n deploy/production/deploy.sh
+                  bash -n deploy/edge/edge.sh
+                  bash deploy/edge/edge.test.sh
+                  docker compose -f deploy/edge/docker-compose.yml config --quiet
                   bash -n deploy/staging/smoke-test.sh
-                  SIGM4_IMAGE=sigm4:uji SIGM4_DOMAIN=contoh.sch.id \
+                  SIGM4_IMAGE=sigm4:uji \
                   SIGM4_ENV_FILE=/dev/null SIGM4_MIGRATION_ENV_FILE=/dev/null \
                       docker compose -f deploy/production/docker-compose.yml --profile migrate config --quiet
 
@@ -401,15 +404,31 @@ jobs:
                   echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
                   docker push "$image"
                   echo "image=$image" >> "$GITHUB_OUTPUT"
+            # Aset web untuk staging (SDD-FE-14): dibangun di sini, bukan di job `web`, yang
+            # dilewati bila pohon web tidak berubah.
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: npm
+            - run: npm ci
+            - run: npm run build -w apps/web
+            - name: Paket web
+              run: tar -C apps/web/dist -czf web-dist.tar.gz .
+            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: web-dist
+                  path: web-dist.tar.gz
 
-    # Koreografi deploy (SDD-INF-10) dijalankan di VPS lewat SSH; smoke test (CD-07)
-    # dijalankan dari runner terhadap origin publik — jalur yang sama dengan pengguna.
-    # Secret & variabel environment `staging`: STAGING_SSH_HOST, STAGING_SSH_USER,
-    # STAGING_SSH_KEY, STAGING_SSH_KNOWN_HOSTS · vars.STAGING_DOMAIN.
+    # Staging berjalan di server sekolah bersama produksi (SDD-INF-15): deploy DITARIK
+    # self-hosted runner berlabel `sigm4-staging` yang dipasang IT sekolah, bukan didorong
+    # lewat SSH — pengembang tidak memegang akses server (SDD-INF-14). Koreografinya
+    # deploy/production/deploy.sh dengan proyek Compose `sigm4-staging`.
+    # Variabel environment `staging`: STAGING_DOMAIN, STAGING_DIR (opsional), EDGE_DIR (opsional).
     deploy-staging:
         name: Deploy staging
         needs: [publikasi-image]
-        runs-on: ubuntu-latest
+        runs-on: [self-hosted, linux, sigm4-staging]
         timeout-minutes: 30
         environment:
             name: staging
@@ -423,36 +442,56 @@ jobs:
             packages: read
         env:
             IMAGE: ${{ needs.publikasi-image.outputs.image }}
-            TUJUAN: ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}
-            DIR_VPS: /opt/sigm4/staging
+            DIR_SERVER: ${{ vars.STAGING_DIR || '/opt/sigm4/staging' }}
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-            - name: Kunci SSH & known_hosts
-              env:
-                  SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
-                  KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+            - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+              with:
+                  name: web-dist
+            - name: Siapkan direktori deploy
               run: |
-                  install -d -m 700 ~/.ssh
-                  printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
-                  # known_hosts dipatok, bukan StrictHostKeyChecking=no: host palsu
-                  # tidak boleh menerima image beserta kredensial registry.
-                  printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-            - name: Salin berkas deploy
-              run: |
-                  ssh -i ~/.ssh/id_deploy "$TUJUAN" "mkdir -p $DIR_VPS"
-                  scp -i ~/.ssh/id_deploy -r deploy/staging/. "$TUJUAN:$DIR_VPS/"
+                  mkdir -p "$DIR_SERVER/nginx" "$DIR_SERVER/web-dist"
+                  cp deploy/production/docker-compose.yml deploy/production/deploy.sh "$DIR_SERVER/"
+                  cp deploy/production/nginx/sigm4.conf.template "$DIR_SERVER/nginx/"
+                  find "$DIR_SERVER/web-dist" -mindepth 1 -delete
+                  tar -C "$DIR_SERVER/web-dist" -xzf web-dist.tar.gz
             - name: Migration + rolling deploy
               env:
                   GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  DOMAIN: ${{ vars.STAGING_DOMAIN }}
+                  SIGM4_PROJECT: sigm4-staging
+                  SIGM4_APP_ENV: staging
+                  SIGM4_ENV_FILE: /etc/sigm4/staging.env
+                  SIGM4_MIGRATION_ENV_FILE: /etc/sigm4/staging-migration.env
+                  SIGM4_BACKUP_DIR: /var/backups/sigm4-staging
               run: |
-                  # Token GITHUB_TOKEN berumur sepanjang job ini saja — cukup untuk satu tarik.
-                  echo "$GHCR_TOKEN" | ssh -i ~/.ssh/id_deploy "$TUJUAN" \
-                      "docker login ghcr.io -u '$GITHUB_ACTOR' --password-stdin"
-                  ssh -i ~/.ssh/id_deploy "$TUJUAN" \
-                      "cd $DIR_VPS && chmod +x deploy.sh smoke-test.sh && SIGM4_DOMAIN='$DOMAIN' ./deploy.sh '$IMAGE'; kode=\$?; docker logout ghcr.io >/dev/null; exit \$kode"
-            - name: Smoke test (CD-07)
-              timeout-minutes: 8
+                  # Kredensial registry hanya hidup selama job ini (GITHUB_TOKEN).
+                  echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+                  kode=0
+                  bash "$DIR_SERVER/deploy.sh" "$IMAGE" "$DIR_SERVER/web-dist" || kode=$?
+                  docker logout ghcr.io >/dev/null
+                  exit "$kode"
+            - name: Proxy tepi
+              env:
+                  DIR_EDGE: ${{ vars.EDGE_DIR || '/opt/sigm4/edge' }}
+              run: |
+                  mkdir -p "$DIR_EDGE/templat"
+                  cp deploy/edge/docker-compose.yml deploy/edge/edge.sh "$DIR_EDGE/"
+                  cp deploy/edge/templat/* "$DIR_EDGE/templat/"
+                  bash "$DIR_EDGE/edge.sh"
+
+    # Dari LUAR server, jalur yang sama dengan pengguna: DNS → TLS → proxy tepi → API (CD-07).
+    # Secret environment `staging`: SMOKE_EMAIL, SMOKE_PASSWORD, SMOKE_TOTP_SECRET ·
+    # variabel SMOKE_ROOM_ID, SMOKE_ASSET_UUID, SMOKE_START_HOUR_WIB.
+    smoke-staging:
+        name: Smoke test staging (CD-07)
+        needs: [deploy-staging]
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        environment:
+            name: staging
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - name: Smoke test penuh
               env:
                   SMOKE_BASE_URL: https://${{ vars.STAGING_DOMAIN }}
                   SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}

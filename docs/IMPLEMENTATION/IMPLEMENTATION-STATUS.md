@@ -41,8 +41,8 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 | [05](phases/phase-05.md) | Penutupan Siklus | 3 | 36 | `In Progress` | 0/36 | Menutup `M3` & `M4` |
 | [06](phases/phase-06.md) | Analitik | 1 | 11 | `In Progress` | 0/11 | Menutup `M5` |
 | [07](phases/phase-07.md) | Integrasi & UAT | — | 14 | `Not Started` | 0/14 | |
-| [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 17 | `Not Started` | 0/17 | Menutup `M6` |
-| | **Total** | **22** | **229** | | **89/229** | |
+| [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 18 | `Not Started` | 0/18 | Menutup `M6` |
+| | **Total** | **22** | **230** | | **89/230** | |
 
 ## Ringkasan milestone PRD
 
@@ -257,6 +257,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 |---|---|:---:|---|
 | `PR-08-01` … `PR-08-16` | `Not Started` | — | Rincian: [`phases/phase-08.md` §7](phases/phase-08.md) |
 | `PR-08-17` | `Done` | [#176](https://github.com/HanzzzBD/SIGM4/pull/176) | Pipeline rilis production ke server sekolah (`SDD-INF-14`, di luar rencana — [log phase-08 §4](logs/phase-08.md)). Cabang `feature/PR-08-17-deploy-produksi-sekolah`. Belum pernah berjalan pada runner nyata: server, runner, environment `production`/`production-smoke`, dan ruleset tag belum disetel ([runbook](runbooks/produksi-server-sekolah.md)). Smoke produksi menunggu `--full` dari `PR-03-36` |
+| `PR-08-18` | `In Progress` | [#184](https://github.com/HanzzzBD/SIGM4/pull/184) | Staging di server sekolah di belakang proxy tepi bersama (`SDD-INF-15`, di luar rencana — [log phase-08 §4](logs/phase-08.md)). Cabang `feature/PR-08-18-staging-server-sekolah`. Belum terbukti di server nyata: runner, environment `staging`, DNS, dan berkas env menunggu IT sekolah dan pemilik repo ([runbook](runbooks/produksi-server-sekolah.md)) |
 
 **Cara memakai tabel ini.** Saat sebuah phase dimulai, ganti barisnya menjadi satu baris per PR. Selama phase belum dimulai, satu baris ringkas lebih jujur daripada 163 baris `Not Started` yang tidak ada yang membacanya.
 

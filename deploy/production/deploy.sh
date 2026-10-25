@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# Deploy produksi bergulir di server sekolah — PR-08-17 (SDD-INF-03/04/05/10/14, CD-04/05).
+# Deploy bergulir stack aplikasi di server sekolah — PR-08-17, PR-08-18
+# (SDD-INF-03/04/05/10/14/15, CD-04/05).
 #
 # Dijalankan dari direktori berkas ini oleh job `deploy` pada
-# .github/workflows/rilis-produksi.yml (self-hosted runner, SDD-INF-14), atau oleh
-# IT sekolah saat darurat:
+# .github/workflows/rilis-produksi.yml dan job `deploy-staging` pada ci.yml
+# (self-hosted runner, SDD-INF-14), atau oleh IT sekolah saat darurat:
 #
-#     SIGM4_DOMAIN=sigm4.sekolah.sch.id ./deploy.sh ghcr.io/hanzzzbd/sigm4:v1.0.0 /path/web-dist
+#     ./deploy.sh ghcr.io/hanzzzbd/sigm4:v1.0.0 /path/web-dist                    # produksi
+#     SIGM4_PROJECT=sigm4-staging SIGM4_APP_ENV=staging \
+#     SIGM4_ENV_FILE=/etc/sigm4/staging.env SIGM4_MIGRATION_ENV_FILE=/etc/sigm4/staging-migration.env \
+#     SIGM4_BACKUP_DIR=/var/backups/sigm4-staging ./deploy.sh ghcr.io/hanzzzbd/sigm4:<sha> /path/web-dist
 #
 # Urutan mengikuti RELEASE-PLAN §3; pola gerbang kesiapannya sama dengan staging:
 #   1. tarik image          — satu tag untuk api, worker, dan migration
@@ -15,7 +19,7 @@
 #   5. api-1, lalu api-2    — readiness gate + jeda serah Nginx (SDD-16 §5)
 #   6. worker               — drain lewat stop_grace_period (SDD-INF-05)
 #   7. aset web             — dari GitHub Release tag yang sama (SDD-FE-14)
-#   8. proxy & certbot      — dinyalakan bila belum
+#   8. nginx stack          — dinyalakan bila belum; TLS/certbot milik proxy tepi (deploy/edge/)
 #   9. retensi              — 5 image & 5 dump terakhir dipertahankan (CD-05)
 # Smoke test dari luar (CD-07) dijalankan pemanggil setelah skrip ini selesai.
 
@@ -26,7 +30,8 @@ IMAGE="${1:?Pemakaian: deploy.sh <image-ref> <direktori-web-dist>}"
 WEB_DIST="$(cd "${2:?Pemakaian: deploy.sh <image-ref> <direktori-web-dist>}" && pwd)"
 [[ -f "$WEB_DIST/index.html" ]] || { echo "!!  $WEB_DIST tidak memuat index.html" >&2; exit 1; }
 export SIGM4_IMAGE="$IMAGE"
-: "${SIGM4_DOMAIN:?SIGM4_DOMAIN wajib diisi}"
+# Nama proyek Compose memisahkan stack staging dan produksi di server yang sama (SDD-INF-15).
+export SIGM4_PROJECT="${SIGM4_PROJECT:-sigm4-production}"
 BATAS_DETIK="${READY_TIMEOUT_DETIK:-180}"
 # Sama dengan staging (keputusan 61): `valid` resolver + `fail_timeout` Nginx, 5 s masing-masing.
 JEDA_SERAH_DETIK="${JEDA_SERAH_DETIK:-12}"
@@ -93,12 +98,14 @@ tunggu_sehat worker
 
 echo "==> 7. Aset web"
 # Volume dibuat compose (berlabel proyek) tanpa menyalakan Nginx; nama = <proyek>_web.
+# Jaringan bersama proxy tepi harus ada sebelum Nginx stack dibuat.
+docker network inspect sigm4-edge >/dev/null 2>&1 || docker network create sigm4-edge >/dev/null
 compose up --no-start --no-deps nginx
-docker run --rm --entrypoint sh -v sigm4-production_web:/dst -v "$WEB_DIST:/src:ro" nginx:1.29-alpine \
+docker run --rm --entrypoint sh -v "${SIGM4_PROJECT}_web:/dst" -v "$WEB_DIST:/src:ro" nginx:1.29-alpine \
     -c 'find /dst -mindepth 1 -delete && cp -a /src/. /dst/'
 
-echo "==> 8. Proxy & certbot"
-compose up -d --no-deps nginx certbot
+echo "==> 8. Nginx stack"
+compose up -d --no-deps nginx
 
 echo "==> 9. Retensi $SIMPAN_RILIS rilis (CD-05)"
 repo="${IMAGE%:*}"
@@ -107,4 +114,4 @@ docker image ls "$repo" --format '{{.CreatedAt}}	{{.Repository}}:{{.Tag}}' \
     | xargs -r docker image rm >/dev/null 2>&1 || true
 ls -1t "$DIR_BACKUP"/pra-deploy-*.dump | tail -n +$(( SIMPAN_RILIS + 1 )) | xargs -r rm -f
 
-echo "==> Selesai. Rollback: jalankan workflow 'Rilis produksi' dengan tag sebelumnya (CD-05)."
+echo "==> Selesai. Proxy tepi diperbarui pemanggil (deploy/edge/edge.sh). Rollback produksi: workflow 'Rilis produksi' dengan tag sebelumnya (CD-05)."

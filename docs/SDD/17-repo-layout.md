@@ -97,7 +97,9 @@ sigm4/
 ├── Dockerfile                   # image sigm4-api + sigm4-worker  → SDD-16 §4.1
 ├── docker-compose.yml           # dependensi pengembangan          → SDD-16 §4.8
 ├── .github/workflows/           # pipeline CI/CD  GitHub Actions   → SDD-16 §4.3, SDD-INF-12
-├── deploy/staging/              # topologi & koreografi deploy staging → SDD-16 §4.2, SDD-INF-10
+├── deploy/production/           # stack aplikasi server sekolah (staging & produksi) → SDD-16 §4.2, SDD-INF-10/14/15
+├── deploy/edge/                 # proxy tepi bersama (Nginx TLS + certbot)       → SDD-INF-15
+├── deploy/staging/              # smoke test pasca-deploy (CD-07)                → SDD-16 §4.3
 │
 ├── apps/
 │   ├── api/                     # POHON BACKEND — isi src/ milik SDD-00 §4.1
