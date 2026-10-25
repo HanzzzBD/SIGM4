@@ -1,8 +1,11 @@
+import type { StatusTone } from "../../shared/ui/status";
 import type { AxiosInstance } from "axios";
 import { WorkOrderDetailResponseSchema,ServiceHistoryResponseSchema,WorkOrderListResponseSchema } from "@sigm4/schemas";
 import { MobileApiError } from "../../shared/api/client";
 import type { UploadQueue,NewUpload } from "../../shared/upload/queue";
 export const workOrderStatuses={DITUGASKAN:"Ditugaskan",DIKERJAKAN:"Dikerjakan",TERTUNDA:"Tertunda",MENUNGGU_VERIFIKASI:"Menunggu Verifikasi",SELESAI:"Selesai",DIBATALKAN:"Dibatalkan",TIDAK_DAPAT_DIPERBAIKI:"Tidak Dapat Diperbaiki"} as const;
+export const workOrderStatusTones:Readonly<Record<keyof typeof workOrderStatuses,StatusTone>>={DITUGASKAN:"pending",DIKERJAKAN:"info",TERTUNDA:"warning",MENUNGGU_VERIFIKASI:"pending",SELESAI:"success",DIBATALKAN:"pending",TIDAK_DAPAT_DIPERBAIKI:"error"};
+export const workOrderPriorityTones:Readonly<Record<keyof typeof workOrderPriorities,StatusTone>>={RENDAH:"pending",SEDANG:"info",TINGGI:"warning",KRITIS:"error"};
 export const workOrderPriorities={RENDAH:"Rendah",SEDANG:"Sedang",TINGGI:"Tinggi",KRITIS:"Kritis"} as const;
 export const loadWorkOrder=async(api:AxiosInstance,id:string,signal:AbortSignal)=>WorkOrderDetailResponseSchema.parse((await api.get(`/work-orders/${id}`,{signal})).data).data;
 export const loadMine=async(api:AxiosInstance,page:number,assetId:string|undefined,signal:AbortSignal)=>WorkOrderListResponseSchema.parse((await api.get("/work-orders/mine",{params:{page,per_page:20,...(assetId?{asset_id:assetId}:{})},signal})).data);

@@ -20,7 +20,8 @@ export function ModuleTile({ label, icon, group, badge = 0, web = false, onPress
     </Pressable>;
 }
 
-export type StatusTone = "success" | "warning" | "error" | "info" | "pending";
+import type { StatusTone } from "./status";
+export type { StatusTone };
 const STATUS: Readonly<Record<StatusTone, { icon: IconName; color: string; soft: string }>> = {
     // Ikon status wajib FOUNDATIONS §8 — status tidak pernah hanya warna (UX-03).
     success: { icon: "checkCircle", color: t.color.success, soft: t.color.successSoft }, warning: { icon: "alert", color: t.color.warning, soft: t.color.warningSoft },

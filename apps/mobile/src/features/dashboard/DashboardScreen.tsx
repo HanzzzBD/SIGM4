@@ -1,15 +1,17 @@
 import { useCallback, useRef, useState } from "react";
 import { router } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { DashboardCardResponseSchema, DashboardManifestResponseSchema } from "@sigm4/schemas";
 import type { DashboardCard, DashboardPeriod } from "@sigm4/schemas";
 import { useAuth } from "../auth";
 import { useResource } from "../../shared/api/useResource";
 import { formatTime } from "../../shared/time";
-import { Badge, Button, Card, EmptyState, Icon, Label, Notice, Screen, SectionHeading, tokens as t } from "../../shared/ui";
+import { Badge, Button, Card, EmptyState, Icon, Label, MiniChart, ModuleTile, Notice, Screen, SectionHeading, tokens as t } from "../../shared/ui";
 import type { IconName } from "../../shared/ui";
-import { cardLines, quickActions, visibleCards } from "./model";
+import { initials } from "../../shared/ui/model";
+import { cardLines, cardSeries, quickActions, visibleCards } from "./model";
 
+/** Kartu KPI C-23: angka utama, sebaran sebagai Grafik Mini C-33 (DSD-11). */
 function CardView({ card, period, refreshKey }: { card: DashboardCard; period: DashboardPeriod; refreshKey: number }) {
     const { api, state } = useAuth(); const account = state.kind === "READY" ? state.session.user.id : "";
     const lastRefresh = useRef(0);
@@ -18,10 +20,16 @@ function CardView({ card, period, refreshKey }: { card: DashboardCard; period: D
     const data = resource.data;
     if (card.id === "efek-tertunda-gagal" && data && typeof data.isi === "object" && data.isi !== null && (data.isi as { jumlah?: number }).jumlah === 0) return null;
     const lines = data ? cardLines(card.id, data.isi) : [];
-    const icon: IconName = /aset/.test(card.id) ? "box" : /pengajuan|persetujuan/.test(card.id) ? "tasks" : /kondisi|kerusakan/.test(card.id) ? "wrench" : /pengguna|role/.test(card.id) ? "user" : "chart";
-    return <Card><View style={styles.cardHeading}><View style={styles.smallIcon}><Icon name={icon} color={t.color.primary}/></View><Text style={styles.cardTitle}>{card.judul}</Text></View>
+    const series = data ? cardSeries(card.id, data.isi) : null;
+    const total = series?.reduce((sum, item) => sum + item.value, 0) ?? 0;
+    const icon: IconName = /aset/.test(card.id) ? "package" : /pengajuan|persetujuan/.test(card.id) ? "badgeCheck" : /kondisi|kerusakan/.test(card.id) ? "hammer" : /pengguna|role/.test(card.id) ? "users" : /teknisi/.test(card.id) ? "wrench" : "chartColumn";
+    return <Card><View style={styles.cardHeading}><View style={styles.smallIcon}><Icon name={icon} color={t.color.iconDefault}/></View><Text style={styles.cardTitle}>{card.judul}</Text></View>
         {resource.loading && <Label tone="muted">Memuat ringkasan...</Label>}{resource.error && <><Notice message={resource.error}/><Button title="Coba lagi" icon="refresh" secondary onPress={resource.reload}/></>}
-        {data && <><Text style={styles.metric}>{lines[0]}</Text>{lines.slice(1).map((line, index) => <Label tone="muted" key={index}>{line}</Label>)}<View style={styles.cardFoot}><Icon name="clock" size={t.size.iconSmall} color={t.color.muted}/><Text style={styles.caption}>{formatTime(data.diperbarui_pada)}</Text></View></>}
+        {data && series && series.length > 0 ? <View style={styles.chartRow}>
+            <MiniChart kind={card.id === "aktivitas-sistem" ? "line" : series.length <= 6 ? "donut" : "bar"} values={series.map((item) => item.value)} summary={`${card.judul}: ${series.map((item) => `${item.label} ${item.value}`).join(", ")}`}/>
+            <View style={styles.legend}><Text style={styles.metric}>{new Intl.NumberFormat("id-ID").format(total)}</Text>{lines.slice(0, 3).map((line, index) => <Text key={index} numberOfLines={1} style={styles.caption}>{line}</Text>)}{lines.length > 3 && <Text style={styles.caption}>+{lines.length - 3} lainnya</Text>}</View>
+        </View> : data && <><Text style={styles.metric}>{lines[0]}</Text>{lines.slice(1).map((line, index) => <Label tone="muted" key={index}>{line}</Label>)}</>}
+        {data && <View style={styles.cardFoot}><Icon name="clock" size={t.size.iconSmall} color={t.color.muted}/><Text style={styles.caption}>{formatTime(data.diperbarui_pada)}</Text></View>}
         {card.id==="pekerjaan-teknisi"&&state.kind==="READY"&&Object.hasOwn(state.session.permissions,"workorder.view")&&<Button title="Buka work order saya" onPress={()=>router.push("/work-order" as "/scan")}/>}
     </Card>;
 }
@@ -37,24 +45,24 @@ export function DashboardScreen() {
     const actions = quickActions(permissions);
     const periods = [["7_hari", "7 hari"], ["30_hari", "30 hari"], ["semester", "Semester"], ["tahun_ajaran", "Tahun ajaran"]] as const;
     const name = state.kind === "READY" ? state.session.user.nama : "";
-    const actionIcons: Record<string, IconName> = { "asset.view": "scan", "material.view": "scan", "approval.decide": "tasks", "reservation.create": "calendar", "damage.create": "wrench", "chat.use": "chat" };
-    return <Screen title="Beranda" icon="house" subtitle="Pantau fasilitas dan lanjutkan pekerjaan Anda." action={canView ? <Button title={periods.find(([value]) => value === period)![1]} icon="calendar" compact secondary onPress={() => setPeriodMenu(value => !value)}/> : undefined}>
-        <View style={styles.welcome}><View style={styles.welcomeText}><Text style={styles.caption}>Selamat datang kembali,</Text><Text style={styles.welcomeName}>{name}</Text></View><View style={styles.avatar}><Text style={styles.initials}>{name.split(" ").slice(0,2).map(part => part[0]).join("").toUpperCase()}</Text></View></View>
+    return <Screen title="Beranda" icon="house" subtitle="Ringkasan fasilitas sesuai hak akses akun Anda. Ketuk Segarkan untuk memuat data terbaru." action={canView ? <Button title={periods.find(([value]) => value === period)![1]} icon="calendar" compact secondary onPress={() => setPeriodMenu(value => !value)}/> : undefined}>
+        <View style={styles.welcome}><View style={styles.welcomeText}><Text style={styles.caption}>Selamat datang kembali,</Text><Text style={styles.welcomeName}>{name}</Text></View><View style={styles.avatar}><Text style={styles.initials}>{initials(name)}</Text></View></View>
         {periodMenu && <Card><SectionHeading title="Rentang ringkasan"/>{periods.map(([value, label]) => <Button key={value} title={label} icon={period === value ? "check" : "calendar"} secondary onPress={() => { setPeriod(value); setPeriodMenu(false); }}/>)}</Card>}
         {cards.filter(card => card.zona === 1).map(card => <CardView key={card.id} card={card} period={period} refreshKey={refreshKey}/>)}
-        <SectionHeading title="Aksi cepat" description="Fitur yang tersedia untuk peran Anda"/>
-        <View style={styles.actions}>{actions.map(action => <Pressable key={action.permission} accessibilityRole="button" accessibilityLabel={action.label} accessibilityState={{disabled:action.path === null}} disabled={action.path === null} onPress={() => { if (action.path) router.push(action.path as "/scan"); }} style={({pressed}) => [styles.action, pressed && styles.actionPressed, action.path === null && styles.unavailable]}><View style={styles.actionIcon}><Icon name={actionIcons[action.permission] ?? "arrowRight"} color={t.color.primary} size={t.size.iconLarge}/></View><Text style={styles.actionLabel}>{action.label === "Chatbot" ? "Tanya SIGM4" : action.label}</Text>{action.path === null && <Text style={styles.caption}>Tersedia di web</Text>}</Pressable>)}</View>
-        {!canView && <EmptyState title="Fitur Anda siap digunakan" icon="shield" description="Pilih aksi cepat atau buka tab Tugas untuk memulai."/>}
+        {actions.length > 0 && <><SectionHeading title="Aksi cepat"/>
+        <View style={styles.actions}>{actions.map(action => <ModuleTile key={action.permission} label={action.label} icon={action.icon} group={action.group} onPress={() => router.push(action.path as "/scan")}/>)}</View></>}
+        {!canView && <EmptyState illustration="success" title="Fitur Anda siap digunakan" description="Pilih aksi cepat atau buka tab Tugas untuk memulai."/>}
         {canView && <><SectionHeading title="Ringkasan operasional" action={<Button title="Segarkan" icon="refresh" compact secondary onPress={() => { setRefreshKey(value => value + 1); resource.reload(); }}/>}/>
         {resource.loading && <Label tone="muted">Memuat dashboard...</Label>}{resource.error && <><Notice message={resource.error}/><Button title="Coba lagi" icon="refresh" onPress={resource.reload}/></>}
-        {resource.data && cards.length === 0 && <EmptyState title="Belum ada ringkasan" description="Antrean pekerjaan yang tersedia dapat dilihat di tab Tugas."/>}
+        {resource.data && cards.length === 0 && <EmptyState illustration="empty" title="Belum ada ringkasan" description="Antrean pekerjaan yang tersedia dapat dilihat di tab Tugas."/>}
         {[2,4].map(zone => cards.filter(card => card.zona === zone).map(card => <CardView key={card.id} card={card} period={period} refreshKey={refreshKey}/>))}
-        {cards.some(card => card.zona === 3) && <><Button title={trends ? "Tutup tren aktivitas" : "Lihat tren aktivitas"} icon="chart" secondary onPress={() => setTrends(value => !value)}/>{trends && cards.filter(card => card.zona === 3).map(card => <CardView key={card.id} card={card} period={period} refreshKey={refreshKey}/>)}</>}
+        {cards.some(card => card.zona === 3) && <><Button title={trends ? "Tutup tren aktivitas" : "Lihat tren aktivitas"} icon="chartColumn" secondary onPress={() => setTrends(value => !value)}/>{trends && cards.filter(card => card.zona === 3).map(card => <CardView key={card.id} card={card} period={period} refreshKey={refreshKey}/>)}</>}
         <Badge label="Data mengikuti hak akses akun" tone="neutral"/></>}
     </Screen>;
 }
 const styles = StyleSheet.create({
  welcome: {flexDirection:"row",alignItems:"center",justifyContent:"space-between",gap:t.space.md,paddingVertical:t.space.sm}, welcomeText:{flex:1,gap:t.space.xs},welcomeName:{fontSize:t.font.heading,fontWeight:"600",color:t.color.heading},avatar:{height:t.size.avatar,width:t.size.avatar,borderRadius:t.radius.full,backgroundColor:t.color.primarySoft,alignItems:"center",justifyContent:"center"},initials:{color:t.color.primary,fontSize:t.font.title,fontWeight:"600"},
- actions:{flexDirection:"row",flexWrap:"wrap",gap:t.space.ms},action:{flexBasis:"45%",flexGrow:1,minHeight:t.size.control*2,padding:t.space.md,backgroundColor:t.color.surface,borderWidth:1,borderColor:t.color.border,borderRadius:t.radius.lg,gap:t.space.ms},actionPressed:{backgroundColor:t.color.primarySoft,borderColor:t.color.primaryBorder},unavailable:{opacity:.5},actionIcon:{width:t.size.touch,height:t.size.touch,backgroundColor:t.color.primarySoft,borderRadius:t.radius.md,justifyContent:"center",alignItems:"center"},actionLabel:{fontSize:t.font.small,fontWeight:"600",color:t.color.heading},
- cardHeading:{flexDirection:"row",alignItems:"center",gap:t.space.sm},smallIcon:{padding:t.space.sm,borderRadius:t.radius.md,backgroundColor:t.color.primarySoft},cardTitle:{flex:1,fontSize:t.font.small,fontWeight:"600",color:t.color.text},metric:{fontSize:t.font.heading,lineHeight:32,fontWeight:"700",color:t.color.heading,fontVariant:["tabular-nums"]},cardFoot:{flexDirection:"row",alignItems:"center",gap:t.space.xs,borderTopWidth:1,borderTopColor:t.color.border,paddingTop:t.space.ms},caption:{fontSize:t.font.caption,lineHeight:18,color:t.color.muted},
+ actions:{flexDirection:"row",flexWrap:"wrap",gap:t.space.ms},
+ cardHeading:{flexDirection:"row",alignItems:"center",gap:t.space.sm},smallIcon:{padding:t.space.sm,borderRadius:t.radius.md,backgroundColor:t.color.neutralSoft},cardTitle:{flex:1,fontSize:t.font.small,fontWeight:"600",color:t.color.text},metric:{fontSize:t.font.heading,lineHeight:32,fontWeight:"700",color:t.color.heading,fontVariant:["tabular-nums"]},cardFoot:{flexDirection:"row",alignItems:"center",gap:t.space.xs,borderTopWidth:1,borderTopColor:t.color.borderSubtle,paddingTop:t.space.ms},caption:{fontSize:t.font.caption,lineHeight:18,color:t.color.muted},
+ chartRow:{flexDirection:"row",alignItems:"center",gap:t.space.md},legend:{flex:1,minWidth:0,gap:t.space.xs},
 });

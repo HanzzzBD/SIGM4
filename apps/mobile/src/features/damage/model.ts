@@ -1,3 +1,4 @@
+import type { StatusTone } from "../../shared/ui/status";
 import { DamageReportCreateSchema, DamageReportCreatedResponseSchema, DamageReportNoteCreateSchema, DamageReportNoteResponseSchema, DamageReportOpenResponseSchema } from "@sigm4/schemas";
 import type { DamageReportOpen } from "@sigm4/schemas";
 import type { AxiosInstance } from "axios";
@@ -8,6 +9,8 @@ import type { NewUpload, UploadQueue } from "../../shared/upload/queue";
 export type DamageObject = { kind: "ASET" | "RUANGAN"; id: string; label: string };
 export type Photo = Pick<NewUpload, "id" | "path" | "checksum" | "size" | "createdAt">;
 export const urgencyLabels = { RENDAH: "Rendah", SEDANG: "Sedang", TINGGI: "Tinggi", KRITIS: "Kritis" } as const;
+export const statusTones: Readonly<Record<keyof typeof statusLabels, StatusTone>> = { DILAPORKAN: "pending", DIVERIFIKASI: "pending", DALAM_PERBAIKAN: "info", SELESAI: "success", DITOLAK: "error" };
+export const urgencyTones: Readonly<Record<keyof typeof urgencyLabels, StatusTone>> = { RENDAH: "pending", SEDANG: "info", TINGGI: "warning", KRITIS: "error" };
 export const statusLabels = { DILAPORKAN: "Dilaporkan", DIVERIFIKASI: "Diverifikasi", DALAM_PERBAIKAN: "Dalam Perbaikan", SELESAI: "Selesai", DITOLAK: "Ditolak" } as const;
 export function readablePhotoUrl(photo: { status: string; url: string | null }, development = false): string | null {
     if (photo.status !== "CLEAN" || !photo.url) return null;

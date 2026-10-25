@@ -1,7 +1,8 @@
 import { readdirSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
-import { MENU, REGISTERED_SCREENS, searchMenu, visibleMenu, webUrl } from "../src/features/menu/model.js";
+import { MENU, searchMenu, visibleMenu, webUrl } from "../src/features/menu/model.js";
+import { REGISTERED_SCREENS } from "../src/shared/screens.js";
 
 /** Path expo-router dari letak berkas rute (SDD-MOB-12): grup `(x)`, `index`, dan `_layout` tidak menjadi segmen. */
 function routePaths(dir: string): string[] {

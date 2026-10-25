@@ -1,3 +1,4 @@
+import type { StatusTone } from "../../shared/ui/status";
 import { DecideBodySchema, ProcurementPartialSchema, LABEL_JENIS_PENGAJUAN, LABEL_STATUS_INSTANCE_APPROVAL } from "@sigm4/schemas";
 import type { ProcurementDetail } from "@sigm4/schemas";
 import type { ApprovalDecision, ApprovalDecisionResult, ApprovalPending, LinimasaPersetujuan, ReservationDetail } from "@sigm4/schemas";
@@ -47,6 +48,8 @@ export function approvalConflict(error: unknown): { name: string; at: string | n
     if (!(error instanceof MobileApiError) || error.code !== "APPROVAL_ALREADY_DECIDED") return null;
     return { name: error.details.find((entry) => entry.field === "diputuskan_oleh")?.message ?? "approver lain", at: error.details.find((entry) => entry.field === "diputuskan_pada")?.message ?? null };
 }
+/** Badge SLA C-13: terlampaui galat, berjalan informasi, belum ada menunggu (FOUNDATIONS §1.8). */
+export function slaTone(sla: { terlambat: boolean } | null): StatusTone { return !sla ? "pending" : sla.terlambat ? "error" : "info"; }
 export function slaLabel(sla: { sisa_menit_kerja: number; terlambat: boolean } | null) {
     if (!sla) return "Tenggat belum tersedia";
     if (sla.terlambat) return "Melewati SLA";
@@ -88,6 +91,10 @@ export class DecisionAttempt {
 }
 
 /** Label tampilan bukan kode enum (NFR-AC-09). */
+/** Nada status instance/langkah persetujuan (FOUNDATIONS §1.8): menunggu dan belum aktif berikon garis putus. */
+export function approvalTone(code: string): StatusTone {
+    return code === "DISETUJUI" ? "success" : code === "DITOLAK" ? "error" : code === "PERLU_REVISI" ? "warning" : code === "AKTIF" ? "info" : "pending";
+}
 export function approvalLabel(code: string): string {
     const labels: Readonly<Record<string, string>> = { ...LABEL_JENIS_PENGAJUAN, ...LABEL_STATUS_INSTANCE_APPROVAL, DILEWATI: "Dilewati", AKTIF: "Aktif", BELUM_AKTIF: "Belum Aktif", TIDAK_DIJALANKAN: "Tidak Dijalankan" };
     return labels[code] ?? code.toLowerCase().replaceAll("_", " ");

@@ -3,12 +3,7 @@
 // di build ini dan permission-nya dipegang menurut `/me` (UXP-02); paket paritas berikutnya cukup mendaftarkan ID.
 import type { DomainGroup } from "../../shared/ui/model";
 import type { IconName } from "../../shared/ui/Icon";
-
-/** Layar mobile yang route-nya ada di build ini: ID UX §6.11 → path. */
-export const REGISTERED_SCREENS: Readonly<Record<string, string>> = {
-    "MS-05": "/", "MS-06": "/tugas", "MS-07": "/scan", "MS-15": "/kerusakan/lapor", "MS-16": "/work-order", "MS-18": "/opname", "MS-20": "/persetujuan", "MS-21": "/chat",
-    "MS-29": "/notifikasi", "MS-30": "/profil", "MS-31": "/menu",
-};
+import { REGISTERED_SCREENS } from "../../shared/screens";
 
 export interface MenuEntry {
     readonly id: string;
