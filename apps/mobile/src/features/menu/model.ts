@@ -39,7 +39,8 @@ export const MENU: readonly MenuGroup[] = [
         e("MS-63", "Jadwal Pemeliharaan", "calendarClock", "maintenance.manage"),
     ] },
     { group: "PENGAWASAN", label: "Pengawasan", entries: [
-        { ...e("MS-65", "Stock Opname", "clipboardCheck", "audit.manage"), alternatives: [{ id: "MS-18", permission: ["audit.execute"] }] },
+        // Daftar sesi (P-47) dilayani MS-18 mode pengelola; MS-65 dibuka dari tombol Buat di sana (log phase-07 paket 4).
+        e("MS-18", "Stock Opname", "clipboardCheck", "audit.execute", "audit.manage", "audit.approve"),
         e("MS-67", "Pengadaan", "shoppingCart", "procurement.view"), e("MS-71", "Penghapusan Aset", "archiveX", "disposal.view"), e("MS-74", "Statistik & Analitik", "chartColumn", "report.view"),
     ] },
     { group: "SISTEM", label: "Sistem", entries: [
