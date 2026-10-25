@@ -5,9 +5,11 @@ import { randomUUID } from "expo-crypto";
 import { useAuth } from "../auth";
 import { useResource } from "../../shared/api/useResource";
 import { formatTime } from "../../shared/time";
-import { BottomSheet, Button, Card, Chips, EmptyState, EntityCard, Input, Label, ListRow, Notice, Screen, SectionHeading, StatusBadge, Toggle, tokens as t } from "../../shared/ui";
+import { BottomSheet, Button, Card, Chips, DateField, EmptyState, EntityCard, Input, Label, ListRow, Notice, Screen, SectionHeading, StatusBadge, Toggle, tokens as t } from "../../shared/ui";
 import { REQUEST_LABEL, REQUEST_TONE, canCancel, cancelRequest, exceedsBalance, loadCatalog, loadMaterial, loadOptions, loadRequest, loadRequests, requestBody, rowsFromRequest, saveRequest } from "./requests";
 import type { RequestRow } from "./requests";
+import { canClose, canIssue, closeRequest, issuable, issueBody, issueLimit, issueRequest } from "./stock";
+import { dateWib } from "../../shared/wib";
 
 function Pager({ page, pages, onPage }: { page: number; pages: number; onPage: (p: number) => void }) {
     return pages > 1 ? <View style={styles.row}><Button icon="arrowLeft" title="Sebelumnya" compact secondary disabled={page === 1} onPress={() => onPage(page - 1)}/><Label tone="muted">{page}/{pages}</Label><Button icon="arrowRight" title="Berikutnya" compact secondary disabled={page >= pages} onPress={() => onPage(page + 1)}/></View> : null;
@@ -96,29 +98,39 @@ export function MaterialRequestListScreen() {
     </Screen>;
 }
 
-/** MS-58 — padanan P-87: baris, saldo terkini, siklus, penyerahan; revisi & batalkan bagi pemohon. Penyerahan petugas menyusul paket 3 (PR-07-26). */
+/** MS-58 — padanan P-87: baris, saldo terkini, siklus, penyerahan; revisi & batalkan bagi pemohon; penyerahan & tutup sisa bagi `material.issue` (FR-22.5). */
 export function MaterialRequestDetailScreen() {
     const { id = "" } = useLocalSearchParams<{ id: string }>(); const { state, api } = useAuth(); const account = state.kind === "READY" ? state.session.user.id : "";
     const permissions = state.kind === "READY" ? state.session.permissions : {}, valid = /^[1-9]\d*$/.test(id) && Object.hasOwn(permissions, "material.view");
     const detail = useResource(`${account}:material-request:${id}`, useCallback((signal: AbortSignal) => valid ? loadRequest(api, id, signal) : Promise.resolve(null), [api, id, valid]));
-    const [cancel, setCancel] = useState(false), [reason, setReason] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null), key = useRef(randomUUID());
+    const [cancel, setCancel] = useState<"cancel" | "close" | false>(false), [issue, setIssue] = useState<{ name: string; date: string; note: string; qty: Record<string, string> } | null>(null), [reason, setReason] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null), key = useRef(randomUUID());
     if (!valid || state.kind !== "READY") return noAccess("Detail Permintaan Bahan");
     const d = detail.data;
-    const confirm = async () => { if (!d || busy) return; setBusy(true); setError(null); try { await cancelRequest(api, d.id, reason, key.current); setCancel(false); detail.reload(); } catch (e) { setError(e instanceof Error ? e.message : "Pembatalan belum tersimpan."); } finally { setBusy(false); } };
+    const confirm = async () => { if (!d || busy) return; setBusy(true); setError(null); try { if (cancel === "close") await closeRequest(api, d.id, reason, key.current); else await cancelRequest(api, d.id, reason, key.current); setCancel(false); detail.reload(); } catch (e) { setError(e instanceof Error ? e.message : "Perubahan belum tersimpan."); } finally { setBusy(false); } };
+    const hand = async () => { if (!d || !issue || busy) return; const r = issueBody(d, issue); if ("error" in r) { setError(r.error); return; } setBusy(true); setError(null); try { await issueRequest(api, d.id, r.body, key.current); setIssue(null); detail.reload(); } catch (e) { setError(e instanceof Error ? e.message : "Penyerahan belum tersimpan."); } finally { setBusy(false); } };
     return <Screen title={d?.nomor ?? "Detail Permintaan Bahan"}>
         {detail.loading && <Label tone="muted">Memuat permintaan…</Label>}{detail.error && <><Notice message={detail.error}/><Button icon="refresh" title="Coba lagi" secondary onPress={detail.reload}/></>}
         {d && <>
             <EntityCard icon="clipboardList" title={d.pemohon} meta={[d.keperluan, `Siklus ${d.revision}`]} statuses={[{ label: REQUEST_LABEL[d.status], tone: REQUEST_TONE[d.status] }]}/>
             {d.catatan_penutupan && <Notice tone="info" message={d.catatan_penutupan}/>}
             {d.status === "PERLU_REVISI" && d.pemohon_id === state.session.user.id && Object.hasOwn(permissions, "material.request") && <Button icon="refresh" title="Revisi permintaan" onPress={() => router.push(`/permintaan-bahan/baru?revisi=${d.id}` as "/scan")}/>}
-            {canCancel(d, state.session.user, permissions) && <Button icon="close" title="Batalkan permintaan" secondary onPress={() => { setError(null); setReason(""); key.current = randomUUID(); setCancel(true); }}/>}
+            {canIssue(d, permissions) && issuable(d).length > 0 && <Button icon="handshake" title="Catat penyerahan" onPress={() => { setError(null); key.current = randomUUID(); setIssue({ name: d.pemohon, date: dateWib(Date.now()), note: "", qty: {} }); }}/>}
+            {canClose(d, permissions) && <Button icon="checkCircle" title="Tutup sisa permintaan" secondary onPress={() => { setError(null); setReason(""); key.current = randomUUID(); setCancel("close"); }}/>}
+            {canCancel(d, state.session.user, permissions) && <Button icon="close" title="Batalkan permintaan" secondary onPress={() => { setError(null); setReason(""); key.current = randomUUID(); setCancel("cancel"); }}/>}
             {d.approval_instance_id && Object.hasOwn(permissions, "approval.view") && <ListRow icon="badgeCheck" title="Linimasa persetujuan" onPress={() => router.push(`/persetujuan/${d.approval_instance_id}` as "/scan")}/>}
             <SectionHeading title="Rincian kebutuhan"/>
             {d.items.map((i) => <EntityCard key={i.id} icon="boxes" title={i.nama} meta={[i.lokasi, `saldo kini ${i.saldo_terkini} ${i.satuan}`]} statuses={i.jumlah_disetujui !== null ? [{ label: `Disetujui ${i.jumlah_disetujui}`, tone: i.jumlah_disetujui === 0 ? "error" : "success" }] : []} value={`${i.jumlah_diserahkan}/${i.jumlah_diminta}`}/>)}
             {d.penyerahan.length > 0 && <><SectionHeading title="Penyerahan"/>{d.penyerahan.map((p) => <Card key={p.id}><Text style={styles.strong}>{p.nama_penerima} · {p.tanggal_serah}</Text><Label tone="muted">Oleh {p.pelaksana}{p.catatan ? ` · ${p.catatan}` : ""}</Label>{p.items.map((x) => <Label key={x.item_id}>{d.items.find((i) => i.id === String(x.item_id))?.nama ?? "Bahan"}: {x.jumlah}</Label>)}</Card>)}</>}
             {d.cycles.length > 1 && <><SectionHeading title="Siklus pengajuan"/>{d.cycles.map((c) => <ListRow key={c.revision} icon="history" title={`Siklus ${c.revision}`} subtitle={formatTime(c.created_at)}/>)}</>}
         </>}
-        <BottomSheet visible={cancel} onClose={() => setCancel(false)} title="Batalkan permintaan?"><View style={styles.sheet}><Label>Permintaan yang belum diserahkan dibatalkan dan tidak dapat dilanjutkan.</Label><Input label="Alasan pembatalan" value={reason} multiline maxLength={2000} onChangeText={setReason}/>{error && <Notice message={error}/>}<Button icon="close" title="Batalkan permintaan" busy={busy} disabled={!reason.trim()} onPress={() => void confirm()}/></View></BottomSheet>
+        <BottomSheet visible={cancel !== false} onClose={() => setCancel(false)} title={cancel === "close" ? "Tutup sisa permintaan?" : "Batalkan permintaan?"}><View style={styles.sheet}><Label>{cancel === "close" ? "Sisa yang belum diserahkan ditutup; penyerahan yang sudah tercatat tetap." : "Permintaan yang belum diserahkan dibatalkan dan tidak dapat dilanjutkan."}</Label><Input label={cancel === "close" ? "Alasan penutupan" : "Alasan pembatalan"} value={reason} multiline maxLength={2000} onChangeText={setReason}/>{error && <Notice message={error}/>}<Button icon="close" title={cancel === "close" ? "Tutup sisa" : "Batalkan permintaan"} busy={busy} disabled={!reason.trim()} onPress={() => void confirm()}/></View></BottomSheet>
+        <BottomSheet visible={issue !== null} full onClose={() => setIssue(null)} title="Catat penyerahan">{d && issue && <View style={styles.sheet}>
+            <Label tone="muted">Isi hanya jumlah yang diserahkan sekarang; sisa dapat diserahkan kemudian.</Label>
+            <Input label="Nama penerima" value={issue.name} maxLength={200} onChangeText={(v) => setIssue({ ...issue, name: v })}/><DateField label="Tanggal serah" value={issue.date} onChange={(v) => setIssue({ ...issue, date: v > dateWib(Date.now()) ? dateWib(Date.now()) : v })}/>
+            {issuable(d).map((i) => <Input key={i.id} label={`${i.nama} · ${i.lokasi} (maks ${issueLimit(i)} ${i.satuan})`} value={issue.qty[i.id] ?? ""} keyboardType="number-pad" onChangeText={(v) => setIssue({ ...issue, qty: { ...issue.qty, [i.id]: v.replace(/\D/g, "") } })}/>)}
+            <Input label="Catatan (opsional)" value={issue.note} multiline maxLength={2000} onChangeText={(v) => setIssue({ ...issue, note: v })}/>
+            {error && <Notice message={error}/>}<Button icon="handshake" title="Simpan penyerahan" busy={busy} onPress={() => void hand()}/>
+        </View>}</BottomSheet>
     </Screen>;
 }
 const styles = StyleSheet.create({ row: { flexDirection: "row", gap: t.space.sm, alignItems: "center" }, flex: { flex: 1, minWidth: 0 }, strong: { fontSize: t.font.body, fontWeight: "600", color: t.color.heading }, sheet: { padding: t.space.md, gap: t.space.md } });

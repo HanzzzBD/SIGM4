@@ -12,5 +12,6 @@ export const REGISTERED_SCREENS: Readonly<Record<string, string>> = {
     "MS-55": "/katalog-bahan", "MS-56": "/permintaan-bahan/baru", "MS-57": "/permintaan-bahan", "MS-58": "/permintaan-bahan/[id]",
     "MS-33": "/aset", "MS-34": "/aset/baru", "MS-35": "/aset/mutasi", "MS-36": "/kategori-aset", "MS-39": "/dokumen-aset",
     "MS-37": "/lokasi", "MS-38": "/lokasi/ruangan/[id]",
+    "MS-40": "/bahan", "MS-41": "/bahan/baru", "MS-42": "/bahan/[id]", "MS-43": "/kategori-bahan",
     "MS-44": "/kalender-ruangan", "MS-45": "/katalog-aset", "MS-46": "/reservasi/baru", "MS-47": "/reservasi", "MS-48": "/reservasi/[id]",
 };

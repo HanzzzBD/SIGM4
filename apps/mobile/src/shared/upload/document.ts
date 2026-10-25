@@ -8,7 +8,10 @@ import * as Crypto from "expo-crypto";
 import * as DocumentPicker from "expo-document-picker";
 import { DOCUMENT_TYPES, documentMime } from "./document-policy";
 
-export interface UploadedDocument { file_id: number; nama_berkas: string; scan_status: "PENDING" | "CLEAN" | "INFECTED" | "FAILED" }
+export interface UploadedDocument { file_id: number; nama_berkas: string; checksum: string; scan_status: "PENDING" | "CLEAN" | "INFECTED" | "FAILED" }
+const Confirmed = z.object({ data: z.object({ scan_status: z.enum(["PENDING", "CLEAN", "INFECTED", "FAILED"]) }) });
+/** Konfirmasi ulang idempoten untuk memeriksa hasil pemindaian berkas yang masih PENDING. */
+export const recheckDocument = async (api: AxiosInstance, doc: Pick<UploadedDocument, "file_id" | "checksum">) => Confirmed.parse((await api.post("/files/confirm", { file_id: doc.file_id, checksum: doc.checksum })).data).data.scan_status;
 /** `null` bila pengguna membatalkan pemilihan. */
 export async function pickAndUploadDocument(api: AxiosInstance, jenis: "ASSET_DOCUMENT" | "MATERIAL_RECEIPT_DOCUMENT"): Promise<UploadedDocument | null> {
     const result = await DocumentPicker.getDocumentAsync({ type: DOCUMENT_TYPES, copyToCacheDirectory: true, multiple: false });
@@ -19,7 +22,7 @@ export async function pickAndUploadDocument(api: AxiosInstance, jenis: "ASSET_DO
     const checksum = [...new Uint8Array(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, await file.bytes()))].map((b) => b.toString(16).padStart(2, "0")).join("");
     const order = z.object({ data: z.object({ file_id: z.string().regex(/^[1-9]\d*$/), upload_url: z.url() }) }).parse((await api.post("/files/presign", { jenis, mime: check.mime, ukuran: file.size })).data).data;
     if (!(await fetch(order.upload_url, { method: "PUT", headers: { "content-type": check.mime }, body: file })).ok) throw new Error("Berkas belum terunggah. Periksa koneksi, lalu coba lagi.");
-    const confirmed = z.object({ data: z.object({ scan_status: z.enum(["PENDING", "CLEAN", "INFECTED", "FAILED"]) }) }).parse((await api.post("/files/confirm", { file_id: Number(order.file_id), checksum })).data).data;
+    const confirmed = Confirmed.parse((await api.post("/files/confirm", { file_id: Number(order.file_id), checksum })).data).data;
     if (file.exists) file.delete();
-    return { file_id: Number(order.file_id), nama_berkas: asset.name, scan_status: confirmed.scan_status };
+    return { file_id: Number(order.file_id), nama_berkas: asset.name, checksum, scan_status: confirmed.scan_status };
 }
