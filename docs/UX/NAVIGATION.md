@@ -143,7 +143,7 @@ Bottom tab bar lima slot dengan Scan di tengah (**UXD-03**); isinya diubah **UXD
 | **Tugas** | **Adaptif per permission** — lihat tabel di bawah | **UXD-03** |
 | **Scan** | Pemindai QR kamera native; mode beruntun aktif bila sedang dalam sesi opname atau mutasi massal | `FR-05.2` · `MOB-MED-05` · `MOB-MED-07` |
 | **Chatbot** | Percakapan (`MS-21`) + riwayat sesi (`MS-32`); disembunyikan tanpa `chat.use` | `FR-19.1` · **UXD-20** |
-| **Menu** | Kartu Profil (`MS-30`) di atas, pencarian modul, lima grup domain (**UXD-01**) berisi entri fitur tersaring permission (`MS-31`); entri `MOB-SCP-02` mengarah ke web | `MOB-SCP-01` · **UXD-20** |
+| **Menu** | Kartu Profil (`MS-30`) di atas, pencarian modul, lima grup domain (**UXD-01**) berisi entri fitur tersaring permission (`MS-31`) dan layar yang sudah ada di build (**UXD-23**); entri `MOB-SCP-02` mengarah ke web | `MOB-SCP-01` · **UXD-20** · **UXD-23** |
 
 | Di luar tab | Isi | Rujukan |
 |---|---|---|
