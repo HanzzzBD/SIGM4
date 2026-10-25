@@ -3,6 +3,7 @@
 // < 768px: overlay drawer dari tombol topbar · MD: ikon-saja · LG: terbuka penuh.
 
 import { Link, useRouterState } from "@tanstack/react-router";
+import * as Dialog from "@radix-ui/react-dialog";
 import { useCan } from "../shared/auth";
 import { HALAMAN_TERDAFTAR, navigasiTerlihat } from "../shared/navigasi";
 import { Ikon } from "../shared/ui/icon";
@@ -23,16 +24,7 @@ export function Sidebar({ ciut, drawerTerbuka, onTutupDrawer }: { readonly ciut:
     const path = useRouterState({ select: (s) => s.location.pathname });
     const kunci = String(ciut) as keyof typeof LEBAR;
     const teks = drawerTerbuka ? "" : TEKS[kunci];
-    return (
-        <>
-            {drawerTerbuka && <button type="button" aria-label="Tutup menu" onClick={onTutupDrawer} className="fixed inset-0 z-20 bg-neutral-900 opacity-50 md:hidden" />}
-            <aside
-                className={gabung(
-                    "flex-col overflow-y-auto border-r border-border-subtle bg-surface-default transisi-lebar",
-                    drawerTerbuka ? "fixed inset-y-0 left-0 z-30 flex w-sidebar" : "hidden md:flex",
-                    LEBAR[kunci],
-                )}
-            >
+    const contents = <>
                 <div className="flex min-h-topbar items-center border-b border-border-subtle px-4">
                     <Logo className={drawerTerbuka ? "" : WORDMARK[kunci]} />
                     {!drawerTerbuka && <Logo varian="ikon" className={IKON[kunci]} />}
@@ -72,7 +64,18 @@ export function Sidebar({ ciut, drawerTerbuka, onTutupDrawer }: { readonly ciut:
                         </div>
                     ))}
                 </nav>
-            </aside>
-        </>
-    );
+    </>;
+    return <>
+        {!drawerTerbuka && <aside className={gabung("hidden flex-col overflow-y-auto border-r border-border-subtle bg-surface-default transisi-lebar md:flex", LEBAR[kunci])}>{contents}</aside>}
+        <Dialog.Root open={drawerTerbuka} onOpenChange={open => { if (!open) onTutupDrawer(); }}>
+            <Dialog.Portal>
+                <Dialog.Overlay className="fixed inset-0 z-40 bg-overlay" />
+                <Dialog.Content id="mobile-navigation" aria-describedby={undefined} onCloseAutoFocus={e => { e.preventDefault(); document.querySelector<HTMLButtonElement>("[data-menu-trigger]")?.focus(); }} className="fixed inset-y-0 left-0 z-50 flex w-sidebar max-w-full flex-col overflow-y-auto border-r border-border-subtle bg-surface-default">
+                    <Dialog.Title className="sr-only">Menu navigasi</Dialog.Title>
+                    <Dialog.Close className="min-h-touch self-end px-4 text-text-link">Tutup menu</Dialog.Close>
+                    {contents}
+                </Dialog.Content>
+            </Dialog.Portal>
+        </Dialog.Root>
+    </>;
 }

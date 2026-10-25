@@ -2,6 +2,9 @@
 // diimpor modul lain / entrypoint `api/` — `repositories/`, `controllers/`,
 // dan `services/` privat terhadap modul ini.
 export type { UsersModuleDeps } from "./routes.js";
+export { privacyRouter, pseudonymizeUserRoute } from "./privacy.routes.js";
+export { PseudonymizationService } from "./services/pseudonymization.service.js";
+export { purgeUserImportReports } from "./services/import-report-retention.js";
 export type {
     StudentObligation,
     StudentObligationChecker,

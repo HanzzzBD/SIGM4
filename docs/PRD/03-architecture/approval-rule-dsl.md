@@ -52,20 +52,22 @@ Bila SDD dan lampiran ini berbeda, **lampiran ini yang berlaku** dan SDD wajib d
 | `total_value` | decimal | Pengadaan, Penghapusan | Total estimasi / total nilai perolehan |
 | `item_count` | integer | Reservasi Aset, Pengadaan, Penghapusan, Permintaan Bahan | Jumlah unit/item |
 | `material_category_id` | integer[] | Permintaan Bahan | Kategori bahan yang diminta |
-| `material_qty_total` | integer | Permintaan Bahan | Total kuantitas bahan yang diminta — dasar ambang `BR-086` |
-| `material_value_total` | decimal | Permintaan Bahan | Perkiraan nilai total bahan yang diminta |
+| `material_qty_total` | integer | Permintaan Bahan | Total kuantitas untuk pemilihan rules; gate BR-086 menghitung setiap jenis tersendiri |
+| `material_value_total` | decimal | Belum diaktifkan | Menunggu sumber harga referensi sah; tidak tersedia pada validator/editor |
 | `duration_days` | integer | Reservasi Aset, Perpanjangan | Selisih hari mulai–selesai |
-| `duration_hours` | integer | Reservasi Ruangan | Durasi penggunaan ruangan |
+| `duration_hours` | integer | Reservasi Ruangan, Reservasi Aset | Durasi penggunaan ruangan |
 | `asset_category_id` | integer[] | Reservasi Aset, Penghapusan | Kategori aset yang diminta |
 | `asset_value_max` | decimal | Reservasi Aset | Nilai perolehan tertinggi di antara unit yang diminta |
-| `room_type` | enum | Reservasi Ruangan | Jenis ruangan |
-| `room_id` | integer[] | Reservasi Ruangan | Ruangan yang diminta |
-| `participant_count` | integer | Reservasi Ruangan | Perkiraan jumlah peserta |
-| `is_recurring` | boolean | Reservasi Ruangan | Pengajuan berulang atau tunggal |
-| `is_outside_operating_hours` | boolean | Reservasi Ruangan | Di luar jam operasional |
+| `room_type` | enum | Reservasi Ruangan, Reservasi Aset | Jenis ruangan |
+| `room_id` | integer[] | Reservasi Ruangan, Reservasi Aset | Ruangan yang diminta |
+| `participant_count` | integer | Reservasi Ruangan, Reservasi Aset | Perkiraan jumlah peserta |
+| `is_recurring` | boolean | Reservasi Ruangan, Reservasi Aset | Pengajuan berulang atau tunggal |
+| `is_outside_operating_hours` | boolean | Reservasi Ruangan, Reservasi Aset | Di luar jam operasional |
 | `lead_time_hours` | integer | Reservasi | Selisih waktu pengajuan ke waktu mulai |
 | `disposal_reason` | enum | Penghapusan | Alasan penghapusan |
 | `priority` | enum | Pengadaan | Prioritas usulan |
+
+Pada reservasi gabungan, satu instance `RESERVASI_ASET` menerima fakta aset dan ruangan. Fakta `room_type`, `room_id`, `participant_count`, dan `is_outside_operating_hours` hanya disediakan jika ada ruangan pendukung; `asset_value_max` dihitung dari unit yang benar-benar dialokasikan.
 
 Field di luar tabel ini, atau field yang tidak berlaku bagi `jenis_pengajuan` aturan, **ditolak saat penyimpanan** (`RE-08`). `RE-02` tetap berlaku sebagai pengaman saat evaluasi.
 
@@ -164,3 +166,11 @@ Field di luar tabel ini, atau field yang tidak berlaku bagi `jenis_pengajuan` at
 | RE-11 | Bila **seluruh** langkah terlewati, pengajuan diarahkan ke *fallback approver* — field **opsional** tingkat aturan (Lampiran D.5). Bila aturan tidak menetapkannya, berlaku role Administrator. Pengajuan tidak pernah otomatis disetujui karena kekosongan approver |
 | RE-12 | Delegasi (FR-10.2 A3) tidak memindahkan tanggung jawab audit: linimasa mencatat approver asli dan penerima delegasi |
 | RE-13 | Langkah yang approver-nya bertipe `user` dan pengguna tersebut **nonaktif saat langkah hendak diaktifkan** ditandai **dilewati** dengan alasan `dilewati — approver nonaktif`, dan pemrosesan lanjut ke langkah berikutnya. Bila seluruh langkah menjadi tidak tersedia karena sebab apa pun — konflik kepentingan (RE-10), approver nonaktif, atau gabungan keduanya — berlaku jalur fallback RE-11 yang sama. Administrator dialarmi (NT-47). Penonaktifan pengguna tidak pernah tertahan oleh instance yang sedang berjalan |
+
+### PR-05-19 — ambang bahan per jenis (14 Oktober 2026)
+
+Permintaan memakai jumlah per jenis master, lintas lokasi, dibandingkan batas M-20.
+Fakta material_qty_total dan material_category_id tersedia untuk pemilihan aturan
+di atas ambang. Field material_value_total dinonaktifkan sampai harga referensi sah
+tersedia; validator/editor tidak menawarkan kondisi nominal Bahan. Nilai estimasi
+usulan pengadaan tetap menjadi fakta M-14 sendiri.

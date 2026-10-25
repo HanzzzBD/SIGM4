@@ -14,5 +14,5 @@ export interface ReservasiLaporan {
 
 export async function reservasiUntukLaporan(scope: TransactionScope, id: number): Promise<ReservasiLaporan | undefined> {
     const r = await createReservationRepository(scope.tx).untukLaporanKerusakan(scope.ctx, id);
-    return r === undefined ? undefined : { id: r.id, nomor: r.nomor, jenis: r.jenis, roomId: r.room_id, status: r.status };
+    return r === undefined ? undefined : { id: r.id, nomor: r.nomor, jenis: r.jenis, roomId: r.room_id, status: r.jenis === "ASET" ? r.status_penggunaan_ruangan ?? r.status : r.status };
 }

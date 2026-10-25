@@ -265,7 +265,7 @@ Format dirakit aplikasi sesuai `SEQ-01`, divalidasi terhadap regex `SEQ-04` pada
 | `slot-activation` | tiap 5 menit | `UPDATE … WHERE status <> target`; reservasi ruangan (FR-07.4, `PR-03-12`) bertransisi hanya dari status asal (`Disetujui`/`Berlangsung`) atas baris yang dikunci `FOR UPDATE SKIP LOCKED` terurut id — baris yang sedang dipegang pembatalan/pencatatan dilewati putaran itu, job tak pernah menunggu kunci; transaksi terpisah dari sisi aset M-04 |
 | `fixed-schedule-materialize` | harian 17:30 (= 00:30 WIB) | kemunculan dibuat hanya bila belum ber-slot (tak dilepas) dan tak beririsan apa pun — yang beririsan dilewati, dicoba lagi besok, tak pernah membatalkan; slot mendatang yang kini libur dilepas; satu transaksi per aturan yang dikunci `FOR UPDATE` (`PR-03-13`) |
 | `tentative-slot-expiry` | tiap 15 menit | `WHERE status='TENTATIVE' AND expires_at < now()` |
-| `loan-overdue` | 17:05 (= 00:05 WIB) | denda diperiksa unik per `(loan_item_id, tanggal)` |
+| `loan-overdue` | 17:05 (= 00:05 WIB) | estimasi denda; event pengingat unik per loan/hari WIB, NT-11 mengikuti versi jatuh tempo (keputusan produk PR-05-05) |
 | `reservation-expiry` | 16:00 (= 23:00 WIB) | transisi hanya dari `Confirmed` |
 | `approval-sla-check` | tiap 30 menit | pengingat `NT-06` dibatasi 1×/hari per objek; eskalasi hanya dari langkah yang masih aktif |
 | `activity-log-partition` | 17:20 (= 00:20 WIB) | `CREATE TABLE IF NOT EXISTS` atas partisi bulan berjalan + 3 bulan ke depan (`SDD-05 §4.4`) |
@@ -322,6 +322,12 @@ Yang **bukan** tanggung jawabnya: aturan reservasi (`BR-030`, `BR-023a`, `BR-023
 
 ---
 
+### Keputusan implementasi reservasi gabungan - 13 Oktober 2026
+
+PR-04-02/03 memakai satu instance `RESERVASI_ASET` dan fakta gabungan sesuai [DSL D.2](../PRD/03-architecture/approval-rule-dsl.md). `reservation_items` menyimpan satu unit fisik per baris; `confirmed_at` menjadi bukti persetujuan unit tanggal tersebut sebelum identitas unit ditampilkan. Alokasi otomatis dapat mengganti unit sekategori. Kunci kuota pemohon sama dengan pengajuan ruangan; semua unit dikunci berurutan sebelum ruangan, lalu seluruh slot dipesan dalam satu transaksi.
+
+Status utama jenis `ASET` menunggu serah terima fisik. `status_penggunaan_ruangan` mencatat DISETUJUI, BERLANGSUNG, SELESAI atau TIDAK_DIGUNAKAN secara terpisah; job waktu hanya mengaktifkan slot ruangan. Pencatatan kondisi ruangan tidak menandai aset sebagai diserahkan/dikembalikan. No-show 24 jam melepaskan aset dan mempertahankan slot ruangan yang sudah digunakan untuk histori. Kerusakan terverifikasi yang membuat unit tidak tersedia membatalkan reservasi mendatang beserta slot pendukung secara atomik. Shared `SlotService` dan dua exclusion constraint tidak diubah.
+
 ## 8. TBD — Menunggu Keputusan
 
 Tidak diisi sendiri. Lihat ringkasan di [`TBD-REGISTER.md`](TBD-REGISTER.md).
@@ -333,3 +339,34 @@ Tidak diisi sendiri. Lihat ringkasan di [`TBD-REGISTER.md`](TBD-REGISTER.md).
 | **TBD-AVL-D** | TTL cache hasil ketersediaan. `AV-04` menetapkan batas atas 30 detik, tetapi nilai operasionalnya (0 = tanpa cache, atau 10–30 detik) belum ditetapkan. |
 
 **Tertutup 25 Agustus 2026 — `TBD-AVL-B`.** Endpoint reservasi **tetap satu rumpun `/reservations`**, dimiliki `M-07` dan dirujuk `M-08` (`UXD-15`, keputusan pemilik produk). Pemisahan `/room-reservations` + `/item-reservations` ditolak karena `BR-017` … `BR-025` berlaku identik bagi kedua jenis: memecah permukaan API di atas perilaku yang sama menghasilkan dua kontrak yang wajib dijaga seragam selamanya, tanpa satu pun requirement yang meminta perbedaannya. Perbedaan jenis diserap **di dalam** muatan permintaan, sebagaimana `SDD-AVL-04` sudah memperlakukan `booking_slots` secara polimorfik. Katalog endpoint tidak berubah; `PR-03-08` dan `PR-04-01` berjalan sesuai rencana.
+
+
+### Realisasi peminjaman - keputusan produk 13 Oktober 2026
+
+PR-05-01..04 memakai SlotService tanpa perubahan: slot aset reservasi CONFIRMED dilepas sebagai histori, lalu slot origin loan dibuat CONFIRMED dan diaktifkan dalam transaksi check-out yang sama. Kedua referensi reservation_id dan loan_id dipertahankan pada slot realisasi. Slot ruangan gabungan tetap menjalani alur penggunaannya sendiri. Loan item menyimpan slot_id sehingga check-in sebagian hanya melepaskan unit yang diproses. Unique index loan_items atas asset_id dengan status BELUM_KEMBALI mencegah penyerahan ulang, termasuk jika slot rentang pinjaman terlambat sudah melewati batas akhir.
+
+LoanService menjadi penulis status aset keempat yang sebelumnya disiapkan SDD-AVL-11. Unit baik saat kembali tersedia langsung, atau DIRESERVASI jika sudah ada slot CONFIRMED yang berlaku; unit rusak/tidak lengkap/hilang TIDAK_TERSEDIA, tanpa menandai Dalam Perbaikan sebelum work order ada. Laporan M-11, pembatalan reservasi mendatang, kewajiban per unit, audit dan outbox atomik dengan check-in. Induk berulang ditutup setelah seluruh realisasi/tanggal turunan terminal, termasuk tanggal terakhir yang dibatalkan/kedaluwarsa.
+
+Tarif/cap belum mempunyai nominal bawaan; parameter JSON null berarti belum dikonfigurasi dan menolak check-out. Nilai eksplisit nol sah. Sesuai keputusan produk yang menggantikan BR-029 lama, snapshot kebijakan saat check-out tidak berubah akibat setting berikutnya. Nilai uang dihitung tepat dalam sen menggunakan bigint, mengikuti kalender WIB dari BusinessCalendarService. Nilai perolehan unit disnapshot untuk cap/ganti rugi; tidak dikirim dalam DTO loan. Kewajiban tanpa nilai perolehan diberi menunggu_penetapan, jumlah null; penetapan nilai penggantian dan persetujuannya ditutup pada PR denda berikutnya.
+
+
+### Realisasi perpanjangan dan pemantauan PR-05-05..08
+
+Perpanjangan mengikuti FR-09.5 dan keputusan kontrak PRD M-09: tabel pengajuan/relasi item menyimpan hold tambahan TENTATIVE, SlotService.extendActive menjadi satu-satunya pemutasi rentang slot ACTIVE. Hook kunciObjek opsional PenanganHasil mengunci domain sebelum langkah keputusan; Check-in mengunci kelompok reservasi lalu loan; perpanjangan mengunci loan sebelum pengajuan/langkah. Kunci loan NOWAIT membuat auto-reject SLA yang sudah memegang langkah dapat gagal cepat dan diulang, tanpa menunggu check-in yang akan menutup instance. Hook tidak mengubah evaluator/aturan persetujuan. API dan worker mendaftarkan handler hasil, rincian notifikasi dan pemeriksa BR-030. Riwayat tindakan kewajiban dan usulan nilai disimpan terpisah agar pembebasan kumulatif dapat ditelusuri. Parameter ambang null mengikuti requirement konfigurasi PRD; tidak ditafsirkan sebagai nominal nol.
+
+### Klaim penghapusan — PR-05-10..14 (14 Oktober 2026)
+
+Keputusan BR-065b/c menambah klaim unik asset_disposal_claims. Pengajuan mengunci
+usulan (untuk revisi), aset dalam urutan ID, lalu memeriksa pinjaman belum kembali,
+slot mendatang/berjalan, WO terbuka dan opname aktif sebelum menulis klaim.
+Trigger slot reservasi/pinjaman mengunci aset yang sama sebelum memeriksa klaim.
+Race pengajuan versus booking hanya membolehkan satu transaksi memegang unit.
+
+SlotService.allocate menambah satu predikat NOT EXISTS klaim agar pemilihan unit
+kategori melewati aset sehat yang direkomendasikan penggantian dan sedang
+diusulkan dihapus. Ini perluasan kelayakan untuk M-21 dari baseline Phase 04;
+algoritme alokasi, rentang, TTL, exclusion constraint dan entry point tetap sama.
+Katalog M-08 memakai predikat yang sama. Pembatalan/penolakan melepas klaim;
+keputusan sebagian melepas hanya unit ditolak; eksekusi melepas klaim dan menandai
+unit terminal secara atomik. Adapter execute/reinstate M-04 merupakan penulis
+status aset terkontrol yang ditambahkan pada whitelist invariant pengujian.

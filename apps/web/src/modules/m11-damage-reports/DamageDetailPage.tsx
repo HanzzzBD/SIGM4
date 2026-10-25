@@ -13,7 +13,7 @@ import { useCan } from "../../shared/auth";
 import { jalurTerdaftar } from "../../shared/navigasi";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
 import { Kartu, Lencana, Peringatan, Pilihan, Tombol } from "../../shared/ui/primitives";
-import { LABEL_STATUS, LABEL_URGENSI, TERBUKA, VARIAN_STATUS, VARIAN_URGENSI, detailQuery, verifikasi, waktuWib } from "./api";
+import { LABEL_STATUS, LABEL_URGENSI, TERBUKA, VARIAN_STATUS, VARIAN_URGENSI, detailQuery, teknisiWorkOrderQuery, verifikasi, waktuWib } from "./api";
 import { TambahInformasi } from "./DamageReportPage";
 
 const KEPUTUSAN = [
@@ -46,6 +46,11 @@ function PanelVerifikasi({ d, onTutup, onSelesai }: { readonly d: DamageReportDe
     const [catatan, setCatatan] = useState("");
     const [kondisi, setKondisi] = useState("");
     const [alasanKondisi, setAlasanKondisi] = useState("");
+    const [teknisi, setTeknisi] = useState("");
+    const [target, setTarget] = useState("");
+    const [estimasi, setEstimasi] = useState("0");
+    const [nonaktifkan, setNonaktifkan] = useState(true);
+    const teknisiQuery = useQuery({ ...teknisiWorkOrderQuery, enabled: keputusan === "TINDAK_LANJUT" && can("workorder.create") });
     const [galat, setGalat] = useState<string | null>(null);
     const [sibuk, setSibuk] = useState(false);
     const judul = useRef<HTMLHeadingElement>(null);
@@ -54,12 +59,14 @@ function PanelVerifikasi({ d, onTutup, onSelesai }: { readonly d: DamageReportDe
     const kirim = async (e: SyntheticEvent) => {
         e.preventDefault();
         if (keputusan === "") return setGalat("Pilih tindak lanjut.");
+        if (keputusan === "TINDAK_LANJUT" && (!teknisi || !target)) return setGalat("Pilih teknisi dan target selesai.");
         if (catatanWajib && catatan.trim() === "") return setGalat(keputusan === "TOLAK" ? "Alasan penolakan wajib diisi." : "Catatan perbaikan wajib diisi.");
         setSibuk(true);
         setGalat(null);
         try {
             const h = await verifikasi(d.id, {
                 keputusan,
+                ...(keputusan === "TINDAK_LANJUT" ? { work_order: { teknisi_id: Number(teknisi), target_selesai: target, estimasi_biaya: Number(estimasi), nonaktifkan_aset: nonaktifkan } } : {}),
                 ...(catatan.trim() === "" ? {} : { catatan: catatan.trim() }),
                 ...(kondisi === "" ? {} : { kondisi_aset: { kondisi: kondisi as "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT", ...(alasanKondisi.trim() === "" ? {} : { alasan: alasanKondisi.trim() }) } }),
             });
@@ -76,7 +83,14 @@ function PanelVerifikasi({ d, onTutup, onSelesai }: { readonly d: DamageReportDe
                 Verifikasi laporan {d.nomor}
             </h2>
             <form noValidate onSubmit={(e) => void kirim(e)} className="flex flex-col gap-4">
-                <Pilihan label="Tindak lanjut" required kosong="Pilih tindak lanjut" value={keputusan} opsi={KEPUTUSAN.map((k) => ({ nilai: k.nilai, label: k.label }))} onChange={(e) => setKeputusan(e.target.value as Keputusan | "")} />
+                <Pilihan label="Tindak lanjut" required kosong="Pilih tindak lanjut" value={keputusan} opsi={KEPUTUSAN.filter(k => k.nilai !== "TINDAK_LANJUT" || can("workorder.create")).map((k) => ({ nilai: k.nilai, label: k.label }))} onChange={(e) => setKeputusan(e.target.value as Keputusan | "")} />
+                {keputusan === "TINDAK_LANJUT" && <div className="flex flex-col gap-3">
+                    <p className="text-sm text-text-secondary">Prioritas work order: {LABEL_URGENSI[d.urgensi]}.</p>
+                    {teknisiQuery.isPending ? <KeadaanMemuat baris={1} label="Memuat teknisi" /> : teknisiQuery.isError ? <KeadaanGalat galat={teknisiQuery.error} onCobaLagi={() => void teknisiQuery.refetch()} /> : <Pilihan label="Teknisi penanggung jawab" required kosong="Pilih teknisi" value={teknisi} opsi={teknisiQuery.data.map(t => ({ nilai: t.id, label: `${t.nama} · ${t.work_order_aktif} work order aktif` }))} onChange={e => setTeknisi(e.target.value)} />}
+                    <label className="flex flex-col gap-2 text-sm font-medium">Target selesai (wajib)<input type="date" required value={target} onChange={e => setTarget(e.target.value)} className="min-h-control-md rounded-sm border border-border-strong bg-surface-default px-4 text-base" /></label>
+                    <label className="flex flex-col gap-2 text-sm font-medium">Estimasi biaya (Rp)<input type="number" min="0" step="0.01" value={estimasi} onChange={e => setEstimasi(e.target.value)} className="min-h-control-md rounded-sm border border-border-strong bg-surface-default px-4 text-base" /></label>
+                    {d.objek.jenis === "ASET" && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={nonaktifkan} onChange={e => setNonaktifkan(e.target.checked)} />Masukkan aset ke Dalam Perbaikan dan batalkan reservasi mendatang</label>}
+                </div>}
                 <div className="flex flex-col gap-2">
                     <label htmlFor="catatan-verifikasi" className="text-sm font-medium text-text-primary">
                         {keputusan === "TOLAK" ? "Alasan penolakan (terlihat oleh pelapor)" : "Catatan"}
@@ -154,6 +168,8 @@ export default function DamageDetailPage({ id, aksi, onAksi }: { readonly id: st
             </header>
 
             {pesan !== null && <Peringatan varian="success">{pesan}</Peringatan>}
+            {can("workorder.view")&&d.work_order&&<a href={`/work-order/${d.work_order.id}`} className="text-text-link underline">Lihat work order {d.work_order.nomor}</a>}
+            {can("workorder.create")&&d.status==="DIVERIFIKASI"&&!d.work_order&&<a href={`/work-order/baru?tiket=${id}`} className="text-text-link underline">Buat Work Order dari tiket</a>}
             {/* BR-052 / FR-11.2 A3: perbaikan diajukan ke penjamin. */}
             {d.garansi !== null && d.garansi.length > 0 && (
                 <Peringatan varian="warning" judul="Aset masih dalam masa garansi">

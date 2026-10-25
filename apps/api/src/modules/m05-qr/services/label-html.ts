@@ -23,6 +23,7 @@ export interface ElemenLabel {
 }
 
 export interface IsiLabel {
+    readonly qrUrl?: string;
     readonly uuid: string;
     readonly kodeAset: string;
     readonly nama: string;
@@ -35,7 +36,7 @@ export function htmlLabel(dasarQr: string, label: readonly IsiLabel[], kode: Kod
     const t = TATA_LETAK[kode];
     const sel = label.map((l) => {
         const teks = [elemen.kodeAset ? `<div class="kode">${escapeHtml(l.kodeAset)}</div>` : "", elemen.nama ? `<div class="nama">${escapeHtml(l.nama)}</div>` : ""].join("");
-        return `<div class="label"><div class="qr">${svgQr(urlQrAset(dasarQr, l.uuid))}</div>${teks === "" ? "" : `<div class="teks">${teks}</div>`}</div>`;
+        return `<div class="label"><div class="qr">${svgQr(l.qrUrl ?? urlQrAset(dasarQr, l.uuid))}</div>${teks === "" ? "" : `<div class="teks">${teks}</div>`}</div>`;
     });
     // Satu `.lembar` per halaman A4: baris label tidak pernah terbelah oleh pemisah halaman.
     const perLembar = t.kolom * t.baris;

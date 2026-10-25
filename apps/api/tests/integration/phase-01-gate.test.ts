@@ -35,8 +35,21 @@ import { FixedClock, SystemClock } from "../../src/shared/clock/index.js";
 import { getDb } from "../../src/shared/db/index.js";
 import { HealthRegistry, Logger } from "../../src/shared/observability/index.js";
 import { PenyimpananS3 } from "../../src/shared/storage/index.js";
+import type { ChatProvider } from "../../src/modules/m19-chatbot/index.js";
 import { authPalsu, daftarkanTotpUji } from "../helpers/auth.js";
 import { dbmate, kueri } from "../helpers/db.js";
+import { sapuFase03Sampai06 } from "../helpers/sapuan-al01-fase03-06.js";
+
+/** Penyedia chatbot tiruan: satu jawaban teks tanpa pemanggilan tool. */
+const penyediaChatGerbang: ChatProvider = {
+    countTokens: () => Promise.resolve(10),
+    probe: () => Promise.resolve(true),
+    create: (_permintaan, onDelta) => {
+        const text = "Proyektor tersedia di Aula.";
+        onDelta(text);
+        return Promise.resolve({ status: "completed", steps: [{ type: "model_output", content: [{ type: "text", text }] }], text, usage: { input: 10, output: 5, cached: 0, thought: 0 } });
+    },
+};
 
 const ADA = process.env["DATABASE_URL"] !== undefined && process.env["REDIS_URL"] !== undefined;
 const T1 = new Date("2026-09-19T03:00:00Z");
@@ -68,6 +81,22 @@ interface Balasan {
     readonly json: { success?: boolean; data?: unknown; meta?: unknown; error?: { code: string; message: string } };
 }
 
+/**
+ * Syarat tambahan SAH di luar permission rute — tercatat di kolom catatan endpoint PRD modulnya
+ * (keputusan pemilik produk 24 Oktober 2026). `izin`/`peran` diberikan ke konteks uji; `diujiDi`
+ * menandai syarat yang mustahil dipenuhi konteks sintetis (izin dibaca ulang dari baris pengguna
+ * di DB, atau pelaksana sesi), sehingga penerimaan dan penolakannya diuji di berkas itu.
+ */
+const SYARAT_TAMBAHAN: Readonly<Record<string, { izin?: readonly string[]; peran?: string; diujiDi?: string }>> = {
+    "GET /assets/:id/service-history": { izin: ["workorder.view"] }, // PRD M-12
+    "GET /procurements/:id/review": { diujiDi: "m14-procurement.test.ts" }, // PRD M-14: + approval.decide, pemutus langkah aktif
+    "GET /chat/reports/:id": { diujiDi: "m19-chatbot.test.ts" }, // PRD M-19: Administrator, setelah izin berbagi pengguna
+    "GET /report-exports": { diujiDi: "m16-report-exports.test.ts" }, // PRD M-16: izin dibaca ulang (PR-06-08)
+    "GET /assets/exports": { diujiDi: "m04-asset-export.test.ts" }, // PRD M-04: izin dibaca ulang
+    "GET /audit-sessions/:id/material-items": { diujiDi: "m13-material-stocktake.test.ts" }, // PRD M-13: pelaksana sesi
+    "GET /audit-sessions/:id/material-resolve": { diujiDi: "m13-material-stocktake.test.ts" }, // PRD M-13: pelaksana sesi
+};
+
 describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (PostgreSQL + Redis nyata)", () => {
     let server: Server;
     let url: string;
@@ -84,6 +113,10 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
         const clock = new FixedClock(T1);
         const logger = new Logger({ clock, tulis: () => undefined });
         const app = createApp({
+            // Mesin approval generik: instance AL-01 merujuk objek tiruan, adapter domain tidak ikut (SDD-APR-17).
+            penanganHasil: [],
+            // Chatbot M-19 ikut disapu AL-01: penyedia tiruan langsung menjawab, kuota tanpa batas.
+            chat: { enabled: true, provider: penyediaChatGerbang, quota: { consume: () => Promise.resolve(), used: () => Promise.resolve(0) } },
             appBaseUrl: "https://sigm4.sekolah.test",
             health: new HealthRegistry(30).register(
                 { name: "database", probe: () => Promise.resolve({ status: "up" }) },
@@ -120,7 +153,9 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 return selesai();
             }
             if (mode.startsWith("penuh:")) {
-                setAuthContext(res, createAuthContext({ userId: 1, roleCode: "ADMIN", scopes: new Map([[mode.slice(6), "all"]]) }));
+                // penuh:izin[+izin...][@PERAN] — syarat tambahan sah per rute (SYARAT_TAMBAHAN).
+                const [izin, peran] = mode.slice(6).split("@") as [string, string | undefined];
+                setAuthContext(res, createAuthContext({ userId: 1, roleCode: peran ?? "ADMIN", scopes: new Map(izin.split("+").map((x) => [x, "all"] as const)) }));
                 return selesai();
             }
             // dinamis:<userId> — permission efektif dibaca dari PermissionCache NYATA setiap permintaan.
@@ -202,7 +237,10 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
         it("pemegang PERMISSION YANG TEPAT lolos otorisasi (bukan 401/403) pada setiap route — otorisasi tidak menolak berlebihan", async () => {
             const gagal: string[] = [];
             for (const r of rute) {
-                const hasil = await panggil(`penuh:${r.permission}`, r.method, konkret(r.path), r.method === "GET" ? undefined : {});
+                const syarat = SYARAT_TAMBAHAN[`${r.method} ${r.path}`];
+                if (syarat?.diujiDi) continue;
+                const mode = `penuh:${[r.permission, ...(syarat?.izin ?? [])].join("+")}${syarat?.peran ? `@${syarat.peran}` : ""}`;
+                const hasil = await panggil(mode, r.method, konkret(r.path), r.method === "GET" ? undefined : {});
                 if (hasil.status === 401 || hasil.status === 403) gagal.push(`${r.method} ${r.path} (${r.permission}) -> ${String(hasil.status)}`);
             }
             expect(gagal).toEqual([]);
@@ -220,7 +258,7 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
 
         it("route publik hanya probe kesehatan, login/refresh (PR-02-02), dan forgot password (PR-02-05), halaman publik aset (PR-03-03), dan dapat dijangkau tanpa AuthContext", async () => {
             const publik = registry.publicRoutes().map((r) => `${r.method} ${r.path}`).sort();
-            expect(publik).toEqual(["GET /health/live", "GET /health/ready", "GET /public/assets/:uuid", "POST /auth/2fa/verify", "POST /auth/login", "POST /auth/password/forgot", "POST /auth/refresh"]);
+            expect(publik).toEqual(["GET /health/live", "GET /health/ready", "GET /public/assets/:uuid", "GET /public/qr/config", "POST /auth/2fa/verify", "POST /auth/login", "POST /auth/password/forgot", "POST /auth/refresh"]);
             expect((await panggil("tanpa", "GET", "/health/live")).status).toBe(200);
             expect((await panggil("tanpa", "GET", "/health/ready")).status).toBe(200);
             // FR-05.2 A3: tanpa AuthContext dijawab layanan (404 QR tak dikenal), bukan 401.
@@ -361,18 +399,25 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
             const admin = await seedPengguna("R-01");
             const mode = `dinamis:${admin}`;
             const disentuh = new Set<string>();
+            // Pengajuan reservasi menuntut ambang blokir terisi (BR-030, tanpa bawaan — PR-05-06);
+            // jaring pengaman isolasi mengembalikannya ke bawaan setelah berkas ini.
+            await kueri("UPDATE system_settings SET value = '100000000' WHERE key = 'denda.ambang_blokir'");
 
             const jumlah = async (aksi: string): Promise<number> =>
                 Number((await kueri<{ n: string }>(`SELECT count(*)::text AS n FROM activity_logs WHERE user_id = ${admin} AND aksi = '${aksi}' AND hasil = 'SUKSES'`))[0]?.n);
+            const batasLog = async (): Promise<string> => (await kueri<{ n: string }>("SELECT coalesce(max(id), 0)::text AS n FROM activity_logs"))[0]?.n ?? "0";
 
-            /** Satu langkah: panggil route, harapkan 2xx, lalu setiap aksi yang disebut bertambah tepat satu. */
-            async function langkah(pola: string, path: string, body: unknown, aksi: readonly string[], headers: Record<string, string> = {}): Promise<Balasan> {
+            /**
+             * Satu langkah: panggil route sebagai `pelaku` (bawaan Administrator), harapkan 2xx, lalu setiap
+             * aksi yang disebut tercatat tepat satu kali atas nama pelaku itu dengan hasil SUKSES.
+             */
+            async function langkah(pola: string, path: string, body: unknown, aksi: readonly string[], headers: Record<string, string> = {}, pelaku = admin): Promise<Balasan> {
                 const [metode] = pola.split(" ") as [string];
-                const sebelum = await Promise.all(aksi.map(jumlah));
-                const hasil = await panggil(mode, metode, path, body, headers);
+                const sebelum = await batasLog();
+                const hasil = await panggil(`dinamis:${String(pelaku)}`, metode, path, body, headers);
                 expect(hasil.status, `${pola} -> ${JSON.stringify(hasil.json)}`).toBeLessThan(300);
-                const sesudah = await Promise.all(aksi.map(jumlah));
-                aksi.forEach((a, i) => expect(sesudah[i]! - sebelum[i]!, `${pola} harus mencatat ${a}`).toBe(1));
+                const tercatat = (await kueri<{ aksi: string }>(`SELECT aksi FROM activity_logs WHERE id > ${sebelum} AND user_id = ${pelaku} AND hasil = 'SUKSES' ORDER BY id`)).map((r) => r.aksi);
+                for (const a of aksi) expect(tercatat.filter((x) => x === a).length, `${pola} harus mencatat ${a}; tercatat: ${tercatat.join(", ")}`).toBe(1);
                 disentuh.add(pola);
                 return hasil;
             }
@@ -611,6 +656,9 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await langkah("POST /device-tokens", "/device-tokens", { token: fid, platform: "ANDROID" }, []);
                 await langkah("DELETE /device-tokens/:token", `/device-tokens/${fid}`, undefined, []);
 
+                // --- Phase 03–06: route tulis modul aset, peminjaman, pemeliharaan, opname, pengadaan, Bahan, chatbot
+                await sapuFase03Sampai06({ langkah, baca: (path) => panggil(`dinamis:${String(admin)}`, "GET", path), admin, hariIni: T1.toISOString().slice(0, 10), sekarang: T1 });
+
                 // --- M-18: dua pembacaan yang WAJIB tercatat
                 await langkah("GET /activity-logs", "/activity-logs?per_page=5", undefined, ["ACTIVITY_LOG_VIEWED"]);
                 await langkah("GET /activity-logs/export", "/activity-logs/export?filter[modul]=m20-settings", undefined, ["ACTIVITY_LOG_EXPORTED"]);
@@ -635,64 +683,8 @@ describe.skipIf(!ADA)("Gerbang keluar Phase 01 — acceptance lintas modul (Post
                 await kueri(`UPDATE roles SET role_version = ${roleTeknisi?.role_version} WHERE id = ${roleTeknisi?.id}`);
                 await kueri(`DELETE FROM role_permissions WHERE role_id IN (SELECT id FROM roles WHERE nama = 'Role Gerbang ${sfx}')`);
                 await kueri(`DELETE FROM roles WHERE nama = 'Role Gerbang ${sfx}'`);
-                // Urutan mengikuti FK: users <-> work_units saling merujuk, dan tabel ber-created_by menunjuk users.
-                await kueri("DELETE FROM user_import_jobs");
-                await kueri("DELETE FROM student_enrollments");
-                await kueri("UPDATE users SET work_unit_id = NULL");
-                // PR-02-13/14: asset_condition_history dan asset_movements menunjuk assets — sebelum dihapus.
-                await kueri("DELETE FROM asset_condition_history");
-                await kueri("DELETE FROM asset_movements");
-                // PR-02-39: operasi menyimpan creator; bersihkan setelah FK riwayat, sebelum users.
-                await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'asset_movement_document'");
-                await kueri("DELETE FROM asset_movement_documents");
-                // PR-03-14: tiket kerusakan menunjuk assets/rooms/users/stored_files — sebelum semuanya.
-                await kueri("DELETE FROM damage_report_note_photos");
-                await kueri("DELETE FROM damage_report_notes");
-                await kueri("DELETE FROM damage_report_photos");
-                await kueri("DELETE FROM damage_reports");
-                await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'damage_report'");
-                // PR-02-11: assets/asset_code_counters menunjuk rooms DAN asset_categories — sebelum keduanya.
-                await kueri("DELETE FROM assets");
-                await kueri("DELETE FROM asset_import_jobs");
-                await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'AssetImportJob'");
-                await kueri("DELETE FROM asset_code_counters");
-                await kueri("DELETE FROM asset_categories");
-                // PR-03-10: slot & reservasi (turunan lebih dulu) menunjuk rooms dan users.
-                await kueri("DELETE FROM booking_slots WHERE resource_type = 'room'");
-                await kueri("DELETE FROM reservations WHERE parent_id IS NOT NULL");
-                await kueri("DELETE FROM reservations");
-                // PR-03-13: blokade menunjuk rooms dan users (slotnya sudah dihapus di atas).
-                await kueri("DELETE FROM room_fixed_schedules");
-                await kueri("DELETE FROM room_manual_blocks");
-                await kueri("DELETE FROM idempotency_keys WHERE endpoint = 'POST /reservations'");
-                await kueri("DELETE FROM rooms");
-                await kueri("DELETE FROM areas");
-                await kueri("DELETE FROM buildings");
-                await kueri("DELETE FROM holidays");
-                await kueri("DELETE FROM academic_terms");
-                await kueri("DELETE FROM academic_years");
-                await kueri("DELETE FROM work_units");
-                await lepasPelaku();
-                await kueri("DELETE FROM password_reset_requests"); // PR-02-05: reset langsung mencatat permintaan
-                await kueri("DELETE FROM totp_activation_codes"); // PR-02-33: kode aktivasi menunjuk users
-                await kueri("DELETE FROM totp_backup_codes");
-                await kueri("DELETE FROM approval_delegations"); // PR-02-20: pemberi/penerima menunjuk users
-                // PR-02-21: langkah (diputuskan_oleh) dan instance (pemohon_id) menunjuk users.
-                await kueri("DELETE FROM approval_steps");
-                await kueri("DELETE FROM approval_instances");
-                await kueri("DELETE FROM notifications"); // PR-02-26: user_id menunjuk users
-                await kueri("DELETE FROM device_tokens"); // PR-02-27: user_id menunjuk users
-                await kueri("DELETE FROM notification_preferences"); // PR-02-28: user_id menunjuk users
-                await kueri("DELETE FROM approval_rules"); // PR-02-24: created_by/updated_by menunjuk users (langkah ikut CASCADE)
-                await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'approval_instance'");
-                await kueri("DELETE FROM idempotency_keys WHERE endpoint LIKE 'POST /approvals/%'");
-                // PR-03-25: stored_files.uploaded_by menunjuk users; event FileUploaded dari confirm.
-                await kueri("DELETE FROM event_outbox WHERE aggregate_type = 'stored_file'");
-                await kueri("UPDATE users SET foto_file_id = NULL");
-                await kueri("DELETE FROM asset_document_links"); // PR-03-06: dokumen menunjuk stored_files
-                await kueri("DELETE FROM asset_documents");
-                await kueri("DELETE FROM stored_files");
-                await kueri("DELETE FROM users");
+                // Baris domain (aset, peminjaman, opname, pengadaan, Bahan, chat, pengguna) dikosongkan jaring
+                // pengaman isolasi (tests/helpers/bersihkan-domain.ts) sesudah berkas ini, mengikuti graf FK katalog.
             }
         }, 120_000);
     });

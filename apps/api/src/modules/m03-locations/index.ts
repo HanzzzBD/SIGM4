@@ -15,4 +15,6 @@ export {
     updateRoomStatusRoute,
 } from "./routes.js";
 export type { RuanganReservasi } from "./services/reservation-eligibility.js";
-export { ruanganUntukReservasi } from "./services/reservation-eligibility.js";
+export { idRuanganDariKode, ruanganUntukReservasi } from "./services/reservation-eligibility.js";
+export { materialStorageRoom,materialStorageOptions } from "./services/storage-room.js";
+export { chatRooms } from "./repositories/chat.repository.js";

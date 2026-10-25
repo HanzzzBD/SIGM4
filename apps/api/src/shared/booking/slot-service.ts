@@ -317,6 +317,7 @@ export class SlotService {
             SELECT a.id::text AS id FROM assets a
              WHERE a.category_id = ${alokasi.categoryId}
                AND a.dapat_dipinjam AND NOT a.dihapuskan
+                AND NOT EXISTS (SELECT 1 FROM asset_disposal_claims d WHERE d.asset_id=a.id)
                AND a.kondisi IN ('BAIK', 'RUSAK_RINGAN')
                AND a.status NOT IN ('DALAM_PERBAIKAN', 'TIDAK_TERSEDIA')
                AND (${!alokasi.untukSiswa} OR a.boleh_dipinjam_siswa)
@@ -386,6 +387,18 @@ export class SlotService {
             })),
         );
         return dilepas.rows;
+    }
+
+    /** FR-09.5: rentang ACTIVE diperpanjang atomik; exclusion constraint tetap penjamin CI-01. */
+    async extendActive(scope: TransactionScope, ids: readonly number[], end: Date): Promise<void> {
+        const unique = [...new Set(ids)];
+        if (unique.length === 0) return;
+        const resources = await scope.tx.selectFrom("booking_slots").select("resource_id").where("id", "in", unique.map(String)).where("resource_type", "=", "asset").execute();
+        await this.kunciAsetNowait(scope, resources.map((r) => Number(r.resource_id)));
+        const result = await sql<{ id: string }>`UPDATE booking_slots SET slot_range=tstzrange(lower(slot_range), ${end}, '[)')
+            WHERE id IN (${sql.join(unique)}) AND status='ACTIVE' AND origin='loan' AND upper(slot_range)<${end}
+            RETURNING id::text`.execute(scope.tx);
+        if (result.rows.length !== unique.length) throw new DomainError("RESERVATION_CONFLICT", "Slot peminjaman tidak lagi aktif atau jadwal tidak memperpanjangnya.");
     }
 
     /** Serah terima: `CONFIRMED` → `ACTIVE` (SDD-01 §4.3). */

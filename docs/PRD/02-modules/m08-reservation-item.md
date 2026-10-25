@@ -168,8 +168,22 @@ _Tidak ada aturan bisnis yang dimiliki modul ini._
 |---|---|---|---|
 | GET | `/assets/availability` | `reservation.view` | Ketersediaan unit aset pada rentang waktu |
 
+Kontrak pembacaan `FR-08.1` (implementasi `PR-04-01`): `dari` dan `sampai` adalah waktu ISO-8601
+berzona, dengan batas `[)` dan horizon dari `reservasi.horizon_hari` (`BR-023c`, `CAL-03`).
+Saringan opsional: `q` (nama/kategori), `kategori_id`, `hanya_tersedia` (`true`/`false`).
+`sort` = `nama`, `-nama`, `tersedia`, atau `-tersedia`; paginasi `page`/`per_page` mengikuti
+konvensi API (bawaan 25, maksimum 100 kelompok). Unit dikelompokkan berdasarkan kategori,
+nama, merek dan model; setiap kelompok memuat jumlah unit/tersedia, kode dan kondisi tiap unit,
+foto terkonfirmasi yang lolos pemindaian, serta waktu tersedia terdekat dengan durasi yang sama
+(`FR-08.1 A2`). Saran kosong bila tidak ditemukan celah dalam horizon. Respons tidak memuat
+identitas pemohon atau rincian reservasi pihak lain. Kategori pemilih berasal dari katalog yang
+diizinkan, sehingga tidak membutuhkan `asset.view`. Skema bersama ada di
+`packages/schemas/src/asset-availability.ts`; endpoint ini tidak memesan atau mengunci unit.
+
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
+
+Pengajuan/pratinjau/detail/pembatalan tetap memakai endpoint M-07, dengan kontrak aset dan gabungan pada [M-07 bagian 7](m07-reservation-room.md#7-api-endpoints). Implementasi PR-04-02/03 menggunakan alokasi otomatis sekategori, gate manual `reservation.cancel_any`, satu approval `RESERVASI_ASET` untuk gabungan, serta penggunaan ruangan terpisah. Entitas, audit dan NT-08/09/46 tetap dimiliki M-07.
 
 ## 8. Database Entity
 

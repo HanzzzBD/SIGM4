@@ -10,6 +10,8 @@ import { BannerLuring } from "../shared/states";
 import { Sidebar } from "./sidebar";
 import type { PreferensiCiut } from "./sidebar";
 import { Topbar } from "./topbar";
+import { ChatPanel } from "../modules/m19-chatbot";
+import {leaveAuthenticatedSession} from "../shared/auth";
 
 const KUNCI_PREF = "sigm4.sidebar.ciut";
 
@@ -37,8 +39,7 @@ export function Shell() {
             } catch {
                 // Sesi mungkin sudah berakhir di tab lain; keluar lokal tetap dijalankan.
             }
-            queryClient.clear();
-            await navigate({ to: "/login", search: { tujuan: href, alasan: "idle" } });
+            await leaveAuthenticatedSession(queryClient,()=>navigate({ to: "/login", search: { tujuan: href, alasan: "idle" }, replace:true, ignoreBlocker:true }));
         })();
     });
     const toggle = () => {
@@ -69,6 +70,7 @@ export function Shell() {
                 <main id="konten" className="mx-auto w-full max-w-xl flex-1 p-4 md:p-10 lg:p-12">
                     <Outlet />
                 </main>
+                <ChatPanel />
             </div>
         </div>
     );

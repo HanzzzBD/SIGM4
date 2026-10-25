@@ -101,10 +101,10 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 | `PR-05-02` | Bukti serah terima: foto + tanda tangan | M | M | 01, Ph03 | `FR-09.1`, `SDD-FS-08`, `DP-01` `DP-05a`, `SDD-FS-11` | Foto tersimpan ter-*scan* AV; foto berwajah dipertahankan utuh dan dilindungi `DP-05` — tidak dikaburkan, tidak dihapus |
 | `PR-05-03` | Check-in + pemeriksaan kondisi + kerusakan baru | L | L | 01, Ph03 | `FR-09.2`, `BR-028` … `BR-028e` | Kerusakan saat kembali membuat laporan M-11 otomatis |
 | `PR-05-04` | Pelepasan slot & pemulihan status aset saat check-in | M | M | 03, Ph02 | `BR-030`, `SDD-AVL-07` | Aset kembali tersedia seketika |
-| `PR-05-05` | Pemantauan keterlambatan + pengingat berjenjang | M | M | 01 | `FR-09.3`, `BR-029` `BR-031`, `CAL-01` … `CAL-03` | Keterlambatan dihitung dengan hari kerja. *Rekonsiliasi (keputusan 23 log phase-03):* mendaftarkan pemeriksa `BR-030` "peminjaman terlambat" di registri `blokirPemohon` |
-| `PR-05-06` | Perhitungan denda | M | M | 05 | `FR-09.4`, `BR-032` `BR-033` | Denda berhenti bertambah setelah aset dinyatakan hilang. *Rekonsiliasi (keputusan 23 log phase-03):* mendaftarkan pemeriksa `BR-030` "denda melebihi ambang" di registri `blokirPemohon` |
+| `PR-05-05` | Pemantauan keterlambatan + pengingat berjenjang | M | M | 01 | `FR-09.3`, `BR-029` `BR-030`, `CAL-01` … `CAL-03` | Keterlambatan denda dihitung dengan hari kalender sesuai BR-028/CAL-02; pengecualian libur mengikuti parameter. *Rekonsiliasi (keputusan 23 log phase-03):* mendaftarkan pemeriksa `BR-030` "peminjaman terlambat" di registri `blokirPemohon` |
+| `PR-05-06` | Perhitungan denda | M | M | 05 | `FR-09.4`, `BR-028` ... `BR-030` | Denda berhenti bertambah setelah aset dinyatakan hilang. *Rekonsiliasi (keputusan 23 log phase-03):* mendaftarkan pemeriksa `BR-030` "denda melebihi ambang" di registri `blokirPemohon` |
 | `PR-05-07` | Pelunasan & pembebasan denda | M | M | 06 | `FR-09.4`, `BR-031` `BR-028e` | Pembebasan `Keterlambatan` memakai `fine.waive`; pembebasan `Ganti Rugi` memakai `fine.waive_compensation` (Pimpinan saja) + alasan, penuh atau sebagian |
-| `PR-05-08` | Perpanjangan peminjaman | M | M | 01, Ph04 | `FR-09.5`, `BR-035` | Perpanjangan ditolak bila ada reservasi menyusul |
+| `PR-05-08` | Perpanjangan peminjaman | M | M | 01, Ph04 | `FR-09.5`, `BR-034` | Perpanjangan ditolak bila ada reservasi menyusul |
 | `PR-05-09` | **Penutupan `SL-04`**: definisi kewajiban aktif | M | M | 06, Ph01 | `SL-04` | Siswa dengan pinjaman/denda aktif tidak dapat dinonaktifkan |
 | `PR-05-10` | Skema penghapusan + pengajuan | M | M | Ph04 | `FR-21.1`, `BR-065a` `BR-065b` | Aset dalam peminjaman aktif tidak dapat diajukan |
 | `PR-05-11` | Approval bertingkat penghapusan | M | M | 10, Ph02 | `FR-21.2`, `BR-065c` `BR-065d` | Jalur approval mengikuti nilai perolehan aset |
@@ -137,24 +137,28 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 ## 8. Task Breakdown
 
 ### `PR-05-26` — Pseudonimisasi akun
-- [ ] Operasi satu arah pada kolom identitas `users` (`SDD-SEC-08`, `SDD-13 §4.7`): nama, email, `nip_nis`, telepon, `work_unit_id`; baris transaksi, denda, dan `activity_logs` **tidak disentuh** (`AL-03`, `BR-008`)
-- [ ] Akun siswa nonaktif dipseudonimisasi setelah 2 tahun (`SL-05`, `DP-10`), **kecuali** masih berkewajiban — memakai `studentObligations` yang diisi `PR-05-09`
-- [ ] Hak penghapusan (`DP-04`) memakai operasi yang sama; foto berwajah **tidak** disentuh (`DP-05a`, `SDD-FS-11`)
-- [ ] Pekerjaan terjadwal berpelaku `SYSTEM` — bergantung `SystemAuthContext` (`PR-02-32`)
-- [ ] Uji: identitas tidak dapat dipulihkan; riwayat peminjaman lama tetap terbaca; akun berdenda aktif tidak dipseudonimisasi
+- [x] Operasi satu arah pada kolom identitas `users` (`SDD-SEC-08`, `SDD-13 §4.7`): nama, email, `nip_nis`, telepon, `work_unit_id`; baris transaksi, denda, dan `activity_logs` **tidak disentuh** (`AL-03`, `BR-008`)
+- [x] Akun siswa nonaktif dipseudonimisasi setelah 2 tahun (`SL-05`, `DP-10`), **kecuali** masih berkewajiban — memakai `studentObligations` yang diisi `PR-05-09`
+- [x] Hak penghapusan (`DP-04`) memakai operasi yang sama; foto berwajah **tidak** disentuh (`DP-05a`, `SDD-FS-11`)
+- [x] Pekerjaan terjadwal berpelaku `SYSTEM` — bergantung `SystemAuthContext` (`PR-02-32`)
+- [x] Uji: identitas tidak dapat dipulihkan; riwayat peminjaman lama tetap terbaca; akun berdenda aktif tidak dipseudonimisasi
+
+Bukti lokal: [audit PR-05-09/26](../audits/pr-05-09-26-local-2026-10-15.md). Review/CI/staging tetap terbuka.
 
 ### `PR-05-03` — Check-in
 - [ ] Bandingkan kondisi saat keluar dan saat kembali (`BR-028`)
-- [ ] Kondisi memburuk → terbitkan event yang membuat laporan M-11 (`BR-028c`)
+- [ ] Kondisi rusak/Tidak Lengkap → laporan M-11 tertaut dalam transaksi check-in yang sama (`BR-032`, `SDD-EVT-02`); notifikasi melalui outbox
 - [ ] Idempoten: check-in ganda tidak menghasilkan dua laporan
 - [ ] Uji: check-out kondisi Baik, check-in kondisi Rusak Ringan → satu laporan kerusakan
 
 ### `PR-05-09` — Penutupan `SL-04`
-- [ ] Isi titik ekstensi `PR-01-13` dengan pemeriksaan nyata: daftarkan pemeriksa ke `studentObligations` (`m02-users/index.ts`) di proses **API dan worker** — registri hidup per proses, dan job penonaktifan lulusan berjalan di worker
-- [ ] Kewajiban aktif = peminjaman belum kembali **atau** denda belum lunas
-- [ ] Pesan penolakan menyebut kewajiban spesifik, bukan sekadar "tidak dapat dinonaktifkan"
-- [ ] Uji: siswa berdenda lunas dapat dinonaktifkan; berdenda aktif tidak
-- [ ] Tandai `SL-04` selesai di log Phase 01 dan Phase 05
+- [x] Isi titik ekstensi `PR-01-13` dengan pemeriksaan nyata: daftarkan pemeriksa ke `studentObligations` (`m02-users/index.ts`) di proses **API dan worker** — registri hidup per proses, dan job penonaktifan lulusan berjalan di worker
+- [x] Kewajiban aktif = peminjaman belum kembali **atau** denda belum lunas
+- [x] Pesan penolakan menyebut kewajiban spesifik, bukan sekadar "tidak dapat dinonaktifkan"
+- [x] Uji: siswa berdenda lunas dapat dinonaktifkan; berdenda aktif tidak
+- [x] Tandai `SL-04` selesai di log Phase 01 dan Phase 05
+
+Bukti lokal: [audit PR-05-09/26](../audits/pr-05-09-26-local-2026-10-15.md). Review/CI/staging tetap terbuka.
 
 ### `PR-05-12` — Eksekusi penghapusan
 - [ ] Transisi status ke terminal sesuai Bab 15
@@ -166,8 +170,8 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 
 - [ ] Seluruh AC pada `FR-09.1`…`FR-09.5`, `FR-21.1`…`FR-21.3` terverifikasi
 - [ ] Seluruh transisi status aset Bab 15 kini memiliki jalur kode dan uji
-- [ ] `SL-04` tertutup dan diuji dari kedua sisi
-- [ ] Denda dihitung dengan hari kerja, bukan hari kalender (`CAL-01`)
+- [x] `SL-04` tertutup dan diuji lokal dari kedua sisi; bukti pada audit PR-05-09/26, staging tetap terbuka
+- [ ] Denda mengikuti hari kalender dan parameter pengecualian libur (`BR-028`, `BR-028c`, `CAL-02`)
 - [ ] Aset terhapus tetap terbaca di seluruh riwayat historis
 - [ ] Seluruh AC pada `FR-22.1`…`FR-22.7` dan `FR-13.4` terverifikasi
 - [ ] `material_balances` tidak pernah menyimpang dari `material_transactions` — diuji dengan penyerahan simultan
@@ -182,7 +186,7 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 | Penghapusan diimplementasikan sebagai `DELETE` baris | Riwayat dan activity log pecah — tidak dapat dipulihkan | Uji eksplisit: aset terhapus harus tetap terbaca di riwayat lama | `BR-008` |
 | ~~`TBD-FS-A` belum terjawab saat `PR-05-02`~~ | — | ✅ **Tertutup 25 Agustus 2026**: foto dipertahankan sebagai bukti (`DP-05a`, `SDD-FS-11`); yang wajib dipastikan kini adalah Pemberitahuan Privasi menyatakannya | `DP-04` · `DP-05a` |
 | `PR-05-25` membatalkan prompt cache bagi seluruh pengguna | Latensi naik sesaat pada rilis sampai prefiks baru terbentuk; pada tier berbayar biaya ikut melonjak | Disengaja dan terjadwal bersama rilis, bukan perubahan runtime (`SDD-10 §5`). `AI-EV-04` dijalankan ulang sebelum rilis | `TBD-BHN-E` · `AI-CTL-01` |
-| Denda dihitung dengan hari kalender | Sengketa dengan orang tua siswa | `BusinessCalendarService` Phase 00 dipakai, bukan aritmetika tanggal langsung | `CAL-01` |
+| Denda berbeda dari kebijakan yang disosialisasikan | Sengketa dengan orang tua siswa | `BusinessCalendarService` dan snapshot kebijakan peminjaman dipakai | `CAL-02`, `BR-029` |
 | `SL-04` terlupa ditutup | Aturan Phase 01 tinggal setengah selamanya | Termasuk gerbang keluar phase ini, bukan catatan tersendiri | `SL-04` |
 | Perpanjangan bertabrakan dengan reservasi menyusul | Dua pihak mengklaim aset yang sama | Pemeriksaan `booking_slots` sebelum perpanjangan disetujui | `BR-035` |
 | Bahan dimodelkan di atas `booking_slots` demi keseragaman | Tabel slot menerima baris tanpa dimensi waktu; exclusion constraint lumpuh | `SDD-AVL-14` melarangnya secara eksplisit; `PR-05-17` ditinjau arsitek | `SDD-AVL-14` |
@@ -194,7 +198,7 @@ Dua milestone tertutup sekaligus di sini. Kriteria keluar `M3` (alur ujung-ke-uj
 | Skenario | Tindakan |
 |---|---|
 | PR gagal di staging | Revert PR; M-09 dan M-21 independen |
-| `PR-05-12` bermasalah | Aset dikembalikan ke status sebelumnya lewat operasi administratif — barisnya tidak pernah dihapus sehingga selalu dapat dipulihkan |
+| `PR-05-12` bermasalah | Nonaktifkan fitur bermasalah sambil mempertahankan schema expand, aset dan histori. Pemulihan produk hanya untuk Hilang oleh Administrator dengan alasan/lokasi/kondisi; penghapusan alasan lain tidak dipulihkan lewat alur ini |
 | `PR-05-09` memblokir penonaktifan yang sah | *Feature flag* mematikan pemeriksaan; Phase 01 kembali berlaku sementara |
 | `PR-05-17` ledger bermasalah | Seluruh PR `PR-05-18`…`PR-05-24` bergantung padanya dan ikut ditarik. Tabel bahan bersifat baru sehingga `down` migration aman: tidak ada data modul lain yang menunjuk ke sana |
 | `PR-05-24` opname bahan bermasalah | Sesi domain `BAHAN` dinonaktifkan lewat *feature flag*; sesi domain `ASET` tidak tersentuh karena difilter kolom `domain` |

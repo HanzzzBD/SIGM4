@@ -1,3 +1,4 @@
+import { ReportExportPanel } from "../m16-analytics";
 // P-39 Laporan Kerusakan (UX §6, §7.4; FR-11.3 langkah 1–4, A1; PR-03-32, keputusan 20a & 22). Tiket per status
 // lewat tab berjumlah, saringan & urutan di URL (SDD-FE-10), penanda pelanggaran SLA berupa lencana + teks
 // (AC "ditandai visual yang jelas", bukan warna saja). Scope `own` = milik sendiri ditegakkan server (A1).
@@ -15,6 +16,7 @@ import type { StatusTiket, Urgensi } from "./api";
 import { LABEL_STATUS, LABEL_URGENSI, STATUS, URGENSI, VARIAN_STATUS, VARIAN_URGENSI, daftarQuery, ruanganQuery, waktuWib } from "./api";
 
 export interface PencarianKerusakan {
+    readonly ekspor?: string | undefined;
     readonly q?: string | undefined;
     readonly status?: StatusTiket | undefined;
     readonly urgensi?: Urgensi | undefined;
@@ -88,6 +90,7 @@ export default function DamageListPage({ pencarian, onPencarian }: { readonly pe
                     </a>
                 )}
             </header>
+            <ReportExportPanel path="/damage-reports/export" jenis="damage-reports" filter={{ q: pencarian.q, status: pencarian.status, urgensi: pencarian.urgensi, room_id: pencarian.ruang ? Number(pencarian.ruang) : undefined, pelapor: pencarian.saya ? "saya" : undefined, melampaui_sla: pencarian.sla ? "true" : undefined, dari: pencarian.dari, sampai: pencarian.sampai, urut: pencarian.urut ?? "dilaporkan" }} exportId={pencarian.ekspor} />
 
             <div role="tablist" aria-label="Status laporan" className="flex flex-wrap border-b border-border-subtle">
                 {tab(undefined, "Semua", semua)}
@@ -102,7 +105,7 @@ export default function DamageListPage({ pencarian, onPencarian }: { readonly pe
                         ubah({ q: kata.trim() === "" ? undefined : kata.trim() });
                     }}
                 >
-                    <div className="flex-1">
+                    <div className="min-w-0 flex-1">
                         <Isian label="Cari nomor tiket atau kode aset" type="search" value={kata} onChange={(e) => setKata(e.target.value)} />
                     </div>
                     <Tombol type="submit" varian="secondary">

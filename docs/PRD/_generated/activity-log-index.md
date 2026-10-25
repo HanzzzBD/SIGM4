@@ -5,7 +5,7 @@
 # Indeks Aksi Activity Log
 
 > Setiap aksi dimiliki modul penerbitnya. Prinsip pencatatan di `../03-architecture/activity-log.md`.
-> Total: **91** baris, dikumpulkan dari 22 berkas modul.
+> Total: **127** baris, dikumpulkan dari 22 berkas modul.
 
 | Aksi | Keterangan | Pemilik |
 |---|---|---|
@@ -24,8 +24,13 @@
 | `APPROVAL_STEP_SKIPPED` | Termasuk alasan (mis. konflik kepentingan) | [M-10](../02-modules/m10-approval.md) |
 | `ASSET_CONDITION_CHANGED` | Wajib menyertakan alasan | [M-04](../02-modules/m04-assets.md) |
 | `ASSET_CREATED` / `ASSET_UPDATED` / `ASSET_DEACTIVATED` | Termasuk pembuatan massal N unit | [M-04](../02-modules/m04-assets.md) |
+| `ASSET_DISPOSAL_EXPORTED` | Unduh/ekspor terfilter; pengajuan ulang dicatat PROPOSED dengan penanda revisi | [M-21](../02-modules/m21-disposal.md) |
 | `ASSET_DISPOSAL_PROPOSED` / `DECIDED` / `EXECUTED` / `CANCELLED` | Siklus penghapusan aset (M-21) | [M-21](../02-modules/m21-disposal.md) |
+| `ASSET_DISPOSAL_REPORT_RETRY_REQUESTED` | Pembuatan ulang berita acara penghapusan yang gagal diantrekan (`POST /asset-disposals/{id}/report/retry`); atomik dengan outbox | [M-21](../02-modules/m21-disposal.md) |
+| `ASSET_EXPORTED` | Berkas katalog siap, format/filter/jumlah baris dan referensi berkas | [M-04](../02-modules/m04-assets.md) |
+| `ASSET_EXPORT_REQUESTED` | Pengajuan ekspor katalog, format dan filter; atomik dengan job/outbox | [M-04](../02-modules/m04-assets.md) |
 | `ASSET_IMPORTED` | Impor massal | [M-04](../02-modules/m04-assets.md) |
+| `ASSET_IMPORT_REPORT_PURGED` | Rincian galat/nama berkas impor melewati retensi 30 hari dibersihkan; ID/status/hitungan tetap tersimpan | [M-04](../02-modules/m04-assets.md) |
 | `ASSET_IMPORT_REQUESTED` | Penerimaan pekerjaan sinkron/asinkron beserta outbox dalam satu transaksi | [M-04](../02-modules/m04-assets.md) |
 | `ASSET_IMPORT_ROW_PROCESSED` | Progres satu baris, jumlah unit atau alasan gagal; atomik dengan aset yang dibuat | [M-04](../02-modules/m04-assets.md) |
 | `ASSET_MOVED` | Mutasi lokasi beserta asal dan tujuan | [M-04](../02-modules/m04-assets.md) |
@@ -39,10 +44,24 @@
 | `ASSET_STATUS_CHANGED` | Perubahan status termasuk yang otomatis oleh sistem | [M-04](../02-modules/m04-assets.md) |
 | `AUDIT_ADJUSTMENT_APPLIED` | Penyesuaian data aset hasil opname | [M-13](../02-modules/m13-audit-stocktake.md) |
 | `AUDIT_ITEM_SCANNED` | Hasil pemeriksaan per aset | [M-13](../02-modules/m13-audit-stocktake.md) |
+| `AUDIT_MATERIAL_COUNTED` | Hitungan fisik Bahan per lokasi beserta basis saldo/ledger, versi dan UUID | [M-13](../02-modules/m13-audit-stocktake.md) |
+| `AUDIT_PHOTO_WITHDRAWN` | Penarikan foto belum siap dengan alasan | [M-13](../02-modules/m13-audit-stocktake.md) |
+| `AUDIT_REPORT_GENERATED` / `AUDIT_REPORT_EXPORTED` | Pembuatan dan ekspor PDF/XLSX | [M-13](../02-modules/m13-audit-stocktake.md) |
+| `AUDIT_REPORT_RETRY_REQUESTED` | Pembuatan ulang berita acara yang gagal diantrekan (`POST /audit-sessions/{id}/report/retry`); atomik dengan outbox | [M-13](../02-modules/m13-audit-stocktake.md) |
 | `AUDIT_SESSION_CREATED` / `SUBMITTED` / `APPROVED` / `REJECTED` / `CANCELLED` | Siklus opname | [M-13](../02-modules/m13-audit-stocktake.md) |
+| `AUDIT_SESSION_FINALIZED` / `AUDIT_LOCATION_COMPLETED` / `AUDIT_RECONCILIATION_UPDATED` | Finalisasi, lokasi dan penyusunan rekonsiliasi | [M-13](../02-modules/m13-audit-stocktake.md) |
 | `BORROWER_BLOCKED` / `BORROWER_UNBLOCKED` | Pemblokiran akibat kewajiban tertunggak | [M-09](../02-modules/m09-loans.md) |
 | `CATEGORY_CREATED` / `CATEGORY_UPDATED` / `CATEGORY_DELETED` | Perubahan kategori | [M-04](../02-modules/m04-assets.md) |
+| `CHAT_ACCESS_RESTRICTED` | Admin membatasi/memulihkan akses chatbot; tanpa isi pribadi | [M-19](../02-modules/m19-chatbot.md) |
+| `CHAT_EVALUATION_COMPLETED` | Skor/rubrik LIVE atau CONTRACT tanpa percakapan privat | [M-19](../02-modules/m19-chatbot.md) |
+| `CHAT_FEEDBACK_UPDATED` | Perubahan penilaian jawaban sendiri | [M-19](../02-modules/m19-chatbot.md) |
+| `CHAT_MESSAGE_COMPLETED` | Hasil, nama tool dan token; tanpa isi/argumen | [M-19](../02-modules/m19-chatbot.md) |
 | `CHAT_MESSAGE_SENT` | Metadata percakapan (tanpa merekam ulang isi di log audit) | [M-19](../02-modules/m19-chatbot.md) |
+| `CHAT_SESSION_ARCHIVED` | Retensi menghapus isi/kaitan akun; statistik anonim tetap | [M-19](../02-modules/m19-chatbot.md) |
+| `CHAT_SESSION_CREATED` | Sesi pribadi baru; metadata saja | [M-19](../02-modules/m19-chatbot.md) |
+| `CHAT_SESSION_DELETED` | Penghapusan isi sesi sendiri | [M-19](../02-modules/m19-chatbot.md) |
+| `CHAT_SESSION_REPORTED` | Izin eksplisit pengguna berbagi sesi bermasalah | [M-19](../02-modules/m19-chatbot.md) |
+| `COMPENSATION_PROPOSED` / `COMPENSATION_DECIDED` | Usulan serta keputusan Pimpinan atas nilai penggantian | [M-09](../02-modules/m09-loans.md) |
 | `COMPENSATION_WAIVED` | Pembebasan ganti rugi oleh Pimpinan beserta alasan dan nilai yang dibebaskan (BR-028e) | [M-09](../02-modules/m09-loans.md) |
 | `DAMAGE_INFO_ADDED` | Informasi tambahan (catatan + foto) ke tiket terbuka (FR-11.1 A1) | [M-11](../02-modules/m11-damage-reports.md) |
 | `DAMAGE_REPORTED` / `DAMAGE_VERIFIED` / `DAMAGE_REJECTED` / `DAMAGE_CLOSED` | Siklus tiket | [M-11](../02-modules/m11-damage-reports.md) |
@@ -52,11 +71,14 @@
 | `FILE_SCANNED` | Putusan akhir pemindaian anti-malware oleh worker (pelaku SYSTEM): `file_id`, hasil (`CLEAN`/`INFECTED`/`FAILED`), alasan (nama tanda tangan, ketidakcocokan MIME, atau kegagalan pemindaian) | [M-06](../02-modules/m06-documents.md) |
 | `FILE_UPLOADED` | Berkas terunggah dikonfirmasi (`POST /files/confirm`): jenis, MIME, ukuran, `file_id` — tanpa nama asli berkas (`SDD-FS-06`) | [M-06](../02-modules/m06-documents.md) |
 | `FINE_ISSUED` / `FINE_PAID` / `FINE_WAIVED` | Termasuk alasan pembebasan | [M-09](../02-modules/m09-loans.md) |
+| `FINE_REOPENED` | Koreksi status lunas oleh Administrator, dengan alasan wajib | [M-09](../02-modules/m09-loans.md) |
 | `HOLIDAY_CREATED` / `HOLIDAY_UPDATED` / `HOLIDAY_DELETED` | Perubahan daftar hari libur | [M-20](../02-modules/m20-settings.md) |
 | `LOAN_CHECKIN` | Pengembalian beserta kondisi akhir | [M-09](../02-modules/m09-loans.md) |
 | `LOAN_CHECKOUT` | Serah terima beserta unit dan kondisi awal | [M-09](../02-modules/m09-loans.md) |
 | `LOAN_EXTENDED` | Perpanjangan yang disetujui | [M-09](../02-modules/m09-loans.md) |
+| `LOAN_EXTENSION_REQUESTED` / `LOAN_EXTENSION_CLOSED` | Pengajuan serta penutupan/expiry perpanjangan | [M-09](../02-modules/m09-loans.md) |
 | `LOAN_MARKED_LOST` | Penetapan aset hilang | [M-09](../02-modules/m09-loans.md) |
+| `LOAN_OVERDUE` | Perubahan status menjadi terlambat | [M-09](../02-modules/m09-loans.md) |
 | `LOAN_UNIT_SUBSTITUTED` | Penggantian unit saat serah terima beserta alasan | [M-09](../02-modules/m09-loans.md) |
 | `LOCATION_CREATED` / `LOCATION_UPDATED` / `LOCATION_DEACTIVATED` | Perubahan struktur lokasi | [M-03](../02-modules/m03-locations.md) |
 | `LOGIN_SUCCESS` / `LOGIN_FAILED` | Termasuk IP dan perangkat. `LOGIN_FAILED` juga mencatat email tak terdaftar dan percobaan atas akun terkunci — pelaku kosong, akun sasaran pada entitas, email yang dicoba tidak disimpan. Kode 2FA yang salah pada `/auth/2fa/verify` juga dicatat di sini, dengan alasan `KODE_2FA_SALAH` | [M-01](../02-modules/m01-auth.md) |
@@ -66,20 +88,32 @@
 | `MATERIAL_CATEGORY_CREATED` / `UPDATED` / `DELETED` | Siklus kategori bahan | [M-22](../02-modules/m22-materials.md) |
 | `MATERIAL_CREATED` / `UPDATED` / `DEACTIVATED` | Siklus master bahan | [M-22](../02-modules/m22-materials.md) |
 | `MATERIAL_ISSUED` | Penyerahan bahan beserta penerima | [M-22](../02-modules/m22-materials.md) |
+| `MATERIAL_QR_PRINTED` | Pencetakan label per jenis Bahan beserta ID, jumlah dan tata letak | [M-05](../02-modules/m05-qr.md) |
 | `MATERIAL_RECEIVED` | Penerimaan bahan beserta jumlah & lokasi | [M-22](../02-modules/m22-materials.md) |
+| `MATERIAL_REQUEST_CLOSED` | Penutupan sisa setelah penyerahan sebagian beserta alasan | [M-22](../02-modules/m22-materials.md) |
+| `MATERIAL_REQUEST_REVISION_REQUESTED` | Permintaan revisi sebelum penyerahan; siklus lama dipertahankan | [M-22](../02-modules/m22-materials.md) |
 | `MATERIAL_REQUEST_SUBMITTED` / `APPROVED` / `REJECTED` / `CANCELLED` | Siklus permintaan bahan | [M-22](../02-modules/m22-materials.md) |
+| `MATERIAL_TRANSACTION_RECORDED` | Fondasi ledger internal PR-05-17: transaksi, lokasi, delta, saldo sebelum/sesudah dan rujukan; audit atomik dengan ledger | [M-22](../02-modules/m22-materials.md) |
+| `MATERIAL_UNIT_CREATED` / `MATERIAL_UNIT_UPDATED` | Penambahan atau perubahan status satuan Bahan, nilai sebelum/sesudah | [M-20](../02-modules/m20-settings.md) |
 | `PASSWORD_CHANGED` | Ganti password sendiri (`FR-01.4`); memuat jumlah sesi lain yang dicabut, tanpa merekam nilai password | [M-01](../02-modules/m01-auth.md) |
 | `PASSWORD_RESET_REQUESTED` / `PASSWORD_RESET_ISSUED` / `PASSWORD_RESET_REJECTED` | Alur reset administratif. `PASSWORD_RESET_REQUESTED` dicatat tanpa pelaku (pemohon belum login; akun sasaran pada entitas), juga untuk percobaan yang tidak menghasilkan permintaan — email tak terdaftar, akun nonaktif, melebihi batas — dengan hasil `Gagal` dan tanpa menyimpan email yang dicoba. `PASSWORD_RESET_ISSUED` memuat metode verifikasi dan jumlah sesi yang dicabut. Tidak satu pun memuat password | [M-01](../02-modules/m01-auth.md) |
 | `PROCUREMENT_ASSETS_GENERATED` | Pembentukan aset dari penerimaan | [M-14](../02-modules/m14-procurement.md) |
+| `PROCUREMENT_CLOSED` | Penutupan Tidak Direalisasikan dengan alasan | [M-14](../02-modules/m14-procurement.md) |
 | `PROCUREMENT_CREATED` / `SUBMITTED` / `DECIDED` | Siklus usulan | [M-14](../02-modules/m14-procurement.md) |
 | `PROCUREMENT_RECEIVED` | Penerimaan barang beserta jumlah | [M-14](../02-modules/m14-procurement.md) |
+| `PROCUREMENT_UPDATED` | Penyuntingan draf atau revisi | [M-14](../02-modules/m14-procurement.md) |
 | `PROFILE_UPDATED` | Perubahan nama/telepon/foto profil sendiri (`FR-01.4` langkah 5, `PUT /me`); foto dicatat sebagai `foto_file_id` | [M-01](../02-modules/m01-auth.md) |
 | `REFRESH_TOKEN_REUSE_DETECTED` | Refresh token yang sudah dirotasi dipakai ulang; seluruh rantai dicabut. Termasuk IP dan perangkat | [M-01](../02-modules/m01-auth.md) |
 | `REPORT_EXPORTED` | Ekspor laporan beserta jenis dan filter | [M-16](../02-modules/m16-analytics.md) |
+| `REPORT_EXPORT_REQUESTED` | Pengajuan job ekspor milik pemohon | [M-16](../02-modules/m16-analytics.md) |
 | `RESERVATION_CREATED` / `RESERVATION_UPDATED` / `RESERVATION_CANCELLED` / `RESERVATION_EXPIRED` | Termasuk alasan pembatalan | [M-07](../02-modules/m07-reservation-room.md) |
 | `ROLE_CREATED` | Pembuatan role kustom dari template (`FR-02.2 A2`) | [M-02](../02-modules/m02-users.md) |
 | `ROLE_PERMISSION_UPDATED` | Perubahan matriks permission | [M-02](../02-modules/m02-users.md) |
 | `ROOM_BLOCK_CREATED` / `ROOM_BLOCK_DEACTIVATED` / `ROOM_BLOCK_SYNCED` | Blokade jadwal tetap & manual (FR-07.5): pembuatan (termasuk reservasi yang dibatalkan karenanya), penonaktifan (jumlah slot dilepas), dan materialisasi horizon oleh job (slot dibuat, dilepas karena libur, kemunculan bentrok) | [M-07](../02-modules/m07-reservation-room.md) |
+| `ROOM_SCHEDULE_IMPORTED` | Hasil akhir sinkron/asinkron, jumlah berhasil/gagal; berkas dibuang | [M-07](../02-modules/m07-reservation-room.md) |
+| `ROOM_SCHEDULE_IMPORT_REPORT_PURGED` | Rincian/nama berkas lewat 30 hari dibersihkan, ringkasan dan audit tetap | [M-07](../02-modules/m07-reservation-room.md) |
+| `ROOM_SCHEDULE_IMPORT_REQUESTED` | Job impor diterima, hash/replay per pengunggah dan outbox atomik | [M-07](../02-modules/m07-reservation-room.md) |
+| `ROOM_SCHEDULE_IMPORT_ROW_PROCESSED` | Progres baris, nomor baris gagal dan alasan; atomik dengan jadwal/slot | [M-07](../02-modules/m07-reservation-room.md) |
 | `SCHEDULED_JOB_EXECUTED` | Ringkasan satu eksekusi pekerjaan terjadwal (`JOB-05`): nama pekerjaan, waktu mulai/selesai, jumlah record diproses, jumlah galat; pelaku `SYSTEM` (`AL-06`); hasil `gagal` bila pekerjaan itu sendiri gagal (`AL-07`) | [M-18](../02-modules/m18-activity-log.md) |
 | `SETTING_UPDATED` | Perubahan parameter sistem beserta nilai lama/baru | [M-20](../02-modules/m20-settings.md) |
 | `STUDENT_ENROLLMENT_SET` | Kelas siswa pada suatu tahun ajaran ditetapkan atau diubah (`SL-01`, `SL-02`), nilai lama/baru | [M-02](../02-modules/m02-users.md) |
@@ -93,7 +127,9 @@
 | `TWO_FA_ENROLLMENT_STARTED` | Pendaftaran 2FA dimulai (secret dan kode cadangan dibangkitkan). Secret dan kode tidak pernah dicatat | [M-01](../02-modules/m01-auth.md) |
 | `USER_CREATED` / `USER_UPDATED` / `USER_DEACTIVATED` / `USER_REACTIVATED` | Manajemen akun | [M-02](../02-modules/m02-users.md) |
 | `USER_IMPORTED` | Impor massal beserta ringkasan hasil; pelaku = Administrator pengunggah, juga bila dijalankan worker | [M-02](../02-modules/m02-users.md) |
+| `USER_IMPORT_REPORT_PURGED` | Rincian laporan impor dihapus setelah retensi 30 hari; ID job dan jumlah tetap tercatat | [M-02](../02-modules/m02-users.md) |
 | `USER_IMPORT_REQUESTED` | Berkas impor diterima dan tercatat sebagai pekerjaan impor (sinkron atau dijadwalkan asinkron, `IMPT-04`) | [M-02](../02-modules/m02-users.md) |
+| `USER_PSEUDONYMIZED` | Identitas akun diganti permanen; alasan/referensi/metode atau sumber retensi otomatis tercatat tanpa menyalin identitas lama | [M-02](../02-modules/m02-users.md) |
 | `WORKORDER_COMPLETED` / `WORKORDER_VERIFIED` / `WORKORDER_RETURNED` / `WORKORDER_CANCELLED` | Penyelesaian | [M-12](../02-modules/m12-maintenance.md) |
 | `WORKORDER_CREATED` / `WORKORDER_ASSIGNED` / `WORKORDER_STARTED` | Penugasan dan pelaksanaan | [M-12](../02-modules/m12-maintenance.md) |
 | `WORKORDER_PROGRESS_UPDATED` | Termasuk perubahan biaya | [M-12](../02-modules/m12-maintenance.md) |

@@ -15,6 +15,7 @@ import type { IsianPengguna, MetodeVerifikasi, Pengguna } from "./api";
 import { LABEL_METODE, LABEL_STATUS, METODE_VERIFIKASI, galatIsian, penggunaQuery, resetDuaFaktor, resetPassword, roleQuery, terbitkanKodeAktivasi, ubahPengguna, ubahStatus, unitQuery, waktuWib } from "./api";
 import { FormPengguna, PanelRahasia } from "./form";
 import { ambilRahasia, useAksiRahasia } from "./rahasia";
+import PseudonymizePanel from "./PseudonymizePanel";
 
 export type AksiPengguna = "ubah" | "status" | "reset-password" | "reset-2fa" | "kode-aktivasi";
 type Rahasia = { readonly judul: string; readonly label: string; readonly nilai: string; readonly berlakuSampai: string | null };
@@ -112,7 +113,7 @@ export default function UserDetailPage({ id, aksi, onAksi }: { readonly id: stri
                         <Lencana varian={aktif ? "success" : "neutral"}>{LABEL_STATUS[u.status]}</Lencana>
                     </span>
                 </div>
-                {aksi === undefined && rahasia === null && (
+                {aksi === undefined && rahasia === null && !u.pseudonymized_at && (
                     <div className="flex flex-wrap gap-2">
                         {can("user.update") && <Tombol varian="secondary" onClick={() => onAksi("ubah")}>Ubah</Tombol>}
                         {can("user.update") && <Tombol varian={aktif ? "danger" : "secondary"} onClick={() => onAksi("status")}>{aktif ? "Nonaktifkan" : "Aktifkan"}</Tombol>}
@@ -125,19 +126,21 @@ export default function UserDetailPage({ id, aksi, onAksi }: { readonly id: stri
             </header>
 
             {pesan !== null && <Peringatan varian="success">{pesan}</Peringatan>}
+            {u.pseudonymized_at && <Peringatan varian="info">Akun telah dipseudonimkan pada {waktuWib(u.pseudonymized_at)}. Identitas tidak dapat dipulihkan dan akun tidak dapat diaktifkan atau disunting.</Peringatan>}
+            {!aktif && !u.pseudonymized_at && sesi.user.role_kode === "R-01" && sesi.user.id !== u.id && can("user.update") && sesi.permissions["user.update"] === "all" && aksi === undefined && <PseudonymizePanel key={u.id} id={u.id} nama={u.nama} />}
             {rahasia !== null && <PanelRahasia judul={rahasia.judul} label={rahasia.label} rahasia={rahasia.nilai} berlakuSampai={rahasia.berlakuSampai} onTutup={() => setRahasia(null)} />}
 
-            {aksi === "ubah" && can("user.update") && (
+            {aksi === "ubah" && can("user.update") && !u.pseudonymized_at && (
                 <section aria-labelledby="judul-ubah" className="rounded-md border border-border-strong bg-surface-default p-4 shadow-1">
                     <h2 id="judul-ubah" className="mb-4 text-lg font-semibold text-text-heading">Ubah pengguna</h2>
                     <FormPengguna awal={u} labelKirim="Simpan perubahan" sibuk={ubah.isPending} galat={ubah.error} onKirim={(isian) => ubah.mutate(isian)} onBatal={() => { ubah.reset(); onAksi(undefined); }} />
                 </section>
             )}
-            {(aksi === "reset-password" || aksi === "reset-2fa" || aksi === "kode-aktivasi") && can(aksi === "reset-password" ? "user.reset_password" : "user.reset_2fa") && (
+            {(aksi === "reset-password" || aksi === "reset-2fa" || aksi === "kode-aktivasi") && !u.pseudonymized_at && can(aksi === "reset-password" ? "user.reset_password" : "user.reset_2fa") && (
                 <DrawerRahasia key={aksi} jenis={aksi} u={u} onTutup={() => onAksi(undefined)} onSelesai={(r, p) => { setRahasia(r); setPesan(p); onAksi(undefined); }} />
             )}
             <DialogKonfirmasi
-                buka={aksi === "status" && can("user.update")}
+                buka={aksi === "status" && can("user.update") && !u.pseudonymized_at}
                 onTutup={() => { status.reset(); onAksi(undefined); }}
                 judul={aktif ? `Nonaktifkan ${u.nama}?` : `Aktifkan ${u.nama}?`}
                 labelAksi={aktif ? "Nonaktifkan" : "Aktifkan"}
@@ -154,7 +157,8 @@ export default function UserDetailPage({ id, aksi, onAksi }: { readonly id: stri
                 <h2 id="judul-profil" className="mb-2 text-lg font-semibold text-text-heading">Profil</h2>
                 <dl>
                     <Baris label="Email">{u.email}</Baris>
-                    <Baris label="NIP/NIS">{u.nip_nis}</Baris>
+                    <Baris label="NIP/NIS">{u.nip_nis ?? "—"}</Baris>
+                    <Baris label="Dinonaktifkan">{u.deactivated_at ? waktuWib(u.deactivated_at) : "—"}</Baris>
                     {can("role.view") && <Baris label="Role">{namaRole ?? "—"}</Baris>}
                     {can("setting.view") && <Baris label="Unit kerja">{namaUnit}</Baris>}
                     <Baris label="Telepon">{u.telepon ?? "—"}</Baris>

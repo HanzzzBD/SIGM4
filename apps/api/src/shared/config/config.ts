@@ -350,6 +350,7 @@ export function readProcessConfig(
 }
 
 export interface ApiConfig extends ProcessConfig {
+    readonly chat: { readonly enabled:boolean;readonly apiKey:string|null };
     readonly documentation: DocumentationConfig;
     /** `null` = push tidak dikonfigurasi (keputusan 80a). */
     readonly fcm: KredensialFcm | null;
@@ -458,7 +459,9 @@ export function readApiConfig(
             ...bentukDokumentasi,
         }),
         env,
-        [...periksaZona(zona), ...jwt.masalah, ...totp.masalah, ...fcm.masalah],
+        [...periksaZona(zona), ...jwt.masalah, ...totp.masalah, ...fcm.masalah,
+         ...(![undefined,"false","true"].includes(env["CHAT_ENABLED"])?[pesan("CHAT_ENABLED","harus true atau false")]:[]),
+         ...(env["CHAT_ENABLED"]==="true"&&kosong(env["GEMINI_API_KEY"])?[pesan("GEMINI_API_KEY","wajib saat CHAT_ENABLED=true")]:[])],
     );
     return {
         database: {
@@ -477,6 +480,7 @@ export function readApiConfig(
             secretKey: d.S3_SECRET_KEY,
         },
         appBaseUrl: d.APP_BASE_URL,
+        chat: {enabled:env["CHAT_ENABLED"]==="true",apiKey:kosong(env["GEMINI_API_KEY"])?null:env["GEMINI_API_KEY"]!.trim()},
         documentation: { environment: d.APP_ENV, version: d.APP_REVISION },
         chromiumExecutablePath: d.CHROMIUM_EXECUTABLE_PATH,
         antivirus: urlClamd(d.CLAMAV_URL)!,

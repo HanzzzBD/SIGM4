@@ -1,3 +1,9 @@
+import { EXPORT_READY, exportNotificationSource } from "../../m16-analytics/index.js";
+import { disposalNotificationSource } from "../../m21-disposal/index.js";
+import { materialRequestNotification } from "../../m22-materials/index.js";
+import { currentReminderLoan } from "../../m09-loans/index.js";
+import { procurementDecisionSource } from "../../m14-procurement/index.js";
+import { EVENT_WORK_ORDER_ASSIGNED,workOrderNotificationSource } from "../../m12-maintenance/index.js";
 // Konsumen outbox penerbit notifikasi (SDD-08 §4.2a, keputusan 75, 78): satu handler
 // per event, dijalankan WORKER setelah commit, masing-masing di transaksinya sendiri
 // dengan pelaku SYSTEM. Penerima & rincian dihitung modul pemiliknya lewat index.ts-nya
@@ -29,7 +35,7 @@ import {
     EVENT_RESET_DITERBITKAN,
     EVENT_SESI_DICABUT,
 } from "../../m01-auth/index.js";
-import { EVENT_RESERVASI_DIBATALKAN, EVENT_RESERVASI_KEDALUWARSA } from "../../m07-reservation-room/index.js";
+import { EVENT_ROOM_SCHEDULE_IMPORT_COMPLETED, EVENT_RESERVASI_DIBATALKAN, EVENT_RESERVASI_KEDALUWARSA } from "../../m07-reservation-room/index.js";
 import { EVENT_KERUSAKAN_DILAPORKAN, EVENT_KERUSAKAN_DIVERIFIKASI } from "../../m11-damage-reports/index.js";
 import {
     ApprovalSlaBreachedPayloadSchema,
@@ -56,9 +62,16 @@ const PIMPINAN = "R-03";
 
 /** Seluruh kode yang dapat diterbitkan konsumen di sini — diperiksa saat dipasang (SDD-08 §5). */
 const KODE_DIPAKAI = [
-    ...["NT-01", "NT-02", "NT-03", "NT-04", "NT-05", "NT-06", "NT-07", "NT-47", "NT-40", "NT-48", "NT-52", "NT-55", "NT-46", "NT-08"],
+    "NT-56", "NT-42",
+    "NT-49",
+    "NT-50", "NT-51",
+    "NT-43", "NT-44", "NT-45",
+    "NT-34","NT-35","NT-36",
+    "NT-30", "NT-31", "NT-32", "NT-33",
+    "NT-10", "NT-14", "NT-15",
+    ...["NT-01", "NT-02", "NT-03", "NT-04", "NT-05", "NT-06", "NT-07", "NT-47", "NT-40", "NT-48", "NT-52", "NT-55", "NT-46", "NT-08", "NT-09"],
     ...["NT-37", "NT-38", "NT-38a", "NT-39", "NT-39a", "NT-53", "NT-54"],
-    ...["NT-19", "NT-20", "NT-21"],
+    ...["NT-19", "NT-20", "NT-21", "NT-22", "NT-24", "NT-25", "NT-26", "NT-27", "NT-28"],
 ] as const;
 
 /** Deep link M-01: P-67 antrean reset, P-63 detail pengguna (UX §6), profil sendiri. */
@@ -114,6 +127,11 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
         }
     };
 
+    registry.on(EXPORT_READY, jalankan(async (scope, e, p, emit) => {
+        const source = await exportNotificationSource(scope, String(p["export_id"]), deps.clock);
+        if (source) await emit(scope, { kode: "NT-42", penerima: [source.requesterId], params: { jenis: source.title }, referensi: { jenis: "report_export", id: source.id }, deepLink: source.deepLink, dedupe: { event: e.id } });
+    }));
+
     /** Rincian pengajuan + referensi + deep link bersama NT-02…07, NT-47. */
     const approval = async (scope: TransactionScope, instanceId: number) => {
         const sumber = await sumberNotifikasiApproval(scope, instanceId, deps.rincian);
@@ -131,6 +149,11 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
             if (a === undefined) return;
             const dedupe = { event: e.id };
             const status = p["status"];
+            if(a.sumber.jenis==="PENGADAAN_BARANG"&&status!=="MENUNGGU"){
+                const source=await procurementDecisionSource(scope,id,angka(p["urutan"]));if(!source)return;
+                const label=status==="DISETUJUI"?(source.sebagian?"disetujui sebagian":"disetujui"):status==="PERLU_REVISI"?"memerlukan revisi":"ditolak";
+                await emit(scope,{kode:"NT-35",penerima:[source.pengusul_id],params:{nomor:source.nomor,status:label,catatan:await catatanLangkah(scope,id,angka(p["urutan"]))},referensi:{jenis:"procurement",id:source.id},deepLink:`/pengadaan/${source.id}`,dedupe});return;
+            }
             if (status === "DISETUJUI") {
                 await emit(scope, { kode: "NT-02", penerima: [a.sumber.pemohonId], params: a.params, referensi: a.referensi, deepLink: a.deepLink, dedupe });
             } else if (status === "DITOLAK") {
@@ -146,6 +169,31 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
         }),
     );
 
+    registry.on("AssetDisposalProposed", jalankan(async (scope, e, p, emit) => {
+        const id = angka(p["disposal_id"]), source = await disposalNotificationSource(scope, id);
+        await emit(scope, { kode: "NT-43", penerima: await pemutusLangkah(scope, deps.clock, angka(p["instance_id"]), angka(p["langkah_aktif"])), params: { ...p, ...source }, referensi: { jenis: "asset_disposal", id }, deepLink: `/penghapusan/${id}`, dedupe: { event: e.id } });
+    }));
+    registry.on("AssetDisposalDecided", jalankan(async (scope, e, p, emit) => {
+        const id = angka(p["disposal_id"]), source = await disposalNotificationSource(scope, id);
+        const labels: Record<string, string> = { DISETUJUI: "disetujui", DISETUJUI_SEBAGIAN: "disetujui sebagian", DITOLAK: "ditolak", PERLU_REVISI: "memerlukan revisi", DIBATALKAN: "dibatalkan" };
+        await emit(scope, { kode: "NT-44", penerima: [angka(p["pengusul_id"])], params: { ...source, status: labels[String(p["status"])] ?? "berubah" }, referensi: { jenis: "asset_disposal", id }, deepLink: `/penghapusan/${id}`, dedupe: { event: e.id } });
+    }));
+    registry.on("AssetDisposalExecuted", jalankan(async (scope, e, p, emit) => {
+        const id = angka(p["disposal_id"]), source = await disposalNotificationSource(scope, id);
+        await emit(scope, { kode: "NT-45", penerima: [angka(p["pengusul_id"]), ...await penggunaAktifBerperan(scope, [PIMPINAN])], params: { ...p, ...source }, referensi: { jenis: "asset_disposal", id }, deepLink: `/penghapusan/${id}`, dedupe: { event: e.id } });
+    }));
+    registry.on("ProcurementSubmitted",jalankan(async(scope,e,p,emit)=>{
+        const id=angka(p["procurement_id"]),referensi={jenis:"procurement",id},deepLink=`/pengadaan/${id}`,dedupe={event:e.id};
+        await emit(scope,{kode:"NT-34",penerima:await pemutusLangkah(scope,deps.clock,angka(p["instance_id"]),angka(p["langkah_aktif"])),params:p,referensi,deepLink:`/persetujuan/${angka(p["instance_id"])}`,dedupe});
+        await emit(scope,{kode:"NT-35",penerima:[angka(p["pengusul_id"])],params:{...p,status:"diajukan dan menunggu persetujuan"},referensi,deepLink,dedupe});
+    }));
+    registry.on("ProcurementReceived",jalankan(async(scope,e,p,emit)=>{
+        const petugas=await penggunaAktifBerperan(scope,[ADMINISTRATOR,PETUGAS_SARPRAS]);
+        await emit(scope,{kode:"NT-35",penerima:[angka(p["pengusul_id"])],params:{...p,status:p["status"]==="SELESAI"?"selesai diterima":"diterima sebagian"},referensi:{jenis:"procurement",id:angka(p["procurement_id"])},deepLink:`/pengadaan/${angka(p["procurement_id"])}`,dedupe:{event:e.id}});
+        await emit(scope,{kode:"NT-36",penerima:[...petugas,angka(p["pengusul_id"])],params:p,referensi:{jenis:"procurement",id:angka(p["procurement_id"])},deepLink:`/pengadaan/${angka(p["procurement_id"])}`,dedupe:{event:e.id}});
+    }));
+    registry.on("ProcurementDrafted",jalankan(async(scope,e,p,emit)=>{await emit(scope,{kode:"NT-35",penerima:[angka(p["pengusul_id"])],params:{...p,status:"kembali menjadi Draf"},referensi:{jenis:"procurement",id:angka(p["procurement_id"])},deepLink:`/pengadaan/${angka(p["procurement_id"])}`,dedupe:{event:e.id}});}));
+    registry.on("ProcurementClosed",jalankan(async(scope,e,p,emit)=>{await emit(scope,{kode:"NT-35",penerima:[angka(p["pengusul_id"])],params:{...p,status:"ditutup sebagai Tidak Direalisasikan",catatan:p["alasan"]},referensi:{jenis:"procurement",id:angka(p["procurement_id"])},deepLink:`/pengadaan/${angka(p["procurement_id"])}`,dedupe:{event:e.id}});}));
     // FR-07.2 langkah 6 / sekuens 15.2 (m10 §9 NT-01): pengajuan RESERVASI baru → pemutus sah langkah aktif.
     registry.on(
         EVENT_INSTANCE_DIBENTUK,
@@ -167,7 +215,7 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
             const id = angka(p["reservation_id"]);
             const approver = p["instance_id"] == null || p["langkah_aktif"] == null ? [] : await pemutusLangkah(scope, deps.clock, angka(p["instance_id"]), angka(p["langkah_aktif"]));
             await emit(scope, {
-                kode: "NT-46",
+                kode: p["alasan"] === "TIDAK_DIAMBIL" ? "NT-09" : "NT-46",
                 penerima: [...new Set([angka(p["pemohon_id"]), ...approver])],
                 params: { nomor: p["nomor"] },
                 referensi: { jenis: "reservation", id },
@@ -181,13 +229,13 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
     registry.on(
         EVENT_RESERVASI_DIBATALKAN,
         jalankan(async (scope, e, p, emit) => {
-            if (p["sepihak"] !== true) return;
+            if (p["sepihak"] !== true && p["kode_notifikasi"] !== "NT-27") return;
             const id = angka(p["reservation_id"]);
             const pelaku = (await identitasPengguna(scope, angka(p["pelaku_id"])))?.nama ?? "Petugas";
             await emit(scope, {
-                kode: "NT-08",
+                kode: p["kode_notifikasi"] === "NT-27" ? "NT-27" : "NT-08",
                 penerima: [angka(p["pemohon_id"])],
-                params: { nomor: p["nomor"], pelaku, alasan: p["alasan"] },
+                params: { nomor: p["nomor"], pelaku, alasan: p["alasan"], aset: p["aset"] },
                 referensi: { jenis: "reservation", id },
                 deepLink: `/reservasi/${String(id)}`,
                 dedupe: { event: e.id },
@@ -195,6 +243,19 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
         }),
     );
 
+    for (const [event, code] of [["LoanCheckedOut", "NT-10"], ["LoanReturned", "NT-14"], ["FineIssued", "NT-15"]] as const) {
+        registry.on(event, jalankan(async (scope, e, p, emit) => {
+            const id = angka(p["loan_id"]);
+            await emit(scope, { kode: code, penerima: [angka(p["peminjam_id"])], params: p, referensi: { jenis: "loan", id }, deepLink: `/peminjaman/${id}`, dedupe: { event: e.id } });
+            if (event === "FineIssued" && p["jenis"] === "GANTI_RUGI") await emit(scope, { kode: code, penerima: await penggunaAktifBerperan(scope, [PIMPINAN]), params: p, referensi: { jenis: "loan", id }, deepLink: `/peminjaman/${id}`, dedupe: { event: e.id } });
+        }));
+    }
+    for (const [event, code] of [["LoanDueReminder", "NT-11"], ["LoanOverdueReminder", "NT-12"]] as const) registry.on(event, jalankan(async (scope, e, p, emit) => {
+        if (!await currentReminderLoan(scope, angka(p["loan_id"]), String(p["tanggal"]))) return;
+        await emit(scope, { kode: code, penerima: [angka(p["peminjam_id"])], params: p, referensi: { jenis: "loan", id: angka(p["loan_id"]) }, deepLink: `/peminjaman/${angka(p["loan_id"])}`, dedupe: code === "NT-12" ? { harian: String(p["hari_wib"]) } : { event: e.id } });
+    }));
+    registry.on("LoanOverdueRecap", jalankan(async (scope, _e, p, emit) => { await emit(scope, { kode: "NT-13", penerima: await penggunaAktifBerperan(scope, [PETUGAS_SARPRAS]), params: p, referensi: { jenis: "loan_recap", id: Number(String(p["hari_wib"]).replaceAll("-", "")) }, deepLink: "/peminjaman?tab=terlambat", dedupe: { harian: String(p["hari_wib"]) } }); }));
+    for (const [event, code] of [["FinePaid", "NT-16"], ["FineWaived", "NT-17"], ["BorrowerBlocked", "NT-18"]] as const) registry.on(event, jalankan(async (scope, e, p, emit) => { await emit(scope, { kode: code, penerima: [angka(p["peminjam_id"])], params: p, referensi: { jenis: code === "NT-18" ? "borrower" : "fine", id: code === "NT-18" ? angka(p["peminjam_id"]) : angka(p["fine_id"]) }, deepLink: code === "NT-18" ? "/denda" : `/denda/${angka(p["fine_id"])}`, dedupe: { event: e.id } }); }));
     // FR-11.1 langkah 5 (m11 §9, keputusan 20d): NT-19 ke Petugas Sarpras; urgensi KRITIS → NT-20 ke
     // Petugas + Pimpinan SEBAGAI GANTI NT-19 (satu notifikasi per tiket). Pelapor tidak dinotifikasi.
     registry.on(
@@ -218,6 +279,45 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
         }),
     );
 
+    registry.on("MaterialLowStock", jalankan(async (scope, e, p, emit) => {
+        const id = angka(p["material_id"]);
+        await emit(scope, { kode: "NT-49", penerima: await penggunaAktifBerperan(scope, [PETUGAS_SARPRAS, ADMINISTRATOR]), params: p, referensi: { jenis: "material", id }, deepLink: `/bahan/${id}`, dedupe: { event: e.id } });
+    }));
+    registry.on("MaterialRequestReady", jalankan(async (scope, e, p, emit) => {
+        const id = angka(p["request_id"]), source = await materialRequestNotification(scope, id, undefined, angka(p["revision"])); if (!source) return;
+        await emit(scope, { kode: "NT-50", penerima: [angka(p["pemohon_id"])], params: { ...p, ...source }, referensi: { jenis: "material_request", id }, deepLink: `/permintaan-bahan/${id}`, dedupe: { event: e.id } });
+    }));
+    registry.on("MaterialIssued", jalankan(async (scope, e, p, emit) => {
+        const id = angka(p["request_id"]), source = await materialRequestNotification(scope, id, angka(p["issue_id"])); if (!source) return;
+        await emit(scope, { kode: "NT-51", penerima: [angka(p["pemohon_id"])], params: { ...p, ...source }, referensi: { jenis: "material_request", id }, deepLink: `/permintaan-bahan/${id}`, dedupe: { event: e.id } });
+    }));
+    registry.on("AuditSessionCreated", jalankan(async (scope, e, p, emit) => {
+        await emit(scope, { kode: "NT-30", penerima: (p["pelaksana_ids"] as number[]), params: p, referensi: { jenis: "audit_session", id: angka(p["session_id"]) }, deepLink: `/opname/${String(p["session_id"])}`, dedupe: { event: e.id } });
+    }));
+    registry.on("AuditSessionSubmitted", jalankan(async (scope, e, p, emit) => {
+        await emit(scope, { kode: "NT-31", penerima: await penggunaAktifBerperan(scope, [PIMPINAN]), params: p, referensi: { jenis: "audit_session", id: angka(p["session_id"]) }, deepLink: `/opname/${String(p["session_id"])}/rekonsiliasi`, dedupe: { event: e.id } });
+    }));
+    registry.on("AuditSessionDecided", jalankan(async (scope, e, p, emit) => {
+        await emit(scope, { kode: "NT-32", penerima: p["pelaksana_ids"] as number[], params: p, referensi: { jenis: "audit_session", id: angka(p["session_id"]) }, deepLink: `/opname/${String(p["session_id"])}`, dedupe: { event: e.id } });
+    }));
+    registry.on("AssetMarkedLost", jalankan(async (scope, e, p, emit) => {
+        await emit(scope, { kode: "NT-33", penerima: await penggunaAktifBerperan(scope, [PIMPINAN, PETUGAS_SARPRAS]), params: p, referensi: { jenis: "audit_session", id: angka(p["session_id"]) }, deepLink: `/opname/${String(p["session_id"])}`, dedupe: { event: e.id } });
+    }));
+    registry.on("PreventiveWorkOrderCreated", jalankan(async (scope, e, p, emit) => {
+        await emit(scope, { kode: "NT-28", penerima: [angka(p["teknisi_id"]), ...await penggunaAktifBerperan(scope, [PETUGAS_SARPRAS])], params: p, referensi: { jenis: "work_order", id: angka(p["work_order_id"]) }, deepLink: `/work-order/${String(p["work_order_id"])}`, dedupe: { event: e.id } });
+    }));
+    registry.on("PreventiveAssetAvailable", jalankan(async (scope, e, p, emit) => {
+        await emit(scope, { kode: "NT-28", penerima: [angka(p["teknisi_id"])], params: { ...p, tanggal: "sekarang; aset sudah tersedia" }, referensi: { jenis: "work_order", id: angka(p["work_order_id"]) }, deepLink: `/work-order/${String(p["work_order_id"])}`, dedupe: { event: e.id } });
+    }));
+    registry.on(EVENT_WORK_ORDER_ASSIGNED, jalankan(async (scope, e, p, emit) => {
+        await emit(scope, { kode: "NT-22", penerima: [angka(p["teknisi_id"])], params: { nomor: p["nomor"], prioritas: p["prioritas"] }, referensi: { jenis: "work_order", id: angka(p["work_order_id"]) }, deepLink: `/work-order/${String(p["work_order_id"])}`, dedupe: { event: e.id } });
+    }));
+    for(const event of ["WorkOrderCompleted","WorkOrderPaused","WorkOrderEstimateRequested"])registry.on(event,jalankan(async(scope,e,p,emit)=>{
+        const id=angka(p["work_order_id"]),source=await workOrderNotificationSource(scope,id);if(!source)return;
+        await emit(scope,{kode:"NT-24",penerima:await penggunaAktifBerperan(scope,[PETUGAS_SARPRAS,ADMINISTRATOR]),params:{...p,nomor:source.nomor,kejadian:event},referensi:{jenis:"work_order",id},deepLink:`/work-order/${id}`,dedupe:{event:e.id}});
+    }));
+    registry.on("WorkOrderReturned",jalankan(async(scope,e,p,emit)=>{const id=angka(p["work_order_id"]),source=await workOrderNotificationSource(scope,id);if(!source)return;await emit(scope,{kode:"NT-25",penerima:[source.teknisi_id],params:{nomor:source.nomor,catatan:p["catatan"]},referensi:{jenis:"work_order",id},deepLink:`/work-order/${id}`,dedupe:{event:e.id}});}));
+    registry.on("WorkOrderClosed",jalankan(async(scope,e,p,emit)=>{const id=angka(p["work_order_id"]),source=await workOrderNotificationSource(scope,id);if(!source)return;await emit(scope,{kode:"NT-26",penerima:[source.teknisi_id,...(source.pelapor_id===null?[]:[source.pelapor_id])],params:{aset:source.objek},referensi:{jenis:"work_order",id},deepLink:`/work-order/${id}`,dedupe:{event:e.id}});}));
     // FR-11.2 langkah 5 (m11 §9, keputusan 21b): hasil verifikasi → pelapor, beserta catatan/alasannya.
     // Pelapor yang memverifikasi tiketnya sendiri tidak dinotifikasi.
     registry.on(
@@ -271,6 +371,10 @@ export function pasangKonsumenNotifikasi(registry: EventHandlerRegistry, deps: K
         }),
     );
 
+    registry.on(EVENT_ROOM_SCHEDULE_IMPORT_COMPLETED, jalankan(async (scope, e, p, emit) => {
+        const jobId = String(p["job_id"]);
+        await emit(scope, { kode: "NT-56", penerima: [angka(p["oleh"])], params: { ...p, status: p["status"] === "GAGAL" ? "gagal" : "selesai" }, referensi: { jenis: "room_schedule_import_job", id: angka(jobId) }, deepLink: `/kalender-ruangan?kelola=true&impor=${jobId}`, dedupe: { event: e.id } });
+    }));
     // NT-55: hasil impor aset langsung menunjuk laporan yang dapat ditinjau ulang (P-17).
     registry.on(EVENT_ASSET_IMPORT_COMPLETED, jalankan(async (scope, e, p, emit) => {
         const jobId = angka(p["job_id"]);

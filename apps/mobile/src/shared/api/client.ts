@@ -20,6 +20,7 @@ export function createApi(baseURL: string, platform: "ANDROID" | "IOS", version:
     client.interceptors.response.use((response) => response, async (error: unknown) => {
         if (!axios.isAxiosError(error)) throw error;
         const response = error.response;
+        if(response&&typeof ReadableStream!=="undefined"&&response.data instanceof ReadableStream){try{const reader=response.data.getReader(),decoder=new TextDecoder();let text="";for(;;){const part=await reader.read();if(part.done)break;text+=decoder.decode(part.value,{stream:true});if(text.length>16384){await reader.cancel();throw new Error("Respons galat terlalu besar.");}}response.data=JSON.parse(text+decoder.decode());reader.releaseLock();}catch{response.data=null;}}
         const data = response?.data as { error?: { code?: string; message?: string; details?: { field: string; message: string }[] } } | undefined;
         const request = error.config as (InternalAxiosRequestConfig & { retried?: boolean }) | undefined;
         const authFlow = /^\/auth\/(login|refresh|2fa\/verify|password\/forgot)$/.test(request?.url ?? "");

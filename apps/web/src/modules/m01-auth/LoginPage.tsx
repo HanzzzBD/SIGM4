@@ -42,7 +42,7 @@ export function KerangkaMasuk({ judul, lebar = "sempit", children }: { readonly 
 }
 
 /** FR-01.2 A2: alasan kembali ke Login yang perlu dijelaskan kepada pengguna. */
-export type AlasanLogin = "idle";
+export type AlasanLogin = "idle" | "expired";
 
 export function LoginPage({ tujuan, alasan }: { readonly tujuan?: string | undefined; readonly alasan?: AlasanLogin | undefined }) {
     const navigate = useNavigate();
@@ -50,11 +50,18 @@ export function LoginPage({ tujuan, alasan }: { readonly tujuan?: string | undef
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [galat, setGalat] = useState<string | null>(null);
+    const [galatEmail, setGalatEmail] = useState<string | undefined>(undefined);
     const [sibuk, setSibuk] = useState(false);
 
     const kirim = async (ev: FormEvent) => {
         ev.preventDefault();
         setGalat(null);
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+            setGalatEmail("Masukkan alamat email yang benar, misalnya nama@sekolah.sch.id.");
+            ev.currentTarget.querySelector<HTMLInputElement>('input[type="email"]')?.focus();
+            return;
+        }
+        setGalatEmail(undefined);
         setSibuk(true);
         try {
             const hasil = await login(email, password);
@@ -84,9 +91,9 @@ export function LoginPage({ tujuan, alasan }: { readonly tujuan?: string | undef
                         {galat !== null ? (
                             <Peringatan varian="error">{galat}</Peringatan>
                         ) : (
-                            alasan === "idle" && <Peringatan varian="info">Sesi Anda berakhir karena tidak ada aktivitas selama 30 menit. Silakan masuk kembali.</Peringatan>
+                            alasan === "idle" ? <Peringatan varian="info">Sesi Anda berakhir karena tidak ada aktivitas selama 30 menit. Silakan masuk kembali.</Peringatan> : alasan === "expired" && <Peringatan varian="info">Sesi Anda sudah berakhir. Masuk kembali untuk melanjutkan ke halaman sebelumnya.</Peringatan>
                         )}
-                        <Isian label="Email" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                        <Isian label="Email" type="email" autoComplete="username" required value={email} galat={galatEmail} onChange={(e) => { setEmail(e.target.value); setGalatEmail(undefined); }} />
                         <Isian label="Password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                         <Tombol type="submit" sibuk={sibuk} disabled={email.trim() === "" || password === ""}>
                             {sibuk ? "Memproses…" : "Masuk"}

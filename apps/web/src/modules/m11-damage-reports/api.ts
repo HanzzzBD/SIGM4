@@ -2,6 +2,7 @@
 // (SDD-FE-05); unggah foto lewat presign → PUT → confirm M-06 (SDD-09 §4.2).
 
 import { queryOptions } from "@tanstack/react-query";
+import { z } from "zod";
 import {
     DamageReportCreatedResponseSchema,
     DamageReportDetailResponseSchema,
@@ -59,6 +60,10 @@ export async function tambahCatatan(id: string, body: DamageReportNoteCreate) {
 export async function verifikasi(id: string, body: DamageReportVerify) {
     return DamageReportVerifiedResponseSchema.parse((await api.post(`/damage-reports/${id}/verify`, body)).data).data;
 }
+export const teknisiWorkOrderQuery = queryOptions({
+    queryKey: ["work-orders", "technicians"],
+    queryFn: async () => z.object({ data: z.array(z.object({ id: z.string(), nama: z.string(), work_order_aktif: z.string() })) }).parse((await api.get("/work-orders/technicians")).data).data,
+});
 
 async function sha256(berkas: Blob): Promise<string> {
     const hash = await crypto.subtle.digest("SHA-256", await berkas.arrayBuffer());

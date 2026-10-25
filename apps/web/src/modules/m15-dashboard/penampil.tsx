@@ -4,6 +4,7 @@
 
 import { LABEL_JENIS_PENGAJUAN, LABEL_KONDISI_ASET, LABEL_STATUS_ASET, LABEL_STATUS_INSTANCE_APPROVAL, labelEnum } from "@sigm4/schemas";
 import type { ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import { GrafikBatang, GrafikDonat, GrafikGaris } from "../../shared/ui/charts";
 import type { Titik } from "../../shared/ui/charts";
 import { Lencana } from "../../shared/ui/primitives";
@@ -62,6 +63,8 @@ const menunggu = (i: Isi) =>
 
 /** id kartu → penampil. Kartu yang tidak dikenal versi ini ditampilkan dengan penjelasan, bukan disembunyikan. */
 export const PENAMPIL: Readonly<Record<string, (isi: Isi, judul: string) => ReactNode>> = {
+    "pekerjaan-teknisi": i => <div className="flex flex-col gap-4"><Angka nilai={Number(i["aktif"] ?? 0)} label="pekerjaan aktif" /><Rincian baris={Object.entries((i["per_status"] ?? {}) as Record<string, number>).map(([status, count]) => ({ label: ({ DITUGASKAN: "Ditugaskan", DIKERJAKAN: "Dikerjakan", TERTUNDA: "Tertunda", MENUNGGU_VERIFIKASI: "Menunggu Verifikasi" } as Record<string,string>)[status] ?? "Status lainnya", nilai: count }))} /><p>{Number(i["terlambat"] ?? 0)} pekerjaan melewati target selesai.</p>{((i["berikutnya"] ?? []) as Isi[]).length === 0 ? <p>Tidak ada pekerjaan aktif. Pekerjaan baru akan muncul setelah ditugaskan kepada Anda.</p> : <ul className="flex flex-col gap-3">{((i["berikutnya"] ?? []) as Isi[]).map(w => <li key={String(w["id"])} className="flex flex-col gap-1"><Link to="/work-order/$id" params={{ id: String(w["id"]) }} className="font-medium text-text-link">{String(w["nomor"])} · Buka pekerjaan</Link><p>{String(w["deskripsi"])}</p><p className="text-sm">{({ DITUGASKAN: "Ditugaskan", DIKERJAKAN: "Dikerjakan", TERTUNDA: "Tertunda", MENUNGGU_VERIFIKASI: "Menunggu Verifikasi" } as Record<string,string>)[String(w["status"])] ?? "Status lainnya"} · {({KRITIS:"Kritis",TINGGI:"Tinggi",SEDANG:"Sedang",RENDAH:"Rendah"} as Record<string,string>)[String(w["prioritas"])] ?? "Prioritas lainnya"} · Target {new Date(String(w["target_selesai"])+"T00:00:00+07:00").toLocaleDateString("id-ID",{timeZone:"Asia/Jakarta"})}</p></li>)}</ul>}</div>,
+    "stok-bahan-menipis": i => <div className="flex flex-col gap-3"><Angka nilai={Number(i["jumlah"] ?? 0)} label="jenis bahan menipis" /><Daftar baris={((i["daftar"] as Isi[] | undefined) ?? []).map(b => ({ kunci: String(b["id"]), utama: String(b["nama"]), meta: `Saldo ${angka.format(Number(b["saldo"]))} ${String(b["satuan"])} · minimum ${angka.format(Number(b["minimum"]))}` }))} /></div>,
     "permintaan-reset-password": (i) => antrean(i, (x) => ({ kunci: String(x["id"]), utama: String(x["nama"]), meta: `Diminta ${waktuWib(String(x["diminta_pada"]))}` })),
     "status-konfigurasi": (i) => {
         const kurang = (i["kekurangan"] as Isi[] | undefined) ?? [];

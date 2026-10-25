@@ -79,7 +79,7 @@ function Matriks({ role: terkini, katalog, bolehUbah, onSimpan, onBatal }: { rea
                                                 {p.inti && <Lencana varian="neutral">Inti</Lencana>}
                                             </span>
                                         </td>
-                                        <td className={`${TD} font-mono text-sm`}>{p.aksi}</td>
+                                        <td className={`${TD} font-mono text-sm`}>{({view:"Lihat",create:"Tambah",update:"Ubah",delete:"Hapus",approve:"Setujui",export:"Ekspor",manage:"Kelola",execute:"Jalankan"} as Record<string,string>)[p.aksi] ?? p.deskripsi}</td>
                                         <td className={TD}>
                                             <select
                                                 aria-label={`Cakupan data: ${p.deskripsi}`}

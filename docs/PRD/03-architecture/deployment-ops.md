@@ -91,6 +91,8 @@ flowchart TB
 | CD-06 | Deployment ke production dilakukan di luar jam operasional (NFR-A-03) dan diumumkan H-2 |
 | CD-07 | *Smoke test* otomatis pasca-deploy atas alur kritis: login, cari aset, ajukan reservasi, scan QR, buat tiket kerusakan |
 
+Pelaksanaan `CD-07` di staging memakai akun Petugas, ruangan dan aset khusus bernama `[SMOKE]`. Reservasi uji dibatalkan setelah pemeriksaan, termasuk bila alur berikutnya gagal. Tiket uji dan auditnya tetap tersimpan; akun Petugas smoke menutup tiket lewat verifikasi **Perbaikan Ringan tanpa mengubah kondisi aset**, sehingga fixture dapat dipakai pada deployment berikutnya. Bukti foto sintetis ditandai sebagai data uji. Konfigurasi kredensial/ID fixture yang belum lengkap menggagalkan smoke penuh dengan petunjuk konfigurasi. Pemeriksaan kesehatan saja hanya boleh dijalankan lewat mode eksplisit dan tidak memenuhi bukti kelima alur `CD-07` (keputusan pemilik produk, 15 Oktober 2026).
+
 ## 27.5 Lingkungan
 
 | Lingkungan | Tujuan | Data | Akses |

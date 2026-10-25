@@ -237,3 +237,21 @@ Strategi pengujian: [`../06-quality/test-strategy.md`](../06-quality/test-strate
 ## 15. Open Issues
 
 _Tidak ada isu terbuka._
+
+### Rincian keputusan domain (PR-03-18)
+
+POST keputusan menerima `rincian_keputusan` opsional yang hanya dipakai pemilik
+pengajuan dengan adapter terdaftar. Jumlah per item untuk pengadaan mengikuti
+FR-14.2 pada PRD M-14 §7; domain lain menolak rincian yang tidak didukung.
+Snapshot dikembalikan pada langkah linimasa tanpa mengubah enum keputusan atau
+aturan snapshot DSL. Klaim first-responder-wins dan perubahan domain satu transaksi.
+
+### Keputusan per aset penghapusan — 14 Oktober 2026
+
+M-21 memakai approval M-10 yang sama, dengan rincian keputusan per item dan
+validasi domain sebelum penulisan keputusan. Snapshot aturan dipilih dari nilai
+perolehan awal, langkah akhir wajib Pimpinan dengan disposal.approve, serta
+pilihan level berikutnya monoton menurun. Rincian histori M-10 menyimpan identitas
+dan keputusan publik saja; nilai perolehan/biaya tidak disalin ke histori.
+Hook sebelumDisetujui menerima waktu keputusan dari Clock M-10 agar pendaftaran
+adapter API/worker tidak menggantikan waktu transaksi keputusan.

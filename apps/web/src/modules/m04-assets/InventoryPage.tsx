@@ -1,10 +1,11 @@
 // P-15 Inventaris Aset (UX §6, §7.1 A, §7.4; FR-04.2 langkah 2–4, A1, A2; PR-02-45). Seluruh saringan,
 // urutan, dan halaman hidup di URL (SDD-FE-10) dan tampil sebagai chip yang dapat dihapus (31.3). Tabel
 // C-15: kepala melekat, urut lewat kepala kolom (ikon + `aria-sort`), klik baris membuka P-18, kartu di
-// bawah 48rem. Ekspor seluruh hasil saringan tersedia melalui PR-02-47; kolom finansial
-// pada berkas mengikuti hak akses yang ditegakkan server (BR-073).
+// bawah 48rem. Ekspor melalui worker PR-02-47 mengikuti izin finansial server (BR-073).
+// Pemilihan massal mengikuti P-24 (log phase-02 §3).
 
 import { useQuery } from "@tanstack/react-query";
+import { ReportExportPanel } from "../m16-analytics";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { LABEL_KONDISI_ASET, LABEL_STATUS_ASET } from "@sigm4/schemas";
 import { useState } from "react";
@@ -16,7 +17,6 @@ import { Ikon } from "../../shared/ui/icon";
 import { Isian, Lencana, Pilihan, Tombol, gabung } from "../../shared/ui/primitives";
 import type { ItemKatalog, Kondisi, SaringanKatalog, StatusAset, Urutan } from "./katalog";
 import { KONDISI, STATUS, VARIAN_KONDISI, VARIAN_STATUS, kategoriQuery, katalogQuery, ruanganQuery } from "./katalog";
-import { ExportAssets } from "./ExportAssets";
 
 const TH = "sticky top-0 h-header-table bg-surface-subtle px-4 text-left text-sm font-medium text-text-primary";
 const TD = "border-t border-border-subtle px-4 py-3 text-base text-text-primary";
@@ -85,7 +85,6 @@ export default function InventoryPage({ pencarian, onPencarian }: { readonly pen
                     <p className="text-base text-text-secondary">Katalog seluruh unit aset beserta kondisi dan statusnya.</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    {can("report.export") && <ExportAssets filter={pencarian} />}
                     {can("asset.create") && jalurTerdaftar("/aset/impor") && (
                         <Link to="/aset/impor" className="inline-flex min-h-control-md items-center rounded-md border border-border-strong px-4 text-base font-medium text-text-primary hover:bg-neutral-50">
                             Impor Aset
@@ -101,13 +100,13 @@ export default function InventoryPage({ pencarian, onPencarian }: { readonly pen
 
             <section aria-label="Saringan aset" className="flex flex-col gap-3 rounded-md border border-border-subtle bg-surface-default p-4">
                 <form
-                    className="flex items-end gap-2"
+                    className="flex flex-wrap items-end gap-2"
                     onSubmit={(e) => {
                         e.preventDefault();
                         ubah({ q: kata.trim() === "" ? undefined : kata.trim() });
                     }}
                 >
-                    <div className="flex-1">
+                    <div className="min-w-0 flex-1 basis-full sm:basis-0">
                         <Isian label="Cari kode aset, nama, merek, atau nomor seri" type="search" value={kata} onChange={(e) => setKata(e.target.value)} />
                     </div>
                     <Tombol type="submit" varian="secondary">
@@ -149,6 +148,12 @@ export default function InventoryPage({ pencarian, onPencarian }: { readonly pen
                     </ul>
                 )}
             </section>
+
+            <ReportExportPanel path="/assets/export" jenis="assets" exportId={pencarian.ekspor} filter={{
+                q: pencarian.q, sort: pencarian.urut ?? "kode_barang", kategori_id: pencarian.kategori, lokasi_id: pencarian.lokasi,
+                kondisi: pencarian.kondisi, status: pencarian.status, tahun_perolehan: pencarian.tahun,
+                dapat_dipinjam: pencarian.pinjam, import_job_id: pencarian.impor,
+            }} />
 
             {kueri.isPending ? (
                 <KeadaanMemuat baris={6} label="Memuat inventaris aset" />
@@ -247,7 +252,7 @@ export default function InventoryPage({ pencarian, onPencarian }: { readonly pen
                             <p>
                                 Menampilkan {ANGKA.format((page - 1) * (pencarian.per ?? 25) + 1)}–{ANGKA.format((page - 1) * (pencarian.per ?? 25) + kueri.data.data.length)} dari {ANGKA.format(kueri.data.meta.total)}
                             </p>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                                 <Tombol varian="secondary" disabled={page <= 1} onClick={() => onPencarian({ page: page - 1 === 1 ? undefined : page - 1 })}>
                                     Sebelumnya
                                 </Tombol>

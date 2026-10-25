@@ -140,6 +140,7 @@ export default function ReservationDetailPage({
                     </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                    {d.jenis === "ASET" && d.status === "DISETUJUI" && can("loan.manage") && <Link to="/peminjaman/serah-terima" search={{ reservasi: d.id }} className="text-text-link underline">Serah terima</Link>}
                     {d.aksi.ubah_jadwal && (
                         <Tombol varian="secondary" onClick={() => setDialog("ubah")}>
                             Ubah jadwal
@@ -157,6 +158,7 @@ export default function ReservationDetailPage({
                     )}
                 </div>
             </header>
+            {d.peminjaman && d.peminjaman.length > 0 && <section className="flex flex-col gap-2"><h2 className="text-lg font-semibold">Realisasi Peminjaman</h2>{d.peminjaman.map((loan) => <Link key={loan.id} to="/peminjaman/$id" params={{ id: loan.id }} className="text-text-link underline">{loan.nomor}</Link>)}</section>}
 
             {terkirim && (
                 <Peringatan varian="success" judul={`Pengajuan terkirim — nomor ${d.nomor}`}>
@@ -165,10 +167,11 @@ export default function ReservationDetailPage({
             )}
             {d.status === "KEDALUWARSA" && (
                 <Peringatan varian="warning" judul="Pengajuan kedaluwarsa">
-                    Pengajuan belum diputuskan hingga batas waktu, sehingga slotnya dibebaskan.{d.aksi.ajukan_ulang && " Ajukan ulang bila ruangan masih diperlukan."}
+                    Reservasi kedaluwarsa dan slot yang ditahan telah dibebaskan. Penyebabnya tercatat pada riwayat.{d.aksi.ajukan_ulang && " Ajukan ulang bila masih diperlukan."}
                 </Peringatan>
             )}
 
+            {(d.aset?.length ?? 0) > 0 && <Kartu judul="Unit aset"><ul className="flex flex-col gap-2">{d.aset!.map((a, index) => <li key={`${a.reservation_id}:${String(index)}`} className="text-base text-text-primary">{a.nama} · {a.kode_barang ?? "Kode unit ditampilkan setelah disetujui"}</li>)}</ul></Kartu>}
             <Kartu judul="Rincian">
                 <dl className="flex flex-col gap-3">
                     <Baris label="Ruangan">{d.ruangan === null ? "—" : `${d.ruangan.nama} · ${d.ruangan.gedung}`}</Baris>
@@ -178,6 +181,8 @@ export default function ReservationDetailPage({
                     <Baris label="Pemohon">{d.pemohon.nama}</Baris>
                     <Baris label="Diajukan">{waktuWib(d.diajukan_pada)}</Baris>
                     {d.keperluan !== null && <Baris label="Keperluan">{d.keperluan}</Baris>}
+                    {d.lokasi_penggunaan != null && <Baris label="Lokasi penggunaan">{d.lokasi_penggunaan}</Baris>}
+                    {d.status_penggunaan_ruangan != null && <Baris label="Penggunaan ruangan">{LABEL_STATUS_RESERVASI[d.status_penggunaan_ruangan]}</Baris>}
                     {d.kebutuhan_tambahan !== null && <Baris label="Kebutuhan tambahan">{d.kebutuhan_tambahan}</Baris>}
                     {d.keterangan !== null && <Baris label="Keterangan">{d.keterangan}</Baris>}
                 </dl>

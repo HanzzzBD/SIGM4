@@ -15,6 +15,7 @@ import { DomainError } from "../../../shared/errors/index.js";
 import { publish } from "../../../shared/events/index.js";
 import type { BarisPengajuan } from "../repositories/reservation.repository.js";
 import { createReservationRepository } from "../repositories/reservation.repository.js";
+import { confirmCombinedRoom, validateAssetApproval } from "../../m08-reservation-item/index.js";
 
 const MODUL = "m07-reservation-room";
 const MENUNGGU: StatusReservasi = "MENUNGGU_PERSETUJUAN";
@@ -33,10 +34,10 @@ async function kunci(scope: TransactionScope, akarId: number) {
     return { kelompok, akar: kelompok.find((b) => b.id === String(akarId)) };
 }
 
-export function penangananReservasiRuangan(clock: Clock, audit: AuditLogger): PenanganHasil {
+export function penangananReservasiRuangan(clock: Clock, audit: AuditLogger, kind: "RESERVASI_RUANGAN" | "RESERVASI_ASET" = "RESERVASI_RUANGAN"): PenanganHasil {
     const slot = new SlotService(clock);
     return {
-        jenis: "RESERVASI_RUANGAN",
+        jenis: kind,
 
         /**
          * Persetujuan level akhir (sekuens 15.2 "verifikasi objek masih tersedia"): seluruh tanggal yang
@@ -48,9 +49,10 @@ export function penangananReservasiRuangan(clock: Clock, audit: AuditLogger): Pe
             if (akar?.status !== MENUNGGU) throw new DomainError("RESERVATION_CONFLICT", "Reservasi tidak lagi menunggu persetujuan; objek sudah tidak tersedia.");
             const tanggal = pemegangSlot(kelompok, referensiId).filter((b) => b.status === MENUNGGU);
             const milik = await slotMilikReservasi(scope.tx, tanggal.map((b) => Number(b.id)));
-            const tentatif = tanggal.map((b) => milik.find((s) => s.reservation_id === b.id && s.status === "TENTATIVE"));
-            if (tentatif.some((s) => s === undefined)) throw new DomainError("RESERVATION_CONFLICT", "Slot reservasi sudah dilepas; objek sudah tidak tersedia.");
-            await slot.confirm(scope, tentatif.flatMap((s) => (s === undefined ? [] : [Number(s.id)])));
+            const expected = kind === "RESERVASI_ASET" ? await validateAssetApproval(scope, tanggal.map((b) => b.id)) : new Map(tanggal.map((b) => [b.id, 1]));
+            if (tanggal.some((b) => milik.filter((s) => s.reservation_id === b.id && s.status === "TENTATIVE").length !== expected.get(b.id))) throw new DomainError("RESERVATION_CONFLICT", "Sebagian slot reservasi sudah dilepas; seluruh pengajuan tidak dapat disetujui.");
+            await slot.confirm(scope, milik.filter((s) => s.status === "TENTATIVE").map((s) => Number(s.id)));
+            if (kind === "RESERVASI_ASET") await confirmCombinedRoom(scope, tanggal.map((b) => b.id), clock);
             const repo = createReservationRepository(scope.tx);
             const berubah = await repo.ubahStatus(scope.ctx, kelompok.filter((b) => b.status === MENUNGGU).map((b) => b.id), MENUNGGU, "DISETUJUI");
             await audit.write(scope, { modul: MODUL, aksi: "RESERVATION_UPDATED", entitas: "reservations", entitasId: referensiId, nilaiSebelum: { status: MENUNGGU }, nilaiSesudah: { status: "DISETUJUI", reservasi: berubah } });
@@ -99,7 +101,7 @@ export async function kedaluwarsakanReservasi(scope: TransactionScope, deps: { r
     // yang memutus pada detik yang sama menunggu, bukan deadlock. Sudah diputuskan = tak ada yang dikedaluwarsakan.
     const { kelompok, akar } = await kunci(scope, akarId);
     if (akar?.status !== MENUNGGU) return;
-    const tutup = await deps.approval.tutupKarenaObjek(scope, "RESERVASI_RUANGAN", akarId);
+    const tutup = await deps.approval.tutupKarenaObjek(scope, akar.jenis === "ASET" ? "RESERVASI_ASET" : "RESERVASI_RUANGAN", akarId);
     if (tutup === undefined) return;
     const milik = await slotMilikReservasi(scope.tx, kelompok.map((b) => Number(b.id)));
     await new SlotService(deps.clock).release(scope, milik.filter((s) => s.status === "TENTATIVE").map((s) => Number(s.id)));

@@ -88,6 +88,7 @@ function server(o: { me?: unknown; pending?: unknown[]; riwayat?: Jawaban; decid
         if (p.url === "/approvals/45/history") return o.riwayat ?? sukses(RIWAYAT);
         if (p.url === "/approvals/45/decide") return o.decide?.(p) ?? sukses({ instance_id: 45, urutan: 2, keputusan: (p.data as { keputusan: string }).keputusan, status: "DISETUJUI", langkah_aktif: null, atas_nama_user_id: null });
         if (p.url === "/reservations/123") return sukses(RESERVASI);
+        if(p.url==="/rooms/availability")return sukses({dari:RESERVASI.waktu_mulai,sampai:RESERVASI.waktu_selesai,zona_waktu:"Asia/Jakarta",granularitas_menit:30,jam_operasional:{hari:[1,2,3,4,5],mulai:"07:00",selesai:"17:00"},hari_libur:[],ruangan:[],slot:[]});
         if (p.url === "/notifications") return { status: 200, data: { success: true, data: [], meta: { page: 1, per_page: 25, total: 0, total_pages: 1, unread_count: 0 } } };
         return { status: 404 };
     });
@@ -139,6 +140,26 @@ describe("P-37 Persetujuan Saya", () => {
 });
 
 describe("P-38 Detail Keputusan", () => {
+    it("UX-014 retries an uncertain decision with the same intent and key, without locking the form", async () => {
+        let calls = 0;
+        const uuid = vi.fn().mockReturnValueOnce("first-attempt").mockReturnValueOnce("unexpected-new-attempt");
+        vi.stubGlobal("crypto", { ...globalThis.crypto, randomUUID: uuid });
+        const log = server({ decide: () => ++calls === 1 ? gagal(500, "INTERNAL_ERROR", "Hasil keputusan belum pasti.") : sukses({ instance_id: 45, urutan: 2, keputusan: "DISETUJUI", status: "DISETUJUI", langkah_aktif: null, atas_nama_user_id: null }) });
+        const user = userEvent.setup();
+        const { router } = await renderAplikasi("/persetujuan/45");
+        await user.click(await screen.findByRole("button", { name: "Setujui" }));
+        const dialog = await screen.findByRole("dialog");
+        await user.click(within(dialog).getByRole("button", { name: "Setujui" }));
+        await within(dialog).findByRole("alert");
+        await user.click(within(dialog).getByRole("button", { name: "Setujui" }));
+        await waitFor(() => expect(router.state.location.pathname).toBe("/persetujuan"));
+        const requests = log.filter(p => p.url.endsWith("/decide"));
+        expect(requests).toHaveLength(2);
+        expect(requests[0]?.headers["Idempotency-Key"]).toBe("first-attempt");
+        expect(requests[1]?.headers["Idempotency-Key"]).toBe("first-attempt");
+        expect(requests[1]?.data).toEqual(requests[0]?.data);
+        expect(uuid).toHaveBeenCalledTimes(1);
+    });
     it("konteks reservasi, linimasa dengan langkah dilewati + durasi kerja + sisa SLA; tanpa pelanggaran axe", async () => {
         server();
         const { container } = await renderAplikasi("/persetujuan/45");

@@ -29,6 +29,17 @@ const envelope = (data: unknown) => ({ data, success: true, meta: null });
 const denied = (code: string) => ({ error: { code, message: "Permintaan ditolak." } });
 
 describe("PR-04-16 SecureStore dan sesi mobile", () => {
+    it("UX-019 guards pending local data before hiding the session or deleting credentials; discard must be explicit", async () => {
+        const calls = server(() => ({ data: envelope({}) }));
+        const { store } = vault(); await store.save(tokens); const states: AuthState[] = []; let cleared = false;
+        const controller = new SessionController(createApi("https://sekolah.test/api/v1", "IOS", "0.2.0", store, () => undefined), store, "IOS", () => 1000, state => states.push(state));
+        controller.setLogoutGuard(async discard => { if (!discard) throw new Error("Hasil belum tersinkron"); });
+        controller.setBeforeLogout(async () => { cleared = true; });
+        await expect(controller.logout()).rejects.toThrow("belum tersinkron");
+        expect(states).toEqual([]); expect(calls).toHaveLength(0); expect(await store.read()).toEqual(tokens); expect(cleared).toBe(false);
+        await controller.logout({ discardPending: true });
+        expect(cleared).toBe(true); expect(await store.read()).toBeNull(); expect(states.at(-1)).toEqual({ kind: "LOGIN" });
+    });
     it("token disimpan satu rekaman; logout menolak hasil refresh yang datang terlambat", async () => {
         const { store, memory } = vault(); const revision = store.revision;
         await store.save(tokens); expect(memory.size).toBe(1);
@@ -81,6 +92,15 @@ describe("PR-04-16 SecureStore dan sesi mobile", () => {
         const api = createApi("https://sekolah.test/api/v1", "IOS", "0.1.0", store, () => undefined);
         const controller = new SessionController(api, store, "IOS", () => 1000, (state) => states.push(state));
         await expect(controller.logout()).rejects.toBeInstanceOf(MobileApiError); expect(await store.read()).toBeNull(); expect(states.at(-1)).toEqual({ kind: "LOGIN" });
+    });
+    it("logout menjalankan semua hook cache, antrean dan push meskipun layar telah dilepas", async () => {
+        const order: string[] = []; server(() => { order.push("http"); return { data: envelope({}) }; });
+        const { store } = vault(); await store.save(tokens); let unsubscribe: () => void = () => undefined;
+        const controller = new SessionController(createApi("https://sekolah.test/api/v1", "IOS", "0.2.0", store, () => undefined), store, "IOS", () => 1000, state => { if (state.kind === "LOGOUT") unsubscribe(); });
+        controller.setBeforeLogout(async () => { order.push("cache"); });
+        unsubscribe = controller.setBeforeLogout(async () => { order.push("queue"); });
+        controller.setBeforeLogout(async () => { order.push("push"); });
+        await controller.logout(); expect(order).toEqual(["cache", "queue", "push", "http"]); expect(await store.read()).toBeNull();
     });
     it("respons /me yang terlambat sesudah logout tidak mengembalikan sesi lama", async () => {
         let complete!: (response: { data: unknown }) => void;

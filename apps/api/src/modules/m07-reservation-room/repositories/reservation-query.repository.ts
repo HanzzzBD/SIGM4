@@ -50,6 +50,7 @@ export interface BarisDetail extends Omit<BarisDaftar, "jumlah_tanggal"> {
 }
 
 export interface BarisKelompok {
+    readonly jenis?: "RUANGAN" | "ASET";
     readonly id: string;
     readonly nomor: string;
     readonly parent_id: string | null;
@@ -60,7 +61,7 @@ export interface BarisKelompok {
 }
 
 /** Scope `restricted` = milik pemanggil saja (keputusan 17b); `all` tanpa saringan pemohon. */
-const terbatas = (ctx: AuthContext) => ctx.scopeOf("reservation.view") === "restricted";
+const terbatas = (ctx: AuthContext) => ctx.scopeOf("reservation.view") !== "all";
 
 /** `%`, `_`, dan `\` pada kata kunci dicari harfiah, bukan sebagai pola. */
 const pola = (q: string) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
@@ -70,7 +71,7 @@ export class ReservationQueryRepository extends BaseRepository {
         super(executor);
     }
 
-    async daftar(ctx: AuthContext, s: SaringanDaftar): Promise<{ readonly baris: readonly BarisDaftar[]; readonly total: number }> {
+    async daftar(ctx: AuthContext, s: SaringanDaftar, exportOnly = false): Promise<{ readonly baris: readonly BarisDaftar[]; readonly total: number }> {
         let dasar = this.query(ctx)
             .selectFrom("reservations as v")
             .where("v.parent_id", "is", null)
@@ -86,7 +87,7 @@ export class ReservationQueryRepository extends BaseRepository {
         if (s.dari !== undefined) dasar = dasar.where("v.waktu_selesai", ">", s.dari);
         if (s.sampai !== undefined) dasar = dasar.where("v.waktu_mulai", "<", s.sampai);
 
-        const total = await dasar.select((eb) => eb.fn.countAll<string>().as("n")).executeTakeFirstOrThrow();
+        const total = exportOnly ? null : await dasar.select((eb) => eb.fn.countAll<string>().as("n")).executeTakeFirstOrThrow();
         const baris = await dasar
             .innerJoin("users as u", "u.id", "v.pemohon_id")
             .leftJoin("rooms as r", "r.id", "v.room_id")
@@ -110,7 +111,7 @@ export class ReservationQueryRepository extends BaseRepository {
             .limit(s.perPage)
             .offset((s.page - 1) * s.perPage)
             .execute();
-        return { baris: baris.map((b) => ({ ...b, jumlah_tanggal: b.jumlah_tanggal ?? "0" })), total: Number(total.n) };
+        return { baris: baris.map((b) => ({ ...b, jumlah_tanggal: b.jumlah_tanggal ?? "0" })), total: total === null ? baris.length : Number(total.n) };
     }
 
     /** Satu baris dalam scope pemanggil; di luar scope = tidak ada (SDD-AUTH-08). */
@@ -156,7 +157,7 @@ export class ReservationQueryRepository extends BaseRepository {
     async kelompok(ctx: AuthContext, akarId: number): Promise<readonly BarisKelompok[]> {
         return this.query(ctx)
             .selectFrom("reservations")
-            .select(["id", "nomor", "parent_id", "pemohon_id", "status", "waktu_mulai", "waktu_selesai"])
+            .select(["id", "nomor", "jenis", "parent_id", "pemohon_id", "status", "waktu_mulai", "waktu_selesai"])
             .where((eb) => eb.or([eb("id", "=", String(akarId)), eb("parent_id", "=", String(akarId))]))
             .orderBy("id")
             .execute();

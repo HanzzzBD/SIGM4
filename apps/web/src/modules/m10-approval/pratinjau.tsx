@@ -6,7 +6,8 @@
 import { useMutation, useQueries } from "@tanstack/react-query";
 import { FIELD_DSL, fieldBerlaku } from "@sigm4/schemas";
 import { useState } from "react";
-import { Isian, Kartu, Lencana, Peringatan, Tombol } from "../../shared/ui/primitives";
+import { Kartu, Lencana, Peringatan, Tombol } from "../../shared/ui/primitives";
+import { RequesterPicker } from "./EntityPickers";
 import { kueriPengguna, pratinjau } from "./api";
 import type { Fakta, HasilPratinjau, Role } from "./api";
 import { IsianNilai } from "./kondisi";
@@ -31,7 +32,7 @@ function Hasil({ h }: { readonly h: HasilPratinjau }) {
             <div>
                 <h3 className="text-base font-semibold text-text-heading">Seluruh aturan yang cocok</h3>
                 {h.cocok.length === 0 ? (
-                    <p className="text-sm text-text-secondary">Tidak ada — aturan bawaan berlaku (RE-06).</p>
+                    <p className="text-sm text-text-secondary">Tidak ada — aturan bawaan berlaku.</p>
                 ) : (
                     <ol className="list-decimal pl-6 text-base text-text-primary">
                         {h.cocok.map((c) => (
@@ -55,7 +56,7 @@ function Hasil({ h }: { readonly h: HasilPratinjau }) {
                                 {l.eskalasi_ke !== null && ` · eskalasi ke ${l.eskalasi_ke.nama ?? "pengguna tidak dikenal"}`}
                             </span>
                             <span className="flex flex-wrap gap-2">
-                                {l.fallback && <Lencana varian="info">Approver cadangan (RE-11)</Lencana>}
+                                {l.fallback && <Lencana varian="info">Approver cadangan</Lencana>}
                                 {l.akan_dilewati !== null && <Lencana varian="warning">{`Dilewati — ${l.akan_dilewati}`}</Lencana>}
                             </span>
                         </li>
@@ -101,9 +102,9 @@ export function PanelPratinjau({ model, idAturan, roles, onGalat }: { readonly m
     return (
         <Kartu judul="Pratinjau">
             <p className="text-sm text-text-secondary">Masukkan skenario pengajuan contoh. Isian kosong dianggap tidak diketahui.</p>
-            {nonaktif.length > 0 && <Peringatan varian="warning" judul="Approver sedang nonaktif">{`${nonaktif.join(", ")} — langkahnya akan dilewati saat pengajuan (RE-13). Aturan tetap dapat disimpan.`}</Peringatan>}
+            {nonaktif.length > 0 && <Peringatan varian="warning" judul="Approver sedang nonaktif">{`${nonaktif.join(", ")} — langkahnya akan dilewati saat pengajuan. Aturan tetap dapat disimpan.`}</Peringatan>}
             <div className="flex flex-col gap-3">
-                <Isian label="ID pengguna pemohon (opsional)" type="number" min={1} value={pemohon} bantuan="Diisi untuk melihat langkah yang dilewati karena konflik kepentingan atau approver nonaktif." onChange={(e) => setPemohon(e.target.value)} />
+                <RequesterPicker value={pemohon ? Number(pemohon) : null} onChange={id => setPemohon(id === null ? "" : String(id))} />
                 {fieldBerlaku(model.jenis)
                     .filter((f) => f !== "requester_id")
                     .map((f) => (

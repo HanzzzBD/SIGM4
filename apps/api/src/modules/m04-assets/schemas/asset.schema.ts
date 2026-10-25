@@ -1,7 +1,7 @@
 // Skema Zod M-04 (SDD-API-01, SDD-API-11, `m04-assets.md` §7).
 
 import { z } from "zod";
-import { MoveAssetsBodySchema, AssetMovementReceiptSchema } from "@sigm4/schemas";
+import { AssetExportFilterSchema, MoveAssetsBodySchema, AssetMovementReceiptSchema } from "@sigm4/schemas";
 export { MoveAssetsBodySchema };
 
 /** Katalog `asset_condition`/`asset_status` (0002, Phase 00) — tabel `assets` belum ada. */
@@ -157,49 +157,11 @@ export const RoomAssetsResponseSchema = z.object({
     }),
 });
 
-/**
- * `sort` (SDD-API §4.5 allow-list): awalan `-` = menurun. Sama dengan
- * `AssetSortField` di repository — diulang di sini karena Zod (validasi
- * masukan) dan tipe TypeScript (repository) adalah dua lapisan berbeda yang
- * SENGAJA memvalidasi hal yang sama (SDD-API-01).
- */
-const AssetSortSchema = z
-    .enum(["created_at", "-created_at", "nama", "-nama", "kode_barang", "-kode_barang", "tahun_perolehan", "-tahun_perolehan"])
-    .default("-created_at");
-
-/** Query boolean `filter[dapat_dipinjam]` — pola `consent_wali` (`user-import.schema.ts`). */
-const FilterBooleanSchema = z
-    .preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : v), z.enum(["true", "false"]).or(z.boolean()))
-    .transform((v) => v === true || v === "true")
-    .optional();
-
-/**
- * `GET /assets` (FR-04.2 langkah 2-4, SDD-API §4.5). `q` mencari kode aset,
- * nama, merek, atau nomor seri (langkah 3); `filter[...]` menyaring kategori,
- * lokasi, kondisi, status, tahun perolehan, dan kelayakan pinjam (langkah 4).
- */
-export const ListAssetsQuerySchema = z.object({
-    import_job_id: z.coerce.number().int().positive().optional(),
+/** FR-04.2/PR-02-47: katalog dan ekspor memakai kontrak filter yang sama. */
+export const ListAssetsQuerySchema = AssetExportFilterSchema.extend({
     page: z.coerce.number().int().positive().default(1),
     per_page: z.coerce.number().int().positive().max(100).default(25),
-    q: z.string().trim().min(1).max(150).optional(),
-    sort: AssetSortSchema,
-    kategori_id: z.coerce.number().int().positive().optional(),
-    lokasi_id: z.coerce.number().int().positive().optional(),
-    kondisi: AssetConditionSchema.optional(),
-    status: AssetStatusSchema.optional(),
-    tahun_perolehan: z.coerce.number().int().min(1900).max(2100).optional(),
-    dapat_dipinjam: FilterBooleanSchema,
-    qr_terpasang: FilterBooleanSchema,
-});
-export const AssetExportQuerySchema = ListAssetsQuerySchema.omit({ page: true, per_page: true }).extend({ format: z.enum(["xlsx", "pdf"]) }).strict();
-export const AssetExportHttpQuerySchema = z.object({
-    format: AssetExportQuerySchema.shape.format, q: AssetExportQuerySchema.shape.q, sort: AssetExportQuerySchema.shape.sort,
-    "filter[import_job_id]": AssetExportQuerySchema.shape.import_job_id, "filter[kategori_id]": AssetExportQuerySchema.shape.kategori_id,
-    "filter[lokasi_id]": AssetExportQuerySchema.shape.lokasi_id, "filter[kondisi]": AssetExportQuerySchema.shape.kondisi,
-    "filter[status]": AssetExportQuerySchema.shape.status, "filter[tahun_perolehan]": AssetExportQuerySchema.shape.tahun_perolehan,
-    "filter[dapat_dipinjam]": AssetExportQuerySchema.shape.dapat_dipinjam, "filter[qr_terpasang]": AssetExportQuerySchema.shape.qr_terpasang,
-}).strict();
+}).strip();
 
 /**
  * Item katalog (FR-04.2). `sumber_perolehan`/`nilai_perolehan` OPSIONAL —

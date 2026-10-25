@@ -154,14 +154,44 @@ sequenceDiagram
 
 ## 7. API Endpoints
 
+### Keputusan implementasi — 14 Oktober 2026
+
+Pengguna mengonfirmasi melalui AskUserQuestion: jempol turun hanya penilaian;
+Laporkan masalah memerlukan persetujuan eksplisit berbagi sesi kepada Admin.
+Isi sesi yang tidak dilaporkan tidak tersedia pada Monitoring. Kuota awal
+50 pesan per akun per hari, reset pukul 00.00 WIB, diubah melalui M-20.
+Penghapusan oleh pengguna atau retensi 90 hari menghapus isi, langkah tool
+dan hubungan akun secara permanen; hanya statistik agregat anonim dipertahankan.
+Arsip tidak menyediakan jalur membuka kembali isi yang sudah dihapus.
+
+`CHAT_ENABLED=false` mengizinkan instalasi tanpa kunci. Bila true,
+`GEMINI_API_KEY` wajib pada startup. Pengalih M-20 dapat menonaktifkan layanan
+di dalam batas instalasi tersebut. HTTP 429 penyedia tidak diulang dalam giliran
+yang sama; pengguna menerima waktu coba lagi. Retry koneksi/5xx maksimal dua kali.
+Pemberitahuan privasi tier gratis tampil sebelum pengiriman pertama (DP-AI-04).
+
+Percakapan streaming menggunakan POST SSE dengan UUID pesan stabil, replay
+hasil tersimpan, dan satu giliran aktif per sesi. Riwayat berhalaman; pengguna
+yang mengubah permission tidak mengirim ulang langkah dari scope lama ke model.
+Tautan jawaban berasal dari hasil tool yang berizin; tautan buatan model tidak
+menjadi tautan aktif. Monitoring menyajikan statistik kategori tool, tanpa
+teks pertanyaan pribadi; daftar kasus gagal pribadi hanya dari sesi dilaporkan.
+
 ### Endpoint
 
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
-| POST | `/chat/sessions` | Bearer | Mulai sesi chatbot |
-| POST | `/chat/messages` | Bearer | Kirim pesan ke chatbot |
-| GET | `/chat/sessions` | Bearer | Riwayat percakapan sendiri |
-| POST | `/chat/messages/{id}/feedback` | Bearer | Beri umpan balik jawaban |
+| POST | `/chat/sessions` | `chat.use` | Mulai sesi chatbot |
+| POST | `/chat/messages` | `chat.use` | Kirim pesan ke chatbot |
+| GET | `/chat/sessions` | `chat.use` | Riwayat percakapan sendiri |
+| POST | `/chat/messages/{id}/feedback` | `chat.use` | Beri umpan balik jawaban |
+| GET | `/chat/sessions/{id}` | `chat.use` | Riwayat sesi sendiri berhalaman |
+| DELETE | `/chat/sessions/{id}` | `chat.use` | Hapus isi sesi sendiri; statistik anonim tetap |
+| POST | `/chat/sessions/{id}/report` | `chat.use` | Laporkan masalah dengan izin berbagi sesi |
+| GET | `/chat/monitor` | `chat.monitor` | Statistik anonim dan sesi dilaporkan |
+| GET | `/chat/reports/{id}` | `chat.monitor` | Isi sesi hanya setelah izin eksplisit pengguna; khusus Administrator (R-01) — Pimpinan hanya metrik agregat `/chat/monitor` |
+| POST | `/chat/reports/{id}/access` | `setting.manage` | Admin R-01 membatasi/memulihkan akses chatbot pemilik sesi dilaporkan; alasan wajib |
+| GET | `/chat/usage` | `chat.use` | Kuota/token akun sendiri dan waktu reset WIB |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
@@ -174,6 +204,9 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 |---|---|---|---|
 | **chat_sessions** | Sesi percakapan chatbot | id, user_id, judul, dimulai_pada, terakhir_aktif | ± 5.000 |
 | **chat_messages** | Pesan dalam percakapan | id, session_id, peran (`USER`/`ASSISTANT`), isi, tools_dipanggil (JSON), token_input, token_output, umpan_balik, waktu | ± 25.000 |
+| **chat_usage_daily** | Statistik anonim harian WIB | tanggal, volume, kegagalan, feedback, token, latensi, kategori tool | Tanpa isi atau pengenal akun/sesi |
+| **chat_evaluations** | Hasil evaluasi | model, prompt_hash, mode LIVE/CONTRACT, accuracy, critical_failures, rubrik kasus | CONTRACT bukan bukti SC-10 |
+| **chat_restrictions** | Pembatasan akses chatbot | user_id, blocked, updated_at, updated_by | Admin R-01; tanpa isi percakapan |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
 
@@ -203,6 +236,14 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | Aksi | Keterangan |
 |---|---|
 | `CHAT_MESSAGE_SENT` | Metadata percakapan (tanpa merekam ulang isi di log audit) |
+| `CHAT_SESSION_CREATED` | Sesi pribadi baru; metadata saja |
+| `CHAT_MESSAGE_COMPLETED` | Hasil, nama tool dan token; tanpa isi/argumen |
+| `CHAT_FEEDBACK_UPDATED` | Perubahan penilaian jawaban sendiri |
+| `CHAT_SESSION_REPORTED` | Izin eksplisit pengguna berbagi sesi bermasalah |
+| `CHAT_SESSION_DELETED` | Penghapusan isi sesi sendiri |
+| `CHAT_SESSION_ARCHIVED` | Retensi menghapus isi/kaitan akun; statistik anonim tetap |
+| `CHAT_EVALUATION_COMPLETED` | Skor/rubrik LIVE atau CONTRACT tanpa percakapan privat |
+| `CHAT_ACCESS_RESTRICTED` | Admin membatasi/memulihkan akses chatbot; tanpa isi pribadi |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
 

@@ -23,7 +23,7 @@ import type { Database } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
 import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
 import { publish } from "../../../shared/events/index.js";
-import { detectCsvDelimiter } from "../../../shared/import/index.js";
+import { detectCsvDelimiter, importReportView } from "../../../shared/import/index.js";
 import type { Logger } from "../../../shared/observability/index.js";
 import { createUserImportRepository } from "../repositories/user-import.repository.js";
 import type { ImportFailure, ImportJobRow } from "../repositories/user-import.repository.js";
@@ -220,8 +220,10 @@ export class UserImportService {
     async get(ctx: AuthContext, id: number): Promise<ImportJobRow> {
         const job = await createUserImportRepository(this.db).findById(ctx, id);
         if (job === undefined) throw new NotFoundError("Pekerjaan impor tidak ditemukan.");
-        return job;
+        return this.report(job);
     }
+
+    report(job: ImportJobRow) { return importReportView(job, this.clock.now()); }
 
     /**
      * Dipanggil worker (JOB-01). Aman dijalankan ulang: pekerjaan yang sudah

@@ -18,7 +18,7 @@ export interface AdminTargetRow {
     readonly id: string;
     readonly nama: string;
     readonly email: string;
-    readonly nip_nis: string;
+    readonly nip_nis: string | null;
     readonly status: "AKTIF" | "NONAKTIF";
     readonly role_kode: string;
     readonly totp_enabled_at: Date | null;

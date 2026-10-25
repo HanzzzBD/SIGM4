@@ -12,7 +12,7 @@ const Room = z.object({ id: z.string(), nama: z.string(), kode: z.string(), stat
 const Tree = z.object({ data: z.array(z.object({ nama: z.string(), areas: z.array(z.object({ nama: z.string(), rooms: z.array(Room) })) })) });
 const Users = z.object({ data: z.array(z.object({ id: z.string(), nama: z.string() })), meta: Pagination });
 export const movementAssetsQuery = (q: string, page: number, enabled: boolean) => queryOptions({ queryKey: ["assets", "movement", q, page], enabled,
-    queryFn: async () => Catalog.parse((await api.get("/assets", { params: { q, page, per_page: 25 } })).data) });
+    queryFn: async () => Catalog.parse((await api.get("/assets", { params: { ...(q.trim() ? { q: q.trim() } : {}), page, per_page: 25 } })).data) });
 export const movementRoomsQuery = (enabled: boolean) => queryOptions({ queryKey: ["locations", "movement"], enabled,
     queryFn: async () => Tree.parse((await api.get("/locations/tree")).data).data.flatMap((building) => building.areas.flatMap((area) => area.rooms.filter((room) => room.status === "AKTIF").map((room) => ({ nilai: room.id, label: `${building.nama} / ${area.nama} / ${room.nama} (${room.kode})` })))) });
 export const movementUsersQuery = (page: number, enabled: boolean) => queryOptions({ queryKey: ["users", "movement", page], enabled,

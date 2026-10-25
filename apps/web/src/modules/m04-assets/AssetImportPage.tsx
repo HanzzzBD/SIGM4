@@ -6,6 +6,7 @@ import { KeadaanGalat, KeadaanMemuat } from "../../shared/states";
 import { Isian, Peringatan, Tombol } from "../../shared/ui/primitives";
 import { jalurDrilldown } from "../../shared/navigasi";
 import { AssetImportInputError, downloadTemplate, importJobKey, importJobQuery, importReportCsv, runningImport, saveDownload, uploadAssets } from "./api";
+import { ImportReportRetention, useImportReportExpired } from "../../shared/ui/import-report-retention";
 
 const STATUS = { MENUNGGU: "Menunggu pemrosesan", BERJALAN: "Sedang diproses", SELESAI: "Selesai", GAGAL: "Pemrosesan terhenti" } as const;
 export default function AssetImportPage({ jobId, onJob }: { readonly jobId: number | null; readonly onJob: (id: number) => void }) {
@@ -15,6 +16,7 @@ export default function AssetImportPage({ jobId, onJob }: { readonly jobId: numb
     const upload = useMutation({ mutationFn: uploadAssets, onSuccess: (result) => { queryClient.setQueryData(importJobKey(Number(result.data.id)), result.data); onJob(Number(result.data.id)); } });
     const template = useMutation({ mutationFn: downloadTemplate });
     const job = query.data;
+    const expired = useImportReportExpired(job?.report_expires_at, job?.report_expired);
     const running = runningImport(job);
     useEffect(() => {
         if (job !== undefined && !runningImport(job)) void queryClient.invalidateQueries({ queryKey: ["assets"] });
@@ -25,7 +27,7 @@ export default function AssetImportPage({ jobId, onJob }: { readonly jobId: numb
     }
     const catalog = job === undefined ? null : jalurDrilldown(`P-15?impor=${job.id}`);
     function download(correction: boolean): void {
-        if (job === undefined) return;
+        if (job === undefined || expired) return;
         saveDownload(new Blob([importReportCsv(job, correction)], { type: "text/csv;charset=utf-8" }), `${correction ? "koreksi" : "laporan"}_impor_aset_${job.id}.csv`);
     }
     return (
@@ -49,7 +51,8 @@ export default function AssetImportPage({ jobId, onJob }: { readonly jobId: numb
             {job !== undefined && (
                 <section aria-labelledby="report-heading" className="flex flex-col gap-4 rounded-md border border-border-subtle bg-surface-default p-4">
                     <h2 id="report-heading" className="text-lg font-semibold text-text-primary">Laporan impor</h2>
-                    <p className="break-all text-sm text-text-secondary">{job.nama_berkas}</p>
+                    <p className="break-all text-sm text-text-secondary">{expired ? `impor-${job.id}` : job.nama_berkas}</p>
+                    <ImportReportRetention expired={expired} expires={job.report_expires_at} />
                     <p role="status" aria-live="polite" className="text-base text-text-primary">{STATUS[job.status]} — {job.terproses} dari {job.total} baris diproses.</p>
                     {running && <progress aria-label="Progres impor aset" max={job.total} value={job.terproses} className="h-2 w-full accent-teal-600" />}
                     <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -58,9 +61,9 @@ export default function AssetImportPage({ jobId, onJob }: { readonly jobId: numb
                         <div><dt className="text-sm text-text-secondary">Unit dibuat</dt><dd className="text-xl font-semibold text-text-primary">{job.unit_dibuat}</dd></div>
                     </dl>
                     {upload.data?.meta?.idempotent_replay === true && <Peringatan varian="info" judul="Berkas sudah diterima">Hasil pekerjaan sebelumnya ditampilkan. Aset yang sudah dibuat tidak diproses ulang.</Peringatan>}
-                    {job.pesan_galat !== null && <Peringatan varian="error" judul="Pemrosesan terhenti">{job.pesan_galat}</Peringatan>}
-                    {job.laporan_gagal.length > 0 && <div className="overflow-x-auto"><table className="w-full text-left text-sm text-text-primary"><caption className="mb-2 text-left font-medium">Baris yang perlu diperbaiki</caption><thead><tr><th scope="col" className="p-2">Baris</th><th scope="col" className="p-2">Nama barang</th><th scope="col" className="p-2">Alasan gagal</th></tr></thead><tbody>{job.laporan_gagal.map((failure) => <tr key={failure.baris} className="border-t border-border-subtle"><td className="p-2">{failure.baris}</td><td className="p-2">{failure.nama_barang ?? "—"}</td><td className="p-2">{failure.pesan}</td></tr>)}</tbody></table></div>}
-                    {!running && <div className="flex flex-wrap gap-2"><Tombol varian="secondary" onClick={() => download(false)}>Unduh laporan</Tombol>{job.gagal > 0 && <Tombol varian="secondary" onClick={() => download(true)}>Unduh berkas koreksi</Tombol>}{catalog !== null && <a href={catalog} className="inline-flex min-h-control-md items-center rounded-md px-4 text-text-link">Lihat aset hasil impor</a>}</div>}
+                    {!expired && job.pesan_galat !== null && <Peringatan varian="error" judul="Pemrosesan terhenti">{job.pesan_galat}</Peringatan>}
+                    {!expired && job.laporan_gagal.length > 0 && <div className="overflow-x-auto"><table className="w-full text-left text-sm text-text-primary"><caption className="mb-2 text-left font-medium">Baris yang perlu diperbaiki</caption><thead><tr><th scope="col" className="p-2">Baris</th><th scope="col" className="p-2">Nama barang</th><th scope="col" className="p-2">Alasan gagal</th></tr></thead><tbody>{job.laporan_gagal.map((failure) => <tr key={failure.baris} className="border-t border-border-subtle"><td className="p-2">{failure.baris}</td><td className="p-2">{failure.nama_barang ?? "—"}</td><td className="p-2">{failure.pesan}</td></tr>)}</tbody></table></div>}
+                    {!running && <div className="flex flex-wrap gap-2">{!expired && <Tombol varian="secondary" onClick={() => download(false)}>Unduh laporan</Tombol>}{!expired && job.gagal > 0 && <Tombol varian="secondary" onClick={() => download(true)}>Unduh berkas koreksi</Tombol>}{catalog !== null && <a href={catalog} className="inline-flex min-h-control-md items-center rounded-md px-4 text-text-link">Lihat aset hasil impor</a>}</div>}
                 </section>
             )}
         </div>

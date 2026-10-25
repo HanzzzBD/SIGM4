@@ -33,8 +33,8 @@ const JAM = 3_600_000;
 
 /** Permission bawaan role (SDD-03 §matriks) — cukup untuk kartu Phase 02. */
 const PERMS: Record<string, readonly string[]> = {
-    "R-01": ["dashboard.view", "user.view", "user.reset_password", "activity_log.view", "approval_rule.view", "setting.view", "setting.manage", "asset.view", "approval.decide"],
-    "R-02": ["dashboard.view", "asset.view", "asset.qr_print", "asset.view_financial", "approval.decide", "approval.view"],
+    "R-01": ["material.view", "dashboard.view", "user.view", "user.reset_password", "activity_log.view", "approval_rule.view", "setting.view", "setting.manage", "asset.view", "approval.decide"],
+    "R-02": ["material.view", "dashboard.view", "asset.view", "asset.qr_print", "asset.view_financial", "approval.decide", "approval.view"],
     "R-03": ["dashboard.view", "asset.view", "asset.view_financial", "approval.decide", "activity_log.view"],
     "R-04": ["dashboard.view", "asset.view"],
     "R-05": ["dashboard.view", "asset.view", "approval.view"],

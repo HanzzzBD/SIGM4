@@ -121,7 +121,7 @@ CREATE INDEX stored_files_pending_scan
 
 Langkah 3 dan 5 sengaja terpisah: berkas dapat diunggah lebih dulu (mis. antrean unggah mobile, `MOB-OFF-02`) lalu ditautkan ketika transaksi bisnisnya siap.
 
-Urutan sebaliknya sah untuk **foto laporan kerusakan** (`FR-11.1 A2`, `MOB-OFF-02`/`MOB-OFF-04`; keputusan 20b log phase-03): `POST /damage-reports` menautkan pesanan `DAMAGE_PHOTO` hasil langkah 1 — milik pelapor, belum dimiliki, tidak `INFECTED` — sebelum langkah 3, sehingga tiket tercatat walau unggahannya masih di antrean perangkat. Foto yang belum dikonfirmasi = "foto tertunda" (`checksum` kosong); langkah 3 tetap berjalan sesudahnya tanpa syarat pemilik. Jenis lain tetap menuntut berkas terkonfirmasi saat ditautkan.
+Urutan sebaliknya sah untuk **foto laporan kerusakan** (`FR-11.1 A2`, `MOB-OFF-02`/`MOB-OFF-04`; keputusan 20b log phase-03): `POST /damage-reports` menautkan pesanan `DAMAGE_PHOTO` hasil langkah 1 — milik pelapor, belum dimiliki, tidak `INFECTED` — sebelum langkah 3, sehingga tiket tercatat walau unggahannya masih di antrean perangkat. Foto yang belum dikonfirmasi = "foto tertunda" (`checksum` kosong); langkah 3 tetap berjalan sesudahnya tanpa syarat pemilik. Foto opname STOCKTAKE_PHOTO mengikuti urutan pesanan ditautkan sebelum unggah yang sama (keputusan M-13, 14 Oktober 2026); foto belum siap menghalangi submit, hanya CLEAN ditampilkan. Jenis lain tetap menuntut berkas terkonfirmasi saat ditautkan.
 
 ### 4.3 Kebijakan per jenis berkas
 
@@ -228,3 +228,58 @@ CLEAN terkonfirmasi diterbitkan melalui urlUnduhBerkas (medium dan thumb, fallba
 900 detik). Metadata publik id/file_id/urutan/is_primary/status tidak membawa identitas
 pengunggah atau object key tersendiri. Respons no-store, paginasi page/per_page <=100,
 primary dahulu lalu urutan/id. Tidak ada endpoint penautan/unggah foto pada PR ini.
+
+### Jenis berkas pengadaan (PR-03-17/19)
+
+Kebijakan tiga owner_type pengadaan mengikuti kontrak M-06 dan FR-14.3 pada PRD
+M-14 §7. Penautan berlangsung setelah confirm: lampiran boleh PENDING saat
+pengajuan; dokumen/foto penerimaan wajib CLEAN. Pemilik registri dipertahankan
+pada penerimaan asal, sedangkan asset_documents dan asset_document_links menjadi
+jalur dokumen M-04/M-06 untuk setiap unit hasil penerimaan (`BR-065`).
+
+### Bukti penerimaan langsung Bahan — PR-05-18
+
+MATERIAL_RECEIPT_DOCUMENT memerlukan material.receive untuk presign, maksimal
+10 MB PDF/JPG/PNG/DOCX/XLSX. Confirm checksum dan worker pemindaian tetap M-06.
+Penerimaan hanya mengklaim berkas milik actor, terkonfirmasi CLEAN dan belum dipakai
+receipt lain; header/file link/ledger/audit commit bersama. Pembaca material.view
+membuka bukti melalui history terpaginasikan, URL CLEAN lewat urlUnduhBerkas M-06.
+Bukti pengadaan BAHAN memakai PROCUREMENT_RECEIPT_DOCUMENT pada receipt M-14,
+tidak disalin sebagai dokumen Aset ketika tidak ada unit Aset.
+
+
+### Ekspor privat M-16 — PR-06-08
+
+REPORT_EXPORT adalah keluaran renderer sistem terpercaya (PDF1.7/XLSX) yang
+terdaftar CLEAN/checksum pada stored_files. Client tidak dapat memesan owner_type
+ini lewat presign. Object key acak per pemohon/job, storage privat; registrasi
+file, status SIAP, audit dan ExportReady commit bersama setelah PUT. File berlaku
+24jam sejak siap; URL GET attachment paling lama300detik atau sisa umur file.
+Revalidasi SQL izin/role/version/scope dan membership own/assigned/restricted
+mendahului penandatanganan; Administrator tidak mengambil file pemohon lain.
+Cleanup15menit menghapus objek expired/terminal, melepas owner_id registri agar
+lifecycle yatim M-06 menghapus metadata, dan menandai object_removed_at untuk
+retry idempoten. Referensi file_id pada job dilepas sebelum GC; audit tidak dihapus.
+Job menyimpan key sejak awal sehingga objek dari worker terputus dapat dibersihkan.
+
+### Ekspor katalog M-04 — PR-02-47
+
+Kontrak [M-04 FR-04.2 A3](../PRD/02-modules/m04-assets.md) memakai job/file dan
+worker M-16 yang sama dengan jenis assets. M-04 menyediakan pembacaan scoped
+dan pemilihan kolom melalui index publik; M-16 merender/menyimpan keluaran.
+Route metadata milik M-04 disajikan adaptor infrastruktur sebelum /assets/:id.
+GET pengajuan memerlukan Idempotency-Key dan no-store; tidak boleh diprefetch.
+Filter dan metadata JSON tidak menyimpan isi aset atau file publik. Status/list/
+download khusus katalog hanya menerima jenis assets dan asset.export; route
+report.export tidak menjadi syarat tersembunyi bagi katalog. Query hash scope
+memakai predicate keanggotaan yang sama dengan ekspor. Retensi/cleanup/registrasi
+CLEAN mengikuti REPORT_EXPORT di atas, tanpa owner_type/migration baru.
+### Retensi laporan galat impor — PR-05-26
+
+Laporan impor pengguna/aset saat ini disimpan sebagai JSON dalam job, bukan objek
+unduh tersimpan pada M-06. Retensi 30×24 jam berlaku pada JSON galat, pesan galat,
+nama asli dan byte berkas tersisa sesudah job terminal. personal-data-retention
+membersihkannya melalui pemilik modul dan menandai report_purged_at, tanpa
+menghapus job/hitungan/audit/aset hasil impor. API dan UI menutup rincian pada
+tenggat walau cleanup tertunda. Unduhan CSV yang dirakit klien tidak menciptakan
+objek bucket; salinan yang telah diunduh berada di luar lifecycle server.

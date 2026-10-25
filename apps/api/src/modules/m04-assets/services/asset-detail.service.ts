@@ -11,6 +11,7 @@ import { urlQrAset } from "../../../shared/qr/index.js";
 import { SUMBER_M04, createAssetDetailRepository } from "../repositories/asset-detail.repository.js";
 import type { RegistriSumberLinimasa } from "./timeline-registry.js";
 import { sumberLinimasaAset } from "./timeline-registry.js";
+import { procurementSource } from "../../m14-procurement/index.js";
 
 const TIDAK_DITEMUKAN = "Aset tidak ditemukan.";
 const iso = (v: unknown): string => (v instanceof Date ? v : new Date(String(v))).toISOString();
@@ -30,6 +31,7 @@ export class AssetDetailService {
             uuid: String(b["uuid"]),
             kode_barang: String(b["kode_barang"]),
             nama: String(b["nama"]),
+            ...(ctx.can("procurement.view")?{pengadaan:b["procurement_id"]==null?null:await procurementSource(this.db,ctx,Number(b["procurement_id"]))}:{}),
             kategori: { id: String(b["category_id"]), nama: String(b["kategori_nama"]) },
             merek: (b["merek"] as string | null) ?? null,
             model: (b["model"] as string | null) ?? null,

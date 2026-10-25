@@ -344,10 +344,8 @@ export class AssetService {
      * "Teknisi (khusus kondisi pasca-perbaikan)"; tabel `§7` menyebut `asset.update`,
      * dianggap keliru — dikonfirmasi pemilik produk).
      *
-     * **TERBUKA (scope `ASSIGNED`):** `work_orders` (M-12 Maintenance, Phase 04)
-     * belum ada, sehingga Teknisi TIDAK dibatasi ke aset yang ditugaskan padanya —
-     * scope ini berlaku seperti `all` untuk sementara (dikonfirmasi pemilik produk).
-     * Ditutup begitu `work_orders` ada, mengikuti pola `SDD-AUTH-03 §4.2`.
+     * PR-04-05: scope `ASSIGNED` memerlukan work order aktif atas aset dengan
+     * teknisi_id milik pemanggil; penugasan pengguna lain tidak memberi akses.
      *
      * **TERBUKA (efek lintas modul):** A1 (membatalkan reservasi mendatang +
      * notifikasi pemohon) dan A2 (notifikasi Pimpinan Sekolah) TIDAK diterbitkan
@@ -364,8 +362,13 @@ export class AssetService {
      * Inti `ubahKondisi` di transaksi PEMANGGIL — dipakai juga verifikasi laporan kerusakan
      * (FR-11.2 langkah 4 / A1, PR-03-15): aturan, riwayat ber-referensi, dan log sama.
      */
-    async ubahKondisiDalam(scope: TransactionScope, id: number, input: UbahKondisiInput): Promise<AssetRow> {
+    async ubahKondisiDalam(scope: TransactionScope, id: number, input: UbahKondisiInput, izinSumber: "asset.update_condition" | "audit.approve" = "asset.update_condition"): Promise<AssetRow> {
         const ctx = scope.ctx;
+        if (izinSumber === "audit.approve" && !ctx.can(izinSumber)) throw new ForbiddenError();
+        if (ctx.scopeOf(izinSumber) === "assigned") {
+            const assignment = await scope.tx.selectFrom("work_orders").select("id").where("asset_id", "=", String(id)).where("teknisi_id", "=", String(ctx.userId)).where("status", "in", ["DITUGASKAN", "DIKERJAKAN", "TERTUNDA", "MENUNGGU_VERIFIKASI"]).executeTakeFirst();
+            if (!assignment) throw new ForbiddenError();
+        }
         if (input.kondisi === "HILANG" && (input.referensiJenis === null || input.referensiId === null)) {
             throw new DomainError(
                 "VALIDATION_ERROR",
@@ -375,10 +378,11 @@ export class AssetService {
         }
 
         const repo = createAssetRepository(scope.tx);
-        const existing = await repo.findById(scope.ctx, id);
+        const existing = await repo.kunciUntukUbah(scope.ctx, id);
         if (existing === undefined) {
             throw new NotFoundError("Aset tidak ditemukan.");
         }
+        if (existing.dihapuskan) throw new DomainError("VALIDATION_ERROR", "Aset yang dihapuskan tidak dapat diubah kondisinya.");
 
         const kondisiLama = existing.kondisi;
         // BR-006/FR-04.3 A1/A2: kondisi memburuk -> status turunan Tidak Tersedia.

@@ -25,6 +25,7 @@ export interface LangkahLinimasa {
     /** Langkah fallback RE-11 (di luar `rule_snapshot`). */
     readonly fallback: boolean;
     readonly catatan: string | null;
+    readonly rincian_keputusan?:Readonly<Record<string,unknown>>;
     readonly diputuskan_oleh: Nama | null;
     /** RE-12: approver asli bila diputus penerima delegasi. */
     readonly atas_nama: Nama | null;
@@ -61,6 +62,14 @@ export class HistoryService {
         private readonly approval: ApprovalService,
         private readonly calendar: BusinessCalendarService = new BusinessCalendarService(),
     ) {}
+
+    /** Public domain-context guard; shares the inbox/history resolver and caller transaction. */
+    async mayReadContext(scope: TransactionScope, instanceId: number): Promise<boolean> {
+        if (!scope.ctx.can("approval.view") && !scope.ctx.can("approval.decide")) return false;
+        const repo = createHistoryRepository(scope.tx), inst = await repo.instance(scope.ctx, instanceId);
+        if (!inst) return false;
+        return scope.ctx.can("approval.view") && scope.ctx.scopeOf("approval.view") === "all" || this.boleh(scope, inst, await repo.langkah(scope.ctx, instanceId));
+    }
 
     /** `GET /approvals/{id}/history`. */
     async linimasa(ctx: AuthContext, instanceId: number): Promise<Linimasa> {
@@ -124,7 +133,7 @@ export class HistoryService {
                     user: l.userId === null ? null : { id: l.userId, nama: l.targetUserNama },
                 },
                 fallback: !dariAturan.has(l.urutan),
-                catatan: l.catatan,
+                catatan: l.catatan,...(l.rincian===null||l.rincian===undefined?{}:{rincian_keputusan:l.rincian as Readonly<Record<string,unknown>>}),
                 diputuskan_oleh: l.diputuskanOleh,
                 atas_nama: l.atasNama,
                 diputuskan_pada: l.diputuskanPada,

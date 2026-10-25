@@ -15,7 +15,6 @@ export {
     listCategoriesRoute,
     updateCategoryRoute,
     listAssetsRoute,
-    exportAssetsRoute,
     listRoomAssetsRoute,
     moveAssetsRoute,
     updateAssetConditionRoute,
@@ -44,3 +43,8 @@ export { AssetCatalogItemSchema } from "./schemas/asset.schema.js";
 export { asetTidakTerdaftar } from "./services/aset-terdaftar.js";
 export type { UbahKondisiInput } from "./services/asset.service.js";
 export { AssetService } from "./services/asset.service.js";
+export { applyStocktakeAdjustment } from "./services/stocktake-adjustment.js";
+export { executeAssetDisposal, reinstateDisposedAsset } from "./services/disposal-adjustment.js";
+export { chatAssets } from "./repositories/chat.repository.js";
+export { assetExportAccess, assetExportDataset, assetExportScopeHash } from "./services/export-source.js";
+export { purgeAssetImportReports } from "./services/import-report-retention.js";

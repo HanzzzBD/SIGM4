@@ -6,6 +6,7 @@
 import type { AuthContext } from "../../../shared/auth/index.js";
 import { BaseRepository, defineRepository } from "../../../shared/db/index.js";
 import type { QueryExecutor } from "../../../shared/db/index.js";
+import {sql} from "kysely";
 
 export interface ProfilRow {
     readonly id: string;
@@ -14,6 +15,8 @@ export interface ProfilRow {
     readonly telepon: string | null;
     readonly role_kode: string;
     readonly must_change_password: boolean;
+    readonly two_factor_enabled?: boolean;
+    readonly remaining_backup_codes?: number;
     /** `stored_files(id)` (FR-01.4, PR-03-25); keadaan berkasnya milik M-06. */
     readonly foto_file_id: string | null;
 }
@@ -23,7 +26,7 @@ export interface KredensialRow {
     readonly password_hash: string;
     readonly nama: string;
     readonly email: string;
-    readonly nip_nis: string;
+    readonly nip_nis: string | null;
 }
 
 export interface PembaruanProfil {
@@ -43,6 +46,7 @@ export class ProfileRepository extends BaseRepository {
             .selectFrom("users as u")
             .innerJoin("roles as r", "r.id", "u.role_id")
             .select(["u.id", "u.nama", "u.email", "u.telepon", "r.kode as role_kode", "u.must_change_password", "u.foto_file_id"])
+            .select([sql<boolean>`u.totp_enabled_at is not null`.as("two_factor_enabled"),sql<number>`(select count(*)::int from totp_backup_codes b where b.user_id=u.id and b.used_at is null)`.as("remaining_backup_codes")])
             .where("u.id", "=", String(ctx.userId))
             .executeTakeFirst();
     }

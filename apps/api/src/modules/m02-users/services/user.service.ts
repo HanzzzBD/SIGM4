@@ -179,9 +179,10 @@ export class UserService {
             ctx,
             async (scope) => {
                 const repo = createUserRepository(scope.tx);
-                const before = await repo.findById(scope.ctx, id);
+                const before = await repo.lockForChange(scope.ctx, id);
                 if (before === undefined)
                     throw new NotFoundError("Pengguna tidak ditemukan.");
+                if (before.pseudonymized_at) throw new DomainError("VALIDATION_ERROR", "Akun yang dipseudonimkan tidak dapat disunting.");
 
                 if (
                     before.email.toLowerCase() !== input.email.toLowerCase() &&
@@ -275,9 +276,10 @@ export class UserService {
             ctx,
             async (scope) => {
                 const repo = createUserRepository(scope.tx);
-                const before = await repo.findById(scope.ctx, id);
+                const before = await repo.lockForChange(scope.ctx, id);
                 if (before === undefined)
                     throw new NotFoundError("Pengguna tidak ditemukan.");
+                if (before.pseudonymized_at) throw new DomainError("VALIDATION_ERROR", "Akun yang dipseudonimkan tidak dapat diaktifkan atau disunting.");
 
                 // SL-06, DP-02: mengaktifkan kembali akun siswa menuntut penanda persetujuan wali.
                 if (input.status === "AKTIF" && before.status === "NONAKTIF") {
@@ -305,20 +307,20 @@ export class UserService {
                         }
                     } else if (rolKode === KODE_ROLE_SISWA) {
                         // SL-04: siswa berkewajiban tidak dapat dinonaktifkan; daftarnya
-                        // dikembalikan kepada Administrator. Registri kosong sampai
-                        // PR-05-09 (SDD-05 §4.7d) — kosong BUKAN jaminan tanpa kewajiban.
+                        // dikembalikan kepada Administrator; M-09 memasang pemeriksa
+                        // pada composition root API dan worker (PR-05-09).
                         const kewajiban = await this.obligations.cek(scope, id);
                         if (kewajiban.length > 0) {
                             throw new DomainError(
                                 "VALIDATION_ERROR",
-                                "Penonaktifan ditolak — siswa masih memiliki kewajiban.",
+                                `Penonaktifan ditolak — ${kewajiban.map(k => k.keterangan).join(" ")}`,
                                 { rule: "SL-04", kewajiban },
                             );
                         }
                     }
                 }
 
-                const after = await repo.updateStatus(scope.ctx, id, input.status);
+                const after = await repo.updateStatus(scope.ctx, id, input.status, this.clock.now());
 
                 await this.audit.write(scope, {
                     modul: MODUL,

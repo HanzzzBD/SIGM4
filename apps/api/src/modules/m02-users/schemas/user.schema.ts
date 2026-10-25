@@ -66,6 +66,7 @@ export const UpdateUserStatusBodySchema = z
  * (parser `simple` Express 5 tidak menguraikan tanda kurung menjadi objek).
  */
 export const ListUsersQuerySchema = z.object({
+    q: z.string().trim().min(1).max(200).optional(),
     page: z.coerce.number().int().positive().default(1),
     per_page: z.coerce.number().int().positive().max(100).default(25),
     status: UserStatusSchema.optional(),
@@ -77,7 +78,9 @@ const UserSchema = z.object({
     id: z.string(),
     nama: z.string(),
     email: z.string(),
-    nip_nis: z.string(),
+    nip_nis: z.string().nullable(),
+    deactivated_at: z.string().nullable(),
+    pseudonymized_at: z.string().nullable(),
     role_id: z.string(),
     work_unit_id: z.string().nullable(),
     telepon: z.string().nullable(),

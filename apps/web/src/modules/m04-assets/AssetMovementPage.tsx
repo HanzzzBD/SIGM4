@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { LABEL_STATUS_ASET } from "@sigm4/schemas";
 import { ApiError } from "../../shared/api";
@@ -8,9 +8,10 @@ import { KeadaanGalat, KeadaanKosong, KeadaanMemuat, KeadaanTanpaAkses, useDarin
 import { Isian, KotakCentang, Peringatan, Pilihan, Tombol } from "../../shared/ui/primitives";
 import { downloadMovementDocument, moveAssets, movementAssetsQuery, movementDocumentQuery, movementRoomsQuery, movementUsersQuery } from "./movement-api";
 import type { MovementAsset } from "./movement-api";
+import {detailAsetQuery} from "./katalog";
 
 const STATUS = { MENUNGGU: "Menunggu pembuatan PDF", BERJALAN: "PDF sedang dibuat", SIAP: "PDF siap diunduh", GAGAL: "PDF gagal dibuat" } as const;
-export default function AssetMovementPage({ documentId, onDocument }: { readonly documentId: number | null; readonly onDocument: (id: number | null) => void }) {
+export default function AssetMovementPage({ documentId, onDocument, initialAsset }: { readonly documentId: number | null; readonly initialAsset?: number | undefined; readonly onDocument: (id: number | null) => void }) {
     const can = useCan(), daring = useDaring(), client = useQueryClient();
     const edit = can("asset.update") && documentId === null, read = can("asset_movement_document.view");
     const [search, setSearch] = useState(""), [q, setQ] = useState(""), [page, setPage] = useState(1);
@@ -22,6 +23,10 @@ export default function AssetMovementPage({ documentId, onDocument }: { readonly
     const rooms = useQuery(movementRoomsQuery(edit && can("location.view")));
     const users = useQuery(movementUsersQuery(userPage, edit && can("user.view")));
     const report = useQuery(movementDocumentQuery(documentId, read));
+    const source=useQuery({...detailAsetQuery(String(initialAsset)),enabled:initialAsset!==undefined&&edit&&can("asset.view")});
+    const prefilled=useRef<string|null>(null);
+    useEffect(()=>{const asset=source.data;if(!asset||prefilled.current===asset.id)return;prefilled.current=asset.id;if(!asset.dihapuskan&&["TERSEDIA","DALAM_PERBAIKAN"].includes(asset.status))setSelected(old=>old.some(x=>x.id===asset.id)?old:[...old,asset]);},[source.data]);
+    const visibleAssets=[...(assets.data?.data??[])];if(source.data&&!visibleAssets.some(x=>x.id===source.data.id))visibleAssets.unshift(source.data);
     const move = useMutation({ mutationFn: moveAssets, onSuccess: (receipt) => {
         setSelected([]); setErrors({}); onDocument(Number(receipt.id));
         void client.invalidateQueries({ queryKey: ["assets"] });
@@ -47,6 +52,10 @@ export default function AssetMovementPage({ documentId, onDocument }: { readonly
         <header><h1 className="text-2xl font-semibold text-text-primary">Mutasi Lokasi Aset</h1><p className="mt-2 text-base text-text-secondary">Pindahkan hingga 50 aset dalam satu operasi. Satu berita acara memuat seluruh aset yang dipindahkan.</p></header>
         {edit && <section aria-labelledby="move-heading" className="flex flex-col gap-4 rounded-md border border-border-subtle bg-surface-default p-4">
             <h2 id="move-heading" className="text-lg font-semibold text-text-primary">Pilih aset dan tujuan</h2>
+            {source.isFetching&&initialAsset!==undefined&&<KeadaanMemuat label="Memuat aset dari halaman detail"/>}
+            {source.isError&&<KeadaanGalat galat={source.error} onCobaLagi={()=>void source.refetch()}/>}
+            {source.data&&<p>Asal {source.data.kode_barang}: {source.data.lokasi.gedung} / {source.data.lokasi.area} / {source.data.lokasi.ruang}. Pilih lokasi tujuan di bawah.</p>}
+            {source.data&&(source.data.dihapuskan||!["TERSEDIA","DALAM_PERBAIKAN"].includes(source.data.status))&&<Peringatan varian="warning">Aset dari halaman detail belum dapat dimutasi. Periksa status peminjaman dan ketersediaannya.</Peringatan>}
             {!can("asset.view") || !can("location.view") ? <KeadaanTanpaAkses aksi={<a href="/" className="text-text-link">Kembali ke Dashboard</a>} /> : <>
                 <form onSubmit={(event) => { event.preventDefault(); setQ(search.trim()); setPage(1); }} className="flex flex-wrap items-end gap-2">
                     <Isian label="Cari aset" value={search} onChange={(event) => setSearch(event.currentTarget.value)} />
@@ -57,7 +66,7 @@ export default function AssetMovementPage({ documentId, onDocument }: { readonly
                 {assets.data?.data.length === 0 && <KeadaanKosong judul="Tidak ada aset" pesan="Ubah pencarian untuk menemukan aset." aksi={<Tombol onClick={() => { setSearch(""); setQ(""); setPage(1); }}>Hapus pencarian</Tombol>} />}
                 <fieldset aria-describedby="selected-count" disabled={move.isPending} className="flex flex-col gap-2">
                     <legend className="mb-2 text-sm font-medium text-text-primary">Aset yang akan dipindahkan</legend>
-                    {assets.data?.data.map((asset) => {
+                    {visibleAssets.map((asset) => {
                         const checked = selected.some((value) => value.id === asset.id);
                         const allowed = ["TERSEDIA", "DALAM_PERBAIKAN"].includes(asset.status);
                         const status = LABEL_STATUS_ASET[asset.status as keyof typeof LABEL_STATUS_ASET] ?? asset.status;

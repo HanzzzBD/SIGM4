@@ -85,7 +85,7 @@ export class DamageReportService {
                 if (isian.reservationId !== undefined) {
                     if (!scope.ctx.can("reservation.record_usage")) throw new ForbiddenError();
                     const rv = await reservasiUntukLaporan(scope, isian.reservationId);
-                    if (rv === undefined || rv.jenis !== "RUANGAN" || rv.roomId !== String(isian.roomId) || !RESERVASI_TERPAKAI.has(rv.status)) {
+                    if (rv === undefined || rv.roomId === null || rv.roomId !== String(isian.roomId) || !RESERVASI_TERPAKAI.has(rv.status)) {
                         throw galat("reservation_id", "Reservasi tidak ditemukan, bukan reservasi ruangan ini, atau belum berlangsung.");
                     }
                 }

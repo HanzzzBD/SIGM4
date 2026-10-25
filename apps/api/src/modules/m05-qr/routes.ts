@@ -3,6 +3,7 @@
 import express from "express";
 import type { RequestHandler, Router } from "express";
 import type { Kysely } from "kysely";
+import { QrConfigResponseSchema } from "@sigm4/schemas";
 import type { AuditLogger } from "../../shared/audit/index.js";
 import type { Database } from "../../shared/db/index.js";
 import { defineRoute } from "../../shared/http/index.js";
@@ -14,6 +15,12 @@ import { QrService } from "./services/qr.service.js";
 
 /** Pemilik katalog endpoint M-05 (m05-qr.md §7). */
 const MODUL = "m05-qr";
+
+/** FR-05.1/05.2: domain label permanen, termasuk saat pemindai dibuka melalui origin dev. */
+export const qrConfigRoute = defineRoute({
+    method: "GET", path: "/public/qr/config", public: true, rateLimitClass: "default", module: MODUL,
+    summary: "Domain resmi label QR untuk pemindai aset dan bahan", response: QrConfigResponseSchema,
+});
 
 /** FR-05.2 langkah 3 — `asset.view` (seluruh role; aksi lanjutan klien menyesuaikan permission). */
 export const assetByUuidRoute = defineRoute({
@@ -101,6 +108,10 @@ export interface QrModuleDeps {
 export function qrRouter(deps: QrModuleDeps, batasi: (route: RouteDefinition) => RequestHandler, otorisasi: (permission: string) => RequestHandler): Router {
     const service = new QrService(deps.db, deps.auditLogger, deps.appBaseUrl, deps.pdf);
     const router = express.Router();
+    router.get(qrConfigRoute.path, batasi(qrConfigRoute), (_req, res) => {
+        res.setHeader("Cache-Control", "public, max-age=300");
+        res.json({ success: true, data: { app_base_url: deps.appBaseUrl }, meta: null });
+    });
     router.get(assetByUuidRoute.path, batasi(assetByUuidRoute), otorisasi(assetByUuidRoute.permission), assetByUuidHandler(service));
     router.get(publicAssetRoute.path, batasi(publicAssetRoute), publicAssetHandler(service));
     router.post(printQrRoute.path, batasi(printQrRoute), otorisasi(printQrRoute.permission), printQrHandler(service));

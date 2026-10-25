@@ -87,6 +87,11 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 
 Scope `asset_document.view/manage` diterapkan sebelum daftar/unduh/lepas: `all` seluruh dokumen, `own` dokumen yang diunggah sendiri, `assigned` tautan pada aset dengan `penanggung_jawab_id` pemanggil, `restricted` tidak mendapat dokumen. Siswa/OSIS tidak mendapat dokumen (`BR-073`). Hitungan tautan hanya mencakup aset dalam scope tersebut; tautan tidak aktif/dokumen dihapus dikecualikan. Penautan aset tambahan dengan scope `assigned` hanya menerima aset yang ditugaskan; scope `restricted` ditolak. Aset dihapuskan tetap boleh mempunyai dokumen (BR-008).
 
+Foto hasil WO memakai jenis WORK_ORDER_PHOTO dan jalur presign/confirm/scan yang sama.
+Penautan ke WO milik Teknisi dilakukan oleh API M-12 (FR-12.3, BR-049); pending boleh tertaut,
+URL hanya CLEAN terkonfirmasi. Berkas tidak dapat dipakai ulang di WO lain. Antrean luring
+hanya menyimpan metadata berkas per akun; transaksi WO tetap daring (SDD-MOB-07).
+
 ## 8. Database Entity
 
 ### Entitas
@@ -150,3 +155,33 @@ Strategi pengujian: [`../06-quality/test-strategy.md`](../06-quality/test-strate
 ## 15. Open Issues
 
 _Tidak ada isu terbuka._
+
+### Integrasi pengadaan (14 Oktober 2026)
+
+Registri berkas menerima `PROCUREMENT_ATTACHMENT` dengan `procurement.create`, serta
+`PROCUREMENT_RECEIPT_DOCUMENT` dan `PROCUREMENT_REJECTION_PHOTO` dengan
+`procurement.receive`. Lampiran/dokumen menerima PDF, JPEG/PNG, DOCX/XLSX maksimal
+10 MB; foto penolakan hanya JPEG/PNG maksimal 2 MB. Penautan memeriksa uploader,
+jenis, konfirmasi checksum, pemilik entitas, dan scan; URL unduh hanya untuk `CLEAN`.
+Penerimaan memerlukan dokumen/foto `CLEAN`. Satu dokumen penerimaan dapat ditautkan
+ke seluruh unit aset dalam satu transaksi sesuai `BR-065`, dengan pemilik registri
+tetap penerimaan asal. Jenis ini tidak digunakan untuk antrean transaksi bisnis mobile.
+
+### Integrasi opname aset (14 Oktober 2026)
+
+M-13 menautkan pesanan STOCKTAKE_PHOTO milik pelaksana sebelum unggah/confirm; foto
+belum siap menghalangi submit dan URL hanya diberikan setelah CLEAN. STOCKTAKE_REPORT
+adalah PDF hasil worker SYSTEM, terdaftar CLEAN setelah checksum/format tervalidasi;
+presign publik tidak menerima jenis tersebut. Worker memakai kunci objek per percobaan
+agar kompensasi kegagalan tidak menghapus PDF percobaan lain yang berhasil.
+
+### Integrasi penghapusan aset — PR-05-10..14 (14 Oktober 2026)
+
+`DISPOSAL_ATTACHMENT`: disposal.create, PDF/JPEG/PNG/DOCX/XLSX maksimal 10 MB.
+`DISPOSAL_EXECUTION_PHOTO`: disposal.execute, JPEG/PNG maksimal 2 MB.
+`DISPOSAL_REPORT`: PDF hasil worker SYSTEM; presign publik menolak jenis ini.
+Penautan memeriksa uploader, jenis, checksum, pemilik usulan, dan scan. Eksekusi
+dan bukti kehilangan mensyaratkan CLEAN; URL privat hanya tersedia saat CLEAN.
+Fakta kelayakan garansi dibaca server melalui entry point M-06 tanpa URL dokumen;
+nama berkas disamarkan tanpa asset_document.view. Pembatasan baca dokumen tidak
+menghilangkan kewajiban konfirmasi garansi pada pengajuan penghapusan.

@@ -50,7 +50,7 @@ export class NotificationService {
                 userId,
                 kode: t.kode,
                 jenis: templat.jenis,
-                judul: templat.judul,
+                judul: templat.judulSaat?.(t.params)??templat.judul,
                 isi,
                 params: t.params,
                 referensiJenis: t.referensi?.jenis ?? null,

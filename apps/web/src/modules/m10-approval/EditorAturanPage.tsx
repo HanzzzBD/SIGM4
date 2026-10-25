@@ -1,3 +1,4 @@
+import {useUnsavedChanges} from "../../shared/ui/unsaved-changes";
 // P-69 Editor Approval Rule (FR-10.1, UX §7.6.5, F-25): dua kolom — kiri penyusun aturan,
 // kanan panel Pratinjau yang selalu terlihat (RE-07). `422 INVALID_RULE_DEFINITION` tampil
 // pada node bermasalah beserta ringkasan yang dapat diklik (RE-08, PATTERNS §4). Menonaktifkan
@@ -84,12 +85,13 @@ function Editor({ awal, roles }: { readonly awal: AturanTersimpan | null; readon
     const ubah = (m: Partial<ModelAturan>) => setModel((x) => ({ ...x, ...m }));
     const berubah = JSON.stringify(keDefinisi(model)) !== awalJson;
     const id = awal?.id ?? null;
+    const guard=useUnsavedChanges(berubah);
 
     const simpan = useMutation({
         mutationFn: () => simpanAturan(id, keDefinisi(model)),
         onSuccess: async (a) => {
             await queryClient.invalidateQueries({ queryKey: KUNCI_ATURAN });
-            await navigate({ to: "/approval-rules", search: { disimpan: a.id } });
+            guard.allow();await navigate({ to: "/approval-rules", search: { disimpan: a.id } });
         },
         onError: (g) => setGalat(galatDefinisi(g) ?? {}),
     });
@@ -127,22 +129,22 @@ function Editor({ awal, roles }: { readonly awal: AturanTersimpan | null; readon
                         kirim();
                     }}
                 >
-                    <RingkasanGalat galat={galat} />
+                    {guard.prompt}<RingkasanGalat galat={galat} />
                     {simpan.isError && galatDefinisi(simpan.error) === null && <Peringatan varian="error">{simpan.error.message}</Peringatan>}
                     <Bagian judul="Identitas aturan" jalur="prioritas">
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                             <Pilihan label="Jenis pengajuan" required value={model.jenis} galat={galat["jenis_pengajuan"]} opsi={JENIS_PENGAJUAN.map((j) => ({ nilai: j, label: LABEL_JENIS_PENGAJUAN[j] }))} onChange={(e) => ubah({ jenis: e.target.value as ModelAturan["jenis"] })} />
-                            <Isian label="Prioritas" type="number" min={0} required value={model.prioritas} galat={galat["prioritas"]} bantuan="Bila beberapa aturan cocok, prioritas terbesar yang dipakai (RE-04)." onChange={(e) => ubah({ prioritas: e.target.value })} />
+                            <Isian label="Prioritas" type="number" min={0} required value={model.prioritas} galat={galat["prioritas"]} bantuan="Bila beberapa aturan cocok, prioritas terbesar yang dipakai." onChange={(e) => ubah({ prioritas: e.target.value })} />
                         </div>
                     </Bagian>
                     <GrupKondisi node={model.kondisi} jalur="kondisi" tingkat={1} k={{ jenis: model.jenis, galat, roles }} onUbah={(kondisi) => ubah({ kondisi })} />
                     <DaftarLangkah langkah={model.langkah} galat={galat} roles={roles} onUbah={(langkah) => ubah({ langkah })} />
                     <Bagian judul="Approver cadangan" jalur="fallback_approver">
-                        <PemilihApprover legend="Dipakai bila seluruh langkah dilewati (RE-11)" bolehKosong jalur="fallback_approver." value={model.fallback} galat={galat} roles={roles} onUbah={(fallback) => ubah({ fallback })} />
+                        <PemilihApprover legend="Dipakai bila seluruh langkah dilewati" bolehKosong jalur="fallback_approver." value={model.fallback} galat={galat} roles={roles} onUbah={(fallback) => ubah({ fallback })} />
                     </Bagian>
                     <Bagian judul="Bila eskalasi habis tanpa keputusan">
                         <fieldset className="flex flex-col gap-1">
-                            <legend className="text-sm text-text-secondary">Persetujuan otomatis tidak pernah tersedia (BR-039a).</legend>
+                            <legend className="text-sm text-text-secondary">Persetujuan otomatis tidak pernah tersedia.</legend>
                             {(["hold_and_alert", "auto_reject"] as const satisfies readonly Terminal[]).map((t) => (
                                 <label key={t} className="flex min-h-touch cursor-pointer items-center gap-2 text-base text-text-primary">
                                     <input type="radio" name={namaTerminal} checked={model.terminal === t} className="size-icon-md accent-teal-600" onChange={() => ubah({ terminal: t })} />
@@ -174,7 +176,7 @@ function Editor({ awal, roles }: { readonly awal: AturanTersimpan | null; readon
                     <PanelPratinjau model={model} idAturan={id} roles={roles} onGalat={setGalat} />
                 </aside>
             </div>
-            <DialogKonfirmasi buka={dialog === "batal"} onTutup={() => setDialog(null)} judul="Buang perubahan aturan?" labelAksi="Buang perubahan" varian="danger" onKonfirmasi={() => void navigate({ to: "/approval-rules" })}>
+            <DialogKonfirmasi buka={dialog === "batal"} onTutup={() => setDialog(null)} judul="Buang perubahan aturan?" labelAksi="Buang perubahan" varian="danger" onKonfirmasi={() => {guard.allow();void navigate({ to: "/approval-rules" });}}>
                 Perubahan yang belum disimpan akan hilang.
             </DialogKonfirmasi>
             <DialogKonfirmasi

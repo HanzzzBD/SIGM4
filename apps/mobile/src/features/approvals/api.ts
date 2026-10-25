@@ -1,6 +1,8 @@
 import type { AxiosInstance } from "axios";
 import { HistoryResponseSchema, ListPendingResponseSchema, ReservationDetailResponseSchema, RoomAvailabilityResponseSchema, RENTANG_KETERSEDIAAN_MAKS_HARI } from "@sigm4/schemas";
 import type { ApprovalPending, ReservationDetail } from "@sigm4/schemas";
+import { ProcurementDetailResponseSchema } from "@sigm4/schemas";
+import type { ProcurementDetail } from "@sigm4/schemas";
 import type { ApprovalReview, AvailabilityReview } from "./model";
 
 export async function findPending(api: AxiosInstance, id: number, signal: AbortSignal): Promise<ApprovalPending | null> {
@@ -42,6 +44,14 @@ export async function loadReview(api: AxiosInstance, id: number, permissions: Re
     const history = HistoryResponseSchema.parse((await api.get(`/approvals/${id}/history`, { signal })).data).data;
     if (history.instance_id !== id) throw new Error("Linimasa tidak cocok dengan pengajuan yang diminta.");
     const pending = Object.hasOwn(permissions, "approval.decide") ? await findPending(api, id, signal) : null;
+    if (history.jenis_pengajuan === "PENGADAAN_BARANG") {
+        let procurement: ProcurementDetail | null = null, contextError: string | null = null;
+        try {
+            const path = pending && Object.hasOwn(permissions, "procurement.approve") ? `/procurements/${history.referensi_id}/review` : `/procurements/${history.referensi_id}`;
+            procurement = ProcurementDetailResponseSchema.parse((await api.get(path, { signal })).data).data;
+        } catch (error) { if (signal.aborted) throw error; contextError = error instanceof Error ? error.message : "Rincian pengadaan belum dapat dimuat."; }
+        return { history, pending, procurement, room: null, availability: null, contextError, requesterContextComplete: procurement !== null };
+    }
     let room: ReservationDetail | null = null; let currentAvailability: AvailabilityReview | null = null; let contextError: string | null = null;
     if (history.jenis_pengajuan === "RESERVASI_RUANGAN" && Object.hasOwn(permissions, "reservation.view")) {
         try { room = ReservationDetailResponseSchema.parse((await api.get(`/reservations/${history.referensi_id}`, { signal })).data).data; currentAvailability = await availability(api, room, signal); }

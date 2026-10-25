@@ -17,3 +17,12 @@ export { DerivativeService, NAMA_PEKERJAAN_TURUNAN, idJobTurunan } from "./servi
 export type { HasilBersih } from "./services/lifecycle.service.js";
 export { FileLifecycleService, PEKERJAAN_BERSIH_YATIM } from "./services/lifecycle.service.js";
 export { EVENT_BERKAS_TERUNGGAH } from "./services/file.service.js";
+export { attachLoanEvidence } from "./services/file.service.js";
+export { attachWorkOrderPhotos,detachWorkOrderPhoto } from "./services/file.service.js";
+export { attachStocktakePhotos } from "./services/file.service.js";
+export { registerStocktakePdf } from "./services/generated-pdf.js";
+export { claimProcurementFiles,createProcurementAssetDocument } from "./services/procurement-files.js";
+export { claimDisposalFiles, releaseDisposalAttachments, registerDisposalPdf, disposalWarrantyFacts } from "./services/disposal-files.js";
+export { claimMaterialReceiptFiles } from "./services/material-files.js";
+
+export { registerReportExportFile, detachReportExportFile } from "./services/report-export-file.js";

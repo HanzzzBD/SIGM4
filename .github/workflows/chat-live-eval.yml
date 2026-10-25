@@ -1,0 +1,47 @@
+name: Chatbot LIVE evaluation
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: chat-live-eval
+  cancel-in-progress: false
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 125
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: sigm4
+          POSTGRES_PASSWORD: chat_fixture_ci
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U sigm4 -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      DATABASE_URL: postgres://sigm4:chat_fixture_ci@localhost:5432/postgres?sslmode=disable
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      CHAT_ENABLED: "false"
+      CHAT_EVAL_LIVE: "true"
+      TZ: UTC
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: node node_modules/typescript/bin/tsc --build
+      - name: Check evaluation credentials
+        run: node -e "if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY secret is required for LIVE evaluation')"
+      - name: Seed isolated fixture and evaluate 700 cases
+        run: node scripts/pr0238-test-db.mjs node_modules/vitest/vitest.mjs run --root apps/api --config vitest.integration.config.ts tests/integration/m19-chatbot.test.ts --maxWorkers=1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: chat-live-evaluation
+          path: tmp/chat-live-eval.json
+          if-no-files-found: error

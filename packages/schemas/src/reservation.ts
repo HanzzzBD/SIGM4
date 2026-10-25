@@ -22,6 +22,12 @@ export const PolaPengulanganSchema = z.object({
     sampai: z.iso.date(TANGGAL),
 });
 
+export const AssetReservationSelectionSchema = z.object({
+    category_id: z.number().int().positive().safe(), jumlah: z.number().int().positive().safe(),
+    asset_ids: z.array(z.number().int().positive().safe()).optional(),
+}).strict().superRefine((a, ctx) => {
+    if (a.asset_ids !== undefined && (a.asset_ids.length !== a.jumlah || new Set(a.asset_ids).size !== a.asset_ids.length)) ctx.addIssue({ code: "custom", path: ["asset_ids"], message: "Jumlah ID unit unik harus sesuai jumlah unit." });
+});
 export const RoomReservationBodySchema = z
     .object({
         room_id: z.number({ error: "Ruangan wajib dipilih." }).int().positive().safe(),
@@ -34,7 +40,8 @@ export const RoomReservationBodySchema = z
         kebutuhan_tambahan: opsional(1000, "Kebutuhan tambahan"),
         keterangan: opsional(1000, "Keterangan"),
         /** FR-07.2 langkah 3 — ditolak sampai `reservation_items` lahir (`PR-04-02`, keputusan 11c). */
-        aset_pendukung: z.array(z.unknown()).optional(),
+        aset_pendukung: z.array(AssetReservationSelectionSchema).optional(),
+        lokasi_penggunaan: z.string().trim().min(1).max(200).optional(),
         pengulangan: PolaPengulanganSchema.optional(),
         /** Tanggal turunan yang dilewati (BR-024a A4: "disesuaikan atau dilewati"). */
         lewati: z.array(z.iso.date(TANGGAL)).max(400).optional(),
@@ -43,8 +50,10 @@ export const RoomReservationBodySchema = z
     .superRefine((b, ctx) => {
         if (!(Date.parse(b.waktu_selesai) > Date.parse(b.waktu_mulai)))
             ctx.addIssue({ code: "custom", path: ["waktu_selesai"], message: "Waktu selesai harus sesudah waktu mulai." });
-        if (b.aset_pendukung !== undefined && b.aset_pendukung.length > 0)
-            ctx.addIssue({ code: "custom", path: ["aset_pendukung"], message: "Aset pendukung belum dapat diajukan bersama reservasi ruangan." });
+        if ((b.aset_pendukung?.length ?? 0) > 0 && !b.keperluan)
+            ctx.addIssue({ code: "custom", path: ["keperluan"], message: "Keperluan wajib untuk pengajuan dengan aset pendukung." });
+        if ((b.aset_pendukung?.length ?? 0) > 0 && !b.lokasi_penggunaan)
+            ctx.addIssue({ code: "custom", path: ["lokasi_penggunaan"], message: "Lokasi penggunaan wajib untuk pengajuan dengan aset pendukung." });
         if (b.lewati !== undefined && b.lewati.length > 0 && b.pengulangan === undefined)
             ctx.addIssue({ code: "custom", path: ["lewati"], message: "Tanggal yang dilewati hanya berlaku bagi reservasi berulang." });
     });
@@ -219,6 +228,10 @@ const TanggalTurunan = z.object({
  * (keputusan 17d/17e — penyajiannya tercatat `ACTIVITY_LOG_VIEWED`).
  */
 export const ReservationDetailSchema = z.object({
+    peminjaman: z.array(z.object({ id: z.string(), nomor: z.string(), reservation_id: z.string() })).optional(),
+    lokasi_penggunaan: z.string().nullable().optional(),
+    status_penggunaan_ruangan: z.enum(STATUS_RESERVASI).nullable().optional(),
+    aset: z.array(z.object({ reservation_id: z.string(), asset_id: z.string().nullable(), kode_barang: z.string().nullable(), nama: z.string(), category_id: z.string(), kondisi: z.string() })).optional(),
     id: z.string(),
     nomor: z.string(),
     jenis: z.enum(["RUANGAN", "ASET"]),

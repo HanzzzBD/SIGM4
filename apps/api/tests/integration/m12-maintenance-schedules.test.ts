@@ -1,0 +1,148 @@
+import { randomUUID } from "node:crypto";
+import { createServer } from "node:http";
+import type { Server } from "node:http";
+import type { AddressInfo } from "node:net";
+import express from "express";
+import { beforeAll, afterAll, describe, expect, it } from "vitest";
+import { MaintenanceScheduleService, finishPreventiveWorkOrder } from "../../src/modules/m12-maintenance/index.js";
+import { createSystemAuthContext } from "../../src/shared/auth/system-context.js";
+import { FixedClock } from "../../src/shared/clock/index.js";
+import { AuditLogger } from "../../src/shared/audit/index.js";
+import { getDb, withTransaction } from "../../src/shared/db/index.js";
+import { dbmate, kueri } from "../helpers/db.js";
+import { createApp } from "../../src/api/index.js";
+import { createAuthContext, setAuthContext, setAmr, AMR_OTP } from "../../src/shared/auth/index.js";
+import { HealthRegistry, Logger } from "../../src/shared/observability/index.js";
+import { fcmCheck, pasangKonsumenNotifikasi } from "../../src/modules/m17-notifications/index.js";
+import { EventHandlerRegistry } from "../../src/shared/events/index.js";
+import { authPalsu } from "../helpers/auth.js";
+
+const marker = randomUUID().slice(0, 7), ctx = createSystemAuthContext("test-preventive");
+const clock = new FixedClock(new Date("2027-11-15T03:00:00Z"));
+let service: MaintenanceScheduleService;
+describe.skipIf(!process.env["DATABASE_URL"])("PR-04-07 preventive schedules", () => {
+    let category: string, room: string, tech: string, a: string, b: string, schedule: string;
+    let server: Server, base = "";
+    const id = async (query: string) => (await kueri<{ id: string }>(query))[0]!.id;
+    const input = () => ({ nama: `Preventif ${marker}`, category_id: Number(category), interval_hari: 30, tanggal_mulai: "2027-11-21", checklist: ["Bersihkan filter", "Periksa kabel"], teknisi_default_id: Number(tech) });
+    const create = () => withTransaction(ctx, scope => service.create(scope, input()), getDb());
+    beforeAll(async () => {
+        dbmate("up");
+        service = new MaintenanceScheduleService(getDb(), clock, new AuditLogger({ clock }));
+        category = await id(`INSERT INTO asset_categories(nama,kode,interval_preventif_hari) VALUES ('Preventif','P${marker}',30) RETURNING id::text`);
+        tech = await id(`INSERT INTO users(nama,email,password_hash,nip_nis,role_id,status,must_change_password) VALUES ('Teknisi preventif','${marker}@preventive.test','x','${marker}',(SELECT id FROM roles WHERE kode='R-04'),'AKTIF',false) RETURNING id::text`);
+        const building = await id(`INSERT INTO buildings(nama,kode) VALUES ('Preventif','P${marker}') RETURNING id::text`);
+        const area = await id(`INSERT INTO areas(building_id,nama,kode) VALUES (${building},'Preventif','P${marker}') RETURNING id::text`);
+        room = await id(`INSERT INTO rooms(area_id,nama,kode,jenis,kapasitas) VALUES (${area},'Preventif','P${marker}','KELAS',20) RETURNING id::text`);
+        a = await id(`INSERT INTO assets(kode_barang,nama,category_id,tahun_perolehan,sumber_perolehan,room_id,kondisi) VALUES ('PA${marker}','Kipas A',${category},2027,'PEMBELIAN',${room},'BAIK') RETURNING id::text`);
+        b = await id(`INSERT INTO assets(kode_barang,nama,category_id,tahun_perolehan,sumber_perolehan,room_id,kondisi,status) VALUES ('PB${marker}','Kipas B',${category},2027,'PEMBELIAN',${room},'BAIK','DIPINJAM') RETURNING id::text`);
+        const app = express();
+        app.use((req, res, next) => { setAuthContext(res, createAuthContext({ userId: Number(tech), roleCode: "R-04", scopes: new Map(req.header("x-manage") === "yes" ? [["maintenance.manage", "all"]] : []) })); setAmr(res, ["pwd", AMR_OTP]); next(); });
+        app.use(createApp({ appBaseUrl: "https://preventive.test", db: getDb(), clock, logger: new Logger({ clock, tulis: () => undefined }), auth: authPalsu(), health: new HealthRegistry(30).register(fcmCheck(null)), security: { objectStorageOrigin: "http://minio:9000" }, limiter: { hit: async () => ({ lolos: true, batas: 1000, sisa: 999, resetDetik: 60 }) } }));
+        server = createServer(app); await new Promise<void>(r => server.listen(0, "127.0.0.1", r)); base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/v1`;
+    });
+    afterAll(async () => {
+        if (server) await new Promise<void>(r => server.close(() => r()));
+        if (!category) return;
+        await kueri(`DELETE FROM notifications WHERE user_id=${tech}`);
+        await kueri(`DELETE FROM event_outbox WHERE aggregate_type='work_order' AND aggregate_id IN (SELECT id FROM work_orders WHERE maintenance_schedule_id IN (SELECT id FROM maintenance_schedules WHERE category_id=${category}))`);
+        await kueri(`DELETE FROM maintenance_schedule_assets WHERE schedule_id IN (SELECT id FROM maintenance_schedules WHERE category_id=${category})`);
+        await kueri(`DELETE FROM maintenance_schedule_skips WHERE schedule_id IN (SELECT id FROM maintenance_schedules WHERE category_id=${category})`);
+        await kueri(`DELETE FROM work_orders WHERE maintenance_schedule_id IN (SELECT id FROM maintenance_schedules WHERE category_id=${category})`);
+        await kueri(`DELETE FROM maintenance_schedules WHERE category_id=${category}`);
+        await kueri(`DELETE FROM assets WHERE category_id=${category}`);
+        await kueri(`DELETE FROM asset_categories WHERE id=${category}`);
+        await kueri(`DELETE FROM users WHERE id=${tech}`);
+        await kueri(`DELETE FROM holidays WHERE nama='Preventif ${marker}'`);
+        const parent = (await kueri<{ area_id: string; building_id: string }>(`SELECT r.area_id,a.building_id FROM rooms r JOIN areas a ON a.id=r.area_id WHERE r.id=${room}`))[0]!;
+        await kueri(`DELETE FROM rooms WHERE id=${room}`); await kueri(`DELETE FROM areas WHERE id=${parent.area_id}`); await kueri(`DELETE FROM buildings WHERE id=${parent.building_id}`);
+    });
+    it("enforces HTTP authorization, validates reasons and replays schedule creation without duplicates", async () => {
+        const key = randomUUID();
+        const send = (path: string, manage: boolean, body?: unknown, method = "POST") => fetch(`${base}${path}`, { method, headers: { "content-type": "application/json", "x-manage": manage ? "yes" : "no", "Idempotency-Key": path === "/maintenance-schedules" ? key : randomUUID() }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+        expect((await send("/maintenance-schedules", false, undefined, "GET")).status).toBe(403);
+        expect((await send("/maintenance-schedules", true, { ...input(), teknisi_default_id: 999999999 })).status).toBe(422);
+        const first = await send("/maintenance-schedules", true, input());
+        expect(first.status).toBe(201);
+        const result = await first.json() as { data: { id: string } };
+        const replay = await send("/maintenance-schedules", true, input());
+        expect((await replay.json() as { data: { id: string } }).data.id).toBe(result.data.id);
+        expect((await send(`/maintenance-schedules/${result.data.id}/skip`, true, { alasan: " " })).status).toBe(422);
+        expect((await send(`/maintenance-schedules/${result.data.id}/deactivate`, true, { alasan: "Uji selesai" })).status).toBe(200);
+    });
+    it("category interval is offered, override persists and first due moves off Sunday", async () => {
+        expect((await service.options()).categories.find(c => c.id === category)?.interval_preventif_hari).toBe(30);
+        const row = await create(); schedule = row.id;
+        expect(row.jatuh_tempo_berikutnya).toBe("2027-11-22");
+        expect(row.checklist).toEqual(input().checklist);
+        expect((await service.detail(ctx, schedule)).tanggal_mulai).toBe("2027-11-21");
+        expect((await service.list(ctx, { page: 1, per_page: 20, "filter[jatuh_tempo_hari]": 7 })).data.some(r => r.id === schedule)).toBe(true);
+    });
+    it("H-7 creates one order per asset on concurrent job replay with a checklist snapshot and waiting marker", async () => {
+        await Promise.all([service.generate(ctx), service.generate(ctx)]);
+        const orders = await kueri<{ asset_id: string; checklist: unknown; menunggu_ketersediaan_aset: boolean; target_selesai: string }>(`SELECT asset_id::text,checklist,menunggu_ketersediaan_aset,to_char(target_selesai,'YYYY-MM-DD') AS target_selesai FROM work_orders WHERE maintenance_schedule_id=${schedule}`);
+        expect(orders).toHaveLength(2);
+        expect(orders.find(o => o.asset_id === b)?.menunggu_ketersediaan_aset).toBe(true);
+        expect(orders.find(o => o.asset_id === a)?.checklist).toEqual([{ id: "1", label: "Bersihkan filter", selesai: false }, { id: "2", label: "Periksa kabel", selesai: false }]);
+        expect(orders[0]?.target_selesai).toBe("2027-11-22");
+        expect((await service.generate(ctx)).created).toBe(0);
+        await kueri(`UPDATE assets SET status='TERSEDIA' WHERE id=${b}`);
+        await service.generate(ctx);
+        expect((await kueri<{ n: string }>(`SELECT count(*) AS n FROM work_orders WHERE maintenance_schedule_id=${schedule} AND menunggu_ketersediaan_aset`))[0]!.n).toBe("0");
+        const registry = new EventHandlerRegistry();
+        pasangKonsumenNotifikasi(registry, { db: getDb, clock, ctx: () => ctx });
+        const events = await kueri<{ id: string; event_name: string; aggregate_id: string; payload: unknown }>(`SELECT id::text,event_name,aggregate_id::text,payload FROM event_outbox WHERE aggregate_type='work_order' AND aggregate_id IN (SELECT id FROM work_orders WHERE maintenance_schedule_id=${schedule})`);
+        for (const e of events) {
+            const handler = registry.handlersFor(e.event_name)[0]!;
+            await Promise.all([1, 2].map(() => handler({ id: e.id, name: e.event_name, aggregateType: "work_order", aggregateId: e.aggregate_id, payload: e.payload, actorId: null, requestId: null, occurredAt: clock.now(), attempts: 0 })));
+        }
+        expect((await kueri<{ n: string }>(`SELECT count(*) AS n FROM notifications WHERE user_id=${tech} AND kode='NT-28'`))[0]!.n).toBe("3");
+    });
+    it("closure moves only that asset's cycle from completion and replay cannot advance it twice", async () => {
+        const wo = (await kueri<{ id: string }>(`SELECT id::text FROM work_orders WHERE maintenance_schedule_id=${schedule} AND asset_id=${a}`))[0]!.id;
+        await kueri(`UPDATE work_orders SET status='SELESAI',waktu_selesai='2027-11-23T03:00:00Z' WHERE id=${wo}`);
+        await withTransaction(ctx, scope => finishPreventiveWorkOrder(scope, wo, new Date("2027-11-25T03:00:00Z")), getDb());
+        await withTransaction(ctx, scope => finishPreventiveWorkOrder(scope, wo, new Date("2027-11-25T03:00:00Z")), getDb());
+        expect((await kueri<{ due: string; work_order_id: string | null }>(`SELECT to_char(jatuh_tempo,'YYYY-MM-DD') AS due,work_order_id FROM maintenance_schedule_assets WHERE schedule_id=${schedule} AND asset_id=${a}`))[0]).toEqual({ due: "2027-12-23", work_order_id: null });
+        expect((await service.generate(ctx)).created).toBe(0);
+        await expect(withTransaction(ctx, scope => service.action(scope, schedule, "skip", "Libur"), getDb())).rejects.toThrow("Work order sudah terbit");
+    });
+    it("skip is auditable and deactivation leaves issued work orders intact", async () => {
+        const row = await create();
+        const skipped = await withTransaction(ctx, scope => service.action(scope, row.id, "skip", "Pemeriksaan sudah dilakukan"), getDb());
+        expect(skipped.jatuh_tempo_berikutnya).toBe("2027-12-22");
+        expect((await kueri<{ n: string }>(`SELECT count(*) AS n FROM maintenance_schedule_skips WHERE schedule_id=${row.id}`))[0]!.n).toBe("2");
+        await withTransaction(ctx, scope => service.action(scope, schedule, "deactivate", "Penggantian kontrak"), getDb());
+        await service.generate(ctx);
+        expect((await service.detail(ctx, schedule)).status).toBe("NONAKTIF");
+        expect((await kueri<{ n: string }>(`SELECT count(*) AS n FROM work_orders WHERE maintenance_schedule_id=${schedule}`))[0]!.n).toBe("2");
+        await withTransaction(ctx, scope => service.action(scope, row.id, "deactivate", "Uji selesai"), getDb());
+    });
+    it("observes configured holidays, H-7 boundary, current category membership and snapshot isolation", async () => {
+        await kueri(`INSERT INTO holidays(tanggal,nama,jenis) VALUES ('2027-12-01','Preventif ${marker}','SEKOLAH')`);
+        const config = { ...input(), tanggal_mulai: "2027-12-01", interval_hari: 45 };
+        const row = await withTransaction(ctx, scope => service.create(scope, config), getDb());
+        expect(row.jatuh_tempo_berikutnya).toBe("2027-12-02");
+        const earlyClock = new FixedClock(new Date("2027-11-24T03:00:00Z"));
+        const early = new MaintenanceScheduleService(getDb(), earlyClock, new AuditLogger({ clock: earlyClock }));
+        expect((await early.generate(ctx)).created).toBe(0);
+        const c = await id(`INSERT INTO assets(kode_barang,nama,category_id,tahun_perolehan,sumber_perolehan,room_id,kondisi) VALUES ('PC${marker}','Kipas C',${category},2027,'PEMBELIAN',${room},'BAIK') RETURNING id::text`);
+        earlyClock.advance(86400000);
+        expect((await early.generate(ctx)).created).toBe(3);
+        expect((await kueri<{ n: string }>(`SELECT count(*) AS n FROM work_orders WHERE maintenance_schedule_id=${row.id} AND asset_id=${c}`))[0]!.n).toBe("1");
+        await withTransaction(ctx, scope => service.update(scope, row.id, { ...config, checklist: ["Checklist baru"] }), getDb());
+        expect((await kueri<{ checklist: { label: string }[] }>(`SELECT checklist FROM work_orders WHERE maintenance_schedule_id=${row.id} LIMIT 1`))[0]!.checklist[0]?.label).toBe("Bersihkan filter");
+        await kueri(`UPDATE work_orders SET status='TIDAK_DAPAT_DIPERBAIKI' WHERE maintenance_schedule_id=${row.id}`);
+        expect((await early.generate(ctx)).created).toBe(0);
+        await withTransaction(ctx, scope => service.action(scope, row.id, "deactivate", "Uji selesai"), getDb());
+    });
+    it("deactivated schedules still release the waiting marker on already-issued work orders", async () => {
+        await kueri(`UPDATE assets SET status='DIPINJAM' WHERE id=${b}`);
+        const row = await create();
+        expect((await service.generate(ctx)).created).toBe(3);
+        await withTransaction(ctx, scope => service.action(scope, row.id, "deactivate", "Kontrak selesai"), getDb());
+        await kueri(`UPDATE assets SET status='TERSEDIA' WHERE id=${b}`);
+        expect((await service.generate(ctx)).created).toBe(0);
+        expect((await kueri<{ menunggu_ketersediaan_aset: boolean }>(`SELECT menunggu_ketersediaan_aset FROM work_orders WHERE maintenance_schedule_id=${row.id} AND asset_id=${b}`))[0]!.menunggu_ketersediaan_aset).toBe(false);
+    });
+});

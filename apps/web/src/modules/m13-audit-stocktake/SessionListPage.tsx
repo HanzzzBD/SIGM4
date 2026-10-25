@@ -1,0 +1,13 @@
+import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useCan } from "../../shared/auth";
+import { Pilihan, Tombol } from "../../shared/ui/primitives";
+import { KeadaanGalat, KeadaanMemuat, KeadaanKosong } from "../../shared/states";
+import { sessionsQuery, statuses, date } from "./api";
+export default function SessionListPage({ page, status, onFilter }: { page: number; status: string; onFilter: (page: number, status: string) => void }) {
+    const q = useQuery(sessionsQuery(page, status)), can = useCan();
+    return <div className="flex flex-col gap-6"><header className="flex flex-wrap justify-between gap-4"><div><h1 className="text-2xl font-semibold text-text-heading">Stock Opname</h1><p className="mt-1 text-text-secondary">Periksa kondisi Aset atau jumlah fisik Bahan, lalu ajukan hasil untuk persetujuan.</p></div>{can("audit.manage") && <Link to="/opname/baru" className="inline-flex min-h-control-md items-center rounded-md bg-teal-600 px-4 py-2 text-text-inverse">Buat sesi</Link>}</header>
+        <Pilihan label="Status sesi" value={status} kosong="Semua status" opsi={Object.entries(statuses).map(([nilai, label]) => ({ nilai, label }))} onChange={e => onFilter(1, e.target.value)} />
+        {q.isPending ? <KeadaanMemuat label="Memuat sesi opname" /> : q.isError ? <KeadaanGalat galat={q.error} onCobaLagi={() => void q.refetch()} /> : q.data.data.length === 0 ? <KeadaanKosong judul="Belum ada sesi opname" pesan="Buat sesi baru atau ubah saringan status." /> : <><ul className="divide-y divide-border-subtle rounded-md border border-border-subtle">{q.data.data.map(s => <li key={s.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:justify-between"><div><Link className="font-medium text-text-link" to="/opname/$id" params={{ id: s.id }}>{s.nama}</Link><p className="text-sm text-text-secondary">{s.nomor} · {s.domain==="BAHAN"?"Bahan":"Aset"} · {statuses[s.status]} · {date(s.periode_mulai)}–{date(s.periode_selesai)}</p></div><div><label className="text-sm" htmlFor={`progress-${s.id}`}>{s.diperiksa} dari {s.target} {s.domain==="BAHAN"?"pasangan bahan/lokasi dihitung":"aset diperiksa"}</label><progress id={`progress-${s.id}`} className="mt-2 block w-full" value={s.diperiksa} max={Math.max(1, s.target)} /></div></li>)}</ul><nav aria-label="Halaman sesi opname" className="flex flex-wrap items-center gap-3"><Tombol varian="secondary" disabled={page <= 1} onClick={() => onFilter(page - 1, status)}>Sebelumnya</Tombol><span>{page} / {q.data.meta.total_pages}</span><Tombol varian="secondary" disabled={page >= q.data.meta.total_pages} onClick={() => onFilter(page + 1, status)}>Berikutnya</Tombol></nav></>}
+    </div>;
+}

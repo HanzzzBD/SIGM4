@@ -15,6 +15,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "3.1145.0",
     "@aws-sdk/s3-request-presigner": "3.1145.0",
+    "@google/genai": "2.29.1",
     "@node-rs/argon2": "^2.2.1",
     "@sigm4/schemas": "*",
     "bullmq": "6.3.4",

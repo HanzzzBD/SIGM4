@@ -5,6 +5,7 @@
 
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import type {QueryClient} from "@tanstack/react-query";
 import { ambilData, api } from "../api";
 
 export interface PenggunaSesi {
@@ -14,6 +15,8 @@ export interface PenggunaSesi {
     readonly telepon: string | null;
     readonly role_kode: string;
     readonly must_change_password: boolean;
+    readonly two_factor_enabled?: boolean;
+    readonly remaining_backup_codes?: number;
 }
 
 export interface Sesi {
@@ -23,6 +26,13 @@ export interface Sesi {
 }
 
 export const KUNCI_ME = ["me"] as const;
+
+/** Leave the protected route before removing /me used by mounted shell children. */
+export async function leaveAuthenticatedSession(client:QueryClient,navigate:()=>Promise<unknown>):Promise<void>{
+    await client.cancelQueries();
+    await navigate();
+    client.clear();
+}
 
 /** SDD-11 §4.3: dimuat sekali saat masuk; dimuat ulang saat token disegarkan. */
 export const kueriMe = queryOptions({

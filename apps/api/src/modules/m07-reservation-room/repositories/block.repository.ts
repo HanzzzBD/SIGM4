@@ -41,6 +41,14 @@ export interface ReservasiRingkas {
 const KOLOM_ATURAN = sql<string>`to_char(berlaku_mulai, 'YYYY-MM-DD')`;
 
 export class BlockRepository extends BaseRepository {
+    async kunciRuangan(ctx: AuthContext, id: number): Promise<void> {
+        await this.query(ctx).selectFrom("rooms").select("id").where("id", "=", String(id)).forUpdate().execute();
+    }
+    async identik(ctx: AuthContext, roomId: number, v: {hari: number; jam_mulai: string; jam_selesai: string; berlaku_mulai: string; berlaku_sampai: string; label_kegiatan: string}) {
+        return this.query(ctx).selectFrom("room_fixed_schedules").select("id").where("room_id", "=", String(roomId)).where("status", "=", "AKTIF")
+          .where("hari", "=", v.hari).where("jam_mulai", "=", v.jam_mulai).where("jam_selesai", "=", v.jam_selesai)
+          .where("berlaku_mulai", "=", v.berlaku_mulai).where("berlaku_sampai", "=", v.berlaku_sampai).where("label_kegiatan", "=", v.label_kegiatan).executeTakeFirst();
+    }
     constructor(executor: QueryExecutor) {
         super(executor);
     }

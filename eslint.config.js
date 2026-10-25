@@ -28,10 +28,11 @@ export default tseslint.config(
   {
     // wireframe/ berisi artefak desain (.dc.html beserta bundel pendukungnya),
     // bukan kode sumber pohon mana pun — di luar apps/* dan packages/*.
-    ignores: ['**/dist/**', '**/build/**', '**/node_modules/**', '**/*.d.ts', 'wireframe/**'],
+    ignores: ['**/dist/**', '**/build/**', '**/node_modules/**', '**/*.d.ts', 'wireframe/**', 'tmp/**', '.kilo/**'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  { files: ['**/*.cjs'], languageOptions: { sourceType: 'commonjs', globals: { ...globals.node } }, rules: { '@typescript-eslint/no-require-imports': 'off' } },
   {
     files: ['**/*.{ts,tsx,mts,cts}'],
     plugins: { import: importPlugin },

@@ -7,3 +7,4 @@ export type { QueryExecutor, TransactionScope } from "./transaction.js";
 export { withTransaction } from "./transaction.js";
 export type { ScopedRepository } from "./repository.js";
 export { BaseRepository, defineRepository } from "./repository.js";
+export type { MaintenanceSchedulesTable } from "./schema.js";

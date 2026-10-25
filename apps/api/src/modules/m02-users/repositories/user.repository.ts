@@ -22,6 +22,8 @@ const KOLOM_USER = [
     "must_change_password",
     "login_terakhir_pada",
     "consent_guardian_at",
+    "deactivated_at",
+    "pseudonymized_at",
     "created_at",
     "updated_at",
 ] as const;
@@ -31,7 +33,9 @@ export interface UserRow {
     readonly id: string;
     readonly nama: string;
     readonly email: string;
-    readonly nip_nis: string;
+    readonly nip_nis: string | null;
+    readonly deactivated_at: Date | null;
+    readonly pseudonymized_at: Date | null;
     readonly role_id: string;
     readonly work_unit_id: string | null;
     readonly telepon: string | null;
@@ -44,6 +48,7 @@ export interface UserRow {
 }
 
 export interface ListUsersFilter {
+    readonly q?: string;
     readonly page: number;
     readonly perPage: number;
     readonly status?: "AKTIF" | "NONAKTIF";
@@ -84,12 +89,19 @@ export class UserRepository extends BaseRepository {
         super(executor);
     }
 
-    async findById(ctx: AuthContext, id: number): Promise<UserRow | undefined> {
-        return this.query(ctx)
+    async findById(ctx: AuthContext, id: number, lock = false): Promise<UserRow | undefined> {
+        const query = this.query(ctx)
             .selectFrom("users")
             .select(KOLOM_USER)
-            .where("id", "=", String(id))
-            .executeTakeFirst();
+            .where("id", "=", String(id));
+        return (lock ? query.forUpdate() : query).executeTakeFirst();
+    }
+
+    /** Keep the established all-administrator lock order before locking a target. */
+    async lockForChange(ctx: AuthContext, id: number): Promise<UserRow | undefined> {
+        const row = await this.findById(ctx, id);
+        if (row?.status === "AKTIF" && await this.findRoleKode(ctx, id) === KODE_ROLE_ADMINISTRATOR) await this.lockActiveUserIdsByRole(ctx, row.role_id);
+        return this.findById(ctx, id, true);
     }
 
     /**
@@ -153,6 +165,10 @@ export class UserRepository extends BaseRepository {
         const eksekutor = this.query(ctx);
         const dasar = () => {
             let q = eksekutor.selectFrom("users");
+            if (filter.q !== undefined) {
+                const pattern = `%${filter.q.replace(/[\\%_]/g, "\\$&")}%`;
+                q = q.where(eb => eb.or([eb("nama", "ilike", pattern), eb("email", "ilike", pattern)]));
+            }
             if (filter.status !== undefined) q = q.where("status", "=", filter.status);
             if (filter.roleId !== undefined)
                 q = q.where("role_id", "=", String(filter.roleId));
@@ -216,6 +232,7 @@ export class UserRepository extends BaseRepository {
             .select("id")
             .where("role_id", "=", roleId)
             .where("status", "=", "AKTIF")
+            .orderBy("id")
             .forUpdate()
             .execute();
         return rows.map((r) => r.id);
@@ -264,11 +281,12 @@ export class UserRepository extends BaseRepository {
         ctx: AuthContext,
         id: number,
         status: "AKTIF" | "NONAKTIF",
+        now?: Date,
     ): Promise<UserRow> {
         return this.query(ctx)
             .updateTable("users")
             // Pelaku SYSTEM (student-graduation, SL-03) → updated_by NULL.
-            .set({ status, updated_by: pelakuId(ctx) })
+            .set({ status, updated_by: pelakuId(ctx), ...(now ? { deactivated_at: status === "AKTIF" ? null : sql`case when status='AKTIF' then ${now} else deactivated_at end` } : {}) })
             .where("id", "=", String(id))
             .returning(KOLOM_USER)
             .executeTakeFirstOrThrow();

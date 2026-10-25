@@ -5,6 +5,8 @@ export const DecideBodySchema = z.object({
     urutan: z.coerce.number().int().positive(),
     keputusan: z.enum(["DISETUJUI", "DITOLAK", "PERLU_REVISI"]),
     catatan: z.string().trim().max(2000).nullable().optional(),
+    /** Validasi makna dimiliki adapter jenis pengajuan, SDD-APR-09/17. */
+    rincian_keputusan: z.record(z.string(),z.unknown()).optional(),
 });
 
 export const DecideResponseSchema = z.object({

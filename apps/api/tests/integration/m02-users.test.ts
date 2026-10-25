@@ -235,7 +235,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
         const sesudah = await service.update(ctx, Number(dibuat.user.id), {
             nama: "Sesudah",
             email: dibuat.user.email,
-            nipNis: dibuat.user.nip_nis,
+            nipNis: dibuat.user.nip_nis!, // Fixture akun baru belum dipseudonimkan.
             roleId: Number(dibuat.user.role_id),
             workUnitId: unitBaru,
             telepon: "081200000000",
@@ -265,7 +265,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
             service.update(ctx, Number(dibuat.user.id), {
                 nama: "X Diubah",
                 email: dibuat.user.email,
-                nipNis: dibuat.user.nip_nis,
+                nipNis: dibuat.user.nip_nis!, // Fixture akun baru belum dipseudonimkan.
                 roleId: Number(dibuat.user.role_id),
                 workUnitId: null,
                 telepon: null,
@@ -448,7 +448,7 @@ describe.skipIf(!ADA_DB)("PR-01-02 — CRUD pengguna (acceptance)", () => {
         const masukan = {
             nama: "Nama Baru",
             email: dibuat.user.email,
-            nipNis: dibuat.user.nip_nis,
+            nipNis: dibuat.user.nip_nis!, // Fixture akun baru belum dipseudonimkan.
             roleId: Number(dibuat.user.role_id),
             telepon: null,
         };

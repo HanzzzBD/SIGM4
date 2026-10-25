@@ -13,7 +13,7 @@
 
 ## 1. Objective
 
-Aset memiliki siklus hidup penuh selain peminjaman: dapat dipesan di muka, dirawat, dan diverifikasi keberadaannya. Reservasi aset menutup separuh kedua `booking_slots` — sumber daya kini mencakup ruangan **dan** unit aset dalam satu tabel dan satu constraint.
+Aset memiliki siklus hidup penuh selain peminjaman: dapat dipesan di muka, dirawat, dan diverifikasi keberadaannya. Reservasi aset menutup separuh kedua `booking_slots` — sumber daya kini mencakup ruangan **dan** unit aset dalam satu tabel, dengan exclusion constraint per jenis sumber daya (`CI-01`, `SDD-AVL-02`).
 
 ## 2. Scope
 
@@ -35,7 +35,7 @@ Aset memiliki siklus hidup penuh selain peminjaman: dapat dipesan di muka, diraw
 |---|---|
 | Phase 03 → M-11 | `BR-052`: laporan kerusakan menjadi hulu work order korektif |
 | Phase 03 → M-05 | M-13 melaksanakan opname lewat pemindaian QR |
-| Phase 02 → `booking_slots` | M-08 memakai tabel dan constraint yang sama dengan M-07 |
+| Phase 02 → `booking_slots` | M-08 memakai tabel yang sama dengan M-07 dan constraint aset dengan semantik irisan yang sama (`CI-01`) |
 | Phase 02 → M-04, M-10, M-17 | Entitas aset, approval, notifikasi |
 
 Urutan di dalam phase:
@@ -72,7 +72,7 @@ M-08 ──(paralel, tanpa ketergantungan internal)
 | [`01-availability-concurrency.md`](../../SDD/01-availability-concurrency.md) | `SDD-AVL-06` … `SDD-AVL-11` pada `resource_type='asset'` |
 | [`02-approval-engine.md`](../../SDD/02-approval-engine.md) | Penerapan pada M-08 |
 | [`07-event-flow.md`](../../SDD/07-event-flow.md) | `SDD-EVT-05` … `SDD-EVT-09` (rantai kerusakan → work order) |
-| [`12-mobile-architecture.md`](../../SDD/12-mobile-architecture.md) | `SDD-MOB-03` … `SDD-MOB-07` (opname & eksekusi teknisi luring) |
+| [`12-mobile-architecture.md`](../../SDD/12-mobile-architecture.md) | `SDD-MOB-03` … `SDD-MOB-07` (opname luring, foto teknisi luring; transaksi WO daring) |
 | [`05-database-design.md`](../../SDD/05-database-design.md) | `SDD-DB-04` `SDD-DB-05` |
 
 ## 6. Deliverables
@@ -81,27 +81,27 @@ M-08 ──(paralel, tanpa ketergantungan internal)
 - Reservasi aset yang melewati approval dan mengunci slot
 - Work order korektif yang lahir otomatis dari laporan kerusakan terverifikasi
 - Jadwal pemeliharaan preventif berbasis kalender kerja
-- Aplikasi teknisi: daftar tugas, eksekusi, unggah bukti — berfungsi luring
+- Aplikasi teknisi: transaksi eksekusi daring; antrean foto luring bertahan setelah aplikasi ditutup (keputusan pengguna 14 Oktober 2026)
 - Sesi opname dengan pemindaian QR massal dan laporan selisih
 
 ## 7. Pull Request Plan
 
 | PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
 |---|---|:---:|:---:|---|---|---|
-| `PR-04-01` | Ketersediaan aset di atas `booking_slots` (`resource_type='asset'`) | M | L | Ph03 | `FR-08.1`, `SDD-AVL-06` | Satu constraint melayani ruangan & aset |
+| `PR-04-01` | Ketersediaan aset di atas `booking_slots` (`resource_type='asset'`) | M | L | Ph03 | `FR-08.1`, `SDD-AVL-06` | Satu tabel melayani ruangan & aset, dengan exclusion constraint per jenis sumber daya (`CI-01`, `SDD-AVL-02`); tidak mengubah `SlotService` |
 | `PR-04-02` | Pengajuan reservasi aset + approval | L | L | 01, Ph02 | `FR-08.2`, `BR-017` … `BR-023c`, `SDD-APR-17` | Status aset ditetapkan saat aktivasi slot, bukan saat approval; penangan hasil `RESERVASI_ASET` terdaftar di registri `penanganHasil` (m10) sehingga `auto_reject` job melepas slot — diuji lewat jalur worker (keputusan 75 log phase-02); migration `expand` `reservation_items` + reservasi gabungan ruangan + aset `BR-024b` (ditunda dari `PR-03-08`, keputusan 11c log phase-03); konsumen event `TentativeSlotExpired` (`PR-02-37`) bagi reservasi aset (`FR-08.2 A6`, `BR-023b`); **deferred FR-04.1 AC 4:** aset dapat_dipinjam=false tidak tampil pada pengajuan, diuji backend dan layar; owner Backend reservasi/Frontend/QA. *Rekonsiliasi (keputusan 23 log phase-03):* juga `FR-11.2` A1 — membatalkan reservasi aset mendatang atas aset yang diturunkan ke Tidak Tersedia saat verifikasi kerusakan |
 | `PR-04-03` | Pembatalan reservasi aset + pelepasan slot | M | L | 02 | `FR-08.3`, `BR-024` `BR-024a` `BR-024b` | Slot `Released`, tidak dihapus |
 | `PR-04-04` | Kalender & pencarian ketersediaan aset (UI) | M | M | 01 | `FR-08.1`, `AV-01` … `AV-05` | Menampilkan alternatif saat penuh. *Rekonsiliasi (keputusan 23 log phase-03):* layar P-28 Katalog Aset |
 | `PR-04-05` | Skema work order + pembuatan korektif | M | M | Ph03 | `FR-12.1`, `BR-046` `BR-047` | Prioritas & tenggat sesuai tingkat kerusakan. *Rekonsiliasi (keputusan 23 log phase-03):* Teknisi melihat tiket kerusakan yang tertaut work order miliknya (`FR-11.3` A2) |
-| `PR-04-06` | Jembatan `BR-052`: kerusakan terverifikasi → work order | M | M | 05, Ph03 | `BR-052`, `SDD-EVT-05` | Satu laporan tidak menghasilkan work order ganda |
-| `PR-04-07` | Jadwal pemeliharaan preventif + job pembangkit | L | L | 05 | `FR-12.2`, `BR-048` `BR-049`, `CAL-01` … `CAL-03` | Jadwal melompati hari libur; **closure handoff Phase 02 FR-04.5 AC 2:** interval_preventif_hari kategori diusulkan pada pembuatan jadwal, dapat disesuaikan; owner Backend maintenance/Frontend/QA, dependency PR-04-05; bukti input kategori → usulan jadwal diuji. *Rekonsiliasi (keputusan 23 log phase-03):* layar P-45 dan P-46 |
-| `PR-04-08` | Eksekusi work order oleh teknisi (mobile, luring) | L | L | 05 | `FR-12.3`, `BR-050` `BR-051`, `SDD-MOB-05` | Antrean unggah bertahan saat aplikasi ditutup. *Rekonsiliasi (keputusan 23 log phase-03):* layar MS-16/MS-17, di atas fondasi `PR-04-16` |
+| `PR-04-06` | Jembatan kerusakan terverifikasi → work order | M | M | 05, Ph03 | `FR-11.2`, `FR-12.1`, `BR-045`, `SDD-EVT-05` | Satu laporan tidak menghasilkan work order ganda; teknisi dipilih saat verifikasi, prioritas mengikuti urgensi tiket dan target diisi petugas (14 Oktober 2026). BR-052 tetap peringatan garansi |
+| `PR-04-07` | Jadwal pemeliharaan preventif + job pembangkit | L | L | 05 | `FR-12.2`, `BR-051`, kalender `work_days`/`holidays`, `CAL-03` | Jadwal melompati hari nonoperasional/libur; **closure handoff Phase 02 FR-04.5 AC 2:** interval_preventif_hari kategori diusulkan pada pembuatan jadwal, dapat disesuaikan; owner Backend maintenance/Frontend/QA, dependency PR-04-05; bukti input kategori → usulan jadwal diuji. H-7 hari kalender WIB, siklus per aset dari tanggal penyelesaian, keputusan 14 Oktober 2026 di PRD M-12 §8. *Rekonsiliasi (keputusan 23 log phase-03):* layar P-45 dan P-46 |
+| `PR-04-08` | Eksekusi work order oleh teknisi (mobile daring, foto luring) | L | L | 05 | `FR-12.3`, `BR-050` `BR-051`, `SDD-MOB-05` | Antrean unggah bertahan saat aplikasi ditutup. *Rekonsiliasi (keputusan 23 log phase-03):* layar MS-16/MS-17, di atas fondasi `PR-04-16` |
 | `PR-04-09` | Verifikasi & penutupan work order | M | M | 08 | `FR-12.4`, `BR-053` | Penutupan memutakhirkan kondisi aset (`BR-005b`) |
 | `PR-04-10` | Riwayat servis aset | S | S | 09 | `FR-12.5` | Riwayat menyatu dengan linimasa aset — jenis entri pemeliharaan pada `GET /assets/{id}/timeline` (`PR-03-24`, keputusan 4 log phase-03) |
-| `PR-04-11` | Skema sesi opname + pembuatan sesi | M | M | Ph03 | `FR-13.1`, `BR-054` `BR-055` | Satu sesi aktif per cakupan |
-| `PR-04-12` | Pelaksanaan opname via pemindaian (mobile, luring, massal) | L | L | 11, Ph03 | `FR-13.2`, `BR-056` `BR-057`, `SDD-MOB-03` | 200 pemindaian luring tersinkron tanpa duplikat. *Rekonsiliasi (keputusan 23 log phase-03):* layar MS-18/MS-19, di atas fondasi `PR-04-16` |
-| `PR-04-13` | Rekonsiliasi & penyelesaian sesi opname | L | L | 12 | `FR-13.3`, `BR-058` `BR-059`, `BR-012` | Selisih menghasilkan tindak lanjut, bukan sekadar laporan |
-| `PR-04-14` | Laporan hasil opname + ekspor | S | S | 13 | `FR-13.3` | Ekspor tercatat di activity log |
+| `PR-04-11` | Skema sesi opname + pembuatan sesi | M | M | Ph03 | `FR-13.1`, `BR-054` `BR-055` | Larang irisan aset snapshot pada seluruh sesi aktif, termasuk menunggu persetujuan (keputusan M-13 §6, 14 Oktober 2026) |
+| `PR-04-12` | Pelaksanaan opname via pemindaian (mobile, luring, massal) | L | L | 11, Ph03 | `FR-13.2`, `BR-056` `BR-057`, `SDD-MOB-03` | 200 pemindaian luring SQLite bertahan restart dan tersinkron tanpa duplikat; akses/target lokal 72 jam, logout menghapus antrean akun (keputusan M-13 §6). *Rekonsiliasi (keputusan 23 log phase-03):* layar MS-18/MS-19, di atas fondasi `PR-04-16` |
+| `PR-04-13` | Rekonsiliasi & penyelesaian sesi opname | L | L | 12 | `FR-13.3`, `BR-058` `BR-059`, `BR-012` | Persetujuan langsung audit.approve, larangan menyetujui sendiri, basis lokasi/kondisi terbaru, registrasi temuan atomik; keputusan M-13 §6 |
+| `PR-04-14` | Laporan hasil opname + ekspor | S | S | 13 | `FR-13.3` | PDF persisten dan XLSX snapshot disetujui; ekspor tercatat di activity log |
 | `PR-04-15` | URL unggah baru untuk pesanan berkas yang sudah ada *(rekonsiliasi 10 Okt, keputusan 23 log phase-03)* | S | S | PR-03-25 | `SDD-MOB-04`, `SDD-FS-01` | Gap 11: URL unggah baru bagi `file_id` milik pemanggil yang belum dikonfirmasi; kontrak ditetapkan PRD m06 §7 lebih dulu; uji penolakan |
 | `PR-04-16` | Fondasi mobile: Expo, login MS-01 … MS-03, antrean expo-sqlite *(rekonsiliasi 10 Okt, keputusan 23 log phase-03)* | L | L | 15, Ph02 | `SDD-MOB-01`, `SDD-MOB-10`, `SDD-MOB-11`, `FR-01.1`, `FR-01.5` | GAP-05-MOBILE: aplikasi berdiri, token di penyimpanan aman, 2FA & ganti password wajib, antrean unggah bertahan saat aplikasi ditutup; prasyarat `PR-04-08` dan `PR-04-12` |
 | `PR-04-17` | Mobile: Beranda MS-05, Tugas MS-06, push & deep link *(rekonsiliasi 10 Okt, keputusan 23 log phase-03)* | M | M | 16, PR-02-27 | `FR-15.1`, `FR-17.2` | Dashboard ringkas + aksi cepat, antrean tugas per permission (UXD-03), registrasi token & push latar depan/belakang, deep link |
@@ -113,11 +113,11 @@ M-08 ──(paralel, tanpa ketergantungan internal)
 ### `PR-04-02` — Reservasi aset
 - [ ] Pakai `SlotService` Phase 02 tanpa modifikasi — bila perlu diubah, itu tanda batas modul salah
 - [ ] Kunci beberapa aset menurut `asset_id` menaik (`SDD-AVL-06`)
-- [ ] Status aset **tidak** diubah saat approval; hanya saat slot naik ke `Active` — mengikuti sekuens 15.2, sesuai resolusi kontradiksi `FR-08.2`
+- [ ] Status aset **tidak** diubah saat approval; job menandai `Direservasi` ketika slot `CONFIRMED` mencakup waktu kini (BR-005b). Slot aset menjadi `ACTIVE` hanya pada serah terima fisik Phase 05; penggunaan ruangan gabungan dicatat terpisah.
 - [ ] Uji: reservasi 5 unit serentak dari 3 penyedia → tidak ada over-booking
 
-### `PR-04-06` — Jembatan `BR-052`
-- [ ] Konsumsi event `damage_report.verified` dari outbox
+### `PR-04-06` — Jembatan tiket terverifikasi
+- [ ] Konsumsi event `DamageReportVerified` dari outbox (`SDD-EVT-05`)
 - [ ] Idempoten berdasarkan `damage_report_id` — event terkirim ulang tidak menggandakan work order
 - [ ] Isi titik ekstensi yang disiapkan `PR-03-15`
 - [ ] Uji: pengiriman ulang event menghasilkan tepat satu work order
@@ -131,8 +131,8 @@ M-08 ──(paralel, tanpa ketergantungan internal)
 ## 9. Acceptance Checklist
 
 - [ ] Seluruh AC pada `FR-08.1`…`FR-08.3`, `FR-12.1`…`FR-12.5`, `FR-13.1`…`FR-13.3` terverifikasi
-- [ ] Reservasi aset dan ruangan berbagi satu constraint tanpa jalur kode terpisah
-- [ ] `BR-052` tertutup: laporan kerusakan terverifikasi menghasilkan tepat satu work order
+- [ ] Reservasi aset dan ruangan memakai `SlotService` dan tabel yang sama, dengan exclusion constraint per jenis sumber daya (`CI-01`, `SDD-AVL-02`)
+- [ ] Jembatan `FR-11.2` → `FR-12.1` tertutup: laporan kerusakan terverifikasi menghasilkan tepat satu work order; `BR-052` menampilkan peringatan garansi
 - [ ] Pemeliharaan preventif tidak menjadwalkan pekerjaan pada hari libur (`CAL-02`)
 - [ ] Opname luring 200 pemindaian tersinkron tanpa duplikat atau kehilangan
 - [ ] Kondisi aset yang berubah karena work order terlihat pada rekonsiliasi opname

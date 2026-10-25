@@ -65,7 +65,7 @@ jobs:
                   fi
                   berubah=$(git diff --name-only "$BASE" HEAD)
                   printf '%s\n' "$berubah"
-                  pola='^(apps/api/|packages/|scripts/|deploy/|docs/PRD/|docs/SDD/|package(-lock)?\.json$|tsconfig[^/]*\.json$|eslint\.config\.js$|\.prettierrc\.json$|Dockerfile$|\.dockerignore$|docker-compose\.yml$|\.github/workflows/)'
+                  pola='^(apps/api/|packages/|scripts/|deploy/|evals/chatbot/|docs/PRD/|docs/SDD/|package(-lock)?\.json$|tsconfig[^/]*\.json$|eslint\.config\.js$|\.prettierrc\.json$|Dockerfile$|\.dockerignore$|docker-compose\.yml$|\.github/workflows/)'
                   if printf '%s\n' "$berubah" | grep -qE "$pola"; then
                       echo "api=true" >> "$GITHUB_OUTPUT"
                   else
@@ -110,6 +110,10 @@ jobs:
             - run: npm ci
             # Seluruh workspace; untuk apps/api didahului tsc atas uji negatif @ts-expect-error.
             - run: npm run test
+            - name: Kontrak keamanan dan pembersihan smoke (CD-07)
+              run: |
+                  bash -n deploy/staging/smoke-test.sh
+                  python3 scripts/qa/smoke-critical.test.py
             # Berkas deploy produksi (PR-08-17): gerbang CD-06 diuji, skrip dan topologi divalidasi.
             - name: Berkas deploy produksi
               run: |
@@ -448,6 +452,14 @@ jobs:
                   ssh -i ~/.ssh/id_deploy "$TUJUAN" \
                       "cd $DIR_VPS && chmod +x deploy.sh smoke-test.sh && SIGM4_DOMAIN='$DOMAIN' ./deploy.sh '$IMAGE'; kode=\$?; docker logout ghcr.io >/dev/null; exit \$kode"
             - name: Smoke test (CD-07)
+              timeout-minutes: 8
               env:
+                  SMOKE_BASE_URL: https://${{ vars.STAGING_DOMAIN }}
+                  SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+                  SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+                  SMOKE_TOTP_SECRET: ${{ secrets.SMOKE_TOTP_SECRET }}
+                  SMOKE_ROOM_ID: ${{ vars.SMOKE_ROOM_ID }}
+                  SMOKE_ASSET_UUID: ${{ vars.SMOKE_ASSET_UUID }}
+                  SMOKE_START_HOUR_WIB: ${{ vars.SMOKE_START_HOUR_WIB || '09:00' }}
                   SMOKE_EXPECTED_REVISION: ${{ github.sha }}
-              run: bash deploy/staging/smoke-test.sh "https://${{ vars.STAGING_DOMAIN }}"
+              run: bash deploy/staging/smoke-test.sh "$SMOKE_BASE_URL" --full

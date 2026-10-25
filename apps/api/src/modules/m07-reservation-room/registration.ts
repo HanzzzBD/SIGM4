@@ -21,6 +21,8 @@ import { kedaluwarsakanReservasi, penangananReservasiRuangan, rincianReservasiRu
 export function daftarkanReservasiRuangan(clock: Clock, audit: AuditLogger): void {
     if (penanganHasil.cari("RESERVASI_RUANGAN") === undefined) penanganHasil.daftar(penangananReservasiRuangan(clock, audit));
     if (penyediaRincian.cari("RESERVASI_RUANGAN") === undefined) penyediaRincian.daftar(rincianReservasiRuangan);
+    if (penanganHasil.cari("RESERVASI_ASET") === undefined) penanganHasil.daftar(penangananReservasiRuangan(clock, audit, "RESERVASI_ASET"));
+    if (penyediaRincian.cari("RESERVASI_ASET") === undefined) penyediaRincian.daftar({ ...rincianReservasiRuangan, jenis: "RESERVASI_ASET" });
 }
 
 export interface KonsumenReservasiDeps {
@@ -38,7 +40,7 @@ export function pasangKonsumenReservasi(registry: EventHandlerRegistry, deps: Ko
     registry.on(EVENT_SLOT_TENTATIF_KEDALUWARSA, async (e) => {
         const p = (e.payload ?? {}) as Readonly<Record<string, unknown>>;
         // Slot pinjaman aset (`loan_id`) milik M-08/M-09; hanya reservasi ruangan di sini.
-        if (p["reservation_id"] === null || p["reservation_id"] === undefined || p["resource_type"] !== "room") return;
+        if (p["reservation_id"] === null || p["reservation_id"] === undefined || !["room", "asset"].includes(String(p["resource_type"]))) return;
         await withTransaction(deps.ctx(), (scope) => kedaluwarsakanReservasi(scope, { clock: deps.clock, audit: deps.audit, approval: deps.approval() }, Number(p["reservation_id"])), deps.db());
     });
 }

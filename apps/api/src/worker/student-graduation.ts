@@ -17,7 +17,7 @@ export async function jalankanKelulusan(db: Kysely<Database>, clock: Clock): Pro
     const audit = new AuditLogger({ clock, logger: new Logger({ clock, modulBawaan: PEKERJAAN_KELULUSAN }) });
     return jalankanPekerjaanSistem({ nama: PEKERJAAN_KELULUSAN, db, audit, clock }, async (ctx) => {
         // Hari WIB (CAL-03): tahun ajaran berakhir bila tanggal_selesai < hari ini.
-        const hasil = await new GraduationService(db, audit).deactivateDueGraduates(ctx, tanggalWib(clock.now()));
+        const hasil = await new GraduationService(db, audit, undefined, clock).deactivateDueGraduates(ctx, tanggalWib(clock.now()));
         // SL-04: lulusan berkewajiban bukan galat — tetap AKTIF dan dilaporkan jumlahnya.
         return { diproses: hasil.diproses, galat: 0, rincian: { dinonaktifkan: hasil.dinonaktifkan, terblokir: hasil.terblokir.length } };
     });

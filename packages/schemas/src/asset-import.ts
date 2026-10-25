@@ -36,6 +36,7 @@ export function importAssetRowSchema(currentYear: number) {
 }
 export const AssetImportFailureSchema = z.object({ baris: z.number().int(), nama_barang: z.string().nullable(), pesan: z.string(), data: z.record(z.string(), z.string()) });
 export const AssetImportJobSchema = z.object({
+    report_expires_at: z.string().nullable().optional(), report_expired: z.boolean().optional(),
     id: z.string(), nama_berkas: z.string(), status: z.enum(["MENUNGGU", "BERJALAN", "SELESAI", "GAGAL"]),
     total: z.number(), terproses: z.number(), sukses: z.number(), gagal: z.number(), unit_dibuat: z.number(),
     laporan_gagal: z.array(AssetImportFailureSchema), pesan_galat: z.string().nullable(), selesai_pada: z.string().nullable(), dibuat_pada: z.string(),

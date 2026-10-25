@@ -10,6 +10,7 @@ import { Ikon } from "../../shared/ui/icon";
 import { Isian, KotakCentang, Pilihan, Tombol } from "../../shared/ui/primitives";
 import type { Role } from "./api";
 import { LABEL_FIELD, LABEL_OPERATOR, grupKosong, kunciBaru, operatorAwal } from "./model";
+import { NamedMultiPicker, RequesterPicker } from "./EntityPickers";
 import type { NodeGrup, NodeKondisi, NodePredikat, PetaGalat } from "./model";
 
 interface Konteks {
@@ -54,6 +55,8 @@ function DaftarId({ label, value, onUbah, galat }: { readonly label: string; rea
 /** Isian `value` menurut tipe field dan operator (D.3). Diekspor untuk skenario pratinjau. */
 export function IsianNilai({ label = "Nilai", field, op, value, onUbah, galat, roles }: { readonly label?: string; readonly field: string; readonly op: Operator; readonly value: unknown; readonly onUbah: (v: unknown) => void; readonly galat?: string | undefined; readonly roles: readonly Role[] }) {
     const tipe = FIELD_DSL[field]?.tipe;
+    if (field === "requester_id" && (op === "eq" || op === "neq")) return <RequesterPicker label={label} value={typeof value === "number" ? value : null} onChange={v => onUbah(v ?? undefined)} galat={galat} />;
+    if (["room_id", "asset_category_id", "material_category_id"].includes(field)) return <NamedMultiPicker field={field} label={label} value={value} onChange={onUbah} galat={galat} />;
     if (op === "is_true" || op === "is_false" || tipe === undefined) return null;
     if (tipe === "boolean") {
         return <Pilihan label={label} kosong="Pilih nilai" value={value === undefined ? "" : String(value)} galat={galat} opsi={[{ nilai: "true", label: "Ya" }, { nilai: "false", label: "Tidak" }]} onChange={(e) => onUbah(e.target.value === "" ? undefined : e.target.value === "true")} />;

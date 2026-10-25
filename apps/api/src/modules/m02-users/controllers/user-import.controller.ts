@@ -11,7 +11,7 @@ import {
 import type { UserImportService } from "../services/user-import.service.js";
 import { userImportTemplate } from "../services/user-import-template.js";
 
-function keJob(job: ImportJobRow): Record<string, unknown> {
+function keJob(job: ReturnType<UserImportService["report"]>): Record<string, unknown> {
     return {
         id: job.id,
         status: job.status,
@@ -24,6 +24,8 @@ function keJob(job: ImportJobRow): Record<string, unknown> {
         pesan_galat: job.pesan_galat,
         selesai_pada: job.selesai_pada?.toISOString() ?? null,
         dibuat_pada: job.created_at.toISOString(),
+        report_expires_at: job.report_expires_at,
+        report_expired: job.report_expired,
     };
 }
 
@@ -42,7 +44,7 @@ export function importUsersHandler(service: UserImportService): RequestHandler {
         });
         res.status(kodeStatus(job)).json({
             success: true,
-            data: keJob(job),
+            data: keJob(service.report(job)),
             meta: { idempotent_replay: replay },
         });
     };
@@ -53,7 +55,8 @@ export function getUserImportHandler(service: UserImportService): RequestHandler
         const ctx = requireAuthContext(res);
         const { id } = ImportJobIdParamSchema.parse(req.params);
         const job = await service.get(ctx, id);
-        res.status(200).json({ success: true, data: keJob(job), meta: null });
+        res.setHeader("Cache-Control", "private, no-store");
+        res.status(200).json({ success: true, data: keJob(service.report(job)), meta: null });
     };
 }
 

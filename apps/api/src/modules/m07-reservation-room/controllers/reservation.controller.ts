@@ -3,7 +3,8 @@
 // slot, instance approval, dan respons tersimpan commit bersama (ID-01 … ID-05, UX P-29).
 // Isian tak sah dijawab `422 VALIDATION_ERROR` per isian (Bab 17.2), bukan 400.
 
-import { CancelReservationBodySchema, RecordUsageBodySchema, ReservationIdParamSchema, ReservationListQuerySchema, RoomReservationBodySchema } from "@sigm4/schemas";
+import { AssetReservationBodySchema, CancelReservationBodySchema, RecordUsageBodySchema, ReservationIdParamSchema, ReservationListQuerySchema, RoomReservationBodySchema } from "@sigm4/schemas";
+import type { AssetReservationBody } from "@sigm4/schemas";
 import type { RequestHandler } from "express";
 import type { Kysely } from "kysely";
 import { requireAuthContext } from "../../../shared/auth/index.js";
@@ -15,14 +16,18 @@ import type { ReservationQueryService } from "../services/reservation-query.serv
 import type { IsianPengajuan, SubmissionService } from "../services/submission.service.js";
 import type { UsageService } from "../services/usage.service.js";
 
-function urai(body: unknown): IsianPengajuan {
-    const hasil = RoomReservationBodySchema.safeParse(body);
+function urai(body: unknown): IsianPengajuan | AssetReservationBody {
+    const asset = body !== null && typeof body === "object" && "jenis" in body && body.jenis === "ASET";
+    const hasil = asset ? AssetReservationBodySchema.safeParse(body) : RoomReservationBodySchema.safeParse(body);
     if (!hasil.success) {
         throw new DomainError("VALIDATION_ERROR", "Isian pengajuan reservasi tidak sah.", {
             errors: hasil.error.issues.map((i) => ({ field: i.path.map(String).join(".") || "(body)", message: i.message })),
         });
     }
-    return hasil.data;
+    const b = hasil.data;
+    if ("jenis" in b) return b;
+    if ((b.aset_pendukung?.length ?? 0) > 0) return AssetReservationBodySchema.parse({ jenis: "ASET", aset: b.aset_pendukung, waktu_mulai: b.waktu_mulai, waktu_selesai: b.waktu_selesai, keperluan: b.keperluan, lokasi_penggunaan: b.lokasi_penggunaan, room_id: b.room_id, nama_kegiatan: b.nama_kegiatan, jenis_kegiatan: b.jenis_kegiatan, jumlah_peserta: b.jumlah_peserta, pengulangan: b.pengulangan, lewati: b.lewati });
+    return b;
 }
 
 export function previewReservationHandler(service: SubmissionService): RequestHandler {

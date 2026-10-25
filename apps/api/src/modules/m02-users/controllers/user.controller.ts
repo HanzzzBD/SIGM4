@@ -27,6 +27,8 @@ function keUser(u: UserRow) {
         must_change_password: u.must_change_password,
         login_terakhir_pada: u.login_terakhir_pada,
         consent_guardian_at: u.consent_guardian_at,
+        deactivated_at: u.deactivated_at,
+        pseudonymized_at: u.pseudonymized_at,
         created_at: u.created_at,
         updated_at: u.updated_at,
     };
@@ -36,6 +38,7 @@ export function listUsersHandler(service: UserService): RequestHandler {
     return async (req, res) => {
         const ctx = requireAuthContext(res);
         const query = ListUsersQuerySchema.parse({
+            q: req.query["q"],
             page: req.query["page"],
             per_page: req.query["per_page"],
             status: req.query["filter[status]"],
@@ -45,6 +48,7 @@ export function listUsersHandler(service: UserService): RequestHandler {
         const hasil = await service.list(ctx, {
             page: query.page,
             perPage: query.per_page,
+            ...(query.q === undefined ? {} : { q: query.q }),
             ...(query.status === undefined ? {} : { status: query.status }),
             ...(query.role_id === undefined ? {} : { roleId: query.role_id }),
             ...(query.work_unit_id === undefined ? {} : { workUnitId: query.work_unit_id }),

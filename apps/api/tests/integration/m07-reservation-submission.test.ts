@@ -51,8 +51,11 @@ describe.skipIf(!ADA)("PR-03-10 — pengajuan reservasi ruangan (acceptance)", (
     const aturanIds: string[] = [];
     const pengguna: Record<"guru" | "guru2" | "guru3" | "siswa" | "petugas" | "teknisi" | "approver" | "kepala" | "diblokir", Peran> = {} as never;
 
+    let oldBlockThreshold: unknown;
     beforeAll(async () => {
         dbmate("up");
+        oldBlockThreshold = (await kueri<{ value: unknown }>("SELECT value FROM system_settings WHERE key='denda.ambang_blokir'"))[0]?.value;
+        await kueri("UPDATE system_settings SET value='100000000' WHERE key='denda.ambang_blokir'");
         await kueri("DELETE FROM event_outbox");
         const app = createApp({
             appBaseUrl: "https://sigm4.sekolah.test",
@@ -129,6 +132,7 @@ describe.skipIf(!ADA)("PR-03-10 — pengajuan reservasi ruangan (acceptance)", (
     });
 
     afterAll(async () => {
+        if (oldBlockThreshold !== undefined) await kueri(`UPDATE system_settings SET value='${JSON.stringify(oldBlockThreshold)}' WHERE key='denda.ambang_blokir'`);
         await new Promise<void>((r) => server.close(() => r()));
         const semua = Object.values(ruang).join(",");
         const ids = Object.values(pengguna).map((p) => p.id).join(",");
@@ -197,10 +201,13 @@ describe.skipIf(!ADA)("PR-03-10 — pengajuan reservasi ruangan (acceptance)", (
             expect((await pratinjau(pengguna.teknisi)).status).toBe(403);
         });
 
-        it("isian tak sah → 422 per isian; aset pendukung ditolak sampai PR-04-02 (keputusan 11c)", async () => {
-            const r = await ajukan(pengguna.guru, { nama_kegiatan: " ", waktu_selesai: wib("2027-05-05", "07:00"), aset_pendukung: [{ kategori_id: 1 }] });
+        it("isian tak sah → 422 per isian; aset pendukung harus memakai kontrak kategori/jumlah PR-04-02", async () => {
+            const r = await ajukan(pengguna.guru, { nama_kegiatan: " ", waktu_selesai: wib("2027-05-05", "07:00") });
             expect(r.status).toBe(422);
-            expect(r.json.error?.details?.map((d) => d.field).sort()).toEqual(["aset_pendukung", "nama_kegiatan", "waktu_selesai"]);
+            expect(r.json.error?.details?.map((d) => d.field).sort()).toEqual(["nama_kegiatan", "waktu_selesai"]);
+            const malformed = await ajukan(pengguna.guru, { aset_pendukung: [{ asset_id: 1 }] });
+            expect(malformed.status).toBe(422);
+            expect(malformed.json.error?.details?.map((d) => d.field)).toContain("aset_pendukung.0.category_id");
         });
 
         it("Idempotency-Key wajib UUIDv4 (ID-01)", async () => {

@@ -12,10 +12,12 @@ import type { AuthContext } from "../../../shared/auth/index.js";
 import type { Clock } from "../../../shared/clock/index.js";
 import type { Database, StatusReservasi } from "../../../shared/db/index.js";
 import { withTransaction } from "../../../shared/db/index.js";
-import { NotFoundError } from "../../../shared/errors/index.js";
+import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
 import type { BarisKelompok, SaringanDaftar } from "../repositories/reservation-query.repository.js";
 import { createReservationQueryRepository } from "../repositories/reservation-query.repository.js";
 import { rencanakanPembatalan } from "./cancellation-plan.js";
+import { assetReservationSupplement, assertNotCheckedOut } from "../../m08-reservation-item/index.js";
+import { reservationLoanLinks } from "../../m09-loans/index.js";
 import { tambahHari, tengahMalamWib } from "./schedule.js";
 import { alasanTolakPencatatan } from "./usage.service.js";
 
@@ -114,7 +116,16 @@ export class ReservationQueryService {
                 const induk = v.parent_id === null ? undefined : kelompok.find((b) => b.id === v.parent_id);
                 const nomor = new Map(kelompok.map((b) => [b.id, b.nomor]));
                 const riwayat = await riwayatEntitas(scope, this.audit, "reservations", [v.id, ...turunan.map((t) => t.id)], "reservasi");
+                const supplement = v.jenis === "ASET" ? await assetReservationSupplement(scope, [v.id, ...turunan.map((t) => t.id)], true) : {};
+                const actions = aksiTersedia(scope.ctx, kelompok, v.id, v.penggunaan_dicatat_pada !== null, this.clock.now());
+                if (v.jenis === "ASET") {
+                    try { await assertNotCheckedOut(scope, [v.id, ...turunan.map((t) => t.id)], this.clock.now()); } catch (error) { if (error instanceof DomainError) { actions.batalkan = false; actions.ubah_jadwal = false; } else throw error; }
+                    const roomStatus = "status_penggunaan_ruangan" in supplement && typeof supplement.status_penggunaan_ruangan === "string" ? supplement.status_penggunaan_ruangan : null;
+                    actions.catat_penggunaan = { kondisi: scope.ctx.can("reservation.record_usage") && turunan.length === 0 && v.penggunaan_dicatat_pada === null && roomStatus === "SELESAI", tidak_digunakan: scope.ctx.can("reservation.record_usage") && turunan.length === 0 && v.penggunaan_dicatat_pada === null && ["BERLANGSUNG", "SELESAI"].includes(roomStatus ?? "") };
+                }
                 return {
+                    ...supplement,
+                    ...(v.jenis === "ASET" ? { peminjaman: await reservationLoanLinks(scope, [v.id, ...turunan.map((t) => t.id)]) } : {}),
                     id: v.id,
                     nomor: v.nomor,
                     jenis: v.jenis,
@@ -137,7 +148,7 @@ export class ReservationQueryService {
                             ? null
                             : { kondisi_ruangan: v.kondisi_ruangan, catatan: v.catatan_penggunaan, dicatat_oleh: v.dicatat_oleh, dicatat_pada: v.penggunaan_dicatat_pada.toISOString() },
                     approval_instance_id: (await this.approval.instanceObjek(scope, v.jenis === "RUANGAN" ? "RESERVASI_RUANGAN" : "RESERVASI_ASET", akarId)) ?? null,
-                    aksi: aksiTersedia(scope.ctx, kelompok, v.id, v.penggunaan_dicatat_pada !== null, this.clock.now()),
+                    aksi: actions,
                     riwayat: riwayat.map((r) => ({
                         waktu: r.waktu.toISOString(),
                         aksi: r.aksi,

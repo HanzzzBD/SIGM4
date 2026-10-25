@@ -137,9 +137,11 @@ export class StudentEnrollmentRepository extends BaseRepository {
             .selectFrom("student_enrollments as e")
             .innerJoin("academic_years as y", "y.id", "e.academic_year_id")
             .innerJoin("users as u", "u.id", "e.user_id")
+            .innerJoin("roles as r", "r.id", "u.role_id")
             .select(["e.id as enrollmentId", "e.user_id as userId", "e.academic_year_id as academicYearId"])
             .where("e.lulus", "=", true)
             .where("u.status", "=", "AKTIF")
+            .where("r.kode", "=", "R-07")
             .where("y.tanggal_selesai", "<", hariIni)
             .orderBy("e.id")
             .execute();

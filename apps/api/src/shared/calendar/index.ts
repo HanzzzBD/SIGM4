@@ -4,3 +4,5 @@ export {
     BusinessCalendarService,
     DEFAULT_OPERATING_HOURS,
 } from "./business-calendar.js";
+
+export { calendarDaysSql } from "./calendar-days-sql.js";

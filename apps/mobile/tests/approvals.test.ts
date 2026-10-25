@@ -1,11 +1,11 @@
 import axios from "axios";
 import type { AxiosAdapter } from "axios";
 import { describe, expect, it } from "vitest";
-import { HistoryResponseSchema, ReservationDetailSchema } from "@sigm4/schemas";
+import { HistoryResponseSchema, ReservationDetailSchema, ProcurementDetailSchema } from "@sigm4/schemas";
 import type { ApprovalDecision, ApprovalDecisionResult, ApprovalPending } from "@sigm4/schemas";
 import { MobileApiError } from "../src/shared/api/client";
 import { findPending, loadReview } from "../src/features/approvals/api";
-import { approvalConflict, decisionBlockers, DecisionAttempt, slaLabel } from "../src/features/approvals/model";
+import { approvalConflict, decisionBlockers, DecisionAttempt, procurementDecision, slaLabel } from "../src/features/approvals/model";
 import type { ApprovalReview } from "../src/features/approvals/model";
 
 const time = "2026-10-13T08:00:00+07:00";
@@ -21,6 +21,33 @@ const signal = () => new AbortController().signal;
 const apiWith = (adapter: AxiosAdapter) => axios.create({ adapter });
 const envelope = (data: unknown) => ({ success: true, data, meta: null });
 const list = (rows: ApprovalPending[], page = 1, totalPages = 1) => ({ success: true, data: rows, meta: { page, per_page: 100, total: rows.length, total_pages: totalPages } });
+
+describe("PR-03-18: mobile procurement approval", () => {
+ const proposal = ProcurementDetailSchema.parse({id:"8",nomor:"PGD-2026-0008",judul:"Kursi",pengusul:{id:"9",nama:"Pemohon",role_kode:"R-05"},work_unit_id:"2",unit_kerja:"Laboratorium",tahun_anggaran:2026,prioritas:"TINGGI",justifikasi:"Penggantian",total_estimasi:"1000.00",status:"MENUNGGU_PERSETUJUAN",approval_instance_id:7,source_asset_id:null,alasan_penutupan:null,created_at:time,updated_at:time,approval_ids:[7],items:[{id:"11",jenis:"ASET",nama_barang:"Kursi",category_id:"1",kategori_nama:"Mebel",spesifikasi:"Kayu",satuan:"unit",jumlah_diusulkan:10,jumlah_disetujui:6,jumlah_diterima:0,estimasi_harga_satuan:"100.00",keterangan:null}],lampiran:[],penerimaan:[],dukungan:[]});
+ const perms = {...permissions,"procurement.approve":"all"};
+ const review = (): ApprovalReview => ({...complete(),history:{...history,jenis_pengajuan:"PENGADAAN_BARANG"},pending:{...pending,jenis_pengajuan:"PENGADAAN_BARANG"},procurement:proposal,room:null,availability:null});
+ it("loads authoritative pending review without room availability calls",async()=>{
+  const calls:string[]=[];const api=apiWith(async config=>{calls.push(config.url!);return {config,headers:{},status:200,statusText:"OK",data:config.url!.endsWith("history")?envelope(review().history):config.url==="/approvals/pending"?list([review().pending!]):envelope(proposal)};});
+  const result=await loadReview(api,7,perms,signal());expect(decisionBlockers(result,perms)).toEqual([]);expect(calls).toEqual(["/approvals/7/history","/approvals/pending","/procurements/8/review"]);
+ });
+ it("blocks stale revision instances, absent pending assignment and domain permission",()=>{
+  expect(decisionBlockers({...review(),procurement:{...proposal,approval_instance_id:99}},perms).length).toBeGreaterThan(0);
+  expect(decisionBlockers({...review(),pending:null},perms).length).toBeGreaterThan(0);expect(decisionBlockers(review(),permissions).length).toBeGreaterThan(0);
+ });
+ it("requires notes and monotonic integer quantities, preserves full approval without payload",()=>{
+  expect(()=>procurementDecision(proposal,1,"DISETUJUI"," ")).toThrow("wajib");
+  for(const quantity of ["7","-1","1.5","0",""])expect(()=>procurementDecision(proposal,1,"DISETUJUI","Sesuai",{"11":quantity})).toThrow();
+  expect(procurementDecision(proposal,1,"DISETUJUI","Sesuai",{"11":"5"})).toEqual({urutan:1,keputusan:"DISETUJUI",catatan:"Sesuai",rincian_keputusan:{items:[{item_id:11,jumlah_disetujui:5}]}});
+  expect(procurementDecision(proposal,1,"DISETUJUI","Sesuai").rincian_keputusan).toBeUndefined();
+ });
+ it("does not approve unsafe attachments, while rejection is allowed",()=>{
+  const unsafe={...proposal,lampiran:[{file_id:"1",nama_berkas:"Proposal.pdf",status:"PENDING",url:null}]};expect(()=>procurementDecision(unsafe,1,"DISETUJUI","Sesuai")).toThrow("diperiksa");expect(procurementDecision(unsafe,1,"DITOLAK","Tidak sesuai").keputusan).toBe("DITOLAK");
+ });
+ it("retains partial decision body and idempotency key on uncertain delivery",async()=>{
+  const body=procurementDecision(proposal,1,"DISETUJUI","Kurangi",{"11":"5"});const sent:Array<{body:ApprovalDecision;key:string}>=[];
+  const attempt=new DecisionAttempt({authorize:async()=>undefined,post:async(body,key)=>{sent.push({body,key});if(sent.length===1)throw new MobileApiError(0,"NETWORK_ERROR","offline");return result;}},()=>"partial-key");await expect(attempt.send(body,signal())).rejects.toThrow();await attempt.send(body,signal());expect(sent[0]).toEqual(sent[1]);
+ });
+});
 
 describe("PR-05-35: konteks dan pembacaan persetujuan", () => {
     it("memblokir konteks pemohon yang belum tersedia meski reservasi dan ketersediaan lengkap", () => {

@@ -69,7 +69,7 @@
     --color-text-heading: var(--color-neutral-900);
     --color-text-primary: var(--color-neutral-600);
     --color-text-secondary: var(--color-neutral-500);
-    --color-text-tertiary: var(--color-neutral-400);
+    --color-text-tertiary: var(--color-neutral-500);
     --color-text-link: var(--color-teal-600);
     --color-text-link-hover: var(--color-teal-700);
     --color-text-inverse: var(--color-white);

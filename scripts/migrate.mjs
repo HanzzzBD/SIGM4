@@ -47,11 +47,11 @@ if (!DATABASE_URL) {
  */
 const APP_DB_PASSWORD = process.env.APP_DB_PASSWORD?.trim();
 
+const diminta = process.argv.slice(2);
 const argumen = [
-  '--migrations-dir',
-  'apps/api/migrations',
+  ...(diminta.some(a => a === '--migrations-dir' || a.startsWith('--migrations-dir=')) ? [] : ['--migrations-dir', 'apps/api/migrations']),
   '--no-dump-schema',
-  ...process.argv.slice(2),
+  ...diminta,
 ];
 
 /**

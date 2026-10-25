@@ -41,7 +41,7 @@ export type PasswordViolation =
 export interface UserIdentity {
     nama: string;
     email: string;
-    nipNis: string;
+    nipNis: string | null;
 }
 
 /** Potongan identitas yang bermakna: bagian pendek menolak terlalu banyak password. */
@@ -49,7 +49,7 @@ const PANJANG_POTONGAN_IDENTITAS = 3;
 
 function potonganIdentitas(identity: UserIdentity): string[] {
     const emailLokal = identity.email.split("@")[0] ?? "";
-    return [...identity.nama.split(/\s+/), emailLokal, identity.nipNis]
+    return [...identity.nama.split(/\s+/), emailLokal, identity.nipNis ?? ""]
         .map((bagian) => bagian.trim().toLowerCase())
         .filter((bagian) => bagian.length >= PANJANG_POTONGAN_IDENTITAS);
 }

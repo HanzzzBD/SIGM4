@@ -28,8 +28,12 @@ const MODUL = "m10-approval";
  */
 export interface PenanganHasil {
     readonly jenis: JenisPengajuan;
+    /** SDD-APR-17: kunci objek sebelum langkah untuk penutupan/check-in konkuren. */
+    kunciObjek?(scope: TransactionScope, referensiId: number): Promise<void>;
+    /** Rincian domain diproses sesudah klaim pemenang, sebelum kelanjutan alur. */
+    saatKeputusan?(scope:TransactionScope,referensiId:number,input:{keputusan:KeputusanManusia;catatan:string|null;rincian:Readonly<Record<string,unknown>>|undefined}):Promise<Readonly<Record<string,unknown>>>;
     /** BR-043 / SDD-APR-11: kunci & verifikasi objek, promosi slot. Melempar DomainError → persetujuan batal (FR-10.2 A5). */
-    sebelumDisetujui(scope: TransactionScope, referensiId: number): Promise<void>;
+    sebelumDisetujui(scope: TransactionScope, referensiId: number, diputuskanPada?: Date): Promise<void>;
     /** Pelepasan slot dsb. saat alur berhenti tanpa persetujuan (BR-038, FR-10.2 A1). */
     setelahDitutup(scope: TransactionScope, referensiId: number, status: "DITOLAK" | "PERLU_REVISI"): Promise<void>;
 }
@@ -38,6 +42,7 @@ export interface InputKeputusan {
     readonly urutan: number;
     readonly keputusan: KeputusanManusia;
     readonly catatan: string | null;
+    readonly rincian_keputusan?: Readonly<Record<string,unknown>> | undefined;
 }
 
 export interface HasilKeputusan {
@@ -118,6 +123,9 @@ export class DecisionService {
             throw new DomainError("VALIDATION_ERROR", "Catatan wajib diisi saat menolak atau meminta revisi.", { field: "catatan" });
         }
 
+        const adapter=this.penangan.cari(inst.jenis);
+        if(input.rincian_keputusan!==undefined&&!adapter?.saatKeputusan)throw new DomainError("VALIDATION_ERROR","Jenis pengajuan ini tidak menerima rincian keputusan.");
+        await adapter?.kunciObjek?.(scope, inst.referensiId);
         const pada = this.clock.now();
         const menang = await repo.putuskan(scope.ctx, {
             instanceId,
@@ -147,6 +155,8 @@ export class DecisionService {
         }
 
         const penangan = this.penangan.cari(inst.jenis);
+        const rincian=await penangan?.saatKeputusan?.(scope,inst.referensiId,{keputusan:input.keputusan,catatan:input.catatan,rincian:input.rincian_keputusan});
+        if(rincian!==undefined)await repo.simpanRincian(scope.ctx,instanceId,input.urutan,rincian);
         let status: StatusInstance = "MENUNGGU";
         let langkahAktif: number | null = null;
         if (input.keputusan === "DISETUJUI") {
@@ -155,7 +165,7 @@ export class DecisionService {
                 // Langkah berikutnya — pemutus nonaktif dilewati, habis → fallback (RE-11/13).
                 langkahAktif = await this.approval.aktifkanBerikutnya(scope, instanceId);
             } else {
-                await penangan?.sebelumDisetujui(scope, inst.referensiId); // BR-043, SDD-APR-17
+                await penangan?.sebelumDisetujui(scope, inst.referensiId, pada); // BR-043, SDD-APR-17
                 status = "DISETUJUI";
                 await repo.tutup(scope.ctx, instanceId, status, pada);
             }
@@ -182,7 +192,7 @@ export class DecisionService {
             aksi: "APPROVAL_DECIDED",
             entitas: "approval_instances",
             entitasId: instanceId,
-            nilaiSesudah: { ...hasil, catatan: input.catatan },
+            nilaiSesudah: { ...hasil, catatan: input.catatan, ...(rincian===undefined?{}:{rincian_keputusan:rincian}) },
         });
         // Hanya jalur pemenang yang sampai di sini (RE-09).
         await publish(scope, {

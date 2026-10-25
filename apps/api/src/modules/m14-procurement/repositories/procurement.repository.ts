@@ -1,0 +1,31 @@
+import { sql } from "kysely";
+import type { AuthContext } from "../../../shared/auth/index.js";
+import type { QueryExecutor } from "../../../shared/db/index.js";
+import { BaseRepository,defineRepository } from "../../../shared/db/index.js";
+import type { ProcurementListQuery } from "@sigm4/schemas";
+import { procurementMaterialOptions } from "../../m22-materials/index.js";
+export class ProcurementRepository extends BaseRepository {
+ constructor(private readonly source:QueryExecutor){super(source);}
+ private visible(ctx:AuthContext){return this.query(ctx).selectFrom("procurements as p").where(e=>e.or([e("p.status","!=","DRAF"),e("p.pengusul_id","=",String(ctx.userId))])).$if(!ctx.can("procurement.view")||ctx.scopeOf("procurement.view")!=="all",q=>q.where("p.pengusul_id","=",String(ctx.userId)));}
+ async read(ctx:AuthContext,id:number,lock=false,review=false){const q=review?this.query(ctx).selectFrom("procurements as p").where("p.status","!=","DRAF"):this.visible(ctx);return q.innerJoin("users as u","u.id","p.pengusul_id").innerJoin("roles as role","role.id","u.role_id").leftJoin("work_units as unit","unit.id","p.work_unit_id").selectAll("p").select(["u.nama as pengusul_nama","role.kode as pengusul_role","unit.nama as unit_kerja"]).where("p.id","=",String(id)).$if(lock,q=>q.forUpdate("p")).executeTakeFirst();}
+ async lock(ctx:AuthContext,id:number){return this.query(ctx).selectFrom("procurements").selectAll().where("id","=",String(id)).forUpdate().executeTakeFirst();}
+ async items(ctx:AuthContext,id:string){return this.query(ctx).selectFrom("procurement_items as i").leftJoin("asset_categories as c","c.id","i.category_id").selectAll("i").select("c.nama as kategori_nama").where("i.procurement_id","=",id).orderBy("i.id").execute();}
+ async options(ctx:AuthContext){return {materials:await procurementMaterialOptions(this.source,ctx),categories:await this.query(ctx).selectFrom("asset_categories").select(["id","nama"]).orderBy("nama").execute(),work_units:await this.query(ctx).selectFrom("work_units").select(["id","nama"]).where("status","=","AKTIF").orderBy("nama").execute()};}
+ async list(ctx:AuthContext,f:ProcurementListQuery){
+  let q=this.visible(ctx).innerJoin("users as u","u.id","p.pengusul_id").innerJoin("roles as role","role.id","u.role_id").leftJoin("work_units as unit","unit.id","p.work_unit_id");
+  if(f.q){const p=`%${f.q.replace(/[\\%_]/g,c=>`\\${c}`)}%`;q=q.where(e=>e.or([e("p.nomor","ilike",p),e("p.judul","ilike",p)]));}
+  if(f.status)q=q.where("p.status","=",f.status);if(f.prioritas)q=q.where("p.prioritas","=",f.prioritas);if(f.tahun_anggaran)q=q.where("p.tahun_anggaran","=",f.tahun_anggaran);if(f.work_unit_id)q=q.where("p.work_unit_id","=",String(f.work_unit_id));
+  const count=await q.select(e=>e.fn.countAll<string>().as("n")).executeTakeFirstOrThrow();
+  const data=await q.selectAll("p").select(["u.nama as pengusul_nama","role.kode as pengusul_role","unit.nama as unit_kerja"]).$if(f.urut==="total_estimasi",q=>q.orderBy("p.total_estimasi","desc")).orderBy("p.created_at","desc").orderBy("p.id","desc").limit(f.per_page).offset((f.page-1)*f.per_page).execute();
+  return {data,meta:{page:f.page,per_page:f.per_page,total:Number(count.n),total_pages:Math.max(1,Math.ceil(Number(count.n)/f.per_page))}};
+ }
+ async attachments(ctx:AuthContext,id:string){return this.query(ctx).selectFrom("procurement_attachments as a").innerJoin("stored_files as f","f.id","a.file_id").select(["a.file_id","a.nama_berkas","f.scan_status","f.checksum","f.object_key"]).where("a.procurement_id","=",id).orderBy("a.id").execute();}
+ async receipts(ctx:AuthContext,id:string){return this.query(ctx).selectFrom("procurement_receipts as r").innerJoin("users as u","u.id","r.diterima_oleh").selectAll("r").select(["u.nama as nama_penerima",sql<string>`to_char(r.tanggal_terima,'YYYY-MM-DD')`.as("tanggal_terima")]).where("r.procurement_id","=",id).orderBy("r.id").execute();}
+ async receiptItems(ctx:AuthContext,id:string){return this.query(ctx).selectFrom("procurement_receipt_items").selectAll().where("receipt_id","=",id).orderBy("id").execute();}
+ async receiptFiles(ctx:AuthContext,id:string){return this.query(ctx).selectFrom("procurement_receipt_files as r").innerJoin("stored_files as f","f.id","r.file_id").select(["r.file_id","r.receipt_item_id","r.nama_berkas","f.scan_status","f.checksum","f.object_key"]).where("r.receipt_id","=",id).orderBy("r.id").execute();}
+ async receiptMaterial(ctx:AuthContext,id:string){return this.query(ctx).selectFrom("procurement_receipt_materials as r").innerJoin("materials as m","m.id","r.material_id").innerJoin("material_units as u","u.id","m.satuan_id").innerJoin("rooms as room","room.id","r.room_id").innerJoin("material_transactions as t","t.id","r.transaction_id").select(["r.material_id","m.nama","r.room_id","room.nama as lokasi","u.simbol as satuan","t.saldo_sesudah"]).where("r.receipt_item_id","=",id).executeTakeFirst();}
+ async receiptAssets(ctx:AuthContext,id:string){return this.query(ctx).selectFrom("procurement_receipt_assets as r").innerJoin("assets as a","a.id","r.asset_id").select(["a.id","a.uuid","a.kode_barang"]).where("r.receipt_item_id","=",id).orderBy("a.id").execute();}
+ async support(ctx:AuthContext,categoryIds:readonly string[]){if(!ctx.can("procurement.approve")||!categoryIds.length)return [];return this.query(ctx).selectFrom("asset_categories as c").leftJoin("assets as a",join=>join.onRef("c.id","=","a.category_id").on("a.dihapuskan","=",false)).where("c.id","in",categoryIds).select(["c.id as category_id","c.nama",sql<number>`count(a.id)::int`.as("jumlah_aset"),sql<number>`count(*) filter(where a.kondisi='BAIK')::int`.as("baik"),sql<number>`count(*) filter(where a.kondisi='RUSAK_RINGAN')::int`.as("rusak_ringan"),sql<number>`count(*) filter(where a.kondisi='RUSAK_BERAT')::int`.as("rusak_berat"),sql<number>`count(*) filter(where a.status='DIPINJAM')::int`.as("dipinjam")]).groupBy(["c.id","c.nama"]).execute();}
+ async approvalIds(ctx:AuthContext,id:string){return this.query(ctx).selectFrom("approval_instances").select("id").where("jenis_pengajuan","=","PENGADAAN_BARANG").where("referensi_id","=",id).orderBy("id").execute();}
+}
+export const createProcurementRepository=(executor:QueryExecutor)=>defineRepository(new ProcurementRepository(executor));

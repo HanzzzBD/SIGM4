@@ -127,6 +127,27 @@ test('GET /assets tidak N+1', async () => {
 
 Ambang ditetapkan per endpoint dan menjadi bagian dari Definition of Done ([delivery-plan §29.5](../PRD/01-product/delivery-plan.md)).
 
+#### M-16 — provider kalkulasi PR-06-03…07
+
+Makna periode/indikator mengikuti keputusan pengguna pada
+[M-16](../PRD/02-modules/m16-analytics.md), bukan status operasional terkini
+yang diasumsikan berlaku surut. Provider murni menerima AnalyticsContext
+(periode, query kanonik, akses, Clock) dan menghasilkan RawBuilder untuk rows
+dan summary. Snapshot kondisi memakai batas bulan dan lookup riwayat dua arah;
+interval utilisasi memakai range_agg/multirange yang diiriskan dengan kalender.
+Helper calendarDaysSql mengikuti BusinessCalendarService dan snapshot pinjaman;
+jumlah hari final dapat dibaca dari fines tanpa memilih nominalnya.
+
+Satu statement CTE membaca total, halaman, ringkasan dan pembanding dengan
+snapshot yang sama di transaksi read-only. Urutan DECIMAL dicast numeric di SQL,
+sedangkan JSON tetap berupa string agar nilai rupiah tidak kehilangan presisi.
+Scope dipasang sebelum agregasi; filter, sort, LIMIT/OFFSET tetap berparameter
+dan sort hanya menerima metadata kolom terdaftar. Tidak ada kueri per baris
+yang dipanggil dari TypeScript, cache bersama, atau tabel materialisasi baru.
+statement_timeout 4.500 ms membatasi statement sinkron; timeout bukan bukti
+terpenuhinya anggaran endpoint. Pengukuran ukuran nyata/EXPLAIN, indeks dan
+jalur ekspor asinkron tetap milik PR-06-09/08.
+
 ### 4.5 Skenario uji beban
 
 | Skenario | Profil | Memverifikasi |
@@ -202,3 +223,28 @@ Kriteria lulus: p95 tiap kelas dalam anggaran §4.1, degradasi ≤ 20% dibanding
 | **TBD-AVL-C** *(dari SDD-01)* | Ukuran connection pool — bergantung batas koneksi PostgreSQL dari penyedia. Ditetapkan setelah uji beban. |
 | **TBD-AVL-D** *(dari SDD-01)* | TTL cache ketersediaan. Rancangan ini memilih tanpa cache; bila `AV-03` tidak tercapai, nilai dalam batas `AV-04` perlu ditetapkan. |
 | **TBD-PERF-A** | Ambang jumlah kueri per endpoint (`SDD-PERF-02`) belum ditetapkan per endpoint — akan dikalibrasi saat endpoint pertama dibangun. |
+
+
+### Kalibrasi M-16 — PR-06-09
+
+TBD-PERF-A untuk laporan terkalibrasi: katalog0 SQL data, laporan1 SQL data
+(termasuk total/paginasi/ringkasan/pembanding), pilihan filter1 SQL. BEGIN,
+SET READ ONLY/statement_timeout, COMMIT dan autentikasi dihitung terpisah.
+Ambang1 diuji pada lima pembacaan setiap jenis dengan Kysely query logging;
+ambang modul/endpoint lain tetap ditentukan pemiliknya. Tidak ada N+1 per aset.
+
+AskUserQuestion14Oktober2026 menetapkan larangan sequential scan tabel>100000
+untuk kueri selektif. Agregasi yang memang membaca hampir seluruh cakupan boleh
+sequential scan hanya dengan bukti EXPLAIN lebih efisien dan anggaran=5detik
+terpenuhi. Tidak memaksa enable_seqscan=off atau menambah indeks berdasarkan dugaan.
+
+Runner scripts/qa/analytics-performance.mjs menolak DB biasa: hanya database acak
+lokal sigm4_pr0238_ dari launcher terisolasi. Dataset105001aset/riwayat,5000aset
+target serta5000transaksi tiap domain; EXPLAIN(ANALYZE,BUFFERS,FORMAT JSON) untuk
+rows/summary/statementHTTP setiap laporan. Lima sampel HTTP SQL perjenis mengukur
+latensi dan query budget. Plan sebelum/sesudah disimpan di audit PR-06-09.
+Temuan: agregasi kalender peraset pada fasilitas diganti cache kalender/usage/
+kapasitas permasaaktif dalam SQL yang sama; aturan sumber tetap identik.
+Indeks assets(penanggung_jawab_id,id) baru dipromosikan setelah selective SeqScan
+623ms berubah menjadi Bitmap/IndexScan26ms pada105001aset. Laporan target5000
+p95lokal tertinggi971ms pada run terukur; ini bukan bukti p95staging/150pengguna.

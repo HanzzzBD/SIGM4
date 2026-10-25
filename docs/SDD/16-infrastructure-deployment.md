@@ -54,7 +54,7 @@ Keputusan platform sudah ditetapkan PRD Bab 27.1 dan tidak diulang. Berkas ini m
 
 **SDD-INF-07 — restore diuji otomatis.** Cadangan yang tidak pernah dipulihkan bukan cadangan. `BR-DR-04` mewajibkan uji berkala; mengotomasinya membuat kegagalan terdeteksi dalam sebulan, bukan saat bencana.
 
-**SDD-INF-08 — konfigurasi divalidasi saat startup.** Konfigurasi yang salah sebaiknya mencegah proses berjalan, bukan menghasilkan perilaku aneh di produksi. Kunci Gemini API yang kosong lebih baik menggagalkan *startup* daripada membuat chatbot gagal diam-diam pada permintaan pertama pengguna.
+**SDD-INF-08 — konfigurasi divalidasi saat startup.** Konfigurasi yang salah sebaiknya mencegah proses berjalan, bukan menghasilkan perilaku aneh di produksi. Bila `CHAT_ENABLED=true`, kunci Gemini API kosong menggagalkan *startup*. Bila false, kunci boleh kosong dan chatbot mengembalikan 503 tanpa mengganggu modul lain (keputusan pengguna 14 Oktober 2026, M-19 §7).
 
 **SDD-INF-13 — Nginx, dan dua konsekuensi yang ikut dengannya.** `INF-06` menyebut dua nama; memilih di antaranya bukan soal selera karena `deployment-ops.md` §Topologi dan [SDD-13 §3](13-security-design.md) sudah menulis "Nginx" dalam prosa, sehingga garis miring itu sebenarnya sudah berselisih dengan dua berkas. Keputusan ini menyelaraskannya ke arah yang sudah tertulis.
 
@@ -174,6 +174,8 @@ Job deploy berjalan di self-hosted runner server sekolah; smoke test berjalan da
 
 Deploy produksi berjalan di luar jam operasional dan diumumkan H-2 (`NFR-A-03`, `CD-06`).
 
+`PR-03-36` menjalankan `deploy/staging/smoke-test.sh <origin> --full` dari runner terhadap origin publik; Python 3 standar menjalankan alur API dengan sesi JWT hasil login nyata. Kredensial, termasuk TOTP bila aktif, hanya lewat environment secret staging; token dan URL unggah tidak dicetak atau ditulis ke artefak. URL wajib HTTPS, redirect ditolak, dan unggah foto memakai presigned PUT tanpa header otorisasi API. Pembersihan dijalankan setelah keberhasilan maupun kegagalan; kegagalan pembersihan menggagalkan gerbang. Kebijakan fixture mengikuti `CD-07`; petunjuk operasional ada di [runbook smoke](../IMPLEMENTATION/runbooks/smoke-test.md). `--health-only` hanya pemeriksaan diagnostik eksplisit. Pengecualian HTTP loopback memerlukan `SMOKE_ALLOW_HTTP_LOOPBACK=1` untuk uji lokal, bukan konfigurasi deploy.
+
 ### 4.4 Migration & rollback
 
 Pola **expand → migrate → contract** (`SDD-DB-08`):
@@ -233,11 +235,11 @@ Setiap langkah memiliki penanggung jawab bernama dan cara verifikasi. Runbook wa
 DATABASE_URL, REDIS_URL, S3_ENDPOINT, S3_PUBLIC_ENDPOINT, S3_REGION, S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY
 CLAMAV_URL        (tcp://host:port — api: av_scanner di /health; worker: pemindaian, SDD-FS-04)
 JWT_PRIVATE_KEY, JWT_PUBLIC_KEY, TOTP_ENCRYPTION_KEY
-GEMINI_API_KEY
+GEMINI_API_KEY   (wajib hanya bila CHAT_ENABLED=true)
 APP_BASE_URL, TZ=UTC
 
 # Opsional dengan bawaan
-LOG_LEVEL=info, DB_POOL_SIZE=<TBD-AVL-C>, CHAT_ENABLED=true
+LOG_LEVEL=info, DB_POOL_SIZE=<TBD-AVL-C>, CHAT_ENABLED=false
 
 # Opsional tanpa bawaan — kosong berarti fitur dilewati, bukan startup gagal
 FCM_CREDENTIALS   (keputusan 80a, SDD-08 §4.4a: push dilewati, `fcm` di /health tidak memengaruhi `ready`)

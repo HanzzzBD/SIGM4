@@ -42,6 +42,8 @@ function tampilkan(user: ProfilRow, foto: FotoProfil | null) {
         telepon: user.telepon,
         role_kode: user.role_kode,
         must_change_password: user.must_change_password,
+        two_factor_enabled: user.two_factor_enabled,
+        remaining_backup_codes: user.remaining_backup_codes,
         foto_status: foto?.status ?? null,
         foto_url: foto?.url ?? null,
     };

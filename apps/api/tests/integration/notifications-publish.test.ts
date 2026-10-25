@@ -41,7 +41,7 @@ const ctxDari = (userId: number, perms: readonly string[] = ["approval.decide"])
     createAuthContext({ userId, roleCode: "UJI", scopes: new Map<string, Scope>(perms.map((p) => [p, "all"])) });
 
 async function aturan(langkah: readonly number[]): Promise<void> {
-    const [r] = await kueri<{ id: string }>(`INSERT INTO approval_rules (jenis_pengajuan, kondisi, prioritas) VALUES ('PENGADAAN_BARANG', '{}', 50) RETURNING id::text`);
+    const [r] = await kueri<{ id: string }>(`INSERT INTO approval_rules (jenis_pengajuan, kondisi, prioritas) VALUES ('PERPANJANGAN_PEMINJAMAN', '{}', 50) RETURNING id::text`);
     for (const [i, u] of langkah.entries()) {
         await kueri(`INSERT INTO approval_rule_steps (rule_id, urutan, approver_type, approver_user_id, sla_jam) VALUES (${String(r?.id)}, ${String(i + 1)}, 'user', ${String(u)}, 8)`);
     }
@@ -49,7 +49,7 @@ async function aturan(langkah: readonly number[]): Promise<void> {
 let ref = 0;
 async function ajukan(pemohon: number): Promise<number> {
     ref += 1;
-    return (await withTransaction(ctxDari(pemohon), (s) => approval.createInstance(s, { jenis: "PENGADAAN_BARANG", referensiId: 600_000 + ref, pemohonId: pemohon, fakta: {} }), getDb())).instanceId;
+    return (await withTransaction(ctxDari(pemohon), (s) => approval.createInstance(s, { jenis: "PERPANJANGAN_PEMINJAMAN", referensiId: 600_000 + ref, pemohonId: pemohon, fakta: {} }), getDb())).instanceId;
 }
 const putuskan = (u: number, id: number, urutan: number, k: "DISETUJUI" | "DITOLAK" | "PERLU_REVISI", catatan: string | null = null) =>
     withTransaction(ctxDari(u), (s) => keputusan.putuskan(s, id, { urutan, keputusan: k, catatan }), getDb());
@@ -57,7 +57,10 @@ const putuskan = (u: number, id: number, urutan: number, k: "DISETUJUI" | "DITOL
 function dispatcher(rincian?: RegistriPenyediaRincian): OutboxDispatcher {
     const registry = new EventHandlerRegistry();
     const pelaku = createSystemAuthContext("uji-notifikasi");
-    pasangKonsumenNotifikasi(registry, { db: getDb, clock, ctx: () => pelaku, rincian });
+    // Render generik memakai registri kosong: registri proses kini berisi penyedia ASLI modul pengaju
+    // yang mencari objek nyata, sedangkan referensi di sini tiruan. Jenisnya PERPANJANGAN_PEMINJAMAN:
+    // PENGADAAN_BARANG kini berjalur khusus NT-35 (M-14), bukan render generik NT-02 yang diuji di sini.
+    pasangKonsumenNotifikasi(registry, { db: getDb, clock, ctx: () => pelaku, rincian: rincian ?? new RegistriPenyediaRincian() });
     return new OutboxDispatcher({ registry, clock, db: getDb(), logger: new Logger({ clock, tulis: () => undefined }) });
 }
 
@@ -132,7 +135,7 @@ describe.skipIf(!ADA_DB)("PR-02-25 — skema notifikasi + penerbitan dari event 
                     user_id: String(pemohon),
                     kode: "NT-02",
                     jenis: "PERSETUJUAN",
-                    isi: `Pengajuan Pengadaan Barang #${String(600_000 + ref)} telah disetujui.`,
+                    isi: `Pengajuan Perpanjangan Peminjaman #${String(600_000 + ref)} telah disetujui.`,
                     deep_link: `/persetujuan/${String(id)}`,
                     wajib: true,
                     referensi_jenis: "approval_instance",
@@ -145,7 +148,7 @@ describe.skipIf(!ADA_DB)("PR-02-25 — skema notifikasi + penerbitan dari event 
             const id = await ajukan(pemohon);
             await putuskan(a, id, 1, "DISETUJUI");
             const rincian = new RegistriPenyediaRincian().daftar({
-                jenis: "PENGADAAN_BARANG",
+                jenis: "PERPANJANGAN_PEMINJAMAN",
                 rincian: (_s, referensiId) => Promise.resolve({ label: "Pengadaan PGD-2026-0007", objek: "Proyektor", tanggal: "1 Oktober 2026", deepLink: `/pengadaan/${String(referensiId)}` }),
             });
             await dispatcher(rincian).drain();
@@ -165,7 +168,7 @@ describe.skipIf(!ADA_DB)("PR-02-25 — skema notifikasi + penerbitan dari event 
             await putuskan(c, id, 2, "DITOLAK", "Anggaran habis");
             await dispatcher().drain();
             const [tolak] = await notif("NT-03");
-            expect(tolak).toMatchObject({ user_id: String(pemohon), isi: `Pengajuan Pengadaan Barang #${String(600_000 + ref)} ditolak. Alasan: Anggaran habis.` });
+            expect(tolak).toMatchObject({ user_id: String(pemohon), isi: `Pengajuan Perpanjangan Peminjaman #${String(600_000 + ref)} ditolak. Alasan: Anggaran habis.` });
         });
 
         it("NT-04 → pemohon dengan catatan revisi", async () => {

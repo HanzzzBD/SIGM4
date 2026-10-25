@@ -6,7 +6,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { ApiError, aturPenangan } from "../shared/api";
-import { KUNCI_ME } from "../shared/auth";
+import { KUNCI_ME, leaveAuthenticatedSession } from "../shared/auth";
 import { ikatRahasiaKeSesi } from "../modules/m02-users";
 import { buatRouter } from "./router";
 
@@ -32,8 +32,7 @@ aturPenangan({
     // FR-01.1 A5: penukaran gagal → Login, tujuan disimpan.
     sesiBerakhir: () => {
         const tujuan = router.state.location.href;
-        queryClient.clear();
-        void router.navigate({ to: "/login", search: { tujuan } });
+        void leaveAuthenticatedSession(queryClient,()=>router.navigate({ to: "/login", search: { tujuan, alasan: "expired" }, replace:true, ignoreBlocker:true }));
     },
     sesiDisegarkan: () => void queryClient.invalidateQueries({ queryKey: KUNCI_ME }),
 });

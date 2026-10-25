@@ -298,6 +298,10 @@ Bukan entitas domain: tidak memakai `created_*`, dan tidak memakai `id` — `key
 |---|---|---|---:|---|---|
 | `peminjaman.batas_perpanjangan` | `PEMINJAMAN` | `BILANGAN_BULAT` | 1 | 0 – 10 | `FR-20.1`, `FR-09.5` |
 | `denda.cap_persen` | `DENDA` | `DESIMAL` | 30 | 1 – 100 | `BR-028b` |
+| `denda.tarif_per_hari` | `DENDA` | `BILANGAN_BULAT` | — (wajib diisi sekolah) | 0 – 90071992547409 | `BR-029`, kontrak M-09 PR-05-01..04 |
+| `denda.cap_nominal` | `DENDA` | `BILANGAN_BULAT` | — (wajib diisi sekolah) | 0 – 90071992547409 | `BR-028b`, `BR-029` |
+| `denda.ambang_blokir` | `DENDA` | `BILANGAN_BULAT` | — (wajib diisi sekolah) | 0 – 90071992547409 | `BR-030`, kontrak M-09 PR-05-05..08 |
+| `denda.kecualikan_hari_libur` | `DENDA` | `BOOLEAN` | `false` | — | `BR-028c`, `BR-029` |
 | `reservasi.horizon_hari` | `RESERVASI` | `BILANGAN_BULAT` | 90 | 1 – 365 | `BR-023c`, `AV-05` |
 | `reservasi.ttl_tentative_jam` | `RESERVASI` | `BILANGAN_BULAT` | 48 | 1 – 168 | `BR-023b` |
 | `reservasi.kuota_tertunda_guru_staf` | `RESERVASI` | `BILANGAN_BULAT` | 5 | 1 – 50 | `BR-023a` |
@@ -305,6 +309,7 @@ Bukan entitas domain: tidak memakai `created_*`, dan tidak memakai `id` — `key
 | `reservasi.granularitas_menit` | `RESERVASI` | `BILANGAN_BULAT` | 30 | 15 – 60, hanya 15/30/60 | `CAL-UI-02` (`PR-03-09`, `0044`) |
 | `reservasi.jam_operasional_mulai` | `RESERVASI` | `TEKS` | `"06:00"` | — | `BR-018`, `SDD-APR-15` (`PR-03-10`, `0045`) |
 | `reservasi.jam_operasional_selesai` | `RESERVASI` | `TEKS` | `"18:00"` | — | `BR-018`, `SDD-APR-15` (`PR-03-10`, `0045`) |
+| `reservasi.durasi_maksimum_jam` | `RESERVASI` | `BILANGAN_BULAT` | 12 | 1 – 24 | FR-20.1, FR-07.2 (`PR-03-38`, `0073`) |
 | `reservasi.jarak_minimum_hari` | `RESERVASI` | `BILANGAN_BULAT` | 1 | 0 – 30 | `BR-020` (`PR-03-10`, `0045`) |
 | `maintenance.sla_tindak_lanjut_hari_rendah` | `MAINTENANCE` | `BILANGAN_BULAT` | 3 | 1 – 30 | `FR-11.3`, `SC-07` (`PR-03-16`, `0050`) |
 | `maintenance.sla_tindak_lanjut_hari_sedang` | `MAINTENANCE` | `BILANGAN_BULAT` | 3 | 1 – 30 | `FR-11.3`, `SC-07` (`PR-03-16`, `0050`) |
@@ -312,7 +317,22 @@ Bukan entitas domain: tidak memakai `created_*`, dan tidak memakai `id` — `key
 | `maintenance.sla_tindak_lanjut_hari_kritis` | `MAINTENANCE` | `BILANGAN_BULAT` | 3 | 1 – 30 | `FR-11.3`, `SC-07` (`PR-03-16`, `0050`) |
 | `kode_aset.pola` | `KODE_ASET` | `TEKS` | `"KATEGORI,LOKASI"` | — | `FR-20.1` |
 | `kode_aset.pemisah` | `KODE_ASET` | `TEKS` | `"-"` | — | `FR-20.1` |
-| `kode_aset.panjang_urut` | `KODE_ASET` | `BILANGAN_BULAT` | 4 | 1 – 10 | `FR-20.1` |
+| `kode_aset.panjang_urut` | `KODE_ASET` | `BILANGAN_BULAT` | 4 | 1 – 10 | `FR-20.1` |
+| `reservasi.durasi_maksimum_r_01_hari` | `RESERVASI` | `BILANGAN_BULAT` | 7 | ≥ 1 | M-08 durasi reservasi aset per role (`PR-04-02`, `0053`) |
+| `reservasi.durasi_maksimum_r_02_hari` | `RESERVASI` | `BILANGAN_BULAT` | 7 | ≥ 1 | M-08 (`PR-04-02`, `0053`) |
+| `reservasi.durasi_maksimum_r_05_hari` | `RESERVASI` | `BILANGAN_BULAT` | 7 | ≥ 1 | M-08 (`PR-04-02`, `0053`) |
+| `reservasi.durasi_maksimum_r_06_hari` | `RESERVASI` | `BILANGAN_BULAT` | 7 | ≥ 1 | M-08 (`PR-04-02`, `0053`) |
+| `reservasi.durasi_maksimum_r_07_hari` | `RESERVASI` | `BILANGAN_BULAT` | 3 | ≥ 1 | M-08 (`PR-04-02`, `0053`) |
+| `maintenance.ambang_persetujuan_estimasi` | `MAINTENANCE` | `DESIMAL` | — (wajib diisi sekolah) | 0 – 999999999999 | `FR-20.1`, M-12 A3 revisi estimasi (`PR-04-08`, `0060`) |
+| `maintenance.ambang_penggantian_persen` | `MAINTENANCE` | `DESIMAL` | — (wajib diisi sekolah) | 0 – 1000 | `FR-20.1`, M-12 rekomendasi penggantian (`PR-04-10`, `0060`) |
+| `bahan.ambang_permintaan_default` | `BAHAN` | `BILANGAN_BULAT` | — (wajib diisi sekolah) | 0 – 2147483647 | `FR-20.1`, M-22 (`PR-05-18`, `0068`) |
+| `chat.aktif` | `CHATBOT_AI` | `BOOLEAN` | `true` | — | M-19 (`PR-03-20`, `0069`) |
+| `chat.batas_harian` | `CHATBOT_AI` | `BILANGAN_BULAT` | 50 | 1 – 1000 | M-19, batas harian `RS-08` (`PR-03-20`, `0069`) |
+| `chat.ambang_token_harian` | `CHATBOT_AI` | `BILANGAN_BULAT` | 0 | 0 – 2147483647 | M-19 (`PR-03-22`, `0069`) |
+| `chat.model` | `CHATBOT_AI` | `TEKS` | `"gemini-3.6-flash"` | — | M-19 (`PR-03-20`, `0069`) |
+| `sekolah.nama` | `IDENTITAS_SEKOLAH` | `TEKS` | `""` | — | `FR-20.1`, kop PDF M-16 — wajib sebelum PDF (`PR-06-08`, `0070`) |
+| `sekolah.alamat` | `IDENTITAS_SEKOLAH` | `TEKS` | `""` | — | `FR-20.1`, kop PDF M-16 (`PR-06-08`, `0070`) |
+| `sekolah.npsn` | `IDENTITAS_SEKOLAH` | `TEKS` | `""` | — | `FR-20.1`, kop PDF M-16 (`PR-06-08`, `0070`) |
 
 **Himpunan tertutup.** `reservasi.granularitas_menit` hanya sah bernilai 15, 30, atau 60 — kelipatan yang membagi satu jam habis agar kolom kalender sejajar batas jam. Rentang 15 – 60 di baris seed adalah pagar luarnya; himpunannya ditegakkan validator m20 (`NILAI_TERBATAS`), karena kolom `nilai_min`/`nilai_maks` tidak dapat menyatakannya.
 
@@ -370,7 +390,21 @@ Endpoint `work_units` (buat, sunting, `PATCH …/status`; tanpa hapus) dimiliki 
 
 **Penonaktifan lulusan** (`SL-03`, `DP-10`): akun berbaris `lulus = true` dinonaktifkan bila `academic_years.tanggal_selesai` tahun itu **sebelum** hari ini (hari WIB, `CAL-03`); menandai sebelum tahun berakhir tidak menonaktifkan seketika. `GraduationService.deactivateDueGraduates` idempoten (`JOB-03`); dipasang sebagai pekerjaan `student-graduation` (00:10 WIB) berpelaku `SYSTEM` lewat `SystemAuthContext` (`SDD-03 §5`, `PR-02-32`).
 
-**Titik ekstensi `SL-04`** — `StudentObligationRegistry`: modul yang mendefinisikan kewajiban (peminjaman aktif, denda belum lunas — Phase 05, `PR-05-09`) mendaftarkan `StudentObligationChecker` dengan `daftarKewajiban(scope, userId)`. Penonaktifan akun **Siswa/OSIS** — lewat `PATCH /users/{id}/status` maupun penonaktifan lulusan — ditolak bila salah satu pemeriksa mengembalikan kewajiban, dan daftarnya dikembalikan kepada Administrator. Registri **kosong** sampai `PR-05-09`; kosongnya berarti "belum ada yang mendefinisikan kewajiban", bukan "siswa tidak berkewajiban".
+**Titik ekstensi `SL-04`** — `StudentObligationRegistry`: M-09 mendaftarkan `StudentObligationChecker` dengan `daftarKewajiban(scope, userId)` pada composition root API dan worker (`PR-05-09`). Penonaktifan akun **Siswa/OSIS** — lewat `PATCH /users/{id}/status` maupun penonaktifan lulusan — ditolak bila ada pinjaman belum selesai/unit belum kembali atau denda/ganti rugi belum lunas, termasuk pembebasan sebagian/menunggu nominal. Daftar spesifik dikembalikan kepada Administrator. Registri kosong bukan jaminan tanpa kewajiban; kedua entrypoint wajib memasangnya.
+
+Migration 0072 (`PR-05-26`) menambah users.deactivated_at/pseudonymized_at,
+mengizinkan nip_nis NULL hanya sesudah pseudonimisasi, serta indeks kandidat
+retensi nonaktif. deactivated_at diambil dari keputusan status sukses terakhir
+yang dapat dibuktikan dalam audit; jika tidak ada, memakai waktu migration.
+Reaktivasi mengosongkannya, penonaktifan berikutnya memberi waktu baru; updated_at
+bukan jangkar. Trigger mencatat transisi status dari jalur lama dan menolak
+mutasi identitas/kredensial akun yang sudah diproses. Pemanggil produksi memasok
+waktu Clock; worker kelulusan memakai Clock yang sama dengan audit.
+
+Job impor pengguna/aset mendapat report_purged_at dan indeks selesai_pada/id
+untuk terminal yang belum dipurge. Status/counter/ID tetap, isi laporan/berkas/nama
+dibersihkan setelah 30×24 jam. password_reset_requests.privacy_revoked_at
+mengizinkan penolakan otomatis berpelaku NULL/SYSTEM tanpa pelaku pengguna palsu.
 
 ### 4.7e Penanda persetujuan wali
 
@@ -429,41 +463,73 @@ CREATE TABLE material_transactions (
     room_id        bigint      NOT NULL REFERENCES rooms(id),
     jenis          material_transaction_type NOT NULL,  -- SDD-DB-02
     jumlah         integer     NOT NULL,
-    saldo_sesudah  integer     NOT NULL,
-    referensi_jenis text,
-    referensi_id   bigint,
+    saldo_sesudah  integer     NOT NULL CHECK (saldo_sesudah >= 0),
+    referensi_jenis text NOT NULL CHECK (length(trim(referensi_jenis)) > 0),
+    referensi_id   bigint NOT NULL CHECK (referensi_id > 0),
     alasan         text,                                -- BR-088: wajib saat PENYESUAIAN
     created_by     bigint      NOT NULL REFERENCES users(id),
     created_at     timestamptz NOT NULL,                -- SDD-DB-03, dari Clock (SDD-SYS-07)
     CONSTRAINT material_transactions_jumlah_nonzero CHECK (jumlah <> 0),
     -- BR-088 ditegakkan skema, bukan hanya service
     CONSTRAINT material_transactions_alasan_penyesuaian
-        CHECK (jenis <> 'PENYESUAIAN' OR alasan IS NOT NULL)
+        CHECK (jenis NOT IN ('PENYESUAIAN','OPNAME') OR coalesce(length(trim(alasan)),0) > 0),
+    CHECK (jenis <> 'PENERIMAAN' OR jumlah > 0),
+    CHECK (jenis <> 'PENGELUARAN' OR jumlah < 0)
 );
 
 -- kartu stok FR-22.2: selalu dibaca per bahan, berurutan waktu
 CREATE INDEX material_transactions_kartu_stok_idx
-    ON material_transactions (material_id, room_id, created_at DESC);
+    ON material_transactions (material_id, room_id, created_at DESC, id DESC);
 ```
 
 **Urutan wajib setiap mutasi saldo** — dijalankan seluruhnya dalam **satu** transaksi (`SDD-EVT-02`):
 
 ```text
 BEGIN
+  SELECT id FROM materials WHERE id = $1 FOR UPDATE
+  INSERT INTO material_balances(material_id, room_id, saldo) VALUES ($1, $2, 0)
+    ON CONFLICT (material_id, room_id) DO NOTHING
   SELECT saldo FROM material_balances
     WHERE material_id = $1 AND room_id = $2
     FOR UPDATE                          -- SDD-DB-14: kunci sebelum periksa
   -- periksa kecukupan (BR-083) -> tolak bila tidak cukup
-  UPDATE material_balances SET saldo = saldo + $delta
-  INSERT INTO material_transactions (..., saldo_sesudah = saldo baru)
+  INSERT INTO material_transactions (..., saldo_sesudah = saldo lama + $delta)
+    -- BEFORE INSERT mengunci dan memeriksa ulang, lalu UPDATE material_balances
   INSERT INTO activity_logs (...)       -- BR-071, AL-01
   INSERT INTO event_outbox (...)        -- NT-49 bila menembus stok minimum
 COMMIT
 ```
 
-Baris `material_balances` dibuat saat bahan pertama kali bertransaksi di suatu lokasi (`INSERT … ON CONFLICT (material_id, room_id) DO UPDATE`), bukan saat bahan didaftarkan — mencegah ledakan baris kosong sebesar jumlah bahan × jumlah ruangan.
+Baris `material_balances` dibuat saat bahan pertama kali bertransaksi di suatu lokasi (`INSERT … ON CONFLICT (material_id, room_id) DO NOTHING`), bukan saat bahan didaftarkan — mencegah ledakan baris kosong sebesar jumlah bahan × jumlah ruangan.
+
+Implementasi expand PR-05-15/17 memakai migration 0064/0065. Native enum
+`material_status` (AKTIF/NONAKTIF) dipakai master bahan/kategori/satuan. Trigger
+ledger mengaplikasikan delta dan memverifikasi `saldo_sesudah`; edit/hapus
+ledger serta edit/hapus saldo langsung ditolak SQL. Saldo baru hanya boleh 0.
+Kegagalan insert, audit atau transaksi pemanggil membatalkan seluruh mutasi.
+Kunci jenis bahan menyerialkan transaksi dan perubahan satuan; setelah ledger
+pertama, perubahan `satuan_id` ditolak service maupun trigger (keputusan pengguna
+14 Oktober 2026, PRD M-22). UUID tetap mewakili satu jenis Bahan. Tidak ada
+`booking_slots` Bahan (`SDD-AVL-14`). Service internal belum menerbitkan NT-49;
+outbox stok minimum dipasang pada PR-05-22 bersama alur bisnis yang terkait.
 
 **Stok minimum (`BR-085`) dievaluasi terhadap saldo total seluruh lokasi**, sehingga pemeriksaannya menjumlahkan `material_balances` per `material_id` — bukan membandingkan per baris.
+
+### 4.6b Percakapan AI (migration 0069, 14 Oktober 2026)
+
+`chat_sessions` memiliki pemilik akun, judul serta izin berbagi laporan.
+`chat_messages` menyimpan UUID/payload hash, status, isi, steps penyedia dan
+angka token. Partial unique index membatasi satu giliran PROCESSING per sesi.
+`chat_usage_daily` hanya angka agregat harian WIB dan kategori tool, tanpa
+teks, argumen, user_id atau session_id. `chat_evaluations` membedakan LIVE
+(model aktual) dan CONTRACT (batas SQL/implementasi). `chat_restrictions`
+menyimpan pembatasan akun oleh Admin tanpa menyalin isi percakapan.
+
+Penghapusan juga membersihkan salinan respons pribadi dalam idempotency_keys;
+audit menyimpan metadata tindakan sesuai AL-09, tanpa isi/steps atau nama akun.
+Worker SYSTEM harian 01.50 WIB menutup giliran orphan lalu menghapus sesi lama.
+Down migration menolak sesudah ada data operasional/agregat/evaluasi/pembatasan;
+setelah dipakai, koreksi dilakukan melalui forward migration.
 
 ### 4.7 Retensi & arsip
 
@@ -471,7 +537,7 @@ Baris `material_balances` dibuat saat bahan pertama kali bertransaksi di suatu l
 |---|---|---|
 | `activity_logs` | ≥2 tahun aktif, tidak pernah dihapus (`AL-09`) | Partisi lama di-*detach* ke tabel arsip, tetap dapat dikueri |
 | `notifications` | 90 hari aktif | Job arsip harian memindahkan ke `notifications_archive` |
-| `chat_messages` | 90 hari (`BR-078`) | idem, isi pesan dianonimkan (`DP-AI-05`) |
+| `chat_sessions` + `chat_messages` | 90 hari sejak awal sesi (`BR-078`) atau dihapus pemilik | Hapus permanen isi, steps/signature, referensi, laporan dan relasi akun; agregat tanpa identitas tetap di chat_usage_daily (`DP-AI-05`, keputusan pengguna 14 Oktober 2026) |
 | `idempotency_keys` | 24 jam | `DELETE WHERE expires_at < now()` |
 | `material_transactions` | Tidak pernah dihapus — dasar kartu stok & rekonstruksi saldo | Tetap aktif; volume rendah (± 20.000/tahun) |
 | `booking_slots` (`Released`) | Belum ditetapkan | **TBD-AVL-A** |
@@ -528,3 +594,162 @@ partial unique index menjaga satu foto utama per aset, indeks asset_id/urutan/id
 Tidak mengubah tabel/baris yang ada. Down hanya untuk rollback migration baru sebelum ada
 penautan; pengelolaan unggah/tautan bukan cakupan PR-05-32. Tinjauan arsitek skema tetap
 wajib sebelum merge sesuai aturan repository. Tes integrasi membuktikan constraint PostgreSQL.
+
+### Expand PR-04-05/06: work_orders (0058)
+
+Tabel work_orders menyimpan nomor WO unik, jenis, tepat satu asset_id/room_id, teknisi_id
+wajib, prioritas, deskripsi, target_selesai date, estimasi_biaya numeric(15,2), opsi
+nonaktifkan_aset dan status. Kolom waktu/biaya/hasil disiapkan untuk PR-04-08/09 tanpa
+menyediakan endpoint eksekusi/penutupan pada PR ini. FK damage_report_id nullable dan
+unik menjaga satu WO per tiket lintas permintaan manual/worker. Indeks penugasan/status
+dan asset_id mendukung scope. Trigger updated_at memakai set_updated_at yang ada.
+
+damage_reports menerima work_order_assignment jsonb nullable: penugasan tahan restart
+ditulis bersama verifikasi, kemudian dibaca ulang konsumen DamageReportVerified.
+Null menandai tiket/event lama yang tetap memakai jalur manual. Kunci tiket menyerialkan
+pembuatan; bila WO sudah ada saat event diulang, handler selesai tanpa audit/event baru.
+WO/aset/pembatalan reservasi/transisi tiket/audit/outbox commit bersama. Adapter status
+aset tetap m12-maintenance/repositories/maintenance.repository.ts (SDD-AVL-11).
+Migration bersifat expand; down hanya untuk DB kosong/rollback sebelum pemakaian,
+bukan izin menghapus histori work order. Tinjauan arsitek tetap diperlukan sebelum merge.
+
+### Expand PR-04-07: maintenance_schedules (0059)
+
+Kontrak produk dan keputusan tanggal/kategori/akses: PRD M-12 §8, 14 Oktober 2026.
+maintenance_schedules menyimpan tepat satu asset_id/category_id, interval hari, tanggal
+mulai, checklist teks, Teknisi bawaan dan status. maintenance_schedule_assets mempunyai
+PK(schedule_id,asset_id), jatuh tempo per aset serta pointer ke WO siklus terbuka.
+maintenance_schedule_skips menyimpan alasan wajib dan jatuh tempo yang dilewati per aset.
+work_orders menerima maintenance_schedule_id, preventive_due_date, checklist JSONB snapshot
+{id,label,selesai} dan menunggu_ketersediaan_aset; unique index parsial per jadwal/aset/tanggal
+menjaga satu WO per siklus. Generator mengunci jadwal, aset berurutan, dan skip-lock WO yang
+sedang ditutup untuk menghindari siklus tunggu antara penguncian generator/verifikasi.
+Hook penutupan mengubah pointer/jatuh tempo secara bersyarat pada work_order_id yang sama,
+di transaksi pemanggil, sehingga replay tidak memajukan siklus dua kali. Kalender memakai
+work_days/holidays yang sudah ada; tidak menambah kalender kedua. Migration 0060 menjaga
+kolom checklist bersama; rollback 0059 dilakukan sesudah 0060. Down hanya diverifikasi pada
+DB kosong terisolasi; bukan prosedur menghapus histori produksi.
+
+### Expand PR-04-08/09/10/18: eksekusi WO (0060)
+
+Kontrak normatif: PRD M-12 §8, keputusan pengguna 14 Oktober 2026. Kolom penundaan,
+rekomendasi, kondisi/verifikasi dan revisi estimasi ditambahkan pada work_orders; checklist
+milik 0059 dipertahankan dengan IF NOT EXISTS. work_order_costs menyimpan nominal numeric
+presisi tetap, work_order_photos memiliki file_id unik dan urutan unik per WO. Metadata foto
+menggunakan stored_files M-06; URL hanya CLEAN terkonfirmasi. Dua setting DESIMAL nullable
+khusus M-12 ditambahkan tanpa default operasional; constraint tipe mempertahankan pengecualian
+denda yang sudah ada. Down mengembalikan constraint sebelumnya dan tidak menghapus checklist.
+
+Mutasi mengunci WO dan memeriksa scope di query; verifikasi mengunci tiket sebelum WO/aset.
+Efek kondisi/status M-04, tiket M-11 dan siklus preventif menggunakan entry point publik dalam
+transaksi pemanggil (SDD-EVT-02); notifikasi memakai outbox. Riwayat/timeline tersaring penugasan
+serta maintenance.view_cost. Migration tetap memerlukan tinjauan arsitek sebelum merge;
+rollback hanya diuji pada database sementara, bukan prosedur menghapus histori produksi.
+
+### Pengadaan — migration 0062 (14 Oktober 2026)
+
+Expand M-14 menambahkan tujuh tabel pada PRD M-14 §8, tiga jenis pemilik berkas M-06,
+dan snapshot keputusan JSON nullable pada `approval_steps`. Kolom
+`assets.procurement_id` yang sudah ada tetap nullable; FK ke `procurements` ditambahkan
+`NOT VALID` untuk tidak menulis ulang aset lama, sementara penulisan baru tetap diperiksa
+(`SDD-DB-08`). Transaksi penerimaan mengunci usulan sebelum memeriksa jumlah kumulatif,
+memakai penomoran M-04, lalu menautkan dokumen M-06 dan menulis audit/outbox.
+Down/up diuji hanya sebelum data pengadaan tercatat pada database sementara. Sesudah
+fitur digunakan, rollback deployment mempertahankan schema/data expand; tidak memakai
+down untuk menghapus histori atau mengosongkan referensi aset. Migration dan hook
+approval memerlukan tinjauan arsitek sebelum merge.
+
+### Opname aset — migration 0061 (14 Oktober 2026)
+
+Expand: audit_sessions, audit_session_assignees, audit_session_rooms, audit_items,
+audit_active_assets, audit_new_findings, audit_scans, audit_photos; asset_movements
+menambah audit_session_id. PK audit_active_assets melarang irisan snapshot aktif.
+Snapshot target dan laporan disetujui dilindungi trigger immutable; audit_scans
+menyimpan hash payload/hasil UUID. Temuan belum terdaftar tidak memiliki FK assets
+wajib. Enum file_owner_type menambah STOCKTAKE_REPORT, tetap dipertahankan saat down.
+Down menghapus tabel/kolom/fungsi opname; tidak menjalankan penghapusan data modul lain.
+
+### Penghapusan aset — migration 0063 (14 Oktober 2026)
+
+Expand M-21: asset_disposals, asset_disposal_items, asset_disposal_claims (PK aset),
+asset_disposal_files, dan tiga enum file_owner_type. Snapshot item serta berita
+acara eksekusi immutable. Trigger booking mengunci aset lalu menolak klaim
+penghapusan/deleted untuk slot reservasi/pinjaman; trigger terminal melarang
+perubahan operasional pada aset terhapus. Adapter M-04 pemulihan menetapkan
+konfigurasi transaksi khusus ID aset, memeriksa Hilang/R-01, dan tetap melarang
+perubahan kode/UUID. Tidak ada penghapusan baris assets.
+
+Down/up hanya pada database uji sementara sebelum penggunaan produksi; enum
+berkas dipertahankan saat down. Rollback deployment mempertahankan schema/data
+expand serta histori, tidak menjalankan down untuk menghapus berita acara.
+Migration 0063 dan guard booking memerlukan tinjauan arsitek sebelum merge.
+
+### PR-05-24 — snapshot opname Bahan (migration 0066)
+
+FR-13.4/BR-093/094/095 memakai audit_material_items, terpisah dari audit_items.
+Constraint sesi diperluas menjadi ASET/BAHAN; trigger menolak perubahan domain
+dan penulisan item domain berbeda. Snapshot identitas/satuan/lokasi/saldo
+tidak dapat diubah/dihapus; hasil sesi tertutup read-only. Jumlah fisik dan
+basis nullable sebelum diperiksa, dengan CHECK jumlah/basis nonnegatif.
+Basis mencatat ID ledger terakhir (0 bila belum ada) dan revision untuk
+idempotensi/konflik. Persetujuan mengunci semua material berurutan, memeriksa
+basis setiap lokasi lalu memanggil service M-22 dengan OPNAME untuk delta
+nonzero; aggregate/audit/report snapshot/outbox atomik. Nilai snapshot awal
+tidak diganti saat hitung ulang. Down sebelum data bisnis diuji; down dengan
+sesi Bahan menolak agar tidak menghapus atau mengubahnya menjadi sesi Aset.
+
+### PR-05-18…22/31 — migration 0067/0068
+
+0067 menambah material_receipts, material_receipt_files, material_adjustments dan
+procurement_receipt_materials dengan transaction_id unik. M-14 procurement_items
+menambah material_id/material_satuan_id nullable untuk kompatibilitas data lama;
+BAHAN baru wajib mapped sejak pengajuan. file_owner_type menambah
+MATERIAL_RECEIPT_DOCUMENT. Dokumen M-14 tetap milik receipt asal.
+
+0068 menambah material_requests/items/cycles, material_issues/issue_items dan
+material_approval_thresholds (pemilik M-20). Item memiliki revision, room_id,
+satuan_id serta nama/lokasi/satuan snapshot; jumlah diserahkan tidak melebihi
+jumlah disetujui. Cycles menyimpan snapshot ambang/items immutable, instance nullable
+untuk autoapproval. PMB memakai sequence nomor bersama. Status SQL menambah
+PERLU_REVISI, DISETUJUI_SEBAGIAN dan DITUTUP; DRAF lama dipertahankan sebagai enum
+namun alur baru langsung mengajukan. Header menyimpan approved_at dari Clock.
+
+Urutan lock penyerahan: request/domain sebelum approval instance, lalu material
+berurutan ID, saldo lokasi, ledger. Request/approval tidak menahan saldo. Trigger
+ledger mengubah agregat atomik; audit/outbox/header penyerahan satu transaksi.
+Constraint settings mengizinkan null hanya untuk key konfigurasi yang belum diisi,
+termasuk bahan.ambang_permintaan_default. Down mengembalikan constraint sebelumnya.
+Up/down/up diuji sebelum data bisnis; deployment rollback mempertahankan data expand
+atau perbaikan maju. Enum tambahan dipertahankan saat down. Migration 0066 opname
+Bahan sesi lain dipertahankan; review arsitek/CI/staging sebelum merge.
+
+
+### report_exports — PR-06-08
+
+Migration0070 menambah job infrastruktur report_exports: requester_id, jenis,
+format/filter, hash izin/cakupan, status, object_key/file_id, jumlah/pesan aman,
+Clock timestamps, batas unduh dan tombstone cleanup. Tidak menyimpan agregat
+lintas pengguna atau byte file. Indeks hanya requester/created_at/id untuk
+riwayat25job dan partialexpiry SIAP. REPORT_EXPORT memperluas enum owner_type;
+identitas kop sekolah disediakan sebagai parameter kosong yang dikonfigurasi
+Administrator. Migration0071 menambah indeks kepemilikan aset berdasarkan bukti
+EXPLAIN pada audit PR-06-09, tanpa mengubah data/transisi domain.
+
+### Pekerjaan impor jadwal tetap (PR-03-35, migration 0073)
+
+`room_schedule_import_jobs` mengikuti mesin impor aset: hash SHA-256 dan advisory
+lock per pengunggah/hash untuk replay 24 jam; cursor dan row lock job menserialisasi
+retry. Tiap baris mengunci ruangan sebelum pemeriksaan jadwal AKTIF identik,
+kemudian BlockService membuat aturan/slot di TransactionScope yang sama dengan
+cursor/audit. Bentrok bisnis/23P01 menjadi galat baris setelah rollback; galat sistem
+diulang oleh worker. Tidak ada pembatalan otomatis. Indeks parsial pencarian aturan
+aktif tidak memodifikasi jadwal lama. Aturan yang belum mempunyai kemunculan dalam
+horizon tetap dilindungi pemeriksaan identik di bawah kunci ruangan.
+
+CHECK menjamin cursor = sukses + gagal, status terminal mempunyai selesai_pada dan
+berkas NULL, SELESAI memproses seluruh baris. Izin worker dimuat ulang; status
+pengunggah AKTIF dan reservation.fixed_schedule wajib. Job dan laporan hanya
+pengunggah; ringkasan tidak memuat isi berkas. API importReportView menutup rincian
+tepat 30×24 jam dari selesai_pada, cleanup SYSTEM personal-data-retention memakai
+batch 200/SKIP LOCKED dan report_purged_at. Job berjalan tidak dibersihkan.
+Down 0073 membuang tabel job/indeks/parameter; jadwal dan slot hasil impor tetap.

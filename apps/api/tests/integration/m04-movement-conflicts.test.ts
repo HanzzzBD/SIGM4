@@ -26,11 +26,11 @@ describe.skipIf(!process.env["DATABASE_URL"])("PR-02-48: slot tanggal mutasi dan
         await kueri(`DELETE FROM assets WHERE created_by=${user}`);
         units = [];
     }
-    async function reserve(options: { origin?: "reservation" | "loan" | "maintenance"; status?: "TENTATIVE" | "CONFIRMED"; start?: string; end?: string } = {}) {
+    async function reserve(options: { origin?: "reservation" | "loan" | "maintenance"; status?: "TENTATIVE" | "CONFIRMED"; start?: string; end?: string; loanId?: number } = {}) {
         return withTransaction(ctx, (scope) => new SlotService(clock).reserve(scope, {
             sumberDaya: [{ jenis: "asset", id: Number(units[1]) }], asal: options.origin ?? "reservation",
             rentang: { mulai: new Date(options.start ?? "2026-10-19T03:00:00Z"), selesai: new Date(options.end ?? "2026-10-19T05:00:00Z") },
-            ...(options.origin === "loan" ? { rujukan: { loanId: 123 } } : options.origin === "maintenance" ? {} : { rujukan: { reservationId: Number(reservation) } }),
+            ...(options.origin === "loan" ? { rujukan: { loanId: options.loanId ?? 0 } } : options.origin === "maintenance" ? {} : { rujukan: { reservationId: Number(reservation) } }),
             ...(options.status === "TENTATIVE" ? { status: "TENTATIVE", kedaluwarsa: new Date("2026-10-20T00:00:00Z") } : { status: "CONFIRMED" }),
         }), getDb());
     }
@@ -51,6 +51,7 @@ describe.skipIf(!process.env["DATABASE_URL"])("PR-02-48: slot tanggal mutasi dan
     });
     afterAll(async () => {
         await cleanUnits();
+        if (reservation) await kueri(`DELETE FROM loans WHERE reservation_id=${reservation}`);
         if (reservation) await kueri(`DELETE FROM reservations WHERE id=${reservation}`);
         if (category) await kueri(`DELETE FROM asset_categories WHERE id=${category}`);
         if (source && target) await kueri(`DELETE FROM rooms WHERE id IN (${source},${target})`);
@@ -69,8 +70,11 @@ describe.skipIf(!process.env["DATABASE_URL"])("PR-02-48: slot tanggal mutasi dan
         }
     });
     it("slot pinjaman CONFIRMED juga ditolak ketika status aset masih TERSEDIA", async () => {
-        await reserve({ origin: "loan" });
-        await expect(service().moveWithDocument(ctx, input())).rejects.toMatchObject({ kode: "ASSET_NOT_AVAILABLE", detail: { errors: [{ message: expect.stringContaining("Pinjaman #123") }] } });
+        // Slot asal pinjaman wajib merujuk pinjaman nyata sejak expand M-09 (booking_slots_loan_fk, 0054).
+        const [loan] = await kueri<{ id: string }>(`INSERT INTO loans(nomor,reservation_id,peminjam_id,petugas_serah_id,nama_penerima,tanggal_pinjam,tanggal_jatuh_tempo)
+            VALUES ('PJM-2026-${String(tag).replace(/\D/g, "").padStart(4, "0").slice(-6)}',${reservation},${user},${user},'Peminjam uji','2026-10-19T03:00:00Z','2026-10-19T05:00:00Z') RETURNING id::text`);
+        await reserve({ origin: "loan", loanId: Number(loan!.id) });
+        await expect(service().moveWithDocument(ctx, input())).rejects.toMatchObject({ kode: "ASSET_NOT_AVAILABLE", detail: { errors: [{ message: expect.stringContaining(`Pinjaman #${loan!.id}`) }] } });
     });
     it.each([
         { start: "2026-10-18T15:00:00Z", end: "2026-10-18T17:00:00Z" },

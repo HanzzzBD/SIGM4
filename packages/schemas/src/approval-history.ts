@@ -25,6 +25,7 @@ export const HistoryResponseSchema = z.object({
                 approver: z.object({ tipe: z.enum(["role", "user"]), role: Nama.nullable(), user: Nama.nullable() }),
                 fallback: z.boolean(),
                 catatan: z.string().nullable(),
+                rincian_keputusan: z.record(z.string(),z.unknown()).nullable().optional(),
                 diputuskan_oleh: Nama.nullable(),
                 atas_nama: Nama.nullable(),
                 diputuskan_pada: z.string().nullable(),

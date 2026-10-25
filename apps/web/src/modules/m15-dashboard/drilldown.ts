@@ -3,6 +3,7 @@ import { jalurDrilldown } from "../../shared/navigasi";
 import type { KartuManifes } from "./api";
 
 const IZIN: Readonly<Record<string, readonly string[]>> = {
+    "P-42": ["workorder.view"],
     "P-15": ["asset.view"], "P-24": ["asset.qr_print", "asset.view"],
     "P-26": ["asset_document.view"],
     "P-30": ["reservation.view"], "P-37": ["approval.decide"],

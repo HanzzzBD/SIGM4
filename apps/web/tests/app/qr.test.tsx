@@ -21,6 +21,7 @@ const halaman = (data: unknown[]): Jawaban => ({ status: 200, data: { success: t
 
 function server(o: { me?: unknown; publik?: Jawaban; cari?: (p: Permintaan) => Jawaban; byUuid?: Jawaban } = {}) {
     return pasangServer((p) => {
+        if (p.url === "/public/qr/config") return sukses({ app_base_url: "https://sigm4.sekolah.test" });
         if (p.url === "/me") return sukses(o.me ?? ME);
         if (p.url === `/public/assets/${UUID}`) return o.publik ?? sukses(PUBLIK);
         if (p.url === `/assets/by-uuid/${UUID}`) return o.byUuid ?? sukses(PINDAIAN);
@@ -48,6 +49,19 @@ describe("uuidDariQr (FR-05.1 langkah 1)", () => {
         expect(uuidDariQr("teks bebas")).toBeNull();
     });
 });
+
+describe("origin label PDF", () => {
+    it("memakai domain backend meskipun halaman scanner dibuka di localhost", () => {
+        const label = `https://sigm4.sekolah.test/a/${UUID}`;
+        expect(uuidDariQr(label, "http://localhost:5173")).toBeNull();
+        expect(uuidDariQr(label, "https://sigm4.sekolah.test")).toBe(UUID);
+    });
+    it("menolak domain asing, URL berparameter dan UUID yang tidak sah", () => {
+        for (const label of [`https://evil.test/a/${UUID}`, `https://sigm4.sekolah.test/a/${UUID}?next=evil`, `https://sigm4.sekolah.test/a/${UUID}#x`, `https://user@sigm4.sekolah.test/a/${UUID}`, "https://sigm4.sekolah.test/a/not-uuid"])
+            expect(uuidDariQr(label, "https://sigm4.sekolah.test")).toBeNull();
+    });
+});
+
 
 describe("P-06 Halaman Publik Aset", () => {
     it("tanpa sesi: atribut non-sensitif, noindex, tanpa sidebar; tanpa pelanggaran axe", async () => {
@@ -132,7 +146,7 @@ describe("P-25 Scan QR web", () => {
         return stop;
     };
 
-    it("QR aset terbaca → profil dari `by-uuid`, diumumkan live region, kamera dimatikan; tanpa pelanggaran axe", async () => {
+    it("QR aset PDF dari domain backend terbaca pada browser localhost → profil dari `by-uuid`, diumumkan live region, kamera dimatikan; tanpa pelanggaran axe", async () => {
         const log = server();
         const stop = kameraAda();
         isiQr.nilai = `https://sigm4.sekolah.test/a/${UUID}`;
@@ -159,7 +173,7 @@ describe("P-25 Scan QR web", () => {
     it("QR asing → 'QR tidak dikenali' tanpa memanggil server (FR-05.2 A1)", async () => {
         const log = server();
         kameraAda();
-        isiQr.nilai = "https://contoh.com/produk/123";
+        isiQr.nilai = `https://evil.test/a/${UUID}`;
         await renderAplikasi("/scan");
         expect(await screen.findByText("QR tidak dikenali. Masukkan kode aset secara manual.", undefined, { timeout: 3000 })).toBeTruthy();
         expect(log.some((p) => p.url.startsWith("/assets/by-uuid"))).toBe(false);

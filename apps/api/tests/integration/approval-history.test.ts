@@ -228,6 +228,9 @@ describe.skipIf(!ADA_DB)("PR-02-23 — riwayat & pelacakan persetujuan (acceptan
 
         beforeAll(async () => {
             const app = createApp({
+                // Mesin approval generik: PERMINTAAN_BAHAN di sini jenis tiruan tanpa objek; adapter
+                // domain M-22 (kunci objek, efek keputusan) tidak boleh ikut (SDD-APR-17).
+                penanganHasil: [],
                 appBaseUrl: "https://sigm4.sekolah.test",
                 health: new HealthRegistry(30),
                 limiter: { hit: () => Promise.resolve({ lolos: true, batas: 1000, sisa: 999, resetDetik: 60 }) },

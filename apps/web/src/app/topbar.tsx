@@ -8,7 +8,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { logout, logoutSemua } from "../modules/m01-auth";
 import { Lonceng } from "../modules/m17-notifications";
-import { useCan, useSesi } from "../shared/auth";
+import { useCan, useSesi, leaveAuthenticatedSession } from "../shared/auth";
 import { ApiError } from "../shared/api";
 import { DialogKonfirmasi } from "../shared/ui/dialog";
 import { jalurTerdaftar } from "../shared/navigasi";
@@ -67,12 +67,11 @@ export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; rea
             // pengguna tidak terjebak di shell; server menolak sesi yang tak sah pada permintaan berikutnya.
         }
         // Cache klien dikosongkan agar data sesi lama tak tertinggal di tab ini.
-        await navigate({ to: "/login" });
-        queryClient.clear();
+        await leaveAuthenticatedSession(queryClient,()=>navigate({ to: "/login", replace:true, ignoreBlocker:true }));
     };
     return (
         <header role="banner" className="flex min-h-topbar items-center gap-2 border-b border-border-subtle bg-surface-default px-4 sm:gap-4">
-            <button type="button" onClick={onMenu} aria-label={menuLabel} className="flex size-touch items-center justify-center rounded-md text-icon-default hover:bg-neutral-50">
+            <button type="button" data-menu-trigger onClick={onMenu} aria-label={menuLabel} className="flex size-touch items-center justify-center rounded-md text-icon-default hover:bg-neutral-50">
                 <Ikon nama="menu" />
             </button>
             <Logo ukuran="sm" className="md:hidden" />
@@ -91,6 +90,7 @@ export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; rea
                             <Menu.Separator className="my-1 h-px bg-border-subtle" />
                             <Menu.Item className={ITEM} onSelect={() => void navigate({ to: "/profil" })}>Profil</Menu.Item>
                             <Menu.Item className={ITEM} onSelect={() => void navigate({ to: "/profil/keamanan" })}>Keamanan &amp; 2FA</Menu.Item>
+                            {can("user.reset_password") && <Menu.Item className={ITEM} onSelect={() => void navigate({ to: "/permintaan-reset-password" })}>Permintaan Reset Password</Menu.Item>}
                             <Menu.Item className={ITEM} onSelect={() => void navigate({ to: "/profil/keamanan", hash: "perangkat" })}>Perangkat Terhubung</Menu.Item>
                             {can("notification.manage_own") && (
                                 <Menu.Item className={ITEM} onSelect={() => void navigate({ to: "/profil/notifikasi" })}>

@@ -7,6 +7,18 @@ import type { NamaIkon } from "../ui/icon";
 
 /** Halaman yang route-nya ada di build ini: ID UX §6 → path. Dijaga sama dengan router (diuji). */
 export const HALAMAN_TERDAFTAR: Readonly<Record<string, string>> = {
+    "P-58": "/analitik", "P-59": "/analitik/$jenis",
+    "P-14":"/chat","P-75":"/monitoring-chatbot",
+    "P-84":"/katalog-bahan", "P-85":"/permintaan-bahan/baru", "P-86":"/permintaan-bahan", "P-87":"/permintaan-bahan/$id",
+    "P-80":"/bahan", "P-81":"/bahan/baru", "P-81 · Ubah":"/bahan/$id/ubah", "P-82":"/bahan/$id", "P-82 · QR":"/b/$uuid", "P-83":"/kategori-bahan",
+    "P-55": "/penghapusan", "P-56": "/penghapusan/baru", "P-57": "/penghapusan/$id",
+    "P-51":"/pengadaan","P-52":"/pengadaan/baru","P-53":"/pengadaan/$id","P-54":"/pengadaan/$id/penerimaan",
+    "P-47": "/opname", "P-48": "/opname/baru", "P-49": "/opname/$id", "P-50": "/opname/$id/rekonsiliasi",
+    "P-42":"/work-order",
+    "P-43":"/work-order/baru",
+    "P-44":"/work-order/$id",
+    "P-45": "/jadwal-pemeliharaan",
+    "P-46": "/jadwal-pemeliharaan/$id",
     "P-01": "/login",
     "P-02": "/login/2fa",
     "P-03": "/login/2fa/aktivasi",
@@ -35,9 +47,15 @@ export const HALAMAN_TERDAFTAR: Readonly<Record<string, string>> = {
     "P-25": "/scan",
     "P-26": "/dokumen-aset",
     "P-27": "/kalender-ruangan",
+    "P-28": "/katalog-aset",
     "P-29": "/reservasi/baru",
     "P-30": "/reservasi",
     "P-31": "/reservasi/$id",
+    "P-32": "/peminjaman",
+    "P-35": "/denda",
+    "P-36": "/denda/$id",
+    "P-33": "/peminjaman/serah-terima",
+    "P-34": "/peminjaman/$id",
     "P-37": "/persetujuan",
     "P-38": "/persetujuan/$id",
     "P-39": "/kerusakan",
@@ -100,7 +118,7 @@ export const NAVIGASI: readonly GrupNav[] = [
             e("Lokasi", "P-22", "lokasi", "location.view"),
             e("Label QR", "P-24", "qr", "asset.qr_print"),
             e("Dokumen Aset", "P-26", "dokumen", "asset_document.view"),
-            e("Scan QR", "P-25", "pindai", "asset.view"),
+            e("Scan QR", "P-25", "pindai", "asset.view","material.view"),
         ],
     },
     {
@@ -111,6 +129,7 @@ export const NAVIGASI: readonly GrupNav[] = [
             e("Katalog Aset", "P-28", "katalog", "reservation.view"),
             e("Reservasi", "P-30", "reservasi", "reservation.view"),
             e("Peminjaman", "P-32", "peminjaman", "loan.view"),
+            e("Antrean Serah Terima", "P-33", "peminjaman", "loan.manage"),
             e("Denda & Kewajiban", "P-35", "denda", "fine.view"),
             e("Katalog Bahan", "P-84", "katalog", "material.view"),
             e("Permintaan Bahan", "P-86", "permintaan", "material.view"),
@@ -123,7 +142,7 @@ export const NAVIGASI: readonly GrupNav[] = [
         entri: [
             e("Laporan Kerusakan", "P-39", "kerusakan", "damage.view"),
             e("Work Order", "P-42", "workOrder", "workorder.view"),
-            e("Jadwal Pemeliharaan", "P-45", "jadwal", "maintenance.view_cost", "maintenance.manage"),
+            e("Jadwal Pemeliharaan", "P-45", "jadwal", "maintenance.manage"),
         ],
     },
     {
@@ -168,6 +187,7 @@ export function navigasiTerlihat(can: (permission: string) => boolean): readonly
  */
 export function jalurTerdaftar(deepLink: string): boolean {
     const path = deepLink.split(/[?#]/)[0] ?? "";
+    if(path.startsWith("/b/"))return /^\/b\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(path);
     return Object.values(HALAMAN_TERDAFTAR).some((pola) => new RegExp(`^${pola.replace(/\$[^/]+/g, "[^/]+")}$`).test(path));
 }
 

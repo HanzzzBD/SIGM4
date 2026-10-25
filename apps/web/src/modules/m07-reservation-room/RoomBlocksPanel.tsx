@@ -7,6 +7,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { RoomBlockInput, RoomBlockPreview } from "@sigm4/schemas";
 import { useState } from "react";
+import RoomScheduleImportPanel from "./RoomScheduleImportPanel";
 import { ApiError } from "../../shared/api";
 import { KeadaanGalat, KeadaanMemuat } from "../../shared/states";
 import { DialogKonfirmasi } from "../../shared/ui/dialog";
@@ -173,8 +174,9 @@ function FormulirBlokade({ roomId, onSelesai }: { readonly roomId: string; reado
     );
 }
 
-export default function RoomBlocksPanel({ roomId, onRuangan, onTutup, tetap = false }: { readonly roomId: string | null; readonly onRuangan: (id: string) => void; readonly onTutup: () => void; readonly tetap?: boolean }) {
+export default function RoomBlocksPanel({ roomId, onRuangan, onTutup, tetap = false, importJobId = null, onImportJob }: { readonly importJobId?: string | null; readonly onImportJob?: (id: string) => void; readonly roomId: string | null; readonly onRuangan: (id: string) => void; readonly onTutup: () => void; readonly tetap?: boolean }) {
     const qc = useQueryClient();
+    const [localJob, setLocalJob] = useState<string | null>(null);
     const hari = hariIniWib();
     const ruangan = useQuery({ ...ketersediaanQuery(`${hari}T00:00:00+07:00`, `${hari}T23:59:59+07:00`, {}), enabled: !tetap });
     const daftar = useQuery({ ...daftarBlokadeQuery(roomId ?? ""), enabled: roomId !== null });
@@ -211,6 +213,7 @@ export default function RoomBlocksPanel({ roomId, onRuangan, onTutup, tetap = fa
             ) : (
                 <Pilihan label="Ruangan" kosong="Pilih ruangan" value={roomId ?? ""} opsi={ruangan.data.ruangan.map((r) => ({ nilai: r.id, label: `${r.nama} · ${r.gedung.nama}` }))} onChange={(e) => e.target.value !== "" && onRuangan(e.target.value)} />
             )}
+            <RoomScheduleImportPanel jobId={importJobId ?? localJob} onJob={onImportJob ?? setLocalJob} />
             {info !== null && <Peringatan varian="success">{info}</Peringatan>}
             {roomId !== null &&
                 (daftar.isPending ? (

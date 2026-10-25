@@ -1,6 +1,7 @@
 // Route M-07 (SDD-AUTH-01, PM-01) + perakit router modul. Katalog: m07-reservation-room.md §7.
 
 import {
+    ReservationSubmissionBodySchema,
     BlockDeactivatedResponseSchema,
     BlockIdParamSchema,
     BlockStatusBodySchema,
@@ -20,14 +21,18 @@ import {
     RoomBlockPreviewResponseSchema,
     RoomIdParamSchema,
     RoomAvailabilityResponseSchema,
-    RoomReservationBodySchema,
     RoomReservationCreatedResponseSchema,
     RoomReservationPreviewResponseSchema,
 } from "@sigm4/schemas";
 import express from "express";
+import { importRoomSchedulesRoute, getRoomScheduleImportRoute, roomScheduleImportTemplateRoute } from "./import.routes.js";
+import { importRoomSchedulesHandler, getRoomScheduleImportHandler, roomScheduleTemplateHandler } from "./controllers/room-schedule-import.controller.js";
+import { RoomScheduleImportService } from "./services/room-schedule-import.service.js";
 import type { RequestHandler, Router } from "express";
 import type { Kysely } from "kysely";
 import { ApprovalService, RuleConfigService } from "../m10-approval/index.js";
+import { AssetSubmissionService } from "../m08-reservation-item/index.js";
+import { blokirPemohon } from "./services/borrower-block-registry.js";
 import type { AuditLogger } from "../../shared/audit/index.js";
 import { SlotService } from "../../shared/booking/index.js";
 import { BusinessCalendarService } from "../../shared/calendar/index.js";
@@ -72,7 +77,7 @@ export const previewReservationRoute = defineRoute({
     module: MODUL,
     summary: "Pratinjau pengajuan reservasi ruangan: tanggal, bentrok, kuota, jalur persetujuan (FR-07.2)",
     successStatus: 200,
-    body: RoomReservationBodySchema,
+    body: ReservationSubmissionBodySchema,
     response: RoomReservationPreviewResponseSchema,
 });
 
@@ -86,7 +91,7 @@ export const createReservationRoute = defineRoute({
     summary: "Ajukan reservasi ruangan (FR-07.2)",
     successStatus: 201,
     idempotent: true,
-    body: RoomReservationBodySchema,
+    body: ReservationSubmissionBodySchema,
     response: RoomReservationCreatedResponseSchema,
 });
 
@@ -235,6 +240,8 @@ export function reservationsRouter(
         new ReservationService(new SlotService(deps.clock), new DocumentNumberService(deps.clock), deps.auditLogger),
         approval,
         new RuleConfigService(deps.db, deps.auditLogger, approval),
+        blokirPemohon,
+        new AssetSubmissionService({ db: deps.db, clock: deps.clock, calendar: kalender, audit: deps.auditLogger, approval, rules: new RuleConfigService(deps.db, deps.auditLogger, approval), blockers: blokirPemohon }),
     );
     const router = express.Router();
     router.get(roomAvailabilityRoute.path, batasi(roomAvailabilityRoute), otorisasi(roomAvailabilityRoute.permission), roomAvailabilityHandler(new AvailabilityService(deps.db, kalender)));
@@ -248,6 +255,10 @@ export function reservationsRouter(
     router.post(cancelReservationRoute.path, batasi(cancelReservationRoute), otorisasi(cancelReservationRoute.permission), cancelReservationHandler(pembatalan));
     // FR-07.5 (PR-03-13). `/preview` sebelum pola tanpa sufiks agar tak tertangkap sebagai id.
     const blokade = new BlockService(deps.db, deps.clock, kalender, deps.auditLogger, pembatalan);
+    const imports = new RoomScheduleImportService(deps.db, deps.auditLogger, deps.clock, blokade);
+    router.get(roomScheduleImportTemplateRoute.path, batasi(roomScheduleImportTemplateRoute), otorisasi(roomScheduleImportTemplateRoute.permission), roomScheduleTemplateHandler(imports));
+    router.get(getRoomScheduleImportRoute.path, batasi(getRoomScheduleImportRoute), otorisasi(getRoomScheduleImportRoute.permission), getRoomScheduleImportHandler(imports));
+    router.post(importRoomSchedulesRoute.path, batasi(importRoomSchedulesRoute), otorisasi(importRoomSchedulesRoute.permission), importRoomSchedulesHandler(imports));
     router.get(listBlocksRoute.path, batasi(listBlocksRoute), otorisasi(listBlocksRoute.permission), listBlocksHandler(blokade));
     router.post(previewBlockRoute.path, batasi(previewBlockRoute), otorisasi(previewBlockRoute.permission), previewBlockHandler(blokade));
     router.post(createBlockRoute.path, batasi(createBlockRoute), otorisasi(createBlockRoute.permission), createBlockHandler(blokade));

@@ -107,6 +107,9 @@ export class DecisionRepository extends BaseRepository {
         return hasil.numUpdatedRows === 1n;
     }
 
+    async simpanRincian(ctx:AuthContext,instanceId:number,urutan:number,rincian:Readonly<Record<string,unknown>>){
+        await this.query(ctx).updateTable("approval_steps").set({rincian_keputusan:JSON.stringify(rincian)}).where("instance_id","=",String(instanceId)).where("urutan","=",urutan).where("diputuskan_oleh","=",String(ctx.userId)).execute();
+    }
     /** Catatan keputusan sebuah langkah — isi `{alasan}`/`{catatan}` NT-03/NT-04 (keputusan 78). */
     async catatan(ctx: AuthContext, instanceId: number, urutan: number): Promise<string | null> {
         const b = await this.query(ctx)

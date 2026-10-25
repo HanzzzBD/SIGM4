@@ -136,6 +136,11 @@ export class ApprovalService {
         });
         return { instanceId, ruleId: snapshot.rule_id, langkahAktif };
     }
+    /** Domain may require an explicitly configured route before creating an instance. Read only. */
+    async selectedSnapshot(scope: TransactionScope, jenis: JenisPengajuan, fakta: KamusFakta): Promise<SnapshotAturan | null> {
+        const { terpilih } = selectRule(await createApprovalRepository(scope.tx).activeRules(scope.ctx, jenis), fakta);
+        return terpilih ? snapshotDari(terpilih) : null;
+    }
 
     /**
      * Objek pengajuan berhenti DI LUAR keputusan approver — TTL slot habis (BR-023b), kelak

@@ -27,6 +27,14 @@ const LABEL_URGENSI = { RENDAH: "Rendah", SEDANG: "Sedang", TINGGI: "Tinggi", KR
 
 function Isi({ e }: { readonly e: EntriLinimasaAset }) {
     switch (e.jenis) {
+        case "PENGHAPUSAN":
+            return <><a href={`/penghapusan/${e.disposal_id}`} className="font-medium text-text-link underline">{e.aksi === "DIPULIHKAN" ? "Pemulihan" : "Penghapusan"} {e.nomor}</a><p className="text-sm text-text-secondary">{e.alasan}</p></>;
+        case "PREVENTIF_DILEWATI":
+            return <><p className="font-medium text-text-primary">Pemeliharaan preventif dilewati: {e.nama}</p><p className="text-sm text-text-secondary">Jatuh tempo {TANGGAL.format(new Date(`${e.jatuh_tempo}T00:00:00Z`))} · Alasan: {e.alasan}</p></>;
+        case "PEMELIHARAAN":
+            return <><a href={`/work-order/${e.work_order_id}`} className="font-medium text-text-link underline">Work order {e.nomor}</a><p className="text-sm text-text-secondary">{e.jenis_pekerjaan.replaceAll("_"," ")} · {e.status.replaceAll("_"," ")}{e.biaya===null?"":` · Biaya Rp${e.biaya}`}</p>{e.hasil&&<p className="text-sm text-text-secondary">{e.hasil}</p>}</>;
+        case "PEMINJAMAN":
+            return <><a href={`/peminjaman/${e.loan_id}`} className="font-medium text-text-link underline">Peminjaman {e.nomor}</a><p className="text-sm text-text-secondary">{e.dikembalikan_pada === null ? "Unit masih dipinjam" : `Dikembalikan ${waktuWib(e.dikembalikan_pada)}`}</p></>;
         case "KONDISI":
             return (
                 <>

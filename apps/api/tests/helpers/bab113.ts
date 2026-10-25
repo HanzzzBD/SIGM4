@@ -54,6 +54,7 @@ export const TIPE_DI_LUAR_BAB113: ReadonlySet<string> = new Set(["booking_resour
 
 /** Kelompok Bab 11.3 -> nama tipe PostgreSQL (`<domain>_<konsep>`, SDD-05 §4.1). */
 export const NAMA_TIPE: ReadonlyMap<string, string> = new Map([
+    ["Status Master Bahan", "material_status"],
     ["Kondisi Aset", "asset_condition"],
     ["Status Aset", "asset_status"],
     ["Sumber Perolehan", "asset_acquisition_source"],

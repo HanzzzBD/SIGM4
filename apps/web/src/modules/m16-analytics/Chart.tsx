@@ -1,0 +1,15 @@
+import { useState } from "react";
+import type { AnalyticsColumn, AnalyticsRow } from "@sigm4/schemas";
+import { Pilihan } from "../../shared/ui/primitives";
+import { displayValue } from "./format";
+export function AnalyticsChart({ columns, rows, total }: { readonly columns: readonly AnalyticsColumn[]; readonly rows: readonly AnalyticsRow[]; readonly total: number }) {
+    const metrics = columns.filter(c => c.tipe === "NUMBER" || c.tipe === "DECIMAL"), [selected, setSelected] = useState(metrics[0]?.key ?? "");
+    const units = [...new Set(rows.map(r => r["satuan"]).filter((v): v is string => typeof v === "string" && v.length > 0))];
+    const [unit, setUnit] = useState(units[0] ?? ""), activeUnit = units.includes(unit) ? unit : units[0];
+    const metric = metrics.find(c => c.key === selected) ?? metrics[0];
+    if (!metric || !rows.length) return null;
+    const sample = (units.length > 1 ? rows.filter(r => r["satuan"] === activeUnit) : rows).slice(0, 20), number = (r: AnalyticsRow) => { const v = r[metric.key]; if (v === null || v === undefined) return null; const n = Number(v); return Number.isFinite(n) && Math.abs(n) <= Number.MAX_SAFE_INTEGER ? n : null; };
+    const maximum = Math.max(1, ...sample.map(r => Math.abs(number(r) ?? 0)));
+    const label = (r: AnalyticsRow) => ["nama", "aset", "nomor", "bahan", "peminjam", "bulan", "kategori", "lokasi", "kondisi", "unit_kerja"].map(k => r[k]).filter(v => typeof v === "string" && v.length).join(" · ") || String(r[columns.find(c => c.tipe === "TEXT" && c.key !== "grup")?.key ?? "grup"] ?? "Baris laporan");
+    return <section className="flex flex-col gap-4 rounded-md border border-border-subtle bg-surface-default p-4" aria-label="Grafik laporan"><Pilihan label="Indikator grafik" value={metric.key} opsi={metrics.map(c => ({ nilai: c.key, label: c.label }))} onChange={e => setSelected(e.target.value)} />{units.length > 1 && <Pilihan label="Satuan grafik" value={activeUnit} opsi={units.map(u => ({ nilai: u, label: u }))} onChange={e => setUnit(e.target.value)} />}<figure><figcaption className="mb-4 text-sm text-text-secondary">{metric.label}{activeUnit ? ` (${activeUnit})` : ""}: {sample.length} baris pada halaman ini, dari {total.toLocaleString("id-ID")} grup terlihat. Nilai lengkap tersedia dalam tabel.</figcaption><ol className="flex flex-col gap-3">{sample.map((r, i) => <li key={String(r["grup"] ?? i)} className="flex flex-col gap-1"><div className="flex flex-wrap justify-between gap-2 text-sm text-text-primary"><span className="min-w-0 break-words">{label(r)}</span><span className="font-medium tabular-nums">{displayValue(r[metric.key], metric)}</span></div><div aria-hidden="true" className="h-3 rounded-sm bg-neutral-100"><div className="h-3 rounded-sm bg-teal-600" style={{ width: `${Math.abs(number(r) ?? 0) / maximum * 100}%` }} /></div>{number(r) === null && r[metric.key] !== null && <span className="text-xs text-text-secondary">Nilai disajikan sebagai teks agar presisinya tetap utuh.</span>}</li>)}</ol></figure></section>;
+}

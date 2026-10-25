@@ -3,7 +3,8 @@
 // apa yang akan ditolak atau dibentuk. `ajukan` berjalan di transaksi idempoten pemanggil (ID-01):
 // reservasi, slot TENTATIVE, dan instance approval lahir dalam SATU transaksi (SDD-AVL-06).
 
-import type { RoomReservationCreated, RoomReservationPreview, TanggalPengajuanRuangan } from "@sigm4/schemas";
+import type { AssetReservationBody, RoomReservationCreated, RoomReservationPreview, TanggalPengajuanRuangan } from "@sigm4/schemas";
+import type { AssetSubmissionService } from "../../m08-reservation-item/index.js";
 import type { Kysely } from "kysely";
 import { ruanganUntukReservasi } from "../../m03-locations/index.js";
 import type { RuanganReservasi } from "../../m03-locations/index.js";
@@ -63,10 +64,12 @@ export class SubmissionService {
         private readonly approval: ApprovalService,
         private readonly aturan: RuleConfigService,
         private readonly blokir: RegistriBlokirPemohon = blokirPemohon,
+        private readonly assets?: AssetSubmissionService,
     ) {}
 
     /** `POST /reservations/preview` — keputusan 14f: tanpa efek samping; kuota dilaporkan, tidak ditolak. */
-    async pratinjau(ctx: AuthContext, isian: IsianPengajuan): Promise<RoomReservationPreview> {
+    async pratinjau(ctx: AuthContext, isian: IsianPengajuan | AssetReservationBody): Promise<RoomReservationPreview> {
+        if ("jenis" in isian) { if (!this.assets) throw new Error("Layanan aset belum terpasang."); return this.assets.pratinjau(ctx, isian); }
         return withTransaction(
             ctx,
             async (scope) => {
@@ -89,7 +92,8 @@ export class SubmissionService {
     }
 
     /** `POST /reservations` (FR-07.2 langkah 4-7) — di transaksi idempoten pemanggil. */
-    async ajukan(scope: TransactionScope, isian: IsianPengajuan): Promise<RoomReservationCreated> {
+    async ajukan(scope: TransactionScope, isian: IsianPengajuan | AssetReservationBody): Promise<RoomReservationCreated> {
+        if ("jenis" in isian) { if (!this.assets) throw new Error("Layanan aset belum terpasang."); return this.assets.ajukan(scope, isian); }
         // BR-023a tanpa celah balapan: pengajuan serentak pemohon yang sama berurutan sampai commit.
         await createReservationRepository(scope.tx).kunciPemohon(scope.ctx, scope.ctx.userId);
         const k = await this.kaji(scope, isian);
@@ -182,6 +186,7 @@ export class SubmissionService {
             jam: await this.kalender.jamOperasional(scope.tx),
             hariKerja: new Set(hariKerja),
             libur: new Map(libur.map((l) => [l.tanggal, l.nama])),
+            durasiMaksimumJam: pengaturan.durasiMaksimumJam,
             granularitasMenit: pengaturan.granularitasMenit,
             jarakMinimumHari: pengaturan.jarakMinimumHari,
             mendesak: ctx.can("reservation.urgent"),

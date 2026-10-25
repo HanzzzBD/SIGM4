@@ -195,7 +195,7 @@ Hal-hal berikut **secara eksplisit berada di luar cakupan** rilis ini:
 | NO-04 | Modul vendor, perbandingan penawaran, dan Purchase Order | Alur pengadaan dikonfirmasi sederhana |
 | NO-05 | Integrasi RKAS/BOS dan validasi pagu anggaran | Di luar alur pengadaan yang disepakati |
 | NO-06 | Akun dan portal untuk vendor/pihak ketiga | Maintenance dikerjakan teknisi internal saja |
-| NO-07 | Mode offline dan sinkronisasi data pada aplikasi mobile | Dikonfirmasi online only. **Klarifikasi audit:** yang dikecualikan adalah replikasi data dan sinkronisasi dua arah. Antrean unggah berkas dengan percobaan ulang **termasuk dalam lingkup** karena transaksi bisnisnya sendiri sudah tercatat di server (lihat Bab 32.1) |
+| NO-07 | Mode offline dan sinkronisasi data pada aplikasi mobile | Online only dengan pengecualian opname aset yang dikonfirmasi 14 Oktober 2026 pada M-13 §6 (scan/temuan SQLite, target/identitas minimum 72 jam). **Klarifikasi audit:** yang dikecualikan adalah replikasi data dan sinkronisasi dua arah. Antrean unggah berkas dengan percobaan ulang **termasuk dalam lingkup** karena transaksi bisnisnya sendiri sudah tercatat di server (lihat Bab 32.1) |
 | NO-08 | Notifikasi email dan WhatsApp | Kanal dibatasi in-app dan push notification |
 | NO-09 | Single Sign-On (Google Workspace / Dapodik) | Autentikasi dikonfirmasi email + password lokal |
 | NO-10 | Integrasi dengan sistem akademik, keuangan, atau perpustakaan | Tidak disebut dalam kebutuhan |
