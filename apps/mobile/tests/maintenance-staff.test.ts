@@ -10,7 +10,7 @@ describe("MS-60 verifikasi tiket (FR-11.2)", () => {
         expect(verifyBody({ decision: "TOLAK", note: "", condition: "", conditionReason: "", assign: null })).toEqual({ error: "Alasan penolakan wajib diisi." });
         expect(verifyBody({ decision: "PERBAIKAN_RINGAN", note: "Baut dikencangkan", condition: "BAIK", conditionReason: "Sudah normal", assign: null })).toEqual({ body: { keputusan: "PERBAIKAN_RINGAN", catatan: "Baut dikencangkan", kondisi_aset: { kondisi: "BAIK", alasan: "Sudah normal" } } });
         expect(verifyBody({ decision: "TINDAK_LANJUT", note: "", condition: "", conditionReason: "", assign })).toEqual({ body: { keputusan: "TINDAK_LANJUT", work_order: { teknisi_id: 4, target_selesai: "2026-11-10", estimasi_biaya: 0, nonaktifkan_aset: true } } });
-        expect(verifyBody({ decision: "TOLAK", note: "Bukan kerusakan", condition: "", conditionReason: "", assign })).not.toMatchObject({ body: { work_order: expect.anything() } });
+        expect(verifyBody({ decision: "TOLAK", note: "Bukan kerusakan", condition: "", conditionReason: "", assign })).toEqual({ body: { keputusan: "TOLAK", catatan: "Bukan kerusakan" } });
     });
 });
 
