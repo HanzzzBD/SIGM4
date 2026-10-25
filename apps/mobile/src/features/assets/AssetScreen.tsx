@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback } from "react";
@@ -7,7 +7,8 @@ import { AssetDetailSchema, AssetPhotosResponseSchema, AssetTimelineResponseSche
 import type { AssetDetail, AssetPhoto, EntriLinimasaAset } from "@sigm4/schemas";
 import { useAuth } from "../auth";
 import { allowed, contextualActions } from "../scanner";
-import { Button, Card, Label, Notice, Screen, tokens as t } from "../../shared/ui";
+import { Button, Card, EntityCard, Label, Notice, Screen, tokens as t } from "../../shared/ui";
+import { CONDITION_LABEL, CONDITION_TONE, STATUS_LABEL, STATUS_TONE } from "./model";
 
 function timelineSummary(entry: EntriLinimasaAset): string {
     switch (entry.jenis) {
@@ -61,8 +62,13 @@ export function AssetScreen({ id, detail = false }: { id: string; detail?: boole
     if (!permitted) return <Screen title="Detail aset"><Notice message="Anda tidak memiliki izin melihat aset." /><Button title="Beranda" onPress={() => router.replace("/")} /></Screen>;
     return <Screen title={detail ? "Detail aset" : "Hasil scan"}>
         {loading && <Label>Memuat aset…</Label>}{error && <><Notice message={error} /><Button icon="refresh" title="Coba lagi" onPress={() => setRetry((value) => value + 1)} /></>}
-        {asset && <><Card><Label>{asset.kode_barang}</Label><Label>{asset.nama}</Label><Label>Kategori: {asset.kategori.nama}</Label>
-            <Label>Lokasi: {asset.lokasi.gedung} · {asset.lokasi.area} · {asset.lokasi.ruang}</Label><Label>Kondisi: {asset.kondisi.replaceAll("_", " ")}</Label><Label>Status: {asset.status.replaceAll("_", " ")}</Label>
+        {asset && <><EntityCard icon="package" title={asset.nama} meta={[asset.kode_barang, asset.kategori.nama]} statuses={[{ label: CONDITION_LABEL[asset.kondisi], tone: CONDITION_TONE[asset.kondisi] }, { label: STATUS_LABEL[asset.status], tone: STATUS_TONE[asset.status] }]}/>
+            {detail && !asset.dihapuskan && <View style={{ flexDirection: "row", flexWrap: "wrap", gap: t.space.sm }}>
+                {allowed(permissions, "asset.update") && <Button icon="settings" title="Ubah" compact secondary onPress={() => router.push(`/aset/${asset.id}/ubah` as "/scan")}/>}
+                {allowed(permissions, "asset.update") && allowed(permissions, "location.view") && <Button icon="mapPin" title="Mutasi lokasi" compact secondary onPress={() => router.push(`/aset/mutasi?ids=${asset.id}` as "/scan")}/>}
+                {allowed(permissions, "asset_document.view") && <Button icon="fileText" title="Dokumen" compact secondary onPress={() => router.push(`/aset/${asset.id}/dokumen` as "/scan")}/>}
+            </View>}
+            <Card><Label>Lokasi: {asset.lokasi.gedung} · {asset.lokasi.area} · {asset.lokasi.ruang}</Label>
             {asset.dihapuskan && <Notice message="Aset tidak aktif: sudah dihapuskan. Aksi transaksi tidak tersedia." />}
             {asset.status === "TIDAK_TERSEDIA" && <Notice message="Aset tidak tersedia untuk transaksi." />}
             {detail && <><Label>Merek / model: {asset.merek ?? "—"} / {asset.model ?? "—"}</Label><Label>Nomor seri: {asset.nomor_seri ?? "—"}</Label><Label>Tahun perolehan: {asset.tahun_perolehan}</Label><Label>Penanggung jawab: {asset.penanggung_jawab?.nama ?? "Belum ditentukan"}</Label><Label>Label QR: {asset.qr_terpasang ? "Terpasang" : "Belum terpasang"}</Label></>}
