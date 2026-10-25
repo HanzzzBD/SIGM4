@@ -20,6 +20,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 |---|---|---|
 | 25 Oktober 2026 | Pemilik produk meminta seluruh fitur web tersedia di mobile untuk semua role dengan UI yang lebih visual. Lima putaran `AskUserQuestion` (keputusan 1–5). `PR-07-15` menurunkannya ke PRD (`MOB-SCP-01`…`04`), SDD (`SDD-MOB-13`), UX (**UXD-19**…**22**, 67 layar `MS-24`…`MS-90`) dan DESIGN (**DSD-11**/**12**, C-30…C-38), lalu merencanakan 20 PR implementasi `PR-07-16`…`35`. Pemilik produk kemudian memilih pelaksanaan dalam enam paket per domain (keputusan 6). | `PR-07-15` |
 | 25 Oktober 2026 | `PR-07-15` (#185) tergabung. Paket 1 Fondasi & Akun dikerjakan di `feature/PR-07-16-fondasi-akun-mobile`: tiga commit `PR-07-16`, `PR-07-17`, `PR-07-18`. Dua putaran `AskUserQuestion` menghasilkan keputusan 7–10. | `PR-07-16`…`18` |
+| 25 Oktober 2026 | Paket 1 (#186) tergabung. Paket 2 Pemanfaatan di `feature/PR-07-19-pemanfaatan-mobile`: commit `PR-07-19`, `PR-07-20`, `PR-07-25`, `PR-07-21` (urutan alur reservasi → peminjaman → serah terima → bahan). Satu putaran `AskUserQuestion` menghasilkan keputusan 11–12. | `PR-07-19`…`21`, `PR-07-25` |
 
 ## 2. Keputusan yang diambil
 
@@ -37,6 +38,8 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 | 8 | **Menu `MS-31` hanya merender layar yang terdaftar di build** — registri `shared/screens.ts`, pola `HALAMAN_TERDAFTAR` web (pemilik produk) | Entri tanpa layar mobile akan menjadi tautan mati; ditolak: membuka padanan web sementara (bercampur dengan entri ↗ web `MOB-SCP-02`) | Ya — **UXD-23** |
 | 9 | **Chatbot dikeluarkan dari Aksi Cepat Beranda** (pemilik produk) | Sudah ada tab + C-38; fitur "tanpa grup" tidak punya accent kotak ikon C-31. Ditolak: varian kotak netral/teal (varian komponen baru) | Ya — **UXD-23** |
 | 10 | **Aksi Cepat tanpa layar terdaftar disembunyikan** — "Ajukan reservasi" muncul saat `MS-46` ada (pemilik produk) | Konsisten dengan keputusan 8; ditolak: tile nonaktif (varian baru C-31) | Ya — **UXD-23** |
+| 11 | **Bukti serah terima/pengembalian mobile diunggah dan dikonfirmasi sebelum transaksi**, bukan diantrekan (pemilik produk) | UX §7.6.6 menyatakan transaksi tetap tercatat dan foto masuk antrean, tetapi API (`attachLoanEvidence`, `BR-027`) menolak berkas yang belum terkonfirmasi. `MOB-OFF-02` (PRD) umum dan tidak bertentangan. Ditolak: mengubah API agar menerima berkas tertunda (perubahan M-06/M-09 di luar paket) | Ya — UX §7.6.6 dan tabel keadaan dikoreksi |
+| 12 | **Wizard `MS-46` mendukung ruangan, aset, dan gabungan** setara web (pemilik produk) | `MOB-SCP-01`; ditolak: gabungan sebagai entri ↗ web (pengecualian baru di luar `MOB-SCP-02`) | Tidak |
 
 ## 3. Penyimpangan dari rencana
 
@@ -47,6 +50,9 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 | `PR-07-18` memuat `MS-26` Privasi | `MS-26` tidak dibuat; tautan Privasi di Login/Profil belum dirender | Keputusan 7 | `PR-08-12` memuat `MS-26` (baris phase-08 diperbarui) |
 | `PR-07-17` menata ulang 25 layar | Seluruh layar memperoleh header C-30 + ikon info C-36, kartu/badge bertoken & berikon, dan batas dua kalimat (diuji). Daftar Tugas, Notifikasi, Persetujuan Saya, Tiket Kerusakan, Work Order Saya, Sesi Opname, Beranda ditata ulang dengan C-31…C-34/C-37. Isi layar detail & formulir lapangan (Detail Aset, Hasil Scan, Lapor Kerusakan, Eksekusi WO, Scan Opname) hanya menerima komponen bersama | Menjaga "perilaku layar lama tidak berubah" dan batas ukuran paket; susunan isi detail lebih tepat ditata saat paket domainnya menyentuh layar itu | Paket 3 (`MS-09`), 4 (`MS-17`, `MS-19`, `MS-15`) menata isi detailnya dengan C-32/C-34 |
 | Rute mobile lama | `/notifikasi` keluar dari tab ke tumpukan akar; `/profil` dan `/chat` pindah ke grup tab Menu/Chatbot dengan **path yang sama** | **UXD-20**/**21** | Tidak ada — deep link (`SDD-MOB-12`) tetap berlaku |
+| `PR-07-21` `MS-58` memuat aksi "serahkan · tutup" | `MS-58` paket 2 hanya revisi & batalkan; penyerahan dan tutup sisa (`material.issue`) | Rencana sendiri menaruh penyerahan di `PR-07-26` | Paket 3 (`PR-07-26`) menambah penyerahan + tutup sisa di `MS-58` |
+| Keputusan bahan di `MS-58` | Persetujuan permintaan bahan tetap lewat Detail Keputusan `MS-54`, tidak digandakan di `MS-58` seperti web `RequestApproval` | Satu jalur keputusan approver di mobile | Bila UAT meminta keputusan dari `MS-58`, ditambahkan di paket 4/6 |
+| `MS-12`/`MS-49` dan `MS-14`/`MS-52` | Masing-masing satu layar (`/peminjaman`, `/denda`) seperti web P-32/P-35; judul menyesuaikan izin | Cakupan baris diputus server; dua layar identik hanya menggandakan kode | Tidak ada |
 
 ## 4. PR di luar rencana
 
@@ -77,6 +83,7 @@ Setiap TBD yang tertutup wajib juga diperbarui di [`../../SDD/TBD-REGISTER.md`](
 | Masalah | Dampak | Penyelesaian | Terbuka? |
 |---|---|---|:---:|
 | Paket 1 hanya diverifikasi lewat typecheck, lint, uji unit, dan bundel `expo export`; tampilan di perangkat/emulator tidak diperiksa di sesi implementasi | Tata letak (tinggi bottom sheet, posisi C-38 di atas tab, header menyusut) belum terlihat di layar nyata | Uji manual di dev build Android/iOS sebelum merge paket 1 | Ya |
+| Paket 2 juga belum dijalankan di perangkat; bagian yang bergantung native — pemindai QR unit (`expo-camera`), ekspor PNG tanda tangan (`react-native-svg` `toDataURL`), unggah foto bukti — hanya teruji lewat typecheck dan bundel | Serah terima/pengembalian dapat gagal di lapangan bila ekspor PNG atau izin kamera berperilaku lain | Uji serah terima → pengembalian end-to-end di dev build terhadap staging sebelum merge paket 2 | Ya |
 
 ## 8. Hasil pengukuran
 
@@ -88,6 +95,10 @@ Angka nyata, bukan perkiraan. Kosongkan bila belum diukur — jangan diisi tebak
 | Uji mobile (`npm test -w apps/mobile`) | Hijau | 18 berkas, 139 uji lulus (sebelumnya 13 berkas, 108 uji) | `CD-01` |
 | Uji mutasi serial pada aturan inti paket 1 | Seluruh mutan mati | 9/9 mati (registri Menu, ikon di atas kuning, C-38 di pemindai, badge 99+, Aksi Cepat terdaftar, push bergantung in-app, kelompok terkunci, cabut sesi sendiri, batas dua kalimat); sumber pulih byte-per-byte | CLAUDE.md "uji yang gagal bila logikanya dicabut" |
 | Bundel Android `expo export` | Berhasil | Berhasil, 4,85 MB (Hermes bytecode) | `SDD-MOB-10` |
+| Baris produksi paket 2 per commit | `PR-07-19` L · `PR-07-20` M · `PR-07-25` L · `PR-07-21` M (≤ 400) | `PR-07-19` +550/−4 · `PR-07-20` +254/−3 · `PR-07-25` +349/−11 · `PR-07-21` +166/−2 | §7 phase-07 |
+| Uji mobile paket 2 | Hijau | 23 berkas, 169 uji lulus (sebelum paket: 139) | `CD-01` |
+| Uji mutasi serial paket 2 | Seluruh mutan mati | 9/9 mati (Tinjau semua-atau-tidak, bentrok ruangan, unit manual, foto wajib serah terima, pengembalian sebagian, aksi kewajiban dari flag, jatuh tempo perpanjangan, batal permintaan, tugas native); sumber pulih byte-per-byte | CLAUDE.md |
+| Bundel Android paket 2 | Berhasil | Berhasil, 5,07 MB | `SDD-MOB-10` |
 
 ## 9. Gerbang keluar
 
