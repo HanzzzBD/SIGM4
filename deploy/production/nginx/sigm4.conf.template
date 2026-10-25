@@ -1,8 +1,8 @@
-# Nginx staging — PR-00-18 (INF-06, SDD-INF-13, SDD-16 §4.2).
+# Nginx stack aplikasi di server sekolah — PR-00-18, PR-08-18 (SDD-16 §4.2, SDD-INF-13/15).
 #
-# Template: entrypoint image nginx mengganti ${SIGM4_DOMAIN} saat container
-# menyala. Variabel Nginx ($host, $remote_addr, …) tidak tersentuh karena hanya
-# variabel lingkungan yang terdefinisi yang disubstitusi.
+# Dipakai stack staging DAN produksi (deploy/production/docker-compose.yml). Container
+# ini tidak memegang port host: TLS, HSTS, dan certbot milik proxy tepi
+# (deploy/edge/, SDD-INF-15), yang meneruskan ke sini lewat jaringan `sigm4-edge`.
 #
 # Satu origin (keputusan 51): web statis di `/`, API di `/api/v1`. Peramban tidak
 # pernah melakukan permintaan lintas origin, sehingga `cors` tidak dipasang.
@@ -27,30 +27,13 @@ upstream sigm4_api {
 
 server {
     listen 80;
-    server_name ${SIGM4_DOMAIN};
+    server_name _;
 
-    # Tantangan HTTP-01 certbot (SDD-INF-13).
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
-
-    location / {
-        return 301 https://$host$request_uri;
-    }
-}
-
-server {
-    listen 443 ssl;
-    http2 on;
-    server_name ${SIGM4_DOMAIN};
-
-    ssl_certificate     /etc/letsencrypt/live/${SIGM4_DOMAIN}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${SIGM4_DOMAIN}/privkey.pem;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_session_cache shared:TLS:10m;
-
-    # INF-06 — HSTS dari proxy; header keamanan API tetap milik aplikasi (NFR-S-11).
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    # IP klien dari proxy tepi. Container ini tanpa port host — hanya proxy tepi dan
+    # container jaringan Docker yang dapat mencapainya — dan proxy tepi MENIMPA
+    # X-Forwarded-For dengan satu alamat, sehingga API tetap melihat satu hop (NFR-S-07).
+    set_real_ip_from 0.0.0.0/0;
+    real_ip_header X-Forwarded-For;
 
     # Kompresi oleh reverse proxy, bukan aplikasi (SDD-06 §4.3).
     gzip on;
@@ -63,7 +46,8 @@ server {
         proxy_set_header Host $host;
         # Satu hop: `trust proxy 1` pada API membaca IP klien dari sini (NFR-S-07).
         proxy_set_header X-Forwarded-For $remote_addr;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        # Skema asli dari proxy tepi (TLS berakhir di sana).
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
         # Instance yang sedang diganti tidak boleh menjadi galat bagi pengguna.
         proxy_next_upstream error timeout http_502 http_503;
         proxy_next_upstream_tries 2;

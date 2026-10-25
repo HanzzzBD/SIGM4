@@ -19,6 +19,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 | Tanggal | Yang terjadi | PR terkait |
 |---|---|---|
 | 24 Oktober 2026 | Pemilik produk menetapkan production di **server milik sekolah**, tanpa akses bagi pengembang, lalu meminta pipeline CI/CD production disiapkan. Empat keputusan diambil lewat `AskUserQuestion` (keputusan 1–5). PRD `INF-05` dan SDD-16 (`SDD-INF-14`) disunting **sebelum** kode. Dikerjakan di worktree terpisah dari `origin/develop`, karena checkout utama memuat ±540 berkas tak ter-commit milik cabang `PR-04-01`. | `PR-08-17` |
+| 25 Oktober 2026 | Setelah #182 tergabung, pemilik produk menanyakan kesiapan deploy. Hasil periksa: develop hijau penuh, tetapi tidak ada environment, secret, runner, maupun cabang `staging` di GitHub; `main` tertinggal di `3703c037`. Pemilik produk menetapkan staging juga di server sekolah, dideploy IT sekolah (keputusan 9–11). `PR-08-18` dibuka [#184](https://github.com/HanzzzBD/SIGM4/pull/184): proxy tepi `deploy/edge/`, stack Compose per lingkungan dari `deploy/production/`, job `deploy-staging` lewat runner `sigm4-staging`, smoke staging dari luar, runbook gabungan untuk IT sekolah. | `PR-08-18`, [#184](https://github.com/HanzzzBD/SIGM4/pull/184) |
 
 ## 2. Keputusan yang diambil
 
@@ -34,6 +35,9 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 | 6 | `ci.yml` tidak lagi dipicu push tag `v*`; tag menjalankannya lewat `workflow_call` dari `rilis-produksi.yml`. | Tanpa ini setiap tag menjalankan CI dua kali; image yang diterbitkan adalah artefak `build` run yang sama dengan yang dipindai Trivy | Tidak |
 | 7 | Jam operasional WIB dihitung sebagai UTC+7 langsung, bukan `TZ=Asia/Jakarta`. | Uji `jendela-deploy.test.sh` gagal 7/11 di Git Bash: tanpa tzdata, `TZ=Asia/Jakarta` diam-diam jatuh ke UTC. Server tanpa paket tzdata akan menggeser gerbang 7 jam | Tidak |
 | 8 | Aset web per tag diterbitkan sebagai **GitHub Release** (`web-dist.tar.gz`, `openapi.json`). | Artefak run berumur pendek; rollback butuh aset yang persis sama tanpa build ulang (`CD-05`) | Ya — SDD-16 §4.2 |
+| 9 | **Staging di server sekolah** yang sama dengan production, dideploy lewat jalur yang dipasang IT sekolah (`AskUserQuestion`, 25 Oktober 2026). | Tidak ada VPS staging; pengembang tidak memegang akses server | Ya — `SDD-INF-15`; `SDD-INF-11` tidak berlaku lagi |
+| 10 | **Proxy tepi bersama** memegang 80/443 dan TLS untuk kedua domain; tiap stack tanpa port host (`AskUserQuestion`, 25 Oktober 2026). Ditolak: staging di port lain (port tambahan + DNS-01), staging hanya sebelum go-live (rilis berikutnya tanpa staging). | Dua stack Compose tidak dapat sama-sama mengikat 80/443 | Ya — `SDD-INF-15`, SDD-16 §3 |
+| 11 | Satu berkas Compose untuk kedua stack (`SIGM4_PROJECT`, `SIGM4_APP_ENV`, path env), bukan salinan staging; berkas VPS `deploy/staging/{docker-compose.yml,deploy.sh,nginx/}` dihapus, smoke test tetap di `deploy/staging/`. Satu runner berlabel `sigm4-produksi,sigm4-staging` disarankan, sehingga deploy kedua lingkungan tidak pernah bersamaan. | Topologi staging = production adalah tujuan staging (`SDD-16 §4.8`); dua salinan pasti menyimpang | Ya — SDD-16 §4.2, SDD-17 §4.1 |
 
 ## 3. Penyimpangan dari rencana
 
@@ -48,6 +52,7 @@ PR yang tidak ada pada daftar [`phase-08.md` §7](../phases/phase-08.md).
 | ID | Judul | Mengapa tidak terencana |
 |---|---|---|
 | `PR-08-17` | Pipeline rilis production ke server sekolah | SDD-16 §4.3 sudah menggambar pipeline "tag rilis", tetapi tidak satu PR pun pada rencana memilikinya — `PR-00-18` hanya staging. Kekosongan itu baru terlihat ketika lokasi production berubah. Kompleksitas `L` (±600 baris kode/konfigurasi): compose, `deploy.sh`, dan workflow saling merujuk dan tidak dapat diuji terpisah — workflow tanpa skrip tidak berjalan, skrip tanpa topologi tidak dapat divalidasi |
+| `PR-08-18` | Staging di server sekolah — proxy tepi bersama | `PR-00-18` merencanakan staging di VPS lewat SSH; ketika production pindah ke server sekolah (`PR-08-17`) staging dibiarkan di jalur lama yang tidak pernah diadakan (tidak ada VPS, environment, maupun secret). Kekosongan baru terlihat saat kesiapan deploy ditanyakan sesudah #182. Kompleksitas `L`: proxy tepi, parameterisasi stack, dua workflow, dan runbook harus berubah bersama agar production tidak kehilangan TLS. |
 
 Kolom ketiga adalah yang paling berharga di seluruh log ini. Pola yang berulang di sana menunjukkan di mana perencanaan phase berikutnya perlu diperbaiki.
 

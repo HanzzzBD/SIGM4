@@ -1,0 +1,45 @@
+# Proxy tepi server sekolah — PR-08-18 (SDD-INF-15, INF-06, SDD-INF-13).
+#
+# Satu-satunya pemegang port 80/443 di server sekolah. Staging dan produksi berjalan
+# sebagai dua stack Compose terpisah (deploy/production/, proyek sigm4-staging dan
+# sigm4-production) tanpa port host; keduanya bergabung ke jaringan `sigm4-edge`
+# dan dicapai lewat alias `<proyek>-web`. TLS, HSTS, dan certbot hanya hidup di sini.
+#
+# Konfigurasi situs TIDAK ditulis tangan: edge.sh merendernya ke ./situs/ dari
+# /etc/sigm4/edge.env (domain per stack) — blok HTTPS baru dipasang setelah
+# sertifikat domain itu ada, sehingga penerbitan pertama tidak terkunci.
+
+name: sigm4-edge
+
+services:
+    nginx:
+        image: nginx:1.29-alpine
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./situs:/etc/nginx/conf.d:ro
+            - letsencrypt:/etc/letsencrypt:ro
+            - certbot-webroot:/var/www/certbot:ro
+        networks:
+            - edge
+        restart: unless-stopped
+
+    # SDD-INF-13 — perpanjangan sertifikat sebagai komponen tersendiri. Penerbitan
+    # pertama per domain dijalankan sekali oleh IT sekolah (runbook §4).
+    certbot:
+        image: certbot/certbot:v4.2.0
+        entrypoint: ["/bin/sh", "-c", "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done"]
+        volumes:
+            - letsencrypt:/etc/letsencrypt
+            - certbot-webroot:/var/www/certbot
+        restart: unless-stopped
+
+networks:
+    edge:
+        name: sigm4-edge
+        external: true
+
+volumes:
+    letsencrypt:
+    certbot-webroot:

@@ -210,13 +210,12 @@ jobs:
               run: |
                   mkdir -p "$DIR_SERVER/nginx" "$DIR_SERVER/web-dist"
                   cp deploy/production/docker-compose.yml deploy/production/deploy.sh "$DIR_SERVER/"
-                  cp deploy/staging/nginx/sigm4.conf.template "$DIR_SERVER/nginx/"
+                  cp deploy/production/nginx/sigm4.conf.template "$DIR_SERVER/nginx/"
                   find "$DIR_SERVER/web-dist" -mindepth 1 -delete
                   tar -C "$DIR_SERVER/web-dist" -xzf web-dist.tar.gz
             - name: Migration + rolling deploy
               env:
                   GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  SIGM4_DOMAIN: ${{ vars.PRODUCTION_DOMAIN }}
               run: |
                   # Kredensial registry hanya hidup selama job ini (GITHUB_TOKEN).
                   echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
@@ -224,6 +223,15 @@ jobs:
                   bash "$DIR_SERVER/deploy.sh" "ghcr.io/${GITHUB_REPOSITORY,,}:$TAG" "$DIR_SERVER/web-dist" || kode=$?
                   docker logout ghcr.io >/dev/null
                   exit "$kode"
+            # Satu pemegang 80/443 untuk staging & produksi di server sekolah (SDD-INF-15).
+            - name: Proxy tepi
+              env:
+                  DIR_EDGE: ${{ vars.EDGE_DIR || '/opt/sigm4/edge' }}
+              run: |
+                  mkdir -p "$DIR_EDGE/templat"
+                  cp deploy/edge/docker-compose.yml deploy/edge/edge.sh "$DIR_EDGE/"
+                  cp deploy/edge/templat/* "$DIR_EDGE/templat/"
+                  bash "$DIR_EDGE/edge.sh"
 
     # Dari LUAR server, jalur yang sama dengan pengguna: DNS → TLS → Nginx → API.
     # Environment terpisah tanpa reviewer agar tidak meminta persetujuan kedua.

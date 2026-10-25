@@ -1,13 +1,16 @@
-# Topologi runtime PRODUKSI — PR-08-17 (SDD-16 §4.2, SDD-INF-10/13/14).
+# Topologi runtime stack aplikasi di SERVER SEKOLAH — PR-08-17, PR-08-18
+# (SDD-16 §4.2, SDD-INF-10/13/14/15).
 #
-# Dijalankan di SERVER SEKOLAH oleh deploy.sh, yang dipanggil job `deploy` pada
-# .github/workflows/rilis-produksi.yml lewat self-hosted runner (SDD-INF-14).
-# Berbeda dari topologi staging:
-#   - PostgreSQL BERJALAN di sini sebagai container (SDD-INF-14 menggantikan
-#     layanan terkelola SDD-INF-11 untuk produksi). Port-nya tidak dibuka ke host.
+# Satu berkas untuk dua stack: produksi (proyek sigm4-production, job `deploy` pada
+# .github/workflows/rilis-produksi.yml) dan staging (proyek sigm4-staging, job
+# `deploy-staging` pada ci.yml). Keduanya dijalankan deploy.sh lewat self-hosted
+# runner (SDD-INF-14); SIGM4_PROJECT, SIGM4_APP_ENV, dan path berkas env yang
+# membedakannya.
+#   - PostgreSQL BERJALAN di sini sebagai container (SDD-INF-14). Port-nya tidak dibuka ke host.
 #   - Object storage tetap Backblaze B2 (INF-02); alamatnya datang dari berkas env.
-#   - Template Nginx dipakai bersama staging (deploy/staging/nginx/) — satu sumber;
-#     job deploy menyalinnya ke ./nginx/ di samping berkas ini.
+#   - Nginx stack tanpa port host: proxy tepi (deploy/edge/, SDD-INF-15) memegang
+#     80/443 dan TLS, lalu meneruskan ke alias `<proyek>-web` di jaringan sigm4-edge.
+#     Template-nya di ./nginx/, disalin job deploy bersama berkas ini.
 #
 # RAHASIA tidak pernah berada di sini (SEC-CFG-01). Dua berkas env disiapkan
 # IT sekolah di server, di luar repositori (runbook produksi-server-sekolah.md):
@@ -19,7 +22,7 @@
 #                                  API dan worker tidak pernah menerimanya
 #                                  (SDD-16 §4.7, SEC-CFG-03).
 
-name: sigm4-production
+name: ${SIGM4_PROJECT:-sigm4-production}
 
 x-app: &app
     # Satu tag untuk api, worker, dan migration (SDD-INF-01).
@@ -28,7 +31,8 @@ x-app: &app
         - ${SIGM4_ENV_FILE:-/etc/sigm4/production.env}
     environment:
         TZ: UTC # SDD-INF-09 — divalidasi lagi saat startup
-        APP_ENV: production # PR-00-19: /api/docs tidak dipasang di produksi
+        # PR-00-19: /api/docs hanya dipasang di staging, tidak di produksi.
+        APP_ENV: ${SIGM4_APP_ENV:-production}
         REDIS_URL: redis://redis:6379
         CLAMAV_URL: tcp://clamav:3310
     restart: unless-stopped
@@ -39,30 +43,18 @@ x-app: &app
             condition: service_healthy
 
 services:
-    # INF-06, SDD-INF-13 — TLS + HSTS, satu origin untuk web statis dan /api/v1.
+    # Satu origin untuk web statis dan /api/v1; TLS/HSTS di proxy tepi (SDD-INF-15).
     nginx:
         image: nginx:1.29-alpine
-        environment:
-            SIGM4_DOMAIN: ${SIGM4_DOMAIN:?SIGM4_DOMAIN wajib diisi}
-        ports:
-            - "80:80"
-            - "443:443"
         volumes:
             - ./nginx/sigm4.conf.template:/etc/nginx/templates/default.conf.template:ro
-            - letsencrypt:/etc/letsencrypt:ro
-            - certbot-webroot:/var/www/certbot:ro
-            # Hasil build web (SDD-FE-14) dari GitHub Release tag yang sama, disalin deploy.sh.
+            # Hasil build web (SDD-FE-14) dari tag/commit yang sama, disalin deploy.sh.
             - web:/usr/share/sigm4/web:ro
-        restart: unless-stopped
-
-    # SDD-INF-13 — perpanjangan sertifikat sebagai komponen tersendiri. Penerbitan
-    # pertama dijalankan sekali oleh IT sekolah (runbook §4).
-    certbot:
-        image: certbot/certbot:v4.2.0
-        entrypoint: ["/bin/sh", "-c", "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done"]
-        volumes:
-            - letsencrypt:/etc/letsencrypt
-            - certbot-webroot:/var/www/certbot
+        networks:
+            default:
+            edge:
+                aliases:
+                    - ${SIGM4_PROJECT:-sigm4-production}-web
         restart: unless-stopped
 
     # SDD-INF-04 — dua instance agar penggantian bergulir tidak memutus layanan.
@@ -161,9 +153,13 @@ services:
             start_period: 300s
         restart: unless-stopped
 
+networks:
+    # Dibuat deploy.sh / edge.sh; dipakai bersama proxy tepi.
+    edge:
+        name: sigm4-edge
+        external: true
+
 volumes:
-    letsencrypt:
-    certbot-webroot:
     web:
     pg-data:
     redis-data:
