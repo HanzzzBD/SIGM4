@@ -67,6 +67,7 @@ export function AssetScreen({ id, detail = false }: { id: string; detail?: boole
                 {allowed(permissions, "asset.update") && <Button icon="settings" title="Ubah" compact secondary onPress={() => router.push(`/aset/${asset.id}/ubah` as "/scan")}/>}
                 {allowed(permissions, "asset.update") && allowed(permissions, "location.view") && <Button icon="mapPin" title="Mutasi lokasi" compact secondary onPress={() => router.push(`/aset/mutasi?ids=${asset.id}` as "/scan")}/>}
                 {allowed(permissions, "asset_document.view") && <Button icon="fileText" title="Dokumen" compact secondary onPress={() => router.push(`/aset/${asset.id}/dokumen` as "/scan")}/>}
+                {asset.kondisi === "RUSAK_BERAT" && allowed(permissions, "procurement.create") && <Button icon="shoppingCart" title="Usulkan penggantian" compact secondary onPress={() => router.push(`/pengadaan/baru?aset=${asset.id}` as "/scan")}/>}
             </View>}
             <Card><Label>Lokasi: {asset.lokasi.gedung} · {asset.lokasi.area} · {asset.lokasi.ruang}</Label>
             {asset.dihapuskan && <Notice message="Aset tidak aktif: sudah dihapuskan. Aksi transaksi tidak tersedia." />}
