@@ -40,9 +40,9 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 | [04](phases/phase-04.md) | Siklus Hidup Aset | 3 | 19 | `In Progress` | 0/19 | Menutup `M2` |
 | [05](phases/phase-05.md) | Penutupan Siklus | 3 | 36 | `In Progress` | 0/36 | Menutup `M3` & `M4` |
 | [06](phases/phase-06.md) | Analitik | 1 | 11 | `In Progress` | 0/11 | Menutup `M5` |
-| [07](phases/phase-07.md) | Integrasi & UAT | — | 14 | `Not Started` | 0/14 | |
+| [07](phases/phase-07.md) | Integrasi & UAT | — | 35 | `In Progress` | 0/35 | Paritas mobile `PR-07-15`…`35` dimulai (**UXD-19**) |
 | [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 18 | `Not Started` | 0/18 | Menutup `M6` |
-| | **Total** | **22** | **230** | | **89/230** | |
+| | **Total** | **22** | **251** | | **89/251** | |
 
 ## Ringkasan milestone PRD
 
@@ -245,11 +245,13 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 |---|---|:---:|---|
 | `PR-06-01` … `PR-06-11` | `In Review` | [#182](https://github.com/HanzzzBD/SIGM4/pull/182) | Tergabung ke `develop` 25 Oktober 2026 (`c94f4a51`; 1 PR commit per area, [log phase-03 §3](logs/phase-03.md)); verifikasi closure tersisa: QA staging layar Phase 03–06 dan uji perangkat nyata: analitik & ekspor laporan asinkron |
 
-### Phase 07 — Integrasi & UAT · `Not Started`
+### Phase 07 — Integrasi & UAT · `In Progress`
 
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
 | `PR-07-01` … `PR-07-14` | `Not Started` | — | Rincian: [`phases/phase-07.md` §7](phases/phase-07.md) |
+| `PR-07-15` | `In Review` | [#185](https://github.com/HanzzzBD/SIGM4/pull/185) | Keputusan & spesifikasi paritas mobile (`MOB-SCP-01`…`04`, **UXD-19**…**22**, `MS-24`…`MS-90`, **DSD-11**/**12**, C-30…C-38); di luar rencana — [log phase-07 §4](logs/phase-07.md) |
+| `PR-07-16` … `PR-07-35` | `Not Started` | — | Paritas mobile dalam enam paket per domain: Fondasi & Akun → Pemanfaatan → Aset & Bahan → Perawatan & Opname → Pengadaan & Penghapusan → Pimpinan & Admin; rincian [`phases/phase-07.md` §7](phases/phase-07.md) |
 
 ### Phase 08 — Pengerasan & Kesiapan Rilis · `Not Started`
 

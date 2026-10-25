@@ -91,8 +91,44 @@ Bila sebuah cacat integrasi baru ditemukan di Phase 08, artinya phase ini gagal.
 | `PR-07-12` | Verifikasi matriks keterlacakan otomatis | M | M | 02 … 08 | `traceability.md` | FR tanpa uji menggagalkan CI |
 | `PR-07-13` | Perbaikan cacat integrasi — batch 1 | M | M | 02 … 09 | — | Setiap perbaikan menunjuk uji E2E yang gagal |
 | `PR-07-14` | Perbaikan cacat integrasi — batch 2 (pasca-UAT) | M | M | UAT | — | Hanya cacat; permintaan fitur ditolak ke CR |
+| `PR-07-15` | Keputusan & spesifikasi paritas mobile — `MOB-SCP-01`…`04`, `SDD-MOB-13`, **UXD-19**…**22**, `MS-24`…`MS-90`, **DSD-11**/**12**, C-30…C-38 *(di luar rencana, 25 Okt — log §4)* | S | S | — | `MOB-SCP-01`, **UXD-19** | Docs saja; seluruh PR paritas di bawah merujuk ID di sini |
+| `PR-07-16` | Mobile tahap A — fondasi navigasi & visual: tab Beranda · Tugas · Scan · Chatbot · Menu, Header C-30 + lonceng `MS-29`, Menu `MS-31`, chatbot mengambang C-38/C-36, komponen C-31…C-37, ikon modul | L | M | 07-15 | **UXD-20**…**22**, **DSD-11**/**12** | Menu hanya menampilkan entri berizin; entri `MOB-SCP-02` mengarah ke web |
+| `PR-07-17` | Mobile tahap A — tata ulang visual 25 layar yang ada + Profil `MS-30`, Riwayat Chatbot `MS-32`, Detail Keputusan `MS-54` | L | M | 07-16 | **DSD-11**, `MOB-SCP-04` | Tidak ada paragraf > 2 kalimat per layar; perilaku layar lama tidak berubah |
+| `PR-07-18` | Mobile tahap A — akun: Aktivasi 2FA `MS-24`, Lupa Password `MS-25`, Privasi `MS-26`, Keamanan & 2FA `MS-27`, Preferensi Notifikasi `MS-28` | M | M | 07-16 | `FR-01.x`, `FR-17.3` | Kode cadangan & perangkat terhubung dapat dikelola dari ponsel |
+| `PR-07-19` | Mobile tahap A — reservasi: Kalender Ruangan `MS-44`, Katalog Aset `MS-45`, Wizard `MS-46`, Daftar/Detail Reservasi `MS-47`/`MS-48` | L | L | 07-16 | `FR-07.x`, `FR-08.x`, **UXD-04** | Pengajuan sampai persetujuan dapat diselesaikan dari ponsel |
+| `PR-07-20` | Mobile tahap A — peminjaman & denda pemohon: Peminjaman Saya `MS-12`, Perpanjangan `MS-13`, Denda Saya `MS-14`, Detail Peminjaman `MS-51`, Detail Kewajiban `MS-53` | M | M | 07-16 | `FR-09.5 AC`, `FR-09.x` | `FR-09.5 AC` (wajib mobile) tertutup |
+| `PR-07-21` | Mobile tahap A — permintaan bahan: Katalog Bahan `MS-55`, Ajukan `MS-56`, Daftar/Detail Permintaan `MS-57`/`MS-58` | M | M | 07-16 | `FR-22.x` | Mencabut **UXD-17** di kode |
+| `PR-07-22` | Mobile tahap A — usulan pengadaan: Pengadaan `MS-67`, Buat Usulan `MS-68`, Detail Usulan `MS-69` | M | M | 07-16 | `FR-14.1`, `FR-14.2` | Lampiran spesifikasi dari kamera/galeri |
+| `PR-07-23` | Mobile tahap B — inventaris: Inventaris `MS-33`, Tambah/Ubah Aset `MS-34`, Mutasi Lokasi `MS-35`, Kategori Aset `MS-36`, Dokumen Aset `MS-39` | L | L | 07-17 | `FR-04.x`, `FR-06.1` | Impor aset tampil sebagai entri ke web (`MOB-SCP-03`) |
+| `PR-07-24` | Mobile tahap B — lokasi: Lokasi `MS-37`, Detail Ruangan `MS-38` | S | S | 07-17 | `FR-03.x` | Pohon gedung → area → ruangan dapat dijelajahi satu tangan |
+| `PR-07-25` | Mobile tahap B — serah terima & pengembalian: `MS-10`, `MS-11`, Daftar Peminjaman `MS-49`, Antrean Serah Terima `MS-50`, Denda & Kewajiban `MS-52` | L | L | 07-20 | `FR-09.1`, `FR-09.2`, `FR-09.3` | Tanda tangan & foto bukti dari ponsel |
+| `PR-07-26` | Mobile tahap B — bahan: Bahan `MS-40`, Tambah/Ubah `MS-41`, Detail & kartu stok `MS-42`, Kategori `MS-43`, penyerahan di `MS-58` | M | M | 07-21 | `FR-22.x` | Penerimaan, penyesuaian, dan penyerahan tercatat di ledger |
+| `PR-07-27` | Mobile tahap B — kerusakan & work order petugas: Laporan Kerusakan `MS-59`, Detail Tiket `MS-60`, Daftar WO `MS-61`, Buat WO `MS-62` | M | M | 07-17 | `FR-11.2`, `FR-12.1`, `FR-12.4` | Verifikasi tiket → WO → tutup dari ponsel |
+| `PR-07-28` | Mobile tahap B — jadwal pemeliharaan `MS-63`, `MS-64` | S | S | 07-17 | `FR-12.2` | Lewati/nonaktifkan beralasan |
+| `PR-07-29` | Mobile tahap B — opname: Buat Sesi `MS-65`, Rekonsiliasi `MS-66` | M | M | 07-17 | `FR-13.1`, `FR-13.3` | Siklus opname penuh tanpa web |
+| `PR-07-30` | Mobile tahap B — Catat Penerimaan `MS-70` + penghapusan `MS-71`…`MS-73` | M | M | 07-22 | `FR-14.3`, `FR-21.x` | Eksekusi penghapusan dengan foto & saksi dari ponsel |
+| `PR-07-31` | Mobile tahap C — analitik: `MS-74`, Laporan `MS-75` (Grafik Mini C-33, ekspor unduh) | M | M | 07-17 | `FR-16.x` | Ekspor berkas tersimpan di perangkat |
+| `PR-07-32` | Mobile tahap C — pengguna: `MS-76`…`MS-79`, Permintaan Reset Password `MS-82` | M | M | 07-17 | `FR-02.1`, `FR-01.3`, `FR-01.5` | Impor pengguna tampil sebagai entri ke web (`MOB-SCP-03`) |
+| `PR-07-33` | Mobile tahap C — role & approval rules: `MS-80`, `MS-81`, `MS-83`, `MS-84` | L | M | 07-17 | `FR-02.2`, `FR-10.1` | Penguncian izin inti Administrator tetap ditegakkan server |
+| `PR-07-34` | Mobile tahap C — pengaturan: Parameter Sistem `MS-85`, Kalender Akademik `MS-86`, Unit Kerja `MS-87` | M | M | 07-17 | `FR-20.x` | Satuan Bahan ikut tab Parameter |
+| `PR-07-35` | Mobile tahap C — Activity Log `MS-88`, Detail Entri `MS-89`, Monitoring Chatbot `MS-90` | S | S | 07-17 | `FR-18.x`, `FR-19.2` | Pembacaan log mobile tercatat `ACTIVITY_LOG_VIEWED` |
 
 > `PR-07-13` dan `PR-07-14` sengaja tidak dirinci — isinya ditentukan temuan. Kompleksitas **M** adalah pagu; bila satu perbaikan melampauinya, ia dipecah menjadi PR tersendiri.
+
+### Paket pelaksanaan paritas mobile
+
+`PR-07-16`…`35` dikerjakan sebagai **enam paket per domain** (log phase-07 keputusan 6), bukan satu PR GitHub per baris. Setiap paket adalah satu PR GitHub berisi satu commit per ID PR di dalamnya (`PR-NN-NN: …`); paket berikutnya baru dimulai setelah paket sebelumnya tergabung. ID, kompleksitas, dan kriteria per baris di atas tetap berlaku.
+
+| Paket | ID PR | Alasan digabung |
+|---|---|---|
+| 1. Fondasi & Akun | `PR-07-16`, `PR-07-17`, `PR-07-18` | Seluruh paket lain bergantung pada tab, header C-30, dan komponen C-31…C-38 |
+| 2. Pemanfaatan | `PR-07-19`, `PR-07-20`, `PR-07-25`, `PR-07-21` | Reservasi → serah terima → peminjaman → denda satu alur; `MS-51`/`MS-53` dipakai pemohon dan petugas |
+| 3. Aset & Bahan | `PR-07-23`, `PR-07-24`, `PR-07-26` | Inventaris ↔ lokasi ↔ ruangan saling menaut; penyerahan bahan melanjutkan `MS-58` dari paket 2 |
+| 4. Perawatan & Opname | `PR-07-27`, `PR-07-28`, `PR-07-29` | Kerusakan → work order → jadwal preventif; opname memakai pemindai yang sama |
+| 5. Pengadaan & Penghapusan | `PR-07-22`, `PR-07-30` | Usulan → persetujuan → penerimaan; penghapusan memakai snapshot aset & approval yang sama |
+| 6. Pimpinan & Admin | `PR-07-31`…`PR-07-35` | Grup Pengawasan/Sistem dengan pola layar administratif serupa |
+
+Setiap paket berukuran **L**; deskripsi PR paket menjelaskan alasan tidak dipecah dan merinci baris uji per ID PR.
 
 ## 8. Task Breakdown
 

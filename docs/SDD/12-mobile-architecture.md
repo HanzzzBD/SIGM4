@@ -38,6 +38,7 @@ Basis teknologi ditetapkan Keputusan #3: **React Native** (Android & iOS).
 | **SDD-MOB-10** | Aplikasi dibangun di atas **Expo SDK** (*dev build*, bukan Expo Go) dan memakai **EAS Update** untuk pembaruan OTA. Versi React Native mengikuti lini Expo yang dipilih dan **wajib diverifikasi memenuhi `NFR-C-03` sebelum dikunci**. Kanal OTA hanya mengirim bundel JavaScript; perubahan yang menyentuh kode native tetap lewat store dan gerbang `426` (`SDD-MOB-05`). |
 | **SDD-MOB-11** | Antrean unggah `SDD-MOB-02` dipersistensi ke **expo-sqlite**. Setiap perubahan status antrean adalah transaksi SQLite, sehingga aplikasi yang mati di tengah unggah tidak merusak antrean. Basis data ini menyimpan antrean unggah; database opname terpisah memuat pengecualian §4.2.1 — batas `MOB-SEC-06` dapat diperiksa dengan membaca isinya. |
 | **SDD-MOB-12** | Navigasi memakai **expo-router**. `deep_link` `SDD-NTF-09` berupa path relatif aplikasi dipetakan **langsung** ke rute berbasis berkas; tidak ada tabel penerjemah path → nama layar yang harus dijaga sinkron. |
+| **SDD-MOB-13** | Paritas fitur web (`MOB-SCP-01`) dibangun **per modul** sebagai `features/<modul>/` yang memakai skema dan endpoint API yang sama dengan web (`SDD-MOB-01`) — tidak ada endpoint khusus mobile dan tidak ada logika otorisasi di klien selain menyembunyikan entri tanpa permission; server tetap pemutus (`PM-02`). Komponen UI tetap tidak dibagi dengan web; bentuk visualnya mengikuti [`docs/DESIGN/`](../DESIGN/DESIGN-SYSTEM.md) (`MOB-SCP-04`). |
 
 ---
 
@@ -92,10 +93,11 @@ src/
     ├── workorders/      # FR-12.3
     ├── stocktake/       # FR-13.2
     ├── approvals/       # FR-10.2 dari ponsel
-    └── notifications/   # FCM + deep link
+    ├── notifications/   # FCM + deep link
+    └── <modul>/         # alur web lainnya per modul PRD (MOB-SCP-01, SDD-MOB-13)
 ```
 
-Aplikasi mobile **tidak** mencerminkan seluruh 22 modul — hanya alur yang PRD nyatakan harus berjalan di lapangan.
+Sejak 25 Oktober 2026 aplikasi mobile **mencerminkan seluruh alur web untuk semua role** (`MOB-SCP-01`), kecuali cetak label QR dan impor massal berkas (`MOB-SCP-02`). Alur lapangan di atas tetap menjadi jalur utama; alur administratif ditambahkan sebagai `features/<modul>/` dengan nama modul PRD (`SDD-MOB-13`).
 
 ### 4.2 Antrean unggah
 
@@ -136,7 +138,7 @@ asinkron, permission/penugasan diperiksa ulang server. UUID berbeda untuk aset s
 mengembalikan hasil pertama server sebagai duplikat. Galat permanen diblokir dan
 ditampilkan untuk tindak lanjut. Foto memakai direktori terpisah dari antrean umum;
 batas 50 foto menolak tambahan tanpa membuang pemeriksaan. Semua penyelesaian lokasi,
-finalisasi, submit serta persetujuan tetap daring. Rekonsiliasi tetap web P-50.
+finalisasi, submit serta persetujuan tetap daring. Rekonsiliasi kini juga tersedia di mobile (MS-66, MOB-SCP-01).
 
 Hitungan Bahan memperluas pengecualian yang sama melalui PR-05-24 di bawah:
 target dipisah per pasangan bahan/lokasi; konflik memakai revision dan basis

@@ -135,15 +135,20 @@ Breadcrumb **tidak** dipakai di mobile; penggantinya adalah judul layar + tombol
 
 ## 5.5 Navigasi mobile
 
-Bottom tab bar lima slot dengan Scan di tengah (**UXD-03**).
+Bottom tab bar lima slot dengan Scan di tengah (**UXD-03**); isinya diubah **UXD-20** (25 Oktober 2026). Notifikasi dibuka dari lonceng header (**UXD-21**) dan chatbot juga dari tombol mengambang di layar mana pun (**UXD-22**).
 
 | Tab | Isi | Rujukan |
 |---|---|---|
 | **Beranda** | Dashboard ringkas per role + Aksi Cepat | 19.5–19.7 |
 | **Tugas** | **Adaptif per permission** — lihat tabel di bawah | **UXD-03** |
 | **Scan** | Pemindai QR kamera native; mode beruntun aktif bila sedang dalam sesi opname atau mutasi massal | `FR-05.2` · `MOB-MED-05` · `MOB-MED-07` |
-| **Notifikasi** | Daftar notifikasi + penghitung belum dibaca | `FR-17.1` |
-| **Profil** | Profil, Keamanan & 2FA, Preferensi Notifikasi, Keluar | `FR-01.4` · `FR-17.3` |
+| **Chatbot** | Percakapan (`MS-21`) + riwayat sesi (`MS-32`); disembunyikan tanpa `chat.use` | `FR-19.1` · **UXD-20** |
+| **Menu** | Kartu Profil (`MS-30`) di atas, pencarian modul, lima grup domain (**UXD-01**) berisi entri fitur tersaring permission (`MS-31`); entri `MOB-SCP-02` mengarah ke web | `MOB-SCP-01` · **UXD-20** |
+
+| Di luar tab | Isi | Rujukan |
+|---|---|---|
+| **Lonceng header** | Pusat Notifikasi (`MS-29`) + badge belum dibaca, di setiap layar ber-header | `FR-17.1` · **UXD-21** |
+| **Tombol chatbot mengambang** | Membuka percakapan `MS-21` sebagai *bottom sheet* dari layar mana pun, kecuali pemindai | **UXD-22** |
 
 ### Isi tab "Tugas"
 

@@ -22,9 +22,13 @@ Spesifikasi 29 komponen. **Perilaku** berasal dari [`docs/UX/`](../UX/); berkas 
 | [C-12](#c-12-toggle) | Toggle | [C-27](#c-27-linimasa-approval) | Linimasa Approval |
 | [C-13](#c-13-badge) | Badge | [C-28](#c-28-drawer) | Drawer |
 | [C-14](#c-14-alert) | Alert | [C-29](#c-29-pusat-notifikasi) | Pusat Notifikasi |
-| [C-15](#c-15-table) | Table | | |
+| [C-15](#c-15-table) | Table | [C-30](#c-30-header-mobile) | Header (mobile) |
+| [C-31](#c-31-tile-modul) | Tile Modul | [C-32](#c-32-kartu-entitas) | Kartu Entitas |
+| [C-33](#c-33-grafik-mini) | Grafik Mini | [C-34](#c-34-cincin-progres) | Cincin Progres |
+| [C-35](#c-35-stepper-wizard) | Stepper Wizard | [C-36](#c-36-bottom-sheet) | Bottom Sheet |
+| [C-37](#c-37-ilustrasi-keadaan) | Ilustrasi Keadaan | [C-38](#c-38-tombol-chatbot-mengambang) | Tombol Chatbot Mengambang |
 
-C-22…C-29 memenuhi daftar komponen inti wajib pada [`ui-foundation.md §31.3`](../PRD/04-frontend/ui-foundation.md).
+C-22…C-29 memenuhi daftar komponen inti wajib pada [`ui-foundation.md §31.3`](../PRD/04-frontend/ui-foundation.md). C-30…C-38 adalah komponen mobile visual-first (**DSD-11**, `MOB-SCP-04`, 25 Oktober 2026).
 
 ## Aturan yang berlaku bagi seluruh komponen
 
@@ -209,13 +213,13 @@ C-22…C-29 memenuhi daftar komponen inti wajib pada [`ui-foundation.md §31.3`]
 
 # C-05 Navigation (mobile)
 
-**Purpose.** Bottom tab bar lima slot dengan Scan di tengah (**UXD-03**).
+**Purpose.** Bottom tab bar lima slot dengan Scan di tengah (**UXD-03**); isi tab sejak **UXD-20**: Beranda · Tugas · Scan · Chatbot · Menu.
 
 **Anatomy.**
 
 ```
 +------------------------------------------+
-|  Beranda   Tugas   (SCAN)   Notif  Profil|   size.bottombar 56px + safe area
+|  Beranda   Tugas   (SCAN)   Chatbot  Menu|   size.bottombar 56px + safe area
 |    [ ]      [ ]     ( O )    [ ]     [ ] |   surface.default, border atas 1px
 +------------------------------------------+
 ```
@@ -997,6 +1001,208 @@ Filter aktif:  (Kategori: Komputer x)  (Kondisi: Baik x)      Hapus semua
 **Enam kelompok** untuk filter dan preferensi (**UXD-05**): Persetujuan · Reservasi & Peminjaman · Denda & Kewajiban · Kerusakan & Perawatan · Opname & Pengadaan · Akun & Sistem.
 
 **Accessibility.** Penghitung diumumkan lewat *live region* sopan. "Tandai semua terbaca" mengumumkan jumlah yang terpengaruh. Item adalah satu target tekan tunggal ber-`aria-label` lengkap.
+
+---
+
+# C-30 Header (mobile)
+
+**Purpose.** Header satu baris di setiap layar mobile (**UXD-21**), pengganti blok merek + judul + subjudul.
+
+**Anatomy.**
+
+```
++------------------------------------------+
+| (<)  Reservasi Saya        (i)  (bell)³  |   size.topbar, surface.default, border bawah 1px
++------------------------------------------+
+```
+
+**Spesifikasi.**
+
+| Elemen | Perlakuan |
+|---|---|
+| Tinggi | `size.topbar` + *safe area inset* atas; menyusut ke judul saja saat konten digulir (`motion.duration.base`) |
+| Kiri | Tombol kembali pada layar bertingkat; ikon modul (`size.icon.md`, `color.icon.default`) pada layar akar tab |
+| Judul | Satu baris `font.size.lg` `font.weight.semibold` `color.text.heading`; terpotong elipsis, nama lengkap pada `accessibilityLabel` |
+| Info | Ikon "i" `color.icon.default` membuka keterangan halaman di **C-36**; hanya bila layar punya keterangan |
+| Lonceng | Ikon lonceng `color.icon.default` + **badge angka** belum dibaca: bulatan `radius.full` min 18px, fill `color.secondary`, angka `font.size.xs` `font.weight.bold` `color.text.inverse`, maks "99+"; jumlah ikut dibacakan pada `accessibilityLabel` lonceng; membuka Pusat Notifikasi `MS-29` |
+| Target sentuh | Setiap tombol ≥ `size.touch.min` (`NFR-AC-07`) |
+
+**Do / Don't.**
+
+| ✅ Do | ❌ Don't |
+|---|---|
+| Keterangan panjang di balik ikon info | Paragraf subjudul di bawah judul |
+| Lonceng di setiap layar ber-header | Notifikasi sebagai tab tersendiri |
+
+---
+
+# C-31 Tile Modul
+
+**Purpose.** Pintu masuk modul pada Menu (`MS-31`) dan Aksi Cepat Beranda (**DSD-12**).
+
+**Anatomy.**
+
+```
++------------+
+|  [▣]       |   [▣] = kotak ikon 40px, fill accent grup
+|  Inventaris|   label ≤ 2 baris
+|  Aset      |
++------------+
+```
+
+**Spesifikasi.**
+
+| Elemen | Perlakuan |
+|---|---|
+| Tile | `color.surface.default`, border 1px `color.border.subtle`, `radius.lg`, padding `spacing.3`, celah antar-tile `spacing.3`; grid 3 kolom ponsel, 4–6 kolom tablet |
+| Kotak ikon | 40px, `radius.md`, **fill accent grup domain** (**DSD-03**): Aset & Bahan `accent.blue` · Pemanfaatan `accent.green` · Perawatan `accent.yellow` · Pengawasan `accent.purple` · Sistem `accent.gray` |
+| Ikon | Ikon modul FOUNDATIONS §8 `size.icon.md`; `color.icon.inverse` di atas blue/green/purple/gray, `color.icon.default` di atas **yellow** (kontras putih 1,84 tidak memenuhi) |
+| Label | `font.size.sm` `font.weight.medium` `color.text.primary`, maks 2 baris, **wajib** (`NFR-AC-04`) |
+| Badge | Hitungan tindakan tertunda opsional — badge angka **C-30** — di pojok kanan atas tile |
+| Entri ↗ web | Ikon panah keluar kecil + label; ketukan membuka penjelasan **C-36** dan tautan web (`MOB-SCP-03`) |
+
+**Do / Don't.**
+
+| ✅ Do | ❌ Don't |
+|---|---|
+| Accent sebagai fill kotak ikon | Accent sebagai warna ikon atau teks (**DSD-07**) |
+| Tile hanya untuk modul yang diizinkan permission | Tile tak berizin dengan gembok |
+
+---
+
+# C-32 Kartu Entitas
+
+**Purpose.** Satu objek dalam daftar mobile — aset, reservasi, peminjaman, tiket, usulan — sebagai kartu ringkas pengganti baris tabel (**DSD-11**).
+
+**Anatomy.**
+
+```
++------------------------------------------+
+| [foto/inisial]  Proyektor Presentasi 01  |
+|                 Lab RPL · DEMO-AST-0001  |
+|                 (✓ Tersedia) (Baik)    > |
++------------------------------------------+
+```
+
+**Spesifikasi.**
+
+| Elemen | Perlakuan |
+|---|---|
+| Media | Foto 56px `radius.md` bila ada; tanpa foto: lingkaran inisial atau ikon modul di atas `color.background.subtle` |
+| Judul | 1 baris `font.size.base` `font.weight.semibold`, elipsis |
+| Meta | 1 baris `font.size.sm` `color.text.secondary`; **paling banyak dua** butir dipisah titik tengah |
+| Status | Paling banyak dua badge **C-13** (ikon + teks, ikon status wajib FOUNDATIONS §8) |
+| Angka | Opsional satu angka kanan (`font.size.lg` `font.weight.bold`, tabular) — jumlah, sisa hari, nominal |
+| Interaksi | Seluruh kartu dapat ditekan; tinggi ≥ `size.row.mobile` |
+
+**Do / Don't.**
+
+| ✅ Do | ❌ Don't |
+|---|---|
+| Rincian lengkap di layar detail | Lebih dari dua baris teks dalam kartu |
+| Status selalu berikon + teks (`UX-03`) | Status hanya warna |
+
+---
+
+# C-33 Grafik Mini
+
+**Purpose.** Grafik kecil di kartu Beranda dan ringkasan analitik mobile (`MS-74`), turunan **DSD-10**.
+
+**Spesifikasi.**
+
+| Elemen | Perlakuan |
+|---|---|
+| Jenis | Batang, garis, donat — SVG milik sendiri (**DSD-10**); tanpa sumbu lengkap, hanya nilai awal-akhir atau total |
+| Warna | Urutan seri data visualisasi FOUNDATIONS (accent); maks 6 seri |
+| Ukuran | Tinggi 48–96px di dalam **C-23** atau **C-07** |
+| Aksesibilitas | Ringkasan teks satu kalimat sebagai `accessibilityLabel`; ketukan membuka laporan lengkap |
+
+**Do / Don't.**
+
+| ✅ Do | ❌ Don't |
+|---|---|
+| Satu pesan per grafik | Legenda lebih dari tiga butir di ponsel |
+
+---
+
+# C-34 Cincin Progres
+
+**Purpose.** Kemajuan sebuah target dalam satu lingkaran: progres opname per lokasi, kuota chatbot, sisa SLA, checklist work order.
+
+**Spesifikasi.**
+
+| Elemen | Perlakuan |
+|---|---|
+| Ukuran | 40px (dalam kartu) · 96px (kepala layar) |
+| Jalur | Latar `color.neutral.200`, isi `color.secondary`; menjadi `color.warning.base` / `color.error.base` hanya bila maknanya status (SLA hampir lewat / terlampaui) |
+| Isi tengah | Angka persen atau "x/y" `font.weight.bold`, tabular |
+| Aksesibilitas | `accessibilityRole="progressbar"` + nilai |
+
+---
+
+# C-35 Stepper Wizard
+
+**Purpose.** Penanda langkah pada wizard mobile — reservasi (**UXD-04**), usulan pengadaan, permintaan bahan, buat sesi opname.
+
+**Spesifikasi.**
+
+| Elemen | Perlakuan |
+|---|---|
+| Bentuk | Titik/angka bernomor terhubung garis di bawah header; langkah aktif `color.secondary`, selesai berikon centang `color.icon.success`, belum `color.neutral.300` |
+| Label | Hanya label langkah aktif yang tampil di ponsel; seluruh label di tablet |
+| Langkah terakhir | Selalu **Tinjau** (**UXD-04**) |
+
+---
+
+# C-36 Bottom Sheet
+
+**Purpose.** Lapisan dari bawah untuk aksi singkat, keterangan halaman (ikon info **C-30**), pilihan filter, dan percakapan chatbot mengambang (**UXD-22**) — padanan mobile **C-28 Drawer** (**UXD-02**).
+
+**Spesifikasi.**
+
+| Elemen | Perlakuan |
+|---|---|
+| Permukaan | `color.surface.raised`, `radius.lg` di sudut atas, `elevation.2`, pegangan seret di atas |
+| Tinggi | Setengah layar bawaan; dapat ditarik penuh |
+| Masuk/keluar | `motion.duration.slow` dengan `motion.easing.enter` / `exit` |
+| Tutup | Seret ke bawah, ketuk latar, atau tombol tutup berlabel |
+
+**Do / Don't.**
+
+| ✅ Do | ❌ Don't |
+|---|---|
+| Aksi singkat dan keterangan | Formulir panjang — gunakan layar penuh (**UXD-02**) |
+
+---
+
+# C-37 Ilustrasi Keadaan
+
+**Purpose.** Gambar sederhana pada keadaan kosong, galat, tanpa akses, luring, dan sukses (pola 31.5 + **UXD-06**), melengkapi **C-21 Empty State**.
+
+**Spesifikasi.**
+
+| Elemen | Perlakuan |
+|---|---|
+| Gaya | Bidang datar + garis outline seragam ikon (FOUNDATIONS §8); warna netral + **satu** accent grup modul sebagai bidang (**DSD-07**) |
+| Ukuran | 120px di ponsel, di atas judul keadaan **C-21** |
+| Teks | Judul satu baris + satu kalimat + satu tombol aksi — tidak lebih |
+| Aksesibilitas | Dekoratif (`accessibilityElementsHidden`); maknanya ada di judul |
+
+---
+
+# C-38 Tombol Chatbot Mengambang
+
+**Purpose.** Membuka chatbot dari layar mana pun (**UXD-22**).
+
+**Spesifikasi.**
+
+| Elemen | Perlakuan |
+|---|---|
+| Bentuk | Lingkaran `radius.full` 56px, fill `color.secondary`, ikon chat `color.icon.inverse`, `elevation.2` |
+| Posisi | Kanan bawah, di atas bottom tab (**C-05**) dengan jarak `spacing.4` |
+| Aksi | Membuka percakapan `MS-21` di **C-36** |
+| Tersembunyi | Pada pemindai (**C-25**) dan bagi pengguna tanpa `chat.use` |
+| Label | `accessibilityLabel` "Tanya asisten SIGM4" |
 
 ---
 
