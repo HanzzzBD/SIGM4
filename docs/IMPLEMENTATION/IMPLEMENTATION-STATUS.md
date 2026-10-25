@@ -250,7 +250,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
 | `PR-07-01` … `PR-07-14` | `Not Started` | — | Rincian: [`phases/phase-07.md` §7](phases/phase-07.md) |
-| `PR-07-15` | `In Progress` | — | Keputusan & spesifikasi paritas mobile (`MOB-SCP-01`…`04`, **UXD-19**…**22**, `MS-24`…`MS-90`, **DSD-11**/**12**, C-30…C-38); di luar rencana — [log phase-07 §4](logs/phase-07.md) |
+| `PR-07-15` | `In Review` | [#185](https://github.com/HanzzzBD/SIGM4/pull/185) | Keputusan & spesifikasi paritas mobile (`MOB-SCP-01`…`04`, **UXD-19**…**22**, `MS-24`…`MS-90`, **DSD-11**/**12**, C-30…C-38); di luar rencana — [log phase-07 §4](logs/phase-07.md) |
 | `PR-07-16` … `PR-07-35` | `Not Started` | — | Paritas mobile tahap A (pemohon) → B (petugas/teknisi) → C (pimpinan/admin); rincian [`phases/phase-07.md` §7](phases/phase-07.md) |
 
 ### Phase 08 — Pengerasan & Kesiapan Rilis · `Not Started`
