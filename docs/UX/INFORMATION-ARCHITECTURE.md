@@ -248,20 +248,23 @@ flowchart LR
 
 ## 4.3 Sitemap mobile
 
-Mobile **tidak** mencerminkan seluruh 22 modul — hanya alur yang PRD nyatakan berjalan di lapangan (`SDD-MOB` §4.1, `UX-01`).
+Sejak 25 Oktober 2026 mobile mencerminkan seluruh 22 modul untuk semua role (`MOB-SCP-01`, **UXD-19**), kecuali cetak label QR dan impor massal yang tampil sebagai entri ke web (`MOB-SCP-02`). Alur lapangan tetap dijangkau langsung dari tab; seluruh modul lain dijangkau lewat tab Menu (**UXD-20**).
 
 ```mermaid
 flowchart TD
     GATE["Gerbang startup<br/>versi · sesi · password · 2FA<br/>SDD-MOB §4.5"]
     GATE --> TABS
 
-    subgraph TABS["Bottom Tab Bar — UXD-03"]
+    subgraph TABS["Bottom Tab Bar — UXD-03 · UXD-20"]
         T1["Beranda"]
         T2["Tugas<br/>adaptif per role"]
         T3["SCAN"]
-        T4["Notifikasi"]
-        T5["Profil"]
+        T4["Chatbot"]
+        T5["Menu"]
     end
+
+    HDR["Lonceng header — UXD-21"] --> M_NTF["Pusat Notifikasi"]
+    FAB["Tombol chatbot mengambang — UXD-22"] --> M_CHAT
 
     T1 --> M_KAT["Katalog & Kalender"]
     T1 --> M_AJU["Ajukan Reservasi"]
@@ -281,8 +284,15 @@ flowchart TD
     M_SCAN --> M_WO
     M_SCAN --> M_OPN
 
-    T4 --> M_DEEP["Deep link ke objek"]
+    M_NTF --> M_DEEP["Deep link ke objek"]
+    T4 --> M_CHAT
     T5 --> M_PROF["Profil · Keamanan · Preferensi Notifikasi"]
+    T5 --> G1["Aset & Bahan<br/>inventaris · lokasi · dokumen · bahan"]
+    T5 --> G2["Pemanfaatan<br/>reservasi · peminjaman · denda · permintaan bahan"]
+    T5 --> G3["Perawatan<br/>kerusakan · work order · jadwal"]
+    T5 --> G4["Pengawasan<br/>opname · pengadaan · penghapusan · analitik"]
+    T5 --> G5["Sistem<br/>pengguna · role · approval rules · pengaturan · log"]
+    G1 -.->|"impor · label QR"| WEB["↗ web — MOB-SCP-02"]
 
     M_WO --> M_EXE["Eksekusi Work Order"]
     M_OPN --> M_SCANOPN["Scan Beruntun Opname"]

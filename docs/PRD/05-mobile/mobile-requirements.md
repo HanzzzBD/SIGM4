@@ -1,6 +1,6 @@
 # 32. Mobile Application Requirements
 
-> Aplikasi mobile menanggung seluruh pekerjaan lapangan: pemindaian QR, stock opname **aset maupun bahan**, eksekusi work order, pelaporan kerusakan, dan persetujuan dari ponsel. Bab ini menutup kekosongan spesifikasi yang sebelumnya menyerahkan hal-hal kritis kepada asumsi developer.
+> Aplikasi mobile menanggung seluruh pekerjaan lapangan: pemindaian QR, stock opname **aset maupun bahan**, eksekusi work order, pelaporan kerusakan, dan persetujuan dari ponsel — dan sejak 25 Oktober 2026 **seluruh alur web lainnya untuk semua role**, kecuali yang memerlukan perangkat khusus (§32.9). Bab ini menutup kekosongan spesifikasi yang sebelumnya menyerahkan hal-hal kritis kepada asumsi developer.
 
 ## 32.1 Klarifikasi Kebijakan Luring
 
@@ -90,6 +90,17 @@ Seluruh izin diminta **saat pertama kali dibutuhkan** disertai penjelasan tujuan
 | MOB-REL-04 | Persyaratan store dipenuhi sebelum pengajuan: kebijakan privasi terpublikasi (DP-01), *data safety form* diisi jujur, dan penjelasan penggunaan kamera |
 | MOB-REL-05 | Tenggang waktu peninjauan App Store diperhitungkan dalam jadwal rilis (GL-11) |
 | MOB-REL-06 | Distribusi alternatif berupa berkas APK langsung diizinkan hanya untuk perangkat internal sekolah pada masa uji coba |
+
+## 32.9 Cakupan Fitur Mobile
+
+Keputusan pemilik produk 25 Oktober 2026: aplikasi mobile tidak lagi terbatas pada alur lapangan.
+
+| Kode | Requirement |
+|---|---|
+| MOB-SCP-01 | Setiap alur yang tersedia di web **tersedia juga di aplikasi mobile untuk semua role**, dengan permission dan scope yang sama — otorisasi tetap ditegakkan server (`NFR-S-05`, `PM-02`), bukan oleh kehadiran menu |
+| MOB-SCP-02 | Pengecualian hanya alur yang memerlukan perangkat atau berkas khusus: cetak label QR (`FR-05.1`, butuh printer) dan impor massal berkas — pengguna (`FR-02.1 A4`), aset (`FR-04.1 A2`), jadwal tetap ruangan (`FR-07.5 A3`) |
+| MOB-SCP-03 | Alur pengecualian `MOB-SCP-02` **tidak disembunyikan**: entrinya tampil di mobile dan mengarahkan ke web beserta alasannya (`UX-05`) |
+| MOB-SCP-04 | Antarmuka mobile mengutamakan visual — ikon, kartu, angka, grafik, dan status berikon — dibanding paragraf teks; keterangan panjang dipindah ke bantuan yang dapat dibuka. Bentuk visualnya ditetapkan [`docs/DESIGN/`](../../DESIGN/DESIGN-SYSTEM.md) |
 
 ---
 

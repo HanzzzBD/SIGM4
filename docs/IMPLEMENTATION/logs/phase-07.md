@@ -18,7 +18,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 
 | Tanggal | Yang terjadi | PR terkait |
 |---|---|---|
-| — | — | — |
+| 25 Oktober 2026 | Pemilik produk meminta seluruh fitur web tersedia di mobile untuk semua role dengan UI yang lebih visual. Lima putaran `AskUserQuestion` (keputusan 1–5). `PR-07-15` menurunkannya ke PRD (`MOB-SCP-01`…`04`), SDD (`SDD-MOB-13`), UX (**UXD-19**…**22**, 67 layar `MS-24`…`MS-90`) dan DESIGN (**DSD-11**/**12**, C-30…C-38), lalu merencanakan 20 PR implementasi `PR-07-16`…`35`. | `PR-07-15` |
 
 ## 2. Keputusan yang diambil
 
@@ -26,13 +26,17 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 
 | # | Keputusan | Alasan | Menaikkan ke PRD/SDD? |
 |:---:|---|---|:---:|
-| — | — | — | — |
+| 1 | **Cakupan:** semua fitur web di mobile untuk semua role, kecuali cetak label QR dan impor massal berkas (pemilik produk) | Pilihan "kecuali yang butuh perangkat khusus"; ditolak: paritas mutlak, bertahap lapangan saja | Ya — `MOB-SCP-01`/`02`, `UX-01`, **UXD-19** (mencabut **UXD-17**) |
+| 2 | **Visual:** design system dikembangkan, bukan diganti — token & hierarki warna tetap, komponen C-30…C-38 ditambah (pemilik produk) | Ditolak: arah visual baru terpisah dari web | Ya — **DSD-11**/**12**, `MOB-SCP-04` |
+| 3 | **Navigasi:** bottom tab Beranda · Tugas · Scan · Chatbot · Menu; Menu berisi pencarian modul + lima grup + fitur per permission; notifikasi ke lonceng header; chatbot juga dari layar lain (usulan pemilik produk) | Lima slot tidak menampung 67 layar | Ya — **UXD-20**…**22** |
+| 4 | **Header ringkas satu baris** — kembali/ikon, judul, info, lonceng (pemilik produk) | Header lama dua baris teks + subjudul | Ya — **UXD-21**, C-30 |
+| 5 | **Proses:** docs dulu (`PR-07-15`), lalu satu PR per modul; urutan pemohon → petugas/teknisi → pimpinan/admin (pemilik produk) | Aturan repo: keputusan lahir di docs sebelum kode | Tidak — rencana phase |
 
 ## 3. Penyimpangan dari rencana
 
 | Yang direncanakan | Yang dikerjakan | Sebab | Dampak pada phase berikutnya |
 |---|---|---|---|
-| — | — | — | — |
+| Phase 07 hanya E2E, uji otorisasi, dan perbaikan cacat; `PR-07-14` menolak permintaan fitur | 21 PR paritas mobile `PR-07-15`…`35` ditambahkan **sebelum** E2E/UAT | Keputusan pemilik produk 25 Oktober 2026 (keputusan 1–5); UAT harus menguji mobile untuk seluruh role | E2E `PR-07-02`…`08` dan UAT menunggu tahap A–C; rencana total 230 → 251 PR |
 
 ## 4. PR di luar rencana
 
@@ -40,7 +44,7 @@ PR yang tidak ada pada daftar [`phase-07.md` §7](../phases/phase-07.md).
 
 | ID | Judul | Mengapa tidak terencana |
 |---|---|---|
-| — | — | — |
+| `PR-07-15`…`PR-07-35` | Paritas mobile seluruh role + mobile visual-first | Rencana awal mengikuti `UX-01`/UX §6.3: mobile hanya alur lapangan. Permintaan baru pemilik produk setelah uji lokal mobile; tidak ada phase yang memiliki pekerjaan ini |
 
 Kolom ketiga adalah yang paling berharga di seluruh log ini. Pola yang berulang di sana menunjukkan di mana perencanaan phase berikutnya perlu diperbaiki.
 

@@ -432,6 +432,19 @@ Overlay modal: `rgba(17, 24, 39, 0.48)`.
 | Informasi · Dipinjam · Dalam Perbaikan | lingkaran huruf i | `color.icon.info` |
 | Menunggu · Draf | lingkaran garis putus | `color.icon.muted` |
 
+**Ikon modul** (**DSD-12**) — nama ikon Lucide (**DSD-09**); aplikasi mobile memakai salinan SVG berbentuk sama. Satu ikon per fitur di Menu (`MS-31`), kepala layar (**C-30**), dan Tile Modul (**C-31**):
+
+| Grup (accent) | Fitur → ikon |
+|---|---|
+| Aset & Bahan (`accent.blue`) | Inventaris Aset `package` · Kategori Aset `tags` · Lokasi `map-pin` · Dokumen Aset `file-text` · Label QR `qr-code` · Bahan `boxes` · Kategori Bahan `folder-tree` |
+| Pemanfaatan (`accent.green`) | Kalender Ruangan `calendar-days` · Katalog Aset `layout-grid` · Reservasi `calendar-check` · Peminjaman `hand-helping` · Serah Terima `handshake` · Denda & Kewajiban `receipt` · Persetujuan `badge-check` · Katalog & Permintaan Bahan `clipboard-list` |
+| Perawatan (`accent.yellow`) | Laporan Kerusakan `hammer` · Work Order `wrench` · Jadwal Pemeliharaan `calendar-clock` |
+| Pengawasan (`accent.purple`) | Stock Opname `clipboard-check` · Pengadaan `shopping-cart` · Penghapusan Aset `archive-x` · Statistik & Analitik `chart-column` |
+| Sistem (`accent.gray`) | Pengguna `users` · Role & Permission `shield` · Permintaan Reset Password `key-round` · Approval Rules `workflow` · Parameter Sistem `settings` · Kalender Akademik `calendar` · Unit Kerja `building-2` · Activity Log `history` · Monitoring Chatbot `bot` |
+| Tanpa grup | Beranda `house` · Tugas `list-checks` · Scan `scan-line` · Chatbot `message-circle` · Menu `menu` · Notifikasi `bell` · Profil `circle-user` |
+
+Ikon status wajib di atas tidak dipakai sebagai ikon modul, agar makna status tidak tertukar dengan identitas fitur.
+
 ---
 
 # 9. Motion

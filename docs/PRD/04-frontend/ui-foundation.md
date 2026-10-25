@@ -6,7 +6,7 @@
 
 | Kode | Prinsip | Alasan |
 |---|---|---|
-| UX-01 | **Mobile-first untuk alur lapangan, desktop-first untuk alur administratif** | Teknisi dan petugas opname bekerja dari ponsel; petugas sarpras dan admin bekerja dari meja |
+| UX-01 | **Mobile-first untuk alur lapangan, desktop-first untuk alur administratif — keduanya tersedia di kedua platform** (`MOB-SCP-01`) | Teknisi dan petugas opname bekerja dari ponsel; petugas sarpras dan admin bekerja dari meja, tetapi juga perlu bertindak dari ponsel saat jauh dari meja (keputusan pemilik produk, 25 Oktober 2026). Prioritas tata letak tetap mengikuti alurnya; ketersediaan tidak |
 | UX-02 | **Scan QR sebagai jalan pintas utama**, dengan input kode aset manual selalu tersedia | Literasi digital pengguna beragam; QR bisa rusak (RS-02) |
 | UX-03 | **Status selalu disertai teks dan ikon**, tidak pernah hanya warna | NFR-AC-06 dan keterbacaan di layar terang saat di lapangan |
 | UX-04 | **Aksi destruktif selalu memerlukan konfirmasi dan alasan** | Sejalan dengan kewajiban audit (BR-025, BR-031) |
