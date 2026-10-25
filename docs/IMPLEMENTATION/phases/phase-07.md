@@ -115,6 +115,21 @@ Bila sebuah cacat integrasi baru ditemukan di Phase 08, artinya phase ini gagal.
 
 > `PR-07-13` dan `PR-07-14` sengaja tidak dirinci — isinya ditentukan temuan. Kompleksitas **M** adalah pagu; bila satu perbaikan melampauinya, ia dipecah menjadi PR tersendiri.
 
+### Paket pelaksanaan paritas mobile
+
+`PR-07-16`…`35` dikerjakan sebagai **enam paket per domain** (log phase-07 keputusan 6), bukan satu PR GitHub per baris. Setiap paket adalah satu PR GitHub berisi satu commit per ID PR di dalamnya (`PR-NN-NN: …`); paket berikutnya baru dimulai setelah paket sebelumnya tergabung. ID, kompleksitas, dan kriteria per baris di atas tetap berlaku.
+
+| Paket | ID PR | Alasan digabung |
+|---|---|---|
+| 1. Fondasi & Akun | `PR-07-16`, `PR-07-17`, `PR-07-18` | Seluruh paket lain bergantung pada tab, header C-30, dan komponen C-31…C-38 |
+| 2. Pemanfaatan | `PR-07-19`, `PR-07-20`, `PR-07-25`, `PR-07-21` | Reservasi → serah terima → peminjaman → denda satu alur; `MS-51`/`MS-53` dipakai pemohon dan petugas |
+| 3. Aset & Bahan | `PR-07-23`, `PR-07-24`, `PR-07-26` | Inventaris ↔ lokasi ↔ ruangan saling menaut; penyerahan bahan melanjutkan `MS-58` dari paket 2 |
+| 4. Perawatan & Opname | `PR-07-27`, `PR-07-28`, `PR-07-29` | Kerusakan → work order → jadwal preventif; opname memakai pemindai yang sama |
+| 5. Pengadaan & Penghapusan | `PR-07-22`, `PR-07-30` | Usulan → persetujuan → penerimaan; penghapusan memakai snapshot aset & approval yang sama |
+| 6. Pimpinan & Admin | `PR-07-31`…`PR-07-35` | Grup Pengawasan/Sistem dengan pola layar administratif serupa |
+
+Setiap paket berukuran **L**; deskripsi PR paket menjelaskan alasan tidak dipecah dan merinci baris uji per ID PR.
+
 ## 8. Task Breakdown
 
 ### Pelaksanaan UAT (bukan PR — kegiatan)

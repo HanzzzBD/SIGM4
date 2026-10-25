@@ -18,7 +18,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 
 | Tanggal | Yang terjadi | PR terkait |
 |---|---|---|
-| 25 Oktober 2026 | Pemilik produk meminta seluruh fitur web tersedia di mobile untuk semua role dengan UI yang lebih visual. Lima putaran `AskUserQuestion` (keputusan 1–5). `PR-07-15` menurunkannya ke PRD (`MOB-SCP-01`…`04`), SDD (`SDD-MOB-13`), UX (**UXD-19**…**22**, 67 layar `MS-24`…`MS-90`) dan DESIGN (**DSD-11**/**12**, C-30…C-38), lalu merencanakan 20 PR implementasi `PR-07-16`…`35`. | `PR-07-15` |
+| 25 Oktober 2026 | Pemilik produk meminta seluruh fitur web tersedia di mobile untuk semua role dengan UI yang lebih visual. Lima putaran `AskUserQuestion` (keputusan 1–5). `PR-07-15` menurunkannya ke PRD (`MOB-SCP-01`…`04`), SDD (`SDD-MOB-13`), UX (**UXD-19**…**22**, 67 layar `MS-24`…`MS-90`) dan DESIGN (**DSD-11**/**12**, C-30…C-38), lalu merencanakan 20 PR implementasi `PR-07-16`…`35`. Pemilik produk kemudian memilih pelaksanaan dalam enam paket per domain (keputusan 6). | `PR-07-15` |
 
 ## 2. Keputusan yang diambil
 
@@ -31,12 +31,14 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 | 3 | **Navigasi:** bottom tab Beranda · Tugas · Scan · Chatbot · Menu; Menu berisi pencarian modul + lima grup + fitur per permission; notifikasi ke lonceng header; chatbot juga dari layar lain (usulan pemilik produk) | Lima slot tidak menampung 67 layar | Ya — **UXD-20**…**22** |
 | 4 | **Header ringkas satu baris** — kembali/ikon, judul, info, lonceng (pemilik produk) | Header lama dua baris teks + subjudul | Ya — **UXD-21**, C-30 |
 | 5 | **Proses:** docs dulu (`PR-07-15`), lalu satu PR per modul; urutan pemohon → petugas/teknisi → pimpinan/admin (pemilik produk) | Aturan repo: keputusan lahir di docs sebelum kode | Tidak — rencana phase |
+| 6 | **Paket:** `PR-07-16`…`35` dilaksanakan dalam **enam PR paket per domain** (Fondasi & Akun → Pemanfaatan → Aset & Bahan → Perawatan & Opname → Pengadaan & Penghapusan → Pimpinan & Admin), satu commit per ID PR, berurutan tanpa PR bertumpuk; menggantikan urutan per PR pada keputusan 5 (pemilik produk) | Layar bersama (`MS-51`, `MS-53`, `MS-58`) dibangun sekali; lebih sedikit putaran merge. Ditolak: 3 paket per tahap role (layar bersama dikerjakan dua kali), tetap 20 PR | Tidak — rencana phase (§7 Paket pelaksanaan) |
 
 ## 3. Penyimpangan dari rencana
 
 | Yang direncanakan | Yang dikerjakan | Sebab | Dampak pada phase berikutnya |
 |---|---|---|---|
 | Phase 07 hanya E2E, uji otorisasi, dan perbaikan cacat; `PR-07-14` menolak permintaan fitur | 21 PR paritas mobile `PR-07-15`…`35` ditambahkan **sebelum** E2E/UAT | Keputusan pemilik produk 25 Oktober 2026 (keputusan 1–5); UAT harus menguji mobile untuk seluruh role | E2E `PR-07-02`…`08` dan UAT menunggu tahap A–C; rencana total 230 → 251 PR |
+| Satu PR GitHub per ID PR (keputusan 5) | Enam PR paket berukuran L, masing-masing memuat beberapa ID PR | Keputusan 6 | Tidak ada; jumlah ID PR tetap 251 |
 
 ## 4. PR di luar rencana
 
