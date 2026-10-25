@@ -22,3 +22,12 @@ const LINKS: readonly { id: string; label: string; icon: IconName; permission: s
 export function profileLinks(permissions: Readonly<Record<string, string>>, registered: Readonly<Record<string, string>> = REGISTERED_SCREENS) {
     return LINKS.flatMap((link) => { const path = registered[link.id]; return path !== undefined && (link.permission === null || Object.hasOwn(permissions, link.permission)) ? [{ ...link, path }] : []; });
 }
+
+/** Mencabut sesi perangkat ini (atau semua) mengakhiri sesi lokal juga; sesi lain cukup dimuat ulang. */
+export function revokeEndsHere(choice: { id: string | null; current: boolean }): boolean { return choice.id === null || choice.current; }
+
+/** Nama perangkat ringkas untuk Kartu Entitas: platform + cuplikan user agent. */
+export function deviceTitle(session: { platform: string; user_agent: string | null }): string {
+    const platform = ({ ANDROID: "Android", IOS: "iPhone/iPad", WEB: "Browser" } as Readonly<Record<string, string>>)[session.platform] ?? session.platform;
+    return session.user_agent ? `${platform} · ${session.user_agent.slice(0, 40)}` : platform;
+}

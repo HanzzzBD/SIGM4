@@ -16,3 +16,15 @@ export async function uploadProfilePhoto(api: AxiosInstance, photo: { size: numb
     await api.post("/files/confirm", { file_id: Number(order.file_id), checksum: photo.checksum });
     return Number(order.file_id);
 }
+
+const TwoFactor = z.object({ data: z.object({ aktif: z.boolean(), diaktifkan_pada: z.string().nullable(), sisa_kode_cadangan: z.number().int().nonnegative(), kode_cadangan_menipis: z.boolean() }) });
+export const loadTwoFactor = async (api: AxiosInstance, signal: AbortSignal) => TwoFactor.parse((await api.get("/auth/2fa/status", { signal })).data).data;
+/** BR-070c: kode pengganti hanya ditampilkan sekali; seluruh kode lama langsung tidak berlaku. */
+export const regenerateBackupCodes = async (api: AxiosInstance) => z.object({ data: z.object({ kode_cadangan: z.array(z.string()) }) }).parse((await api.post("/auth/2fa/backup-codes/regenerate")).data).data.kode_cadangan;
+
+const DeviceSession = z.object({ id: z.string(), platform: z.string(), ip: z.string().nullable(), user_agent: z.string().nullable(), dibuat_pada: z.string(), terakhir_diperbarui: z.string(), berlaku_sampai: z.string(), saat_ini: z.boolean() });
+export type DeviceSession = z.infer<typeof DeviceSession>;
+/** P-79 Perangkat Terhubung (FR-01.2 A1). */
+export const loadSessions = async (api: AxiosInstance, signal: AbortSignal) => z.object({ data: z.array(DeviceSession) }).parse((await api.get("/auth/sessions", { signal })).data).data;
+export const revokeSession = async (api: AxiosInstance, id: string) => { await api.delete(`/auth/sessions/${encodeURIComponent(id)}`); };
+export const logoutAll = async (api: AxiosInstance) => { await api.post("/auth/logout-all"); };
