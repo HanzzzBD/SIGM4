@@ -30,7 +30,7 @@ export const MENU: readonly MenuGroup[] = [
     ] },
     { group: "PEMANFAATAN", label: "Pemanfaatan", entries: [
         e("MS-44", "Kalender Ruangan", "calendarDays", "reservation.view"), e("MS-45", "Katalog Aset", "layoutGrid", "reservation.view"), e("MS-47", "Reservasi", "calendarCheck", "reservation.view"),
-        e("MS-49", "Peminjaman", "handHelping", "loan.view"), e("MS-50", "Antrean Serah Terima", "handshake", "loan.manage"), e("MS-52", "Denda & Kewajiban", "receipt", "fine.view"),
+        { ...e("MS-49", "Peminjaman", "handHelping", "loan.view"), alternatives: [{ id: "MS-12", permission: ["loan.view"] }] }, e("MS-50", "Antrean Serah Terima", "handshake", "loan.manage"), { ...e("MS-52", "Denda & Kewajiban", "receipt", "fine.view"), alternatives: [{ id: "MS-14", permission: ["fine.view"] }] },
         e("MS-55", "Katalog Bahan", "clipboardList", "material.view"), e("MS-57", "Permintaan Bahan", "clipboardList", "material.view"), e("MS-20", "Persetujuan Saya", "badgeCheck", "approval.decide"),
     ] },
     { group: "PERAWATAN", label: "Perawatan", entries: [

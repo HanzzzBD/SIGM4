@@ -447,7 +447,7 @@ Ditetapkan `ui-foundation.md §31.5`. Tabel berikut menjabarkannya menjadi keten
 | Slot tentative kedaluwarsa | P-31 | `BR-023b` · `NT-46` — status `Kedaluwarsa` + tombol "Ajukan Ulang" |
 | Aset masih bergaransi | P-41 · P-56 | `BR-052` · `FR-21.1 A2` — peringatan + tautan ke dokumen garansi |
 | Berkas belum lolos pemindaian AV | P-18 · P-26 | `NFR-S-18` — status "Sedang diperiksa", tombol unduh nonaktif dengan penjelasan |
-| Foto belum terunggah (mobile) | MS-10 · MS-11 · MS-15 · MS-17 | `MOB-OFF-04` — penanda pada entitas + daftar tindak lanjut Petugas Sarpras |
+| Foto belum terunggah (mobile) | MS-15 · MS-17 (MS-10 · MS-11 mengunggah bukti sebelum transaksi, §7.6.6) | `MOB-OFF-04` — penanda pada entitas + daftar tindak lanjut Petugas Sarpras |
 | Layanan LLM tidak tersedia | MS-21 · panel chatbot | `503 LLM_UNAVAILABLE` — arahkan ke pencarian manual (`FR-19.1 A4`); **tidak boleh** memengaruhi layar lain (`NFR-A-05`) |
 | Batas percakapan harian tercapai | MS-21 | `FR-19.1 A5` — tampilkan waktu ketersediaan berikutnya |
 | Versi aplikasi tidak didukung | MS-04 | `426 UPGRADE_REQUIRED` (`MOB-VER-03`) |
@@ -615,7 +615,7 @@ P-34 menjadi receipt: status, unit/bukti awal/akhir, penerima, jadwal dan kewaji
 | **Aksi sekunder** | Batal · Substitusi Unit | Tandai Hilang (beralasan, `FR-09.2 A2`) · Pengembalian Sebagian (`FR-09.2 A3`) · Bebaskan Denda 🔒 |
 | **Sukses** | Layar bukti serah terima yang dapat ditunjukkan | Ringkasan: status unit baru, denda bila ada, tiket kerusakan bila kondisi rusak (`BR-032`) |
 | **Luring** | Gagal eksplisit — **tidak pernah** diantrekan (`MOB-OFF-05`) | Sama |
-| **Foto gagal terunggah** | Transaksi tetap tercatat; foto masuk antrean unggah dan entitas ditandai "Foto belum terunggah" (`MOB-OFF-02`, `MOB-OFF-04`) | Sama |
+| **Foto gagal terunggah** | Foto dan tanda tangan diunggah serta dikonfirmasi **sebelum** transaksi (`BR-027`; berkas bukti harus terkonfirmasi saat serah terima dicatat). Bila unggahan gagal, tombol Serahkan tertahan dan pengguna mengunggah ulang — bukti peminjaman tidak masuk antrean unggah *(dikoreksi 25 Oktober 2026, keputusan pemilik produk — log phase-07 keputusan 11)* | Sama |
 | **Idempotensi** | `Idempotency-Key` wajib; ketuk ganda tidak menghasilkan dua transaksi (`ID-01`) | Sama |
 
 ### 7.6.7 MS-18 & MS-19 Stock Opname (mobile)

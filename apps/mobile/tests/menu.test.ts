@@ -30,13 +30,13 @@ describe("MS-31 Menu tersaring permission & registri layar (UXD-20, MOB-SCP-01)"
         expect(MENU.map((group) => group.group)).toEqual(["ASET_BAHAN", "PEMANFAATAN", "PERAWATAN", "PENGAWASAN", "SISTEM"]);
     });
     it("renders only entries whose screen is registered and whose permission is held", () => {
-        const groups = visibleMenu({ "approval.decide": "assigned", "reservation.view": "own" });
+        const groups = visibleMenu({ "approval.decide": "assigned", "reservation.view": "own" }, { "MS-20": "/persetujuan" });
         expect(ids(groups)).toEqual(["MS-20"]);
         expect(groups.map((group) => group.group)).toEqual(["PEMANFAATAN"]);
         expect(visibleMenu({})).toEqual([]);
     });
     it("shows an entry as soon as a later package registers its screen", () => {
-        const groups = visibleMenu({ "reservation.view": "own" }, { ...REGISTERED_SCREENS, "MS-47": "/reservasi" });
+        const groups = visibleMenu({ "reservation.view": "own" }, { "MS-20": "/persetujuan", "MS-47": "/reservasi" });
         expect(groups[0]?.entries.map((entry) => [entry.id, entry.path])).toEqual([["MS-47", "/reservasi"]]);
     });
     it("falls back to the first registered alternative the user may open", () => {

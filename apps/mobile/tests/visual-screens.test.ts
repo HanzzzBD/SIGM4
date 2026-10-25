@@ -11,12 +11,13 @@ describe("Aksi Cepat Beranda sebagai C-31 (DSD-12; keputusan paket 1)", () => {
     it("leaves the chatbot out — it already has a tab and C-38", () => {
         expect(quickActions(all).map((action) => action.label)).not.toContain("Chatbot");
     });
+    const withoutWizard = Object.fromEntries(Object.entries(REGISTERED_SCREENS).filter(([id]) => id !== "MS-46"));
     it("hides actions whose mobile screen is not registered yet and shows them once it is", () => {
-        expect(quickActions(all).map((action) => action.screen)).toEqual(["MS-07", "MS-20", "MS-15"]);
-        expect(quickActions(all, { ...REGISTERED_SCREENS, "MS-46": "/reservasi/baru" }).find((action) => action.screen === "MS-46")).toMatchObject({ path: "/reservasi/baru", group: "PEMANFAATAN" });
+        expect(quickActions(all, withoutWizard).map((action) => action.screen)).toEqual(["MS-07", "MS-20", "MS-15"]);
+        expect(quickActions(all, { ...withoutWizard, "MS-46": "/reservasi/baru" }).find((action) => action.screen === "MS-46")).toMatchObject({ path: "/reservasi/baru", group: "PEMANFAATAN" });
     });
     it("gives every action a domain group for the tile accent", () => {
-        expect(quickActions(all).map((action) => action.group)).toEqual(["ASET_BAHAN", "PEMANFAATAN", "PERAWATAN"]);
+        expect(quickActions(all).map((action) => action.group)).toEqual(["ASET_BAHAN", "PEMANFAATAN", "PEMANFAATAN", "PERAWATAN"]);
     });
 });
 
