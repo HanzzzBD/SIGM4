@@ -4,10 +4,17 @@ import type { StyleProp, TextInputProps, ViewStyle } from "react-native";
 import { tokens as t } from "./tokens";
 import { Icon } from "./Icon";
 import type { IconName } from "./Icon";
+import { StateIllustration } from "./visual";
 export { tokens } from "./tokens";
 export { Icon } from "./Icon";
 export type { IconName } from "./Icon";
 export { Screen } from "./Screen";
+export { Header, ChromeProvider, CountBadge, useChrome } from "./Header";
+export type { Chrome } from "./Header";
+export { BottomSheet } from "./BottomSheet";
+export { ChatFab, EntityCard, MiniChart, ModuleTile, ProgressRing, StateIllustration, StatusBadge, Stepper } from "./visual";
+export type { StatusTone } from "./visual";
+export type { DomainGroup } from "./model";
 
 export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) { return <View style={[styles.card, style]}>{children}</View>; }
 export function Label({ children, tone = "default", strong = false }: { children: ReactNode; tone?: "default" | "muted"; strong?: boolean }) { return <Text style={[styles.text, tone === "muted" && styles.muted, strong && styles.strong]}>{children}</Text>; }
@@ -31,7 +38,8 @@ export function ListRow({ title, subtitle, icon, onPress }: { title: string; sub
     const content = <><View style={styles.rowIcon}><Icon name={icon} color={t.color.primary}/></View><View style={styles.rowText}><Text style={styles.rowTitle}>{title}</Text>{subtitle && <Text style={styles.caption}>{subtitle}</Text>}</View>{onPress && <Icon name="chevronRight" color={t.color.muted}/>}</>;
     return onPress ? <Pressable accessibilityRole="button" accessibilityLabel={title} onPress={onPress} style={({ pressed }) => [styles.row, pressed && styles.secondaryPressed]}>{content}</Pressable> : <View style={styles.row}>{content}</View>;
 }
-export function EmptyState({ icon = "tasks", title, description }: { icon?: IconName; title: string; description: string }) { return <View style={styles.empty}><View style={styles.emptyIcon}><Icon name={icon} size={t.size.iconLarge} color={t.color.primary}/></View><Text style={styles.sectionTitle}>{title}</Text><Text style={[styles.caption, styles.center]}>{description}</Text></View>; }
+/** C-21; `illustration` menampilkan C-37 di atas judul keadaan. */
+export function EmptyState({ icon = "tasks", title, description, illustration }: { icon?: IconName; title: string; description: string; illustration?: "empty" | "error" | "noAccess" | "offline" | "success" }) { return <View style={styles.empty}>{illustration ? <StateIllustration kind={illustration}/> : <View style={styles.emptyIcon}><Icon name={icon} size={t.size.iconLarge} color={t.color.primary}/></View>}<Text style={styles.sectionTitle}>{title}</Text><Text style={[styles.caption, styles.center]}>{description}</Text></View>; }
 export const styles = StyleSheet.create({
     text: { fontSize: t.font.body, lineHeight: 24, color: t.color.text }, muted: { color: t.color.muted, fontSize: t.font.small, lineHeight: 21 }, strong: { fontWeight: "600", color: t.color.heading },
     card: { padding: t.space.md, gap: t.space.ms, borderColor: t.color.border, borderWidth: 1, borderRadius: t.radius.lg, backgroundColor: t.color.surface },

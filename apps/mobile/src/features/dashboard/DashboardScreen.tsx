@@ -38,7 +38,7 @@ export function DashboardScreen() {
     const periods = [["7_hari", "7 hari"], ["30_hari", "30 hari"], ["semester", "Semester"], ["tahun_ajaran", "Tahun ajaran"]] as const;
     const name = state.kind === "READY" ? state.session.user.nama : "";
     const actionIcons: Record<string, IconName> = { "asset.view": "scan", "material.view": "scan", "approval.decide": "tasks", "reservation.create": "calendar", "damage.create": "wrench", "chat.use": "chat" };
-    return <Screen title="Beranda" icon="home" subtitle="Pantau fasilitas dan lanjutkan pekerjaan Anda." action={canView ? <Button title={periods.find(([value]) => value === period)![1]} icon="calendar" compact secondary onPress={() => setPeriodMenu(value => !value)}/> : undefined}>
+    return <Screen title="Beranda" icon="house" subtitle="Pantau fasilitas dan lanjutkan pekerjaan Anda." action={canView ? <Button title={periods.find(([value]) => value === period)![1]} icon="calendar" compact secondary onPress={() => setPeriodMenu(value => !value)}/> : undefined}>
         <View style={styles.welcome}><View style={styles.welcomeText}><Text style={styles.caption}>Selamat datang kembali,</Text><Text style={styles.welcomeName}>{name}</Text></View><View style={styles.avatar}><Text style={styles.initials}>{name.split(" ").slice(0,2).map(part => part[0]).join("").toUpperCase()}</Text></View></View>
         {periodMenu && <Card><SectionHeading title="Rentang ringkasan"/>{periods.map(([value, label]) => <Button key={value} title={label} icon={period === value ? "check" : "calendar"} secondary onPress={() => { setPeriod(value); setPeriodMenu(false); }}/>)}</Card>}
         {cards.filter(card => card.zona === 1).map(card => <CardView key={card.id} card={card} period={period} refreshKey={refreshKey}/>)}

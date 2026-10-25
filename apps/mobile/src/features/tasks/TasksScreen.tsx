@@ -37,4 +37,4 @@ function QueueSection({ kind, label }: { kind: string; label: string }) {
         <Button title={web?`Lanjutkan ${label.toLowerCase()} di web`:`Buka ${label.toLowerCase()}`} disabled={!destination} onPress={()=>open()}/>
     </Card>;
 }
-export function TasksScreen(){const {state}=useAuth(),permissions=state.kind==="READY"?state.session.permissions:{},sections=taskSections(permissions);return <Screen title="Tugas" icon="tasks" subtitle="Prioritaskan pekerjaan yang membutuhkan tindakan Anda.">{sections.length===0&&<Label>Belum ada antrean yang tersedia untuk izin akun Anda.</Label>}{sections.map(section=><QueueSection key={section.kind} {...section}/>)}</Screen>;}
+export function TasksScreen(){const {state}=useAuth(),permissions=state.kind==="READY"?state.session.permissions:{},sections=taskSections(permissions);return <Screen title="Tugas" icon="listChecks" subtitle="Prioritaskan pekerjaan yang membutuhkan tindakan Anda.">{sections.length===0&&<Label>Belum ada antrean yang tersedia untuk izin akun Anda.</Label>}{sections.map(section=><QueueSection key={section.kind} {...section}/>)}</Screen>;}
