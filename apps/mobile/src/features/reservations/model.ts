@@ -2,7 +2,7 @@
 // P-27/P-29 — kalender ponsel berupa daftar per hari, wizard tiga layar. Seluruh waktu WIB.
 import type { AssetReservationBody, KeadaanSlot, ReservationDetail, RoomAvailability, RoomReservationBody, SlotKetersediaan, StatusReservasi } from "@sigm4/schemas";
 import type { StatusTone } from "../../shared/ui/status";
-import { atWib, dateWib, fromMinutes, isoWeekday, isoWib, timeWib, toMinutes, validDate, validTime } from "../../shared/wib";
+import { atWib, dateWib, fromMinutes, isoWeekday, isoWib, shiftDay, shiftMonth, timeWib, toMinutes, validDate, validTime } from "../../shared/wib";
 
 export const STATUS_LABEL: Readonly<Record<StatusReservasi, string>> = { DRAF: "Draf", MENUNGGU_PERSETUJUAN: "Menunggu Persetujuan", DISETUJUI: "Disetujui", DITOLAK: "Ditolak", PERLU_REVISI: "Perlu Revisi", DIBATALKAN: "Dibatalkan", KEDALUWARSA: "Kedaluwarsa", BERLANGSUNG: "Berlangsung", SELESAI: "Selesai", TIDAK_DIGUNAKAN: "Tidak Digunakan" };
 /** C-13 web: menunggu/perlu revisi peringatan, selesai/disetujui sukses, ditolak galat, berlangsung info; sisanya netral (garis putus). */
@@ -29,6 +29,54 @@ export function dayAgenda(data: RoomAvailability, date: string) {
         const used = slots.reduce((sum, s) => sum + Math.max(0, Math.min(Date.parse(s.selesai), close) - Math.max(Date.parse(s.mulai), open)), 0);
         return { room, slots, freeMinutes: Math.max(0, Math.round((close - open - used) / 60_000)) };
     });
+}
+
+/** Tampilan kalender (CAL-UI-01); di ponsel tiap tampilan tetap berbentuk daftar per ruangan/hari (CAL-UI-07). */
+export type CalendarMode = "HARIAN" | "MINGGUAN" | "BULANAN";
+export const CALENDAR_MODES: readonly { value: CalendarMode; label: string }[] = [{ value: "HARIAN", label: "Harian" }, { value: "MINGGUAN", label: "Mingguan" }, { value: "BULANAN", label: "Bulanan" }];
+
+/** Tanggal yang dimuat per tampilan: satu hari, minggu Senin–Minggu, atau 6 minggu penuh bulan itu (sama dengan P-27). */
+export function calendarDates(mode: CalendarMode, date: string): string[] {
+    if (mode === "HARIAN") return [date];
+    const first = mode === "MINGGUAN" ? date : `${date.slice(0, 7)}-01`;
+    const start = shiftDay(first, 1 - isoWeekday(first));
+    return Array.from({ length: mode === "MINGGUAN" ? 7 : 42 }, (_, i) => shiftDay(start, i));
+}
+
+export function shiftCalendar(mode: CalendarMode, date: string, step: number): string {
+    if (mode === "HARIAN") return shiftDay(date, step);
+    if (mode === "MINGGUAN") return shiftDay(date, step * 7);
+    return `${shiftMonth(date.slice(0, 7), step)}-01`;
+}
+
+/** Potongan pita waktu satu ruangan pada satu hari: posisi & lebar sebagai pecahan jam operasional. */
+export interface StripSegment { readonly start: number; readonly width: number; readonly slot: SlotKetersediaan }
+export function stripSegments(data: RoomAvailability, roomId: string, date: string): StripSegment[] {
+    const open = atWib(date, data.jam_operasional.mulai).getTime(), close = atWib(date, data.jam_operasional.selesai).getTime(), span = close - open;
+    if (span <= 0) return [];
+    return overlapping(data.slot, roomId, new Date(open), new Date(close)).sort((a, b) => Date.parse(a.mulai) - Date.parse(b.mulai)).map((slot) => {
+        const from = Math.max(Date.parse(slot.mulai), open), to = Math.min(Date.parse(slot.selesai), close);
+        return { start: (from - open) / span, width: (to - from) / span, slot };
+    });
+}
+
+/** Penanda jam di bawah pita: setiap dua jam penuh di dalam jam operasional. */
+export function hourTicks(data: Pick<RoomAvailability, "jam_operasional">): { label: string; at: number }[] {
+    const open = toMinutes(data.jam_operasional.mulai), close = toMinutes(data.jam_operasional.selesai), span = close - open;
+    if (span <= 0) return [];
+    const ticks: { label: string; at: number }[] = [];
+    for (let m = Math.ceil(open / 120) * 120; m <= close; m += 120) ticks.push({ label: fromMinutes(m).slice(0, 2), at: (m - open) / span });
+    return ticks;
+}
+
+/** Kepadatan seluruh ruangan pada satu hari (tampilan Bulanan): pecahan 0–1, atau null bila sekolah tutup. */
+export function dayUsage(data: RoomAvailability, date: string): number | null {
+    if (dayClosure(date, data) !== null) return null;
+    const open = atWib(date, data.jam_operasional.mulai).getTime(), close = atWib(date, data.jam_operasional.selesai).getTime();
+    const capacity = (close - open) * data.ruangan.length;
+    if (capacity <= 0) return 0;
+    const used = data.ruangan.reduce((sum, room) => sum + stripSegments(data, room.id, date).reduce((s, seg) => s + seg.width * (close - open), 0), 0);
+    return Math.min(1, used / capacity);
 }
 
 /** Pilihan jam pada batas granularitas di dalam jam operasional (CAL-UI-02). */

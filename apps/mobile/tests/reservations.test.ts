@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AssetReservationBodySchema, RoomReservationBodySchema } from "@sigm4/schemas";
 import type { ReservationDetail, RoomAvailability } from "@sigm4/schemas";
-import { EMPTY_ASSET, EMPTY_ROOM, assetBody, dayAgenda, dayClosure, draftsFromDetail, draftsFromParams, nearestSlot, previewSummary, roomBody, roomsWithCapacity, timeOptions, timeProblem } from "../src/features/reservations/model.js";
+import { EMPTY_ASSET, EMPTY_ROOM, assetBody, calendarDates, dayAgenda, dayClosure, dayUsage, hourTicks, shiftCalendar, stripSegments, draftsFromDetail, draftsFromParams, nearestSlot, previewSummary, roomBody, roomsWithCapacity, timeOptions, timeProblem } from "../src/features/reservations/model.js";
 
 // Senin 3 Nov 2026; jam operasional 07.00–09.00, granularitas 30 menit.
 const data: RoomAvailability = {
@@ -23,6 +23,34 @@ describe("Kalender Ruangan per hari (MS-44, CAL-UI-07)", () => {
     });
     it("offers time boundaries on the granularity inside operating hours (CAL-UI-02)", () => {
         expect(timeOptions(data)).toEqual({ start: ["07:00", "07:30", "08:00", "08:30"], end: ["07:30", "08:00", "08:30", "09:00"] });
+    });
+});
+
+describe("Pita waktu Kalender Ruangan (MS-44, CAL-UI-01/05/07)", () => {
+    it("loads one day, a Monday–Sunday week, or six full weeks of the month", () => {
+        expect(calendarDates("HARIAN", "2026-11-03")).toEqual(["2026-11-03"]);
+        expect(calendarDates("MINGGUAN", "2026-11-05")).toEqual(["2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08"]);
+        const month = calendarDates("BULANAN", "2026-11-18");
+        expect([month.length, month[0], month[41]]).toEqual([42, "2026-10-26", "2026-12-06"]);
+    });
+    it("steps by a day, a week, or a month", () => {
+        expect(shiftCalendar("HARIAN", "2026-11-03", -1)).toBe("2026-11-02");
+        expect(shiftCalendar("MINGGUAN", "2026-11-03", 1)).toBe("2026-11-10");
+        expect(shiftCalendar("BULANAN", "2026-11-18", 1)).toBe("2026-12-01");
+    });
+    it("places booked slots on the strip as fractions of operating hours, clipped to them", () => {
+        const [seg] = stripSegments(data, "1", "2026-11-03");
+        expect([seg?.start, seg?.width, seg?.slot.keadaan]).toEqual([0.25, 0.5, "DISETUJUI"]);
+        expect(stripSegments(data, "2", "2026-11-03")).toEqual([]);
+        expect(stripSegments({ ...data, slot: [{ ...data.slot[0]!, mulai: "2026-11-03T06:00:00+07:00" }] }, "1", "2026-11-03").map((s) => [s.start, s.width])).toEqual([[0, 0.75]]);
+    });
+    it("labels every two whole hours inside operating hours", () => {
+        expect(hourTicks(data)).toEqual([{ label: "08", at: 0.5 }]);
+        expect(hourTicks({ jam_operasional: { hari: [1], mulai: "06:00", selesai: "15:00" } }).map((t) => t.label)).toEqual(["06", "08", "10", "12", "14"]);
+    });
+    it("monthly density counts all rooms and is null when the school is closed", () => {
+        expect(dayUsage(data, "2026-11-03")).toBeCloseTo(1 / 6);
+        expect(dayUsage(data, "2026-11-04")).toBeNull();
     });
 });
 
