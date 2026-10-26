@@ -89,6 +89,18 @@ export function parseDocumentationEnv(env: NodeJS.ProcessEnv = process.env): Doc
     return { environment: d.APP_ENV, version: d.APP_REVISION };
 }
 
+/** Port container (`EXPOSE 3000`, SDD-INF-01). Diubah hanya bila api & worker berbagi host lokal; healthcheck deploy memakai 3000. */
+const PORT_HEALTH_WORKER_BAWAAN = 3000;
+const bentukHealthWorker = {
+    WORKER_HEALTH_PORT: z
+        .string()
+        .optional()
+        .refine((v) => kosong(v) || (/^\d+$/.test(v!.trim()) && Number(v) >= 1 && Number(v) <= 65535), {
+            error: pesan("WORKER_HEALTH_PORT", "harus bilangan bulat 1–65535", "SDD-SYS-08"),
+        })
+        .transform((v) => (kosong(v) ? PORT_HEALTH_WORKER_BAWAAN : Number(v))),
+};
+
 const bentukLog = {
     LOG_LEVEL: z
         .string()
@@ -381,6 +393,8 @@ export interface WorkerConfig extends ProcessConfig {
     readonly antivirus: KonfigurasiAntivirus;
     /** Kotak enkripsi secret TOTP (`TOTP_ENCRYPTION_KEY`); sudah tervalidasi. */
     readonly totpKey: KotakRahasia;
+    /** Port satu-satunya endpoint HTTP worker, `/health` (SDD-SYS-08); bawaan 3000. */
+    readonly healthPort: number;
 }
 
 /**
@@ -407,6 +421,7 @@ export function readWorkerConfig(
             ...bentukPenyimpanan,
             ...bentukAntivirus,
             ...bentukPdf,
+            ...bentukHealthWorker,
         }),
         env,
         [...periksaZona(zona), ...totp.masalah, ...fcm.masalah],
@@ -432,6 +447,7 @@ export function readWorkerConfig(
         // `bentukAntivirus` sudah menolak bentuk yang tak terurai.
         antivirus: urlClamd(d.CLAMAV_URL)!,
         chromiumExecutablePath: d.CHROMIUM_EXECUTABLE_PATH,
+        healthPort: d.WORKER_HEALTH_PORT,
     };
 }
 
