@@ -52,6 +52,7 @@ describe("MS-84 editor approval rule (FR-10.1, D.1–D.5)", () => {
         expect(checkModel({ ...m, prioritas: "-1", steps: [] })).toEqual({ prioritas: "Prioritas berupa bilangan bulat 0–1.000.000.", steps: "Aturan wajib memiliki sedikitnya satu langkah." });
         const step = { ...newStep(), approver: { type: "user" as const, role: "", user: null }, sla: "721", breach: "escalate" as const };
         expect(checkModel({ ...m, steps: [step], fallback: { type: "role", role: "", user: null } })).toEqual({ "steps.0.approver_user_id": "Pilih pengguna approver.", "steps.0.sla_hours": "SLA berupa bilangan bulat 1–720 jam.", "steps.0.escalate_to_user_id": "Pilih pengguna tujuan eskalasi.", "fallback_approver.approver_role": "Pilih role approver." });
+        expect(checkModel({ ...m, steps: [{ ...newStep(), sla: "0", approver: { type: "role", role: "R-02", user: null } }] })).toEqual({ "steps.0.sla_hours": "SLA berupa bilangan bulat 1–720 jam." });
         expect(checkModel({ ...m, kondisi: emptyGroup(), steps: [{ ...newStep(), approver: { type: "role", role: "R-02", user: null } }] })).toEqual({});
     });
     it("maps 422 INVALID_RULE_DEFINITION details to node paths, stripping the preview prefix", () => {
