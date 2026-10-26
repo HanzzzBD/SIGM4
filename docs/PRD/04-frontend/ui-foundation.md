@@ -91,4 +91,18 @@ Menyelesaikan kontradiksi antara FR-09.1 langkah 5 ("tanda tangan pada layar") d
 | DS-05 | Spesifikasi responsif untuk empat titik henti (30.6) | M1 |
 | DS-06 | Daftar periksa aksesibilitas per komponen | M1 |
 
+## 31.8 Antarmuka Web Visual-First
+
+Keputusan pemilik produk 26 Oktober 2026: antarmuka web untuk semua role mengikuti arah yang sama dengan mobile (`MOB-SCP-04`), yaitu visual lebih dulu dan teks seperlunya.
+
+| Kode | Requirement |
+|---|---|
+| WEB-VIS-01 | Seluruh halaman web mengutamakan visual dibanding paragraf, yaitu ikon modul, kartu, angka, grafik, dan status berikon (`UX-03`). Keterangan halaman dipindah ke bantuan yang dapat dibuka. Paragraf yang tampil memuat **paling banyak dua kalimat**, kecuali teks hukum/privasi (`DP-05a`) dan isi data milik pengguna |
+| WEB-VIS-02 | **Panduan muncul saat dibutuhkan**, tidak ditampilkan panjang sejak awal: contoh pengisian saat field difokuskan, validasi langsung setelah field disentuh, tooltip kontekstual pada ikon dan istilah, serta saran tindakan berikutnya |
+| WEB-VIS-03 | Saran tindakan pada `WEB-VIS-02` **hanya diturunkan dari business rule dan data yang sudah ada**, dan hanya tampil bila pengguna memiliki permission atas tindakan itu (`PM-04`). Saran tidak pernah menjadi sumber aturan baru |
+| WEB-VIS-04 | Halaman daftar entitas dapat ditampilkan sebagai **tabel atau kartu**. Filter, urutan, dan halaman berlaku sama pada kedua tampilan (`FR-04.2`) |
+| WEB-VIS-05 | Sidebar dan area konten **bergulir terpisah**; sidebar dapat diciutkan menjadi ikon saja tanpa kehilangan nama entri, yang tetap terbaca lewat tooltip dan pembaca layar (`NFR-AC-03`) |
+
+Bentuk visualnya ditetapkan [`docs/DESIGN/`](../../DESIGN/DESIGN-SYSTEM.md) (**DSD-13**, **DSD-14**).
+
 ---
