@@ -5,6 +5,8 @@ import { randomUUID } from "expo-crypto";
 import type { MaterialStocktakeItem, StocktakeItem, StocktakeNewFinding } from "@sigm4/schemas";
 import { useAuth } from "../auth";
 import { useResource } from "../../shared/api/useResource";
+import { ExportButtons } from "../../shared/export/ExportButtons";
+import { shareFromApi, shareFromUrl } from "../../shared/export/share";
 import { BottomSheet, Button, Card, Chips, DateField, EmptyState, EntityCard, Input, Label, MultiChips, Notice, ProgressRing, Screen, SectionHeading, StatusBadge, Toggle, tokens as t } from "../../shared/ui";
 import { dateWib } from "../../shared/wib";
 import { canApprove, finalizationBlockers, findingBody, itemActions, loadDifferences, loadFindings, loadMaterialDifferences, loadOptions, loadPhotos, loadSession, loadSessions, readyToSubmit, reconcileBody, reportUrl, sessionBody, sessionWrite } from "./manage";
@@ -110,6 +112,8 @@ export function ReconciliationScreen() {
             {editable && <Card><Label>{d.belum_dilengkapi} selisih dan {d.temuan_belum_dilengkapi} temuan belum lengkap; {d.foto_tertunda} foto belum siap.</Label><Button icon="send" title="Kirim ke Pimpinan" disabled={busy || !readyToSubmit(d)} onPress={() => { setNote(""); setDialog("submit"); }}/></Card>}
             {approval === "SELF" && <Notice tone="info" message="Pembuat dan pelaksana tidak dapat menyetujui sesinya sendiri."/>}
             {approval === "YES" && <View style={styles.row}><View style={styles.flex}><Button icon="checkCircle" title="Setujui" onPress={() => { setNote(""); setDialog("SETUJU"); }}/></View><View style={styles.flex}><Button icon="arrowLeft" title="Kembalikan" secondary onPress={() => { setNote(""); setDialog("TOLAK"); }}/></View></View>}
+            {d.finalized_at && <ExportButtons formats={["xlsx"]} label="Ekspor hasil" onExport={(format) => shareFromApi(api, `/audit-sessions/${id}/export`, {}, d.nomor, format)}/>}
+            {d.status === "SELESAI" && <Button icon="arrowRight" title="Simpan berita acara PDF" secondary onPress={() => { void reportUrl(api, id).then((u) => shareFromUrl(u, `berita-acara-${d.nomor}.pdf`)).catch((e: unknown) => setError(e instanceof Error ? e.message : "Berita acara belum dapat disimpan.")); }}/>}
             {d.status === "SELESAI" && <Button icon="fileText" title="Buka berita acara PDF" secondary onPress={() => { void reportUrl(api, id).then((u) => Linking.openURL(u)).catch((e: unknown) => setError(e instanceof Error ? e.message : "Berita acara belum dapat dibuka.")); }}/>}
             {d.status === "SELESAI" && d.report_status === "GAGAL" && can("audit.manage") && <Button icon="refresh" title="Buat ulang berita acara" secondary busy={busy} onPress={() => void write("report/retry")}/>}
             {!["SELESAI", "DIBATALKAN"].includes(d.status) && can("audit.manage") && state.session.user.role_kode === "R-01" && <Button icon="close" title="Batalkan sesi" secondary onPress={() => { setNote(""); setDialog("cancel"); }}/>}

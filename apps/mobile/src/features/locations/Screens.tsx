@@ -4,6 +4,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import type { RoomBlockPreview } from "@sigm4/schemas";
 import { useAuth } from "../auth";
 import { useResource } from "../../shared/api/useResource";
+import { ExportButtons } from "../../shared/export/ExportButtons";
+import { shareFromApi } from "../../shared/export/share";
 import { MobileApiError } from "../../shared/api/client";
 import { formatTime } from "../../shared/time";
 import { BottomSheet, Button, Card, Chips, DateField, EmptyState, EntityCard, Icon, Input, Label, MiniChart, MultiChips, Notice, Screen, SectionHeading, StatusBadge, Toggle, tokens as t } from "../../shared/ui";
@@ -115,6 +117,7 @@ export function RoomDetailScreen() {
         <View style={styles.row}>{can("asset.create") && <View style={styles.flex}><Button icon="plus" title="Tambah aset" onPress={() => router.push(`/aset/baru?ruangan=${id}` as "/scan")}/></View>}{can("location.manage") && r && <View style={styles.flex}><Button icon="settings" title="Ubah ruangan" secondary onPress={() => setEdit(true)}/></View>}</View>
         {can("asset.view") && <>
             {sum && <Card><View style={styles.row}><MiniChart kind="donut" values={Object.values(sum.per_kondisi)} summary={`${sum.total} aset: ${Object.entries(sum.per_kondisi).map(([k, v]) => `${KONDISI_LABEL[k]} ${v}`).join(", ")}`}/><View style={styles.flex}><Text style={styles.big}>{sum.total} aset</Text><Text style={styles.meta}>{sum.jumlah_dipinjam} dipinjam · {sum.jumlah_dalam_perbaikan} dalam perbaikan</Text></View></View></Card>}
+            {can("report.export") && <ExportButtons formats={["xlsx", "pdf"]} onExport={(format) => shareFromApi(api, `/rooms/${id}/assets/export`, { q: q || undefined, "filter[kondisi]": kondisi || undefined, format }, `inventaris-ruangan-${r?.kode ?? id}`, format)}/>}
             <Input icon="search" label="Cari aset di ruangan" value={q} onChangeText={(v) => { setQ(v); setPage(1); }}/>
             <Chips label="Kondisi" value={kondisi} options={[{ value: "", label: "Semua" }, ...Object.entries(KONDISI_LABEL).map(([value, label]) => ({ value, label }))]} onChange={(v) => { setKondisi(v); setPage(1); }}/>
             {assets.error && <Notice message={assets.error}/>}{assets.data?.data.assets.length === 0 && <EmptyState illustration="empty" title="Belum ada aset" description="Aset di ruangan ini akan tampil di sini."/>}
