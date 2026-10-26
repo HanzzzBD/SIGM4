@@ -77,3 +77,12 @@ describe("tautan web pengecualian", () => {
         expect(webUrl("https://sekolah.test", "//evil.test")).toBeNull();
     });
 });
+
+describe("Kembali dari fitur Menu yang berutekan di tab lain", () => {
+    it("Tabs follow tab history so Back returns to Menu instead of Beranda", async () => {
+        const { readFile } = await import("node:fs/promises");
+        const { join } = await import("node:path");
+        const layout = await readFile(join(__dirname, "../src/app/(tabs)/_layout.tsx"), "utf8");
+        expect(layout).toMatch(/<Tabs\s+backBehavior="history"/);
+    });
+});
