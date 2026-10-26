@@ -64,6 +64,8 @@ import {
     UpdateProfilBodySchema,
     UpdateProfilResponseSchema,
 } from "./schemas/profile.schema.js";
+import { ListToursResponseSchema, TourParamsSchema, UpdateTourBodySchema, UpdateTourResponseSchema } from "./schemas/tour.schema.js";
+import { listToursHandler, updateTourHandler } from "./controllers/tour.controller.js";
 import {
     EnrollBodySchema,
     EnrollConfirmBodySchema,
@@ -81,6 +83,7 @@ import { ProfileService } from "./services/profile.service.js";
 import type { PengelolaFotoProfil } from "./services/profile.service.js";
 import { SessionService } from "./services/session.service.js";
 import type { PenyimpanTantangan } from "./services/tantangan-dua-faktor.js";
+import { TourService } from "./services/tour.service.js";
 import { TwoFactorService } from "./services/two-factor.service.js";
 
 /** Pemilik katalog endpoint M-01 (m01-auth.md §7). */
@@ -308,6 +311,30 @@ export const perbaruiProfilRoute = defineRoute({
     response: UpdateProfilResponseSchema,
 });
 
+/** Tur produk berbasis role: tur mana yang sudah selesai/dilewati pemanggil (keputusan 26 Oktober 2026). */
+export const listToursRoute = defineRoute({
+    method: "GET",
+    path: "/me/tours",
+    authenticated: true,
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Progres tur produk saya",
+    response: ListToursResponseSchema,
+});
+
+/** Dicatat saat tur selesai atau dilewati, bukan per langkah (AL-01). */
+export const updateTourRoute = defineRoute({
+    method: "PUT",
+    path: "/me/tours/:kunci",
+    authenticated: true,
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Tandai tur produk selesai atau dilewati",
+    params: TourParamsSchema,
+    body: UpdateTourBodySchema,
+    response: UpdateTourResponseSchema,
+});
+
 /** FR-01.4 langkah 2-4: mencabut sesi lain; `successStatus` eksplisit karena PRD menetapkan `200`. */
 export const gantiPasswordRoute = defineRoute({
     method: "POST",
@@ -361,6 +388,7 @@ export function authRouter(
     const sesi = new SessionService(deps.db, deps.auditLogger, deps.clock);
     const reset = new PasswordResetService(deps.db, deps.auditLogger, deps.clock, deps.logger);
     const profil = new ProfileService(deps.db, deps.jwtKeys, deps.permissionCache, deps.auditLogger, deps.clock, deps.fotoProfil);
+    const tur = new TourService(deps.db, deps.auditLogger, deps.clock);
     const router = express.Router();
     router.get(statusDuaFaktorRoute.path, batasi(statusDuaFaktorRoute), terautentikasi(), statusDuaFaktorHandler(duaFaktor));
     router.post(loginRoute.path, batasi(loginRoute), loginHandler(service));
@@ -390,6 +418,8 @@ export function authRouter(
     router.get(lihatProfilRoute.path, batasi(lihatProfilRoute), terautentikasi(), lihatProfilHandler(profil));
     router.put(perbaruiProfilRoute.path, batasi(perbaruiProfilRoute), terautentikasi(), perbaruiProfilHandler(profil));
     router.post(gantiPasswordRoute.path, batasi(gantiPasswordRoute), terautentikasi(), gantiPasswordHandler(profil));
+    router.get(listToursRoute.path, batasi(listToursRoute), terautentikasi(), listToursHandler(tur));
+    router.put(updateTourRoute.path, batasi(updateTourRoute), terautentikasi(), updateTourHandler(tur));
     return router;
 }
 
