@@ -243,6 +243,7 @@ APP_BASE_URL, TZ=UTC
 
 # Opsional dengan bawaan
 LOG_LEVEL=info, DB_POOL_SIZE=<TBD-AVL-C>, CHAT_ENABLED=false
+WORKER_HEALTH_PORT=3000   (worker saja, SDD-SYS-08: port /health. Ubah HANYA bila api & worker berbagi satu host pengembangan; container dan healthcheck deploy memakai 3000)
 
 # Opsional tanpa bawaan — kosong berarti fitur dilewati, bukan startup gagal
 FCM_CREDENTIALS   (keputusan 80a, SDD-08 §4.4a: push dilewati, `fcm` di /health tidak memengaruhi `ready`)

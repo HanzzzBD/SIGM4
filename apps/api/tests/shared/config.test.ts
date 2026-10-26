@@ -318,6 +318,27 @@ describe("readWorkerConfig — TOTP_ENCRYPTION_KEY masuk skema worker (SDD-SESS-
     });
 });
 
+describe("readWorkerConfig — WORKER_HEALTH_PORT (SDD-SYS-08)", () => {
+    const SAH_WORKER = { ...SAH, ...S3_DAN_AV, TOTP_ENCRYPTION_KEY: KUNCI_TOTP };
+
+    it("bawaan 3000 sama dengan EXPOSE image dan healthcheck deploy bila tidak diisi", () => {
+        expect(readWorkerConfig(SAH_WORKER, "UTC").healthPort).toBe(3000);
+        expect(readWorkerConfig({ ...SAH_WORKER, WORKER_HEALTH_PORT: " " }, "UTC").healthPort).toBe(3000);
+    });
+
+    it("dapat dipindah agar api dan worker berjalan di satu host lokal", () => {
+        expect(readWorkerConfig({ ...SAH_WORKER, WORKER_HEALTH_PORT: "3001" }, "UTC").healthPort).toBe(3001);
+    });
+
+    it("nilai bukan port ditolak saat startup", () => {
+        for (const v of ["abc", "0", "65536", "30.5", "-1"]) {
+            expect(masalahDari(() => readWorkerConfig({ ...SAH_WORKER, WORKER_HEALTH_PORT: v }, "UTC"))).toEqual([
+                "Variabel lingkungan WORKER_HEALTH_PORT harus bilangan bulat 1–65535 (SDD-SYS-08).",
+            ]);
+        }
+    });
+});
+
 describe("CLAMAV_URL — wajib bagi API dan worker (SDD-FS-04; PR-03-05, keputusan 8a)", () => {
     const SAH_WORKER = { ...SAH, ...S3_DAN_AV, TOTP_ENCRYPTION_KEY: KUNCI_TOTP };
 

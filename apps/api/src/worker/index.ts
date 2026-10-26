@@ -86,9 +86,6 @@ import { CRON_AKTIVASI_SLOT, CRON_KEDALUWARSA_SLOT, PEKERJAAN_AKTIVASI_SLOT, PEK
 import { PEKERJAAN_KELULUSAN, jalankanKelulusan } from "./student-graduation.js";
 import { BATAS_DRAIN_WORKER_MS, langkahHentiWorker } from "./shutdown.js";
 
-/** Port container — `EXPOSE 3000` pada image bersama (SDD-16 §4.1, SDD-INF-01). */
-const HEALTH_PORT = 3000;
-
 /** Job push per notifikasi (FR-17.2, SDD-08 §4.4a, keputusan 80c). */
 export const NAMA_PEKERJAAN_PUSH = "notification-push";
 /** `jobId` tetap per notifikasi — event yang diulang tidak menggandakan push. */
@@ -416,7 +413,8 @@ export async function bootstrap(
         // OBS-06: dilaporkan, tidak menentukan `ready` (keputusan 80a).
         fcmCheck(config.fcm),
     );
-    const healthServer = createHealthServer(health).listen(HEALTH_PORT);
+    // Bawaan 3000 = `EXPOSE` image bersama (SDD-INF-01); `WORKER_HEALTH_PORT` hanya untuk api & worker satu host lokal.
+    const healthServer = createHealthServer(health).listen(config.healthPort);
     const queue = createQueue(connection);
     pasangHandlerAntrean(eventHandlers, queue);
     antreanPush = queue;
