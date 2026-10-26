@@ -376,9 +376,9 @@ Ketentuan umum kanal, latensi, dan preferensi: [`m17-notifications.md`](m17-noti
 
 | Kode | Domain | Deskripsi singkat | Role bawaan pemilik |
 |---|---|---|---|
-| `material.view` | Bahan | Melihat bahan, saldo, dan kartu stok | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa(`restricted`, `BR-091a`) |
+| `material.view` | Bahan | Melihat bahan, saldo, dan kartu stok | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa(`restricted`) |
 | `material.manage` | Bahan | Kelola master bahan & kategori bahan | Admin, Petugas |
-| `material.request` | Bahan | Mengajukan & membatalkan permintaan bahan | Admin, Petugas, Teknisi, Guru, Staf, Siswa(`restricted`, `BR-086a`) |
+| `material.request` | Bahan | Mengajukan & membatalkan permintaan bahan | Admin, Petugas, Teknisi, Guru, Staf, Siswa(`restricted`) |
 | `material.receive` | Bahan | Mencatat penerimaan bahan | Admin, Petugas |
 | `material.issue` | Bahan | Menyerahkan bahan kepada pemohon | Admin, Petugas |
 | `material.adjust` | Bahan | Menyesuaikan saldo dengan alasan | Admin, Petugas |

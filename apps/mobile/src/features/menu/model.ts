@@ -23,7 +23,7 @@ const e = (id: string, label: string, icon: IconName, ...permission: string[]): 
 /** UX §5.3 — urutan tetap untuk semua role; ikon modul FOUNDATIONS §8 (DSD-12). */
 export const MENU: readonly MenuGroup[] = [
     { group: "ASET_BAHAN", label: "Aset & Bahan", entries: [
-        e("MS-33", "Inventaris Aset", "package", "asset.view"), e("MS-36", "Kategori Aset", "tags", "category.manage"), e("MS-40", "Bahan", "boxes", "material.view"),
+        e("MS-33", "Inventaris Aset", "package", "asset.view"), e("MS-36", "Kategori Aset", "tags", "category.manage"), e("MS-40", "Bahan", "boxes", "material.view:penuh"),
         e("MS-43", "Kategori Bahan", "folderTree", "material.manage"), e("MS-37", "Lokasi", "mapPin", "location.view"),
         { ...e("P-24", "Label QR", "qrCode", "asset.qr_print"), web: { path: "/label-qr", reason: "Cetak label QR memerlukan printer, sehingga hanya tersedia di web sekolah." } },
         e("MS-39", "Dokumen Aset", "fileText", "asset_document.view"), e("MS-07", "Scan QR", "scanLine", "asset.view", "material.view"),
@@ -53,7 +53,8 @@ export const MENU: readonly MenuGroup[] = [
 export type VisibleEntry = MenuEntry & { readonly path: string };
 /** Grup berisi entri yang boleh dirender; grup kosong ikut hilang (UXD-01). */
 export function visibleMenu(permissions: Readonly<Record<string, string>>, registered: Readonly<Record<string, string>> = REGISTERED_SCREENS): readonly (Omit<MenuGroup, "entries"> & { entries: readonly VisibleEntry[] })[] {
-    const can = (list: readonly string[]) => list.some((permission) => Object.hasOwn(permissions, permission));
+    // Sufiks `:penuh` = scope selain restricted — master Bahan MS-40 tidak tampil bagi Siswa/OSIS (BR-091a).
+    const can = (list: readonly string[]) => list.some((permission) => { const [code = "", rule] = permission.split(":"); return Object.hasOwn(permissions, code) && (rule !== "penuh" || permissions[code] !== "restricted"); });
     const pick = (entry: MenuEntry): VisibleEntry | null => {
         if (entry.web) return can(entry.permission) ? { ...entry, path: entry.web.path } : null;
         const target = [{ id: entry.id, permission: entry.permission }, ...(entry.alternatives ?? [])].find((option) => registered[option.id] !== undefined && can(option.permission));

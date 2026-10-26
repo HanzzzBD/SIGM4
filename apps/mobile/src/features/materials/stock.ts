@@ -24,11 +24,11 @@ export const closeRequest = async (api: AxiosInstance, id: string, alasan: strin
 export const TX_LABEL = { PENERIMAAN: "Penerimaan", PENGELUARAN: "Penyerahan", PENYESUAIAN: "Penyesuaian", OPNAME: "Opname" } as const;
 export const TX_TONE: Readonly<Record<keyof typeof TX_LABEL, StatusTone>> = { PENERIMAAN: "success", PENGELUARAN: "info", PENYESUAIAN: "warning", OPNAME: "pending" };
 
-export interface MaterialForm { nama: string; category: string; unit: string; minimum: string; room: string; note: string; active: boolean }
-export const formFromMaterial = (m: MaterialDetail): MaterialForm => ({ nama: m.nama, category: m.kategori.id, unit: m.satuan.id, minimum: String(m.stok_minimum), room: m.lokasi_bawaan.id, note: m.keterangan ?? "", active: m.status === "AKTIF" });
+export interface MaterialForm { nama: string; category: string; unit: string; minimum: string; room: string; note: string; active: boolean; students: boolean }
+export const formFromMaterial = (m: MaterialDetail): MaterialForm => ({ nama: m.nama, category: m.kategori.id, unit: m.satuan.id, minimum: String(m.stok_minimum ?? 0), room: m.lokasi_bawaan.id, note: m.keterangan ?? "", active: m.status === "AKTIF", students: m.boleh_diminta_siswa });
 /** FR-22.1: master bahan tanpa saldo; satuan terkunci setelah ada transaksi (tidak dikirim). */
 export function materialBody(f: MaterialForm, edit: { lockedUnit: boolean } | null): { body: unknown } | { error: string } {
-    const body = { nama: f.nama, material_category_id: Number(f.category), ...(edit?.lockedUnit ? {} : { satuan_id: Number(f.unit) }), stok_minimum: Number(f.minimum), room_id_default: Number(f.room), keterangan: f.note.trim() || null, status: f.active ? "AKTIF" : "NONAKTIF" };
+    const body = { nama: f.nama, material_category_id: Number(f.category), ...(edit?.lockedUnit ? {} : { satuan_id: Number(f.unit) }), stok_minimum: Number(f.minimum), room_id_default: Number(f.room), boleh_diminta_siswa: f.students, keterangan: f.note.trim() || null, status: f.active ? "AKTIF" : "NONAKTIF" };
     const parsed = edit ? MaterialPatchSchema.safeParse(body) : MaterialBodySchema.safeParse(body);
     return parsed.success ? { body: parsed.data } : { error: parsed.error.issues[0]?.message ?? "Lengkapi data bahan." };
 }
@@ -48,7 +48,7 @@ export const categoryBody = (f: { nama: string; kode: string; note: string; acti
 
 /** FR-22.5: hanya baris dengan sisa disetujui; jumlah ≤ min(sisa, saldo kini); baris nol tidak dikirim. */
 export const issuable = (d: MaterialRequestDetail) => d.items.filter((i) => (i.jumlah_disetujui ?? 0) > i.jumlah_diserahkan);
-export const issueLimit = (i: MaterialRequestDetail["items"][number]) => Math.min((i.jumlah_disetujui ?? 0) - i.jumlah_diserahkan, i.saldo_terkini);
+export const issueLimit = (i: MaterialRequestDetail["items"][number]) => Math.min((i.jumlah_disetujui ?? 0) - i.jumlah_diserahkan, i.saldo_terkini ?? 0);
 export function issueBody(d: MaterialRequestDetail, input: { name: string; date: string; note: string; qty: Readonly<Record<string, string>> }): { body: unknown } | { error: string } {
     const rows = issuable(d).filter((i) => Number(input.qty[i.id] ?? 0) > 0);
     const over = rows.find((i) => Number(input.qty[i.id]) > issueLimit(i));

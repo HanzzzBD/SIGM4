@@ -217,9 +217,9 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 | `disposal.approve` | Penghapusan | Menyetujui penghapusan | Pimpinan |
 | `disposal.execute` | Penghapusan | Mencatat pelaksanaan & menghapuskan | Admin, Petugas |
 | `disposal.reinstate` 🔒 | Penghapusan | Memulihkan aset terhapus | Admin |
-| `material.view` | Bahan | Melihat bahan, saldo, dan kartu stok | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa(`restricted`, `BR-091a`) |
+| `material.view` | Bahan | Melihat bahan, saldo, dan kartu stok | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa(`restricted`) |
 | `material.manage` | Bahan | Kelola master bahan & kategori bahan | Admin, Petugas |
-| `material.request` | Bahan | Mengajukan & membatalkan permintaan bahan | Admin, Petugas, Teknisi, Guru, Staf, Siswa(`restricted`, `BR-086a`) |
+| `material.request` | Bahan | Mengajukan & membatalkan permintaan bahan | Admin, Petugas, Teknisi, Guru, Staf, Siswa(`restricted`) |
 | `material.receive` | Bahan | Mencatat penerimaan bahan | Admin, Petugas |
 | `material.issue` | Bahan | Menyerahkan bahan kepada pemohon | Admin, Petugas |
 | `material.adjust` | Bahan | Menyesuaikan saldo dengan alasan wajib | Admin, Petugas |

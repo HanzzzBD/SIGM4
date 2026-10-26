@@ -41,7 +41,7 @@ export function MaterialListScreen() {
 /** MS-41 — padanan P-81: master bahan tanpa saldo awal; satuan terkunci setelah ada transaksi (FR-22.1). */
 export function MaterialFormScreen() {
     const { id } = useLocalSearchParams<{ id?: string }>(); const editing = id !== undefined; const { api } = useAuth(); const { can, account } = usePerms(); const permitted = can("material.manage") && (!editing || /^[1-9]\d*$/.test(id));
-    const [form, setForm] = useState<MaterialForm | null>(editing ? null : { nama: "", category: "", unit: "", minimum: "0", room: "", note: "", active: true });
+    const [form, setForm] = useState<MaterialForm | null>(editing ? null : { nama: "", category: "", unit: "", minimum: "0", room: "", note: "", active: true, students: false });
     const detail = useResource(`${account}:material-edit:${id ?? ""}`, useCallback(async (s: AbortSignal) => { if (!editing || !permitted) return null; const m = await loadMaterial(api, id!, s); setForm((f) => f ?? formFromMaterial(m)); return m; }, [api, id, editing, permitted]));
     const opts = useResource(`${account}:material-options`, useCallback((s: AbortSignal) => permitted ? loadOptions(api, s) : Promise.resolve(null), [api, permitted]));
     const [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null), key = useKey();
@@ -57,6 +57,7 @@ export function MaterialFormScreen() {
         <Input label="Stok minimum" value={form.minimum} keyboardType="number-pad" onChangeText={(v) => set({ minimum: v.replace(/\D/g, "") })}/>
         <Chips label="Lokasi penyimpanan bawaan" value={form.room} options={opts.data.rooms.filter((r) => r.aktif || r.id === form.room).map((r) => ({ value: r.id, label: r.nama }))} onChange={(v) => set({ room: v })}/>
         <Input label="Keterangan (opsional)" value={form.note} multiline maxLength={2000} onChangeText={(v) => set({ note: v })}/>
+        <Toggle label="Boleh diminta siswa" value={form.students} onChange={(v) => set({ students: v })}/>
         {editing && <Toggle label="Bahan aktif" value={form.active} onChange={(v) => set({ active: v })}/>}
     </Screen>;
 }

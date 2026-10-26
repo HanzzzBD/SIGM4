@@ -168,6 +168,8 @@ const MATERIAL_FIELDS = {
 };
 ```
 
+**Pengecualian Siswa/OSIS (`BR-091a`, PR-07-52).** Pemegang `material.view` berscope `restricted` hanya menjangkau bahan aktif bertanda `boleh_diminta_siswa` di repository, dan serializer mengganti `saldo_total`/`stok_minimum` dengan `null` serta mengirim `status_stok` (Tersedia/Terbatas/Habis); saldo per lokasi, kartu stok, dan `saldo_terkini` permintaan tidak dikirim. Ini penyaringan *kuantitas*, bukan finansial — penerapan `SDD-AUTH-06` yang sama.
+
 Yang tetap dijaga adalah **scope baris** pada permintaan bahan: pemohon hanya melihat permintaannya sendiri kecuali memiliki scope `all`. Scope itu dibaca dari **`material.request`**, bukan dari `material.view`: Bab 18 memberi Teknisi, Guru, dan Staf 🔍 — bukan 🟡 — pada saldo dan kartu stok, sehingga `material.view` mereka ber-scope `all` (§4.8). Pemegang `material.view` tanpa `material.request` (Pimpinan) melihat seluruh permintaan secara baca.
 
 ```ts
@@ -276,7 +278,7 @@ Baris yang kolomnya **bukan** daftar role, atau yang Bab 18-nya bertanda 🟡 ta
 | `damage.create` | Semua role | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa | Bab 18 "Laporan Kerusakan — buat" |
 | `damage.view` | Semua (scope berbeda) | Admin, Petugas, Pimpinan, Teknisi(`own`), Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Laporan Kerusakan — lihat semua"; Teknisi `own` — kerusakan pada work order-nya terlihat lewat `workorder.view` |
 | `procurement.approve` | Sesuai approval rules | Admin, Petugas, Pimpinan | Bab 18 "Pengadaan — setujui" |
-| `material.request` | Admin, Petugas, Teknisi, Guru, Staf | Admin, Petugas, Teknisi(`own`), Guru(`own`), Staf(`own`) | `BR-074`; §4.3 |
+| `material.request` | Admin, Petugas, Teknisi, Guru, Staf, Siswa(`restricted`) | Admin, Petugas, Teknisi(`own`), Guru(`own`), Staf(`own`), Siswa(`restricted`) | `BR-074`, `BR-086a`; §4.3 |
 | `dashboard.view` | Semua role | Admin, Petugas, Pimpinan, Teknisi(`own`), Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Dashboard" 🟡 |
 | `notification.manage_own` | Semua role | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa | Bab 18 "Notifikasi pribadi" |
 | `chat.use` | Semua role (Siswa `restricted`) | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa(`restricted`) | Bab 18 "Chatbot AI" |
