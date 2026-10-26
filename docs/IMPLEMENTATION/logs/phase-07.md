@@ -25,6 +25,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 | 25 Oktober 2026 | Paket 3 (#188) tergabung. Paket 4 Perawatan & Opname di `feature/PR-07-27-perawatan-opname-mobile`: commit `PR-07-27`, `PR-07-28`, `PR-07-29`, ditambah satu commit `PR-07-27` yang memperketat uji setelah satu mutan lolos. Satu putaran `AskUserQuestion` menghasilkan keputusan 17–19. | `PR-07-27`, `28`, `29` |
 | 26 Oktober 2026 | Paket 4 (#189) tergabung. Paket 5 Pengadaan & Penghapusan di `feature/PR-07-22-pengadaan-penghapusan-mobile`: commit `PR-07-22`, `PR-07-30`. Satu putaran `AskUserQuestion` menghasilkan keputusan 20–23. | `PR-07-22`, `PR-07-30` |
 | 26 Oktober 2026 | Paket 5 (#190) tergabung. Paket 6 Pimpinan & Admin di `feature/PR-07-31-pimpinan-admin-mobile`: commit dependensi + versi, lalu `PR-07-31`…`PR-07-35`, ditambah satu commit uji `PR-07-33` setelah satu mutan lolos. Satu putaran `AskUserQuestion` menghasilkan keputusan 24–27. Seluruh 20 PR paritas mobile `PR-07-16`…`35` kini terimplementasi. | `PR-07-31`…`35` |
+| 26 Oktober 2026 | Pemilik produk meminta **tur produk interaktif berbasis role** di web dan mobile, sebelum paket web visual-first, dan **tanpa dokumen** (aturan "requirement lahir di docs dulu" dikesampingkan pemilik produk untuk fitur ini). Dua putaran `AskUserQuestion`: progres per akun di server (`product_tour_progress`, migration `0075` expand; `GET/PUT /me/tours`, `authenticated`); tur otomatis saat login pertama + putar ulang (menu akun web, Menu mobile) + mini-tur halaman inti + tombol bantuan (?); pustaka `driver.js` 1.9.0 (web; 1.10.x belum berumur dua minggu) dan `react-native-copilot` 3.3.3 (mobile, JS murni — tanpa build ulang binari); activity log `PRODUCT_TOUR_COMPLETED`/`SKIPPED` hanya saat selesai/dilewati (AL-01). Cabang `feature/tur-produk-role`. | — (tanpa ID PR) |
 
 ## 2. Keputusan yang diambil
 
@@ -89,6 +90,7 @@ PR yang tidak ada pada daftar [`phase-07.md` §7](../phases/phase-07.md).
 
 | ID | Judul | Mengapa tidak terencana |
 |---|---|---|
+| `feature/tur-produk-role` | Tur produk interaktif berbasis role, web + mobile | Permintaan pemilik produk 26 Oktober 2026 tanpa ID PRD/UX; pemilik produk memilih tanpa dokumen. Narasi tur dipilih dari role, tetapi langkahnya tetap tersaring permission `/me`. `react-native-copilot` menarik `@changesets/cli` sebagai dependensi produksi (+968 baris lockfile, tidak ter-bundle, tanpa kerentanan baru) |
 | `chore/worker-health-port` | Port `/health` worker dapat diatur `WORKER_HEALTH_PORT` (bawaan 3000) | API dan worker sama-sama memakai port 3000 yang ditulis langsung; saat uji lokal mobile + web pemilik produk, keduanya tidak dapat berjalan di satu laptop sehingga unggahan, ekspor, berita acara, dan notifikasi tidak dapat diuji. Produksi tidak berubah |
 | `PR-07-15`…`PR-07-35` | Paritas mobile seluruh role + mobile visual-first | Rencana awal mengikuti `UX-01`/UX §6.3: mobile hanya alur lapangan. Permintaan baru pemilik produk setelah uji lokal mobile; tidak ada phase yang memiliki pekerjaan ini |
 
