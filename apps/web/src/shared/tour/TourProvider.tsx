@@ -1,6 +1,5 @@
-// Penggerak tur produk web (driver.js). Tur utama per role diputar otomatis sekali setelah
-// login pertama; mini-tur halaman inti diputar otomatis saat halamannya pertama kali dibuka,
-// setelah tur utama tuntas. Keduanya dapat diputar ulang dari menu akun dan tombol bantuan.
+// Penggerak tur produk web (driver.js). Pengenalan berbasis role diputar otomatis sekali setelah
+// login pertama; panduan halaman hanya diputar saat pengguna menekan tombol bantuan.
 // Progres disimpan di server per akun (`/me/tours`) saat tur selesai atau dilewati.
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -17,10 +16,7 @@ import { VERSI_TUR, turHalaman, turUtama } from "./katalog";
 import type { LangkahTur, Tur } from "./katalog";
 import "./tour.css";
 
-/**
- * Jeda sebelum tur otomatis: konten halaman dimuat asinkron, dan langkah yang elemennya belum
- * dirender akan dilewati. Tur yang diputar pengguna sendiri tidak menunggu.
- */
+/** Jeda agar navigasi dan konten utama siap sebelum pengenalan otomatis dimulai. */
 const JEDA_OTOMATIS_MS = 1200;
 
 interface KendaliTur {
@@ -31,11 +27,16 @@ interface KendaliTur {
 
 const KonteksTur = createContext<KendaliTur | null>(null);
 
-/** Elemen pertama yang cocok DAN terlihat; elemen tersembunyi (drawer tertutup, layar sempit) dilewati. */
+/** Elemen pertama yang benar-benar terlihat; drawer tertutup dan elemen nol ukuran dilewati. */
 function cariElemen(selektor: readonly string[]): Element | null {
     for (const s of selektor) {
         const el = document.querySelector(s);
-        if (el !== null && el.getClientRects().length > 0) return el;
+        if (el === null) continue;
+        const rect = el.getBoundingClientRect();
+        const style = window.getComputedStyle(el);
+        const adaUkuran = rect.width > 0 && rect.height > 0;
+        const dalamViewport = rect.bottom > 0 && rect.right > 0 && rect.top < window.innerHeight && rect.left < window.innerWidth;
+        if (adaUkuran && dalamViewport && style.visibility !== "hidden" && style.display !== "none" && style.opacity !== "0") return el;
     }
     return null;
 }
@@ -44,7 +45,7 @@ function susunLangkah(langkah: readonly LangkahTur[]) {
     return langkah.flatMap((l) => {
         if (l.elemen === undefined) return [{ popover: { title: l.judul, description: l.isi } }];
         const el = cariElemen(l.elemen);
-        return el === null ? [] : [{ element: el, popover: { title: l.judul, description: l.isi } }];
+        return el === null ? [] : [{ element: el, popover: { title: l.judul, description: l.isi, ...(l.sisi ? { side: l.sisi } : {}), ...(l.rata ? { align: l.rata } : {}) } }];
     });
 }
 
@@ -90,6 +91,8 @@ export function TourProvider({ children }: { readonly children: ReactNode }) {
                 steps: langkah,
                 showProgress: true,
                 progressText: "{{current}} dari {{total}}",
+                allowScroll: true,
+                smoothScroll: true,
                 nextBtnText: "Lanjut",
                 prevBtnText: "Kembali",
                 doneBtnText: "Selesai",
@@ -107,18 +110,13 @@ export function TourProvider({ children }: { readonly children: ReactNode }) {
         [akhiri],
     );
 
-    // Tur otomatis: utama lebih dulu; mini-tur halaman hanya setelah tur utama tuntas.
+    // Hanya pengenalan berbasis role yang berjalan otomatis; panduan halaman tetap atas permintaan.
     useEffect(() => {
         if (!progres.isSuccess) return;
-        const sasaran = perluDiputar(progres.data, utama.kunci, VERSI_TUR)
-            ? utama
-            : halaman !== undefined && perluDiputar(progres.data, halaman.kunci, VERSI_TUR)
-              ? halaman
-              : undefined;
-        if (sasaran === undefined) return;
-        const t = window.setTimeout(() => putar(sasaran), JEDA_OTOMATIS_MS);
+        if (!perluDiputar(progres.data, utama.kunci, VERSI_TUR)) return;
+        const t = window.setTimeout(() => putar(utama), JEDA_OTOMATIS_MS);
         return () => window.clearTimeout(t);
-    }, [progres.isSuccess, progres.data, utama, halaman, putar]);
+    }, [progres.isSuccess, progres.data, utama, putar]);
 
     // Pindah halaman menutup tur yang masih berjalan (tercatat dilewati).
     useEffect(() => () => akhiri("DILEWATI"), [path, akhiri]);

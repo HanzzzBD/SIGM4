@@ -31,7 +31,7 @@ export function MenuScreen() {
             <View style={styles.identity}><Text numberOfLines={1} style={styles.name}>{user.nama}</Text><Text numberOfLines={1} style={styles.role}>{roleLabel(user.role_kode)}</Text></View>
             <Icon name="chevronRight" color={t.color.muted}/>
         </Pressable>
-        {restartTour && <Button secondary icon="help" title="Tur Aplikasi" onPress={restartTour}/>}
+        {restartTour && <Button secondary icon="help" title="Pengenalan SIGM4" onPress={restartTour}/>}
         <Input icon="search" label="Cari modul" value={query} onChangeText={setQuery} placeholder="Contoh: reservasi" autoCorrect={false}/>
         {groups.length === 0 && <EmptyState illustration="empty" title="Modul tidak ditemukan" description="Coba kata lain atau periksa ejaan."/>}
         {groups.map((group) => <View key={group.group} style={styles.group}>

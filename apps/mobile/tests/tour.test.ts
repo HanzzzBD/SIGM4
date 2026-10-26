@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { REGISTERED_SCREENS } from "../src/shared/screens";
-import { PAGE_TOURS, TOUR_VERSION, mainTourCopy, mainTourKey, needsTour, shouldAutoRunPage } from "../src/features/tour/catalog";
+import { PAGE_TOURS, TOUR_VERSION, mainTourCopy, mainTourKey, needsTour } from "../src/features/tour/catalog";
 
 // Tur produk berbasis role (keputusan pemilik produk 26 Oktober 2026).
 const ROLES = ["R-01", "R-02", "R-03", "R-04", "R-05", "R-06", "R-07"];
@@ -23,9 +23,9 @@ describe("katalog tur mobile", () => {
     it("narasi mengikuti role; role kustom mendapat narasi umum", () => {
         expect(mainTourCopy("R-02", "Budi Petugas").home.text).toContain("Petugas Sarana Prasarana");
         expect(mainTourCopy("R-02", "Budi Petugas").home.title).toBe("Selamat datang, Budi!");
-        expect(mainTourCopy("R-04", "T").tasks.text).toContain("Work order");
+        expect(mainTourCopy("R-04", "T").tasks.text).toContain("work order");
         expect(mainTourCopy("R-07", "S").menu.text).toContain("Denda");
-        expect(mainTourCopy("R-99", "X").home.text).toContain("peran pengguna");
+        expect(mainTourCopy("R-99", "X").home.text).toContain("untuk pengguna");
     });
 
     it("MOB-SCP-04: setiap teks tur paling banyak dua kalimat", () => {
@@ -34,7 +34,7 @@ describe("katalog tur mobile", () => {
     });
 });
 
-describe("kapan tur diputar otomatis", () => {
+describe("pengenalan role otomatis", () => {
     const main = mainTourKey("R-07");
     const done = (kunci: string, versi = TOUR_VERSION) => ({ kunci, status: "SELESAI" as const, versi });
 
@@ -44,11 +44,4 @@ describe("kapan tur diputar otomatis", () => {
         expect(needsTour([done(main)], main)).toBe(false);
     });
 
-    it("mini-tur menunggu tur utama tuntas dan progres termuat", () => {
-        const page = "mobile.halaman.inventaris";
-        expect(shouldAutoRunPage(null, main, page)).toBe(false);
-        expect(shouldAutoRunPage([], main, page)).toBe(false);
-        expect(shouldAutoRunPage([done(main)], main, page)).toBe(true);
-        expect(shouldAutoRunPage([done(main), done(page)], main, page)).toBe(false);
-    });
 });

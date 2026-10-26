@@ -18,7 +18,7 @@ export function CountBadge({ count, style }: { count: number; style?: object }) 
 }
 
 /** C-30 — satu baris: kembali/ikon modul · judul · info · lonceng (UXD-21). */
-/** `onHelp` memutar mini-tur layar ini bila katalog tur memilikinya. */
+/** `onHelp` memutar panduan layar sesuai permintaan bila katalog memilikinya. */
 export function Header({ title, icon, onBack, onInfo, onHelp, collapsed = false }: { title: string; icon?: IconName; onBack?: () => void; onInfo?: () => void; onHelp?: () => void; collapsed?: boolean }) {
     const chrome = useChrome();
     return <View style={[styles.bar, collapsed && styles.collapsed]}>

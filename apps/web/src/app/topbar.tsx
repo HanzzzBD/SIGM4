@@ -108,7 +108,7 @@ export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; rea
                             )}
                             <Menu.Item className={ITEM} onSelect={tur.mulaiUtama}>
                                 <Ikon nama="bantuan" />
-                                Tur Aplikasi
+                                Pengenalan SIGM4
                             </Menu.Item>
                             <Menu.Item className={ITEM} onSelect={() => void keluar(false)}>
                                 <Ikon nama="keluar" />

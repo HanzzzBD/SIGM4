@@ -1,13 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useAuth } from "../auth";
 import { TourChromeProvider, TourScope, TourTarget, useTourControl } from "../../shared/ui";
 import type { TourChrome, TourCopy, TourStatus } from "../../shared/ui";
 import { loadTourProgress, saveTourProgress } from "./api";
-import { MAIN_STEP_ORDER, TOUR_VERSION, mainTourCopy, mainTourKey, needsTour, pageTourFor, shouldAutoRunPage } from "./catalog";
+import { MAIN_STEP_ORDER, TOUR_VERSION, mainTourCopy, mainTourKey, needsTour, pageTourFor } from "./catalog";
 import type { MainStep, TourProgress } from "./catalog";
 
-/** Jeda tur otomatis: tab dan Beranda perlu selesai diukur sebelum disorot. */
+/** Jeda pengenalan otomatis: tab dan Beranda perlu selesai diukur sebelum disorot. */
 const AUTO_TOUR_DELAY_MS = 1200;
 
 interface TourState {
@@ -42,19 +42,23 @@ export function TourRoot({ children }: { children: ReactNode }) {
         setProgress((p) => [...(p ?? []).filter((x) => x.kunci !== key), { kunci: key, status, versi: TOUR_VERSION }]);
         void saveTourProgress(api, key, status, TOUR_VERSION).catch(() => undefined);
     }, [api]);
-    const chrome = useMemo<TourChrome>(() => ({ pageTour: pageTourFor, shouldAutoRun: (key) => shouldAutoRunPage(progress, mainKey, key), finish }), [progress, mainKey, finish]);
+    const chrome = useMemo<TourChrome>(() => ({ pageTour: pageTourFor, finish }), [finish]);
     const value = useMemo<TourState>(() => ({ progress, mainKey, copy: session ? mainTourCopy(role, name) : null, replay, finish, restartMain: () => setReplay((n) => n + 1) }), [progress, mainKey, session, role, name, replay, finish]);
     return <Context.Provider value={value}><TourChromeProvider value={session ? chrome : null}>{children}</TourChromeProvider></Context.Provider>;
 }
 
 function MainAuto() {
-    const ctx = useContext(Context); const { start } = useTourControl();
+    const ctx = useContext(Context); const { start, visible } = useTourControl();
     const needed = ctx?.progress != null && needsTour(ctx.progress, ctx.mainKey);
+    const autoStarted = useRef(false);
     useEffect(() => {
-        if (!needed) return undefined;
-        const timer = setTimeout(start, AUTO_TOUR_DELAY_MS);
+        if (!needed || autoStarted.current || visible) return undefined;
+        const timer = setTimeout(() => {
+            autoStarted.current = true;
+            start();
+        }, AUTO_TOUR_DELAY_MS);
         return () => clearTimeout(timer);
-    }, [needed, start]);
+    }, [needed, start, visible]);
     const replay = ctx?.replay ?? 0;
     useEffect(() => { if (replay > 0) start(); }, [replay, start]);
     return null;

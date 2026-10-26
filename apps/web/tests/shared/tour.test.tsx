@@ -2,7 +2,7 @@
 // tur otomatis hanya sekali per akun, dan progresnya tersimpan ke `/me/tours`.
 
 import { fireEvent, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { HALAMAN_TERDAFTAR } from "../../src/shared/navigasi";
 import { TUR_HALAMAN, VERSI_TUR, perluDiputar, turUtama } from "../../src/shared/tour";
 import { gagal, pasangServer, renderAplikasi, sukses } from "../helpers";
@@ -14,6 +14,7 @@ const ME_SISWA = {
 };
 
 afterEach(() => {
+    vi.restoreAllMocks();
     document.querySelectorAll(".driver-popover, .driver-overlay").forEach((el) => el.remove());
 });
 
@@ -37,8 +38,8 @@ describe("katalog tur", () => {
         const siswa = turUtama("R-07", "Sari Siswa");
         expect(siswa.kunci).toBe("utama.r-07");
         expect(siswa.langkah[0]?.isi).toContain("Siswa / OSIS");
-        expect(siswa.langkah.some((l) => l.elemen?.includes('[data-tour="nav-P-35"]'))).toBe(true);
-        expect(turUtama("R-01", "A").langkah.some((l) => l.elemen?.includes('[data-tour="nav-P-35"]'))).toBe(false);
+        expect(siswa.langkah.some((l) => l.elemen?.includes('[data-tour="nav-P-28"]'))).toBe(true);
+        expect(turUtama("R-01", "A").langkah.some((l) => l.elemen?.includes('[data-tour="nav-P-28"]'))).toBe(false);
         const kustom = turUtama("R-99", "B");
         expect(kustom.kunci).toBe("utama.r-99");
         expect(kustom.langkah.some((l) => l.elemen?.[0]?.startsWith('[data-tour="nav-'))).toBe(false);
@@ -63,6 +64,9 @@ describe("tur otomatis di shell", () => {
 
     it("login pertama → tur utama role muncul; dilewati → tersimpan DILEWATI dengan versi terkini", async () => {
         const log = server([]);
+        // jsdom tidak menata letak: beri setiap elemen ukuran agar langkah bersorot ikut terbentuk,
+        // sehingga Esc pada langkah pertama berarti tur dilewati, bukan diselesaikan.
+        vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({ x: 10, y: 10, width: 100, height: 40, top: 10, left: 10, bottom: 50, right: 110, toJSON: () => ({}) } as DOMRect);
         await renderAplikasi("/profil");
         expect(await screen.findByText("Selamat datang, Sari!", undefined, { timeout: 4000 })).toBeTruthy();
         // Esc menutup tur (driver.js mendengarkan `keyup` di window).
@@ -84,7 +88,7 @@ describe("tur otomatis di shell", () => {
         await renderAplikasi("/profil");
         const pemicu = await screen.findByRole("button", { name: /Sari Siswa/ });
         fireEvent.pointerDown(pemicu, { button: 0, ctrlKey: false });
-        fireEvent.click(await screen.findByRole("menuitem", { name: "Tur Aplikasi" }));
+        fireEvent.click(await screen.findByRole("menuitem", { name: "Pengenalan SIGM4" }));
         expect(await screen.findByText("Selamat datang, Sari!")).toBeTruthy();
     });
 });
