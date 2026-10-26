@@ -3,6 +3,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { roleLabel } from "@sigm4/schemas";
 import { useAuth } from "../auth";
+import { useRestartMainTour } from "../tour";
 import { BottomSheet, Button, EmptyState, Icon, Input, ModuleTile, Notice, Screen, tokens as t } from "../../shared/ui";
 import { initials } from "../../shared/ui/model";
 import { searchMenu, visibleMenu, webUrl } from "./model";
@@ -11,6 +12,7 @@ import type { VisibleEntry } from "./model";
 /** MS-31 — kartu Profil, pencarian modul, lima grup domain tersaring permission (UXD-20). */
 export function MenuScreen() {
     const { state, offlineOnly } = useAuth();
+    const restartTour = useRestartMainTour();
     const permissions = state.kind === "READY" ? state.session.permissions : {};
     const [query, setQuery] = useState(""); const [web, setWeb] = useState<VisibleEntry | null>(null); const [error, setError] = useState<string | null>(null);
     const groups = useMemo(() => searchMenu(visibleMenu(permissions), query), [permissions, query]);
@@ -29,6 +31,7 @@ export function MenuScreen() {
             <View style={styles.identity}><Text numberOfLines={1} style={styles.name}>{user.nama}</Text><Text numberOfLines={1} style={styles.role}>{roleLabel(user.role_kode)}</Text></View>
             <Icon name="chevronRight" color={t.color.muted}/>
         </Pressable>
+        {restartTour && <Button secondary icon="help" title="Tur Aplikasi" onPress={restartTour}/>}
         <Input icon="search" label="Cari modul" value={query} onChangeText={setQuery} placeholder="Contoh: reservasi" autoCorrect={false}/>
         {groups.length === 0 && <EmptyState illustration="empty" title="Modul tidak ditemukan" description="Coba kata lain atau periksa ejaan."/>}
         {groups.map((group) => <View key={group.group} style={styles.group}>

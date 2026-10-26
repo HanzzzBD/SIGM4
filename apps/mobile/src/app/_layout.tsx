@@ -9,6 +9,7 @@ import { UploadProvider } from "../features/uploads";
 import { StocktakeProvider, StocktakeScreen } from "../features/stocktake";
 import { NotificationsProvider, useNotifications } from "../features/notifications";
 import { isHeadless } from "../shared/push";
+import { TourRoot } from "../features/tour";
 import { Button, ChromeProvider, Label, Notice, Screen } from "../shared/ui";
 
 function SessionGate() {
@@ -29,7 +30,7 @@ function SessionGate() {
     // Lonceng C-30 di setiap layar ber-header, hanya bagi pemegang notification.manage_own (MS-29, UXD-21).
     const chrome = Object.hasOwn(state.session.permissions, "notification.manage_own") ? { unread: notifications.unread, openNotifications: () => router.push("/notifikasi" as "/scan") } : null;
     if (offlineOnly) return <StocktakeScreen />;
-    return <ChromeProvider value={chrome}><View style={{ flex: 1 }}>{notifications.banner && <View><Label>Ada notifikasi baru.</Label><Button title="Lihat notifikasi" onPress={() => { notifications.dismissBanner(); router.push("/notifikasi" as "/scan"); }} /><Button title="Tutup pemberitahuan" secondary onPress={notifications.dismissBanner} /></View>}<Stack screenOptions={{ headerShown: false }} /></View></ChromeProvider>;
+    return <ChromeProvider value={chrome}><TourRoot><View style={{ flex: 1 }}>{notifications.banner && <View><Label>Ada notifikasi baru.</Label><Button title="Lihat notifikasi" onPress={() => { notifications.dismissBanner(); router.push("/notifikasi" as "/scan"); }} /><Button title="Tutup pemberitahuan" secondary onPress={notifications.dismissBanner} /></View>}<Stack screenOptions={{ headerShown: false }} /></View></TourRoot></ChromeProvider>;
 }
 export default function RootLayout() {
     const [headless, setHeadless] = useState<boolean | null>(null);
