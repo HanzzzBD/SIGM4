@@ -5,10 +5,10 @@ import { randomUUID } from "expo-crypto";
 import type { ProcurementDetail } from "@sigm4/schemas";
 import { useAuth } from "../auth";
 import { useResource } from "../../shared/api/useResource";
-import { Button, Card, Chips, EmptyState, EntityCard, Input, Label, Notice, Screen, SectionHeading, tokens as t } from "../../shared/ui";
+import { BottomSheet, Button, Card, Chips, EmptyState, EntityCard, Input, Label, Notice, Screen, SectionHeading, tokens as t } from "../../shared/ui";
 import { AttachmentField, scanLabel } from "../../shared/upload/AttachmentField";
 import { dateWib, rupiah } from "../../shared/wib";
-import { canEdit, emptyForm, estimateTotal, formFromAsset, formFromDetail, loadProcurement, loadProcurementOptions, loadProcurements, loadSourceAsset, newItem, priorities, procurementBody, saveProcurement, statuses, statusTones } from "./model";
+import { canClose, canEdit, canReceive, emptyForm, estimateTotal, formFromAsset, formFromDetail, loadProcurement, loadProcurementOptions, loadProcurements, loadSourceAsset, newItem, priorities, procurementAction, procurementBody, saveProcurement, statuses, statusTones } from "./model";
 import type { ItemForm, ProcurementForm } from "./model";
 
 const id = (v: string | undefined) => v && /^[1-9]\d*$/.test(v) ? v : "";
@@ -96,15 +96,22 @@ export function ProcurementContents({ d }: { d: ProcurementDetail }) {
 export function ProcurementDetailScreen() {
     const params = useLocalSearchParams<{ id: string }>(), pid = id(params.id), { api, account, perms } = useSession();
     const [version, setVersion] = useState(0), permitted = !!pid && Object.hasOwn(perms, "procurement.view");
+    const [closing, setClosing] = useState(false), [reason, setReason] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null), attempt = useRef<{ body: string; key: string } | null>(null);
     const r = useResource(`${account}:procurement:${pid}:${version}`, useCallback((s: AbortSignal) => permitted ? loadProcurement(api, pid, s) : Promise.resolve(null), [api, pid, permitted, version]));
     if (!permitted) return denied("Detail Usulan");
     const d = r.data;
+    // Usulan yang tidak terealisasi ditutup setelah tahun anggarannya lewat; penerimaan tercatat tetap tersimpan (FR-14.3).
+    const close = async () => {
+        if (!d) return; const body = JSON.stringify({ alasan: reason.trim() }); if (attempt.current?.body !== body) attempt.current = { body, key: randomUUID() };
+        setBusy(true); setError(null); try { await procurementAction(api, d.id, "close", { alasan: reason.trim() }, attempt.current.key); setClosing(false); setVersion((v) => v + 1); } catch (e) { setError(e instanceof Error ? e.message : "Usulan belum ditutup."); } finally { setBusy(false); }
+    };
     return <Screen title={d ? d.nomor : "Detail Usulan"} subtitle="Keputusan diberikan approver lewat Detail Keputusan; aset dan stok terbentuk saat penerimaan dicatat.">
         {r.loading && <Label tone="muted">Memuat usulan…</Label>}{r.error && <Notice message={r.error}/>}
         {d && <>
             <EntityCard icon="shoppingCart" title={d.judul} meta={[d.nomor]} statuses={[{ label: statuses[d.status], tone: statusTones[d.status] }]}/>
             {d.alasan_penutupan && <Notice tone="info" message={`Usulan ditutup: ${d.alasan_penutupan}`}/>}
             <View style={styles.wrap}>
+                {canReceive(d, perms) && <Button icon="package" title="Catat penerimaan" compact onPress={() => router.push(`/pengadaan/${d.id}/penerimaan` as "/scan")}/>}
                 {canEdit(d, account, perms) && <Button icon="settings" title="Sunting usulan" compact secondary onPress={() => router.push(`/pengadaan/${d.id}/ubah` as "/scan")}/>}
                 {d.source_asset_id && Object.hasOwn(perms, "asset.view") && <Button icon="package" title="Aset sumber" compact secondary onPress={() => router.push(`/aset/${d.source_asset_id}` as "/scan")}/>}
                 <Button icon="refresh" title="Muat ulang" compact secondary onPress={() => setVersion((v) => v + 1)}/>
@@ -116,7 +123,13 @@ export function ProcurementDetailScreen() {
                 {p.items.map((i) => { const item = d.items.find((x) => x.id === i.item_id); return <View key={i.id} style={styles.block}><Label>{item?.nama_barang}: {i.jumlah} {item?.satuan ?? "unit"} {i.status === "DITERIMA" ? "diterima" : "ditolak saat penerimaan"}{i.alasan ? ` — ${i.alasan}` : ""}</Label>{i.bahan && <Label tone="muted">Stok ditambahkan di {i.bahan.lokasi}; saldo {i.bahan.saldo_sesudah} {i.bahan.satuan}.</Label>}{i.assets.length > 0 && <View style={styles.wrap}>{i.assets.map((a) => <Button key={a.id} title={a.kode_barang} compact secondary onPress={() => router.push(`/aset/${a.id}` as "/scan")}/>)}</View>}</View>; })}
                 {p.dokumen.map((f) => <Button key={f.file_id} icon="fileText" title={f.nama_berkas} compact secondary disabled={!f.url} onPress={() => { void Linking.openURL(f.url!).catch(() => undefined); }}/>)}
             </Card>)}
+            {canClose(d, perms, Number(dateWib(Date.now()).slice(0, 4))) && <Button icon="close" title="Tutup sebagai Tidak Direalisasikan" secondary onPress={() => { setReason(""); setError(null); setClosing(true); }}/>}
         </>}
+        <BottomSheet visible={closing} onClose={() => { if (!busy) setClosing(false); }} title="Tutup usulan yang tidak direalisasikan?"><View style={styles.sheet}>
+            <Label>Aset dari penerimaan yang sudah tercatat tetap tersimpan. Sisa pengadaan dihentikan.</Label>
+            <Input label="Alasan penutupan" value={reason} multiline maxLength={2000} onChangeText={setReason}/>{error && <Notice message={error}/>}
+            <Button icon="check" title="Tutup usulan" busy={busy} disabled={!reason.trim()} onPress={() => void close()}/>
+        </View></BottomSheet>
     </Screen>;
 }
-const styles = StyleSheet.create({ row: { flexDirection: "row", alignItems: "center", gap: t.space.sm }, flex: { flex: 1 }, wrap: { flexDirection: "row", flexWrap: "wrap", gap: t.space.sm }, block: { gap: t.space.xs } });
+const styles = StyleSheet.create({ row: { flexDirection: "row", alignItems: "center", gap: t.space.sm }, flex: { flex: 1 }, wrap: { flexDirection: "row", flexWrap: "wrap", gap: t.space.sm }, block: { gap: t.space.xs }, sheet: { padding: t.space.md, gap: t.space.md } });

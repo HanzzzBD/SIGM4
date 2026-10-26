@@ -1,7 +1,7 @@
 // Usulan pengadaan mobile (FR-14.1, FR-14.2; MS-67…MS-69) — kontrak sama dengan web P-51…P-53. Selalu daring.
 import type { AxiosInstance } from "axios";
 import { z } from "zod";
-import { ProcurementDetailResponseSchema, ProcurementListResponseSchema, ProcurementOptionsResponseSchema, ProcurementSaveSchema } from "@sigm4/schemas";
+import { ProcurementDetailResponseSchema, ProcurementListResponseSchema, ProcurementOptionsResponseSchema, ProcurementReceiptSchema, ProcurementSaveSchema } from "@sigm4/schemas";
 import type { ProcurementDetail } from "@sigm4/schemas";
 import type { StatusTone } from "../../shared/ui";
 import type { Attached } from "../../shared/upload/AttachmentField";
@@ -38,3 +38,26 @@ export function procurementBody(f: ProcurementForm, mode: "DRAF" | "AJUKAN"): { 
 }
 /** Hanya pengusul yang menyunting draf atau usulan Perlu Revisi miliknya (sama dengan web). */
 export const canEdit = (d: Pick<ProcurementDetail, "status" | "pengusul">, user: string, perms: Readonly<Record<string, string>>) => Object.hasOwn(perms, "procurement.create") && d.pengusul.id === user && (d.status === "DRAF" || d.status === "PERLU_REVISI");
+
+/** MS-70 (FR-14.3): penerimaan untuk usulan disetujui; sisa = disetujui − diterima. Penutupan setelah tahun anggaran lewat. */
+const RECEIVABLE = ["DISETUJUI", "DISETUJUI_SEBAGIAN", "DITERIMA_SEBAGIAN"];
+export const canReceive = (d: Pick<ProcurementDetail, "status">, perms: Readonly<Record<string, string>>) => Object.hasOwn(perms, "procurement.receive") && RECEIVABLE.includes(d.status);
+export const canClose = (d: Pick<ProcurementDetail, "status" | "tahun_anggaran">, perms: Readonly<Record<string, string>>, year: number) => canReceive(d, perms) && year > d.tahun_anggaran;
+export const remaining = (i: Pick<ProcurementDetail["items"][number], "jumlah_disetujui" | "jumlah_diterima">) => (i.jumlah_disetujui ?? 0) - i.jumlah_diterima;
+export interface ReceivedRow { selected: boolean; jumlah: string; status: "DITERIMA" | "DITOLAK_SAAT_PENERIMAAN"; alasan: string; foto: Attached[]; room: string; kondisi: "BAIK" | "RUSAK_RINGAN"; merek: string; model: string; nilai: string; seri: string; pinjam: boolean }
+export const receivedRow = (i: Pick<ProcurementDetail["items"][number], "jenis" | "jumlah_disetujui" | "jumlah_diterima">): ReceivedRow => ({ selected: false, jumlah: String(Math.max(0, Math.min(i.jenis === "BAHAN" ? 100000 : 500, remaining(i)))), status: "DITERIMA", alasan: "", foto: [], room: "", kondisi: "BAIK", merek: "", model: "", nilai: "", seri: "", pinjam: true });
+export interface ReceiptForm { tanggal: string; nomor: string; catatan: string; dokumen: (Attached & { jenis: "FAKTUR" | "BERITA_ACARA" | "LAINNYA" })[]; rows: Readonly<Record<string, ReceivedRow>> }
+/** Aset → didaftarkan per unit (merek, nomor seri per baris); Bahan → menambah stok di ruangan; ditolak → alasan + foto. */
+export function receiptBody(d: Pick<ProcurementDetail, "items">, f: ReceiptForm): { body: unknown } | { error: string } {
+    const picked = d.items.filter((i) => f.rows[i.id]?.selected);
+    if (!picked.length) return { error: "Pilih minimal satu barang yang tiba." };
+    const over = picked.find((i) => Number(f.rows[i.id]!.jumlah) > remaining(i));
+    if (over) return { error: `${over.nama_barang}: jumlah melebihi sisa ${remaining(over)} ${over.satuan}.` };
+    const unready = picked.find((i) => f.rows[i.id]!.status === "DITERIMA" && !f.rows[i.id]!.room);
+    if (unready) return { error: `${unready.nama_barang}: pilih lokasi penempatan.` };
+    const p = ProcurementReceiptSchema.safeParse({ tanggal_terima: f.tanggal, nomor_dokumen: f.nomor, ...(f.catatan.trim() ? { catatan: f.catatan.trim() } : {}), dokumen: f.dokumen.map(({ file_id, nama_berkas, jenis }) => ({ file_id, nama_berkas, jenis })),
+        items: picked.map((i) => { const r = f.rows[i.id]!; return { item_id: Number(i.id), jumlah: Number(r.jumlah), status: r.status, ...(r.status === "DITOLAK_SAAT_PENERIMAAN" ? { alasan: r.alasan.trim(), foto_file_ids: r.foto.map((x) => x.file_id) } : i.jenis === "BAHAN" ? { room_id: Number(r.room) } : { kondisi: r.kondisi, room_id: Number(r.room), ...(r.merek.trim() ? { merek: r.merek.trim() } : {}), ...(r.model.trim() ? { model: r.model.trim() } : {}), ...(r.nilai.trim() ? { nilai_perolehan: Number(r.nilai) } : {}), nomor_seri: r.seri.trim() ? r.seri.split("\n").map((v) => v.trim() || null) : [], dapat_dipinjam: r.pinjam }) }; }) });
+    if (p.success) return { body: p.data };
+    const at = p.error.issues[0]?.path[0];
+    return { error: at === "dokumen" ? "Lampirkan minimal satu dokumen penerimaan." : at === "nomor_dokumen" ? "Isi nomor dokumen penerimaan/faktur." : at === "tanggal_terima" ? "Isi tanggal penerimaan." : "Periksa jumlah dan isian setiap barang." };
+}

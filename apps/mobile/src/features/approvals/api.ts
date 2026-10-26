@@ -1,7 +1,7 @@
 import type { AxiosInstance } from "axios";
 import { HistoryResponseSchema, ListPendingResponseSchema, ReservationDetailResponseSchema, RoomAvailabilityResponseSchema, RENTANG_KETERSEDIAAN_MAKS_HARI } from "@sigm4/schemas";
 import type { ApprovalPending, ReservationDetail } from "@sigm4/schemas";
-import { ProcurementDetailResponseSchema } from "@sigm4/schemas";
+import { DisposalDetailResponseSchema, ProcurementDetailResponseSchema } from "@sigm4/schemas";
 import type { ProcurementDetail } from "@sigm4/schemas";
 import type { ApprovalReview, AvailabilityReview } from "./model";
 
@@ -44,6 +44,12 @@ export async function loadReview(api: AxiosInstance, id: number, permissions: Re
     const history = HistoryResponseSchema.parse((await api.get(`/approvals/${id}/history`, { signal })).data).data;
     if (history.instance_id !== id) throw new Error("Linimasa tidak cocok dengan pengajuan yang diminta.");
     const pending = Object.hasOwn(permissions, "approval.decide") ? await findPending(api, id, signal) : null;
+    if (history.jenis_pengajuan === "PENGHAPUSAN_ASET") {
+        let disposal = null, contextError: string | null = null;
+        try { disposal = DisposalDetailResponseSchema.parse((await api.get(`/asset-disposals/${history.referensi_id}`, { signal })).data).data; }
+        catch (error) { if (signal.aborted) throw error; contextError = error instanceof Error ? error.message : "Rincian penghapusan belum dapat dimuat."; }
+        return { history, pending, disposal, room: null, availability: null, contextError, requesterContextComplete: disposal !== null };
+    }
     if (history.jenis_pengajuan === "PENGADAAN_BARANG") {
         let procurement: ProcurementDetail | null = null, contextError: string | null = null;
         try {
