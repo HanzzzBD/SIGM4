@@ -89,6 +89,7 @@ PR yang tidak ada pada daftar [`phase-07.md` §7](../phases/phase-07.md).
 
 | ID | Judul | Mengapa tidak terencana |
 |---|---|---|
+| `chore/worker-health-port` | Port `/health` worker dapat diatur `WORKER_HEALTH_PORT` (bawaan 3000) | API dan worker sama-sama memakai port 3000 yang ditulis langsung; saat uji lokal mobile + web pemilik produk, keduanya tidak dapat berjalan di satu laptop sehingga unggahan, ekspor, berita acara, dan notifikasi tidak dapat diuji. Produksi tidak berubah |
 | `PR-07-15`…`PR-07-35` | Paritas mobile seluruh role + mobile visual-first | Rencana awal mengikuti `UX-01`/UX §6.3: mobile hanya alur lapangan. Permintaan baru pemilik produk setelah uji lokal mobile; tidak ada phase yang memiliki pekerjaan ini |
 
 Kolom ketiga adalah yang paling berharga di seluruh log ini. Pola yang berulang di sana menunjukkan di mana perencanaan phase berikutnya perlu diperbaiki.
