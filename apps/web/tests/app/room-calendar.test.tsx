@@ -130,10 +130,10 @@ describe("P-27 Kalender Ruangan", () => {
         await renderAplikasi("/kalender-ruangan?tanggal=2027-03-03&tampilan=mingguan");
         expect(await screen.findByText(/07\.00–08\.00 Rapat Komite/)).toBeTruthy();
         expect(screen.getAllByText("Hari Raya Nyepi").length).toBeGreaterThan(0);
-        expect(log.at(-1)?.params).toMatchObject({ dari: "2027-02-28T17:00:00.000Z", sampai: "2027-03-07T17:00:00.000Z" });
+        expect(log.filter((p) => p.url === "/rooms/availability").at(-1)?.params).toMatchObject({ dari: "2027-02-28T17:00:00.000Z", sampai: "2027-03-07T17:00:00.000Z" });
         await user.click(screen.getByRole("button", { name: "Bulanan" }));
         expect(await screen.findByRole("button", { name: /Senin, 1 Maret 2027: 17% terpakai/ })).toBeTruthy();
-        expect(log.at(-1)?.params).toMatchObject({ sampai: "2027-04-11T17:00:00.000Z" });
+        expect(log.filter((p) => p.url === "/rooms/availability").at(-1)?.params).toMatchObject({ sampai: "2027-04-11T17:00:00.000Z" });
         await user.click(screen.getByRole("button", { name: /Rabu, 3 Maret 2027: Hari Raya Nyepi/ }));
         expect(await screen.findByRole("grid", { name: /Rabu, 3 Maret 2027/ })).toBeTruthy();
     });
@@ -144,11 +144,11 @@ describe("P-27 Kalender Ruangan", () => {
         await renderAplikasi("/kalender-ruangan?tanggal=2027-03-01");
         await sel(/Aula Utama, 06\.00/);
         await user.selectOptions(screen.getByLabelText("Gedung"), "2");
-        await waitFor(() => expect(log.at(-1)?.params).toMatchObject({ gedung_id: "2" }));
+        await waitFor(() => expect(log.filter((p) => p.url === "/rooms/availability").at(-1)?.params).toMatchObject({ gedung_id: "2" }));
         await user.selectOptions(screen.getByLabelText("Jenis ruangan"), "LABORATORIUM");
-        await waitFor(() => expect(log.at(-1)?.params).toMatchObject({ gedung_id: "2", jenis: "LABORATORIUM" }));
+        await waitFor(() => expect(log.filter((p) => p.url === "/rooms/availability").at(-1)?.params).toMatchObject({ gedung_id: "2", jenis: "LABORATORIUM" }));
         await user.type(screen.getByLabelText("Kapasitas minimum"), "25");
-        await waitFor(() => expect(log.at(-1)?.params).toMatchObject({ kapasitas_min: 25 }));
+        await waitFor(() => expect(log.filter((p) => p.url === "/rooms/availability").at(-1)?.params).toMatchObject({ kapasitas_min: 25 }));
     });
 
     it("keadaan kosong: belum ada ruangan yang dapat direservasi", async () => {

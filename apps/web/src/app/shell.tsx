@@ -12,6 +12,7 @@ import type { PreferensiCiut } from "./sidebar";
 import { Topbar } from "./topbar";
 import { ChatPanel } from "../modules/m19-chatbot";
 import {leaveAuthenticatedSession} from "../shared/auth";
+import { TourProvider } from "../shared/tour";
 
 const KUNCI_PREF = "sigm4.sidebar.ciut";
 
@@ -58,6 +59,7 @@ export function Shell() {
         }
     };
     return (
+        <TourProvider>
         <div className="flex min-h-full">
             <a href="#konten" className="sr-only focus:not-sr-only">
                 Lompat ke konten
@@ -73,5 +75,6 @@ export function Shell() {
                 <ChatPanel />
             </div>
         </div>
+        </TourProvider>
     );
 }

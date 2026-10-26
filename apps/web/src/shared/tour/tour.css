@@ -1,0 +1,67 @@
+/* Popover tur produk (driver.js) bertoken FOUNDATIONS — tidak ada nilai visual mentah (DS-P-07).
+   Interaksi memakai color.secondary (teal), sama seperti tombol utama. */
+
+.driver-popover.tur-sigm4 {
+    background-color: var(--color-surface-default);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-2);
+    padding: var(--spacing-5);
+    font-family: var(--font-sans);
+}
+
+.driver-popover.tur-sigm4 .driver-popover-title {
+    color: var(--color-text-heading);
+    font-size: var(--text-lg);
+    font-weight: 600;
+}
+
+.driver-popover.tur-sigm4 .driver-popover-description {
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+}
+
+.driver-popover.tur-sigm4 .driver-popover-progress-text {
+    color: var(--color-text-tertiary);
+    font-size: var(--text-sm);
+}
+
+.driver-popover.tur-sigm4 .driver-popover-footer button {
+    min-height: var(--spacing-touch);
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    text-shadow: none;
+    color: var(--color-text-primary);
+    background-color: var(--color-surface-default);
+    border: 1px solid var(--color-border-strong);
+    transition: background-color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.driver-popover.tur-sigm4 .driver-popover-footer .driver-popover-next-btn {
+    color: var(--color-text-inverse);
+    background-color: var(--color-teal-600);
+    border-color: var(--color-teal-600);
+}
+
+.driver-popover.tur-sigm4 .driver-popover-footer .driver-popover-next-btn:hover {
+    background-color: var(--color-teal-700);
+}
+
+.driver-popover.tur-sigm4 .driver-popover-footer button:focus-visible,
+.driver-popover.tur-sigm4 .driver-popover-close-btn:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+
+.driver-popover.tur-sigm4 .driver-popover-close-btn {
+    color: var(--color-text-secondary);
+}
+
+.driver-popover.tur-sigm4 .driver-popover-arrow-side-left.driver-popover-arrow { border-left-color: var(--color-surface-default); }
+.driver-popover.tur-sigm4 .driver-popover-arrow-side-right.driver-popover-arrow { border-right-color: var(--color-surface-default); }
+.driver-popover.tur-sigm4 .driver-popover-arrow-side-top.driver-popover-arrow { border-top-color: var(--color-surface-default); }
+.driver-popover.tur-sigm4 .driver-popover-arrow-side-bottom.driver-popover-arrow { border-bottom-color: var(--color-surface-default); }

@@ -14,6 +14,7 @@ import { DialogKonfirmasi } from "../shared/ui/dialog";
 import { jalurTerdaftar } from "../shared/navigasi";
 import { Ikon } from "../shared/ui/icon";
 import { Logo } from "../shared/ui/logo";
+import { useTour } from "../shared/tour";
 
 /** Jam dinding WIB (CAL-UI-09, NFR-C-10) — tidak mengikuti zona waktu perangkat. */
 function JamWib() {
@@ -35,6 +36,7 @@ function PencarianGlobal() {
     return (
         <form
             role="search"
+            data-tour="cari"
             className="hidden w-full max-w-sm items-center gap-2 rounded-sm border border-border-strong bg-surface-default px-3 md:flex"
             onSubmit={(e) => {
                 e.preventDefault();
@@ -56,6 +58,7 @@ export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; rea
     const [galat, setGalat] = useState<string | undefined>();
     const sesi = useSesi();
     const can = useCan();
+    const tur = useTour();
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const keluar = async (semua: boolean) => {
@@ -78,9 +81,14 @@ export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; rea
             {can("asset.view") && jalurTerdaftar("/aset") && <PencarianGlobal />}
             <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-4">
                 <JamWib />
-                {can("notification.manage_own") && <Lonceng />}
+                {tur.adaTurHalaman && (
+                    <button type="button" data-tour="bantuan-halaman" onClick={tur.mulaiHalaman} aria-label="Panduan halaman ini" title="Panduan halaman ini" className="flex size-touch items-center justify-center rounded-md text-icon-default hover:bg-neutral-50">
+                        <Ikon nama="bantuan" />
+                    </button>
+                )}
+                {can("notification.manage_own") && <span data-tour="lonceng" className="flex"><Lonceng /></span>}
                 <Menu.Root>
-                    <Menu.Trigger className="flex min-h-touch min-w-0 items-center gap-2 rounded-md px-2 text-base font-medium text-text-primary hover:bg-neutral-50">
+                    <Menu.Trigger data-tour="menu-pengguna" className="flex min-h-touch min-w-0 items-center gap-2 rounded-md px-2 text-base font-medium text-text-primary hover:bg-neutral-50">
                         <span className="truncate">{sesi.user.nama}</span>
                         <Ikon nama="chevron" ukuran="sm" />
                     </Menu.Trigger>
@@ -98,6 +106,10 @@ export function Topbar({ onMenu, menuLabel }: { readonly onMenu: () => void; rea
                                     Preferensi Notifikasi
                                 </Menu.Item>
                             )}
+                            <Menu.Item className={ITEM} onSelect={tur.mulaiUtama}>
+                                <Ikon nama="bantuan" />
+                                Tur Aplikasi
+                            </Menu.Item>
                             <Menu.Item className={ITEM} onSelect={() => void keluar(false)}>
                                 <Ikon nama="keluar" />
                                 Keluar
