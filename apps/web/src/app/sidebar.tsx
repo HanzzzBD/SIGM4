@@ -29,7 +29,7 @@ export function Sidebar({ ciut, drawerTerbuka, onTutupDrawer }: { readonly ciut:
                     <Logo className={drawerTerbuka ? "" : WORDMARK[kunci]} />
                     {!drawerTerbuka && <Logo varian="ikon" className={IKON[kunci]} />}
                 </div>
-                <nav aria-label="Navigasi utama" className="flex flex-col gap-4 py-4">
+                <nav aria-label="Navigasi utama" data-tour="sidebar" className="flex flex-col gap-4 py-4">
                     {navigasiTerlihat(can).map((grup) => (
                         <div key={grup.label} className="flex flex-col gap-1">
                             <p className="flex items-center gap-2 px-4 text-xs font-medium uppercase tracking-wide text-text-secondary">
@@ -46,6 +46,7 @@ export function Sidebar({ ciut, drawerTerbuka, onTutupDrawer }: { readonly ciut:
                                                 to={tujuan}
                                                 onClick={onTutupDrawer}
                                                 aria-current={aktif ? "page" : undefined}
+                                                data-tour={`nav-${x.halaman}`}
                                                 title={x.label}
                                                 className={gabung(
                                                     "flex min-h-touch items-center gap-3 rounded-md px-4 py-3 text-base transisi-cepat",

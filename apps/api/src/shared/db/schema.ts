@@ -841,6 +841,16 @@ export interface NotificationPreferencesTable {
     push: ColumnType<boolean, boolean | undefined, boolean>;
 }
 
+/** Progres tur produk per akun (0075). Ketiadaan baris = tur belum diselesaikan/dilewati. */
+export interface ProductTourProgressTable {
+    user_id: ColumnType<string, string | number, never>;
+    kunci_tur: ColumnType<string, string, never>;
+    status: "SELESAI" | "DILEWATI";
+    versi: number;
+    created_at: ColumnType<Date, Date, never>;
+    updated_at: ColumnType<Date, Date, Date>;
+}
+
 /** Riwayat hash password (0037; SDD-SESS-19). Diisi trigger — aplikasi hanya membaca. */
 export interface PasswordHistoryTable {
     id: Generated<string>;
@@ -1144,6 +1154,7 @@ export interface Database {
     device_tokens: DeviceTokensTable;
     notification_deliveries: NotificationDeliveriesTable;
     notification_preferences: NotificationPreferencesTable;
+    product_tour_progress: ProductTourProgressTable;
     password_history: PasswordHistoryTable;
 }
 import type { AuditMaterialItemsTable } from "./material-stocktake-schema.js";

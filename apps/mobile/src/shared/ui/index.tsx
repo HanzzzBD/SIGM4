@@ -11,6 +11,8 @@ export type { IconName } from "./Icon";
 export { Screen } from "./Screen";
 export { Header, ChromeProvider, CountBadge, useChrome } from "./Header";
 export type { Chrome } from "./Header";
+export { TourChromeProvider, TourScope, TourTarget, useTourChrome, useTourControl } from "./tour";
+export type { PageTourSpec, TourChrome, TourCopy, TourStatus } from "./tour";
 export { BottomSheet } from "./BottomSheet";
 export { Chips, DateField, MultiChips, Toggle } from "./fields";
 export { ChatFab, EntityCard, MiniChart, ModuleTile, ProgressRing, StateIllustration, StatusBadge, Stepper } from "./visual";
