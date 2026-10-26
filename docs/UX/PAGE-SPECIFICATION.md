@@ -172,7 +172,7 @@ Total: **87 halaman web** · **23 layar mobile**.
 | P-60 | Pengguna | `/pengguna` | Daftar akun dengan filter role, status, unit kerja (`FR-02.1`) | `user.view` | Sidebar · kartu "Total Pengguna Aktif" (19.2) | Detail Pengguna · Tambah · Impor · Kenaikan Kelas Massal |
 | P-61 | Tambah Pengguna | `/pengguna/baru` | Membuat akun + password sementara (`FR-02.1`) | `user.create` | Tombol pada Pengguna | Detail Pengguna dengan password sementara tampil **satu kali** · batal ke Pengguna |
 | P-62 | Impor Pengguna | `/pengguna/impor` | Impor massal CSV/XLSX dengan laporan per baris (`FR-02.1 A4`, `E.5.2`) | `user.create` | Tombol pada Pengguna | Laporan hasil ke Pengguna · unduh templat |
-| P-63 | Detail Pengguna | `/pengguna/{id}` | Profil, role, unit kerja, status, riwayat login | `user.view` | Daftar Pengguna · pencarian global | Ubah · Aktifkan/Nonaktifkan (drawer beralasan) · Reset Password 🔒 · Reset 2FA 🔒 · Terbitkan Kode Aktivasi 2FA 🔒 · Riwayat Perubahan |
+| P-63 | Detail Pengguna | `/pengguna/{id}` | Profil, role, unit kerja, status, riwayat login, cakupan lokasi (**UXD-28**) | `user.view` | Daftar Pengguna · pencarian global | Ubah · Aktifkan/Nonaktifkan (drawer beralasan) · Reset Password 🔒 · Reset 2FA 🔒 · Terbitkan Kode Aktivasi 2FA 🔒 · Atur Cakupan Lokasi 🔒 (`FR-02.3`) · Riwayat Perubahan |
 | P-64 | Kenaikan Kelas Massal | `/pengguna/kenaikan-kelas` | Menetapkan kelas baru atau menandai lulus pada pergantian tahun ajaran (`SL-02`) | `user.update` | Tombol pada Pengguna · pemicu setelah `AC-YR-02` | Laporan hasil ke Pengguna. Siswa dengan peminjaman aktif atau kewajiban belum lunas ditampilkan sebagai daftar terblokir (`SL-04`) |
 | P-65 | Role & Permission | `/role` | Daftar role + jumlah pengguna & permission aktif (`FR-02.2`) | `role.view` | Sidebar | Matriks Permission · Salin Role sebagai templat (`FR-02.2 A2`) |
 | P-66 | Matriks Permission | `/role/{id}` | Matriks domain × aksi untuk satu role (`FR-02.2`) | `role.view` / `role.update` | Daftar Role | Simpan ke Daftar Role · penolakan eksplisit saat mencabut permission inti 🔒 (`FR-02.2 A1`) |
@@ -276,7 +276,7 @@ Total: **87 halaman web** · **23 layar mobile**.
 | MS-75 | Laporan Analitik | Padanan mobile `P-59` (**UXD-19**) | `report.view` | Statistik & Analitik · Detail Usulan Pengadaan | Ekspor (unduh ke perangkat) |
 | MS-76 | Pengguna | Padanan mobile `P-60` (**UXD-19**) | `user.view` | Menu → Sistem · kartu Total Pengguna Aktif | Detail Pengguna · Tambah Pengguna |
 | MS-77 | Tambah Pengguna | Padanan mobile `P-61` (**UXD-19**) | `user.create` | Pengguna | Detail Pengguna |
-| MS-78 | Detail Pengguna | Padanan mobile `P-63` (**UXD-19**) | `user.view` | Pengguna · pencarian Menu | Ubah · reset password · reset 2FA · nonaktifkan |
+| MS-78 | Detail Pengguna | Padanan mobile `P-63` (**UXD-19**) | `user.view` | Pengguna · pencarian Menu | Ubah · reset password · reset 2FA · nonaktifkan · atur cakupan lokasi (**UXD-28**) |
 | MS-79 | Kenaikan Kelas Massal | Padanan mobile `P-64` (**UXD-19**) | `user.update` | Pengguna · pemicu pergantian tahun ajaran | Pengguna |
 | MS-80 | Role & Permission | Padanan mobile `P-65` (**UXD-19**) | `role.view` | Menu → Sistem | Matriks Permission |
 | MS-81 | Matriks Permission | Padanan mobile `P-66` (**UXD-19**) | `role.view` / `role.update` | Role & Permission | Role & Permission |

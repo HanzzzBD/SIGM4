@@ -50,7 +50,7 @@
 | **NT-38a** | Password berhasil diganti setelah reset | Pengguna terkait | In-app + Push | ✅ | "Password Anda berhasil diperbarui pada {waktu}. Bila ini bukan Anda, segera hubungi Administrator." | [M-01](../02-modules/m01-auth.md) |
 | **NT-39** | Akun terkunci karena percobaan login gagal | Pengguna + Administrator | In-app | ✅ | "Akun terkunci sementara akibat 5 percobaan login gagal." | [M-01](../02-modules/m01-auth.md) |
 | **NT-39a** | 2FA diaktifkan pada sebuah akun | Administrator | In-app | ✅ | "{pengguna} mengaktifkan 2FA pada {waktu} dari {perangkat}. Bila pengguna tidak mengenalinya, reset 2FA dari detail pengguna." | [M-01](../02-modules/m01-auth.md) |
-| **NT-40** | Role atau status akun diubah | Pengguna terkait | In-app | ✅ | "Role akun Anda diubah menjadi {role}." | [M-02](../02-modules/m02-users.md) |
+| **NT-40** | Role, status, atau cakupan lokasi akun diubah (`FR-02.3`) | Pengguna terkait | In-app | ✅ | "Role akun Anda diubah menjadi {role}." · "Cakupan lokasi Anda kini: {lokasi}." | [M-02](../02-modules/m02-users.md) |
 | **NT-41** | Ringkasan harian operasional | Petugas Sarpras + Pimpinan Sekolah | In-app | ❌ | "Ringkasan hari ini: {n} pengajuan baru, {n} pengembalian, {n} kerusakan." | [M-15](../02-modules/m15-dashboard.md) |
 | **NT-42** | Berkas ekspor asinkron siap diunduh | Pemohon ekspor | In-app + Push | ❌ | "Laporan {jenis} siap diunduh." | [M-16](../02-modules/m16-analytics.md) |
 | **NT-43** | Usulan penghapusan aset diajukan | Approver (Pimpinan Sekolah) | In-app + Push | ✅ | "Usulan penghapusan {nomor} atas {n} unit aset menunggu persetujuan Anda." | [M-21](../02-modules/m21-disposal.md) |
