@@ -146,6 +146,7 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 - Format kode: `{domain}.{aksi}` — huruf kecil, titik sebagai pemisah.
 - Aksi baku: `view` · `create` · `update` · `delete` · `approve` · `execute` · `export` · `manage` (`manage` = create + update + delete pada domain tersebut).
 - Cakupan data (*scope*) bersifat ortogonal terhadap permission dan bernilai: `all` (seluruh data), `own` (hanya milik sendiri), `assigned` (hanya yang ditugaskan), `restricted` (subset terbatas, mis. katalog siswa). Simbol 🟡 pada Bab 18 setara dengan scope selain `all`.
+- **Cakupan lokasi** (`PM-07`…`PM-10`) adalah lapisan kedua yang **mengiris** hasil scope di atas menurut lokasi objek: pengguna role staf dapat dibatasi pada gedung, area, atau ruangan tertentu (keputusan pemilik produk 26 Oktober 2026). Pengguna tanpa cakupan lokasi tidak dibatasi.
 - Permission bertanda 🔒 adalah **permission inti** yang tidak dapat dicabut dari role Administrator (FR-02.2 A1).
 
 ### C.2 Katalog
@@ -243,4 +244,8 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 | PM-03 | *Scope* data (`all`/`own`/`assigned`/`restricted`) diterapkan pada lapisan repository sebagai filter wajib, bukan sebagai parameter opsional yang bisa dilupakan pemanggil |
 | PM-04 | Endpoint `GET /me` mengembalikan daftar kode permission efektif beserta scope-nya, dan menjadi satu-satunya sumber bagi klien untuk merender menu dan kartu dashboard (19.1) |
 | PM-05 | Perubahan matriks berlaku pada permintaan berikutnya tanpa restart; cache permission per pengguna maksimum 60 detik |
+| PM-07 | **Cakupan lokasi pengguna** (`FR-02.3`): himpunan simpul lokasi — gedung, area, atau ruangan — yang ditetapkan Administrator per pengguna. Sebuah simpul mencakup seluruh turunannya, termasuk area dan ruangan yang ditambahkan kemudian. Himpunan kosong berarti **tidak dibatasi**, sehingga akun yang ada tetap berperilaku sama |
+| PM-08 | Cakupan lokasi diterapkan pada lapisan repository **setelah** scope `PM-03`, sebagai irisan wajib yang sama mengikatnya. Objek dinilai menurut lokasinya: aset — ruangannya; saldo & transaksi bahan — lokasi penyimpanannya; reservasi — ruangan atau aset yang dipesan; peminjaman, kerusakan, work order, jadwal pemeliharaan, penghapusan — aset/ruangan terkait; sesi opname — seluruh lokasi cakupannya harus berada dalam cakupan pengguna; usulan pengadaan — lokasi tujuannya (`FR-14.1`); permintaan bahan — lokasi penyimpanan asalnya (`FR-22.4`). Laporan, dashboard, dan analitik hanya menghitung lokasi dalam cakupan. Objek tanpa lokasi hanya terlihat oleh pengguna tanpa cakupan lokasi. Objek yang menyentuh beberapa lokasi terlihat bila **seluruh** lokasinya berada dalam cakupan |
+| PM-09 | Operasi tulis yang memindahkan objek antar-lokasi — mutasi aset, pemindahan stok bahan, penerimaan pengadaan ke ruangan — wajib memiliki lokasi asal **dan** tujuan di dalam cakupan pemanggil; selain itu ditolak `403` tanpa efek |
+| PM-10 | `GET /me` mengembalikan cakupan lokasi pengguna (daftar simpul, atau kosong). Klien memakainya hanya untuk menyaring pilihan lokasi dan menampilkan penanda cakupan; penegakan tetap di server (`PM-02`) |
 | PM-06 | Bab 18 (matriks level modul) bersifat **ringkasan bagi pemangku kepentingan non-teknis**; bila terjadi perbedaan, **Lampiran C yang mengikat** |

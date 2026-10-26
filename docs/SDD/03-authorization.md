@@ -43,6 +43,8 @@ Kegagalan memisahkan keduanya adalah penyebab paling umum kebocoran lintas hak a
 | **SDD-AUTH-10** | Permission inti bertanda 🔒 (Lampiran C) pada role Administrator ditolak pencabutannya **maupun perubahan scope-nya** oleh **validator domain**, bukan hanya oleh UI (`FR-02.2 A1`). |
 | **SDD-AUTH-11** | **Uji tiga syarat bagi mekanisme teknis.** Sebuah mekanisme boleh ditetapkan pada tingkat SDD tanpa dianggap requirement baru **hanya bila ketiganya terpenuhi**: (1) tidak mengubah perilaku yang dapat diamati pengguna mana pun; (2) tidak menambah atau mengubah business rule, permission, endpoint publik, maupun aksi activity log; (3) semata menjadi **cara** memenuhi requirement yang sudah ada. Gagal pada satu syarat berarti wajib dinaikkan ke PRD lebih dulu. `role_version` (`SDD-AUTH-04`) lolos ketiganya. Menutup `TBD-AUTH-C` (keputusan pemilik produk, 25 Agustus 2026). |
 | **SDD-AUTH-12** | Endpoint yang hanya menuntut **autentikasi** ("Bearer" pada PRD: `/me`, logout, daftar perangkat, ganti password sendiri) dideklarasikan `authenticated: true` — varian ketiga `RouteDefinition`, saling meniadakan dengan `permission` dan `public`. Registri, OpenAPI (`x-authenticated`), dan matriks `SEC-T-01` mengenalnya; route yang tidak menyatakan salah satu dari ketiganya tetap gagal saat bootstrap. Scope `own` ditegakkan repository (`SDD-AUTH-02`), bukan permission. Keputusan pemilik produk, 19 September 2026. |
+| **SDD-AUTH-13** | **Cakupan lokasi** (`PM-07`…`PM-10`) diselesaikan sekali saat `AuthContext` dibentuk menjadi `locationRooms: ReadonlySet<roomId> | null` — simpul gedung/area diperluas ke seluruh ruangan turunannya — dan di-cache bersama permission (`PM-05`, kunci `role_version` + `location_version`). `null` berarti tidak dibatasi. Repository menerapkannya lewat **satu** helper `withinLocation(ctx, qb, kolomRuangan)` setelah filter scope `PM-03`; objek tanpa ruangan dikecualikan bila `locationRooms` tidak `null`. Penulisan antar-lokasi (`PM-09`) memeriksa asal dan tujuan dengan `assertLocation(ctx, roomId)` di service sebelum transaksi menulis. |
+| **SDD-AUTH-14** | Pemilihan approver bertipe `role` (`RE-14`) dan penerima notifikasi berbasis role (`NTF-06`) memakai **resolver yang sama** dengan `SDD-AUTH-13` (`LocationScopeResolver`), dihitung di server saat langkah diaktifkan atau notifikasi diterbitkan. Evaluator DSL tetap murni (`RE-01`): resolver dipanggil lapisan pembentuk langkah, bukan evaluator. |
 
 ---
 
@@ -116,6 +118,8 @@ interface AuthContext {
   permissions: ReadonlySet<string>;
   scopeOf(permission: string): Scope;
   can(permission: string): boolean;
+  /** SDD-AUTH-13: ruangan yang tercakup; null = tidak dibatasi lokasi. */
+  locationRooms: ReadonlySet<number> | null;
 }
 ```
 
@@ -281,6 +285,31 @@ Tafsir ini hanya menetapkan **bawaan**. Administrator tetap dapat menyesuaikanny
 
 ---
 
+### 4.9 Cakupan lokasi (`SDD-AUTH-13`, `SDD-AUTH-14`)
+
+```
+user_location_scopes (user_id, building_id | area_id | room_id)   -- tepat satu terisi
+        |
+        v  diperluas saat AuthContext dibentuk (cache PM-05)
+ctx.locationRooms = {room ids} | null
+        |
+        +-- repository: scope PM-03  -->  withinLocation(ctx, qb, "assets.room_id")
+        +-- service tulis: assertLocation(ctx, asal) + assertLocation(ctx, tujuan)   (PM-09)
+        +-- pembentuk langkah approval / penerbit notifikasi: LocationScopeResolver (RE-14, NTF-06)
+```
+
+| Objek | Kolom ruangan yang dipakai `withinLocation` |
+|---|---|
+| Aset, dokumen aset, label QR, penghapusan | `assets.room_id` |
+| Ruangan, kalender, reservasi ruangan | `rooms.id` |
+| Reservasi aset, peminjaman, denda | `assets.room_id` aset yang dipinjam |
+| Saldo, transaksi, permintaan bahan | `material_balances.room_id` / lokasi asal permintaan |
+| Kerusakan, work order, jadwal pemeliharaan | ruangan aset, atau ruangan tiket bila tanpa aset |
+| Sesi opname | seluruh ruangan cakupan sesi (semua harus tercakup) |
+| Usulan pengadaan | `room_id_tujuan`, atau seluruh ruangan `building_id_tujuan` |
+
+Uji arsitektur menandai repository yang membaca tabel di kolom kiri tanpa memanggil `withinLocation`, sepola dengan uji `ctx` wajib (§6). Seluruh perubahan ini menyentuh lapisan permission/`AuthContext` dan evaluator approval, sehingga wajib tinjauan arsitek (`BRANCHING-STRATEGY §3.1`).
+
 ## 5. Konsekuensi
 
 - **Modul terdampak:** seluruhnya. Tidak ada modul yang boleh mengakses basis data tanpa `AuthContext`.
@@ -299,13 +328,15 @@ Tafsir ini hanya menetapkan **bawaan**. Administrator tetap dapat menyesuaikanny
 | Serializer lupa menyaring field baru | Data finansial bocor | Allow-list bersifat *opt-in*: field baru tidak muncul sampai sengaja didaftarkan |
 | `SystemAuthContext` dipakai di jalur HTTP | Bypass otorisasi | Pembentukannya dibatasi `src/worker`; lint `import/no-restricted-paths` melarang impornya dari `src/api`, `src/modules`, dan `shared/*` lain — dibuktikan uji `tests/shared/auth/system-context.test.ts` |
 | Tool chatbot ditambah tanpa lewat repository | `BR-076` dilanggar | Registry tool hanya menerima metode repository; ditegakkan oleh tipe |
+| Repository baru lupa `withinLocation` | Petugas gedung melihat lokasi lain | Uji arsitektur §4.9 + uji irisan per modul dengan dua pengguna bercakupan berbeda |
+| Ekspansi simpul basi setelah ruangan ditambah | Ruangan baru tidak tercakup ≤60 detik | `location_version` naik saat lokasi atau cakupan berubah, membatalkan cache seketika |
 | Respons 403 vs 404 tidak konsisten | Membocorkan keberadaan data | Error mapper terpusat; diuji `SEC-T-01` |
 
 ---
 
 ## 7. Requirement Terkait
 
-`PM-01` … `PM-06` · `BR-066` `BR-069` `BR-070` `BR-073` `BR-074` `BR-075` `BR-076` ·
+`PM-01` … `PM-10` · `FR-02.3` `BR-069b` `RE-14` `NTF-06` · `BR-066` `BR-069` `BR-070` `BR-073` `BR-074` `BR-075` `BR-076` ·
 `FR-01.1` `FR-01.2` `FR-01.4` `FR-01.5` `FR-01.6` `FR-02.1` `FR-02.2` `FR-04.2` `FR-19.1` ·
 `NFR-S-03` `NFR-S-05` `NFR-S-07` `NFR-S-10` `NFR-S-14` `NFR-S-15` ·
 `DP-03` `DP-05` `DP-11` `DP-AI-01` `DP-AI-02` `DP-AI-03` ·

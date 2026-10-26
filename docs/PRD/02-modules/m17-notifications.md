@@ -63,6 +63,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | NTF-02 | Fanout antar-instance API dilakukan melalui Redis Pub/Sub agar notifikasi sampai meskipun pengguna terhubung ke instance berbeda dari yang menghasilkan event |
 | NTF-03 | Batas 2 koneksi SSE aktif per pengguna; koneksi terlama diputus bila melebihi |
 | NTF-04 | Penulisan notifikasi ke basis data dilakukan **di dalam** transaksi bisnis; pengiriman (SSE/FCM) dilakukan **di luar** transaksi melalui antrean, sehingga kegagalan pengiriman tidak pernah menggagalkan transaksi bisnis (NFR-A-06) |
+| NTF-06 | Notifikasi operasional yang penerimanya ditentukan menurut role (kerusakan, stok bahan, serah terima, opname, pemeliharaan) hanya dikirim kepada pemegang role yang cakupan lokasinya meliputi lokasi objek, **ditambah** pemegang role tanpa cakupan lokasi (`PM-07`). Notifikasi yang penerimanya pengguna tertentu (pemohon, approver, teknisi yang ditugaskan) tidak terpengaruh |
 | NTF-05 | Penghitung belum dibaca dihitung di server dan disiarkan ulang setiap perubahan, bukan dihitung ulang oleh klien |
 
 **Acceptance Criteria**

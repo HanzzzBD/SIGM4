@@ -40,9 +40,9 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 | [04](phases/phase-04.md) | Siklus Hidup Aset | 3 | 19 | `In Progress` | 0/19 | Menutup `M2` |
 | [05](phases/phase-05.md) | Penutupan Siklus | 3 | 36 | `In Progress` | 0/36 | Menutup `M3` & `M4` |
 | [06](phases/phase-06.md) | Analitik | 1 | 11 | `In Progress` | 0/11 | Menutup `M5` |
-| [07](phases/phase-07.md) | Integrasi & UAT | — | 42 | `In Progress` | 21/42 | Paritas mobile `PR-07-15`…`35` tergabung (**UXD-19**); web visual-first `PR-07-36`…`42` dimulai (**UXD-24**) |
+| [07](phases/phase-07.md) | Integrasi & UAT | — | 50 | `In Progress` | 21/50 | Paritas mobile `PR-07-15`…`35` tergabung (**UXD-19**); web visual-first `PR-07-36`…`42` dimulai (**UXD-24**); cakupan lokasi `PR-07-43`…`50` direncanakan (**UXD-28**) |
 | [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 18 | `Not Started` | 0/18 | Menutup `M6` |
-| | **Total** | **22** | **258** | | **110/258** | |
+| | **Total** | **22** | **266** | | **110/266** | |
 
 ## Ringkasan milestone PRD
 
@@ -271,8 +271,10 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-07-33` | `Done` | [#191](https://github.com/HanzzzBD/SIGM4/pull/191) | Paket 6: `MS-80`, `MS-81`, `MS-83`, `MS-84` paritas penuh pohon kondisi + pratinjau (keputusan 26). Kompleksitas `L`. Digabung PM ke `develop` (squash `72cb7c2`) |
 | `PR-07-34` | `Done` | [#191](https://github.com/HanzzzBD/SIGM4/pull/191) | Paket 6: `MS-85` (+ Satuan Bahan), `MS-86`, `MS-87`. Kompleksitas `M`. Digabung PM ke `develop` (squash `72cb7c2`) |
 | `PR-07-35` | `Done` | [#191](https://github.com/HanzzzBD/SIGM4/pull/191) | Paket 6: `MS-88`, `MS-89`, `MS-90`. Kompleksitas `S`. Digabung PM ke `develop` (squash `72cb7c2`) |
-| `PR-07-36` | `In Review` | [#195](https://github.com/HanzzzBD/SIGM4/pull/195) | Keputusan & spesifikasi web visual-first, cabang `feature/PR-07-36-web-visual-first` (`WEB-VIS-01`…`05`, `SDD-FE-17`…`19`, **UXD-24**…**27**, **DSD-13**/**14**, C-39…C-41); di luar rencana — [log phase-07 §4](logs/phase-07.md) |
+| `PR-07-36` | `Done` | [#195](https://github.com/HanzzzBD/SIGM4/pull/195) | Keputusan & spesifikasi web visual-first, cabang `feature/PR-07-36-web-visual-first` (`WEB-VIS-01`…`05`, `SDD-FE-17`…`19`, **UXD-24**…**27**, **DSD-13**/**14**, C-39…C-41); di luar rencana — [log phase-07 §4](logs/phase-07.md). Digabung ke `develop` (squash `d4f4a4f`) |
 | `PR-07-37` … `PR-07-42` | `Not Started` | — | Web visual-first dalam enam paket: Fondasi → Aset & Bahan → Pemanfaatan → Perawatan → Pengawasan → Sistem; rincian [`phases/phase-07.md` §7](phases/phase-07.md) |
+| `PR-07-43` | `In Review` | [#197](https://github.com/HanzzzBD/SIGM4/pull/197) | Keputusan & spesifikasi cakupan lokasi pengguna, cabang `feature/PR-07-43-cakupan-lokasi` (`PM-07`…`PM-10`, `FR-02.3`, `BR-069b`, `RE-14`, `NTF-06`, `SDD-AUTH-13`/`14`, **UXD-28**); di luar rencana — [log phase-07 §4](logs/phase-07.md) |
+| `PR-07-44` … `PR-07-50` | `Not Started` | — | Cakupan lokasi: fondasi → Aset & Bahan → Pemanfaatan → Perawatan → Pengawasan → approval & notifikasi → UI; mulai setelah `PR-07-42`. Rincian [`phases/phase-07.md` §7](phases/phase-07.md) |
 
 ### Phase 08 — Pengerasan & Kesiapan Rilis · `Not Started`
 
