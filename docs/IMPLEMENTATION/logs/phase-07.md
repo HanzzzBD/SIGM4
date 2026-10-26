@@ -27,6 +27,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 | 26 Oktober 2026 | Paket 5 (#190) tergabung. Paket 6 Pimpinan & Admin di `feature/PR-07-31-pimpinan-admin-mobile`: commit dependensi + versi, lalu `PR-07-31`…`PR-07-35`, ditambah satu commit uji `PR-07-33` setelah satu mutan lolos. Satu putaran `AskUserQuestion` menghasilkan keputusan 24–27. Seluruh 20 PR paritas mobile `PR-07-16`…`35` kini terimplementasi. | `PR-07-31`…`35` |
 | 26 Oktober 2026 | Paket 6 (#191) tergabung. Pemilik produk meminta UI web seluruh role tidak lagi bertumpu pada teks panjang, melainkan visual (ikon, interaktif) seperti mobile, ditambah *smart guidance* dan sidebar yang bergulir terpisah dari konten. Dua putaran `AskUserQuestion` menghasilkan keputusan 28–31. `PR-07-36` di `feature/PR-07-36-web-visual-first` menurunkannya ke PRD (`WEB-VIS-01`…`05`), SDD (`SDD-FE-17`…`19`), UX (**UXD-24**…**27**), dan DESIGN (**DSD-13**/**14**, C-39…C-41), lalu merencanakan enam PR paket `PR-07-37`…`42`. | `PR-07-36` |
 | 26 Oktober 2026 | Pemilik produk bertanya cara membuat petugas sarpras khusus gedung serta aset/bahan tertentu. Mekanisme yang ada (role kustom + scope `assigned` = penanggung jawab aset) tidak menjangkau gedung maupun bahan, sehingga pemilik produk meminta cakupan lokasi sebagai requirement baru. Tiga putaran `AskUserQuestion` menghasilkan keputusan 32–37. `PR-07-43` di `feature/PR-07-43-cakupan-lokasi` menurunkannya ke PRD (`PM-07`…`PM-10`, `FR-02.3`, `BR-069b`, `RE-14`, `NTF-06`, lokasi tujuan `FR-14.1`), SDD (`SDD-AUTH-13`/`14`), dan UX (**UXD-28**), lalu merencanakan `PR-07-44`…`50`. | `PR-07-43` |
+| 26 Oktober 2026 | Pemilik produk menanyakan mengapa Siswa tidak dapat meminta bahan di mobile. PRD tidak mencatat alasan pengecualiannya; pemilik produk memutuskan membukanya. Satu putaran `AskUserQuestion` menghasilkan keputusan 39. `PR-07-51` di `feature/PR-07-51-bahan-siswa` menurunkannya ke PRD (`BR-086a`, `BR-091a`, `FR-22.4 A4`, Lampiran C) dan UX (**UXD-29**), dengan implementasi `PR-07-52`. | `PR-07-51` |
 
 ## 2. Keputusan yang diambil
 
@@ -71,6 +72,7 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 | 35 | **Approval & notifikasi hanya ke pemegang lokasi**, jatuh ke pemegang role tanpa cakupan, lalu `RE-11` (pemilik produk) | Antrean petugas gedung tidak berisi pengajuan yang tidak dapat ia buka. Ditolak: tetap seperti sekarang | Ya — `RE-14`, `NTF-06`, `SDD-AUTH-14` |
 | 36 | **Modul yang dibatasi:** seluruh grup — Aset & Bahan, Pemanfaatan, Perawatan, Pengawasan (termasuk dashboard, analitik, chatbot) (pemilik produk) | — | Ya — `PM-08` |
 | 37 | **Urutan:** spesifikasi sekarang (`PR-07-43`, PR dibuka setelah #195 tergabung), implementasi `PR-07-44`…`50` setelah paket web visual-first (pemilik produk) | Halaman tidak disentuh dua kali. Ditolak: kode duluan (redesign ditunda), paralel | Tidak — rencana phase (§7 Paket cakupan lokasi) |
+| 39 | **Siswa/OSIS boleh meminta bahan**: hanya bahan bertanda *boleh diminta siswa*, saldo tampil sebagai status Tersedia/Terbatas/Habis, tanpa batas jumlah khusus, dan **tanpa approval** — Petugas menilai saat penyerahan (pemilik produk) | OSIS & praktik SMK memakai bahan habis pakai. Ditolak: selalu lewat approval Guru → Petugas, ikut ambang biasa, semua bahan aktif, angka saldo, batas per permintaan | Ya — `BR-086a`, `BR-091a`, `FR-22.4 A4`, Lampiran C, **UXD-29** |
 
 ## 3. Penyimpangan dari rencana
 
@@ -108,6 +110,7 @@ PR yang tidak ada pada daftar [`phase-07.md` §7](../phases/phase-07.md).
 | `PR-07-15`…`PR-07-35` | Paritas mobile seluruh role + mobile visual-first | Rencana awal mengikuti `UX-01`/UX §6.3: mobile hanya alur lapangan. Permintaan baru pemilik produk setelah uji lokal mobile; tidak ada phase yang memiliki pekerjaan ini |
 | `PR-07-36`…`PR-07-42` | Web visual-first seluruh role | Halaman web Phase 01–06 dibangun mengikuti PATTERNS §1.2 lama (sub-judul paragraf) dan tabel saja. Setelah mobile visual-first selesai, pemilik produk meminta arah yang sama di web; tidak ada phase yang memiliki pekerjaan ini |
 | `PR-07-43`…`PR-07-50` | Cakupan lokasi pengguna (petugas khusus gedung/area/ruangan) | Scope Lampiran C hanya `all`/`own`/`assigned`/`restricted`; tidak ada dimensi lokasi. Permintaan pemilik produk setelah mengetahui `assigned` hanya bekerja per aset dan tidak menjangkau bahan |
+| `PR-07-51`…`PR-07-52` | Permintaan bahan oleh Siswa/OSIS | Lampiran C awal tidak memberi Siswa izin bahan tanpa alasan tertulis; permintaan pemilik produk saat uji mobile |
 
 Kolom ketiga adalah yang paling berharga di seluruh log ini. Pola yang berulang di sana menunjukkan di mana perencanaan phase berikutnya perlu diperbaiki.
 

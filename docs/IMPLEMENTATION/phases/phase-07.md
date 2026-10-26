@@ -127,6 +127,8 @@ Bila sebuah cacat integrasi baru ditemukan di Phase 08, artinya phase ini gagal.
 | `PR-07-48` | Cakupan lokasi — Pengawasan: M-13, M-14 (field lokasi tujuan `FR-14.1`, migration expand), M-21, M-15 dashboard, M-16 analitik, M-19 tool chatbot | L | L | 07-44 | `PM-08`, `FR-14.1`, `BR-076` | Angka analitik petugas bercakupan = jumlah lokasinya saja |
 | `PR-07-49` | Cakupan lokasi — approval & notifikasi: `RE-14` di pembentuk langkah, `NTF-06` di penerbit notifikasi, `LocationScopeResolver` | M | M | 07-44 | `RE-14`, `NTF-06`, `SDD-AUTH-14` | Tinjauan arsitek: evaluator DSL tetap murni (`RE-01`) |
 | `PR-07-50` | Cakupan lokasi — UI web & mobile: bagian Cakupan Lokasi P-63/MS-78, chip cakupan, pemilih lokasi tersaring, field Lokasi Tujuan P-52/MS-68 | M | M | 07-45…49 | **UXD-28**, `PM-10` | Admin mengatur cakupan dari web maupun ponsel |
+| `PR-07-51` | Keputusan & spesifikasi permintaan bahan oleh Siswa/OSIS — `BR-086a`, `BR-091a`, `FR-22.4 A4`, **UXD-29** *(di luar rencana, 26 Okt — log §4)* | S | S | — | `FR-22.4`, **UXD-29** | Docs saja |
+| `PR-07-52` | Permintaan bahan Siswa/OSIS: kolom `boleh_diminta_siswa` (expand), seed `material.view`/`material.request` R-07 `restricted`, penyaringan katalog + status saldo (serializer `SDD-AUTH-06`), lewati approval (`BR-086a`), UI web P-81/P-84…P-87 + mobile MS-41/MS-55…MS-58 | M | M | 07-51 | `BR-086a`, `BR-091a` | Siswa hanya melihat bahan bertanda tanpa angka saldo; permintaannya tidak membentuk instance approval |
 
 > `PR-07-13` dan `PR-07-14` sengaja tidak dirinci — isinya ditentukan temuan. Kompleksitas **M** adalah pagu; bila satu perbaikan melampauinya, ia dipecah menjadi PR tersendiri.
 
