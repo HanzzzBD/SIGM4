@@ -273,7 +273,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-07-35` | `Done` | [#191](https://github.com/HanzzzBD/SIGM4/pull/191) | Paket 6: `MS-88`, `MS-89`, `MS-90`. Kompleksitas `S`. Digabung PM ke `develop` (squash `72cb7c2`) |
 | `PR-07-36` | `Done` | [#195](https://github.com/HanzzzBD/SIGM4/pull/195) | Keputusan & spesifikasi web visual-first, cabang `feature/PR-07-36-web-visual-first` (`WEB-VIS-01`…`05`, `SDD-FE-17`…`19`, **UXD-24**…**27**, **DSD-13**/**14**, C-39…C-41); di luar rencana — [log phase-07 §4](logs/phase-07.md). Digabung ke `develop` (squash `d4f4a4f`) |
 | `PR-07-37` … `PR-07-42` | `Not Started` | — | Web visual-first dalam enam paket: Fondasi → Aset & Bahan → Pemanfaatan → Perawatan → Pengawasan → Sistem; rincian [`phases/phase-07.md` §7](phases/phase-07.md) |
-| `PR-07-43` | `In Progress` | — | Keputusan & spesifikasi cakupan lokasi pengguna, cabang `feature/PR-07-43-cakupan-lokasi` (`PM-07`…`PM-10`, `FR-02.3`, `BR-069b`, `RE-14`, `NTF-06`, `SDD-AUTH-13`/`14`, **UXD-28**); di luar rencana — [log phase-07 §4](logs/phase-07.md) |
+| `PR-07-43` | `In Review` | [#197](https://github.com/HanzzzBD/SIGM4/pull/197) | Keputusan & spesifikasi cakupan lokasi pengguna, cabang `feature/PR-07-43-cakupan-lokasi` (`PM-07`…`PM-10`, `FR-02.3`, `BR-069b`, `RE-14`, `NTF-06`, `SDD-AUTH-13`/`14`, **UXD-28**); di luar rencana — [log phase-07 §4](logs/phase-07.md) |
 | `PR-07-44` … `PR-07-50` | `Not Started` | — | Cakupan lokasi: fondasi → Aset & Bahan → Pemanfaatan → Perawatan → Pengawasan → approval & notifikasi → UI; mulai setelah `PR-07-42`. Rincian [`phases/phase-07.md` §7](phases/phase-07.md) |
 
 ### Phase 08 — Pengerasan & Kesiapan Rilis · `Not Started`
