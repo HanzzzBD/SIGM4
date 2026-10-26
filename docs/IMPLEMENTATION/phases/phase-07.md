@@ -112,6 +112,13 @@ Bila sebuah cacat integrasi baru ditemukan di Phase 08, artinya phase ini gagal.
 | `PR-07-33` | Mobile tahap C — role & approval rules: `MS-80`, `MS-81`, `MS-83`, `MS-84` | L | M | 07-17 | `FR-02.2`, `FR-10.1` | Penguncian izin inti Administrator tetap ditegakkan server |
 | `PR-07-34` | Mobile tahap C — pengaturan: Parameter Sistem `MS-85`, Kalender Akademik `MS-86`, Unit Kerja `MS-87` | M | M | 07-17 | `FR-20.x` | Satuan Bahan ikut tab Parameter |
 | `PR-07-35` | Mobile tahap C — Activity Log `MS-88`, Detail Entri `MS-89`, Monitoring Chatbot `MS-90` | S | S | 07-17 | `FR-18.x`, `FR-19.2` | Pembacaan log mobile tercatat `ACTIVITY_LOG_VIEWED` |
+| `PR-07-36` | Keputusan & spesifikasi web visual-first — `WEB-VIS-01`…`05`, `SDD-FE-17`…`19`, **UXD-24**…**27**, **DSD-13**/**14**, C-39…C-41 *(di luar rencana, 26 Okt — log §4)* | S | S | — | `WEB-VIS-01`, **UXD-24** | Docs saja; seluruh PR web visual-first di bawah merujuk ID di sini |
+| `PR-07-37` | Web — fondasi visual: kerangka gulir terpisah + sidebar ikon modul & tooltip ciut (**UXD-25**), kepala halaman kotak ikon + C-39, komponen C-31…C-34/C-37/C-40/C-41 web, validasi langsung & contoh pengisian, mikro-interaksi; ditata ulang: Dashboard P-12 (Aksi Cepat C-31, saran C-41), P-13, P-14, akun P-76…P-79, auth & publik P-01…P-11 | L | M | 07-36 | **UXD-24**…**27**, **DSD-13**/**14** | Sidebar tetap di tempat saat konten digulir; tidak ada paragraf > 2 kalimat pada halaman yang disentuh |
+| `PR-07-38` | Web — Aset & Bahan: P-15…P-26, P-80…P-83 (Tabel ⇄ Kartu pada P-15, P-21, P-26, P-80, P-83; saran pemeliharaan/garansi/stok minimum) | L | M | 07-37 | `FR-03.x`, `FR-04.x`, `FR-05.x`, `FR-06.x`, `FR-22.x` | Filter URL identik di kedua tampilan |
+| `PR-07-39` | Web — Pemanfaatan: P-27…P-38, P-84…P-87 (kartu daftar reservasi/peminjaman/denda/persetujuan; saran jatuh tempo & keputusan tertunda) | L | M | 07-37 | `FR-07.x`…`FR-10.x`, `FR-22.x` | Wizard P-29 memakai validasi langsung tanpa mengubah **UXD-04** |
+| `PR-07-40` | Web — Perawatan: P-39…P-46 | M | M | 07-37 | `FR-11.x`, `FR-12.x` | Saran "Buat work order" hanya bagi pemegang `workorder.create` |
+| `PR-07-41` | Web — Pengawasan: P-47…P-59 (Cincin Progres opname, Grafik Mini analitik) | L | M | 07-37 | `FR-13.x`, `FR-14.x`, `FR-16.x`, `FR-21.x` | Tabel alternatif grafik tetap ada (**DSD-10**) |
+| `PR-07-42` | Web — Sistem: P-60…P-75 | L | M | 07-37 | `FR-01.x`, `FR-02.x`, `FR-10.1`, `FR-18.x`…`FR-20.x` | Penjelasan parameter P-70 tetap prosa (`container.prose`, **UXD-24**) |
 
 > `PR-07-13` dan `PR-07-14` sengaja tidak dirinci — isinya ditentukan temuan. Kompleksitas **M** adalah pagu; bila satu perbaikan melampauinya, ia dipecah menjadi PR tersendiri.
 
@@ -129,6 +136,10 @@ Bila sebuah cacat integrasi baru ditemukan di Phase 08, artinya phase ini gagal.
 | 6. Pimpinan & Admin | `PR-07-31`…`PR-07-35` | Grup Pengawasan/Sistem dengan pola layar administratif serupa |
 
 Setiap paket berukuran **L**; deskripsi PR paket menjelaskan alasan tidak dipecah dan merinci baris uji per ID PR.
+
+### Paket pelaksanaan web visual-first
+
+`PR-07-37`…`42` mengikuti aturan paket yang sama (log phase-07 keputusan 31): satu PR GitHub per baris, berurutan, tanpa PR bertumpuk. Fondasi lebih dulu, lalu satu paket per grup domain sidebar (**UXD-01**), sehingga setiap halaman disentuh tepat satu kali. Semua role tercakup karena setiap paket menata ulang seluruh halaman grupnya, bukan halaman milik role tertentu.
 
 ## 8. Task Breakdown
 

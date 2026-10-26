@@ -70,6 +70,7 @@ Struktur tetap sama untuk semua role (**UXD-01**). Yang berbeda hanyalah entri m
 | **Grup kosong disembunyikan** | Bila seluruh entri dalam satu grup tersembunyi, judul grup ikut hilang — tidak ada judul menggantung | **UXD-01** |
 | **Penanda jumlah** | Hanya pada entri berbasis antrean: Notifikasi (belum dibaca), Persetujuan Saya (menunggu keputusan saya), Work Order (ditugaskan & belum selesai), Laporan Kerusakan (`Dilaporkan`) | 19.2–19.5 |
 | **Grup Sistem** | Selalu paling bawah, diberi pemisah visual | **UXD-01** |
+| **Gulir terpisah** | Sidebar bergulir sendiri, tidak ikut halaman; mode ciut menampilkan ikon modul + tooltip nama entri | **UXD-25** |
 | **Akun Saya** | **Tidak** di sidebar; hanya di menu pengguna pada topbar | **UXD-01** |
 
 ### Sidebar per role (yang benar-benar terlihat)

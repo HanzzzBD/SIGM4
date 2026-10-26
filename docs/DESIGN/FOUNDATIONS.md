@@ -402,7 +402,7 @@ Tiga tingkat sesuai batas 31.2. `DS-P-05` menetapkan border lebih dipercaya dari
 | Token | Nilai | Dipakai untuk | Catatan |
 |---|---|---|---|
 | `elevation.0` | `none` + `1px solid color.border.subtle` | **Bawaan** untuk kartu, tabel, panel, sidebar, topbar | Pilihan pertama untuk memisahkan permukaan |
-| `elevation.1` | `0 1px 2px rgba(17, 24, 39, 0.06)` | Dropdown · popover · tooltip · toast | Selalu **disertai** border 1px agar tetap terlihat di bawah cahaya matahari |
+| `elevation.1` | `0 1px 2px rgba(17, 24, 39, 0.06)` | Dropdown · popover · tooltip · toast · kartu interaktif web saat hover (**DSD-14**) | Selalu **disertai** border 1px agar tetap terlihat di bawah cahaya matahari |
 | `elevation.2` | `0 4px 8px rgba(17, 24, 39, 0.08)` | Drawer aksi · modal · bottom sheet | Lapisan yang benar-benar mengambang di atas konten |
 
 **Dilarang:** bayangan berwarna · lebih dari dua tingkat bayangan terlihat sekaligus · bayangan sebagai satu-satunya pemisah permukaan · bayangan pada elemen statis di dalam halaman.
@@ -468,6 +468,7 @@ Animasi bersifat fungsional: menjelaskan asal dan tujuan sebuah lapisan. Tidak a
 - Animasi **tidak pernah** menunda ketersediaan aksi. *Skeleton* muncul seketika, tanpa transisi masuk.
 - Tidak ada animasi pada baris tabel — daftar 4.820 baris harus terasa seketika (`NFR-P-05`).
 - Progres opname dan penghitung notifikasi bertransisi nilai, bukan berkedip.
+- Mikro-interaksi web (**DSD-14**): kartu interaktif naik `elevation.0 → 1` saat hover (`fast`), nilai Kartu KPI dan Cincin Progres bertransisi saat data tiba (`slow`, `easing.enter`), dan lebar sidebar bertransisi saat diciutkan (`base`). Grid kartu tidak beranimasi masuk, sama seperti baris tabel.
 - `prefers-reduced-motion: reduce` membuat seluruh durasi menjadi 0ms dan mengganti transform dengan *fade* sederhana — [`RESPONSIVE-ACCESSIBILITY.md §11`](RESPONSIVE-ACCESSIBILITY.md#11-reduced-motion).
 
 ---
