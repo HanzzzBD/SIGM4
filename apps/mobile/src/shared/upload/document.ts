@@ -13,7 +13,9 @@ const Confirmed = z.object({ data: z.object({ scan_status: z.enum(["PENDING", "C
 /** Konfirmasi ulang idempoten untuk memeriksa hasil pemindaian berkas yang masih PENDING. */
 export const recheckDocument = async (api: AxiosInstance, doc: Pick<UploadedDocument, "file_id" | "checksum">) => Confirmed.parse((await api.post("/files/confirm", { file_id: doc.file_id, checksum: doc.checksum })).data).data.scan_status;
 /** `null` bila pengguna membatalkan pemilihan. */
-export async function pickAndUploadDocument(api: AxiosInstance, jenis: "ASSET_DOCUMENT" | "MATERIAL_RECEIPT_DOCUMENT"): Promise<UploadedDocument | null> {
+/** Jenis berkas dokumen yang dapat diunggah dari ponsel (M-06); server memeriksa izin per jenis. */
+export type DocumentKind = "ASSET_DOCUMENT" | "MATERIAL_RECEIPT_DOCUMENT" | "PROCUREMENT_ATTACHMENT" | "PROCUREMENT_RECEIPT_DOCUMENT" | "DISPOSAL_ATTACHMENT";
+export async function pickAndUploadDocument(api: AxiosInstance, jenis: DocumentKind): Promise<UploadedDocument | null> {
     const result = await DocumentPicker.getDocumentAsync({ type: DOCUMENT_TYPES, copyToCacheDirectory: true, multiple: false });
     const asset = result.canceled ? undefined : result.assets[0];
     if (!asset) return null;
