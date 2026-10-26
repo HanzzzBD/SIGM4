@@ -44,6 +44,8 @@ type Jawab = { status: number; json: { data?: { tur: Tur[] | Tur }; error?: { co
 describe.skipIf(!ADA)("Tur produk — GET/PUT /me/tours", () => {
     let server: Server;
     let base = "";
+    /** Pengguna sesi permintaan berikutnya, diatur uji itu sendiri; `undefined` = tanpa sesi. */
+    let sesi: number | undefined;
 
     beforeAll(async () => {
         dbmate("up");
@@ -58,11 +60,10 @@ describe.skipIf(!ADA)("Tur produk — GET/PUT /me/tours", () => {
             auth: authPalsu(),
         });
         const luar = express();
-        luar.use((req, res, next) => {
-            const user = req.header("x-uji-user");
-            // Tanpa header = tanpa sesi: route `authenticated` wajib menolak.
-            if (user !== undefined) {
-                setAuthContext(res, createAuthContext({ userId: Number(user), roleCode: "R-07", scopes: new Map() }));
+        luar.use((_req, res, next) => {
+            // Tanpa sesi: route `authenticated` wajib menolak.
+            if (sesi !== undefined) {
+                setAuthContext(res, createAuthContext({ userId: sesi, roleCode: "R-07", scopes: new Map() }));
                 setAmr(res, ["pwd", AMR_OTP]);
             }
             next();
@@ -78,9 +79,10 @@ describe.skipIf(!ADA)("Tur produk — GET/PUT /me/tours", () => {
     });
 
     const kirim = async (user: number | undefined, metode: "GET" | "PUT", jalur = "", body?: unknown): Promise<Jawab> => {
+        sesi = user;
         const res = await fetch(base + jalur, {
             method: metode,
-            headers: { "content-type": "application/json", ...(user === undefined ? {} : { "x-uji-user": String(user) }) },
+            headers: { "content-type": "application/json" },
             ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         });
         return { status: res.status, json: (await res.json()) as Jawab["json"] };
