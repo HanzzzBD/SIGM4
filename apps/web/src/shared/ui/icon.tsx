@@ -14,6 +14,7 @@ import {
     CircleAlert,
     CircleCheck,
     CircleDot,
+    CircleHelp,
     CircleDashed,
     CircleX,
     ClipboardCheck,
@@ -105,6 +106,7 @@ const PETA = {
     unduh: Download,
     belumTerpenuhi: CircleDot,
     cari: Search,
+    bantuan: CircleHelp,
 } satisfies Record<string, LucideIcon>;
 
 export type NamaIkon = keyof typeof PETA;

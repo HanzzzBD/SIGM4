@@ -38,6 +38,7 @@ export {
     kodeCadanganBaruRoute,
     konfirmasiDuaFaktorRoute,
     lihatProfilRoute,
+    listToursRoute,
     listPermintaanResetRoute,
     listSesiRoute,
     statusDuaFaktorRoute,
@@ -48,6 +49,7 @@ export {
     refreshRoute,
     terbitkanResetRoute,
     tolakResetRoute,
+    updateTourRoute,
     verifyDuaFaktorRoute,
 } from "./routes.js";
 export type { PermintaanMenunggu } from "./services/dashboard-source.js";

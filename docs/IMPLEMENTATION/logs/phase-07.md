@@ -103,6 +103,7 @@ PR yang tidak ada pada daftar [`phase-07.md` §7](../phases/phase-07.md).
 
 | ID | Judul | Mengapa tidak terencana |
 |---|---|---|
+| `feature/tur-produk-role` | Tur produk interaktif berbasis role, web + mobile | Permintaan pemilik produk 26 Oktober 2026 tanpa ID PRD/UX; pemilik produk memilih tanpa dokumen. Narasi tur dipilih dari role, tetapi langkahnya tetap tersaring permission `/me`. `react-native-copilot` menarik `@changesets/cli` sebagai dependensi produksi (+968 baris lockfile, tidak ter-bundle, tanpa kerentanan baru) |
 | `chore/worker-health-port` | Port `/health` worker dapat diatur `WORKER_HEALTH_PORT` (bawaan 3000) | API dan worker sama-sama memakai port 3000 yang ditulis langsung; saat uji lokal mobile + web pemilik produk, keduanya tidak dapat berjalan di satu laptop sehingga unggahan, ekspor, berita acara, dan notifikasi tidak dapat diuji. Produksi tidak berubah |
 | `PR-07-15`…`PR-07-35` | Paritas mobile seluruh role + mobile visual-first | Rencana awal mengikuti `UX-01`/UX §6.3: mobile hanya alur lapangan. Permintaan baru pemilik produk setelah uji lokal mobile; tidak ada phase yang memiliki pekerjaan ini |
 | `PR-07-36`…`PR-07-42` | Web visual-first seluruh role | Halaman web Phase 01–06 dibangun mengikuti PATTERNS §1.2 lama (sub-judul paragraf) dan tabel saja. Setelah mobile visual-first selesai, pemilik produk meminta arah yang sama di web; tidak ada phase yang memiliki pekerjaan ini |

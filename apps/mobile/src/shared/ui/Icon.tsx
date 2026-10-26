@@ -23,6 +23,7 @@ const shapes = {
     checkCircle: <><Circle cx="12" cy="12" r="9"/><Path d="m8 12 3 3 5-6"/></>,
     alert: <><Path d="m12 3 10 18H2ZM12 9v4"/><Circle cx="12" cy="17" r=".5"/></>,
     info: <><Circle cx="12" cy="12" r="9"/><Path d="M12 11v6"/><Circle cx="12" cy="7" r=".5"/></>,
+    help: <><Circle cx="12" cy="12" r="9"/><Path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><Circle cx="12" cy="17" r=".5"/></>,
     clock: <><Circle cx="12" cy="12" r="9"/><Path d="M12 7v5l3 2"/></>,
     refresh: <><Path d="M20 7a9 9 0 1 0 1 8M20 3v5h-5"/></>,
     search: <><Circle cx="10.5" cy="10.5" r="7.5"/><Path d="m16 16 5 5"/></>,

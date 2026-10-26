@@ -18,11 +18,13 @@ export function CountBadge({ count, style }: { count: number; style?: object }) 
 }
 
 /** C-30 — satu baris: kembali/ikon modul · judul · info · lonceng (UXD-21). */
-export function Header({ title, icon, onBack, onInfo, collapsed = false }: { title: string; icon?: IconName; onBack?: () => void; onInfo?: () => void; collapsed?: boolean }) {
+/** `onHelp` memutar panduan layar sesuai permintaan bila katalog memilikinya. */
+export function Header({ title, icon, onBack, onInfo, onHelp, collapsed = false }: { title: string; icon?: IconName; onBack?: () => void; onInfo?: () => void; onHelp?: () => void; collapsed?: boolean }) {
     const chrome = useChrome();
     return <View style={[styles.bar, collapsed && styles.collapsed]}>
         {!collapsed && (onBack ? <Pressable accessibilityRole="button" accessibilityLabel="Kembali" onPress={onBack} style={styles.button}><Icon name="arrowLeft" color={t.color.iconDefault}/></Pressable> : icon ? <View style={styles.button}><Icon name={icon} color={t.color.iconDefault}/></View> : null)}
         <Text accessibilityRole="header" accessibilityLabel={title} numberOfLines={1} style={[styles.title, collapsed && styles.titleCollapsed]}>{title}</Text>
+        {!collapsed && onHelp && <Pressable accessibilityRole="button" accessibilityLabel="Panduan layar ini" onPress={onHelp} style={styles.button}><Icon name="help" color={t.color.iconDefault}/></Pressable>}
         {!collapsed && onInfo && <Pressable accessibilityRole="button" accessibilityLabel="Keterangan halaman" onPress={onInfo} style={styles.button}><Icon name="info" color={t.color.iconDefault}/></Pressable>}
         {!collapsed && chrome && <Pressable accessibilityRole="button" accessibilityLabel={bellLabel(chrome.unread)} onPress={chrome.openNotifications} style={styles.button}><Icon name="bell" color={t.color.iconDefault}/><CountBadge count={chrome.unread} style={styles.bellBadge}/></Pressable>}
     </View>;
