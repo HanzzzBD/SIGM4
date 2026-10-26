@@ -5,6 +5,8 @@ import { randomUUID } from "expo-crypto";
 import type { DisposalDetail } from "@sigm4/schemas";
 import { useAuth } from "../auth";
 import { useResource } from "../../shared/api/useResource";
+import { ExportButtons } from "../../shared/export/ExportButtons";
+import { shareFromApi, shareFromUrl } from "../../shared/export/share";
 import { BottomSheet, Button, Card, Chips, DateField, EmptyState, EntityCard, Input, Label, Notice, Screen, SectionHeading, Toggle, tokens as t } from "../../shared/ui";
 import { AttachmentField, scanLabel, scanTone } from "../../shared/upload/AttachmentField";
 import { dateWib, rupiah } from "../../shared/wib";
@@ -27,7 +29,7 @@ export function DisposalListScreen() {
         <Input icon="search" label="Cari nomor, kode, atau nama aset" value={q} onChangeText={(v) => { setQ(v); setPage(1); }}/>
         {tab === "USULAN" && <Chips label="Status" value={status} options={[{ value: "", label: "Semua" }, ...Object.entries(statuses).map(([value, label]) => ({ value, label }))]} onChange={(v) => { setStatus(v); setPage(1); }}/>}
         {r.error && <Notice message={r.error}/>}{r.loading && <Label tone="muted">Memuat penghapusan…</Label>}
-        {tab === "ARSIP" && r.data && <Card><Label strong>Total dihapuskan: {r.data.ringkasan.unit} unit</Label><Label tone="muted">Nilai perolehan {rupiah(r.data.ringkasan.nilai)}</Label></Card>}
+        {tab === "ARSIP" && r.data && <Card><Label strong>Total dihapuskan: {r.data.ringkasan.unit} unit</Label><Label tone="muted">Nilai perolehan {rupiah(r.data.ringkasan.nilai)}</Label><ExportButtons formats={["xlsx", "pdf"]} label="Ekspor arsip" onExport={(format) => shareFromApi(api, `/asset-disposals/export/${format}`, { tab: "ARSIP", ...(q.trim() ? { q: q.trim() } : {}) }, `arsip-penghapusan-${dateWib(Date.now())}`, format)}/></Card>}
         {r.data?.data.map((d) => <EntityCard key={d.id} icon="archiveX" title={d.nomor} meta={[reasons[d.alasan], `${d.jumlah_aset} aset diusulkan · ${d.jumlah_disetujui} disetujui`, d.tanggal_pelaksanaan ? `Pelaksanaan ${d.tanggal_pelaksanaan} · ${d.pelaksana ?? ""}` : null]} value={rupiah(d.total_nilai)} statuses={[{ label: statuses[d.status], tone: statusTones[d.status] }]} onPress={() => router.push(`/penghapusan/${d.id}` as "/scan")}/>)}
         {r.data && !r.data.data.length && <EmptyState illustration="empty" title="Belum ada penghapusan" description="Buat usulan atau ubah saringan daftar."/>}
         {r.data && r.data.meta.total_pages > 1 && <View style={styles.row}><Button icon="arrowLeft" title="Sebelumnya" compact secondary disabled={page === 1} onPress={() => setPage(page - 1)}/><Label tone="muted">{page}/{r.data.meta.total_pages}</Label><Button icon="arrowRight" title="Berikutnya" compact secondary disabled={page >= r.data.meta.total_pages} onPress={() => setPage(page + 1)}/></View>}
@@ -119,6 +121,7 @@ export function DisposalDetailScreen() {
             {d.lampiran.length + d.foto_pelaksanaan.length === 0 && <Label tone="muted">Tidak ada berkas tertaut.</Label>}
             {canExecute(d, perms) && <ExecutionPanel key={d.id} d={d} busy={busy} onSubmit={(b) => void write(`/asset-disposals/${d.id}/execute`, b)}/>}
             {d.status === "SELESAI" && <Card><Label>Pelaksanaan {d.tanggal_pelaksanaan} · {d.pelaksana} · Saksi: {d.saksi?.join(", ")}</Label>
+                <Button icon="arrowRight" title="Simpan berita acara PDF" secondary onPress={() => { void disposalReportUrl(api, d.id).then((u) => shareFromUrl(u, `berita-acara-${d.nomor}.pdf`)).catch((e: unknown) => setError(e instanceof Error ? e.message : "Berita acara belum dapat disimpan.")); }}/>
                 <Button icon="fileText" title="Buka berita acara PDF" secondary onPress={() => { void disposalReportUrl(api, d.id).then((u) => Linking.openURL(u)).catch((e: unknown) => setError(e instanceof Error ? e.message : "Berita acara belum dapat dibuka.")); }}/>
                 {d.report_status === "GAGAL" && Object.hasOwn(perms, "disposal.execute") && <Button icon="refresh" title="Buat ulang berita acara" secondary busy={busy} onPress={() => void write(`/asset-disposals/${d.id}/report/retry`)}/>}
                 {d.report_status === "MENUNGGU" && <Notice tone="info" message="Berita acara sedang disiapkan."/>}</Card>}

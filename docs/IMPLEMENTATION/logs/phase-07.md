@@ -24,6 +24,7 @@ Log tidak boleh memuat requirement, keputusan desain, maupun business rule baru.
 | 25 Oktober 2026 | Paket 2 (#187) tergabung. Paket 3 Aset & Bahan di `feature/PR-07-23-aset-bahan-mobile`: commit `PR-07-23`, `PR-07-24`, `PR-07-26`. Dua putaran `AskUserQuestion` menghasilkan keputusan 13–15. | `PR-07-23`, `24`, `26` |
 | 25 Oktober 2026 | Paket 3 (#188) tergabung. Paket 4 Perawatan & Opname di `feature/PR-07-27-perawatan-opname-mobile`: commit `PR-07-27`, `PR-07-28`, `PR-07-29`, ditambah satu commit `PR-07-27` yang memperketat uji setelah satu mutan lolos. Satu putaran `AskUserQuestion` menghasilkan keputusan 17–19. | `PR-07-27`, `28`, `29` |
 | 26 Oktober 2026 | Paket 4 (#189) tergabung. Paket 5 Pengadaan & Penghapusan di `feature/PR-07-22-pengadaan-penghapusan-mobile`: commit `PR-07-22`, `PR-07-30`. Satu putaran `AskUserQuestion` menghasilkan keputusan 20–23. | `PR-07-22`, `PR-07-30` |
+| 26 Oktober 2026 | Paket 5 (#190) tergabung. Paket 6 Pimpinan & Admin di `feature/PR-07-31-pimpinan-admin-mobile`: commit dependensi + versi, lalu `PR-07-31`…`PR-07-35`, ditambah satu commit uji `PR-07-33` setelah satu mutan lolos. Satu putaran `AskUserQuestion` menghasilkan keputusan 24–27. Seluruh 20 PR paritas mobile `PR-07-16`…`35` kini terimplementasi. | `PR-07-31`…`35` |
 
 ## 2. Keputusan yang diambil
 
@@ -54,6 +55,10 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 | 21 | **Lampiran pengadaan & penghapusan dari kamera/galeri (dikompresi `MOB-MED-01`) dan pemilih berkas** (pemilik produk); komponen `AttachmentField` + `photo.ts` di `shared/upload` | Faktur dan foto kondisi paling sering dipotret; PDF/DOCX tetap perlu. Ditolak: kamera/galeri saja, berkas saja | Tidak |
 | 22 | **Ekspor arsip penghapusan (XLSX/PDF) ke `PR-07-31`; cetak QR unit hasil penerimaan tetap ↗ web (`MOB-SCP-02`)**; berita acara PDF dibuka di peramban (pemilik produk) | Sejalan keputusan 14 dan 19 — satu mekanisme simpan berkas. Ditolak: unduh ke perangkat sekarang | Tidak |
 | 23 | **Pintu masuk "Usulkan penggantian/penghapusan" dari Detail Aset (`MS-09`) dan Detail WO (selesai + rekomendasi)** dengan prefill `?aset=` (pemilik produk) | Sama dengan web P-18/P-44; menyentuh `assets` dan `workorders` hanya sebatas satu tombol. Ditolak: hanya dari daftar | Tidak |
+| 24 | **Ekspor disimpan lewat lembar bagikan OS (`expo-sharing`)**: berkas diunduh ke cache aplikasi lalu dibagikan ke Files/Drive/Unduhan atau aplikasi lain (pemilik produk) | Satu mekanisme untuk Android & iOS; menutup keputusan 14, 19, 22. Ditolak: folder SAF Android saja, keduanya | Tidak — modul native baru → versi 0.5.0 (`MOB-VER-03`) |
+| 25 | **Password sementara & kode aktivasi tampil sekali dengan tombol Salin (`expo-clipboard`)** (pemilik produk) | Sama dengan web; tangkapan layar sudah diblokir aplikasi. Ditolak: tanpa salin | Tidak (BR-070c tetap: rahasia hanya di state layar) |
+| 26 | **Editor Approval Rule `MS-84` berparitas penuh dengan web** — pohon kondisi bersarang ≤ 3 tingkat, langkah/SLA/eskalasi, cadangan, terminal, pratinjau (pemilik produk) | Tanpa itu aturan bersarang tidak dapat disunting di ponsel. Ditolak: satu tingkat grup, baca-saja | Tidak — evaluator tetap di server (SDD-APR-10) |
+| 27 | **Kenaikan Kelas Massal `MS-79` dan Kalender Akademik `MS-86` penuh** (pemilik produk) | Sama dengan web P-64/P-71. Ditolak: `MS-79` ↗ web | Tidak |
 
 ## 3. Penyimpangan dari rencana
 
@@ -73,6 +78,9 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 | `MS-54` menolak jenis pengajuan selain reservasi ruangan dan pengadaan | `MS-54` juga memuat konteks penghapusan (`/asset-disposals/{id}`) dan keputusannya | Keputusan 20 | Tidak ada |
 | Sunting usulan di tempat seperti web P-53/P-57 | Rute terpisah `/pengadaan/[id]/ubah` dan `/penghapusan/[id]/ubah` memakai layar `MS-68`/`MS-72` | Formulir panjang tidak muat di dalam detail pada ponsel; tidak ada ID layar baru | Tidak ada |
 | `PR-07-22`/`PR-07-30` hanya menyentuh `procurement`/`disposal` | Satu tombol tambahan di Detail Aset dan Detail WO; aturan keputusan penghapusan ditaruh di `approvals/model.ts` | Keputusan 20 dan 23; `approvals` tidak boleh mengimpor layar `disposal` dalam uji node | Tidak ada |
+| Detail Pengguna `MS-78` padanan P-63 | Panel pseudonimisasi (P-63 web) tidak dibuat; tetap di web | UX `MS-78` hanya menyebut ubah · reset password · reset 2FA · nonaktifkan; pseudonimisasi tidak dapat dibatalkan | Bila UAT memintanya, ditambahkan sebagai PR tersendiri |
+| Laporan Analitik `MS-75` padanan P-59 | Tabel menjadi kartu per grup (4 kolom pertama + indikator grafik); pengurutan per kolom tidak ditawarkan | Tabel lebar tidak terbaca di ponsel; urutan bawaan server tetap | Tidak ada |
+| Validasi klien Kalender/Parameter | Hanya kelengkapan isian seperti web; urutan tanggal semester, rentang parameter (FR-20.1 A1), dan hari kerja diputus server | Tidak menambah aturan bisnis di klien | Tidak ada |
 | `MS-12`/`MS-49` dan `MS-14`/`MS-52` | Masing-masing satu layar (`/peminjaman`, `/denda`) seperti web P-32/P-35; judul menyesuaikan izin | Cakupan baris diputus server; dua layar identik hanya menggandakan kode | Tidak ada |
 
 ## 4. PR di luar rencana
@@ -109,6 +117,7 @@ Setiap TBD yang tertutup wajib juga diperbarui di [`../../SDD/TBD-REGISTER.md`](
 | Paket 3 menambah modul native `expo-document-picker`; binari dev build lama tidak memuatnya, sehingga unggah dokumen hanya berjalan setelah build ulang | Pembaruan OTA ke binari lama akan menampilkan galat saat memilih dokumen | Versi dinaikkan ke 0.4.0 sehingga OTA paket 3 tidak mendarat di binari 0.3.0 (keputusan 16); binari 0.4.0 tetap harus dibangun ulang sebelum uji | Ya |
 | Paket 4 belum dijalankan di perangkat; finalisasi → rekonsiliasi → persetujuan opname hanya teruji lewat logika murni, typecheck, dan bundel | Urutan tombol dan keadaan sesi (finalisasi, menunggu persetujuan, dikembalikan) belum terlihat dengan data nyata | Uji satu siklus opname Aset dan satu Bahan di staging dengan tiga akun (pelaksana, pengelola, Pimpinan) | Ya |
 | Paket 5 belum dijalankan di perangkat; unggah kamera/galeri/berkas, penerimaan atomik, dan eksekusi penghapusan hanya teruji lewat logika murni, typecheck, dan bundel | Kompresi foto dan pemilih berkas dapat berperilaku lain di Android/iOS; urutan langkah keputusan multi-level belum terlihat dengan data nyata | Uji satu usulan pengadaan → persetujuan sebagian → penerimaan, dan satu penghapusan → persetujuan Pimpinan → eksekusi di staging | Ya |
+| Paket 6 menambah modul native `expo-sharing` dan `expo-clipboard`; ekspor, salin rahasia, dan editor aturan baru teruji lewat logika murni, typecheck, dan bundel | Binari 0.4.0 tidak memuat modul ini; lembar bagikan dan clipboard belum dicoba di Android/iOS | Versi dinaikkan ke 0.5.0 sehingga OTA tidak mendarat di binari lama; bangun ulang binari 0.5.0 lalu uji ekspor, salin, dan satu aturan bersarang di staging | Ya |
 
 ## 8. Hasil pengukuran
 
@@ -136,6 +145,10 @@ Angka nyata, bukan perkiraan. Kosongkan bila belum diukur — jangan diisi tebak
 | Uji mobile paket 5 | Hijau | 30 berkas, 220 uji lulus (sebelum paket: 204) | `CD-01` |
 | Uji mutasi serial paket 5 | Seluruh mutan mati | 16/16 mati (syarat pengajuan, saringan draf, penyunting pemilik, batas sisa penerimaan, lokasi wajib, penutupan setelah tahun anggaran, cabang penolakan, garansi, bukti kehilangan CLEAN, foto pelaksanaan, pembatalan R-01, pemulihan R-01, keputusan akhir R-03, langkah akhir, kecocokan instance, lampiran CLEAN); sumber pulih byte-per-byte | CLAUDE.md |
 | Bundel Android paket 5 | Berhasil | Berhasil, 5,5 MB; tanpa modul native baru | `SDD-MOB-10` |
+| Baris produksi paket 6 per commit | `PR-07-31` M · `PR-07-32` M · `PR-07-33` L · `PR-07-34` M · `PR-07-35` S | `PR-07-31` +211/−1 · `PR-07-32` +246 · `PR-07-33` +410 · `PR-07-34` +219 · `PR-07-35` +182 | §7 phase-07 |
+| Uji mobile paket 6 | Hijau | 35 berkas, 246 uji lulus (sebelum paket: 220) | `CD-01` |
+| Uji mutasi serial paket 6 | Seluruh mutan mati | 21/21 mati setelah satu uji ditambah (batas bawah SLA semula lolos). Sasaran: pasangan tanggal, izin rincian, presisi grafik, tanda selisih, panjang nama berkas, consent wali, unit dipertahankan, batas 200 siswa, sisa gagal, kunci inti Admin, cakupan semula, SLA, eskalasi, kondisi `{}`, awalan galat pratinjau, urutan RE-04, parameter tak berubah, kepala unit, libur umum, batas akhir hari, kode dicabut; sumber pulih byte-per-byte | CLAUDE.md |
+| Bundel Android paket 6 | Berhasil | Berhasil, 5,8 MB; `npm ci --dry-run` lolos | `SDD-MOB-10` |
 
 ## 9. Gerbang keluar
 

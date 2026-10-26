@@ -40,9 +40,9 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 | [04](phases/phase-04.md) | Siklus Hidup Aset | 3 | 19 | `In Progress` | 0/19 | Menutup `M2` |
 | [05](phases/phase-05.md) | Penutupan Siklus | 3 | 36 | `In Progress` | 0/36 | Menutup `M3` & `M4` |
 | [06](phases/phase-06.md) | Analitik | 1 | 11 | `In Progress` | 0/11 | Menutup `M5` |
-| [07](phases/phase-07.md) | Integrasi & UAT | — | 35 | `In Progress` | 14/35 | Paritas mobile: paket 1–4 tergabung; paket 5 Pengadaan & Penghapusan (`PR-07-22`, `30`) dalam tinjauan (**UXD-19**) |
+| [07](phases/phase-07.md) | Integrasi & UAT | — | 35 | `In Progress` | 16/35 | Paritas mobile: paket 1–5 tergabung; paket 6 Pimpinan & Admin (`PR-07-31`…`35`) dalam tinjauan (**UXD-19**) |
 | [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 18 | `Not Started` | 0/18 | Menutup `M6` |
-| | **Total** | **22** | **251** | | **103/251** | |
+| | **Total** | **22** | **251** | | **105/251** | |
 
 ## Ringkasan milestone PRD
 
@@ -264,9 +264,13 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-07-27` | `Done` | [#189](https://github.com/HanzzzBD/SIGM4/pull/189) | Paket 4 Perawatan & Opname: `MS-59` (berbagi `/kerusakan` dengan Tiket Saya), `MS-60` verifikasi + penugasan, `MS-61` mode pengelola (berbagi `/work-order` dengan `MS-16`), `MS-62`; restyle ringan `MS-15`/`MS-17` (keputusan 17). Kompleksitas `M`. Digabung (squash `5d232b5`). |
 | `PR-07-28` | `Done` | [#189](https://github.com/HanzzzBD/SIGM4/pull/189) | Paket 4: `MS-63`, `MS-64` — jadwal preventif, lewati/nonaktifkan beralasan. Kompleksitas `S`. Digabung (squash `5d232b5`). |
 | `PR-07-29` | `Done` | [#189](https://github.com/HanzzzBD/SIGM4/pull/189) | Paket 4: `MS-65`, `MS-66` (Aset & Bahan, keputusan 18; berita acara PDF di peramban, keputusan 19), mode pengelola `MS-18` padanan P-47; restyle ringan `MS-19`. Kompleksitas `M`. Digabung (squash `5d232b5`). |
-| `PR-07-22` | `In Review` | [#190](https://github.com/HanzzzBD/SIGM4/pull/190) | Paket 5 Pengadaan & Penghapusan, cabang `feature/PR-07-22-pengadaan-penghapusan-mobile`: `MS-67`, `MS-68` (`?aset=` dari Detail Aset), `MS-69`; lampiran kamera/galeri/berkas lewat `AttachmentField` bersama (keputusan 21). Kompleksitas `M` |
-| `PR-07-30` | `In Review` | [#190](https://github.com/HanzzzBD/SIGM4/pull/190) | Paket 5: `MS-70` penerimaan, `MS-71`…`MS-73` penghapusan; keputusan penghapusan di `MS-54` (keputusan 20); ekspor arsip ke `PR-07-31` (keputusan 22); pintu masuk dari Detail Aset & WO (keputusan 23). Kompleksitas `M` |
-| `PR-07-31` … `PR-07-35` | `Not Started` | — | Paket 6: Pimpinan & Admin; rincian [`phases/phase-07.md` §7](phases/phase-07.md) |
+| `PR-07-22` | `Done` | [#190](https://github.com/HanzzzBD/SIGM4/pull/190) | Paket 5 Pengadaan & Penghapusan: `MS-67`, `MS-68` (`?aset=` dari Detail Aset), `MS-69`; lampiran kamera/galeri/berkas lewat `AttachmentField` bersama (keputusan 21). Kompleksitas `M`. Digabung (squash `aaaac1f`). |
+| `PR-07-30` | `Done` | [#190](https://github.com/HanzzzBD/SIGM4/pull/190) | Paket 5: `MS-70` penerimaan, `MS-71`…`MS-73` penghapusan; keputusan penghapusan di `MS-54` (keputusan 20); ekspor arsip ke `PR-07-31` (keputusan 22); pintu masuk dari Detail Aset & WO (keputusan 23). Kompleksitas `M`. Digabung (squash `aaaac1f`). |
+| `PR-07-31` | `In Review` | [#191](https://github.com/HanzzzBD/SIGM4/pull/191) | Paket 6 Pimpinan & Admin, cabang `feature/PR-07-31-pimpinan-admin-mobile`: `MS-74`, `MS-75` + ekspor ke perangkat lewat lembar bagikan (keputusan 24) untuk analitik, inventaris ruangan `MS-38`, opname `MS-66`, arsip penghapusan `MS-71`; `expo-sharing`/`expo-clipboard`, versi 0.5.0. Kompleksitas `M` |
+| `PR-07-32` | `In Review` | [#191](https://github.com/HanzzzBD/SIGM4/pull/191) | Paket 6: `MS-76`…`MS-79`, `MS-82`; password sementara sekali tampil + Salin (keputusan 25); impor ↗ web (`MOB-SCP-03`). Kompleksitas `M` |
+| `PR-07-33` | `In Review` | [#191](https://github.com/HanzzzBD/SIGM4/pull/191) | Paket 6: `MS-80`, `MS-81`, `MS-83`, `MS-84` paritas penuh pohon kondisi + pratinjau (keputusan 26). Kompleksitas `L` |
+| `PR-07-34` | `In Review` | [#191](https://github.com/HanzzzBD/SIGM4/pull/191) | Paket 6: `MS-85` (+ Satuan Bahan), `MS-86`, `MS-87`. Kompleksitas `M` |
+| `PR-07-35` | `In Review` | [#191](https://github.com/HanzzzBD/SIGM4/pull/191) | Paket 6: `MS-88`, `MS-89`, `MS-90`. Kompleksitas `S` |
 
 ### Phase 08 — Pengerasan & Kesiapan Rilis · `Not Started`
 
