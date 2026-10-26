@@ -271,7 +271,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-07-33` | `Done` | [#191](https://github.com/HanzzzBD/SIGM4/pull/191) | Paket 6: `MS-80`, `MS-81`, `MS-83`, `MS-84` paritas penuh pohon kondisi + pratinjau (keputusan 26). Kompleksitas `L`. Digabung PM ke `develop` (squash `72cb7c2`) |
 | `PR-07-34` | `Done` | [#191](https://github.com/HanzzzBD/SIGM4/pull/191) | Paket 6: `MS-85` (+ Satuan Bahan), `MS-86`, `MS-87`. Kompleksitas `M`. Digabung PM ke `develop` (squash `72cb7c2`) |
 | `PR-07-35` | `Done` | [#191](https://github.com/HanzzzBD/SIGM4/pull/191) | Paket 6: `MS-88`, `MS-89`, `MS-90`. Kompleksitas `S`. Digabung PM ke `develop` (squash `72cb7c2`) |
-| `PR-07-36` | `In Progress` | — | Keputusan & spesifikasi web visual-first, cabang `feature/PR-07-36-web-visual-first` (`WEB-VIS-01`…`05`, `SDD-FE-17`…`19`, **UXD-24**…**27**, **DSD-13**/**14**, C-39…C-41); di luar rencana — [log phase-07 §4](logs/phase-07.md) |
+| `PR-07-36` | `In Review` | [#195](https://github.com/HanzzzBD/SIGM4/pull/195) | Keputusan & spesifikasi web visual-first, cabang `feature/PR-07-36-web-visual-first` (`WEB-VIS-01`…`05`, `SDD-FE-17`…`19`, **UXD-24**…**27**, **DSD-13**/**14**, C-39…C-41); di luar rencana — [log phase-07 §4](logs/phase-07.md) |
 | `PR-07-37` … `PR-07-42` | `Not Started` | — | Web visual-first dalam enam paket: Fondasi → Aset & Bahan → Pemanfaatan → Perawatan → Pengawasan → Sistem; rincian [`phases/phase-07.md` §7](phases/phase-07.md) |
 
 ### Phase 08 — Pengerasan & Kesiapan Rilis · `Not Started`
