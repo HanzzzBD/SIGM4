@@ -336,6 +336,7 @@ JUDUL                                          [Aksi utama]  [... aksi lain]
 | Pengurutan | Klik kepala kolom; arah ditandai ikon **dan** `aria-sort` | `NFR-AC-06` |
 | Ekspor | Mengekspor **hasil filter saat ini**, bukan seluruh tabel; > 5 detik diproses asinkron | `FR-04.2 A3` · `NFR-P-08` |
 | Baris | Seluruh baris dapat diklik menuju detail; kolom aksi tetap ada untuk papan ketik | `NFR-AC-03` |
+| Tampilan | Pengalih **Tabel ⇄ Kartu** di kanan panel filter; bawaan Tabel `≥768px`, Kartu di bawahnya; diingat per halaman. Pemilihan massal hanya di Tabel | **UXD-26** · `SDD-FE-17` |
 
 ### B. Halaman Detail
 

@@ -27,8 +27,10 @@ Spesifikasi 29 komponen. **Perilaku** berasal dari [`docs/UX/`](../UX/); berkas 
 | [C-33](#c-33-grafik-mini) | Grafik Mini | [C-34](#c-34-cincin-progres) | Cincin Progres |
 | [C-35](#c-35-stepper-wizard) | Stepper Wizard | [C-36](#c-36-bottom-sheet) | Bottom Sheet |
 | [C-37](#c-37-ilustrasi-keadaan) | Ilustrasi Keadaan | [C-38](#c-38-tombol-chatbot-mengambang) | Tombol Chatbot Mengambang |
+| [C-39](#c-39-popover-info) | Popover Info | [C-40](#c-40-pengalih-tampilan) | Pengalih Tampilan |
+| [C-41](#c-41-kartu-saran-tindakan) | Kartu Saran Tindakan | | |
 
-C-22…C-29 memenuhi daftar komponen inti wajib pada [`ui-foundation.md §31.3`](../PRD/04-frontend/ui-foundation.md). C-30…C-38 adalah komponen mobile visual-first (**DSD-11**, `MOB-SCP-04`, 25 Oktober 2026).
+C-22…C-29 memenuhi daftar komponen inti wajib pada [`ui-foundation.md §31.3`](../PRD/04-frontend/ui-foundation.md). C-30…C-38 adalah komponen mobile visual-first (**DSD-11**, `MOB-SCP-04`, 25 Oktober 2026); C-31…C-34 dan C-37 juga dipakai web, ditambah C-39…C-41 untuk web visual-first (**DSD-13**, `WEB-VIS-01`, 26 Oktober 2026).
 
 ## Aturan yang berlaku bagi seluruh komponen
 
@@ -169,7 +171,7 @@ C-22…C-29 memenuhi daftar komponen inti wajib pada [`ui-foundation.md §31.3`]
 | `focus` | Ring 2px `border.focus` offset −2px (di dalam, agar tidak terpotong) | 4,98 ✓ |
 | `active` | Latar `surface.selected` `teal.50` · garis kiri 3px `teal.600` · teks `teal.800` bobot 600 · ikon `icon.interactive` | 8,10 ✓ |
 
-**Interaction.** Grup yang seluruh entrinya tersembunyi **tidak dirender** beserta judulnya (**UXD-01**). Preferensi ciut/lebar disimpan sebagai preferensi tampilan (`SDD-FE-03`). Pada `<768px` sidebar menjadi overlay drawer.
+**Interaction.** Grup yang seluruh entrinya tersembunyi **tidak dirender** beserta judulnya (**UXD-01**). Preferensi ciut/lebar disimpan sebagai preferensi tampilan (`SDD-FE-03`). Pada `<768px` sidebar menjadi overlay drawer. Sidebar setinggi layar dan **bergulir sendiri**, terpisah dari area konten (**UXD-25**). Ikon item adalah ikon modul FOUNDATIONS §8 (**DSD-12**). Dalam mode ciut, label grup diganti batang penanda accent selebar item dan setiap item menampilkan nama entri lewat [Tooltip C-18](#c-18-tooltip) di kanan; `aria-label` item tetap memuat nama entri.
 
 **Accessibility.** `<nav aria-label="Navigasi utama">`; grup memakai `<ul>` bersarang dengan `<h2>` tersembunyi visual; item aktif `aria-current="page"`. Penanda accent 3px bersifat **dekoratif** — nama grup sudah dibawa teks, sehingga kontras rendah `accent.yellow` (1,84) dan `accent.gray` (4,23) tidak melanggar `NFR-AC-06`.
 
@@ -270,7 +272,7 @@ Tombol Scan memakai perlakuan visual tombol primer karena `UX-02` menjadikan sca
 | Varian | Perlakuan | Dipakai untuk |
 |---|---|---|
 | `default` | Border 1px, tanpa bayangan | Kartu dashboard, blok detail |
-| `interactive` | + hover latar `neutral.50`, kursor pointer, seluruh kartu dapat ditekan | Kartu baris pada mobile, kartu aset di katalog |
+| `interactive` | + hover latar `neutral.50`, kursor pointer, seluruh kartu dapat ditekan; di web hover juga menaikkan `elevation.0 → 1` dalam `motion.duration.fast` (**DSD-14**) | Kartu baris pada mobile, kartu aset di katalog |
 | `accent` | + garis atas 3px `color.accent.*` | Kartu identitas domain — maksimum satu per layar |
 | `status` | + garis kiri 3px `color.*.base` semantic | Kartu peringatan pada Zona 1 dashboard |
 
@@ -1038,7 +1040,7 @@ Filter aktif:  (Kategori: Komputer x)  (Kondisi: Baik x)      Hapus semua
 
 # C-31 Tile Modul
 
-**Purpose.** Pintu masuk modul pada Menu (`MS-31`) dan Aksi Cepat Beranda (**DSD-12**).
+**Purpose.** Pintu masuk modul pada Menu (`MS-31`) dan Aksi Cepat Beranda (**DSD-12**); di web, Zona 4 Aksi Cepat Dashboard P-12 memakai tile yang sama dalam grid 4–6 kolom (**DSD-13**).
 
 **Anatomy.**
 
@@ -1072,7 +1074,7 @@ Filter aktif:  (Kategori: Komputer x)  (Kondisi: Baik x)      Hapus semua
 
 # C-32 Kartu Entitas
 
-**Purpose.** Satu objek dalam daftar mobile — aset, reservasi, peminjaman, tiket, usulan — sebagai kartu ringkas pengganti baris tabel (**DSD-11**).
+**Purpose.** Satu objek dalam daftar mobile — aset, reservasi, peminjaman, tiket, usulan — sebagai kartu ringkas pengganti baris tabel (**DSD-11**). Di web, kartu yang sama mengisi tampilan Kartu pada halaman daftar lewat C-40 (**DSD-13**), dengan media 48px dan grid 1/2/3/4 kolom per titik henti.
 
 **Anatomy.**
 
@@ -1184,7 +1186,7 @@ Filter aktif:  (Kategori: Komputer x)  (Kondisi: Baik x)      Hapus semua
 | Elemen | Perlakuan |
 |---|---|
 | Gaya | Bidang datar + garis outline seragam ikon (FOUNDATIONS §8); warna netral + **satu** accent grup modul sebagai bidang (**DSD-07**) |
-| Ukuran | 120px di ponsel, di atas judul keadaan **C-21** |
+| Ukuran | 120px di ponsel · 160px di web; di atas judul keadaan **C-21** (**DSD-13**) |
 | Teks | Judul satu baris + satu kalimat + satu tombol aksi — tidak lebih |
 | Aksesibilitas | Dekoratif (`accessibilityElementsHidden`); maknanya ada di judul |
 
@@ -1203,6 +1205,79 @@ Filter aktif:  (Kategori: Komputer x)  (Kondisi: Baik x)      Hapus semua
 | Aksi | Membuka percakapan `MS-21` di **C-36** |
 | Tersembunyi | Pada pemindai (**C-25**) dan bagi pengguna tanpa `chat.use` |
 | Label | `accessibilityLabel` "Tanya asisten SIGM4" |
+
+---
+
+# C-39 Popover Info
+
+**Purpose.** Padanan web untuk ikon info **C-30** → **C-36**. Keterangan halaman atau seksi yang sebelumnya tampil sebagai paragraf sub-judul dipindah ke sini (**UXD-24**). Berbeda dari [Tooltip C-18](#c-18-tooltip), popover dibuka dengan klik, tetap terbuka saat dibaca, dan boleh memuat satu tautan.
+
+**Anatomy.** `Judul halaman (i)` → klik → panel `[judul singkat] [≤ 3 kalimat] [tautan opsional]`.
+
+**Spesifikasi.**
+
+| Elemen | Perlakuan |
+|---|---|
+| Pemicu | Ikon `info` `size.icon.sm` `color.icon.muted` dalam tombol bulat seluas `size.touch.min`; hover `color.icon.interactive` |
+| Panel | `surface.default`, border 1px `border.subtle`, `elevation.1`, `radius.md`, padding `spacing.4`, lebar maksimum 320px, jarak 8px dari pemicu |
+| Isi | Judul `font.size.sm` 600 + paling banyak tiga kalimat `font.size.sm` `text.secondary`; paling banyak satu [Link C-02](#c-02-link) |
+| Gerak | Masuk `motion.duration.base` `easing.enter` (**DSD-14**) |
+
+**Accessibility.** Radix Popover (`SDD-FE-13`); pemicu `aria-label` "Tentang halaman ini"; Esc menutup dan mengembalikan fokus ke pemicu. Isinya tidak boleh menjadi satu-satunya tempat informasi wajib — informasi wajib milik [Alert C-14](#c-14-alert).
+
+---
+
+# C-40 Pengalih Tampilan
+
+**Purpose.** Mengganti penyajian halaman daftar antara Table **C-15** dan grid Kartu Entitas **C-32** (**UXD-26**).
+
+**Anatomy.** `[≡ Tabel | ▦ Kartu]` — dua tombol bersegmen di kanan panel filter **C-22**.
+
+**Spesifikasi.**
+
+| Elemen | Perlakuan |
+|---|---|
+| Wadah | Border 1px `border.strong`, `radius.sm`, tinggi `size.control.sm` (toolbar desktop) |
+| Segmen | Ikon `list` / `layout-grid` `size.icon.sm` + label `font.size.sm`; label disembunyikan di bawah `lg`, `aria-label` tetap ada |
+| Aktif | Latar `surface.selected`, ikon dan teks `teal.800` 600 — sama dengan item aktif **C-03** |
+| Tidak aktif | `text.secondary`; hover latar `neutral.50` |
+
+**Accessibility.** Radix Toggle Group tipe tunggal, `aria-label` "Tampilan daftar"; panah kiri/kanan berpindah segmen. Pergantian tampilan tidak memindahkan fokus dan tidak mengubah URL (`SDD-FE-17`).
+
+---
+
+# C-41 Kartu Saran Tindakan
+
+**Purpose.** Menyarankan langkah berikutnya yang diturunkan dari business rule dan data yang sudah ada (**UXD-27**, `WEB-VIS-03`). Contohnya: aset dengan pemeliharaan jatuh tempo menyarankan "Buat work order", dan bahan di bawah stok minimum menyarankan "Ajukan pengadaan".
+
+**Anatomy.**
+
+```
++----------------------------------------------------+
+| [ikon]  Stok kertas A4 di bawah minimum    [Ajukan]|
+|         Sisa 2 rim · minimum 10                    |
++----------------------------------------------------+
+```
+
+**Spesifikasi.**
+
+| Elemen | Perlakuan |
+|---|---|
+| Permukaan | `color.info.subtle`, border kiri 3px `info.base`, `radius.md`, padding `spacing.4` |
+| Ikon | `lightbulb` `size.icon.md` `info.base` |
+| Judul | Satu kalimat `font.size.base` 600 `info.strong` |
+| Alasan | Satu baris meta `font.size.sm` `text.secondary` berisi angka yang memicu saran |
+| Aksi | Satu [Button C-01](#c-01-button) `secondary` menuju halaman/aksi yang sudah ada |
+| Jumlah | Paling banyak tiga kartu per halaman; saran berikutnya dilipat ke "Lihat N saran lain" |
+
+**Interaction.** Kartu **tidak dirender** bila pengguna tidak memiliki permission aksinya (`PM-04`), bukan dinonaktifkan. Kartu dapat disembunyikan untuk sesi ini lewat tombol tutup.
+
+**Do / Don't.**
+
+| ✅ Do | ❌ Don't |
+|---|---|
+| Menyebut angka yang memicu saran | Saran tanpa dasar business rule |
+| Satu aksi yang jelas | Memakai warna `warning`/`error`, karena saran bukan status |
 
 ---
 

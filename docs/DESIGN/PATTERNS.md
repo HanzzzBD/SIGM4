@@ -50,14 +50,15 @@ Empat arketipe pada [`UX §7.1`](../UX/PAGE-SPECIFICATION.md#71-empat-arketipe-l
 
 | Bagian | Spesifikasi |
 |---|---|
-| Judul | `font.size.2xl` 30px · 600 · `text.heading` |
-| Sub-judul / identitas | `font.size.base` · `text.secondary` — mis. "Kategori Komputer · Lab Komputer 1 · Diperoleh 2024" |
+| Ikon modul | Kotak 40px `radius.md` berisi accent grup + ikon modul `size.icon.md` `color.icon.inverse` (`color.icon.default` di atas kuning), di kiri judul (**DSD-13**, pola **DSD-12**) |
+| Judul | `font.size.2xl` 30px · 600 · `text.heading` + ikon info [C-39](COMPONENTS.md#c-39-popover-info) bila halaman punya keterangan |
+| Identitas | Hanya pada halaman detail: satu baris meta `font.size.sm` · `text.secondary`, paling banyak tiga butir dipisah titik tengah — mis. "Komputer · Lab Komputer 1 · 2024". Paragraf keterangan halaman **tidak** tampil di sini, melainkan di dalam C-39 (**UXD-24**) |
 | Lencana status | [Badge](COMPONENTS.md#c-13-badge) di kanan judul, gap `spacing.3` |
 | Aksi utama | Maksimum **dua** tombol terlihat; sisanya di [Dropdown](COMPONENTS.md#c-17-dropdown) titik-tiga |
 | Garis identitas domain | `border.width.marker` 3px `color.accent.*` sesuai grup, di bawah seluruh blok kepala |
 | Padding | `spacing.6` vertikal · mengikuti padding area konten horizontal |
 
-Garis 3px accent adalah **satu-satunya** tempat accent muncul di area konten. Halaman yang tidak termasuk lima grup domain — layar publik, layar galat, profil — tidak memiliki garis ini.
+Garis 3px accent dan kotak ikon modul adalah **satu-satunya** tempat accent muncul di area konten, di luar grafik dan Tile Modul C-31. Halaman yang tidak termasuk lima grup domain — layar publik, layar galat, profil — tidak memiliki garis ini.
 
 ## 1.3 Lebar konten
 
@@ -202,7 +203,9 @@ BAHAN ────────────────────────�
 
 | Aspek | Ketentuan |
 |---|---|
-| Kapan | Saat *blur* per field; seluruh form saat submit |
+| Kapan | Saat *blur* pertama per field, lalu **langsung** setiap perubahan pada field yang sudah disentuh; seluruh form saat submit (**UXD-27**, `SDD-FE-18`) |
+| Contoh pengisian | Teks bantuan "Contoh: …" `font.size.sm` `text.secondary` muncul di bawah field **saat difokuskan** dan hilang saat blur. Teks ini tidak pernah menggantikan label, tidak ditaruh di *placeholder*, dan tetap ditautkan `aria-describedby` |
+| Sukses field | Field wajib yang sudah valid menampilkan ikon centang `success.base` di kanan, tanpa teks |
 | Sumber aturan | Skema bersama frontend–backend (`SDD-FE-05`, `SDD-REPO-05`) — form tidak pernah menerima nilai yang akan ditolak API |
 | Tampilan | Border 2px `border.error` + ikon + pesan `error.base` di bawah field |
 | Isi pesan | Menyebut **nama field** dan cara memperbaikinya |
@@ -246,6 +249,7 @@ Hanya **Usulan Pengadaan** yang memiliki status `Draf` bagi pemohon (`FR-14.1 A1
 |---|---|---|
 | Tabel | Data terstruktur, banyak baris, perlu diurutkan & difilter | [Table](COMPONENTS.md#c-15-table) |
 | Kartu | Data visual berorientasi objek, sedikit field | [Card](COMPONENTS.md#c-07-card) `interactive` |
+| Tabel ⇄ Kartu | Halaman daftar arketipe A (**UXD-26**); kartu = [Kartu Entitas C-32](COMPONENTS.md#c-32-kartu-entitas) dalam grid 1/2/3/4 kolom per titik henti | [Pengalih Tampilan C-40](COMPONENTS.md#c-40-pengalih-tampilan) |
 | Daftar deskripsi | Detail satu objek | Pasangan label–nilai |
 | Linimasa | Urutan kejadian | [Linimasa Approval](COMPONENTS.md#c-27-linimasa-approval) |
 | Pohon | Hierarki | Pohon lokasi P-22 |
