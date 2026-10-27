@@ -7,7 +7,8 @@ import { Link } from "@tanstack/react-router";
 import { LABEL_KELOMPOK_NOTIFIKASI } from "@sigm4/schemas";
 import { useState } from "react";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
-import { Peringatan, Pilihan, Tombol } from "../../shared/ui/primitives";
+import { Lencana, Peringatan, Pilihan, Tombol } from "../../shared/ui/primitives";
+import { KepalaHalaman } from "../../shared/ui/visual";
 import type { Kelompok } from "./api";
 import { KELOMPOK, KUNCI_NOTIFIKASI, daftarNotifikasiQuery, tandaiSemuaTerbaca } from "./api";
 import { aturPenghitung, useKeadaanAliran } from "./aliran";
@@ -53,13 +54,11 @@ export default function NotificationCenterPage({ pencarian, onPencarian }: { rea
     const tersaring = pencarian.jenis !== undefined || pencarian.tampilan === "belum";
     return (
         <div className="flex flex-col gap-6">
-            <header className="flex flex-wrap items-start justify-between gap-4">
-                <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl font-semibold text-text-heading">Notifikasi</h1>
-                    <p className="text-base text-text-secondary">
-                        {aliran.unread === null || arsip ? "Pemberitahuan untuk Anda." : aliran.unread === 0 ? "Seluruh notifikasi sudah dibaca." : `${String(aliran.unread)} notifikasi belum dibaca.`}
-                    </p>
-                </div>
+            <KepalaHalaman
+                judul="Notifikasi"
+                info={{ judul: "Tentang Notifikasi", isi: "Pemberitahuan untuk Anda, terbaru di atas. Atur kanal penerimaan di Preferensi Notifikasi." }}
+                status={aliran.unread === null || arsip ? undefined : aliran.unread === 0 ? <Lencana varian="success">Semua sudah dibaca</Lencana> : <Lencana varian="info">{`${String(aliran.unread)} notifikasi belum dibaca`}</Lencana>}
+                aksi={
                 <div className="flex flex-wrap items-center gap-2">
                     <Link to="/profil/notifikasi" className="inline-flex min-h-control-md items-center rounded-md px-4 text-base font-medium text-text-link hover:text-text-link-hover">
                         Preferensi Notifikasi
@@ -70,7 +69,8 @@ export default function NotificationCenterPage({ pencarian, onPencarian }: { rea
                         </Tombol>
                     )}
                 </div>
-            </header>
+                }
+            />
             <p role="status" className="sr-only">
                 {pengumuman}
             </p>

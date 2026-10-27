@@ -1,23 +1,23 @@
 // Lima keadaan layar sebagai komponen bersama (SDD-FE-09, UX §7.3, 31.5): memuat, kosong,
 // galat, tanpa akses, luring. Setiap keadaan selain memuat WAJIB menawarkan aksi berikutnya
 // (UX-05). Galat server menampilkan `request_id` yang dapat disalin, tanpa detail teknis
-// (NFR-R-10). Tanpa akses tidak pernah mengonfirmasi keberadaan data (SDD-AUTH-08).
+// (NFR-R-10). Tanpa akses tidak pernah mengonfirmasi keberadaan data (SDD-AUTH-08). Setiap keadaan memakai
+// Ilustrasi Keadaan C-37 di atas judul, satu kalimat, dan satu aksi (UXD-24, DSD-13).
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { ApiError, GalatJaringan } from "../api";
 import { Ikon } from "../ui/icon";
-import type { NamaIkon } from "../ui/icon";
+import { IlustrasiKeadaan } from "../ui/visual";
+import type { JenisKeadaan } from "../ui/visual";
 import { Kerangka, Tombol } from "../ui/primitives";
 
 export { Kerangka as KeadaanMemuat };
 
-function Blok({ ikon, judul, children, aksi }: { readonly ikon: NamaIkon; readonly judul: string; readonly children?: ReactNode; readonly aksi?: ReactNode }) {
+function Blok({ jenis, judul, children, aksi }: { readonly jenis: JenisKeadaan; readonly judul: string; readonly children?: ReactNode; readonly aksi?: ReactNode }) {
     return (
         <div className="flex flex-col items-center gap-3 px-4 py-16 text-center">
-            <span className="text-icon-muted">
-                <Ikon nama={ikon} ukuran="lg" />
-            </span>
+            <IlustrasiKeadaan jenis={jenis} />
             <h2 className="text-lg font-semibold text-text-heading">{judul}</h2>
             {children !== undefined && <div className="max-w-prose text-base text-text-secondary">{children}</div>}
             {aksi}
@@ -28,7 +28,7 @@ function Blok({ ikon, judul, children, aksi }: { readonly ikon: NamaIkon; readon
 /** C-21: ikon + satu kalimat + tombol aksi berikutnya. */
 export function KeadaanKosong({ judul, pesan, aksi }: { readonly judul: string; readonly pesan: string; readonly aksi?: ReactNode }) {
     return (
-        <Blok ikon="info" judul={judul} aksi={aksi}>
+        <Blok jenis="kosong" judul={judul} aksi={aksi}>
             {pesan}
         </Blok>
     );
@@ -57,7 +57,7 @@ export function KeadaanGalat({ galat, onCobaLagi }: { readonly galat: unknown; r
     const luring = galat instanceof GalatJaringan;
     const pesan = galat instanceof ApiError || luring ? (galat as Error).message : "Terjadi gangguan pada sistem. Coba lagi beberapa saat lagi.";
     return (
-        <Blok ikon={luring ? "luring" : "galat"} judul={luring ? "Tidak tersambung" : "Data tidak dapat dimuat"} aksi={<Tombol varian="secondary" ikon="muatUlang" onClick={onCobaLagi}>Coba lagi</Tombol>}>
+        <Blok jenis={luring ? "luring" : "galat"} judul={luring ? "Tidak tersambung" : "Data tidak dapat dimuat"} aksi={<Tombol varian="secondary" ikon="muatUlang" onClick={onCobaLagi}>Coba lagi</Tombol>}>
             <p>{pesan}</p>
             {galat instanceof ApiError && galat.requestId !== null && <SalinRequestId id={galat.requestId} />}
         </Blok>
@@ -67,7 +67,7 @@ export function KeadaanGalat({ galat, onCobaLagi }: { readonly galat: unknown; r
 /** Tanpa akses (P-08): menjelaskan pembatasan tanpa menyebut apakah datanya ada. */
 export function KeadaanTanpaAkses({ aksi }: { readonly aksi: ReactNode }) {
     return (
-        <Blok ikon="tanpaAkses" judul="Akses dibatasi" aksi={aksi}>
+        <Blok jenis="tanpaAkses" judul="Akses dibatasi" aksi={aksi}>
             Anda tidak memiliki hak akses untuk halaman ini. Hubungi Administrator bila Anda memerlukannya.
         </Blok>
     );

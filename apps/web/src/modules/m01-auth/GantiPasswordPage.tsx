@@ -94,7 +94,7 @@ export function GantiPasswordPage({ tujuan }: { readonly tujuan?: string | undef
                     <Isian label="Password saat ini" type="password" autoComplete="current-password" required value={lama} galat={galat.lama} onChange={(e) => setLama(e.target.value)} />
                     <Isian label="Password baru" type="password" autoComplete="new-password" required value={baru} galat={galat.baru} onChange={(e) => setBaru(e.target.value)} />
                     <IndikatorAturan password={baru} />
-                    <Isian label="Konfirmasi password baru" type="password" autoComplete="new-password" required value={konfirmasi} galat={galat.konfirmasi} onChange={(e) => setKonfirmasi(e.target.value)} />
+                    <Isian label="Konfirmasi password baru" type="password" autoComplete="new-password" required value={konfirmasi} galat={galat.konfirmasi} validasi={(v) => (v === baru ? undefined : "Konfirmasi password tidak sama dengan password baru.")} onChange={(e) => setKonfirmasi(e.target.value)} />
                     <Tombol type="submit" sibuk={sibuk} disabled={lama === "" || baru === "" || konfirmasi === ""}>
                         {sibuk ? "Menyimpan…" : "Simpan password"}
                     </Tombol>

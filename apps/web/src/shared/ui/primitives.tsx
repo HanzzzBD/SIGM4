@@ -3,7 +3,7 @@
 // + teks (UX-03, NFR-AC-06); kontrol ≥ 44px (NFR-AC-07).
 
 import * as Centang from "@radix-ui/react-checkbox";
-import { useId } from "react";
+import { useId, useState } from "react";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
 import { Ikon } from "./icon";
 import type { NamaIkon } from "./icon";
@@ -44,27 +44,62 @@ export function Tombol({
     );
 }
 
-/** C-08: label selalu di atas; galat ditautkan `aria-describedby` (NFR-AC-05). */
-export function Isian({ label, galat, bantuan, ...sisa }: InputHTMLAttributes<HTMLInputElement> & { readonly label: string; readonly galat?: string | undefined; readonly bantuan?: string }) {
+/**
+ * C-08: label selalu di atas; galat ditautkan `aria-describedby` (NFR-AC-05). Smart guidance (UXD-27,
+ * SDD-FE-18, PATTERNS §4): `contoh` tampil hanya saat field difokuskan; `validasi` berjalan mode *touched* —
+ * diperiksa saat blur pertama, lalu setiap perubahan; field wajib yang valid diberi centang tanpa teks.
+ */
+export function Isian({
+    label,
+    galat: galatLuar,
+    bantuan: bantuanTetap,
+    contoh,
+    validasi,
+    ...sisa
+}: InputHTMLAttributes<HTMLInputElement> & { readonly label: string; readonly galat?: string | undefined; readonly bantuan?: string; readonly contoh?: string; readonly validasi?: (nilai: string) => string | undefined }) {
     const id = useId();
     const idKet = `${id}-ket`;
+    const [fokus, setFokus] = useState(false);
+    const [tersentuh, setTersentuh] = useState(false);
+    const nilai = typeof sisa.value === "string" ? sisa.value : "";
+    const galatLangsung = tersentuh && validasi !== undefined ? validasi(nilai) : undefined;
+    const galat = galatLuar ?? galatLangsung;
+    const bantuan = bantuanTetap ?? (fokus && contoh !== undefined ? `Contoh: ${contoh}` : undefined);
+    const valid = sisa.required === true && tersentuh && validasi !== undefined && galat === undefined && nilai !== "";
     return (
         <div className="flex flex-col gap-2">
             <label htmlFor={id} className="text-sm font-medium text-text-primary">
                 {label}
                 {sisa.required === true && <span className="font-regular text-text-secondary"> (wajib)</span>}
             </label>
-            <input
-                id={id}
-                {...sisa}
-                aria-invalid={galat !== undefined || undefined}
-                aria-describedby={galat !== undefined || bantuan !== undefined ? idKet : undefined}
-                className={gabung(
-                    "min-h-control-md rounded-sm bg-surface-default px-4 py-3 text-base text-text-primary placeholder:text-text-tertiary hover:border-neutral-500",
-                    galat === undefined ? "border border-border-strong" : "border-2 border-border-error",
-                    "disabled:bg-neutral-100 disabled:border-border-disabled disabled:text-text-disabled",
+            <div className="relative flex flex-col">
+                <input
+                    id={id}
+                    {...sisa}
+                    onFocus={(e) => {
+                        setFokus(true);
+                        sisa.onFocus?.(e);
+                    }}
+                    onBlur={(e) => {
+                        setFokus(false);
+                        setTersentuh(true);
+                        sisa.onBlur?.(e);
+                    }}
+                    aria-invalid={galat !== undefined || undefined}
+                    aria-describedby={galat !== undefined || bantuan !== undefined ? idKet : undefined}
+                    className={gabung(
+                        "min-h-control-md rounded-sm bg-surface-default px-4 py-3 text-base text-text-primary placeholder:text-text-tertiary hover:border-neutral-500",
+                        galat === undefined ? "border border-border-strong" : "border-2 border-border-error",
+                        valid && "pr-10",
+                        "disabled:bg-neutral-100 disabled:border-border-disabled disabled:text-text-disabled",
+                    )}
+                />
+                {valid && (
+                    <span data-valid className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-success-base">
+                        <Ikon nama="sukses" />
+                    </span>
                 )}
-            />
+            </div>
             {galat !== undefined ? (
                 <p id={idKet} className="flex items-center gap-1 text-sm text-error-base">
                     <Ikon nama="galat" ukuran="sm" />

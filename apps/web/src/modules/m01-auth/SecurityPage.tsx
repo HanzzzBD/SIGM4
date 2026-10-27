@@ -6,11 +6,12 @@ import { DialogKonfirmasi } from "../../shared/ui/dialog";
 import { Lencana, Peringatan, Tombol } from "../../shared/ui/primitives";
 import { buatUlangKode, status2faQuery } from "./account-api";
 import { PasswordForm } from "./PasswordForm";
+import { KepalaHalaman } from "../../shared/ui/visual";
 import { SessionsPanel } from "./SessionsPanel";
 import { accountError } from "./account-api";
 export default function SecurityPage() {
     const status = useQuery(status2faQuery); const qc = useQueryClient(); const [confirm, setConfirm] = useState(false); const [sibuk, setSibuk] = useState(false); const [galat, setGalat] = useState<string | undefined>(); const [kode, setKode] = useState<readonly string[] | null>(null);
-    return <div className="flex min-w-0 flex-col gap-8"><h1 className="text-2xl font-semibold text-text-heading">Keamanan &amp; 2FA</h1><Link to="/profil" className="text-text-link">Kembali ke Profil</Link><PasswordForm />
+    return <div className="flex min-w-0 flex-col gap-8"><KepalaHalaman judul="Keamanan & 2FA" info={{ judul: "Tentang Keamanan", isi: "Kelola password, verifikasi dua langkah, dan perangkat yang masuk ke akun Anda." }} /><Link to="/profil" className="text-text-link">Kembali ke Profil</Link><PasswordForm />
         <section aria-labelledby="judul-2fa" className="flex min-w-0 flex-col gap-4"><h2 id="judul-2fa" className="text-xl font-semibold">Autentikasi dua faktor</h2>
             {status.isPending ? <KeadaanMemuat label="Memuat status 2FA" /> : status.isError ? <KeadaanGalat galat={status.error} onCobaLagi={() => void status.refetch()} /> : <><Lencana varian={status.data.aktif ? "success" : "neutral"}>{status.data.aktif ? "2FA aktif" : "2FA belum aktif"}</Lencana>
                 {status.data.aktif ? <><p>Sisa kode cadangan: {status.data.sisa_kode_cadangan}</p>{status.data.kode_cadangan_menipis && <Peringatan varian="warning">Kode cadangan menipis. Buat ulang dan simpan kode pengganti.</Peringatan>}<Tombol varian="secondary" disabled={kode !== null} onClick={() => { setGalat(undefined); setConfirm(true); }}>Buat ulang kode cadangan</Tombol></> : <Link to="/login/2fa/aktivasi" search={{ tujuan: "/profil/keamanan" }} className="text-text-link">Aktifkan 2FA</Link>}
