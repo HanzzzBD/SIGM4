@@ -61,6 +61,8 @@ describe.skipIf(!process.env["DATABASE_URL"])("PR-07-52 — permintaan bahan Sis
         unit = await id(`INSERT INTO material_units(nama,simbol) VALUES ('Buah ${marker}','bh${marker}') RETURNING id::text`);
         category = await id(`INSERT INTO material_categories(nama,kode) VALUES ('ATK ${marker}','C${marker}') RETURNING id::text`);
         await kueri("UPDATE system_settings SET value='1' WHERE key='bahan.ambang_permintaan_default'");
+        // Pengajuan baru menolak bila ambang blokir kosong; DB CI berangkat dari bawaan migration.
+        await kueri("UPDATE system_settings SET value='1000000' WHERE key='denda.ambang_blokir'");
         const app = express();
         app.use((_req, res, next) => { if (current) { setAuthContext(res, ctx(current)); setAmr(res, ["pwd", AMR_OTP]); } next(); });
         app.use(createApp({ appBaseUrl: "https://bahan.test", db: getDb(), clock, logger: new Logger({ clock, tulis: () => undefined }), auth: authPalsu(), health: new HealthRegistry(30).register(fcmCheck(null)), security: { objectStorageOrigin: "https://storage.test" }, limiter: { hit: async () => ({ lolos: true, batas: 10000, sisa: 9999, resetDetik: 60 }) } }));
