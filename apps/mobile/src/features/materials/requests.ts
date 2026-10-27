@@ -5,6 +5,8 @@ import { MaterialDetailResponseSchema, MaterialListResponseSchema, MaterialOptio
 import type { MaterialRequestBody, MaterialRequestDetail } from "@sigm4/schemas";
 import type { StatusTone } from "../../shared/ui/status";
 
+/** BR-091a, UXD-29: status stok bagi Siswa/OSIS — badge ikon + teks pengganti angka saldo. */
+export const STOCK_STATUS: Readonly<Record<"TERSEDIA" | "TERBATAS" | "HABIS", { label: string; tone: "success" | "warning" | "error" }>> = { TERSEDIA: { label: "Tersedia", tone: "success" }, TERBATAS: { label: "Terbatas", tone: "warning" }, HABIS: { label: "Habis", tone: "error" } };
 export const REQUEST_LABEL = { MENUNGGU_PERSETUJUAN: "Menunggu Persetujuan", PERLU_REVISI: "Perlu Revisi", DISETUJUI: "Disetujui", DISETUJUI_SEBAGIAN: "Disetujui Sebagian", DITOLAK: "Ditolak", DISERAHKAN_SEBAGIAN: "Diserahkan Sebagian", DISERAHKAN: "Diserahkan", DIBATALKAN: "Dibatalkan", DITUTUP: "Sisa Ditutup" } as const;
 export type RequestStatus = keyof typeof REQUEST_LABEL;
 export const REQUEST_TONE: Readonly<Record<RequestStatus, StatusTone>> = { MENUNGGU_PERSETUJUAN: "warning", PERLU_REVISI: "warning", DISETUJUI: "success", DISETUJUI_SEBAGIAN: "success", DITOLAK: "error", DISERAHKAN_SEBAGIAN: "info", DISERAHKAN: "success", DIBATALKAN: "pending", DITUTUP: "pending" };

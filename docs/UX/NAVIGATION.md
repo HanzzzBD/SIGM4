@@ -94,8 +94,8 @@ Diturunkan dari Lampiran C dan Bab 18. Tanda `—` berarti entri tidak dirender 
 | **Pemanfaatan** — Reservasi | ✅ | ✅ | ✅ | — | 🟡 | 🟡 | 🟡 |
 | **Pemanfaatan** — Peminjaman | ✅ | ✅ | 🔍 | — | 🟡 | 🟡 | 🟡 |
 | **Pemanfaatan** — Denda & Kewajiban | ✅ | ✅ | 🔍◆ | — | 🟡 | 🟡 | 🟡 |
-| **Pemanfaatan** — Katalog Bahan | ✅ | ✅ | 🔍 | ✅ | ✅ | ✅ | — |
-| **Pemanfaatan** — Permintaan Bahan | ✅ | ✅ | 🔍 | 🟡 | 🟡 | 🟡 | — |
+| **Pemanfaatan** — Katalog Bahan | ✅ | ✅ | 🔍 | ✅ | ✅ | ✅ | 🟡 |
+| **Pemanfaatan** — Permintaan Bahan | ✅ | ✅ | 🔍 | 🟡 | 🟡 | 🟡 | 🟡 |
 | **Pemanfaatan** — Persetujuan Saya | ✅ | ✅ | ✅ | — | ◐ | ◐ | — |
 | **Perawatan** — Laporan Kerusakan | ✅ | ✅ | 🔍 | 🟡 | 🟡 | 🟡 | 🟡 |
 | **Perawatan** — Work Order | ✅ | ✅ | 🔍 | 🟡 | — | — | — |

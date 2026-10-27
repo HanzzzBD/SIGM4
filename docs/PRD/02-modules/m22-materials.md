@@ -84,7 +84,7 @@ flowchart TD
 
 **Main Flow**
 1. Pengguna membuka menu Bahan dan menekan "Tambah Bahan".
-2. Pengguna mengisi: nama bahan, kategori bahan, satuan (dipilih dari master satuan), stok minimum, lokasi penyimpanan bawaan, dan keterangan.
+2. Pengguna mengisi: nama bahan, kategori bahan, satuan (dipilih dari master satuan), stok minimum, lokasi penyimpanan bawaan, penanda **boleh diminta siswa** (`BR-091a`), dan keterangan.
 3. Sistem memvalidasi bahwa nama bahan belum dipakai dalam kategori yang sama.
 4. Sistem membuat record bahan berstatus `Aktif` dengan saldo awal 0 pada seluruh lokasi.
 5. Sistem membentuk UUID bahan sebagai dasar QR per jenis bahan (`m05-qr.md`).
@@ -165,7 +165,7 @@ dan nonaktif.
 | Aspek | Uraian |
 |---|---|
 | **Description** | Pengguna mengajukan kebutuhan bahan; pengajuan melewati approval hanya bila melampaui ambang yang dikonfigurasi. |
-| **Actor** | Guru, Staf/Tata Usaha, Teknisi, Petugas Sarana Prasarana |
+| **Actor** | Guru, Staf/Tata Usaha, Teknisi, Petugas Sarana Prasarana, Siswa/OSIS (`BR-086a`, `BR-091a`) |
 | **Preconditions** | Pengguna login dan tidak diblokir; bahan berstatus `Aktif` |
 
 **Main Flow**
@@ -180,6 +180,7 @@ dan nonaktif.
 - **A1 — Saldo tidak mencukupi:** Sistem menolak dan menampilkan saldo tersedia beserta lokasi lain yang masih memiliki saldo.
 - **A2 — Bahan berstatus nonaktif:** Bahan tidak muncul pada katalog permintaan (`BR-091`).
 - **A3 — Permintaan ditolak approver:** Status `Ditolak` beserta alasan; saldo tidak tersentuh.
+- **A4 — Pemohon Siswa/OSIS:** Katalog hanya memuat bahan bertanda boleh diminta siswa dengan status Tersedia/Terbatas/Habis, lokasi asal adalah lokasi penyimpanan bawaan bahan, dan permintaan langsung berstatus `Disetujui` tanpa instance approval berapa pun jumlahnya; Petugas menilainya saat penyerahan (`BR-086a`, `BR-091a`, `FR-22.5`).
 
 **Post Conditions** — Permintaan tersimpan; instance approval terbentuk bila diperlukan; activity log tercatat.
 
@@ -188,6 +189,7 @@ dan nonaktif.
 - [ ] Permintaan di atas ambang tidak dapat dilayani sebelum berstatus `Disetujui`.
 - [ ] Permintaan tidak pernah mengurangi saldo — saldo hanya berkurang saat penyerahan (`FR-22.5`).
 - [ ] Uji penolakan: pengguna tanpa permission `material.request` menerima `403`.
+- [ ] Siswa/OSIS tidak dapat melihat maupun meminta bahan yang tidak bertanda boleh diminta siswa, dan tidak pernah menerima angka saldo, lokasi lain, maupun kartu stok (`BR-091a`).
 
 ### FR-22.5 Pengeluaran & Penyerahan Bahan
 
@@ -282,9 +284,11 @@ dan nonaktif.
 | BR-086 | Permintaan bahan melewati approval engine hanya bila melampaui ambang yang dikonfigurasi Administrator; di bawah ambang permintaan berstatus `Disetujui` tanpa instance approval. |
 | BR-087 | Bahan yang telah diserahkan **tidak memiliki kewajiban pengembalian**. Tidak berlaku jadwal pengembalian, denda keterlambatan (`BR-028`), maupun ganti rugi. |
 | BR-088 | Setiap transaksi `PENYESUAIAN` wajib menyertakan alasan sebelum dapat disimpan. |
+| BR-086a | Permintaan bahan oleh Siswa/OSIS **tidak** melewati approval engine, berapa pun jumlahnya (pengecualian `BR-086`): permintaan langsung `Disetujui` dan Petugas menilainya saat penyerahan — menyerahkan penuh, sebagian, atau menutup sisa dengan alasan (`FR-22.5`). Keputusan pemilik produk 26 Oktober 2026. |
 | BR-089 | Jumlah bahan yang diserahkan tidak boleh melebihi jumlah yang disetujui pada permintaan. |
 | BR-090 | QR bahan mengikat satu **jenis bahan** dan tidak pernah bermakna unit individual. |
 | BR-091 | Bahan berstatus nonaktif tidak dapat diminta, namun saldo dan seluruh riwayat transaksinya tetap dapat ditelusuri. |
+| BR-091a | Siswa/OSIS (scope `restricted` pada `material.view` dan `material.request`) hanya melihat dan meminta bahan aktif bertanda `boleh_diminta_siswa`. Saldo ditampilkan sebagai status — **Tersedia** (di atas stok minimum), **Terbatas** (di atas 0 dan tidak melebihi stok minimum), **Habis** (0) — tanpa angka, lokasi lain, maupun kartu stok; lokasi asal permintaannya adalah `room_id_default` bahan. |
 | BR-092 | Setiap transaksi bahan menyimpan `saldo_sesudah` sehingga kartu stok dapat direkonstruksi tanpa menghitung ulang seluruh riwayat. |
 
 **Aturan bersama yang juga berlaku** (dimiliki modul lain, dirujuk melalui ID — tidak disalin ke sini):
@@ -343,7 +347,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
 | **material_categories** | Kategori bahan — terpisah dari kategori aset | id, nama, kode, keterangan, status | ± 15 |
-| **materials** | Master jenis bahan | id, uuid (dasar QR per jenis), nama, material_category_id, satuan_id, stok_minimum, room_id_default, keterangan, status | ± 300 |
+| **materials** | Master jenis bahan | id, uuid (dasar QR per jenis), nama, material_category_id, satuan_id, stok_minimum, room_id_default, boleh_diminta_siswa, keterangan, status | ± 300 |
 | **material_balances** | Saldo per bahan per lokasi penyimpanan | id, material_id, room_id, saldo | ± 900 |
 | **material_transactions** | Seluruh peristiwa yang mengubah saldo | id, material_id, room_id, jenis (PENERIMAAN/PENGELUARAN/PENYESUAIAN/OPNAME), jumlah, saldo_sesudah, referensi_jenis, referensi_id, alasan, created_by, created_at | ± 20.000 |
 | **material_requests** | Permintaan bahan | id, nomor, pemohon_id, keperluan, status, approval_instance_id (nullable — `BR-086`), diserahkan_oleh, diserahkan_pada | ± 1.500 |
@@ -372,9 +376,9 @@ Ketentuan umum kanal, latensi, dan preferensi: [`m17-notifications.md`](m17-noti
 
 | Kode | Domain | Deskripsi singkat | Role bawaan pemilik |
 |---|---|---|---|
-| `material.view` | Bahan | Melihat bahan, saldo, dan kartu stok | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf |
+| `material.view` | Bahan | Melihat bahan, saldo, dan kartu stok | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa(`restricted`) |
 | `material.manage` | Bahan | Kelola master bahan & kategori bahan | Admin, Petugas |
-| `material.request` | Bahan | Mengajukan & membatalkan permintaan bahan | Admin, Petugas, Teknisi, Guru, Staf |
+| `material.request` | Bahan | Mengajukan & membatalkan permintaan bahan | Admin, Petugas, Teknisi, Guru, Staf, Siswa(`restricted`) |
 | `material.receive` | Bahan | Mencatat penerimaan bahan | Admin, Petugas |
 | `material.issue` | Bahan | Menyerahkan bahan kepada pemohon | Admin, Petugas |
 | `material.adjust` | Bahan | Menyesuaikan saldo dengan alasan | Admin, Petugas |

@@ -6,7 +6,7 @@ import { FIELD_DSL, LABEL_ALASAN_PENGHAPUSAN, LABEL_JENIS_PENGAJUAN, LABEL_JENIS
 import { describe, expect, it } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
 import { buatRouter } from "../../src/app/router";
-import { HALAMAN_TERDAFTAR, NAVIGASI, jalurDrilldown, navigasiTerlihat } from "../../src/shared/navigasi";
+import { HALAMAN_TERDAFTAR, NAVIGASI, bisaDariScope, jalurDrilldown, navigasiTerlihat } from "../../src/shared/navigasi";
 
 const bab113 = readFileSync(resolve(process.cwd(), "../../docs/PRD/03-architecture/data-model.md"), "utf8");
 const nilaiBab = (kelompok: string): string[] => {
@@ -53,8 +53,14 @@ describe("registri navigasi", () => {
     });
 
     it("entri dirender hanya bila halamannya terdaftar DAN permission dipegang; grup kosong hilang", () => {
-        expect(navigasiTerlihat(semua("dashboard.view", "loan.view", "material.view")).map((g) => [g.label, g.entri.map((e) => e.label)])).toEqual([["Beranda", ["Dashboard"]], ["Aset & Bahan", ["Bahan", "Scan QR"]], ["Pemanfaatan", ["Peminjaman", "Katalog Bahan", "Permintaan Bahan"]]]);
+        expect(navigasiTerlihat(bisaDariScope({ "dashboard.view": "all", "loan.view": "all", "material.view": "all" })).map((g) => [g.label, g.entri.map((e) => e.label)])).toEqual([["Beranda", ["Dashboard"]], ["Aset & Bahan", ["Bahan", "Scan QR"]], ["Pemanfaatan", ["Peminjaman", "Katalog Bahan", "Permintaan Bahan"]]]);
         expect(navigasiTerlihat(semua("loan.view")).map((g) => g.entri.map((e) => e.label))).toEqual([["Peminjaman"]]);
+    });
+
+    it("BR-091a: material.view restricted (Siswa) menampilkan Katalog & Permintaan Bahan, bukan master Bahan P-80", () => {
+        const label = navigasiTerlihat(bisaDariScope({ "material.view": "restricted" })).flatMap((g) => g.entri.map((e) => e.label));
+        expect(label).toEqual(expect.arrayContaining(["Katalog Bahan", "Permintaan Bahan"]));
+        expect(label).not.toContain("Bahan");
     });
 
     it("HALAMAN_TERDAFTAR identik dengan route yang benar-benar ada di router", () => {

@@ -3,12 +3,12 @@ import type { MaterialRequestDetail } from "@sigm4/schemas";
 import { adjustmentBody, canClose, canIssue, categoryBody, issueBody, issueLimit, issuable, materialBody, receiptBody } from "../src/features/materials/stock.js";
 import { nativeChatPath } from "../src/features/chat/model.js";
 
-const form = { nama: "Kertas A4", category: "2", unit: "3", minimum: "10", room: "5", note: "", active: true };
+const form = { nama: "Kertas A4", category: "2", unit: "3", minimum: "10", room: "5", note: "", active: true, students: true };
 const clean = [{ file_id: 9, nama_berkas: "nota.pdf", scan_status: "CLEAN" }];
 
 describe("MS-41 master bahan (FR-22.1)", () => {
     it("never sends a locked unit and validates through the shared schema", () => {
-        expect(materialBody(form, null)).toEqual({ body: { nama: "Kertas A4", material_category_id: 2, satuan_id: 3, stok_minimum: 10, room_id_default: 5, keterangan: null, status: "AKTIF" } });
+        expect(materialBody(form, null)).toEqual({ body: { nama: "Kertas A4", material_category_id: 2, satuan_id: 3, stok_minimum: 10, room_id_default: 5, boleh_diminta_siswa: true, keterangan: null, status: "AKTIF" } });
         expect(materialBody(form, { lockedUnit: true })).toMatchObject({ body: expect.not.objectContaining({ satuan_id: 3 }) });
         expect(materialBody({ ...form, nama: " " }, null)).toHaveProperty("error");
     });

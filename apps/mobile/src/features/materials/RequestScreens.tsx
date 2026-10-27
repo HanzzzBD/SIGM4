@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { randomUUID } from "expo-crypto";
@@ -6,7 +6,7 @@ import { useAuth } from "../auth";
 import { useResource } from "../../shared/api/useResource";
 import { formatTime } from "../../shared/time";
 import { BottomSheet, Button, Card, Chips, DateField, EmptyState, EntityCard, Input, Label, ListRow, Notice, Screen, SectionHeading, StatusBadge, Toggle, tokens as t } from "../../shared/ui";
-import { REQUEST_LABEL, REQUEST_TONE, canCancel, cancelRequest, exceedsBalance, loadCatalog, loadMaterial, loadOptions, loadRequest, loadRequests, requestBody, rowsFromRequest, saveRequest } from "./requests";
+import { REQUEST_LABEL, REQUEST_TONE, STOCK_STATUS, canCancel, cancelRequest, exceedsBalance, loadCatalog, loadMaterial, loadOptions, loadRequest, loadRequests, requestBody, rowsFromRequest, saveRequest } from "./requests";
 import type { RequestRow } from "./requests";
 import { canClose, canIssue, closeRequest, issuable, issueBody, issueLimit, issueRequest } from "./stock";
 import { dateWib } from "../../shared/wib";
@@ -30,7 +30,7 @@ export function MaterialCatalogScreen() {
         {options.data && <Chips label="Kategori" value={category} options={[{ value: "", label: "Semua" }, ...options.data.categories.filter((c) => c.status === "AKTIF").map((c) => ({ value: c.id, label: c.nama }))]} onChange={(v) => { setCategory(v); setPage(1); }}/>}
         {list.loading && <Label tone="muted">Memuat bahan…</Label>}{list.error && <><Notice message={list.error}/><Button icon="refresh" title="Coba lagi" secondary onPress={list.reload}/></>}
         {list.data?.data.length === 0 && <EmptyState illustration="empty" title="Tidak ada bahan bersaldo" description="Ubah kata kunci atau kategori."/>}
-        {list.data?.data.map((m) => <EntityCard key={m.id} icon="boxes" title={m.nama} meta={[m.kategori.nama, m.lokasi_bawaan.nama]} statuses={m.stok_menipis ? [{ label: "Stok menipis", tone: "warning" }] : []} value={`${m.saldo_total} ${m.satuan.simbol}`} {...(Object.hasOwn(permissions, "material.request") ? { onPress: () => router.push(`/permintaan-bahan/baru?bahan=${m.id}` as "/scan") } : {})}/>)}
+        {list.data?.data.map((m) => <EntityCard key={m.id} icon="boxes" title={m.nama} meta={[m.kategori.nama, m.lokasi_bawaan.nama]} statuses={m.saldo_total === null ? [STOCK_STATUS[m.status_stok]] : m.stok_menipis ? [{ label: "Stok menipis", tone: "warning" }] : []} {...(m.saldo_total === null ? {} : { value: `${m.saldo_total} ${m.satuan.simbol}` })} {...(Object.hasOwn(permissions, "material.request") ? { onPress: () => router.push(`/permintaan-bahan/baru?bahan=${m.id}` as "/scan") } : {})}/>)}
         <Pager page={page} pages={list.data?.meta.total_pages ?? 1} onPage={setPage}/>
     </Screen>;
 }
@@ -41,13 +41,17 @@ function MaterialRow({ index, row, onChange, onRemove }: { index: number; row: R
     const search = useResource(`${account}:material-pick:${q}`, useCallback((signal: AbortSignal) => row.material ? Promise.resolve(null) : loadCatalog(api, { page: 1, ...(q.trim() ? { q: q.trim() } : {}) }, signal), [api, q, row.material]));
     const detail = useResource(`${account}:material-row:${row.material}`, useCallback((signal: AbortSignal) => row.material ? loadMaterial(api, row.material, signal) : Promise.resolve(null), [api, row.material]));
     const m = detail.data, balance = m?.saldo_lokasi.find((s) => s.room_id === row.room)?.saldo;
+    // BR-091a: bagi Siswa (saldo tidak dikirim server) lokasi asal selalu lokasi penyimpanan bawaan bahan.
+    const student = m?.saldo_total === null, home = m?.lokasi_bawaan.id;
+    useEffect(() => { if (student && home && row.room !== home) onChange({ room: home }); }, [student, home, row.room, onChange]);
     return <Card><Text style={styles.strong}>Baris {index + 1}</Text>
         {m ? <ListRow icon="boxes" title={m.nama} subtitle={`${m.kategori.nama} · satuan ${m.satuan.simbol}`} onPress={() => onChange({ material: "", room: "" })}/> : <>
             <Input icon="search" label="Cari bahan" value={q} onChangeText={setQ}/>
             {search.data && <Chips label="Bahan" value={row.material} options={search.data.data.map((x) => ({ value: x.id, label: x.nama }))} onChange={(material) => onChange({ material, room: "" })}/>}
         </>}
         {detail.error && <Notice message={detail.error}/>}
-        {m && <Chips label="Lokasi bersaldo" value={row.room} options={m.saldo_lokasi.filter((s) => s.saldo > 0).map((s) => ({ value: s.room_id, label: `${s.lokasi} · ${s.saldo} ${m.satuan.simbol}` }))} onChange={(room) => onChange({ room })}/>}
+        {m && student && <StatusBadge {...STOCK_STATUS[m.status_stok]}/>}
+        {m && !student && <Chips label="Lokasi bersaldo" value={row.room} options={m.saldo_lokasi.filter((s) => s.saldo > 0).map((s) => ({ value: s.room_id, label: `${s.lokasi} · ${s.saldo} ${m.satuan.simbol}` }))} onChange={(room) => onChange({ room })}/>}
         <Input label={`Jumlah${m ? ` (${m.satuan.simbol})` : ""}`} value={row.quantity} keyboardType="number-pad" onChangeText={(v) => onChange({ quantity: v.replace(/\D/g, "") })}/>
         {exceedsBalance(row.quantity, balance) && <StatusBadge label="Melebihi saldo lokasi saat ini" tone="warning"/>}
         {onRemove && <Button icon="close" title="Hapus baris" secondary compact onPress={onRemove}/>}

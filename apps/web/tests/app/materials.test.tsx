@@ -1,10 +1,12 @@
-import { describe,it,expect } from "vitest";
+import { beforeAll,describe,it,expect,vi } from "vitest";
 import { screen,within,waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { MaterialDetail } from "@sigm4/schemas";
 import { ME_ADMIN,pasangServer,sukses,gagal,renderAplikasi,pelanggaranAxe } from "../helpers";
+// jsdom tidak menyediakan ResizeObserver yang dipakai checkbox C-10 (penanda boleh diminta siswa) di dalam form.
+beforeAll(() => vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} }));
 const uuid="93a2d3fe-1c97-40fb-98fe-b4ad03ecf479";
-const detail:MaterialDetail={id:"11",uuid,nama:"Kertas A4",kategori:{id:"3",nama:"ATK"},satuan:{id:"2",nama:"Rim",simbol:"rim"},stok_minimum:4,saldo_total:3,stok_menipis:true,lokasi_bawaan:{id:"4",nama:"Gudang"},status:"AKTIF",keterangan:null,qr_url:`https://sigm4.sekolah.test/b/${uuid}`,saldo_lokasi:[{room_id:"4",lokasi:"Gudang",saldo:3}],satuan_terkunci:true};
+const detail:MaterialDetail={id:"11",uuid,nama:"Kertas A4",kategori:{id:"3",nama:"ATK"},satuan:{id:"2",nama:"Rim",simbol:"rim"},stok_minimum:4,saldo_total:3,stok_menipis:true,status_stok:"TERBATAS",boleh_diminta_siswa:false,lokasi_bawaan:{id:"4",nama:"Gudang"},status:"AKTIF",keterangan:null,qr_url:`https://sigm4.sekolah.test/b/${uuid}`,saldo_lokasi:[{room_id:"4",lokasi:"Gudang",saldo:3}],satuan_terkunci:true};
 const permissions={"material.view":"all","material.manage":"all","material.qr_print":"all","setting.view":"all","setting.manage":"all"};
 const category={id:"3",nama:"ATK",kode:"ATK",status:"AKTIF",keterangan:null,jumlah_bahan:1},unit={id:"2",nama:"Rim",simbol:"rim",status:"AKTIF",keterangan:null};
 function server(perms:Record<string,string>=permissions,unauth=false,failOnce=false){let current=detail;return pasangServer(p=>{

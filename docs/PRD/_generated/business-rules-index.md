@@ -5,7 +5,7 @@
 # Indeks Business Rules
 
 > Setiap aturan dimiliki satu modul. Sunting di berkas modulnya, bukan di sini.
-> Total: **123** baris, dikumpulkan dari 22 berkas modul.
+> Total: **125** baris, dikumpulkan dari 22 berkas modul.
 
 | Kode | Business Rule | Pemilik |
 |---|---|---|
@@ -123,11 +123,13 @@
 | BR-084 | Satuan bahan hanya boleh berasal dari master satuan yang dikelola Administrator (`FR-20.1`), tidak dapat diketik bebas. | [M-22](../02-modules/m22-materials.md) |
 | BR-085 | Stok minimum ditetapkan per bahan dan dievaluasi terhadap **saldo total** seluruh lokasi penyimpanan. | [M-22](../02-modules/m22-materials.md) |
 | BR-086 | Permintaan bahan melewati approval engine hanya bila melampaui ambang yang dikonfigurasi Administrator; di bawah ambang permintaan berstatus `Disetujui` tanpa instance approval. | [M-22](../02-modules/m22-materials.md) |
+| BR-086a | Permintaan bahan oleh Siswa/OSIS **tidak** melewati approval engine, berapa pun jumlahnya (pengecualian `BR-086`): permintaan langsung `Disetujui` dan Petugas menilainya saat penyerahan — menyerahkan penuh, sebagian, atau menutup sisa dengan alasan (`FR-22.5`). Keputusan pemilik produk 26 Oktober 2026. | [M-22](../02-modules/m22-materials.md) |
 | BR-087 | Bahan yang telah diserahkan **tidak memiliki kewajiban pengembalian**. Tidak berlaku jadwal pengembalian, denda keterlambatan (`BR-028`), maupun ganti rugi. | [M-22](../02-modules/m22-materials.md) |
 | BR-088 | Setiap transaksi `PENYESUAIAN` wajib menyertakan alasan sebelum dapat disimpan. | [M-22](../02-modules/m22-materials.md) |
 | BR-089 | Jumlah bahan yang diserahkan tidak boleh melebihi jumlah yang disetujui pada permintaan. | [M-22](../02-modules/m22-materials.md) |
 | BR-090 | QR bahan mengikat satu **jenis bahan** dan tidak pernah bermakna unit individual. | [M-22](../02-modules/m22-materials.md) |
 | BR-091 | Bahan berstatus nonaktif tidak dapat diminta, namun saldo dan seluruh riwayat transaksinya tetap dapat ditelusuri. | [M-22](../02-modules/m22-materials.md) |
+| BR-091a | Siswa/OSIS (scope `restricted` pada `material.view` dan `material.request`) hanya melihat dan meminta bahan aktif bertanda `boleh_diminta_siswa`. Saldo ditampilkan sebagai status — **Tersedia** (di atas stok minimum), **Terbatas** (di atas 0 dan tidak melebihi stok minimum), **Habis** (0) — tanpa angka, lokasi lain, maupun kartu stok; lokasi asal permintaannya adalah `room_id_default` bahan. | [M-22](../02-modules/m22-materials.md) |
 | BR-092 | Setiap transaksi bahan menyimpan `saldo_sesudah` sehingga kartu stok dapat direkonstruksi tanpa menghitung ulang seluruh riwayat. | [M-22](../02-modules/m22-materials.md) |
 | BR-093 | Satu sesi stock opname hanya mencakup **satu domain**: Aset atau Bahan. Sesi tidak pernah mencampur keduanya. `BR-054`…`BR-058` berlaku bagi sesi domain **Aset**. | [M-13](../02-modules/m13-audit-stocktake.md) |
 | BR-094 | Hasil opname bahan baru diterapkan ke saldo setelah laporan rekonsiliasi disetujui Pimpinan Sekolah — sejajar dengan `BR-057` pada sesi aset. | [M-13](../02-modules/m13-audit-stocktake.md) |

@@ -4,8 +4,8 @@
 
 import { Link, useRouterState } from "@tanstack/react-router";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useCan } from "../shared/auth";
-import { HALAMAN_TERDAFTAR, navigasiTerlihat } from "../shared/navigasi";
+import { useSesi } from "../shared/auth";
+import { HALAMAN_TERDAFTAR, bisaDariScope, navigasiTerlihat } from "../shared/navigasi";
 import { Ikon } from "../shared/ui/icon";
 import { Logo } from "../shared/ui/logo";
 import { gabung } from "../shared/ui/primitives";
@@ -20,7 +20,7 @@ const WORDMARK = { null: "md:hidden lg:block", true: "md:hidden", false: "" } as
 const IKON = { null: "hidden md:block lg:hidden", true: "hidden md:block", false: "hidden" } as const;
 
 export function Sidebar({ ciut, drawerTerbuka, onTutupDrawer }: { readonly ciut: PreferensiCiut; readonly drawerTerbuka: boolean; readonly onTutupDrawer: () => void }) {
-    const can = useCan();
+    const can = bisaDariScope(useSesi().permissions);
     const path = useRouterState({ select: (s) => s.location.pathname });
     const kunci = String(ciut) as keyof typeof LEBAR;
     const teks = drawerTerbuka ? "" : TEKS[kunci];
