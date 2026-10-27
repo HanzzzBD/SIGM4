@@ -13,6 +13,6 @@ export function PasswordForm() {
             <Isian label="Password saat ini" type="password" autoComplete="current-password" required value={lama} disabled={sibuk} onChange={(e) => setLama(e.target.value)} />
             <Isian label="Password baru" type="password" autoComplete="new-password" required maxLength={512} value={baru} disabled={sibuk} onChange={(e) => setBaru(e.target.value)} />
             <ul aria-label="Syarat password baru" className="text-sm">{ATURAN_PASSWORD.map((a) => <li key={a.label}>{a.label}: {a.uji(baru) ? "terpenuhi" : "belum terpenuhi"}</li>)}</ul><p className="text-sm text-text-secondary">Server juga memeriksa password bocor, nama/email, dan 3 password terakhir.</p>
-            <Isian label="Konfirmasi password baru" type="password" autoComplete="new-password" required value={konfirmasi} disabled={sibuk} onChange={(e) => setKonfirmasi(e.target.value)} /><Tombol type="submit" sibuk={sibuk}>Simpan password</Tombol>
+            <Isian label="Konfirmasi password baru" type="password" autoComplete="new-password" required value={konfirmasi} disabled={sibuk} validasi={(v) => (v === baru ? undefined : "Konfirmasi password tidak sama dengan password baru.")} onChange={(e) => setKonfirmasi(e.target.value)} /><Tombol type="submit" sibuk={sibuk}>Simpan password</Tombol>
         </form></section>;
 }

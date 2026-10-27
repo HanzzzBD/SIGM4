@@ -6,6 +6,7 @@ import { Isian, Peringatan, Tombol } from "../../shared/ui/primitives";
 import { perbaruiProfil, photoQuery, unggahFotoProfil } from "./account-api";
 import { accountError } from "./account-api";
 import { KeadaanGalat } from "../../shared/states";
+import { KepalaHalaman } from "../../shared/ui/visual";
 
 export default function ProfilePage() {
     const sesi = useSesi(); const qc = useQueryClient(); const can = useCan();
@@ -18,8 +19,8 @@ export default function ProfilePage() {
         if (file && !hapus) { if (receipt.current?.file !== file) receipt.current = { file, id: await unggahFotoProfil(file) }; id = receipt.current.id; }
         await perbaruiProfil(nama.trim(), telepon.trim() || null, id); await qc.invalidateQueries({ queryKey: KUNCI_ME }); await qc.invalidateQueries({ queryKey: ["account", "profile-photo"] }); setFile(null); setHapus(false); receipt.current = null; setSukses(true);
     } catch (error) { setGalat(accountError(error)); } finally { setSibuk(false); } };
-    return <div className="flex min-w-0 flex-col gap-6"><h1 className="text-2xl font-semibold text-text-heading">Profil</h1><nav className="flex flex-wrap gap-4" aria-label="Pengaturan akun"><Link to="/profil/keamanan" className="text-text-link">Keamanan &amp; 2FA</Link>{can("notification.manage_own") && <Link to="/profil/notifikasi" className="text-text-link">Preferensi Notifikasi</Link>}</nav>
-        <p className="break-all">Email: {sesi.user.email} · Role: {sesi.user.role_kode}. Email dan role dikelola Administrator.</p>
+    return <div className="flex min-w-0 flex-col gap-6"><KepalaHalaman judul="Profil" info={{ judul: "Tentang Profil", isi: "Ubah nama, telepon, dan foto profil Anda. Email dan role dikelola Administrator." }} /><nav className="flex flex-wrap gap-4" aria-label="Pengaturan akun"><Link to="/profil/keamanan" className="text-text-link">Keamanan &amp; 2FA</Link>{can("notification.manage_own") && <Link to="/profil/notifikasi" className="text-text-link">Preferensi Notifikasi</Link>}</nav>
+        <p className="break-all text-sm text-text-secondary">{sesi.user.email} · Role {sesi.user.role_kode}</p>
         {foto.isError && <KeadaanGalat galat={foto.error} onCobaLagi={() => void foto.refetch()} />}
         {foto.data?.foto_status === "CLEAN" && foto.data.foto_url && <img src={foto.data.foto_url} alt="Foto profil Anda" className="size-24 rounded-full object-cover" />}
         {foto.data?.foto_status && foto.data.foto_status !== "CLEAN" && <Peringatan varian="info">{foto.data.foto_status === "PENDING" ? "Foto sedang diperiksa." : "Foto belum lolos pemeriksaan. Pilih foto pengganti."}</Peringatan>}

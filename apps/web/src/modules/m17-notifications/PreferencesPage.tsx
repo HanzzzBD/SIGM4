@@ -10,6 +10,7 @@ import { useState } from "react";
 import { useCan } from "../../shared/auth";
 import { KeadaanGalat, KeadaanMemuat } from "../../shared/states";
 import { KotakCentang, Peringatan, Tombol } from "../../shared/ui/primitives";
+import { KepalaHalaman } from "../../shared/ui/visual";
 import type { Kelompok, Preferensi } from "./api";
 import { preferensiQuery, simpanPreferensi } from "./api";
 
@@ -62,10 +63,7 @@ function Formulir({ daftar }: { readonly daftar: readonly Preferensi[] }) {
     };
     return (
         <div className="flex max-w-prose flex-col gap-6">
-            <header className="flex flex-col gap-1">
-                <h1 className="text-2xl font-semibold text-text-heading">Preferensi Notifikasi</h1>
-                <p className="text-base text-text-secondary">Pilih kanal untuk setiap kelompok notifikasi. Push dikirim ke aplikasi mobile; tanpa notifikasi dalam aplikasi, push tidak dikirim.</p>
-            </header>
+            <KepalaHalaman judul="Preferensi Notifikasi" info={{ judul: "Tentang preferensi", isi: "Pilih kanal untuk setiap kelompok notifikasi. Push dikirim ke aplikasi mobile; tanpa notifikasi dalam aplikasi, push tidak dikirim." }} />
             <ul className="flex flex-col rounded-md border border-border-subtle bg-surface-default">
                 {daftar.map((p) => {
                     const nilai = p.terkunci ? { in_app: true, push: true } : isian[p.jenis];

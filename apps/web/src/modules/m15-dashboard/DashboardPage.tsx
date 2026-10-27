@@ -1,15 +1,19 @@
 // P-12 Dashboard (FR-15.1, Bab 19, UX §8.2). Manifes dari server menentukan kartu —
 // kartu di luar permission tidak ada di manifes, sehingga tidak pernah dirender (AC 4).
 // Tiap kartu memuat mandiri dengan skeleton; galat satu kartu tidak menggagalkan kartu
-// lain (19.1 A2). Rentang di URL (SDD-FE-10); muat ulang melewati cache server (19.1).
+// lain (19.1 A2). Rentang di URL (SDD-FE-10); muat ulang melewati cache server (19.1). Visual-first (UXD-24, DSD-13):
+// Kartu Saran Tindakan C-41 dari registri saran (SDD-FE-18) dan Aksi Cepat Zona 4 sebagai Tile Modul C-31.
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { ApiError } from "../../shared/api";
 import { KUNCI_ME, useCan } from "../../shared/auth";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
 import { Ikon } from "../../shared/ui/icon";
 import { Kartu, Tombol, gabung } from "../../shared/ui/primitives";
+import { DaftarSaran, KepalaHalaman, TileModul } from "../../shared/ui/visual";
+import { KARTU_SARAN, saranDashboard } from "../../shared/saran";
+import { aksiCepat } from "./aksi-cepat";
 import { kueriKartu, kueriManifes } from "./api";
 import type { KartuManifes } from "./api";
 import { LABEL_RENTANG, RENTANG } from "./rentang";
@@ -83,11 +87,19 @@ export default function DashboardPage({ rentang, onRentang }: { readonly rentang
     const lebar = useLebar();
     const zona = ([1, 2, 3, 4] as const).map((z) => ({ z, kartu: manifes.data?.kartu.filter((k) => k.zona === z) ?? [] })).filter((x) => x.kartu.length > 0);
     const adaBerperiode = manifes.data?.kartu.some((k) => k.berperiode) === true;
+    const can = useCan();
+    const aksi = aksiCepat(can);
+    // Kueri kartu yang SAMA dengan KartuDashboard — cache bersama, tanpa permintaan tambahan (SDD-FE-18).
+    const kartuSaran = manifes.data?.kartu.filter((k) => KARTU_SARAN.includes(k.id)) ?? [];
+    const dataSaran = useQueries({ queries: kartuSaran.map((k) => kueriKartu(k.id, rentang, versi)) });
+    const saran = saranDashboard(Object.fromEntries(kartuSaran.map((k, i) => [k.id, dataSaran[i]?.data?.isi as Record<string, unknown> | undefined])), can);
 
     return (
         <div className="flex flex-col gap-8">
-            <header className="flex flex-wrap items-end justify-between gap-4">
-                <h1 className="text-2xl font-semibold text-text-heading">Dashboard</h1>
+            <KepalaHalaman
+                judul="Dashboard"
+                info={{ judul: "Tentang Dashboard", isi: "Ringkasan dan antrean tindakan sesuai peran Anda. Pilih kartu untuk membuka daftar sumbernya." }}
+                aksi={
                 <div className="flex flex-wrap items-end gap-3">
                     {adaBerperiode && (
                         <label className="flex flex-col gap-2 text-sm font-medium text-text-primary">
@@ -105,12 +117,14 @@ export default function DashboardPage({ rentang, onRentang }: { readonly rentang
                         Muat ulang
                     </Tombol>
                 </div>
-            </header>
+                }
+            />
+            <DaftarSaran saran={saran} />
             {manifes.isPending ? (
                 <KeadaanMemuat label="Memuat dashboard" baris={6} />
             ) : manifes.isError ? (
                 <KeadaanGalat galat={manifes.error} onCobaLagi={() => void manifes.refetch()} />
-            ) : zona.length === 0 ? (
+            ) : zona.length === 0 && aksi.length === 0 ? (
                 <KeadaanKosong judul="Belum ada ringkasan untuk peran Anda" pesan="Kartu dashboard akan tampil di sini begitu data yang relevan dengan peran Anda tersedia." aksi={<Tombol varian="secondary" ikon="muatUlang" onClick={() => void manifes.refetch()}>Muat ulang</Tombol>} />
             ) : (
                 zona.map(({ z, kartu }) => {
@@ -138,6 +152,18 @@ export default function DashboardPage({ rentang, onRentang }: { readonly rentang
                         </section>
                     );
                 })
+            )}
+            {aksi.length > 0 && (
+                <section aria-labelledby="zona-4" className="flex flex-col gap-4">
+                    <h2 id="zona-4" className="text-xl font-semibold text-text-heading">
+                        {ZONA[4]}
+                    </h2>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+                        {aksi.map((a) => (
+                            <TileModul key={a.href} label={a.label} ikon={a.ikon} accent={a.accent} href={a.href} />
+                        ))}
+                    </div>
+                </section>
             )}
         </div>
     );

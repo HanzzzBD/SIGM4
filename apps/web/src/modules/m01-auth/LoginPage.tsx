@@ -18,6 +18,9 @@ export function tujuanAman(tujuan: string | undefined): string {
     return tujuan !== undefined && tujuan.startsWith("/") && !tujuan.startsWith("//") && !tujuan.startsWith("/login") ? tujuan : "/";
 }
 
+/** Validasi langsung email (UXD-27): pesan menyebut nama field dan cara memperbaikinya (PATTERNS §4). */
+export const periksaEmail = (v: string): string | undefined => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? undefined : "Masukkan alamat email yang benar, misalnya nama@sekolah.sch.id.");
+
 function pesanGalat(g: unknown): string {
     if (g instanceof GalatJaringan) return g.message;
     if (g instanceof ApiError) {
@@ -56,8 +59,9 @@ export function LoginPage({ tujuan, alasan }: { readonly tujuan?: string | undef
     const kirim = async (ev: FormEvent) => {
         ev.preventDefault();
         setGalat(null);
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-            setGalatEmail("Masukkan alamat email yang benar, misalnya nama@sekolah.sch.id.");
+        const salahEmail = periksaEmail(email);
+        if (salahEmail !== undefined) {
+            setGalatEmail(salahEmail);
             ev.currentTarget.querySelector<HTMLInputElement>('input[type="email"]')?.focus();
             return;
         }
@@ -93,7 +97,7 @@ export function LoginPage({ tujuan, alasan }: { readonly tujuan?: string | undef
                         ) : (
                             alasan === "idle" ? <Peringatan varian="info">Sesi Anda berakhir karena tidak ada aktivitas selama 30 menit. Silakan masuk kembali.</Peringatan> : alasan === "expired" && <Peringatan varian="info">Sesi Anda sudah berakhir. Masuk kembali untuk melanjutkan ke halaman sebelumnya.</Peringatan>
                         )}
-                        <Isian label="Email" type="email" autoComplete="username" required value={email} galat={galatEmail} onChange={(e) => { setEmail(e.target.value); setGalatEmail(undefined); }} />
+                        <Isian label="Email" type="email" autoComplete="username" required contoh="nama@sekolah.sch.id" validasi={periksaEmail} value={email} galat={galatEmail} onChange={(e) => { setEmail(e.target.value); setGalatEmail(undefined); }} />
                         <Isian label="Password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                         <Tombol type="submit" sibuk={sibuk} disabled={email.trim() === "" || password === ""}>
                             {sibuk ? "Memproses…" : "Masuk"}
