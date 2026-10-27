@@ -150,7 +150,7 @@ describe("Dashboard P-12 terpadu", () => {
         await waitFor(() => expect(screen.getByRole("link", { name: /Lapor kerusakan/ })).toBeTruthy());
     });
 
-    it("sidebar dan konten bergulir di wilayah terpisah (UXD-25)", async () => {
+    it("sidebar dan konten bergulir di wilayah terpisah; kepala logo tidak ikut bergulir (UXD-25)", async () => {
         pasangServer((p) => (p.url === "/me" ? sukses(ME_ADMIN) : p.url === "/dashboard" ? sukses({ templat: null, kartu: [] }) : sukses([])));
         await renderAplikasi("/");
         const konten = await waitFor(() => {
@@ -160,12 +160,18 @@ describe("Dashboard P-12 terpadu", () => {
         });
         expect(konten.className).toContain("overflow-y-auto");
         expect(konten.parentElement?.className).toContain("overflow-hidden");
-        const aside = screen.getByRole("navigation", { name: "Navigasi utama" }).closest("aside");
-        expect(aside?.className).toContain("overflow-y-auto");
+        const nav = screen.getByRole("navigation", { name: "Navigasi utama" });
+        const aside = nav.closest("aside");
+        // Hanya daftar navigasi yang bergulir; kepala logo di atasnya tetap diam seperti topbar.
+        expect(nav.classList.contains("overflow-y-auto")).toBe(true);
+        expect(aside?.classList.contains("overflow-hidden")).toBe(true);
+        const kepalaLogo = aside?.querySelector("img[alt='SIGM4']")?.parentElement;
+        expect(kepalaLogo !== null && kepalaLogo !== undefined && !nav.contains(kepalaLogo)).toBe(true);
+        expect(kepalaLogo?.classList.contains("shrink-0")).toBe(true);
         // Elemen sr-only (absolute) — tabel data grafik, label ciut — wajib terkurung di wadah gulirnya; tanpa
         // kelas relative mereka memanjangkan dokumen dan halaman ikut bergulir dengan scrollbar kedua.
         expect(konten.classList.contains("relative")).toBe(true);
-        expect(aside?.classList.contains("relative")).toBe(true);
+        expect(nav.classList.contains("relative")).toBe(true);
     });
 });
 
