@@ -8,7 +8,7 @@ const iosFirebase = process.env["GOOGLE_SERVICE_INFO_PLIST"];
 const firebaseEnabled = Boolean(androidFirebase && iosFirebase && existsSync(androidFirebase) && existsSync(iosFirebase));
 const apnsEnvironment = process.env["APNS_ENVIRONMENT"] === "production" ? "production" : "development";
 const config: ExpoConfig = {
-    name: "SIGM4", slug: "sigm4", version: "0.3.0", scheme: "sigm4", platforms: ["android", "ios"],
+    name: "SIGM4", slug: "sigm4", version: "0.5.0", scheme: "sigm4", platforms: ["android", "ios"],
     orientation: "default", userInterfaceStyle: "light",
     ios: { bundleIdentifier: "id.sch.sigm4.mobile", supportsTablet: true, ...(firebaseEnabled ? { googleServicesFile: iosFirebase!, entitlements: { "aps-environment": apnsEnvironment }, infoPlist: { UIBackgroundModes: ["remote-notification"] } } : {}), ...(appHost ? { associatedDomains: [`applinks:${appHost}`] } : {}) },
     android: { package: "id.sch.sigm4.mobile", allowBackup: false, blockedPermissions: ["android.permission.RECORD_AUDIO"], ...(firebaseEnabled ? { googleServicesFile: androidFirebase! } : {}), ...(appHost ? { intentFilters: [{ action: "VIEW", autoVerify: true, category: ["BROWSABLE", "DEFAULT"], data: [{ scheme: "https", host: appHost, pathPrefix: "/" }] }] } : {}) },

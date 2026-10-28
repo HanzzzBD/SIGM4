@@ -1,5 +1,6 @@
+import type { StatusTone } from "../../shared/ui/status";
 import { DecideBodySchema, ProcurementPartialSchema, LABEL_JENIS_PENGAJUAN, LABEL_STATUS_INSTANCE_APPROVAL } from "@sigm4/schemas";
-import type { ProcurementDetail } from "@sigm4/schemas";
+import type { DisposalDetail, ProcurementDetail } from "@sigm4/schemas";
 import type { ApprovalDecision, ApprovalDecisionResult, ApprovalPending, LinimasaPersetujuan, ReservationDetail } from "@sigm4/schemas";
 import { MobileApiError } from "../../shared/api/client";
 
@@ -12,6 +13,7 @@ export interface ApprovalReview {
     contextError: string | null;
     requesterContextComplete: boolean;
     procurement?: ProcurementDetail | null;
+    disposal?: DisposalDetail | null;
 }
 export function decisionBlockers(review: ApprovalReview, permissions: Readonly<Record<string, string>>): string[] {
     const reasons: string[] = [];
@@ -19,6 +21,12 @@ export function decisionBlockers(review: ApprovalReview, permissions: Readonly<R
     if (review.history.status !== "MENUNGGU") reasons.push("Pengajuan sudah tidak menunggu keputusan.");
     const item = review.pending;
     if (!item || item.instance_id !== review.history.instance_id || item.urutan !== review.history.langkah_aktif || item.jenis_pengajuan !== review.history.jenis_pengajuan || item.referensi_id !== review.history.referensi_id || item.pemohon.id !== review.history.pemohon.id || !review.history.langkah.some((step) => step.urutan === item.urutan && step.status === "AKTIF")) reasons.push("Langkah ini tidak lagi berada pada kewenangan Anda. Muat ulang untuk memeriksa antrean.");
+    if (review.history.jenis_pengajuan === "PENGHAPUSAN_ASET") {
+        const d = review.disposal;
+        if (!d || d.id !== String(review.history.referensi_id) || d.approval_instance_id !== String(review.history.instance_id) || Number(d.pengusul_id) !== review.history.pemohon.id || d.status !== "MENUNGGU_PERSETUJUAN") reasons.push("Rincian penghapusan tidak cocok dengan pengajuan aktif. Muat ulang konteks.");
+        if (review.contextError) reasons.push(review.contextError);
+        return reasons;
+    }
     if (review.history.jenis_pengajuan === "PENGADAAN_BARANG") {
         if (!Object.hasOwn(permissions, "procurement.approve")) reasons.push("Anda tidak memiliki izin menyetujui pengadaan.");
         const proposal = review.procurement;
@@ -43,10 +51,24 @@ export function procurementDecision(proposal: ProcurementDetail, urutan: number,
     if (rincian && (rincian.items.every(item => item.jumlah_disetujui === 0) || rincian.items.some((item, index) => !quantities![String(item.item_id)]?.trim() || item.jumlah_disetujui > (proposal.items[index]!.jumlah_disetujui ?? proposal.items[index]!.jumlah_diusulkan)))) throw new Error("Jumlah harus tetap atau berkurang, dan minimal satu item disetujui.");
     return { urutan, keputusan, catatan: catatan.trim(), ...(rincian ? { rincian_keputusan: rincian } : {}) };
 }
+/** MS-54 (keputusan 20): penyetujuan akhir hanya Pimpinan (R-03 + disposal.approve); lampiran wajib CLEAN. Tolak/revisi selalu boleh. */
+export function disposalApproveBlocker(d: Pick<DisposalDetail, "lampiran">, finalStep: boolean, u: { role_kode: string }, p: Readonly<Record<string, string>>): string | null {
+    if (d.lampiran.some((f) => f.status !== "CLEAN")) return "Persetujuan menunggu seluruh lampiran terverifikasi.";
+    if (finalStep && !(u.role_kode === "R-03" && Object.hasOwn(p, "disposal.approve"))) return "Keputusan akhir penghapusan memerlukan Pimpinan. Anda dapat menolak atau meminta revisi.";
+    return null;
+}
+export const isFinalStep = (steps: readonly { urutan: number; status: string }[], current: number) => !steps.some((s) => s.urutan > current && s.status === "BELUM_AKTIF");
+export function disposalDecision(d: Pick<DisposalDetail, "items">, urutan: number, keputusan: "DISETUJUI" | "DITOLAK" | "PERLU_REVISI", catatan: string, approved?: readonly string[]) {
+    if (!catatan.trim()) throw new Error("Catatan keputusan penghapusan wajib diisi.");
+    if (approved && !approved.length) throw new Error("Pilih minimal satu aset, atau gunakan Tolak.");
+    return { urutan, keputusan, catatan: catatan.trim(), ...(approved ? { rincian_keputusan: { items: d.items.map((i) => ({ item_id: Number(i.id), disetujui: approved.includes(i.id), keterangan: catatan.trim() })) } } : {}) };
+}
 export function approvalConflict(error: unknown): { name: string; at: string | null } | null {
     if (!(error instanceof MobileApiError) || error.code !== "APPROVAL_ALREADY_DECIDED") return null;
     return { name: error.details.find((entry) => entry.field === "diputuskan_oleh")?.message ?? "approver lain", at: error.details.find((entry) => entry.field === "diputuskan_pada")?.message ?? null };
 }
+/** Badge SLA C-13: terlampaui galat, berjalan informasi, belum ada menunggu (FOUNDATIONS §1.8). */
+export function slaTone(sla: { terlambat: boolean } | null): StatusTone { return !sla ? "pending" : sla.terlambat ? "error" : "info"; }
 export function slaLabel(sla: { sisa_menit_kerja: number; terlambat: boolean } | null) {
     if (!sla) return "Tenggat belum tersedia";
     if (sla.terlambat) return "Melewati SLA";
@@ -88,6 +110,10 @@ export class DecisionAttempt {
 }
 
 /** Label tampilan bukan kode enum (NFR-AC-09). */
+/** Nada status instance/langkah persetujuan (FOUNDATIONS §1.8): menunggu dan belum aktif berikon garis putus. */
+export function approvalTone(code: string): StatusTone {
+    return code === "DISETUJUI" ? "success" : code === "DITOLAK" ? "error" : code === "PERLU_REVISI" ? "warning" : code === "AKTIF" ? "info" : "pending";
+}
 export function approvalLabel(code: string): string {
     const labels: Readonly<Record<string, string>> = { ...LABEL_JENIS_PENGAJUAN, ...LABEL_STATUS_INSTANCE_APPROVAL, DILEWATI: "Dilewati", AKTIF: "Aktif", BELUM_AKTIF: "Belum Aktif", TIDAK_DIJALANKAN: "Tidak Dijalankan" };
     return labels[code] ?? code.toLowerCase().replaceAll("_", " ");

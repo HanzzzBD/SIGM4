@@ -40,9 +40,9 @@ Menyalin status requirement ke sini akan menciptakan dua sumber yang pasti berbe
 | [04](phases/phase-04.md) | Siklus Hidup Aset | 3 | 19 | `In Progress` | 0/19 | Menutup `M2` |
 | [05](phases/phase-05.md) | Penutupan Siklus | 3 | 36 | `In Progress` | 0/36 | Menutup `M3` & `M4` |
 | [06](phases/phase-06.md) | Analitik | 1 | 11 | `In Progress` | 0/11 | Menutup `M5` |
-| [07](phases/phase-07.md) | Integrasi & UAT | — | 14 | `Not Started` | 0/14 | |
-| [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 18 | `Not Started` | 0/18 | Menutup `M6` |
-| | **Total** | **22** | **230** | | **89/230** | |
+| [07](phases/phase-07.md) | Integrasi & UAT | — | 52 | `In Progress` | 23/52 | Paritas mobile `PR-07-15`…`35` tergabung (**UXD-19**); web visual-first `PR-07-36`…`42` dimulai (**UXD-24**); cakupan lokasi `PR-07-43`…`50` direncanakan (**UXD-28**) |
+| [08](phases/phase-08.md) | Pengerasan & Kesiapan Rilis | — | 19 | `Not Started` | 0/19 | Menutup `M6` |
+| | **Total** | **22** | **269** | | **112/269** | |
 
 ## Ringkasan milestone PRD
 
@@ -245,11 +245,39 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 |---|---|:---:|---|
 | `PR-06-01` … `PR-06-11` | `In Review` | [#182](https://github.com/HanzzzBD/SIGM4/pull/182) | Tergabung ke `develop` 25 Oktober 2026 (`c94f4a51`; 1 PR commit per area, [log phase-03 §3](logs/phase-03.md)); verifikasi closure tersisa: QA staging layar Phase 03–06 dan uji perangkat nyata: analitik & ekspor laporan asinkron |
 
-### Phase 07 — Integrasi & UAT · `Not Started`
+### Phase 07 — Integrasi & UAT · `In Progress`
 
 | ID | Status | PR | Catatan |
 |---|---|:---:|---|
 | `PR-07-01` … `PR-07-14` | `Not Started` | — | Rincian: [`phases/phase-07.md` §7](phases/phase-07.md) |
+| `PR-07-15` | `Done` | [#185](https://github.com/HanzzzBD/SIGM4/pull/185) | Keputusan & spesifikasi paritas mobile (`MOB-SCP-01`…`04`, **UXD-19**…**22**, `MS-24`…`MS-90`, **DSD-11**/**12**, C-30…C-38); di luar rencana — [log phase-07 §4](logs/phase-07.md). Digabung PM ke `develop` (squash `b9eed6b`) |
+| `PR-07-16` | `Done` | [#186](https://github.com/HanzzzBD/SIGM4/pull/186) | Paket 1 Fondasi & Akun, cabang `feature/PR-07-16-fondasi-akun-mobile`: tab Beranda · Tugas · Scan · Chatbot · Menu (**UXD-20**), Header C-30 + lonceng `MS-29` (**UXD-21**), Menu `MS-31` dari registri layar terdaftar (**UXD-23**), C-38 + C-36 (**UXD-22**), komponen C-31…C-37, ikon modul (**DSD-12**). Kompleksitas `L`. Digabung PM ke `develop` (squash `726d1a0`) |
+| `PR-07-17` | `Done` | [#186](https://github.com/HanzzzBD/SIGM4/pull/186) | Paket 1: tata ulang visual lewat C-30/C-32/C-33/C-34/C-37 dan badge berikon (**DSD-11**), batas dua kalimat dijaga uji; Profil `MS-30`, Riwayat Chatbot `MS-32`, Detail Keputusan `MS-54`. Kompleksitas `L`. Digabung (squash `726d1a0`) |
+| `PR-07-18` | `Done` | [#186](https://github.com/HanzzzBD/SIGM4/pull/186) | Paket 1: `MS-24`, `MS-25`, `MS-27`, `MS-28`; **`MS-26` ditunda ke `PR-08-12`** (isi `DP-01` belum ada — [log phase-07](logs/phase-07.md) keputusan 7). Kompleksitas `M`. Digabung (squash `726d1a0`) |
+| `PR-07-19` | `Done` | [#187](https://github.com/HanzzzBD/SIGM4/pull/187) | Paket 2 Pemanfaatan, cabang `feature/PR-07-19-pemanfaatan-mobile`: `MS-44` kalender per hari (CAL-UI-07), `MS-45`, wizard `MS-46` ruangan/aset/gabungan (**UXD-04**, BR-024b), `MS-47`/`MS-48`. Kompleksitas `L`. Digabung (squash `684d688`). |
+| `PR-07-20` | `Done` | [#187](https://github.com/HanzzzBD/SIGM4/pull/187) | Paket 2: `MS-12`, `MS-13` (`FR-09.5 AC` wajib mobile tertutup), `MS-14`, `MS-51`, `MS-53`. Kompleksitas `M`. Digabung (squash `684d688`). |
+| `PR-07-25` | `Done` | [#187](https://github.com/HanzzzBD/SIGM4/pull/187) | Paket 2: `MS-10` (QR/kode, foto, tanda tangan PNG), `MS-11` (pratinjau denda), `MS-49`, `MS-50`, `MS-52` + aksi kewajiban `MS-53`; bukti diunggah sebelum transaksi ([log phase-07](logs/phase-07.md) keputusan 11). Kompleksitas `L`. Digabung (squash `684d688`). |
+| `PR-07-21` | `Done` | [#187](https://github.com/HanzzzBD/SIGM4/pull/187) | Paket 2: `MS-55`…`MS-58`; mencabut **UXD-17** di kode; penyerahan & tutup sisa di `PR-07-26`. Kompleksitas `M`. Digabung (squash `684d688`). |
+| `PR-07-23` | `Done` | [#188](https://github.com/HanzzzBD/SIGM4/pull/188) | Paket 3 Aset & Bahan: `MS-33`…`MS-36`, `MS-39` (unggah dokumen lewat `expo-document-picker`, keputusan 13), kepala `MS-09`. Kompleksitas `M`. Digabung (squash `5c00e34`). |
+| `PR-07-24` | `Done` | [#188](https://github.com/HanzzzBD/SIGM4/pull/188) | Paket 3: `MS-37` pohon lokasi + CRUD, `MS-38` + jadwal tetap/blokade (`FR-07.5`, keputusan 15). Kompleksitas `M` (rencana `S`; [log phase-07](logs/phase-07.md) §3). Digabung (squash `5c00e34`). |
+| `PR-07-26` | `Done` | [#188](https://github.com/HanzzzBD/SIGM4/pull/188) | Paket 3: `MS-40`…`MS-43`, kartu stok, penerimaan/penyesuaian, penyerahan & tutup sisa di `MS-58`. Kompleksitas `M`. Digabung (squash `5c00e34`). |
+| `PR-07-27` | `Done` | [#189](https://github.com/HanzzzBD/SIGM4/pull/189) | Paket 4 Perawatan & Opname: `MS-59` (berbagi `/kerusakan` dengan Tiket Saya), `MS-60` verifikasi + penugasan, `MS-61` mode pengelola (berbagi `/work-order` dengan `MS-16`), `MS-62`; restyle ringan `MS-15`/`MS-17` (keputusan 17). Kompleksitas `M`. Digabung (squash `5d232b5`). |
+| `PR-07-28` | `Done` | [#189](https://github.com/HanzzzBD/SIGM4/pull/189) | Paket 4: `MS-63`, `MS-64` — jadwal preventif, lewati/nonaktifkan beralasan. Kompleksitas `S`. Digabung (squash `5d232b5`). |
+| `PR-07-29` | `Done` | [#189](https://github.com/HanzzzBD/SIGM4/pull/189) | Paket 4: `MS-65`, `MS-66` (Aset & Bahan, keputusan 18; berita acara PDF di peramban, keputusan 19), mode pengelola `MS-18` padanan P-47; restyle ringan `MS-19`. Kompleksitas `M`. Digabung (squash `5d232b5`). |
+| `PR-07-22` | `Done` | [#190](https://github.com/HanzzzBD/SIGM4/pull/190) | Paket 5 Pengadaan & Penghapusan: `MS-67`, `MS-68` (`?aset=` dari Detail Aset), `MS-69`; lampiran kamera/galeri/berkas lewat `AttachmentField` bersama (keputusan 21). Kompleksitas `M`. Digabung (squash `aaaac1f`). |
+| `PR-07-30` | `Done` | [#190](https://github.com/HanzzzBD/SIGM4/pull/190) | Paket 5: `MS-70` penerimaan, `MS-71`…`MS-73` penghapusan; keputusan penghapusan di `MS-54` (keputusan 20); ekspor arsip ke `PR-07-31` (keputusan 22); pintu masuk dari Detail Aset & WO (keputusan 23). Kompleksitas `M`. Digabung (squash `aaaac1f`). |
+| `PR-07-31` | `Done` | [#191](https://github.com/HanzzzBD/SIGM4/pull/191) | Paket 6 Pimpinan & Admin, cabang `feature/PR-07-31-pimpinan-admin-mobile`: `MS-74`, `MS-75` + ekspor ke perangkat lewat lembar bagikan (keputusan 24) untuk analitik, inventaris ruangan `MS-38`, opname `MS-66`, arsip penghapusan `MS-71`; `expo-sharing`/`expo-clipboard`, versi 0.5.0. Kompleksitas `M`. Digabung PM ke `develop` (squash `72cb7c2`) |
+| `PR-07-32` | `Done` | [#191](https://github.com/HanzzzBD/SIGM4/pull/191) | Paket 6: `MS-76`…`MS-79`, `MS-82`; password sementara sekali tampil + Salin (keputusan 25); impor ↗ web (`MOB-SCP-03`). Kompleksitas `M`. Digabung PM ke `develop` (squash `72cb7c2`) |
+| `PR-07-33` | `Done` | [#191](https://github.com/HanzzzBD/SIGM4/pull/191) | Paket 6: `MS-80`, `MS-81`, `MS-83`, `MS-84` paritas penuh pohon kondisi + pratinjau (keputusan 26). Kompleksitas `L`. Digabung PM ke `develop` (squash `72cb7c2`) |
+| `PR-07-34` | `Done` | [#191](https://github.com/HanzzzBD/SIGM4/pull/191) | Paket 6: `MS-85` (+ Satuan Bahan), `MS-86`, `MS-87`. Kompleksitas `M`. Digabung PM ke `develop` (squash `72cb7c2`) |
+| `PR-07-35` | `Done` | [#191](https://github.com/HanzzzBD/SIGM4/pull/191) | Paket 6: `MS-88`, `MS-89`, `MS-90`. Kompleksitas `S`. Digabung PM ke `develop` (squash `72cb7c2`) |
+| `PR-07-36` | `Done` | [#195](https://github.com/HanzzzBD/SIGM4/pull/195) | Keputusan & spesifikasi web visual-first, cabang `feature/PR-07-36-web-visual-first` (`WEB-VIS-01`…`05`, `SDD-FE-17`…`19`, **UXD-24**…**27**, **DSD-13**/**14**, C-39…C-41); di luar rencana — [log phase-07 §4](logs/phase-07.md). Digabung ke `develop` (squash `d4f4a4f`) |
+| `PR-07-37` | `In Review` | [#200](https://github.com/HanzzzBD/SIGM4/pull/200) | Paket Fondasi web visual-first, cabang `feature/PR-07-37-fondasi-visual-web`: kerangka gulir terpisah + tooltip sidebar ciut (**UXD-25**), kepala halaman + C-39, komponen C-31…C-34/C-37/C-40/C-41, validasi langsung & contoh pengisian, registri saran (`SDD-FE-18`), Dashboard P-12 (saran + Aksi Cepat), P-13, P-14, P-76…P-78, auth P-01…P-05; keputusan 40–42 [log phase-07](logs/phase-07.md). Kompleksitas `L` |
+| `PR-07-38` … `PR-07-42` | `Not Started` | — | Web visual-first: Aset & Bahan → Pemanfaatan → Perawatan → Pengawasan → Sistem; rincian [`phases/phase-07.md` §7](phases/phase-07.md) |
+| `PR-07-43` | `In Review` | [#197](https://github.com/HanzzzBD/SIGM4/pull/197) | Keputusan & spesifikasi cakupan lokasi pengguna, cabang `feature/PR-07-43-cakupan-lokasi` (`PM-07`…`PM-10`, `FR-02.3`, `BR-069b`, `RE-14`, `NTF-06`, `SDD-AUTH-13`/`14`, **UXD-28**); di luar rencana — [log phase-07 §4](logs/phase-07.md) |
+| `PR-07-44` … `PR-07-50` | `Not Started` | — | Cakupan lokasi: fondasi → Aset & Bahan → Pemanfaatan → Perawatan → Pengawasan → approval & notifikasi → UI; mulai setelah `PR-07-42`. Rincian [`phases/phase-07.md` §7](phases/phase-07.md) |
+| `PR-07-51` | `In Review` | [#199](https://github.com/HanzzzBD/SIGM4/pull/199) | Keputusan & spesifikasi permintaan bahan Siswa/OSIS, cabang `feature/PR-07-51-bahan-siswa` (`BR-086a`, `BR-091a`, **UXD-29**); di luar rencana — [log phase-07 §4](logs/phase-07.md) |
+| `PR-07-52` | `In Review` | [#199](https://github.com/HanzzzBD/SIGM4/pull/199) | Paket Kelompok C bersama `PR-07-51`: migration `0076` (kolom `boleh_diminta_siswa`, izin R-07 `restricted`), katalog tersaring + `status_stok`, permintaan siswa tanpa approval, UI web P-81/P-84/P-85 + mobile MS-41/MS-55/MS-56; master Bahan disembunyikan bagi siswa. Kompleksitas `M` |
 
 ### Phase 08 — Pengerasan & Kesiapan Rilis · `Not Started`
 
@@ -258,6 +286,7 @@ Kolom **PR** merujuk nomor pull request di repositori setelah dibuka. Judul leng
 | `PR-08-01` … `PR-08-16` | `Not Started` | — | Rincian: [`phases/phase-08.md` §7](phases/phase-08.md) |
 | `PR-08-17` | `Done` | [#176](https://github.com/HanzzzBD/SIGM4/pull/176) | Pipeline rilis production ke server sekolah (`SDD-INF-14`, di luar rencana — [log phase-08 §4](logs/phase-08.md)). Cabang `feature/PR-08-17-deploy-produksi-sekolah`. Belum pernah berjalan pada runner nyata: server, runner, environment `production`/`production-smoke`, dan ruleset tag belum disetel ([runbook](runbooks/produksi-server-sekolah.md)). Smoke produksi menunggu `--full` dari `PR-03-36` |
 | `PR-08-18` | `In Progress` | [#184](https://github.com/HanzzzBD/SIGM4/pull/184) | Staging di server sekolah di belakang proxy tepi bersama (`SDD-INF-15`, di luar rencana — [log phase-08 §4](logs/phase-08.md)). Cabang `feature/PR-08-18-staging-server-sekolah`. Belum terbukti di server nyata: runner, environment `staging`, DNS, dan berkas env menunggu IT sekolah dan pemilik repo ([runbook](runbooks/produksi-server-sekolah.md)) |
+| `PR-08-19` | `Done` | [#202](https://github.com/HanzzzBD/SIGM4/pull/202) · perbaikan konteks build web di cabang `fix/PR-08-19-konteks-web-dist` | Deploy staging & production lewat Dokploy, nginx sekolah di depan (`SDD-INF-16`, di luar rencana — [log phase-08 §4](logs/phase-08.md)). Cabang `feature/PR-08-19-deploy-dokploy`. |
 
 **Cara memakai tabel ini.** Saat sebuah phase dimulai, ganti barisnya menjadi satu baris per PR. Selama phase belum dimulai, satu baris ringkas lebih jujur daripada 163 baris `Not Started` yang tidak ada yang membacanya.
 

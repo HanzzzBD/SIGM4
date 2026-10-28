@@ -88,6 +88,33 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 - [ ] Perubahan permission berlaku tanpa restart layanan.
 - [ ] Perubahan matriks tercatat di activity log.
 
+### FR-02.3 Cakupan Lokasi Pengguna
+
+| Aspek | Uraian |
+|---|---|
+| **Description** | Administrator membatasi pengguna role staf pada gedung, area, atau ruangan tertentu, sehingga ia hanya melihat dan mengelola aset, bahan, dan kegiatan di lokasi itu (`PM-07`…`PM-10`). Keputusan pemilik produk 26 Oktober 2026. |
+| **Actor** | Administrator |
+| **Preconditions** | Administrator login; pengguna sasaran berrole Petugas Sarana Prasarana (R-02), Teknisi (R-04), atau role kustom (`RK-*`) |
+
+**Main Flow**
+1. Administrator membuka detail pengguna dan bagian Cakupan Lokasi.
+2. Sistem menampilkan pohon gedung → area → ruangan beserta simpul yang sudah dipilih.
+3. Administrator memilih satu atau beberapa simpul; memilih gedung atau area otomatis mencakup seluruh turunannya.
+4. Administrator menyimpan; sistem mencatat perubahan dan memberi tahu pengguna terkait (NT-40).
+5. Cakupan berlaku pada permintaan berikutnya dari pengguna itu (`PM-05`).
+
+**Alternative Flow**
+- **A1 — Pengguna berrole Administrator, Pimpinan Sekolah, Guru, Staf/Tata Usaha, atau Siswa/OSIS:** Sistem menolak (`BR-069b`).
+- **A2 — Mengosongkan cakupan:** Pengguna kembali tidak dibatasi lokasi.
+- **A3 — Simpul yang dinonaktifkan kemudian:** Simpul tetap tersimpan dan tetap membatasi; turunannya yang aktif tetap tercakup.
+- **A4 — Pengguna mengubah cakupannya sendiri:** Sistem menolak (`BR-069`).
+- **A5 — Role pengguna diganti ke role yang tidak diizinkan `BR-069b`:** Cakupan lokasinya dihapus dalam transaksi yang sama dan tercatat.
+
+**Acceptance Criteria**
+- [ ] Pengguna bercakupan tidak dapat membaca maupun mengubah objek di luar cakupannya melalui endpoint apa pun, termasuk pencarian, ekspor, dashboard, dan chatbot (`PM-08`, `BR-076`).
+- [ ] Ruangan baru di bawah gedung yang dipilih langsung tercakup tanpa penyuntingan ulang.
+- [ ] Perubahan cakupan tercatat di activity log dengan nilai sebelum dan sesudah.
+
 ## 6. Business Rules
 
 ### Dimiliki modul ini
@@ -99,6 +126,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | BR-068 | Sistem wajib memiliki minimal satu akun Administrator berstatus aktif. |
 | BR-069 | Pengguna tidak dapat mengubah email dan rolenya sendiri. |
 | BR-069a | Role Administrator (R-01), Pimpinan Sekolah (R-03), dan Siswa/OSIS (R-07) tidak dapat dijadikan template role kustom: kewajiban 2FA (`BR-070`) dan perlindungan siswa (`DP-02`, `SL-01` … `SL-06`) melekat pada kode role, sehingga salinannya akan lolos dari perlindungan tersebut. |
+| BR-069b | Cakupan lokasi (`FR-02.3`) hanya dapat diberikan kepada pengguna berrole Petugas Sarana Prasarana (R-02), Teknisi (R-04), atau role kustom (`RK-*`). Administrator dan Pimpinan Sekolah mengawasi seluruh sekolah; Guru, Staf/Tata Usaha, dan Siswa/OSIS sudah dibatasi pada data miliknya sendiri. |
 | BR-073 | Role Siswa/OSIS tidak boleh mengakses data finansial aset, biaya pemeliharaan, data pengadaan, dokumen aset, maupun data pribadi pengguna lain. |
 | BR-074 | Setiap pengguna hanya dapat melihat riwayat transaksi, denda, dan percakapan chatbot miliknya sendiri, kecuali role yang diberi permission lebih luas. |
 
@@ -118,6 +146,8 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | GET | `/users/import/template` | `user.create` | Unduh template XLSX E.5.2 beserta petunjuk dan contoh isian (`IMPT-05`) |
 | POST | `/class-promotions` | `user.update` | Kenaikan kelas massal: tetapkan kelas atau tandai lulus per siswa pada satu tahun ajaran (`SL-02`) |
 | POST | `/users/{id}/pseudonymize` | `user.update` | Khusus Administrator R-01 berscope all: pseudonimisasi permanen akun lain yang NONAKTIF dan tanpa kewajiban; alasan, referensi permintaan terverifikasi dan metode verifikasi wajib (`DP-04`, `SL-05`) |
+| GET | `/users/{id}/location-scope` | `user.view` | Cakupan lokasi pengguna: daftar simpul gedung/area/ruangan (`FR-02.3`) |
+| PUT | `/users/{id}/location-scope` | `user.update` | Ganti seluruh cakupan lokasi pengguna; daftar kosong = tidak dibatasi (`FR-02.3`, `BR-069b`) |
 | POST | `/users/{id}/reset-password` | `user.reset_password` | Terbitkan password sementara langsung dari detail pengguna (`FR-01.3 A5`); `metode_verifikasi` wajib; password tampil satu kali; sesi dicabut dan kunci login dibuka. Logikanya milik M-01 |
 | POST | `/users/{id}/reset-2fa` | `user.reset_2fa` | Reset 2FA pengguna (`FR-01.5 A3`): menonaktifkan 2FA, menghapus kode cadangan, mencabut seluruh sesi; `metode_verifikasi` wajib; untuk role wajib 2FA menerbitkan kode aktivasi baru, tampil satu kali (`BR-070d`) |
 | POST | `/users/{id}/2fa-activation-code` | `user.reset_2fa` | Terbitkan kode aktivasi 2FA bagi akun role wajib yang belum ber-2FA (`FR-01.5 A7`, `BR-070d`); `metode_verifikasi` wajib; kode tampil satu kali; tidak untuk akun sendiri |
@@ -138,6 +168,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 | **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, work_unit_id, telepon, foto, status, deactivated_at, pseudonymized_at, totp_enabled_at, must_change_password, login_terakhir_pada, failed_login_count, failed_login_window_start, locked_until, consent_guardian_at | Administrator |
 | **student_enrollments** | Kelas siswa per tahun ajaran (Lampiran E.4, `SL-01`) — bukan atribut permanen akun | id, user_id, academic_year_id, kelas_id (unit kerja berjenis Kelas), lulus | Administrator |
 | **user_import_jobs** | Pekerjaan impor pengguna — setiap impor, sinkron maupun asinkron (`IMPT-02`, `IMPT-03`, `IMPT-04`) | id, file_hash, nama_berkas, status, total_baris, baris_terproses, sukses, gagal, laporan_gagal (hanya baris gagal: nomor baris, email, alasan), pesan_galat, selesai_pada | Administrator |
+| **user_location_scopes** | Cakupan lokasi pengguna (`FR-02.3`, `PM-07`) | user_id, building_id / area_id / room_id (tepat satu terisi), created_at, created_by | Administrator |
 | **roles** | Peran pengguna | id, nama, deskripsi, is_system | Administrator |
 | **permissions** | Daftar hak akses granular | id, modul, aksi, kode | Sistem |
 | **role_permissions** | Relasi role–permission | role_id, permission_id | Administrator |
@@ -150,7 +181,7 @@ Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-archit
 
 | Kode | Event Pemicu | Penerima | Kanal | Wajib | Contoh Isi |
 |---|---|---|---|:---:|---|
-| **NT-40** | Role atau status akun diubah | Pengguna terkait | In-app | ✅ | "Role akun Anda diubah menjadi {role}." |
+| **NT-40** | Role, status, atau cakupan lokasi akun diubah (`FR-02.3`) | Pengguna terkait | In-app | ✅ | "Role akun Anda diubah menjadi {role}." · "Cakupan lokasi Anda kini: {lokasi}." |
 | **NT-48** | Persetujuan wali siswa belum terekam | Administrator | In-app | ✅ | "Akun siswa {nama} tidak dapat diaktifkan: persetujuan wali belum terekam (DP-02)." |
 | **NT-52** | Impor massal pengguna selesai diproses (`IMPT-04`) | Administrator pengunggah | In-app | ✅ | "Impor pengguna selesai: {sukses} berhasil, {gagal} gagal dari {total} baris." |
 
@@ -186,6 +217,7 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | `STUDENT_ENROLLMENT_SET` | Kelas siswa pada suatu tahun ajaran ditetapkan atau diubah (`SL-01`, `SL-02`), nilai lama/baru |
 | `STUDENT_MARKED_GRADUATED` | Siswa ditandai lulus pada suatu tahun ajaran (`SL-02`) |
 | `STUDENT_GRADUATION_DEACTIVATED` | Akun siswa lulus dinonaktifkan setelah tahun ajarannya berakhir (`SL-03`); pelaku `SYSTEM` bila dijalankan pekerjaan terjadwal |
+| `USER_LOCATION_SCOPE_UPDATED` | Cakupan lokasi pengguna diganti (`FR-02.3`); daftar simpul sebelum/sesudah |
 | `ROLE_PERMISSION_UPDATED` | Perubahan matriks permission |
 | `ROLE_CREATED` | Pembuatan role kustom dari template (`FR-02.2 A2`) |
 

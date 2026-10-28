@@ -113,8 +113,8 @@ export const NAVIGASI: readonly GrupNav[] = [
         entri: [
             e("Inventaris Aset", "P-15", "aset", "asset.view"),
             e("Kategori Aset", "P-21", "kategori", "category.manage"),
-            e("Bahan", "P-80", "bahan", "material.view"),
-            e("Kategori Bahan", "P-83", "kategori", "material.manage"),
+            e("Bahan", "P-80", "bahan", "material.view:penuh"),
+            e("Kategori Bahan", "P-83", "kategoriBahan", "material.manage"),
             e("Lokasi", "P-22", "lokasi", "location.view"),
             e("Label QR", "P-24", "qr", "asset.qr_print"),
             e("Dokumen Aset", "P-26", "dokumen", "asset_document.view"),
@@ -129,9 +129,9 @@ export const NAVIGASI: readonly GrupNav[] = [
             e("Katalog Aset", "P-28", "katalog", "reservation.view"),
             e("Reservasi", "P-30", "reservasi", "reservation.view"),
             e("Peminjaman", "P-32", "peminjaman", "loan.view"),
-            e("Antrean Serah Terima", "P-33", "peminjaman", "loan.manage"),
+            e("Antrean Serah Terima", "P-33", "serahTerima", "loan.manage"),
             e("Denda & Kewajiban", "P-35", "denda", "fine.view"),
-            e("Katalog Bahan", "P-84", "katalog", "material.view"),
+            e("Katalog Bahan", "P-84", "permintaan", "material.view"),
             e("Permintaan Bahan", "P-86", "permintaan", "material.view"),
             e("Persetujuan Saya", "P-37", "persetujuan", "approval.decide"),
         ],
@@ -164,7 +164,7 @@ export const NAVIGASI: readonly GrupNav[] = [
             e("Approval Rules", "P-68", "aturan", "approval_rule.view"),
             e("Parameter Sistem", "P-70", "pengaturan", "setting.view", "setting.manage"),
             e("Activity Log", "P-73", "log", "activity_log.view"),
-            e("Monitoring Chatbot", "P-75", "chatbot", "chat.monitor"),
+            e("Monitoring Chatbot", "P-75", "monitoringChatbot", "chat.monitor"),
         ],
     },
 ];
@@ -173,6 +173,18 @@ export const NAVIGASI: readonly GrupNav[] = [
  * Grup berisi entri yang boleh dirender; grup kosong ikut hilang (UXD-01). Entri bertujuan cadangan memakai
  * tujuan PERTAMA yang terdaftar di build ini dan izinnya dipegang.
  */
+/**
+ * Penggerbang entri dari `/me` (PM-04). Kode bersufiks `:penuh` hanya lolos bila scope-nya bukan
+ * `restricted` — mis. master Bahan P-80 tidak tampil bagi Siswa/OSIS (UX §5.3, BR-091a).
+ */
+export function bisaDariScope(permissions: Readonly<Record<string, string>>): (permission: string) => boolean {
+    return (permission) => {
+        const [kode = "", syarat] = permission.split(":");
+        const scope = permissions[kode];
+        return scope !== undefined && (syarat !== "penuh" || scope !== "restricted");
+    };
+}
+
 export function navigasiTerlihat(can: (permission: string) => boolean): readonly GrupNav[] {
     const pilih = (x: EntriNav): EntriNav | null => {
         const tujuan = [{ halaman: x.halaman, permission: x.permission }, ...(x.alternatif ?? [])].find((t) => HALAMAN_TERDAFTAR[t.halaman] !== undefined && t.permission.some(can));

@@ -59,8 +59,9 @@ Total: **87 halaman web** · **23 layar mobile**.
 |---|:---:|:---:|---|
 | Login, 2FA, profil, notifikasi | ✅ | ✅ | `FR-01.1` |
 | Dashboard | ✅ | ✅ ringkas | `FR-15.1` |
-| CRUD aset, kategori, lokasi, impor massal | ✅ | — | `UX-01` administratif |
-| Cetak label QR | ✅ | — | `FR-05.1` memerlukan printer |
+| CRUD aset, kategori, lokasi | ✅ | ✅ | `MOB-SCP-01` · **UXD-19** |
+| Impor massal berkas (pengguna, aset, jadwal tetap) | ✅ | ↗ web | `MOB-SCP-02` — entri mengarah ke web (`MOB-SCP-03`) |
+| Cetak label QR | ✅ | ↗ web | `FR-05.1` memerlukan printer · `MOB-SCP-02` |
 | Scan QR + aksi kontekstual | ✅ kamera peramban | ✅ **utama** | `FR-05.2` · `NFR-C-05` |
 | Kalender ruangan & pengajuan reservasi | ✅ **utama** | ✅ | `CAL-UI-07` |
 | Serah terima & pengembalian | ✅ | ✅ **utama** | `FR-09.1` · `SDD-MOB` §4.1 |
@@ -69,12 +70,14 @@ Total: **87 halaman web** · **23 layar mobile**.
 | Verifikasi kerusakan & buat work order | ✅ | ✅ | `FR-11.2` |
 | Eksekusi work order | 🔍 | ✅ **utama** | `FR-12.3 AC`: "seluruh alur dapat diselesaikan dari mobile" |
 | Verifikasi & tutup work order | ✅ **utama** | ✅ | `FR-12.4` |
-| Stock opname | ✅ sesi & rekonsiliasi | ✅ **pelaksanaan** | `FR-13.2 AC` |
+| Stock opname | ✅ sesi & rekonsiliasi | ✅ **pelaksanaan** + sesi & rekonsiliasi | `FR-13.2 AC` · **UXD-19** |
 | Persetujuan | ✅ | ✅ **wajib** | `FR-10.2 AC` · `FR-14.2 AC` |
-| Pengadaan, penghapusan, analitik, activity log, pengaturan | ✅ | — | `UX-01` administratif |
+| Pengadaan, penghapusan, analitik, activity log, pengaturan | ✅ | ✅ | `MOB-SCP-01` · **UXD-19** |
+| Bahan: master, stok, permintaan, penyerahan | ✅ | ✅ | `MOB-SCP-01` · **UXD-19** (mencabut **UXD-17**) |
+| Pengguna, role, approval rules | ✅ | ✅ | `MOB-SCP-01` · **UXD-19** |
 | Chatbot | ✅ | ✅ | `FR-19.1` |
 
-**Konsekuensi:** aplikasi mobile tidak memiliki entri untuk 9 dari 22 modul. Itu **disengaja** — `SDD-MOB` §4.1 menyatakannya secara eksplisit. Pengguna mobile yang membutuhkan alur administratif diarahkan ke web responsif melalui tautan pada layar terkait, bukan dibiarkan buntu.
+**Konsekuensi** (25 Oktober 2026, **UXD-19**): seluruh 22 modul memiliki entri di mobile. Tanda ↗ web berarti entri tetap tampil dan mengarahkan ke web beserta alasannya (`MOB-SCP-03`), bukan disembunyikan. Kolom "**utama**" tetap menandai platform yang diprioritaskan tata letaknya (`UX-01`); layar administratif di mobile disederhanakan menjadi kartu dan ringkasan, bukan salinan tabel web (`MOB-SCP-04`).
 
 ## 6.4 Beranda (M-15, M-17, M-19)
 
@@ -169,7 +172,7 @@ Total: **87 halaman web** · **23 layar mobile**.
 | P-60 | Pengguna | `/pengguna` | Daftar akun dengan filter role, status, unit kerja (`FR-02.1`) | `user.view` | Sidebar · kartu "Total Pengguna Aktif" (19.2) | Detail Pengguna · Tambah · Impor · Kenaikan Kelas Massal |
 | P-61 | Tambah Pengguna | `/pengguna/baru` | Membuat akun + password sementara (`FR-02.1`) | `user.create` | Tombol pada Pengguna | Detail Pengguna dengan password sementara tampil **satu kali** · batal ke Pengguna |
 | P-62 | Impor Pengguna | `/pengguna/impor` | Impor massal CSV/XLSX dengan laporan per baris (`FR-02.1 A4`, `E.5.2`) | `user.create` | Tombol pada Pengguna | Laporan hasil ke Pengguna · unduh templat |
-| P-63 | Detail Pengguna | `/pengguna/{id}` | Profil, role, unit kerja, status, riwayat login | `user.view` | Daftar Pengguna · pencarian global | Ubah · Aktifkan/Nonaktifkan (drawer beralasan) · Reset Password 🔒 · Reset 2FA 🔒 · Terbitkan Kode Aktivasi 2FA 🔒 · Riwayat Perubahan |
+| P-63 | Detail Pengguna | `/pengguna/{id}` | Profil, role, unit kerja, status, riwayat login, cakupan lokasi (**UXD-28**) | `user.view` | Daftar Pengguna · pencarian global | Ubah · Aktifkan/Nonaktifkan (drawer beralasan) · Reset Password 🔒 · Reset 2FA 🔒 · Terbitkan Kode Aktivasi 2FA 🔒 · Atur Cakupan Lokasi 🔒 (`FR-02.3`) · Riwayat Perubahan |
 | P-64 | Kenaikan Kelas Massal | `/pengguna/kenaikan-kelas` | Menetapkan kelas baru atau menandai lulus pada pergantian tahun ajaran (`SL-02`) | `user.update` | Tombol pada Pengguna · pemicu setelah `AC-YR-02` | Laporan hasil ke Pengguna. Siswa dengan peminjaman aktif atau kewajiban belum lunas ditampilkan sebagai daftar terblokir (`SL-04`) |
 | P-65 | Role & Permission | `/role` | Daftar role + jumlah pengguna & permission aktif (`FR-02.2`) | `role.view` | Sidebar | Matriks Permission · Salin Role sebagai templat (`FR-02.2 A2`) |
 | P-66 | Matriks Permission | `/role/{id}` | Matriks domain × aksi untuk satu role (`FR-02.2`) | `role.view` / `role.update` | Daftar Role | Simpan ke Daftar Role · penolakan eksplisit saat mencabut permission inti 🔒 (`FR-02.2 A1`) |
@@ -219,6 +222,73 @@ Total: **87 halaman web** · **23 layar mobile**.
 | MS-21 | Chatbot | Percakapan streaming + tautan aksi (`FR-19.1`) | `chat.use` | Aksi Cepat · Beranda | Tautan aksi ke layar terkait · riwayat sesi · pesan gangguan bila `503` (`FR-19.1 A4`) |
 | MS-22 | Sesi Opname Bahan | Progres per lokasi penyimpanan + daftar bahan target (`FR-13.4`, `MOB-PERF-06`) | `audit.execute` | Tab Tugas · notifikasi `NT-30` | Input Hitungan Fisik · Sesi Opname |
 | MS-23 | Input Hitungan Fisik | Mencatat jumlah fisik per bahan; QR bahan melompat ke barisnya (`FR-13.4`, `BR-090`) | `audit.execute` | MS-22 · Pemindai QR | MS-22 |
+| MS-24 | Aktivasi 2FA | Padanan mobile `P-03` (**UXD-19**) | Sesi terautentikasi, 2FA belum aktif | Login pertama role wajib 2FA | Beranda |
+| MS-25 | Lupa Password | Padanan mobile `P-04` (**UXD-19**) | Publik | Tautan pada Login (`MS-01`) | Login |
+| MS-26 | Pemberitahuan Privasi | Padanan mobile `P-07` (**UXD-19**) | Publik | Login · kartu Profil di Menu | Kembali |
+| MS-27 | Keamanan & 2FA | Padanan mobile `P-77` + `P-79` (**UXD-19**) | Bearer | Kartu Profil di Menu | Profil · kode cadangan · perangkat terhubung |
+| MS-28 | Preferensi Notifikasi | Padanan mobile `P-78` (**UXD-19**) | `notification.manage_own` | Kartu Profil di Menu · Pusat Notifikasi | Profil |
+| MS-29 | Pusat Notifikasi | Padanan mobile `P-13` (**UXD-19**) | `notification.manage_own` | Lonceng header (**UXD-21**) · push | Deep link ke objek terkait |
+| MS-30 | Profil | Padanan mobile `P-76` (**UXD-19**) | Bearer | Kartu teratas Menu (**UXD-20**) | Keamanan · Preferensi · Privasi · Keluar |
+| MS-31 | Menu | Pencarian modul + lima grup domain (**UXD-01**) + entri fitur tersaring permission; entri `MOB-SCP-02` mengarah ke web (**UXD-20**) | Sesi aktif | Tab Menu (**UXD-20**) | Seluruh layar modul yang diizinkan |
+| MS-32 | Riwayat Chatbot | Padanan mobile `P-14` (**UXD-19**) | `chat.use` | Tab Chatbot · tombol mengambang (**UXD-22**) | Lanjutkan sesi (`MS-21`) |
+| MS-33 | Inventaris Aset | Padanan mobile `P-15` (**UXD-19**) | `asset.view` | Menu → Aset & Bahan · kartu Beranda | Detail Aset (`MS-09`) · Tambah Aset |
+| MS-34 | Tambah / Ubah Aset | Padanan mobile `P-16` + `P-19` (**UXD-19**) | `asset.create` | Inventaris · Detail Aset · Detail Ruangan | Detail Aset |
+| MS-35 | Mutasi Lokasi | Padanan mobile `P-20` (**UXD-19**) | `asset.update` untuk form; `asset_movement_document.view` untuk hasil | Inventaris (pilih banyak) · Detail Aset · Scan beruntun | Ringkasan mutasi |
+| MS-36 | Kategori Aset | Padanan mobile `P-21` (**UXD-19**) | `category.manage` | Menu → Aset & Bahan | Inventaris tersaring kategori |
+| MS-37 | Lokasi | Padanan mobile `P-22` (**UXD-19**) | `location.view` | Menu → Aset & Bahan | Detail Ruangan |
+| MS-38 | Detail Ruangan | Padanan mobile `P-23` (**UXD-19**) | `location.view` | Lokasi · scan QR ruangan · Detail Aset | Detail Aset · Tambah Aset |
+| MS-39 | Dokumen Aset | Padanan mobile `P-26` (**UXD-19**) | `asset_document.view` | Menu → Aset & Bahan · kartu garansi Beranda | Unduh dokumen · Detail Aset |
+| MS-40 | Bahan | Padanan mobile `P-80` (**UXD-19**) | `material.view` | Menu → Aset & Bahan · kartu stok menipis | Detail Bahan · Tambah Bahan |
+| MS-41 | Tambah / Ubah Bahan | Padanan mobile `P-81` (**UXD-19**) | `material.manage` | Bahan · Detail Bahan | Detail Bahan |
+| MS-42 | Detail Bahan | Padanan mobile `P-82` (**UXD-19**) | `material.view` | Bahan · Hasil Scan QR bahan (`MS-08`) · notifikasi | Kartu stok · penerimaan · penyesuaian |
+| MS-43 | Kategori Bahan | Padanan mobile `P-83` (**UXD-19**) | `material.manage` | Menu → Aset & Bahan | Bahan tersaring kategori |
+| MS-44 | Kalender Ruangan | Padanan mobile `P-27` (**UXD-19**) | `reservation.view` | Menu → Pemanfaatan · kartu Beranda · chatbot | Wizard Pengajuan Reservasi |
+| MS-45 | Katalog Aset | Padanan mobile `P-28` (**UXD-19**) | `reservation.view` | Menu → Pemanfaatan · Aksi Cepat | Wizard Pengajuan Reservasi |
+| MS-46 | Wizard Pengajuan Reservasi | Padanan mobile `P-29` (**UXD-19**) | `reservation.create` | Kalender Ruangan · Katalog Aset · Aksi Cepat | Detail Reservasi |
+| MS-47 | Daftar Reservasi | Padanan mobile `P-30` (**UXD-19**) | `reservation.view` | Menu → Pemanfaatan · Tugas · kartu Pengajuan Saya | Detail Reservasi |
+| MS-48 | Detail Reservasi | Padanan mobile `P-31` (**UXD-19**) | `reservation.view` | Daftar Reservasi · notifikasi · Kalender | Batalkan · catat penggunaan · Serah Terima |
+| MS-49 | Daftar Peminjaman | Padanan mobile `P-32` (**UXD-19**) | `loan.view` | Menu → Pemanfaatan · kartu terlambat/jatuh tempo | Detail Peminjaman |
+| MS-50 | Antrean Serah Terima | Padanan mobile `P-33` (**UXD-19**) | `loan.manage` | Menu → Pemanfaatan · Tugas · Hasil Scan aset `Direservasi` | Serah Terima (`MS-10`) |
+| MS-51 | Detail Peminjaman | Padanan mobile `P-34` (**UXD-19**) | `loan.view` | Daftar Peminjaman · Peminjaman Saya (`MS-12`) · Hasil Scan aset `Dipinjam` | Pengembalian (`MS-11`) · Ajukan Perpanjangan (`MS-13`) |
+| MS-52 | Denda & Kewajiban | Padanan mobile `P-35` (**UXD-19**) | `fine.view` | Menu → Pemanfaatan · notifikasi `NT-15`…`NT-18` | Detail Kewajiban |
+| MS-53 | Detail Kewajiban | Padanan mobile `P-36` (**UXD-19**) | `fine.view` | Denda & Kewajiban · Denda Saya (`MS-14`) · Detail Peminjaman | Catat bayar · bebaskan · usulan ganti rugi |
+| MS-54 | Detail Keputusan | Padanan mobile `P-38` (**UXD-19**) | `approval.decide` | Persetujuan Saya (`MS-20`) · push | Kotak masuk persetujuan |
+| MS-55 | Katalog Bahan | Padanan mobile `P-84` (**UXD-19**) | `material.view` | Menu → Pemanfaatan | Ajukan Permintaan Bahan |
+| MS-56 | Ajukan Permintaan Bahan | Padanan mobile `P-85` (**UXD-19**) | `material.request` | Katalog Bahan | Detail Permintaan Bahan |
+| MS-57 | Daftar Permintaan Bahan | Padanan mobile `P-86` (**UXD-19**) | `material.view` | Menu → Pemanfaatan · notifikasi `NT-50` | Detail Permintaan Bahan |
+| MS-58 | Detail Permintaan Bahan | Padanan mobile `P-87` (**UXD-19**) | `material.view` | Daftar Permintaan Bahan · notifikasi `NT-50`/`NT-51` | Revisi · batalkan · serahkan · tutup |
+| MS-59 | Laporan Kerusakan | Padanan mobile `P-39` (**UXD-19**) | `damage.view` | Menu → Perawatan · kartu kerusakan baru/kritis · notifikasi | Detail Tiket Kerusakan |
+| MS-60 | Detail Tiket Kerusakan | Padanan mobile `P-41` (**UXD-19**) | `damage.view` | Laporan Kerusakan · Detail Aset · notifikasi `NT-21` | Verifikasi · Buat Work Order · catatan |
+| MS-61 | Daftar Work Order | Padanan mobile `P-42` (**UXD-19**) | `workorder.view` | Menu → Perawatan · kartu Work Order Aktif | Detail/Eksekusi Work Order (`MS-17`) |
+| MS-62 | Buat Work Order | Padanan mobile `P-43` (**UXD-19**) | `workorder.create` | Detail Tiket · Daftar Work Order · Detail Aset | Detail Work Order |
+| MS-63 | Jadwal Pemeliharaan | Padanan mobile `P-45` (**UXD-19**) | `maintenance.manage` | Menu → Perawatan · kartu jadwal mendatang | Detail Jadwal Pemeliharaan |
+| MS-64 | Detail Jadwal Pemeliharaan | Padanan mobile `P-46` (**UXD-19**) | `maintenance.manage` | Jadwal Pemeliharaan · Kategori Aset | Ubah · lewati · nonaktifkan |
+| MS-65 | Buat Sesi Opname | Padanan mobile `P-48` (**UXD-19**) | `audit.manage` | Sesi Opname (`MS-18`) · Menu → Pengawasan | Sesi Opname |
+| MS-66 | Rekonsiliasi Opname | Padanan mobile `P-50` (**UXD-19**) | `audit.manage` atau `audit.approve` | Sesi Opname setelah finalisasi | Kirim ke Pimpinan · persetujuan |
+| MS-67 | Pengadaan | Padanan mobile `P-51` (**UXD-19**) | `procurement.view` | Menu → Pengawasan · kartu Status Pengadaan · notifikasi | Detail Usulan Pengadaan |
+| MS-68 | Buat Usulan Pengadaan | Padanan mobile `P-52` (**UXD-19**) | `procurement.create` | Pengadaan · rekomendasi penggantian Riwayat Servis | Detail Usulan Pengadaan |
+| MS-69 | Detail Usulan Pengadaan | Padanan mobile `P-53` (**UXD-19**) | `procurement.view` | Pengadaan · notifikasi · Persetujuan Saya | Ajukan · ubah draf · Catat Penerimaan |
+| MS-70 | Catat Penerimaan | Padanan mobile `P-54` (**UXD-19**) | `procurement.receive` | Detail Usulan Pengadaan | Detail Usulan Pengadaan |
+| MS-71 | Penghapusan Aset | Padanan mobile `P-55` (**UXD-19**) | `disposal.view` | Menu → Pengawasan · notifikasi `NT-43`…`NT-45` | Detail Usulan Penghapusan |
+| MS-72 | Buat Usulan Penghapusan | Padanan mobile `P-56` (**UXD-19**) | `disposal.create` | Penghapusan Aset · Detail Aset · Work Order tidak dapat diperbaiki | Detail Usulan Penghapusan |
+| MS-73 | Detail Usulan Penghapusan | Padanan mobile `P-57` (**UXD-19**) | `disposal.view` | Penghapusan Aset · notifikasi · Persetujuan Saya | Eksekusi · berita acara · pemulihan |
+| MS-74 | Statistik & Analitik | Padanan mobile `P-58` (**UXD-19**) | `report.view` | Menu → Pengawasan · kartu Beranda Pimpinan | Laporan Analitik |
+| MS-75 | Laporan Analitik | Padanan mobile `P-59` (**UXD-19**) | `report.view` | Statistik & Analitik · Detail Usulan Pengadaan | Ekspor (unduh ke perangkat) |
+| MS-76 | Pengguna | Padanan mobile `P-60` (**UXD-19**) | `user.view` | Menu → Sistem · kartu Total Pengguna Aktif | Detail Pengguna · Tambah Pengguna |
+| MS-77 | Tambah Pengguna | Padanan mobile `P-61` (**UXD-19**) | `user.create` | Pengguna | Detail Pengguna |
+| MS-78 | Detail Pengguna | Padanan mobile `P-63` (**UXD-19**) | `user.view` | Pengguna · pencarian Menu | Ubah · reset password · reset 2FA · nonaktifkan · atur cakupan lokasi (**UXD-28**) |
+| MS-79 | Kenaikan Kelas Massal | Padanan mobile `P-64` (**UXD-19**) | `user.update` | Pengguna · pemicu pergantian tahun ajaran | Pengguna |
+| MS-80 | Role & Permission | Padanan mobile `P-65` (**UXD-19**) | `role.view` | Menu → Sistem | Matriks Permission |
+| MS-81 | Matriks Permission | Padanan mobile `P-66` (**UXD-19**) | `role.view` / `role.update` | Role & Permission | Role & Permission |
+| MS-82 | Permintaan Reset Password | Padanan mobile `P-67` (**UXD-19**) | `user.reset_password` | Menu → Sistem · kartu Beranda · notifikasi `NT-37` | Terbitkan password sementara |
+| MS-83 | Approval Rules | Padanan mobile `P-68` (**UXD-19**) | `approval_rule.view` | Menu → Sistem · kartu Status Konfigurasi | Editor Approval Rule |
+| MS-84 | Editor Approval Rule | Padanan mobile `P-69` (**UXD-19**) | `approval_rule.manage` | Approval Rules | Approval Rules · pratinjau evaluasi |
+| MS-85 | Parameter Sistem | Padanan mobile `P-70` (**UXD-19**) | `setting.view` / `setting.manage` | Menu → Sistem | Kalender Akademik · Unit Kerja · satuan Bahan |
+| MS-86 | Kalender Akademik | Padanan mobile `P-71` (**UXD-19**) | `setting.view` / `setting.manage` | Parameter Sistem | Parameter Sistem |
+| MS-87 | Unit Kerja | Padanan mobile `P-72` (**UXD-19**) | `setting.view` / `setting.manage` | Parameter Sistem | Parameter Sistem |
+| MS-88 | Activity Log | Padanan mobile `P-73` (**UXD-19**) | `activity_log.view` | Menu → Sistem · kartu Aktivitas Terbaru · Riwayat Perubahan entitas | Detail Entri Log |
+| MS-89 | Detail Entri Log | Padanan mobile `P-74` (**UXD-19**) | `activity_log.view` | Activity Log | Activity Log |
+| MS-90 | Monitoring Chatbot | Padanan mobile `P-75` (**UXD-19**) | `chat.monitor` | Menu → Sistem · kartu Kesehatan Integrasi | Detail sesi yang dilaporkan |
 
 ---
 
@@ -266,6 +336,7 @@ JUDUL                                          [Aksi utama]  [... aksi lain]
 | Pengurutan | Klik kepala kolom; arah ditandai ikon **dan** `aria-sort` | `NFR-AC-06` |
 | Ekspor | Mengekspor **hasil filter saat ini**, bukan seluruh tabel; > 5 detik diproses asinkron | `FR-04.2 A3` · `NFR-P-08` |
 | Baris | Seluruh baris dapat diklik menuju detail; kolom aksi tetap ada untuk papan ketik | `NFR-AC-03` |
+| Tampilan | Pengalih **Tabel ⇄ Kartu** di kanan panel filter; bawaan Tabel `≥768px`, Kartu di bawahnya; diingat per halaman. Pemilihan massal hanya di Tabel | **UXD-26** · `SDD-FE-17` |
 
 ### B. Halaman Detail
 
@@ -377,7 +448,7 @@ Ditetapkan `ui-foundation.md §31.5`. Tabel berikut menjabarkannya menjadi keten
 | Slot tentative kedaluwarsa | P-31 | `BR-023b` · `NT-46` — status `Kedaluwarsa` + tombol "Ajukan Ulang" |
 | Aset masih bergaransi | P-41 · P-56 | `BR-052` · `FR-21.1 A2` — peringatan + tautan ke dokumen garansi |
 | Berkas belum lolos pemindaian AV | P-18 · P-26 | `NFR-S-18` — status "Sedang diperiksa", tombol unduh nonaktif dengan penjelasan |
-| Foto belum terunggah (mobile) | MS-10 · MS-11 · MS-15 · MS-17 | `MOB-OFF-04` — penanda pada entitas + daftar tindak lanjut Petugas Sarpras |
+| Foto belum terunggah (mobile) | MS-15 · MS-17 (MS-10 · MS-11 mengunggah bukti sebelum transaksi, §7.6.6) | `MOB-OFF-04` — penanda pada entitas + daftar tindak lanjut Petugas Sarpras |
 | Layanan LLM tidak tersedia | MS-21 · panel chatbot | `503 LLM_UNAVAILABLE` — arahkan ke pencarian manual (`FR-19.1 A4`); **tidak boleh** memengaruhi layar lain (`NFR-A-05`) |
 | Batas percakapan harian tercapai | MS-21 | `FR-19.1 A5` — tampilkan waktu ketersediaan berikutnya |
 | Versi aplikasi tidak didukung | MS-04 | `426 UPGRADE_REQUIRED` (`MOB-VER-03`) |
@@ -545,7 +616,7 @@ P-34 menjadi receipt: status, unit/bukti awal/akhir, penerima, jadwal dan kewaji
 | **Aksi sekunder** | Batal · Substitusi Unit | Tandai Hilang (beralasan, `FR-09.2 A2`) · Pengembalian Sebagian (`FR-09.2 A3`) · Bebaskan Denda 🔒 |
 | **Sukses** | Layar bukti serah terima yang dapat ditunjukkan | Ringkasan: status unit baru, denda bila ada, tiket kerusakan bila kondisi rusak (`BR-032`) |
 | **Luring** | Gagal eksplisit — **tidak pernah** diantrekan (`MOB-OFF-05`) | Sama |
-| **Foto gagal terunggah** | Transaksi tetap tercatat; foto masuk antrean unggah dan entitas ditandai "Foto belum terunggah" (`MOB-OFF-02`, `MOB-OFF-04`) | Sama |
+| **Foto gagal terunggah** | Foto dan tanda tangan diunggah serta dikonfirmasi **sebelum** transaksi (`BR-027`; berkas bukti harus terkonfirmasi saat serah terima dicatat). Bila unggahan gagal, tombol Serahkan tertahan dan pengguna mengunggah ulang — bukti peminjaman tidak masuk antrean unggah *(dikoreksi 25 Oktober 2026, keputusan pemilik produk — log phase-07 keputusan 11)* | Sama |
 | **Idempotensi** | `Idempotency-Key` wajib; ketuk ganda tidak menghasilkan dua transaksi (`ID-01`) | Sama |
 
 ### 7.6.7 MS-18 & MS-19 Stock Opname (mobile)

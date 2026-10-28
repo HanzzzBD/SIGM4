@@ -1,7 +1,7 @@
 import { z } from "zod";
 const Id=z.number().int().positive(),Text=z.string().trim(),Qty=z.number().int().min(0).max(2147483647);
 export const MaterialStatusSchema=z.enum(["AKTIF","NONAKTIF"]);
-export const MaterialBodySchema=z.object({nama:Text.min(1).max(200),material_category_id:Id,satuan_id:Id,stok_minimum:Qty,room_id_default:Id,keterangan:Text.max(2000).nullable().optional(),status:MaterialStatusSchema.default("AKTIF")}).strict();
+export const MaterialBodySchema=z.object({nama:Text.min(1).max(200),material_category_id:Id,satuan_id:Id,stok_minimum:Qty,room_id_default:Id,boleh_diminta_siswa:z.boolean().optional(),keterangan:Text.max(2000).nullable().optional(),status:MaterialStatusSchema.default("AKTIF")}).strict();
 export const MaterialPatchSchema=MaterialBodySchema.omit({status:true}).partial().extend({status:MaterialStatusSchema.optional()}).refine(v=>Object.keys(v).length>0,{message:"Isi minimal satu perubahan."});
 export const MaterialOptionsResponseSchema=z.object({success:z.literal(true),data:z.object({categories:z.array(z.object({id:z.string(),nama:z.string(),status:MaterialStatusSchema})),units:z.array(z.object({id:z.string(),nama:z.string(),simbol:z.string(),status:MaterialStatusSchema})),rooms:z.array(z.object({id:z.string(),nama:z.string(),aktif:z.boolean()}))}),meta:z.null()});
 export const MaterialCategoryBodySchema=z.object({nama:Text.min(1).max(100),kode:Text.min(1).max(30).regex(/^[A-Za-z0-9_-]+$/),keterangan:Text.max(2000).nullable().optional(),status:MaterialStatusSchema.default("AKTIF")}).strict();
@@ -11,7 +11,7 @@ export const MaterialTransactionQuerySchema=z.object({page:z.coerce.number().int
 const Ref=z.object({id:z.string(),nama:z.string()}),Master=Ref.extend({keterangan:z.string().nullable(),status:MaterialStatusSchema});
 export const MaterialCategorySchema=Master.extend({kode:z.string(),jumlah_bahan:z.number()});
 export const MaterialUnitSchema=Master.extend({simbol:z.string()});
-export const MaterialSummarySchema=z.object({id:z.string(),uuid:z.uuid(),nama:z.string(),kategori:Ref,satuan:Ref.extend({simbol:z.string()}),stok_minimum:z.number(),saldo_total:z.number(),stok_menipis:z.boolean(),lokasi_bawaan:Ref,status:MaterialStatusSchema,keterangan:z.string().nullable(),qr_url:z.url()});
+export const MaterialSummarySchema=z.object({id:z.string(),uuid:z.uuid(),nama:z.string(),kategori:Ref,satuan:Ref.extend({simbol:z.string()}),stok_minimum:z.number().nullable(),saldo_total:z.number().nullable(),stok_menipis:z.boolean(),status_stok:z.enum(["TERSEDIA","TERBATAS","HABIS"]),boleh_diminta_siswa:z.boolean(),lokasi_bawaan:Ref,status:MaterialStatusSchema,keterangan:z.string().nullable(),qr_url:z.url()});
 export const MaterialDetailSchema=MaterialSummarySchema.extend({saldo_lokasi:z.array(z.object({room_id:z.string(),lokasi:z.string(),saldo:z.number()})),satuan_terkunci:z.boolean()});
 export const MaterialTransactionSchema=z.object({id:z.string(),room_id:z.string(),lokasi:z.string(),jenis:z.enum(["PENERIMAAN","PENGELUARAN","PENYESUAIAN","OPNAME"]),jumlah:z.number(),saldo_sesudah:z.number(),referensi_jenis:z.string(),referensi_id:z.string(),referensi_url:z.string().nullable().optional(),referensi_label:z.string().nullable().optional(),alasan:z.string().nullable(),pelaku:Ref,created_at:z.string()});
 const Meta=z.object({page:z.number(),per_page:z.number(),total:z.number(),total_pages:z.number()});

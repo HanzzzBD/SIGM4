@@ -1,22 +1,23 @@
-# Rilis produksi ke server sekolah — PR-08-17 (SDD-16 §4.3 "tag rilis", SDD-INF-14).
+# Rilis produksi ke server sekolah — PR-08-17, PR-08-19 (SDD-16 §4.3 "tag rilis", SDD-INF-16).
 #
-# Pengembang TIDAK memiliki akses ke server sekolah. Karena itu deploy tidak
-# didorong lewat SSH seperti staging, melainkan ditarik oleh self-hosted runner
-# yang dipasang IT sekolah di server itu (koneksi keluar saja, tanpa port masuk).
+# Produksi adalah Compose app `sigm4-production` di Dokploy server sekolah (SDD-INF-16).
+# Pengembang hanya memegang dashboard Dokploy, bukan SSH: deploy dipicu lewat API
+# Dokploy dari runner GitHub, setelah seluruh gerbang di bawah lulus.
 #
 #   tag vX.Y.Z di main
 #    ├─ validasi            semver + tag menunjuk commit di main (CD-03)
 #    ├─ ci                  seluruh gerbang CD-01/CD-02 (ci.yml, dipanggil ulang)
-#    ├─ terbit              image yang SAMA dengan yang dipindai Trivy → GHCR :vX.Y.Z;
-#    │                      GitHub Release berisi web-dist + openapi.json (SDD-API-12)
+#    ├─ terbit              image API yang SAMA dengan yang dipindai Trivy + image web
+#    │                      → GHCR :vX.Y.Z; GitHub Release berisi openapi.json (SDD-API-12)
 #    ├─ deploy              environment `production` — menunggu persetujuan reviewer;
-#    │                      gerbang jam operasional (CD-06) → deploy.sh di server sekolah
+#    │                      gerbang jam operasional (CD-06) → tag `production` dipindah ke
+#    │                      vX.Y.Z → API Dokploy compose.deploy, ditunggu sampai selesai
 #    └─ smoke               dari runner GitHub terhadap domain publik (CD-07)
 #
 #   workflow_dispatch tag=vX.Y.Z   rollback / ulang deploy rilis yang sudah terbit (CD-05):
 #                                  validasi → ambil-rilis → deploy → smoke, tanpa build ulang.
 #
-# Setelan manual yang dibutuhkan (environment, secret, label runner) ada di
+# Setelan manual yang dibutuhkan (Compose app, domain, env, environment, secret) ada di
 # docs/IMPLEMENTATION/runbooks/produksi-server-sekolah.md.
 
 name: Rilis produksi
@@ -126,29 +127,34 @@ jobs:
                       docker tag "sigm4:$SHA" "$repo:$t"
                       docker push "$repo:$t"
                   done
-            # OpenAPI bertag dari job `build` run ini (SDD-API-12) — bukan dibangkitkan ulang.
-            - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-              with:
-                  name: openapi-${{ needs.validasi.outputs.sha }}
+            # Image web dari commit tag ini (SDD-FE-14, SDD-INF-16) — dipindai sebelum terbit.
             - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
               with:
                   node-version: "22"
                   cache: npm
             - run: npm ci
             - run: npm run build -w apps/web
-            - name: Paket web (SDD-FE-14)
-              run: tar -C apps/web/dist -czf web-dist.tar.gz .
-            # Rilis GitHub adalah tempat permanen aset web per tag, sehingga rollback
-            # (workflow_dispatch) memakai aset yang persis sama tanpa build ulang.
+            - name: Bangun image web
+              run: docker build -f deploy/production/web.Dockerfile --build-context conf=deploy/production/nginx -t "sigm4-web:$TAG" apps/web/dist/app
+            - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+              with:
+                  image-ref: sigm4-web:${{ needs.validasi.outputs.tag }}
+                  severity: HIGH,CRITICAL
+                  exit-code: "1"
+                  format: table
+            - name: Dorong image web
+              run: |
+                  web="ghcr.io/${GITHUB_REPOSITORY,,}-web:$TAG"
+                  docker tag "sigm4-web:$TAG" "$web"
+                  docker push "$web"
+            # OpenAPI bertag dari job `build` run ini (SDD-API-12) — bukan dibangkitkan ulang.
+            - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+              with:
+                  name: openapi-${{ needs.validasi.outputs.sha }}
             - name: GitHub Release
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              run: gh release create "$TAG" web-dist.tar.gz openapi.json --verify-tag --title "$TAG" --generate-notes
-            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-              with:
-                  name: web-dist
-                  path: web-dist.tar.gz
-                  retention-days: 3
+              run: gh release create "$TAG" openapi.json --verify-tag --title "$TAG" --generate-notes
 
     ambil-rilis:
         name: Ambil rilis terbit
@@ -162,37 +168,30 @@ jobs:
         env:
             TAG: ${{ needs.validasi.outputs.tag }}
         steps:
-            - name: Image GHCR dan aset web tersedia
+            - name: Image API dan web rilis ini tersedia
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
                   echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
                   docker manifest inspect "ghcr.io/${GITHUB_REPOSITORY,,}:$TAG" >/dev/null
-                  gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern web-dist.tar.gz
-            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-              with:
-                  name: web-dist
-                  path: web-dist.tar.gz
-                  retention-days: 3
+                  docker manifest inspect "ghcr.io/${GITHUB_REPOSITORY,,}-web:$TAG" >/dev/null
 
     deploy:
         name: Deploy produksi
         needs: [validasi, terbit, ambil-rilis]
         if: ${{ !cancelled() && needs.validasi.result == 'success' && (needs.terbit.result == 'success' || needs.ambil-rilis.result == 'success') }}
-        # Runner dipasang IT sekolah di server produksi (SDD-INF-14); label khusus
-        # memastikan job ini tidak pernah jatuh ke runner lain.
-        runs-on: [self-hosted, linux, sigm4-produksi]
+        runs-on: ubuntu-latest
         timeout-minutes: 45
         # Required reviewers pada environment ini adalah gerbang persetujuan rilis.
+        # Variabel DOKPLOY_URL, DOKPLOY_COMPOSE_ID, PRODUCTION_DOMAIN · secret DOKPLOY_API_KEY.
         environment:
             name: production
             url: https://${{ vars.PRODUCTION_DOMAIN }}
         permissions:
             contents: read
-            packages: read
+            packages: write
         env:
             TAG: ${{ needs.validasi.outputs.tag }}
-            DIR_SERVER: ${{ vars.PRODUCTION_DIR || '/opt/sigm4/production' }}
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
@@ -203,35 +202,22 @@ jobs:
                   JENDELA_PAKSA: ${{ inputs.paksa_jam_operasional || false }}
                   JENDELA_ALASAN: ${{ inputs.alasan }}
               run: bash deploy/production/jendela-deploy.sh
-            - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-              with:
-                  name: web-dist
-            - name: Siapkan direktori deploy
-              run: |
-                  mkdir -p "$DIR_SERVER/nginx" "$DIR_SERVER/web-dist"
-                  cp deploy/production/docker-compose.yml deploy/production/deploy.sh "$DIR_SERVER/"
-                  cp deploy/production/nginx/sigm4.conf.template "$DIR_SERVER/nginx/"
-                  find "$DIR_SERVER/web-dist" -mindepth 1 -delete
-                  tar -C "$DIR_SERVER/web-dist" -xzf web-dist.tar.gz
-            - name: Migration + rolling deploy
+            # Compose app produksi selalu menarik tag `production` (SDD-INF-16 c); rollback
+            # memindahkan tag yang sama ke rilis sebelumnya (CD-05).
+            - name: Pindahkan tag production
               env:
                   GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
-                  # Kredensial registry hanya hidup selama job ini (GITHUB_TOKEN).
                   echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-                  kode=0
-                  bash "$DIR_SERVER/deploy.sh" "ghcr.io/${GITHUB_REPOSITORY,,}:$TAG" "$DIR_SERVER/web-dist" || kode=$?
-                  docker logout ghcr.io >/dev/null
-                  exit "$kode"
-            # Satu pemegang 80/443 untuk staging & produksi di server sekolah (SDD-INF-15).
-            - name: Proxy tepi
+                  for repo in "ghcr.io/${GITHUB_REPOSITORY,,}" "ghcr.io/${GITHUB_REPOSITORY,,}-web"; do
+                      docker buildx imagetools create -t "$repo:production" "$repo:$TAG"
+                  done
+            - name: Deploy lewat Dokploy
               env:
-                  DIR_EDGE: ${{ vars.EDGE_DIR || '/opt/sigm4/edge' }}
-              run: |
-                  mkdir -p "$DIR_EDGE/templat"
-                  cp deploy/edge/docker-compose.yml deploy/edge/edge.sh "$DIR_EDGE/"
-                  cp deploy/edge/templat/* "$DIR_EDGE/templat/"
-                  bash "$DIR_EDGE/edge.sh"
+                  DOKPLOY_URL: ${{ vars.DOKPLOY_URL }}
+                  DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+                  COMPOSE_ID: ${{ vars.DOKPLOY_COMPOSE_ID }}
+              run: bash deploy/production/dokploy-deploy.sh "$COMPOSE_ID" "produksi $TAG run ${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
 
     # Dari LUAR server, jalur yang sama dengan pengguna: DNS → TLS → Nginx → API.
     # Environment terpisah tanpa reviewer agar tidak meminta persetujuan kedua.

@@ -5,7 +5,7 @@
 # Indeks Aksi Activity Log
 
 > Setiap aksi dimiliki modul penerbitnya. Prinsip pencatatan di `../03-architecture/activity-log.md`.
-> Total: **127** baris, dikumpulkan dari 22 berkas modul.
+> Total: **128** baris, dikumpulkan dari 22 berkas modul.
 
 | Aksi | Keterangan | Pemilik |
 |---|---|---|
@@ -129,6 +129,7 @@
 | `USER_IMPORTED` | Impor massal beserta ringkasan hasil; pelaku = Administrator pengunggah, juga bila dijalankan worker | [M-02](../02-modules/m02-users.md) |
 | `USER_IMPORT_REPORT_PURGED` | Rincian laporan impor dihapus setelah retensi 30 hari; ID job dan jumlah tetap tercatat | [M-02](../02-modules/m02-users.md) |
 | `USER_IMPORT_REQUESTED` | Berkas impor diterima dan tercatat sebagai pekerjaan impor (sinkron atau dijadwalkan asinkron, `IMPT-04`) | [M-02](../02-modules/m02-users.md) |
+| `USER_LOCATION_SCOPE_UPDATED` | Cakupan lokasi pengguna diganti (`FR-02.3`); daftar simpul sebelum/sesudah | [M-02](../02-modules/m02-users.md) |
 | `USER_PSEUDONYMIZED` | Identitas akun diganti permanen; alasan/referensi/metode atau sumber retensi otomatis tercatat tanpa menyalin identitas lama | [M-02](../02-modules/m02-users.md) |
 | `WORKORDER_COMPLETED` / `WORKORDER_VERIFIED` / `WORKORDER_RETURNED` / `WORKORDER_CANCELLED` | Penyelesaian | [M-12](../02-modules/m12-maintenance.md) |
 | `WORKORDER_CREATED` / `WORKORDER_ASSIGNED` / `WORKORDER_STARTED` | Penugasan dan pelaksanaan | [M-12](../02-modules/m12-maintenance.md) |

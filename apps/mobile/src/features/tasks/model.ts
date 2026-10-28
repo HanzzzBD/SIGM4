@@ -19,8 +19,8 @@ export function taskDestination(kind: string, permissions: Readonly<Record<strin
     const routes: Record<string,{path:string;permission:string;native:boolean}> = {
         workorder:{path:"/work-order",permission:"workorder.execute",native:true},stocktake:{path:"/opname",permission:"audit.execute",native:true},
         approval:{path:"/persetujuan",permission:"approval.decide",native:true},damage:{path:"/kerusakan",permission:"damage.view",native:true},
-        requests:{path:"/reservasi",permission:"reservation.view",native:false},handover:{path:"/peminjaman/serah-terima",permission:"loan.manage",native:false},
-        returns:{path:"/peminjaman",permission:"loan.manage",native:false},loans:{path:"/peminjaman",permission:"loan.view",native:false},fines:{path:"/denda",permission:"fine.view",native:false},
+        requests:{path:"/reservasi",permission:"reservation.view",native:true},handover:{path:"/peminjaman/serah-terima",permission:"loan.manage",native:true},
+        returns:{path:"/peminjaman",permission:"loan.manage",native:true},loans:{path:"/peminjaman",permission:"loan.view",native:true},fines:{path:"/denda",permission:"fine.view",native:true},
     };
     const route=routes[kind];if(!route||!Object.hasOwn(permissions,route.permission)||(id!==undefined&&!/^[1-9]\d*$/.test(id)))return null;
     const path=route.path+(id===undefined?"":`/${id}`);

@@ -40,6 +40,9 @@ Basis teknologi ditetapkan Keputusan #3: **React**. Berkas ini menetapkan bentuk
 | **SDD-FE-14** | *Build tool* `apps/web` adalah **Vite**. Keluarannya aset statis murni, disajikan reverse proxy/CDN sesuai [SDD-16 §4.2](16-infrastructure-deployment.md); tidak ada proses Node yang merender di server. |
 | **SDD-FE-15** | Router adalah **TanStack Router**. *Search param* divalidasi skema Zod (`SDD-API-11`) dan ber-tipe, sehingga filter tabel `SDD-FE-10` menjadi kontrak yang diperiksa kompilator, bukan string yang diurai tangan. |
 | **SDD-FE-16** | Klien HTTP `shared/api/` (§4.4) adalah **axios**, dan bentuk yang sama berlaku di mobile (`SDD-MOB-09`). Mutex *refresh* (`SDD-FE-07`) dan gerbang versi `426` (`SDD-MOB-05`) dipasang sebagai **interceptor**; keduanya tetap kode milik kita, bukan fitur pustaka. |
+| **SDD-FE-17** | Pilihan tampilan **Tabel ⇄ Kartu** (`WEB-VIS-04`) adalah **preferensi tampilan** (`SDD-FE-03`). Pilihan disimpan di `localStorage` per halaman daftar dan tidak masuk URL, karena tidak mengubah data yang diminta. Filter tetap di URL (`SDD-FE-10`), sehingga tautan yang dibagikan menghasilkan baris yang sama di tampilan mana pun. |
+| **SDD-FE-18** | **Saran tindakan** (`WEB-VIS-02`/`03`) dihitung **murni di klien** dari respons yang sudah diterima halaman itu, melalui satu registri aturan saran di `shared/` yang setiap butirnya merujuk ID business rule. Saran tidak memiliki endpoint, permission, maupun aksi log baru. Tombol saran memakai gerbang permission yang sama dengan aksinya (`SDD-FE-04`) dan menuju halaman/aksi yang sudah ada. Validasi langsung memakai skema bersama yang sama (`SDD-FE-05`), dalam mode *touched*: diperiksa saat *blur* pertama, lalu setiap perubahan. |
+| **SDD-FE-19** | **Mikro-interaksi** (`WEB-VIS-01`, **DSD-14**) ditulis sebagai transisi CSS ber-token durasi/easing (FOUNDATIONS §9), **tanpa pustaka animasi**. Daftar `SDD-FE-13` tetap tertutup, dan `prefers-reduced-motion` mematikan seluruhnya lewat satu aturan global. |
 
 ---
 
@@ -237,7 +240,7 @@ async function onUnauthorized() {
 
 ## 7. Requirement Terkait
 
-`FR-04.2` `FR-07.1` `FR-08.1` `FR-15.1` `FR-17.1` · Bab 19 · `UX-01` … `UX-06` · `CAL-UI-01` … `CAL-UI-09` · `DS-01` … `DS-06` ·
+`FR-04.2` `FR-07.1` `FR-08.1` `FR-15.1` `FR-17.1` · Bab 19 · `UX-01` … `UX-06` · `WEB-VIS-01` … `WEB-VIS-05` · `CAL-UI-01` … `CAL-UI-09` · `DS-01` … `DS-06` ·
 `PM-04` · `NFR-P-03` `NFR-P-04` `NFR-P-05` · `NFR-AC-01` … `NFR-AC-09` · `NFR-C-01` `NFR-C-02` · `NTF-01` `NTF-03` `NTF-05` · `AV-04`
 
 ---

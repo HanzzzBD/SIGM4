@@ -11,7 +11,7 @@ import { materialStorageRoom } from "../../m03-locations/index.js";
 import { blokirPemohon } from "../../m07-reservation-room/index.js";
 import { procurementRequesterOverdue } from "../../m09-loans/index.js";
 import { createMaterialRequestRepository } from "../repositories/request.repository.js";
-import { materialInvalid } from "../access.js";
+import { materialInvalid, studentMaterialScope } from "../access.js";
 export class MaterialRequestSubmissionService {
     constructor(private readonly clock: Clock, private readonly audit: AuditLogger, private readonly approval: ApprovalService) {}
     async submit(scope: TransactionScope, input: MaterialRequestBody, id?: string) {
@@ -20,17 +20,21 @@ export class MaterialRequestSubmissionService {
         if (current && (current.pemohon_id !== String(scope.ctx.userId) || current.status !== "PERLU_REVISI")) throw materialInvalid("Revisi hanya oleh pemohon pada status Perlu Revisi, sebelum penyerahan.");
         const blocking = await blokirPemohon.periksa(scope, scope.ctx.userId); if (blocking.length) throw materialInvalid(blocking.map(b => b.keterangan).join(" "), "pemohon");
         const ids = [...new Set(input.items.map(i => String(i.material_id)))].sort((a, b) => Number(a) - Number(b));
-        const materials = await scope.tx.selectFrom("materials as m").innerJoin("material_units as u", "u.id", "m.satuan_id").select(["m.id", "m.nama", "m.status", "m.satuan_id", "m.material_category_id", "u.simbol"]).where("m.id", "in", ids).orderBy("m.id").forUpdate("m").execute();
+        const student = studentMaterialScope(scope.ctx);
+        const materials = await scope.tx.selectFrom("materials as m").innerJoin("material_units as u", "u.id", "m.satuan_id").select(["m.id", "m.nama", "m.status", "m.satuan_id", "m.material_category_id", "m.room_id_default", "m.boleh_diminta_siswa", "u.simbol"]).where("m.id", "in", ids).orderBy("m.id").forUpdate("m").execute();
         if (materials.length !== ids.length || materials.some(m => m.status !== "AKTIF")) throw materialInvalid("Pilih jenis bahan aktif yang masih tersedia.", "items");
-        const thresholds = await materialRequestThresholds(scope, ids); if (thresholds.default_qty === null) throw materialInvalid("Administrator harus mengisi ambang permintaan bahan sebelum pengajuan.", "konfigurasi");
+        // BR-091a: Siswa hanya bahan bertanda, diambil dari lokasi penyimpanan bawaannya.
+        if (student && (materials.some(m => !m.boleh_diminta_siswa) || input.items.some(i => String(i.room_id) !== materials.find(m => m.id === String(i.material_id))?.room_id_default))) throw materialInvalid("Pilih bahan yang tersedia untuk siswa dari katalog.", "items");
+        const thresholds = await materialRequestThresholds(scope, ids); if (!student && thresholds.default_qty === null) throw materialInvalid("Administrator harus mengisi ambang permintaan bahan sebelum pengajuan.", "konfigurasi");
         const quantities = new Map<string, number>(); for (const i of input.items) quantities.set(String(i.material_id), (quantities.get(String(i.material_id)) ?? 0) + i.jumlah);
-        const thresholdSnapshot = ids.map(material_id => ({ material_id, jumlah: quantities.get(material_id)!, batas: thresholds.overrides.get(material_id) ?? thresholds.default_qty!, khusus: thresholds.overrides.has(material_id) }));
-        const needsApproval = thresholdSnapshot.some(i => i.jumlah > i.batas), revision = current ? current.revision + 1 : 1, rows = [];
+        const thresholdSnapshot = ids.map(material_id => ({ material_id, jumlah: quantities.get(material_id)!, batas: thresholds.overrides.get(material_id) ?? thresholds.default_qty, khusus: thresholds.overrides.has(material_id) }));
+        // BR-086a: permintaan Siswa tidak pernah melewati approval engine; Petugas menilainya saat penyerahan.
+        const needsApproval = !student && thresholdSnapshot.some(i => i.batas !== null && i.jumlah > i.batas), revision = current ? current.revision + 1 : 1, rows = [];
         for (const i of input.items) {
             const m = materials.find(m => m.id === String(i.material_id))!;
             const room = await materialStorageRoom(scope, i.room_id);
             const balance = await scope.tx.selectFrom("material_balances").select("saldo").where("material_id", "=", m.id).where("room_id", "=", room.id).executeTakeFirst();
-            if ((balance?.saldo ?? 0) < i.jumlah) throw materialInvalid(`${m.nama}: saldo tersedia di lokasi ini ${balance?.saldo ?? 0}, kurang dari ${i.jumlah}. Pilih lokasi lain atau kurangi jumlah.`, "items.jumlah");
+            if ((balance?.saldo ?? 0) < i.jumlah) throw materialInvalid(student ? `${m.nama}: stok tidak mencukupi untuk jumlah ini. Kurangi jumlah atau tanyakan ke Petugas.` : `${m.nama}: saldo tersedia di lokasi ini ${balance?.saldo ?? 0}, kurang dari ${i.jumlah}. Pilih lokasi lain atau kurangi jumlah.`, "items.jumlah");
             const location = await scope.tx.selectFrom("rooms").select("nama").where("id", "=", room.id).executeTakeFirstOrThrow();
             rows.push({ material_id: m.id, room_id: room.id, satuan_id: m.satuan_id, revision, snapshot: JSON.stringify({ nama: m.nama, satuan: m.simbol, lokasi: location.nama, category_id: m.material_category_id }), jumlah_diminta: i.jumlah, jumlah_disetujui: needsApproval ? null : i.jumlah });
         }

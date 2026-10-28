@@ -5,7 +5,7 @@
 # Indeks Endpoint API
 
 > Setiap endpoint dimiliki satu modul. Konvensi umum di `../03-architecture/api-conventions.md`.
-> Total: **287** baris, dikumpulkan dari 22 berkas modul.
+> Total: **289** baris, dikumpulkan dari 22 berkas modul.
 
 | Method | Endpoint | Permission | Deskripsi | Pemilik |
 |---|---|---|---|---|
@@ -143,6 +143,7 @@
 | GET | `/settings` | `setting.view` | Baca parameter sistem | [M-20](../02-modules/m20-settings.md) |
 | GET | `/users/import/template` | `user.create` | Unduh template XLSX E.5.2 beserta petunjuk dan contoh isian (`IMPT-05`) | [M-02](../02-modules/m02-users.md) |
 | GET | `/users/import/{id}` | `user.create` | Status dan laporan per baris sebuah pekerjaan impor (`IMPT-02`) | [M-02](../02-modules/m02-users.md) |
+| GET | `/users/{id}/location-scope` | `user.view` | Cakupan lokasi pengguna: daftar simpul gedung/area/ruangan (`FR-02.3`) | [M-02](../02-modules/m02-users.md) |
 | GET | `/users/{id}` | `user.view` | Detail pengguna | [M-02](../02-modules/m02-users.md) |
 | GET | `/users` | `user.view` | Daftar pengguna (filter role, status, unit kerja) | [M-02](../02-modules/m02-users.md) |
 | GET | `/work-days` | `setting.view` | Baca hari kerja sekolah | [M-20](../02-modules/m20-settings.md) |
@@ -293,6 +294,7 @@
 | PUT | `/roles/{id}/permissions` | `role.update` | Perbarui matriks permission | [M-02](../02-modules/m02-users.md) |
 | PUT | `/rooms/{id}` | `location.manage` | Perbarui ruangan | [M-03](../02-modules/m03-locations.md) |
 | PUT | `/settings` | `setting.manage` | Perbarui parameter sistem | [M-20](../02-modules/m20-settings.md) |
+| PUT | `/users/{id}/location-scope` | `user.update` | Ganti seluruh cakupan lokasi pengguna; daftar kosong = tidak dibatasi (`FR-02.3`, `BR-069b`) | [M-02](../02-modules/m02-users.md) |
 | PUT | `/users/{id}` | `user.update` | Perbarui pengguna | [M-02](../02-modules/m02-users.md) |
 | PUT | `/work-days` | `setting.manage` | Perbarui hari kerja sekolah | [M-20](../02-modules/m20-settings.md) |
 | PUT | `/work-units/{id}` | `setting.manage` | Sunting unit kerja | [M-20](../02-modules/m20-settings.md) |

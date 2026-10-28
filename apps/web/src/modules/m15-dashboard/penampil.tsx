@@ -18,7 +18,7 @@ export const waktuWib = (iso: string): string =>
 function Angka({ nilai, label }: { readonly nilai: number; readonly label?: string }) {
     return (
         <p className="flex flex-col">
-            <span className="text-3xl font-semibold tabular-nums text-text-heading">{angka.format(nilai)}</span>
+            <span className="text-3xl font-semibold tabular-nums text-text-heading masuk-lambat">{angka.format(nilai)}</span>
             {label !== undefined && <span className="text-sm text-text-secondary">{label}</span>}
         </p>
     );

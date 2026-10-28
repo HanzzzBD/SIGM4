@@ -402,7 +402,7 @@ Tiga tingkat sesuai batas 31.2. `DS-P-05` menetapkan border lebih dipercaya dari
 | Token | Nilai | Dipakai untuk | Catatan |
 |---|---|---|---|
 | `elevation.0` | `none` + `1px solid color.border.subtle` | **Bawaan** untuk kartu, tabel, panel, sidebar, topbar | Pilihan pertama untuk memisahkan permukaan |
-| `elevation.1` | `0 1px 2px rgba(17, 24, 39, 0.06)` | Dropdown · popover · tooltip · toast | Selalu **disertai** border 1px agar tetap terlihat di bawah cahaya matahari |
+| `elevation.1` | `0 1px 2px rgba(17, 24, 39, 0.06)` | Dropdown · popover · tooltip · toast · kartu interaktif web saat hover (**DSD-14**) | Selalu **disertai** border 1px agar tetap terlihat di bawah cahaya matahari |
 | `elevation.2` | `0 4px 8px rgba(17, 24, 39, 0.08)` | Drawer aksi · modal · bottom sheet | Lapisan yang benar-benar mengambang di atas konten |
 
 **Dilarang:** bayangan berwarna · lebih dari dua tingkat bayangan terlihat sekaligus · bayangan sebagai satu-satunya pemisah permukaan · bayangan pada elemen statis di dalam halaman.
@@ -432,6 +432,19 @@ Overlay modal: `rgba(17, 24, 39, 0.48)`.
 | Informasi · Dipinjam · Dalam Perbaikan | lingkaran huruf i | `color.icon.info` |
 | Menunggu · Draf | lingkaran garis putus | `color.icon.muted` |
 
+**Ikon modul** (**DSD-12**) — nama ikon Lucide (**DSD-09**); aplikasi mobile memakai salinan SVG berbentuk sama. Satu ikon per fitur di Menu (`MS-31`), kepala layar (**C-30**), dan Tile Modul (**C-31**):
+
+| Grup (accent) | Fitur → ikon |
+|---|---|
+| Aset & Bahan (`accent.blue`) | Inventaris Aset `package` · Kategori Aset `tags` · Lokasi `map-pin` · Dokumen Aset `file-text` · Label QR `qr-code` · Bahan `boxes` · Kategori Bahan `folder-tree` |
+| Pemanfaatan (`accent.green`) | Kalender Ruangan `calendar-days` · Katalog Aset `layout-grid` · Reservasi `calendar-check` · Peminjaman `hand-helping` · Serah Terima `handshake` · Denda & Kewajiban `receipt` · Persetujuan `badge-check` · Katalog & Permintaan Bahan `clipboard-list` |
+| Perawatan (`accent.yellow`) | Laporan Kerusakan `hammer` · Work Order `wrench` · Jadwal Pemeliharaan `calendar-clock` |
+| Pengawasan (`accent.purple`) | Stock Opname `clipboard-check` · Pengadaan `shopping-cart` · Penghapusan Aset `archive-x` · Statistik & Analitik `chart-column` |
+| Sistem (`accent.gray`) | Pengguna `users` · Role & Permission `shield` · Permintaan Reset Password `key-round` · Approval Rules `workflow` · Parameter Sistem `settings` · Kalender Akademik `calendar` · Unit Kerja `building-2` · Activity Log `history` · Monitoring Chatbot `bot` |
+| Tanpa grup | Beranda `house` · Tugas `list-checks` · Scan `scan-line` · Chatbot `message-circle` · Menu `menu` · Notifikasi `bell` · Profil `circle-user` |
+
+Ikon status wajib di atas tidak dipakai sebagai ikon modul, agar makna status tidak tertukar dengan identitas fitur.
+
 ---
 
 # 9. Motion
@@ -455,6 +468,7 @@ Animasi bersifat fungsional: menjelaskan asal dan tujuan sebuah lapisan. Tidak a
 - Animasi **tidak pernah** menunda ketersediaan aksi. *Skeleton* muncul seketika, tanpa transisi masuk.
 - Tidak ada animasi pada baris tabel — daftar 4.820 baris harus terasa seketika (`NFR-P-05`).
 - Progres opname dan penghitung notifikasi bertransisi nilai, bukan berkedip.
+- Mikro-interaksi web (**DSD-14**): kartu interaktif naik `elevation.0 → 1` saat hover (`fast`), nilai Kartu KPI dan Cincin Progres bertransisi saat data tiba (`slow`, `easing.enter`), dan lebar sidebar bertransisi saat diciutkan (`base`). Grid kartu tidak beranimasi masuk, sama seperti baris tabel.
 - `prefers-reduced-motion: reduce` membuat seluruh durasi menjadi 0ms dan mengganti transform dengan *fade* sederhana — [`RESPONSIVE-ACCESSIBILITY.md §11`](RESPONSIVE-ACCESSIBILITY.md#11-reduced-motion).
 
 ---

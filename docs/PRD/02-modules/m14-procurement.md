@@ -75,7 +75,7 @@ flowchart TD
 
 **Main Flow**
 1. Pengguna membuka menu Pengadaan dan menekan "Buat Usulan".
-2. Pengguna mengisi kepala usulan: judul usulan, unit kerja pengusul, tahun anggaran, prioritas (Rendah/Sedang/Tinggi/Mendesak), dan justifikasi kebutuhan.
+2. Pengguna mengisi kepala usulan: judul usulan, unit kerja pengusul, **lokasi tujuan** barang (gedung atau ruangan; dasar cakupan lokasi `PM-08`), tahun anggaran, prioritas (Rendah/Sedang/Tinggi/Mendesak), dan justifikasi kebutuhan.
 3. Pengguna menambahkan baris item: nama barang, kategori, spesifikasi, jumlah, satuan, estimasi harga satuan, dan keterangan.
 4. Sistem menghitung total estimasi biaya secara otomatis.
 5. Pengguna dapat melampirkan dokumen pendukung (brosur, foto kondisi aset lama, referensi harga).
@@ -206,7 +206,7 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **procurements** | Usulan pengadaan | id, nomor, judul, pengusul_id, work_unit_id, tahun_anggaran, prioritas, justifikasi, total_estimasi, status, approval_instance_id, source_asset_id | ± 100 |
+| **procurements** | Usulan pengadaan | id, nomor, judul, pengusul_id, work_unit_id, building_id_tujuan, room_id_tujuan, tahun_anggaran, prioritas, justifikasi, total_estimasi, status, approval_instance_id, source_asset_id | ± 100 |
 | **procurement_items** | Item dalam usulan | id, procurement_id, jenis (Aset/Bahan — Keputusan #27), nama_barang, category_id, spesifikasi, jumlah_diusulkan, jumlah_disetujui, jumlah_diterima, satuan, estimasi_harga_satuan | ± 500 |
 | **procurement_receipts** | Catatan penerimaan barang | id, procurement_id, tanggal_terima, nomor_dokumen, diterima_oleh, catatan | ± 120 |
 | **procurement_attachments** | Lampiran pendukung | procurement_id, file_id, nama_berkas | Referensi registri M-06 |

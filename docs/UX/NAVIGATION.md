@@ -70,6 +70,7 @@ Struktur tetap sama untuk semua role (**UXD-01**). Yang berbeda hanyalah entri m
 | **Grup kosong disembunyikan** | Bila seluruh entri dalam satu grup tersembunyi, judul grup ikut hilang — tidak ada judul menggantung | **UXD-01** |
 | **Penanda jumlah** | Hanya pada entri berbasis antrean: Notifikasi (belum dibaca), Persetujuan Saya (menunggu keputusan saya), Work Order (ditugaskan & belum selesai), Laporan Kerusakan (`Dilaporkan`) | 19.2–19.5 |
 | **Grup Sistem** | Selalu paling bawah, diberi pemisah visual | **UXD-01** |
+| **Gulir terpisah** | Sidebar bergulir sendiri, tidak ikut halaman; mode ciut menampilkan ikon modul + tooltip nama entri | **UXD-25** |
 | **Akun Saya** | **Tidak** di sidebar; hanya di menu pengguna pada topbar | **UXD-01** |
 
 ### Sidebar per role (yang benar-benar terlihat)
@@ -93,8 +94,8 @@ Diturunkan dari Lampiran C dan Bab 18. Tanda `—` berarti entri tidak dirender 
 | **Pemanfaatan** — Reservasi | ✅ | ✅ | ✅ | — | 🟡 | 🟡 | 🟡 |
 | **Pemanfaatan** — Peminjaman | ✅ | ✅ | 🔍 | — | 🟡 | 🟡 | 🟡 |
 | **Pemanfaatan** — Denda & Kewajiban | ✅ | ✅ | 🔍◆ | — | 🟡 | 🟡 | 🟡 |
-| **Pemanfaatan** — Katalog Bahan | ✅ | ✅ | 🔍 | ✅ | ✅ | ✅ | — |
-| **Pemanfaatan** — Permintaan Bahan | ✅ | ✅ | 🔍 | 🟡 | 🟡 | 🟡 | — |
+| **Pemanfaatan** — Katalog Bahan | ✅ | ✅ | 🔍 | ✅ | ✅ | ✅ | 🟡 |
+| **Pemanfaatan** — Permintaan Bahan | ✅ | ✅ | 🔍 | 🟡 | 🟡 | 🟡 | 🟡 |
 | **Pemanfaatan** — Persetujuan Saya | ✅ | ✅ | ✅ | — | ◐ | ◐ | — |
 | **Perawatan** — Laporan Kerusakan | ✅ | ✅ | 🔍 | 🟡 | 🟡 | 🟡 | 🟡 |
 | **Perawatan** — Work Order | ✅ | ✅ | 🔍 | 🟡 | — | — | — |
@@ -135,15 +136,20 @@ Breadcrumb **tidak** dipakai di mobile; penggantinya adalah judul layar + tombol
 
 ## 5.5 Navigasi mobile
 
-Bottom tab bar lima slot dengan Scan di tengah (**UXD-03**).
+Bottom tab bar lima slot dengan Scan di tengah (**UXD-03**); isinya diubah **UXD-20** (25 Oktober 2026). Notifikasi dibuka dari lonceng header (**UXD-21**) dan chatbot juga dari tombol mengambang di layar mana pun (**UXD-22**).
 
 | Tab | Isi | Rujukan |
 |---|---|---|
 | **Beranda** | Dashboard ringkas per role + Aksi Cepat | 19.5–19.7 |
 | **Tugas** | **Adaptif per permission** — lihat tabel di bawah | **UXD-03** |
 | **Scan** | Pemindai QR kamera native; mode beruntun aktif bila sedang dalam sesi opname atau mutasi massal | `FR-05.2` · `MOB-MED-05` · `MOB-MED-07` |
-| **Notifikasi** | Daftar notifikasi + penghitung belum dibaca | `FR-17.1` |
-| **Profil** | Profil, Keamanan & 2FA, Preferensi Notifikasi, Keluar | `FR-01.4` · `FR-17.3` |
+| **Chatbot** | Percakapan (`MS-21`) + riwayat sesi (`MS-32`); disembunyikan tanpa `chat.use` | `FR-19.1` · **UXD-20** |
+| **Menu** | Kartu Profil (`MS-30`) di atas, pencarian modul, lima grup domain (**UXD-01**) berisi entri fitur tersaring permission (`MS-31`) dan layar yang sudah ada di build (**UXD-23**); entri `MOB-SCP-02` mengarah ke web | `MOB-SCP-01` · **UXD-20** · **UXD-23** |
+
+| Di luar tab | Isi | Rujukan |
+|---|---|---|
+| **Lonceng header** | Pusat Notifikasi (`MS-29`) + badge belum dibaca, di setiap layar ber-header | `FR-17.1` · **UXD-21** |
+| **Tombol chatbot mengambang** | Membuka percakapan `MS-21` sebagai *bottom sheet* dari layar mana pun, kecuali pemindai | **UXD-22** |
 
 ### Isi tab "Tugas"
 

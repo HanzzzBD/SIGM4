@@ -136,6 +136,12 @@
     --spacing-icon-md: 1.25rem;
     --spacing-icon-lg: 1.5rem;
     --spacing-full: 100%;
+    /* Ukuran komponen web visual-first (COMPONENTS.md, DSD-13). Kotak ikon C-31 & kepala halaman 40px
+       memakai spacing-10; media C-32 48px memakai spacing-12. */
+    --spacing-cincin: 2.5rem;
+    --spacing-cincin-besar: 6rem;
+    --spacing-grafik-mini: 4rem;
+    --spacing-ilustrasi: 10rem;
 
     /* §4.2 Container */
     --container-sm: 40rem;
@@ -145,6 +151,10 @@
     --container-prose: 72ch;
     /* FOUNDATIONS §10: size.modal.sm — modal konfirmasi (C-28). */
     --container-modal-sm: 30rem;
+    /* C-39 Popover Info: lebar maksimum panel 320px. */
+    --container-popover: 20rem;
+    /* C-18 Tooltip: lebar maksimum 280px. */
+    --container-tooltip: 17.5rem;
 
     /* §6 Radius */
     --radius-sm: 0.25rem;
@@ -175,8 +185,40 @@
 
 @utility transisi-lebar {
     transition-property: width;
-    transition-duration: var(--motion-duration-slow);
+    /* DSD-14: lebar sidebar bertransisi motion.duration.base. */
+    transition-duration: var(--motion-duration-base);
     transition-timing-function: var(--motion-easing-standard);
+}
+
+/* DSD-14: kartu interaktif web naik elevation.0 → 1 saat hover (fast); border 1px tetap ada. */
+@utility kartu-interaktif {
+    transition-property: box-shadow, background-color, border-color;
+    transition-duration: var(--motion-duration-fast);
+    transition-timing-function: var(--motion-easing-standard);
+    &:hover {
+        box-shadow: var(--shadow-1);
+    }
+}
+
+/* DSD-14: nilai KPI & Cincin Progres masuk saat data tiba (slow, easing.enter); panel C-39 (base). */
+@utility masuk-lambat {
+    animation: sigm4-masuk var(--motion-duration-slow) var(--motion-easing-enter);
+}
+@utility masuk-sedang {
+    animation: sigm4-masuk var(--motion-duration-base) var(--motion-easing-enter);
+}
+@utility transisi-cincin {
+    transition-property: stroke-dashoffset;
+    transition-duration: var(--motion-duration-slow);
+    transition-timing-function: var(--motion-easing-enter);
+}
+@keyframes sigm4-masuk {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 /* Ring fokus seragam: 2px border.focus + offset 2px (NFR-AC-03). */

@@ -8,8 +8,9 @@ import { useAuth } from "../auth";
 import { useResource } from "../../shared/api/useResource";
 import { MobileApiError } from "../../shared/api/client";
 import { formatTime } from "../../shared/time";
-import { Button, Card, Label, Notice, Screen, tokens as t } from "../../shared/ui";
-import { readablePhotoUrl, statusLabels, urgencyLabels } from "./model";
+import { Button, Card, EntityCard, Label, ListRow, Notice, Screen, tokens as t } from "../../shared/ui";
+import { readablePhotoUrl, statusLabels, statusTones, urgencyLabels, urgencyTones } from "./model";
+import { VerifyPanel } from "./VerifyPanel";
 
 function Photo({ photo }: { photo: DamageReportDetail["foto"][number] }) {
     const [failed, setFailed] = useState(false);
@@ -31,7 +32,10 @@ export function DamageDetailScreen() {
     const notes = detail?.catatan ?? []; const pages = Math.max(1, Math.ceil(notes.length / 5)); const currentPage = Math.min(page, pages);
     return <Screen title="Detail Tiket Kerusakan" action={<Button title="Tiket saya" secondary onPress={() => router.replace("/kerusakan" as "/scan")} />}>
         {!permitted && <Notice message="Tiket tidak valid atau Anda tidak memiliki izin membacanya." />}{permitted && <><Button icon="refresh" title="Muat ulang tiket dan foto" secondary onPress={resource.reload} />{resource.loading && <Label>Memuat tiket...</Label>}{resource.error && <Notice message={resource.error} />}
-            {detail && <><Card><Label>{detail.nomor} · {statusLabels[detail.status]}</Label><Label>{detail.objek.label} · {detail.objek.lokasi}</Label><Label>Urgensi: {urgencyLabels[detail.urgensi]}</Label><Label>Pelapor: {detail.pelapor.nama} · {formatTime(detail.dilaporkan_pada)}</Label><Label>{detail.deskripsi}</Label>{detail.foto_tertunda > 0 && <Notice message={`Foto belum terunggah: ${detail.foto_tertunda}. Periksa antrean pada perangkat yang mengirim foto.`} />}{detail.foto.map((photo) => <Photo key={`${photo.file_id}:${photo.url}`} photo={photo} />)}</Card>
+            {detail && <><EntityCard icon="hammer" title={detail.objek.label} meta={[detail.nomor, detail.objek.lokasi]} statuses={[{ label: statusLabels[detail.status], tone: statusTones[detail.status] }, { label: urgencyLabels[detail.urgensi], tone: urgencyTones[detail.urgensi] }]}/>
+                <VerifyPanel detail={detail} onDone={resource.reload}/>
+                {detail.work_order && Object.hasOwn(permissions, "workorder.view") && <ListRow icon="wrench" title={`Work order ${detail.work_order.nomor}`} onPress={() => router.push(`/work-order/${detail.work_order!.id}` as "/scan")}/>}
+                <Card><Label>Pelapor: {detail.pelapor.nama} · {formatTime(detail.dilaporkan_pada)}</Label><Label>{detail.deskripsi}</Label>{detail.foto_tertunda > 0 && <Notice message={`Foto belum terunggah: ${detail.foto_tertunda}. Periksa antrean pada perangkat yang mengirim foto.`} />}{detail.foto.map((photo) => <Photo key={`${photo.file_id}:${photo.url}`} photo={photo} />)}</Card>
                 {detail.catatan_verifikasi && <Card><Label>Hasil verifikasi: {detail.catatan_verifikasi}</Label><Label>{detail.diverifikasi_oleh?.nama ?? "Petugas"}{detail.diverifikasi_pada ? ` · ${formatTime(detail.diverifikasi_pada)}` : ""}</Label></Card>}
                 {detail.reservasi && <Label>Tertaut reservasi {detail.reservasi.nomor}</Label>}
                 <Card><Label>Informasi tambahan ({notes.length})</Label>{notes.length === 0 && <Label>Belum ada informasi tambahan.</Label>}{notes.slice((currentPage - 1) * 5, currentPage * 5).map((note) => <Card key={note.id}><Label>{note.penulis.nama} · {formatTime(note.dibuat_pada)}</Label><Label>{note.keterangan}</Label>{note.foto.map((photo) => <Photo key={`${photo.file_id}:${photo.url}`} photo={photo} />)}</Card>)}{pages > 1 && <><Label>Halaman catatan {currentPage} dari {pages}</Label><Button title="Catatan sebelumnya" secondary disabled={currentPage === 1} onPress={() => setPage(currentPage - 1)} /><Button title="Catatan berikutnya" secondary disabled={currentPage === pages} onPress={() => setPage(currentPage + 1)} /></>}</Card>

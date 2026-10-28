@@ -50,12 +50,12 @@ export function contextualActions(asset: Pick<AssetDetail, "status" | "dihapuska
     const add = (permission: string, label: string, context = "", available = false) => {
         if (allowed(permissions, permission)) actions.push({ label, available, reason: available ? "" : `${context}Layar ${label.toLowerCase()} belum tersedia di aplikasi.` });
     };
-    if (asset.status === "DIRESERVASI") add("loan.manage", "Serah terima", "Memerlukan reservasi yang disetujui. ");
-    if (asset.status === "DIPINJAM") add("loan.manage", "Pengembalian", "Memerlukan peminjaman aktif. ");
+    if (asset.status === "DIRESERVASI") add("loan.manage", "Serah terima", "", true);
+    if (asset.status === "DIPINJAM") add("loan.manage", "Pengembalian", "", true);
     add("damage.create", "Lapor kerusakan", "", true);
     add("audit.execute", "Catat opname", "Memerlukan sesi opname aktif dan penugasan Anda. ");
     if (asset.status === "DALAM_PERBAIKAN") add("workorder.execute", "Perbarui work order", "",true);
-    if (asset.status === "TERSEDIA" && asset.dapat_dipinjam) add("reservation.create", "Ajukan reservasi");
+    if (asset.status === "TERSEDIA" && asset.dapat_dipinjam) add("reservation.create", "Ajukan reservasi", "", true);
     if (allowed(permissions, "workorder.view")) add("workorder.view", "Riwayat servis","",true);
     return actions;
 }

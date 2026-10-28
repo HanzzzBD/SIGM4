@@ -6,7 +6,7 @@ import { Button, Card, Label, Notice, tokens as t } from "../../shared/ui";
 import { discardPreparedPhoto, preparePhoto } from "../uploads";
 import type { PreparedPhoto } from "../uploads";
 
-export function PhotoPicker({ photos, disabled, onAdd, onRemove, isCurrent,title="Foto kerusakan",help="Laporan baru wajib 1–5 foto. Informasi tambahan dapat dikirim tanpa foto. Foto diperkecil sebelum dikirim." }: { photos: readonly PreparedPhoto[]; disabled: boolean; onAdd: (photo: PreparedPhoto) => void; onRemove: (id: string) => void; isCurrent: () => boolean;title?:string;help?:string }) {
+export function PhotoPicker({ photos, disabled, onAdd, onRemove, isCurrent,title="Foto kerusakan",help="Laporan baru wajib 1–5 foto; informasi tambahan boleh tanpa foto. Foto diperkecil sebelum dikirim." }: { photos: readonly PreparedPhoto[]; disabled: boolean; onAdd: (photo: PreparedPhoto) => void; onRemove: (id: string) => void; isCurrent: () => boolean;title?:string;help?:string }) {
     const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null);
     const picking = useRef(false);
     const pick = async (camera: boolean) => {
