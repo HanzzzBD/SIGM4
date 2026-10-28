@@ -12,6 +12,15 @@ Urutan rilis yang mengikat ada di [`RELEASE-PLAN.md §3`](../RELEASE-PLAN.md). B
 
 ## 1. Alur
 
+**Staging nonaktif sampai subdomainnya tersedia** (`SDD-INF-16` e). Job *Deploy staging* dilewati kecuali variabel **repositori** `STAGING_AKTIF` = `true` (Settings → Secrets and variables → Actions → *Variables*). Sebelum go-live, rilis dicoba lewat **pra-rilis** ke produksi:
+
+```
+merge develop → staging (CI hijau) → PR staging → main → git tag v0.1.0 && git push origin v0.1.0
+→ setujui environment production → deploy di luar jam operasional (CD-06) → smoke
+```
+
+Data produksi sebelum `v1.0.0` adalah data uji dan dibuang sebelum go-live. Alur di bawah berlaku penuh begitu staging aktif.
+
 ```
 STAGING
 pengembang  : merge ke cabang `staging` → push
@@ -126,6 +135,7 @@ Repositori ini **publik**, sehingga mitigasi berikut wajib aktif sebelum kunci A
 | Persetujuan workflow fork | Settings → Actions → General → *Fork pull request workflows from outside collaborators* | **Require approval for all external contributors** |
 | Ruleset tag | Settings → Rules → Rulesets → New tag ruleset | Target `v*`; *Restrict creations/updates/deletions*; bypass hanya pemilik repo |
 | Cabang `staging` | dibuat dari `develop`; Settings → Branches | Proteksi: hanya pemilik repo/maintainer yang boleh push; *required status check* `CI lulus` |
+| Variabel repositori `STAGING_AKTIF` | Settings → Secrets and variables → Actions → Variables | `true` hanya setelah app `sigm4-staging`, subdomain, dan environment `staging` siap; selama tidak ada, deploy staging dilewati |
 | Environment `staging` | Settings → Environments | *Deployment branches* → cabang `staging` saja; variabel `DOKPLOY_URL`, `DOKPLOY_COMPOSE_ID` (ID app `sigm4-staging`), `STAGING_DOMAIN`; secret `DOKPLOY_API_KEY`, `SMOKE_EMAIL`, `SMOKE_PASSWORD`, `SMOKE_TOTP_SECRET`; variabel `SMOKE_ROOM_ID`, `SMOKE_ASSET_UUID`, `SMOKE_START_HOUR_WIB` (opsional) |
 | Environment `production` | Settings → Environments | *Required reviewers* (minimal 1 orang); *Deployment branches and tags* → cabang `main` (rollback lewat *Run workflow*) dan tag `v*`; variabel `DOKPLOY_URL`, `DOKPLOY_COMPOSE_ID` (ID app `sigm4-production`), `PRODUCTION_DOMAIN`; secret `DOKPLOY_API_KEY` |
 | Environment `production-smoke` | Settings → Environments | Tanpa reviewer; cabang `main` dan tag `v*`; secret `SMOKE_EMAIL`, `SMOKE_PASSWORD`, `SMOKE_TOTP_SECRET`; variabel `SMOKE_ROOM_ID`, `SMOKE_ASSET_UUID`, `PRODUCTION_DOMAIN` |

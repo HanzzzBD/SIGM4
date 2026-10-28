@@ -74,7 +74,7 @@ Menyertakan ID PR pada nama cabang membuat rantai *cabang → PR → phase → r
 |---|---|
 | `develop` | Pipeline hijau (`CD-01`) · minimal satu *approval* · DoD PR §5 terpenuhi |
 | `staging` | Seluruh PR phase berjalan sudah di `develop` · DoD phase terpenuhi |
-| `main` | Seluruh gerbang rilis `GL-01`–`GL-12` terpenuhi ([PRD 29.3](../PRD/01-product/delivery-plan.md)) |
+| `main` | Untuk `v1.0.0` dan sesudahnya: seluruh gerbang rilis `GL-01`–`GL-12` terpenuhi ([PRD 29.3](../PRD/01-product/delivery-plan.md)). Sebelum go-live: pipeline `staging` hijau dan persetujuan pemilik produk, untuk pra-rilis `v0.x.y` (`SDD-INF-16` e) |
 
 **Riwayat linear.** Penggabungan ke `develop` memakai *squash*: satu PR menjadi satu commit. Penggabungan `develop` → `staging` → `main` memakai *merge commit* agar batas antar-phase tetap terbaca pada riwayat.
 
@@ -182,7 +182,7 @@ Format `vMAJOR.MINOR.PATCH` ditetapkan `CD-03`.
 | MINOR | Penambahan fungsi tanpa memutus kompatibilitas |
 | PATCH | Perbaikan cacat |
 
-Go-live menghasilkan `v1.0.0`. Sebelum go-live tidak ada tag produksi — seluruh phase 00–08 berjalan di `develop` dan `staging`. Ini konsekuensi langsung dari strategi rilis **big bang** (Keputusan #13, `DL-01`): satu rilis produksi, banyak checkpoint internal.
+Go-live menghasilkan `v1.0.0`. Ini konsekuensi langsung dari strategi rilis **big bang** (Keputusan #13, `DL-01`): satu rilis produksi bagi sekolah, banyak checkpoint internal. Sebelum go-live, selama staging nonaktif, checkpoint internal itu boleh berupa **pra-rilis `v0.x.y`** ke server produksi yang belum dipakai pengguna (`SDD-INF-16` e, keputusan pemilik produk 28 Oktober 2026); datanya data uji dan dibuang sebelum `v1.0.0`.
 
 ---
 

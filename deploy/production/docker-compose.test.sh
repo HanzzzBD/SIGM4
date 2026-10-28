@@ -105,6 +105,8 @@ echo "==> Uji pemanggil: workflow membangun dari outDir Vite"
 for wf in ../../.github/workflows/ci.yml ../../.github/workflows/rilis-produksi.yml; do
     grep -q 'web.Dockerfile .* apps/web/dist/app$' "$wf" || gagal "$wf tidak membangun image web dari apps/web/dist/app"
 done
+grep -A3 '^    deploy-staging:' ../../.github/workflows/ci.yml | grep -qF "if: vars.STAGING_AKTIF == 'true'" \
+    || gagal "deploy staging tidak dijaga STAGING_AKTIF (SDD-INF-16 e)"
 outdir="$(grep -oE 'outDir: "[^"]+"' ../../apps/web/vite.config.ts | cut -d'"' -f2)"
 [[ "$outdir" == "dist/app" ]] || gagal "outDir Vite berubah ($outdir) — sesuaikan konteks build image web"
 
