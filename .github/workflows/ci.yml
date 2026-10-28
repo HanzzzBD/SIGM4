@@ -409,7 +409,7 @@ jobs:
             - run: npm ci
             - run: npm run build -w apps/web
             - name: Bangun image web
-              run: docker build -f deploy/production/web.Dockerfile --build-context conf=deploy/production/nginx -t "sigm4-web:${GITHUB_SHA}" apps/web/dist
+              run: docker build -f deploy/production/web.Dockerfile --build-context conf=deploy/production/nginx -t "sigm4-web:${GITHUB_SHA}" apps/web/dist/app
             - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
               with:
                   image-ref: sigm4-web:${{ github.sha }}
