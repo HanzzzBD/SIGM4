@@ -84,7 +84,8 @@ Setiap TBD yang tertutup wajib juga diperbarui di [`../../SDD/TBD-REGISTER.md`](
 |---|---|---|:---:|
 | `smoke-test.sh` di `develop` belum memiliki `--full` (`PR-03-36` belum tergabung) | Smoke produksi tidak dapat membuktikan lima alur `CD-07` | Opsi tak dikenal kini ditolak (kode 2), tidak lagi diabaikan diam-diam, sehingga job smoke produksi **gagal** sampai `PR-03-36` tergabung | Ya — `PR-03-36` |
 | `actionlint` tidak dapat dijalankan (daemon Docker lokal mati) | Ekspresi dan izin `workflow_call` belum divalidasi alat | YAML diurai, `docker compose config` lolos; validasi nyata pada run CI pertama | Ya |
-| `deploy.sh` produksi menduplikasi `tunggu_sehat` dari staging | Dua salinan koreografi | Tidak disatukan di PR ini (aturan tanpa refactor sambil lalu); kandidat PR tersendiri | Ya |
+| `deploy.sh` produksi menduplikasi `tunggu_sehat` dari staging | Dua salinan koreografi | Tidak disatukan di PR ini (aturan tanpa refactor sambil lalu); kandidat PR tersendiri | Tidak — `deploy.sh` dihapus `PR-08-19` |
+| Image web dibangun dari `apps/web/dist`, padahal `outDir` Vite adalah `dist/app` (ditemukan 28 Oktober 2026 setelah #202 tergabung, saat pemilik produk menanyakan alamat API web). Cacat yang sama sudah ada sejak `PR-08-17`/`PR-08-18` (`web-dist.tar.gz` dari `apps/web/dist`), tidak pernah terlihat karena belum ada deploy nyata | Web produksi/staging menyajikan 404 — `index.html` berada di `/app/` | Konteks build diganti `apps/web/dist/app`; `web.Dockerfile` gagal bila `index.html` tidak di akar; `docker-compose.test.sh` menguji konteks salah ditolak dan memeriksa workflow serta `outDir` Vite. Uji lama memakai folder tiruan sehingga tidak menangkapnya | Tidak |
 
 ## 8. Hasil pengukuran
 

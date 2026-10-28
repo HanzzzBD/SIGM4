@@ -92,4 +92,20 @@ docker run --rm --entrypoint sh sigm4-web:uji -c \
     'test -f /usr/share/sigm4/web/index.html && ! grep -q proxy_pass /etc/nginx/conf.d/default.conf && nginx -t'
 docker image rm sigm4-web:uji >/dev/null
 
+echo "==> Image web: konteks tanpa index.html di akar ditolak"
+# Bentuk apps/web/dist yang sebenarnya: hasil Vite di app/, keluaran tsc di tsc/.
+mkdir -p "$kerja/dist-salah/app" "$kerja/dist-salah/tsc"
+echo '<!doctype html><title>uji</title>' > "$kerja/dist-salah/app/index.html"
+if docker build -q -f web.Dockerfile --build-context conf=nginx -t sigm4-web:salah "$kerja/dist-salah" >/dev/null 2>&1; then
+    docker image rm sigm4-web:salah >/dev/null
+    gagal "image web terbangun dari konteks tanpa index.html di akar"
+fi
+
+echo "==> Uji pemanggil: workflow membangun dari outDir Vite"
+for wf in ../../.github/workflows/ci.yml ../../.github/workflows/rilis-produksi.yml; do
+    grep -q 'web.Dockerfile .* apps/web/dist/app$' "$wf" || gagal "$wf tidak membangun image web dari apps/web/dist/app"
+done
+outdir="$(grep -oE 'outDir: "[^"]+"' ../../apps/web/vite.config.ts | cut -d'"' -f2)"
+[[ "$outdir" == "dist/app" ]] || gagal "outDir Vite berubah ($outdir) — sesuaikan konteks build image web"
+
 echo "==> Lulus"
