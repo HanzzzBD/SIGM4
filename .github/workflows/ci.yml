@@ -114,18 +114,13 @@ jobs:
               run: |
                   bash -n deploy/staging/smoke-test.sh
                   python3 scripts/qa/smoke-critical.test.py
-            # Berkas deploy server sekolah (PR-08-17/18): gerbang CD-06 diuji, skrip dan topologi divalidasi.
+            # Berkas deploy server sekolah (PR-08-17/19): gerbang CD-06 diuji, skrip dan topologi divalidasi.
             - name: Berkas deploy produksi
               run: |
                   bash deploy/production/jendela-deploy.test.sh
-                  bash -n deploy/production/deploy.sh
-                  bash -n deploy/edge/edge.sh
-                  bash deploy/edge/edge.test.sh
-                  docker compose -f deploy/edge/docker-compose.yml config --quiet
+                  bash -n deploy/production/dokploy-deploy.sh
+                  bash deploy/production/docker-compose.test.sh
                   bash -n deploy/staging/smoke-test.sh
-                  SIGM4_IMAGE=sigm4:uji \
-                  SIGM4_ENV_FILE=/dev/null SIGM4_MIGRATION_ENV_FILE=/dev/null \
-                      docker compose -f deploy/production/docker-compose.yml --profile migrate config --quiet
 
     # Pohon web (SDD-11, PR-02-30): uji (token & kontras NFR-AC-01/02, lint DS-P-07, alur aplikasi,
     # axe) lalu build Vite. Tanpa layanan eksternal — server HTTP tiruan pada adapter axios.
@@ -404,8 +399,8 @@ jobs:
                   echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
                   docker push "$image"
                   echo "image=$image" >> "$GITHUB_OUTPUT"
-            # Aset web untuk staging (SDD-FE-14): dibangun di sini, bukan di job `web`, yang
-            # dilewati bila pohon web tidak berubah.
+            # Image web untuk staging (SDD-FE-14, SDD-INF-16): dibangun di sini, bukan di job
+            # `web`, yang dilewati bila pohon web tidak berubah.
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
             - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
               with:
@@ -413,23 +408,30 @@ jobs:
                   cache: npm
             - run: npm ci
             - run: npm run build -w apps/web
-            - name: Paket web
-              run: tar -C apps/web/dist -czf web-dist.tar.gz .
-            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+            - name: Bangun image web
+              run: docker build -f deploy/production/web.Dockerfile --build-context conf=deploy/production/nginx -t "sigm4-web:${GITHUB_SHA}" apps/web/dist
+            - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
               with:
-                  name: web-dist
-                  path: web-dist.tar.gz
+                  image-ref: sigm4-web:${{ github.sha }}
+                  severity: HIGH,CRITICAL
+                  exit-code: "1"
+                  format: table
+            - name: Dorong image web
+              run: |
+                  web="ghcr.io/${GITHUB_REPOSITORY,,}-web:${GITHUB_SHA}"
+                  docker tag "sigm4-web:${GITHUB_SHA}" "$web"
+                  docker push "$web"
 
-    # Staging berjalan di server sekolah bersama produksi (SDD-INF-15): deploy DITARIK
-    # self-hosted runner berlabel `sigm4-staging` yang dipasang IT sekolah, bukan didorong
-    # lewat SSH — pengembang tidak memegang akses server (SDD-INF-14). Koreografinya
-    # deploy/production/deploy.sh dengan proyek Compose `sigm4-staging`.
-    # Variabel environment `staging`: STAGING_DOMAIN, STAGING_DIR (opsional), EDGE_DIR (opsional).
+    # Staging berjalan di server sekolah sebagai Compose app `sigm4-staging` di Dokploy
+    # (SDD-INF-16): job ini memindahkan tag `staging` ke image commit ini, lalu memicu
+    # deploy lewat API Dokploy dan menunggu hasilnya. Tidak ada runner di server.
+    # Environment `staging`: variabel DOKPLOY_URL, DOKPLOY_COMPOSE_ID, STAGING_DOMAIN ·
+    # secret DOKPLOY_API_KEY.
     deploy-staging:
         name: Deploy staging
         needs: [publikasi-image]
-        runs-on: [self-hosted, linux, sigm4-staging]
-        timeout-minutes: 30
+        runs-on: ubuntu-latest
+        timeout-minutes: 40
         environment:
             name: staging
             url: https://${{ vars.STAGING_DOMAIN }}
@@ -439,47 +441,25 @@ jobs:
             cancel-in-progress: false
         permissions:
             contents: read
-            packages: read
-        env:
-            IMAGE: ${{ needs.publikasi-image.outputs.image }}
-            DIR_SERVER: ${{ vars.STAGING_DIR || '/opt/sigm4/staging' }}
+            packages: write
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-            - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-              with:
-                  name: web-dist
-            - name: Siapkan direktori deploy
-              run: |
-                  mkdir -p "$DIR_SERVER/nginx" "$DIR_SERVER/web-dist"
-                  cp deploy/production/docker-compose.yml deploy/production/deploy.sh "$DIR_SERVER/"
-                  cp deploy/production/nginx/sigm4.conf.template "$DIR_SERVER/nginx/"
-                  find "$DIR_SERVER/web-dist" -mindepth 1 -delete
-                  tar -C "$DIR_SERVER/web-dist" -xzf web-dist.tar.gz
-            - name: Migration + rolling deploy
+            - name: Pindahkan tag staging (SDD-INF-16 c)
               env:
                   GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  SIGM4_PROJECT: sigm4-staging
-                  SIGM4_APP_ENV: staging
-                  SIGM4_ENV_FILE: /etc/sigm4/staging.env
-                  SIGM4_MIGRATION_ENV_FILE: /etc/sigm4/staging-migration.env
-                  SIGM4_BACKUP_DIR: /var/backups/sigm4-staging
               run: |
-                  # Kredensial registry hanya hidup selama job ini (GITHUB_TOKEN).
                   echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-                  kode=0
-                  bash "$DIR_SERVER/deploy.sh" "$IMAGE" "$DIR_SERVER/web-dist" || kode=$?
-                  docker logout ghcr.io >/dev/null
-                  exit "$kode"
-            - name: Proxy tepi
+                  for repo in "ghcr.io/${GITHUB_REPOSITORY,,}" "ghcr.io/${GITHUB_REPOSITORY,,}-web"; do
+                      docker buildx imagetools create -t "$repo:staging" "$repo:${GITHUB_SHA}"
+                  done
+            - name: Deploy lewat Dokploy
               env:
-                  DIR_EDGE: ${{ vars.EDGE_DIR || '/opt/sigm4/edge' }}
-              run: |
-                  mkdir -p "$DIR_EDGE/templat"
-                  cp deploy/edge/docker-compose.yml deploy/edge/edge.sh "$DIR_EDGE/"
-                  cp deploy/edge/templat/* "$DIR_EDGE/templat/"
-                  bash "$DIR_EDGE/edge.sh"
+                  DOKPLOY_URL: ${{ vars.DOKPLOY_URL }}
+                  DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+                  COMPOSE_ID: ${{ vars.DOKPLOY_COMPOSE_ID }}
+              run: bash deploy/production/dokploy-deploy.sh "$COMPOSE_ID" "staging ${GITHUB_SHA::12} run ${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
 
-    # Dari LUAR server, jalur yang sama dengan pengguna: DNS → TLS → proxy tepi → API (CD-07).
+    # Dari LUAR server, jalur yang sama dengan pengguna: DNS → TLS + routing nginx sekolah → api / web (CD-07).
     # Secret environment `staging`: SMOKE_EMAIL, SMOKE_PASSWORD, SMOKE_TOTP_SECRET ·
     # variabel SMOKE_ROOM_ID, SMOKE_ASSET_UUID, SMOKE_START_HOUR_WIB.
     smoke-staging:
