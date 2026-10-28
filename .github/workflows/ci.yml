@@ -427,9 +427,13 @@ jobs:
     # deploy lewat API Dokploy dan menunggu hasilnya. Tidak ada runner di server.
     # Environment `staging`: variabel DOKPLOY_URL, DOKPLOY_COMPOSE_ID, STAGING_DOMAIN ·
     # secret DOKPLOY_API_KEY.
+    # Staging belum berjalan sampai subdomainnya tersedia (SDD-INF-16 e): job ini — dan
+    # smoke staging yang bergantung padanya — dilewati kecuali variabel REPOSITORI
+    # STAGING_AKTIF bernilai `true`. Variabel environment tidak terbaca pada `if` job.
     deploy-staging:
         name: Deploy staging
         needs: [publikasi-image]
+        if: vars.STAGING_AKTIF == 'true'
         runs-on: ubuntu-latest
         timeout-minutes: 40
         environment:
