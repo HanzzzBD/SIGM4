@@ -10,6 +10,10 @@
 # Konteks build adalah apps/web/dist/app — `outDir` Vite (apps/web/vite.config.ts);
 # apps/web/dist sendiri juga memuat keluaran tsc.
 FROM nginx:1.29-alpine
+# Paket Alpine image dasar sering tertinggal dari perbaikan keamanan; Trivy (HIGH/CRITICAL)
+# menggerbang image ini seperti image API, yang juga memakai `apk upgrade` (merah pada push
+# staging pertama, 28 Oktober 2026: 48 HIGH, seluruhnya sudah ada versi perbaikannya).
+RUN apk upgrade --no-cache
 COPY --from=conf web.conf /etc/nginx/conf.d/default.conf
 COPY . /usr/share/sigm4/web
 # Konteks yang salah tetap lolos build tetapi menyajikan 404; gagalkan di sini.
