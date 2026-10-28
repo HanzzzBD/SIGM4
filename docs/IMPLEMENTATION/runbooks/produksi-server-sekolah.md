@@ -56,6 +56,7 @@ Rollback production (`CD-05`): Actions → **Rilis produksi** → *Run workflow*
 
   location /api/ {
       proxy_pass http://<ip-server-dokploy>:3010;   # TANPA "/" di akhir: awalan /api wajib tetap ada
+      proxy_read_timeout 3600s;                      # aliran notifikasi & chatbot (SSE) tidak diputus tiap 60 s
   }
   location / {
       proxy_pass http://<ip-server-dokploy>:3011;
