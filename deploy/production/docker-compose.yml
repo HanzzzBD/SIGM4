@@ -1,64 +1,88 @@
-# Topologi runtime stack aplikasi di SERVER SEKOLAH — PR-08-17, PR-08-18
-# (SDD-16 §4.2, SDD-INF-10/13/14/15).
+# Topologi runtime stack aplikasi di SERVER SEKOLAH — PR-08-17, PR-08-18, PR-08-19
+# (SDD-16 §4.2, SDD-INF-10/14/16).
 #
-# Satu berkas untuk dua stack: produksi (proyek sigm4-production, job `deploy` pada
-# .github/workflows/rilis-produksi.yml) dan staging (proyek sigm4-staging, job
-# `deploy-staging` pada ci.yml). Keduanya dijalankan deploy.sh lewat self-hosted
-# runner (SDD-INF-14); SIGM4_PROJECT, SIGM4_APP_ENV, dan path berkas env yang
-# membedakannya.
-#   - PostgreSQL BERJALAN di sini sebagai container (SDD-INF-14). Port-nya tidak dibuka ke host.
-#   - Object storage tetap Backblaze B2 (INF-02); alamatnya datang dari berkas env.
-#   - Nginx stack tanpa port host: proxy tepi (deploy/edge/, SDD-INF-15) memegang
-#     80/443 dan TLS, lalu meneruskan ke alias `<proyek>-web` di jaringan sigm4-edge.
-#     Template-nya di ./nginx/, disalin job deploy bersama berkas ini.
+# Satu berkas untuk dua Compose app di Dokploy (SDD-INF-16): `sigm4-staging` (cabang
+# staging) dan `sigm4-production` (cabang main). Dokploy menjalankannya dengan
+# `docker compose -p <app> --env-file .env up -d`; job deploy GitHub Actions hanya
+# memicu lewat API Dokploy setelah image terbit.
+#   - PostgreSQL BERJALAN di sini sebagai container (SDD-INF-14 b). Port-nya tidak dibuka ke host.
+#   - Object storage tetap Backblaze B2 (INF-02); alamatnya datang dari env.
+#   - nginx sekolah memegang 80/443 dan TLS, lalu meneruskan HTTP polos ke SATU port
+#     host per app: port `nginx` stack ini (SDD-INF-16 b). Service lain tanpa port host.
 #
-# RAHASIA tidak pernah berada di sini (SEC-CFG-01). Dua berkas env disiapkan
-# IT sekolah di server, di luar repositori (runbook produksi-server-sekolah.md):
-#   ${SIGM4_ENV_FILE}            — api & worker: DATABASE_URL (akun sigm4_app),
-#                                  S3_*, JWT_*, TOTP_ENCRYPTION_KEY, APP_BASE_URL, …
-#   ${SIGM4_MIGRATION_ENV_FILE}  — HANYA postgres & job migration: POSTGRES_USER,
-#                                  POSTGRES_PASSWORD, POSTGRES_DB,
-#                                  MIGRATION_DATABASE_URL, APP_DB_PASSWORD.
-#                                  API dan worker tidak pernah menerimanya
-#                                  (SDD-16 §4.7, SEC-CFG-03).
+# RAHASIA tidak pernah berada di sini (SEC-CFG-01). Seluruh nilai diisi di tab
+# Environment Dokploy (runbook produksi-server-sekolah.md), yang ditulis Dokploy ke
+# `.env` di samping berkas ini dan HANYA dipakai untuk interpolasi `${…}`. Setiap
+# service menerima variabel yang disebut namanya di bawah, tidak lebih: akun DDL
+# (POSTGRES_*, MIGRATION_DATABASE_URL, APP_DB_PASSWORD) hanya sampai ke postgres,
+# backup, dan migrate — api dan worker tidak pernah menerimanya (SDD-16 §4.7, SEC-CFG-03).
 
-name: ${SIGM4_PROJECT:-sigm4-production}
+x-image-app: &image-app
+    # Satu tag untuk api, worker, dan migration (SDD-INF-01). Tag lingkungan
+    # (`staging`/`production`) dipindahkan job deploy ke image yang baru terbit;
+    # `always` memaksa Compose menarik ulang tag yang sama (SDD-INF-16 c).
+    image: ghcr.io/hanzzzbd/sigm4:${SIGM4_TAG:?SIGM4_TAG wajib diisi}
+    pull_policy: always
 
 x-app: &app
-    # Satu tag untuk api, worker, dan migration (SDD-INF-01).
-    image: ${SIGM4_IMAGE:?SIGM4_IMAGE wajib diisi deploy.sh}
-    env_file:
-        - ${SIGM4_ENV_FILE:-/etc/sigm4/production.env}
+    <<: *image-app
     environment:
         TZ: UTC # SDD-INF-09 — divalidasi lagi saat startup
         # PR-00-19: /api/docs hanya dipasang di staging, tidak di produksi.
-        APP_ENV: ${SIGM4_APP_ENV:-production}
+        APP_ENV: ${SIGM4_APP_ENV:?SIGM4_APP_ENV wajib diisi}
         REDIS_URL: redis://redis:6379
         CLAMAV_URL: tcp://clamav:3310
+        DATABASE_URL: ${DATABASE_URL:?}
+        JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?}
+        JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:?}
+        TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY:?}
+        APP_BASE_URL: ${APP_BASE_URL:?}
+        S3_ENDPOINT: ${S3_ENDPOINT:?}
+        S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:?}
+        S3_REGION: ${S3_REGION:?}
+        S3_BUCKET: ${S3_BUCKET:?}
+        S3_ACCESS_KEY: ${S3_ACCESS_KEY:?}
+        S3_SECRET_KEY: ${S3_SECRET_KEY:?}
+        FCM_CREDENTIALS: ${FCM_CREDENTIALS:-}
+        CHAT_ENABLED: ${CHAT_ENABLED:-false}
+        GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+        LOG_LEVEL: ${LOG_LEVEL:-info}
     restart: unless-stopped
     depends_on:
         postgres:
             condition: service_healthy
         redis:
             condition: service_healthy
+        # SDD-INF-03 — instance baru tidak dinyalakan sebelum migration berhasil;
+        # migration gagal = `compose up` gagal = deployment Dokploy berstatus error.
+        migrate:
+            condition: service_completed_successfully
+
+x-akun-ddl: &akun-ddl
+    POSTGRES_USER: ${POSTGRES_USER:?}
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+    POSTGRES_DB: ${POSTGRES_DB:?}
 
 services:
-    # Satu origin untuk web statis dan /api/v1; TLS/HSTS di proxy tepi (SDD-INF-15).
+    # Satu origin untuk web statis dan /api/v1 (keputusan 51). Image berisi hasil build
+    # web dari commit yang sama dengan API (SDD-FE-14) dan template ./nginx/.
     nginx:
-        image: nginx:1.29-alpine
-        volumes:
-            - ./nginx/sigm4.conf.template:/etc/nginx/templates/default.conf.template:ro
-            # Hasil build web (SDD-FE-14) dari tag/commit yang sama, disalin deploy.sh.
-            - web:/usr/share/sigm4/web:ro
-        networks:
-            default:
-            edge:
-                aliases:
-                    - ${SIGM4_PROJECT:-sigm4-production}-web
+        image: ghcr.io/hanzzzbd/sigm4-web:${SIGM4_TAG:?SIGM4_TAG wajib diisi}
+        pull_policy: always
+        # Satu-satunya port host stack ini (SDD-INF-16 b); bukan 3000 — port itu dipakai
+        # di server dan API hanya mendengarkannya di dalam container.
+        ports:
+            - "${SIGM4_HTTP_BIND:-0.0.0.0}:${SIGM4_HTTP_PORT:?SIGM4_HTTP_PORT wajib diisi}:80"
+        environment:
+            # Alamat nginx sekolah; hanya darinya X-Forwarded-For dipercaya (NFR-S-07).
+            SIGM4_PROXY_CIDR: ${SIGM4_PROXY_CIDR:?SIGM4_PROXY_CIDR wajib diisi}
         restart: unless-stopped
+        depends_on:
+            - api-1
+            - api-2
 
-    # SDD-INF-04 — dua instance agar penggantian bergulir tidak memutus layanan.
-    # Tenggat henti sama dengan staging (SDD-16 §5): API 25 s dari 30 s.
+    # SDD-INF-04 — dua instance; keduanya diganti bersamaan oleh `compose up`
+    # (SDD-INF-16 d). Tenggat henti sama dengan staging (SDD-16 §5): API 25 s dari 30 s.
     api-1:
         <<: *app
         stop_grace_period: 30s
@@ -85,35 +109,55 @@ services:
             retries: 3
             start_period: 15s
 
-    # SDD-INF-03, CD-04 — container sekali-jalan dengan akun DDL, sebelum instance
-    # baru menerima trafik. Hanya berjalan lewat `--profile migrate`.
+    # SDD-INF-03, CD-04 — container sekali-jalan dengan akun DDL, setiap deploy,
+    # sesudah dump pra-migration dan sebelum api/worker dinyalakan.
     migrate:
-        image: ${SIGM4_IMAGE:?SIGM4_IMAGE wajib diisi deploy.sh}
+        <<: *image-app
         command: ["node", "scripts/migrate.mjs", "up"]
-        env_file:
-            - ${SIGM4_MIGRATION_ENV_FILE:-/etc/sigm4/production-migration.env}
         environment:
             TZ: UTC
+            MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL:?}
+            APP_DB_PASSWORD: ${APP_DB_PASSWORD:?}
+        depends_on:
+            backup:
+                condition: service_completed_successfully
+        restart: "no"
+
+    # RELEASE-PLAN §3 langkah 2 — dump pra-migration sebagai jaring pengaman sebelum
+    # skema berubah; 5 dump terakhir dipertahankan (CD-05). Base backup + arsip WAL
+    # (SDD-INF-06) tetap milik PR-08-07.
+    backup:
+        image: postgres:15-alpine
+        environment:
+            <<: *akun-ddl
+            TZ: UTC
+        volumes:
+            - backup:/backup
+        command:
+            - sh
+            - -ec
+            - |
+                berkas="/backup/pra-deploy-$$(date -u +%Y%m%dT%H%M%SZ).dump"
+                PGPASSWORD="$$POSTGRES_PASSWORD" pg_dump -h postgres -U "$$POSTGRES_USER" -Fc "$$POSTGRES_DB" > "$$berkas.tmp"
+                mv "$$berkas.tmp" "$$berkas"
+                ls -1t /backup/pra-deploy-*.dump | tail -n +6 | xargs -r rm -f
+                echo "dump pra-migration: $$berkas"
         depends_on:
             postgres:
                 condition: service_healthy
-        profiles: ["migrate"]
         restart: "no"
 
-    # INF-01, SDD-INF-14 — PostgreSQL di server sekolah. POSTGRES_USER adalah akun
+    # INF-01, SDD-INF-14 b — PostgreSQL di server sekolah. POSTGRES_USER adalah akun
     # migration pemilik skema; akun aplikasi sigm4_app dibuat migration 0007 dan
-    # kata sandinya disetel migrate.mjs dari APP_DB_PASSWORD. Base backup + arsip
-    # WAL (SDD-INF-06) milik PR-08-07; deploy.sh hanya membuat dump pra-migration.
+    # kata sandinya disetel migrate.mjs dari APP_DB_PASSWORD.
     postgres:
         image: postgres:15-alpine
-        env_file:
-            - ${SIGM4_MIGRATION_ENV_FILE:-/etc/sigm4/production-migration.env}
         environment:
+            <<: *akun-ddl
             TZ: UTC
             PGTZ: UTC
         volumes:
-            # Direktori data dapat dipindah IT sekolah ke disk khusus lewat SIGM4_PG_DATA.
-            - ${SIGM4_PG_DATA:-pg-data}:/var/lib/postgresql/data
+            - pg-data:/var/lib/postgresql/data
         # Checkpoint penutupan yang rapi lebih lama dari bawaan 10 s Docker.
         stop_grace_period: 120s
         healthcheck:
@@ -153,14 +197,8 @@ services:
             start_period: 300s
         restart: unless-stopped
 
-networks:
-    # Dibuat deploy.sh / edge.sh; dipakai bersama proxy tepi.
-    edge:
-        name: sigm4-edge
-        external: true
-
 volumes:
-    web:
     pg-data:
     redis-data:
     clamav-db:
+    backup:
