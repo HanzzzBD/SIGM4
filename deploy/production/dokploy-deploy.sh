@@ -4,7 +4,7 @@
 # Dijalankan job `deploy-staging` (ci.yml) dan `deploy` (rilis-produksi.yml) dari
 # runner GitHub SETELAH image `<tag lingkungan>` dipindahkan ke rilis yang dideploy.
 # Dokploy lalu menjalankan `docker compose up` atas deploy/production/docker-compose.yml:
-# dump pra-migration → migration → api/worker/nginx (urutan dijamin `depends_on`).
+# dump pra-migration → migration → api/worker, dan web statis (urutan dijamin `depends_on`).
 #
 #     DOKPLOY_URL=https://dokploy.example DOKPLOY_API_KEY=… \
 #         ./dokploy-deploy.sh <composeId> "<judul unik deployment>"

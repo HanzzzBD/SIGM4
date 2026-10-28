@@ -7,8 +7,10 @@
 # memicu lewat API Dokploy setelah image terbit.
 #   - PostgreSQL BERJALAN di sini sebagai container (SDD-INF-14 b). Port-nya tidak dibuka ke host.
 #   - Object storage tetap Backblaze B2 (INF-02); alamatnya datang dari env.
-#   - nginx sekolah memegang 80/443 dan TLS, lalu meneruskan HTTP polos ke SATU port
-#     host per app: port `nginx` stack ini (SDD-INF-16 b). Service lain tanpa port host.
+#   - nginx sekolah memegang 80/443, TLS, dan SELURUH routing: `/api` → port `api`,
+#     `/` → port `web` (SDD-INF-16 b). Service lain tanpa port host. Port host kedua
+#     service itu wajib hanya terjangkau dari nginx sekolah: API memercayai satu hop
+#     X-Forwarded-For (NFR-S-07), sehingga akses langsung dapat memalsukan IP klien.
 #
 # RAHASIA tidak pernah berada di sini (SEC-CFG-01). Seluruh nilai diisi di tab
 # Environment Dokploy (runbook produksi-server-sekolah.md), yang ditulis Dokploy ke
@@ -64,38 +66,31 @@ x-akun-ddl: &akun-ddl
     POSTGRES_DB: ${POSTGRES_DB:?}
 
 services:
-    # Satu origin untuk web statis dan /api/v1 (keputusan 51). Image berisi hasil build
-    # web dari commit yang sama dengan API (SDD-FE-14) dan template ./nginx/.
-    nginx:
+    # Web statis SAJA (SDD-INF-16 b): tanpa routing /api, tanpa proxy. nginx sekolah
+    # meneruskan `/` ke port ini dan `/api` ke port api, sehingga web dan API tetap satu
+    # origin (keputusan 51). Image berisi hasil build web dari commit yang sama dengan
+    # API (SDD-FE-14).
+    web:
         image: ghcr.io/hanzzzbd/sigm4-web:${SIGM4_TAG:?SIGM4_TAG wajib diisi}
         pull_policy: always
-        # Satu-satunya port host stack ini (SDD-INF-16 b); bukan 3000 — port itu dipakai
-        # di server dan API hanya mendengarkannya di dalam container.
         ports:
-            - "${SIGM4_HTTP_BIND:-0.0.0.0}:${SIGM4_HTTP_PORT:?SIGM4_HTTP_PORT wajib diisi}:80"
-        environment:
-            # Alamat nginx sekolah; hanya darinya X-Forwarded-For dipercaya (NFR-S-07).
-            SIGM4_PROXY_CIDR: ${SIGM4_PROXY_CIDR:?SIGM4_PROXY_CIDR wajib diisi}
+            - "${SIGM4_HTTP_BIND:-0.0.0.0}:${SIGM4_WEB_PORT:?SIGM4_WEB_PORT wajib diisi}:80"
         restart: unless-stopped
-        depends_on:
-            - api-1
-            - api-2
 
-    # SDD-INF-04 — dua instance; keduanya diganti bersamaan oleh `compose up`
-    # (SDD-INF-16 d). Tenggat henti sama dengan staging (SDD-16 §5): API 25 s dari 30 s.
-    api-1:
+    # Satu instance, diteruskan langsung oleh nginx sekolah (SDD-INF-16 b/d). Port host
+    # dari SIGM4_API_PORT; 3000 hanya di dalam container — port host 3000 sudah dipakai.
+    # Tenggat henti sama dengan staging (SDD-16 §5): API 25 s dari 30 s.
+    api:
         <<: *app
+        ports:
+            - "${SIGM4_HTTP_BIND:-0.0.0.0}:${SIGM4_API_PORT:?SIGM4_API_PORT wajib diisi}:3000"
         stop_grace_period: 30s
-        healthcheck: &api-ready
+        healthcheck:
             test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/api/v1/health/ready"]
             interval: 5s
             timeout: 3s
             retries: 3
             start_period: 15s
-    api-2:
-        <<: *app
-        stop_grace_period: 30s
-        healthcheck: *api-ready
 
     # SDD-SYS-08, SDD-INF-05 — tenggat drain worker 50 s dari 60 s.
     worker:

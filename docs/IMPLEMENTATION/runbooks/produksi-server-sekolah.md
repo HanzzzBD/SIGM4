@@ -1,6 +1,6 @@
 # Deploy staging & production di server sekolah
 
-Pelaksanaan `SDD-INF-14` (`PR-08-17`), `SDD-INF-15` (`PR-08-18`), dan `SDD-INF-16` (`PR-08-19`). IT sekolah memasang **Dokploy** khusus SIGM4 dan memberi pengembang akses **dashboard** (tanpa SSH). Staging dan production adalah dua **Compose app** Dokploy (`sigm4-staging`, `sigm4-production`) dari berkas yang sama, `deploy/production/docker-compose.yml`. **nginx milik sekolah** memegang port 80/443 dan sertifikat, lalu meneruskan HTTP polos ke satu port host per app. GitHub Actions memicu deploy lewat **API Dokploy** setelah seluruh gerbang lulus; tidak ada runner di server.
+Pelaksanaan `SDD-INF-14` (`PR-08-17`), `SDD-INF-15` (`PR-08-18`), dan `SDD-INF-16` (`PR-08-19`). IT sekolah memasang **Dokploy** khusus SIGM4 dan memberi pengembang akses **dashboard** (tanpa SSH). Staging dan production adalah dua **Compose app** Dokploy (`sigm4-staging`, `sigm4-production`) dari berkas yang sama, `deploy/production/docker-compose.yml`. **nginx milik sekolah** memegang port 80/443, sertifikat, dan seluruh routing: `/api` ke port host service `api`, `/` ke port host service `web`. SIGM4 tidak punya reverse proxy sendiri. GitHub Actions memicu deploy lewat **API Dokploy** setelah seluruh gerbang lulus; tidak ada runner di server.
 
 | Pihak | Memegang | Bagian |
 |---|---|---|
@@ -17,7 +17,7 @@ STAGING
 pengembang  : merge ke cabang `staging` → push
 GitHub      : CI penuh → image GHCR sigm4:<sha> + sigm4-web:<sha>
 GitHub      : tag `staging` dipindah ke <sha> → API Dokploy compose.deploy (app sigm4-staging)
-Dokploy     : compose up → backup (dump) → migrate → api-1, api-2, worker → nginx
+Dokploy     : compose up → backup (dump) → migrate → api, worker; web
 GitHub      : menunggu deployment `done` → smoke test CD-07 dari luar terhadap https://<domain-staging>
 
 PRODUCTION
@@ -25,39 +25,46 @@ pemilik repo: git tag v1.0.0 (di main) → push
 GitHub      : validasi → CI penuh → image GHCR sigm4:v1.0.0 + sigm4-web:v1.0.0 + GitHub Release (openapi.json)
 reviewer    : menyetujui environment `production`
 GitHub      : jendela CD-06 → tag `production` dipindah ke v1.0.0 → API Dokploy (app sigm4-production)
-Dokploy     : compose up → backup (dump) → migrate → api-1, api-2, worker → nginx
+Dokploy     : compose up → backup (dump) → migrate → api, worker; web
 GitHub      : smoke test CD-07 dari luar terhadap https://<domain-production>
 ```
 
 ```
-internet ─ 80/443 ─ nginx sekolah (TLS)
-                     ├─ <domain-staging>    → http://<server>:<port staging>    → app sigm4-staging,    service nginx
-                     └─ <domain-production> → http://<server>:<port production> → app sigm4-production, service nginx
-                        hanya service nginx yang membuka port host; api tetap di 3000 DI DALAM container
+internet ─ 80/443 ─ nginx sekolah (TLS + routing)
+                     ├─ <domain-production> /api → http://<server>:3010 → app sigm4-production, service api
+                     │                      /    → http://<server>:3011 →                        service web (statis)
+                     └─ <domain-staging>    /api → http://<server>:<port api staging>,  / → <port web staging>
+                        hanya api dan web yang membuka port host; api di 3000 hanya DI DALAM container
 ```
 
-Kedua instance API diganti **bersamaan**, sehingga setiap deploy memutus layanan beberapa detik (`SDD-INF-16` d). Karena itu deploy produksi hanya di luar jam operasional (`CD-06`).
+API berjalan satu instance dan diganti setiap deploy, sehingga layanan terputus beberapa detik (`SDD-INF-16` d). Karena itu deploy produksi hanya di luar jam operasional (`CD-06`).
 
 Rollback production (`CD-05`): Actions → **Rilis produksi** → *Run workflow*, lalu isi `tag` dengan rilis sebelumnya. Rollback hanya memindahkan tag `production` dan memicu deploy ulang; tidak ada yang dibangun ulang. Target ≤ 15 menit. Staging di-rollback dengan push commit sebelumnya ke cabang `staging`.
 
 ## 2. Prasyarat server (IT sekolah)
 
 - Dokploy terpasang dan dashboard-nya dapat dibuka dari internet lewat HTTPS. GitHub Actions memanggil API-nya dari luar.
-- nginx sekolah memegang port **80 dan 443** dan sertifikat kedua domain: production (mis. `sigm4.sekolah.sch.id`) dan staging (mis. `staging.sigm4.sekolah.sch.id`). Tiap domain diteruskan ke port host app-nya (§3), dengan aturan berikut:
+- nginx sekolah memegang port **80 dan 443**, sertifikat, dan routing kedua domain: production (mis. `sigm4.sekolah.sch.id`) dan staging (mis. `staging.sigm4.sekolah.sch.id`). Tiap domain diteruskan ke dua port host app-nya (§3):
 
   ```nginx
+  # Header yang sama untuk kedua location.
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Forwarded-For $remote_addr;   # DITIMPA, bukan $proxy_add_x_forwarded_for (NFR-S-07)
+  proxy_set_header X-Forwarded-Proto https;
+  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;   # INF-06
+
+  location /api/ {
+      proxy_pass http://<ip-server-dokploy>:3010;   # TANPA "/" di akhir: awalan /api wajib tetap ada
+  }
   location / {
-      proxy_pass http://<ip-server-dokploy>:<SIGM4_HTTP_PORT app ini>;
-      proxy_http_version 1.1;
-      proxy_set_header Host $host;
-      proxy_set_header X-Forwarded-For $remote_addr;   # DITIMPA, bukan $proxy_add_x_forwarded_for (NFR-S-07)
-      proxy_set_header X-Forwarded-Proto https;
+      proxy_pass http://<ip-server-dokploy>:3011;
   }
   ```
 
-- Dua port host bebas untuk SIGM4, satu per app, **bukan 3000** (sudah dipakai). Bila nginx sekolah berada di server lain, kedua port hanya boleh dijangkau dari alamat nginx sekolah (firewall).
+- Dua port host per app: produksi **3010** (api) dan **3011** (web); staging sepasang port lain. Bukan 3000 (sudah dipakai). API memercayai satu hop `X-Forwarded-For`, jadi keempat port **hanya boleh dijangkau dari nginx sekolah**: `SIGM4_HTTP_BIND=127.0.0.1` bila nginx sekolah di server yang sama, atau firewall bila di server lain.
 - Akses keluar HTTPS ke `github.com`, `ghcr.io`, `pkg-containers.githubusercontent.com`, endpoint Backblaze B2, dan Firebase (FCM).
-- Kapasitas untuk **dua** stack lengkap (masing-masing PostgreSQL, Redis, ClamAV, api ×2, worker). Staging berbagi CPU, memori, dan disk dengan production: staging boleh dihentikan (tombol *Stop* app `sigm4-staging`) bila production membutuhkan sumber dayanya, dan uji beban di staging hanya di luar jam operasional.
+- Kapasitas untuk **dua** stack lengkap (masing-masing PostgreSQL, Redis, ClamAV, api, worker, web). Staging berbagi CPU, memori, dan disk dengan production: staging boleh dihentikan (tombol *Stop* app `sigm4-staging`) bila production membutuhkan sumber dayanya, dan uji beban di staging hanya di luar jam operasional.
 - Disk cukup untuk volume Docker PostgreSQL kedua app.
 
 ## 3. Compose app di Dokploy (pemilik repo)
@@ -79,8 +86,8 @@ Buat satu project `SIGM4`, lalu dua service bertipe **Compose**:
 ```
 SIGM4_TAG=staging                 # production: SIGM4_TAG=production
 SIGM4_APP_ENV=staging             # production: SIGM4_APP_ENV=production
-SIGM4_HTTP_PORT=<port staging>    # port host yang diteruskan nginx sekolah; BUKAN 3000
-SIGM4_PROXY_CIDR=<ip nginx sekolah>/32   # hanya dari alamat ini X-Forwarded-For dipercaya
+SIGM4_API_PORT=<port api>         # produksi 3010; port host /api dari nginx sekolah, BUKAN 3000
+SIGM4_WEB_PORT=<port web>         # produksi 3011; port host / dari nginx sekolah
 # SIGM4_HTTP_BIND=127.0.0.1       # isi bila nginx sekolah di server yang sama
 
 # api & worker

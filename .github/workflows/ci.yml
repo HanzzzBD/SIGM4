@@ -459,7 +459,7 @@ jobs:
                   COMPOSE_ID: ${{ vars.DOKPLOY_COMPOSE_ID }}
               run: bash deploy/production/dokploy-deploy.sh "$COMPOSE_ID" "staging ${GITHUB_SHA::12} run ${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
 
-    # Dari LUAR server, jalur yang sama dengan pengguna: DNS → TLS nginx sekolah → Nginx stack → API (CD-07).
+    # Dari LUAR server, jalur yang sama dengan pengguna: DNS → TLS + routing nginx sekolah → api / web (CD-07).
     # Secret environment `staging`: SMOKE_EMAIL, SMOKE_PASSWORD, SMOKE_TOTP_SECRET ·
     # variabel SMOKE_ROOM_ID, SMOKE_ASSET_UUID, SMOKE_START_HOUR_WIB.
     smoke-staging:
