@@ -84,7 +84,7 @@ flowchart TD
 
 **Main Flow**
 1. Pengguna membuka menu Bahan dan menekan "Tambah Bahan".
-2. Pengguna mengisi: nama bahan, kategori bahan, satuan (dipilih dari master satuan), stok minimum, lokasi penyimpanan bawaan, dan keterangan.
+2. Pengguna mengisi: nama bahan, kategori bahan, satuan (dipilih dari master satuan), stok minimum, lokasi penyimpanan bawaan, penanda **boleh diminta siswa** (`BR-091a`), dan keterangan.
 3. Sistem memvalidasi bahwa nama bahan belum dipakai dalam kategori yang sama.
 4. Sistem membuat record bahan berstatus `Aktif` dengan saldo awal 0 pada seluruh lokasi.
 5. Sistem membentuk UUID bahan sebagai dasar QR per jenis bahan (`m05-qr.md`).
@@ -93,6 +93,13 @@ flowchart TD
 - **A1 — Kategori bahan belum ada:** Pengguna membuat kategori bahan lebih dulu; kategori bahan **terpisah** dari kategori aset.
 - **A2 — Menonaktifkan bahan yang masih bersaldo:** Sistem mengizinkan, namun bahan tidak lagi dapat diminta; saldo dan riwayatnya tetap dapat ditelusuri (`BR-091`).
 - **A3 — Menghapus kategori yang masih dipakai bahan:** Sistem menolak dan menampilkan jumlah bahan terkait.
+
+Keputusan pengguna untuk PR-05-15/16/17/23/30 (14 Oktober 2026): satuan dapat
+diganti sebelum transaksi pertama. Setelah ada transaksi, satuan terkunci di
+service dan database; satuan berbeda memakai jenis bahan baru agar jumlah pada
+riwayat tidak berganti arti. Master satuan dimiliki M-20, dengan rim, pcs, botol,
+liter dan dus sebagai data awal. Penghapusan kategori menghitung bahan aktif
+dan nonaktif.
 
 **Post Conditions** — Record bahan tersimpan berstatus `Aktif`; UUID QR terbentuk; activity log tercatat.
 
@@ -158,7 +165,7 @@ flowchart TD
 | Aspek | Uraian |
 |---|---|
 | **Description** | Pengguna mengajukan kebutuhan bahan; pengajuan melewati approval hanya bila melampaui ambang yang dikonfigurasi. |
-| **Actor** | Guru, Staf/Tata Usaha, Teknisi, Petugas Sarana Prasarana |
+| **Actor** | Guru, Staf/Tata Usaha, Teknisi, Petugas Sarana Prasarana, Siswa/OSIS (`BR-086a`, `BR-091a`) |
 | **Preconditions** | Pengguna login dan tidak diblokir; bahan berstatus `Aktif` |
 
 **Main Flow**
@@ -173,6 +180,7 @@ flowchart TD
 - **A1 — Saldo tidak mencukupi:** Sistem menolak dan menampilkan saldo tersedia beserta lokasi lain yang masih memiliki saldo.
 - **A2 — Bahan berstatus nonaktif:** Bahan tidak muncul pada katalog permintaan (`BR-091`).
 - **A3 — Permintaan ditolak approver:** Status `Ditolak` beserta alasan; saldo tidak tersentuh.
+- **A4 — Pemohon Siswa/OSIS:** Katalog hanya memuat bahan bertanda boleh diminta siswa dengan status Tersedia/Terbatas/Habis, lokasi asal adalah lokasi penyimpanan bawaan bahan, dan permintaan langsung berstatus `Disetujui` tanpa instance approval berapa pun jumlahnya; Petugas menilainya saat penyerahan (`BR-086a`, `BR-091a`, `FR-22.5`).
 
 **Post Conditions** — Permintaan tersimpan; instance approval terbentuk bila diperlukan; activity log tercatat.
 
@@ -181,6 +189,7 @@ flowchart TD
 - [ ] Permintaan di atas ambang tidak dapat dilayani sebelum berstatus `Disetujui`.
 - [ ] Permintaan tidak pernah mengurangi saldo — saldo hanya berkurang saat penyerahan (`FR-22.5`).
 - [ ] Uji penolakan: pengguna tanpa permission `material.request` menerima `403`.
+- [ ] Siswa/OSIS tidak dapat melihat maupun meminta bahan yang tidak bertanda boleh diminta siswa, dan tidak pernah menerima angka saldo, lokasi lain, maupun kartu stok (`BR-091a`).
 
 ### FR-22.5 Pengeluaran & Penyerahan Bahan
 
@@ -275,9 +284,11 @@ flowchart TD
 | BR-086 | Permintaan bahan melewati approval engine hanya bila melampaui ambang yang dikonfigurasi Administrator; di bawah ambang permintaan berstatus `Disetujui` tanpa instance approval. |
 | BR-087 | Bahan yang telah diserahkan **tidak memiliki kewajiban pengembalian**. Tidak berlaku jadwal pengembalian, denda keterlambatan (`BR-028`), maupun ganti rugi. |
 | BR-088 | Setiap transaksi `PENYESUAIAN` wajib menyertakan alasan sebelum dapat disimpan. |
+| BR-086a | Permintaan bahan oleh Siswa/OSIS **tidak** melewati approval engine, berapa pun jumlahnya (pengecualian `BR-086`): permintaan langsung `Disetujui` dan Petugas menilainya saat penyerahan — menyerahkan penuh, sebagian, atau menutup sisa dengan alasan (`FR-22.5`). Keputusan pemilik produk 26 Oktober 2026. |
 | BR-089 | Jumlah bahan yang diserahkan tidak boleh melebihi jumlah yang disetujui pada permintaan. |
 | BR-090 | QR bahan mengikat satu **jenis bahan** dan tidak pernah bermakna unit individual. |
 | BR-091 | Bahan berstatus nonaktif tidak dapat diminta, namun saldo dan seluruh riwayat transaksinya tetap dapat ditelusuri. |
+| BR-091a | Siswa/OSIS (scope `restricted` pada `material.view` dan `material.request`) hanya melihat dan meminta bahan aktif bertanda `boleh_diminta_siswa`. Saldo ditampilkan sebagai status — **Tersedia** (di atas stok minimum), **Terbatas** (di atas 0 dan tidak melebihi stok minimum), **Habis** (0) — tanpa angka, lokasi lain, maupun kartu stok; lokasi asal permintaannya adalah `room_id_default` bahan. |
 | BR-092 | Setiap transaksi bahan menyimpan `saldo_sesudah` sehingga kartu stok dapat direkonstruksi tanpa menghitung ulang seluruh riwayat. |
 
 **Aturan bersama yang juga berlaku** (dimiliki modul lain, dirujuk melalui ID — tidak disalin ke sini):
@@ -291,18 +302,40 @@ flowchart TD
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
 | GET | `/materials` | `material.view` | Daftar bahan + saldo (filter kategori, lokasi, status stok) |
+| GET | `/materials/options` | `material.view` | Pilihan kategori, satuan dan ruangan beserta status |
+| GET | `/materials/by-uuid/{uuid}` | `material.view` | Detail jenis bahan dari QR privat; wajib login |
 | POST | `/materials` | `material.manage` | Daftarkan bahan baru |
 | GET | `/materials/{id}` | `material.view` | Detail bahan beserta saldo per lokasi |
 | PATCH | `/materials/{id}` | `material.manage` | Ubah data bahan |
 | GET | `/materials/{id}/transactions` | `material.view` | Kartu stok — riwayat transaksi |
 | GET | `/material-categories` | `material.view` | Daftar kategori bahan |
 | POST | `/material-categories` | `material.manage` | Buat kategori bahan |
+| PUT | `/material-categories/{id}` | `material.manage` | Ubah kategori bahan beserta status |
+| DELETE | `/material-categories/{id}` | `material.manage` | Hapus kategori yang belum dipakai bahan |
+| GET | `/materials/{id}/receipts` | `material.view` | Bukti penerimaan langsung, pagination dan URL dokumen CLEAN |
 | POST | `/materials/{id}/receipts` | `material.receive` | Catat penerimaan bahan |
 | POST | `/materials/{id}/adjustments` | `material.adjust` | Catat penyesuaian saldo |
 | GET | `/material-requests` | `material.view` | Daftar permintaan bahan |
 | POST | `/material-requests` | `material.request` | Ajukan permintaan bahan |
+| GET | `/material-requests/{id}` | `material.view` | Detail scope, siklus approval dan histori penyerahan |
+| PUT | `/material-requests/{id}` | `material.request` | Pemohon merevisi Perlu Revisi sebelum penyerahan |
+| POST | `/material-requests/{id}/close` | `material.issue` | Tutup sisa setelah penyerahan sebagian dengan alasan |
 | POST | `/material-requests/{id}/issue` | `material.issue` | Catat penyerahan bahan |
 | POST | `/material-requests/{id}/cancel` | `material.request` | Batalkan permintaan sebelum diserahkan |
+
+Kontrak master memakai jumlah bilangan bulat nonnegatif dan menolak kolom saldo,
+UUID atau kolom tak dikenal pada write. PATCH hanya mengubah kolom yang dikirim.
+Daftar memakai `q`, `category_id`, `room_id`, `status`, `stok` (MENIPIS/AMAN),
+`bersaldo=true` (saldo positif di lokasi terpilih atau salah satu lokasi), `urut` (nama/saldo), `page` dan `per_page`; kartu stok memakai pagination dan
+`room_id`, berurutan waktu menurun lalu ID menurun. Stok menipis berlaku untuk
+bahan aktif dengan minimum > 0 dan saldo total <= minimum (`SDD-DB-13`).
+Write master/kategori memerlukan `Idempotency-Key` sesuai konvensi API.
+
+PR-05-17 menyediakan service ledger internal dalam transaksi pemanggil.
+Endpoint penerimaan, penyesuaian, permintaan dan penyerahan pada tabel ini
+dibangun oleh PR-05-18/19/20/21; NT-49 oleh PR-05-22 dan opname Bahan oleh
+PR-05-24. Pengadaan Bahan diaktifkan lokal oleh PR-05-18 melalui mapping master sejak pengajuan. Pencetakan PDF QR
+dimiliki M-05; master satuan dimiliki M-20.
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
@@ -314,9 +347,9 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
 | **material_categories** | Kategori bahan — terpisah dari kategori aset | id, nama, kode, keterangan, status | ± 15 |
-| **materials** | Master jenis bahan | id, uuid (dasar QR per jenis), nama, material_category_id, satuan_id, stok_minimum, room_id_default, keterangan, status | ± 300 |
+| **materials** | Master jenis bahan | id, uuid (dasar QR per jenis), nama, material_category_id, satuan_id, stok_minimum, room_id_default, boleh_diminta_siswa, keterangan, status | ± 300 |
 | **material_balances** | Saldo per bahan per lokasi penyimpanan | id, material_id, room_id, saldo | ± 900 |
-| **material_transactions** | Seluruh peristiwa yang mengubah saldo | id, material_id, room_id, jenis (PENERIMAAN/PENGELUARAN/PENYESUAIAN/OPNAME), jumlah, saldo_sesudah, referensi_tipe, referensi_id, alasan, dibuat_oleh, dibuat_pada | ± 20.000 |
+| **material_transactions** | Seluruh peristiwa yang mengubah saldo | id, material_id, room_id, jenis (PENERIMAAN/PENGELUARAN/PENYESUAIAN/OPNAME), jumlah, saldo_sesudah, referensi_jenis, referensi_id, alasan, created_by, created_at | ± 20.000 |
 | **material_requests** | Permintaan bahan | id, nomor, pemohon_id, keperluan, status, approval_instance_id (nullable — `BR-086`), diserahkan_oleh, diserahkan_pada | ± 1.500 |
 | **material_request_items** | Baris permintaan | id, material_request_id, material_id, jumlah_diminta, jumlah_disetujui, jumlah_diserahkan | ± 3.000 |
 
@@ -343,9 +376,9 @@ Ketentuan umum kanal, latensi, dan preferensi: [`m17-notifications.md`](m17-noti
 
 | Kode | Domain | Deskripsi singkat | Role bawaan pemilik |
 |---|---|---|---|
-| `material.view` | Bahan | Melihat bahan, saldo, dan kartu stok | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf |
+| `material.view` | Bahan | Melihat bahan, saldo, dan kartu stok | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa(`restricted`) |
 | `material.manage` | Bahan | Kelola master bahan & kategori bahan | Admin, Petugas |
-| `material.request` | Bahan | Mengajukan & membatalkan permintaan bahan | Admin, Petugas, Teknisi, Guru, Staf |
+| `material.request` | Bahan | Mengajukan & membatalkan permintaan bahan | Admin, Petugas, Teknisi, Guru, Staf, Siswa(`restricted`) |
 | `material.receive` | Bahan | Mencatat penerimaan bahan | Admin, Petugas |
 | `material.issue` | Bahan | Menyerahkan bahan kepada pemohon | Admin, Petugas |
 | `material.adjust` | Bahan | Menyesuaikan saldo dengan alasan | Admin, Petugas |
@@ -363,8 +396,11 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | `MATERIAL_CATEGORY_CREATED` / `UPDATED` / `DELETED` | Siklus kategori bahan |
 | `MATERIAL_RECEIVED` | Penerimaan bahan beserta jumlah & lokasi |
 | `MATERIAL_REQUEST_SUBMITTED` / `APPROVED` / `REJECTED` / `CANCELLED` | Siklus permintaan bahan |
+| `MATERIAL_REQUEST_REVISION_REQUESTED` | Permintaan revisi sebelum penyerahan; siklus lama dipertahankan |
+| `MATERIAL_REQUEST_CLOSED` | Penutupan sisa setelah penyerahan sebagian beserta alasan |
 | `MATERIAL_ISSUED` | Penyerahan bahan beserta penerima |
 | `MATERIAL_ADJUSTED` | Penyesuaian saldo beserta alasan wajib |
+| `MATERIAL_TRANSACTION_RECORDED` | Fondasi ledger internal PR-05-17: transaksi, lokasi, delta, saldo sebelum/sesudah dan rujukan; audit atomik dengan ledger |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
 
@@ -395,3 +431,20 @@ Strategi pengujian: [`../06-quality/test-strategy.md`](../06-quality/test-strate
 ## 15. Open Issues
 
 _Tidak ada isu terbuka._
+
+### Keputusan pengguna PR-05-18/19/20/21/22/31 (14 Oktober 2026)
+
+Kelima keputusan AskUserQuestion berlaku untuk FR-22.3…22.7:
+
+- Ambang memakai **jumlah per jenis bahan**, dijumlahkan lintas lokasi. Administrator wajib mengisi batas bawaan M-20 dan boleh memasang override jenis bahan. Tepat di batas langsung Disetujui tanpa instance M-10; melewati salah satu batas masuk aturan aktif M-10 yang cocok atau fallback Petugas. Nilai uang tidak dipakai tanpa harga referensi sah.
+- Pengajuan dan persetujuan tidak menahan stok. Pengajuan memeriksa saldo lokasi; penyerahan memeriksa ulang dalam transaksi dengan row lock. Jumlah disetujui per baris hanya dapat tetap/berkurang pada level berikutnya. Jumlah aktual tidak melebihi sisa disetujui maupun saldo. Seluruh baris satu penyerahan commit/rollback bersama.
+- Guru/Staf/Teknisi melihat permintaan sendiri. Petugas/Admin/Pimpinan melihat seluruhnya dengan izin operasional/approval berscope all; pembaca lain tidak mendapat perluasan hanya karena material.view all. Pemutus sah dapat membuka konteks langkah aktif; peserta keputusan/delegasi mempertahankan akses riwayat miliknya melalui penjaga M-10. Revisi oleh pemohon pada Perlu Revisi sebelum penyerahan membentuk siklus baru menggunakan ambang terkini; snapshot lama immutable.
+- Pemohon/Admin dapat membatalkan sebelum penyerahan, alasan wajib. Sesudah sebagian diserahkan hanya Petugas dengan material.issue dapat menutup sisa, alasan wajib; histori tidak dihapus. Bahan tidak masuk pinjaman/pengembalian/denda.
+- Item pengadaan BAHAN wajib memilih master aktif sejak pengajuan, satuan master tanpa konversi. Penerimaan membutuhkan procurement.receive dan material.receive serta bukti M-14 yang sama. Penerimaan langsung membutuhkan tanggal WIB tidak mendatang, nomor dokumen dan minimal satu dokumen milik pengunggah yang terkonfirmasi CLEAN. Penyesuaian TAMBAH/KURANG memakai material.adjust langsung, jumlah/lokasi/alasan wajib, ledger immutable.
+- NT-49 wajib kepada Petugas/Admin hanya pada transaksi penurunan bahan aktif yang menembus total > minimum menjadi <= minimum (minimum > 0). Tidak berulang saat sudah rendah; pulih di atas minimum mengaktifkan kembali peringatan. Audit, perubahan saldo dan outbox atomik. NT-50/51 mengikuti preferensi dan deduplikasi event. Dashboard Petugas/Admin menampilkan saldo menipis dengan drilldown ke bahan.
+
+Permintaan memakai nomor PMB, item unik per jenis/lokasi/siklus, jumlah bulat positif.
+Detail menyimpan nama/satuan/lokasi snapshot; siklus menyimpan ambang efektif dan items.
+GET daftar memakai tab AKTIF/SELESAI/SEMUA, status, q, saya, page/per_page. Semua write
+membutuhkan Idempotency-Key. Berita penerimaan langsung dibuka melalui GET receipts;
+bukti pengadaan melalui referensi kartu stok ke detail pengadaan. URL hanya untuk CLEAN.

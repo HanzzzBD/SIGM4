@@ -1,0 +1,199 @@
+# Topologi runtime stack aplikasi di SERVER SEKOLAH — PR-08-17, PR-08-18, PR-08-19
+# (SDD-16 §4.2, SDD-INF-10/14/16).
+#
+# Satu berkas untuk dua Compose app di Dokploy (SDD-INF-16): `sigm4-staging` (cabang
+# staging) dan `sigm4-production` (cabang main). Dokploy menjalankannya dengan
+# `docker compose -p <app> --env-file .env up -d`; job deploy GitHub Actions hanya
+# memicu lewat API Dokploy setelah image terbit.
+#   - PostgreSQL BERJALAN di sini sebagai container (SDD-INF-14 b). Port-nya tidak dibuka ke host.
+#   - Object storage tetap Backblaze B2 (INF-02); alamatnya datang dari env.
+#   - nginx sekolah memegang 80/443, TLS, dan SELURUH routing: `/api` → port `api`,
+#     `/` → port `web` (SDD-INF-16 b). Service lain tanpa port host. Port host kedua
+#     service itu wajib hanya terjangkau dari nginx sekolah: API memercayai satu hop
+#     X-Forwarded-For (NFR-S-07), sehingga akses langsung dapat memalsukan IP klien.
+#
+# RAHASIA tidak pernah berada di sini (SEC-CFG-01). Seluruh nilai diisi di tab
+# Environment Dokploy (runbook produksi-server-sekolah.md), yang ditulis Dokploy ke
+# `.env` di samping berkas ini dan HANYA dipakai untuk interpolasi `${…}`. Setiap
+# service menerima variabel yang disebut namanya di bawah, tidak lebih: akun DDL
+# (POSTGRES_*, MIGRATION_DATABASE_URL, APP_DB_PASSWORD) hanya sampai ke postgres,
+# backup, dan migrate — api dan worker tidak pernah menerimanya (SDD-16 §4.7, SEC-CFG-03).
+
+x-image-app: &image-app
+    # Satu tag untuk api, worker, dan migration (SDD-INF-01). Tag lingkungan
+    # (`staging`/`production`) dipindahkan job deploy ke image yang baru terbit;
+    # `always` memaksa Compose menarik ulang tag yang sama (SDD-INF-16 c).
+    image: ghcr.io/hanzzzbd/sigm4:${SIGM4_TAG:?SIGM4_TAG wajib diisi}
+    pull_policy: always
+
+x-app: &app
+    <<: *image-app
+    environment:
+        TZ: UTC # SDD-INF-09 — divalidasi lagi saat startup
+        # PR-00-19: /api/docs hanya dipasang di staging, tidak di produksi.
+        APP_ENV: ${SIGM4_APP_ENV:?SIGM4_APP_ENV wajib diisi}
+        REDIS_URL: redis://redis:6379
+        CLAMAV_URL: tcp://clamav:3310
+        DATABASE_URL: ${DATABASE_URL:?}
+        JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?}
+        JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:?}
+        TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY:?}
+        APP_BASE_URL: ${APP_BASE_URL:?}
+        S3_ENDPOINT: ${S3_ENDPOINT:?}
+        S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:?}
+        S3_REGION: ${S3_REGION:?}
+        S3_BUCKET: ${S3_BUCKET:?}
+        S3_ACCESS_KEY: ${S3_ACCESS_KEY:?}
+        S3_SECRET_KEY: ${S3_SECRET_KEY:?}
+        FCM_CREDENTIALS: ${FCM_CREDENTIALS:-}
+        CHAT_ENABLED: ${CHAT_ENABLED:-false}
+        GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+        LOG_LEVEL: ${LOG_LEVEL:-info}
+    restart: unless-stopped
+    depends_on:
+        postgres:
+            condition: service_healthy
+        redis:
+            condition: service_healthy
+        # SDD-INF-03 — instance baru tidak dinyalakan sebelum migration berhasil;
+        # migration gagal = `compose up` gagal = deployment Dokploy berstatus error.
+        migrate:
+            condition: service_completed_successfully
+
+x-akun-ddl: &akun-ddl
+    POSTGRES_USER: ${POSTGRES_USER:?}
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+    POSTGRES_DB: ${POSTGRES_DB:?}
+
+services:
+    # Web statis SAJA (SDD-INF-16 b): tanpa routing /api, tanpa proxy. nginx sekolah
+    # meneruskan `/` ke port ini dan `/api` ke port api, sehingga web dan API tetap satu
+    # origin (keputusan 51). Image berisi hasil build web dari commit yang sama dengan
+    # API (SDD-FE-14).
+    web:
+        image: ghcr.io/hanzzzbd/sigm4-web:${SIGM4_TAG:?SIGM4_TAG wajib diisi}
+        pull_policy: always
+        ports:
+            - "${SIGM4_HTTP_BIND:-0.0.0.0}:${SIGM4_WEB_PORT:?SIGM4_WEB_PORT wajib diisi}:80"
+        restart: unless-stopped
+
+    # Satu instance, diteruskan langsung oleh nginx sekolah (SDD-INF-16 b/d). Port host
+    # dari SIGM4_API_PORT; 3000 hanya di dalam container — port host 3000 sudah dipakai.
+    # Tenggat henti sama dengan staging (SDD-16 §5): API 25 s dari 30 s.
+    api:
+        <<: *app
+        ports:
+            - "${SIGM4_HTTP_BIND:-0.0.0.0}:${SIGM4_API_PORT:?SIGM4_API_PORT wajib diisi}:3000"
+        stop_grace_period: 30s
+        healthcheck:
+            test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/api/v1/health/ready"]
+            interval: 5s
+            timeout: 3s
+            retries: 3
+            start_period: 15s
+
+    # SDD-SYS-08, SDD-INF-05 — tenggat drain worker 50 s dari 60 s.
+    worker:
+        <<: *app
+        command: ["node", "apps/api/dist/worker/index.js"]
+        stop_grace_period: 60s
+        healthcheck:
+            test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/health/ready"]
+            interval: 5s
+            timeout: 3s
+            retries: 3
+            start_period: 15s
+
+    # SDD-INF-03, CD-04 — container sekali-jalan dengan akun DDL, setiap deploy,
+    # sesudah dump pra-migration dan sebelum api/worker dinyalakan.
+    migrate:
+        <<: *image-app
+        command: ["node", "scripts/migrate.mjs", "up"]
+        environment:
+            TZ: UTC
+            MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL:?}
+            APP_DB_PASSWORD: ${APP_DB_PASSWORD:?}
+        depends_on:
+            backup:
+                condition: service_completed_successfully
+        restart: "no"
+
+    # RELEASE-PLAN §3 langkah 2 — dump pra-migration sebagai jaring pengaman sebelum
+    # skema berubah; 5 dump terakhir dipertahankan (CD-05). Base backup + arsip WAL
+    # (SDD-INF-06) tetap milik PR-08-07.
+    backup:
+        image: postgres:15-alpine
+        environment:
+            <<: *akun-ddl
+            TZ: UTC
+        volumes:
+            - backup:/backup
+        command:
+            - sh
+            - -ec
+            - |
+                berkas="/backup/pra-deploy-$$(date -u +%Y%m%dT%H%M%SZ).dump"
+                PGPASSWORD="$$POSTGRES_PASSWORD" pg_dump -h postgres -U "$$POSTGRES_USER" -Fc "$$POSTGRES_DB" > "$$berkas.tmp"
+                mv "$$berkas.tmp" "$$berkas"
+                ls -1t /backup/pra-deploy-*.dump | tail -n +6 | xargs -r rm -f
+                echo "dump pra-migration: $$berkas"
+        depends_on:
+            postgres:
+                condition: service_healthy
+        restart: "no"
+
+    # INF-01, SDD-INF-14 b — PostgreSQL di server sekolah. POSTGRES_USER adalah akun
+    # migration pemilik skema; akun aplikasi sigm4_app dibuat migration 0007 dan
+    # kata sandinya disetel migrate.mjs dari APP_DB_PASSWORD.
+    postgres:
+        image: postgres:15-alpine
+        environment:
+            <<: *akun-ddl
+            TZ: UTC
+            PGTZ: UTC
+        volumes:
+            - pg-data:/var/lib/postgresql/data
+        # Checkpoint penutupan yang rapi lebih lama dari bawaan 10 s Docker.
+        stop_grace_period: 120s
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+            interval: 5s
+            timeout: 3s
+            retries: 12
+        restart: unless-stopped
+
+    # INF-03 — cache, rate limit, antrean, distributed lock (SDD-16 §4.2).
+    redis:
+        image: redis:7-alpine
+        environment:
+            TZ: UTC
+        volumes:
+            - redis-data:/data
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 5s
+            timeout: 3s
+            retries: 12
+        restart: unless-stopped
+
+    # SDD-FS-04 — ClamAV sebagai proses terpisah; bukan `depends_on` api/worker
+    # karena `av_scanner` tidak menentukan `ready` (SDD-15 §4.5).
+    clamav:
+        image: clamav/clamav:1.4
+        environment:
+            TZ: UTC
+        volumes:
+            - clamav-db:/var/lib/clamav
+        healthcheck:
+            test: ["CMD", "clamdcheck.sh"]
+            interval: 15s
+            timeout: 10s
+            retries: 20
+            start_period: 300s
+        restart: unless-stopped
+
+volumes:
+    pg-data:
+    redis-data:
+    clamav-db:
+    backup:

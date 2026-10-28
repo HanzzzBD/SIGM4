@@ -1,0 +1,586 @@
+// Repository M-04 (SDD-AUTH-02, PM-03). PRIVAT terhadap modul (SDD-SYS-03) —
+// hanya service/asset.service.ts yang boleh memanggilnya.
+//
+// `roomExists`/`findKategoriById`/`findRuanganAktifById` mengueri `rooms` dan
+// `asset_categories` LANGSUNG, bukan lewat repository modul lain (dilarang
+// lintas modul, SDD-00 §4.2) — `m04-assets.md` §13 menyatakan M-04 bergantung
+// M-03 justru pada data lokasi ini; `asset_categories` tabel milik modul sendiri.
+
+import { sql } from "kysely";
+import type { AuthContext } from "../../../shared/auth/index.js";
+import { BaseRepository, defineRepository } from "../../../shared/db/index.js";
+import type { QueryExecutor } from "../../../shared/db/index.js";
+import { NotFoundError } from "../../../shared/errors/index.js";
+
+export interface KategoriRow {
+    readonly id: string;
+    readonly kode: string;
+}
+
+export interface RuanganRow {
+    readonly id: string;
+    readonly kode: string;
+}
+
+/** `kode_aset.*` (0027, `system_settings` kelompok `KODE_ASET`, FR-20.1). */
+export interface PengaturanKodeAset {
+    readonly pola: string;
+    readonly pemisah: string;
+    readonly panjangUrut: number;
+}
+
+const KOLOM_ASSET = [
+    "id",
+    "uuid",
+    "kode_barang",
+    "nama",
+    "category_id",
+    "merek",
+    "model",
+    "nomor_seri",
+    "tahun_perolehan",
+    "sumber_perolehan",
+    "nilai_perolehan",
+    "room_id",
+    "kondisi",
+    "status",
+    "dapat_dipinjam",
+    "boleh_dipinjam_siswa",
+    "penanggung_jawab_id",
+    "procurement_id",
+    "qr_terpasang",
+    "created_at",
+] as const;
+
+export interface AssetRow {
+    readonly id: string;
+    readonly uuid: string;
+    readonly kode_barang: string;
+    readonly nama: string;
+    readonly category_id: string;
+    readonly merek: string | null;
+    readonly model: string | null;
+    readonly nomor_seri: string | null;
+    readonly tahun_perolehan: number;
+    readonly sumber_perolehan: "PEMBELIAN" | "HIBAH" | "BANTUAN_PEMERINTAH" | "SUMBANGAN" | "LAINNYA";
+    readonly nilai_perolehan: string | null;
+    readonly room_id: string;
+    readonly kondisi: "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT" | "HILANG";
+    readonly status: "TERSEDIA" | "DIRESERVASI" | "DIPINJAM" | "DALAM_PERBAIKAN" | "TIDAK_TERSEDIA";
+    readonly dapat_dipinjam: boolean;
+    readonly boleh_dipinjam_siswa: boolean;
+    readonly penanggung_jawab_id: string | null;
+    readonly procurement_id: string | null;
+    /** FR-05.1 langkah 5 — label QR sudah ditempel. */
+    readonly qr_terpasang: boolean;
+    readonly created_at: Date;
+}
+
+export interface AtributAset {
+    readonly nama: string;
+    readonly merek: string | null;
+    readonly model: string | null;
+    readonly nomorSeri: string | null;
+    readonly tahunPerolehan: number;
+    readonly dapatDipinjam: boolean;
+    readonly bolehDipinjamSiswa: boolean;
+    readonly penanggungJawabId: number | null;
+    /** BR-073: hanya ada bila pemanggil memegang `asset.view_financial`. */
+    readonly sumberPerolehan?: AssetRow["sumber_perolehan"];
+    readonly nilaiPerolehan?: number | null;
+}
+
+export interface AssetFields {
+    readonly importJobId?: string;
+    readonly kodeBarang: string;
+    readonly nama: string;
+    readonly categoryId: number;
+    readonly merek: string | null;
+    readonly model: string | null;
+    readonly nomorSeri: string | null;
+    readonly tahunPerolehan: number;
+    readonly sumberPerolehan: "PEMBELIAN" | "HIBAH" | "BANTUAN_PEMERINTAH" | "SUMBANGAN" | "LAINNYA";
+    readonly nilaiPerolehan: number | null;
+    readonly roomId: number;
+    readonly kondisi: "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT" | "HILANG";
+    readonly dapatDipinjam: boolean;
+    readonly bolehDipinjamSiswa: boolean;
+    readonly penanggungJawabId: number | null;
+    readonly procurementId: number | null;
+}
+
+type AssetCondition = "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT" | "HILANG";
+type AssetStatus = "TERSEDIA" | "DIRESERVASI" | "DIPINJAM" | "DALAM_PERBAIKAN" | "TIDAK_TERSEDIA";
+
+/** `sort` (SDD-API-06 allow-list) — awalan `-` = menurun (SDD-API §4.5). */
+export type AssetSortField =
+    | "created_at"
+    | "-created_at"
+    | "nama"
+    | "-nama"
+    | "kode_barang"
+    | "-kode_barang"
+    | "tahun_perolehan"
+    | "-tahun_perolehan";
+
+const KOLOM_URUT: Record<AssetSortField, "created_at" | "nama" | "kode_barang" | "tahun_perolehan"> = {
+    created_at: "created_at",
+    "-created_at": "created_at",
+    nama: "nama",
+    "-nama": "nama",
+    kode_barang: "kode_barang",
+    "-kode_barang": "kode_barang",
+    tahun_perolehan: "tahun_perolehan",
+    "-tahun_perolehan": "tahun_perolehan",
+};
+
+function arahUrut(sort: AssetSortField): "asc" | "desc" {
+    return sort.startsWith("-") ? "desc" : "asc";
+}
+
+/** Field dasar (FR-04.2 langkah 2-4) — SELALU terlihat oleh siapa pun ber-`asset.view`. */
+const KOLOM_KATALOG_BASE = [
+    "id",
+    "uuid",
+    "kode_barang",
+    "nama",
+    "category_id",
+    "merek",
+    "model",
+    "nomor_seri",
+    "tahun_perolehan",
+    "room_id",
+    "kondisi",
+    "status",
+    "dapat_dipinjam",
+    "boleh_dipinjam_siswa",
+    "qr_terpasang",
+    "created_at",
+] as const;
+
+/** BR-073: hanya ter-SELECT bila pemanggil memegang `asset.view_financial` (SDD-03 §4.3, SDD-AUTH-06). */
+const KOLOM_KATALOG_FINANSIAL = ["nilai_perolehan", "sumber_perolehan"] as const;
+
+/** Nama kategori & lokasi bagi kolom P-15 (keputusan 93b log phase-02) — Siswa/OSIS tak memegang `location.view`. */
+const KOLOM_KATALOG_NAMA = [
+    sql<string>`(SELECT c.nama FROM asset_categories c WHERE c.id = assets.category_id)`.as("kategori_nama"),
+    sql<string>`(SELECT r.nama FROM rooms r WHERE r.id = assets.room_id)`.as("ruang_nama"),
+    sql<string>`(SELECT b.nama FROM rooms r JOIN areas a ON a.id = r.area_id JOIN buildings b ON b.id = a.building_id WHERE r.id = assets.room_id)`.as("gedung_nama"),
+];
+
+export interface AssetCatalogFilter {
+    /** FR-04.2 langkah 3: kode aset, nama, merek, atau nomor seri (substring, tanpa mempedulikan huruf besar/kecil). */
+    readonly q?: string;
+    readonly categoryId?: number;
+    readonly roomId?: number;
+    readonly kondisi?: AssetCondition;
+    readonly status?: AssetStatus;
+    readonly tahunPerolehan?: number;
+    readonly dapatDipinjam?: boolean;
+    readonly qrTerpasang?: boolean;
+}
+
+export interface ListAssetsFilter extends AssetCatalogFilter {
+    readonly importJobId?: number;
+    readonly page: number;
+    readonly perPage: number;
+    readonly sort: AssetSortField;
+}
+
+export interface ListAssetsResult {
+    readonly rows: readonly Record<string, unknown>[];
+    readonly total: number;
+}
+
+export interface RingkasanBarisRow {
+    readonly kondisi: AssetCondition;
+    readonly status: AssetStatus;
+    readonly jumlah: string;
+}
+
+export class AssetRepository extends BaseRepository {
+    async reconcileStocktakeStatus(ctx: AuthContext, id: string, status: "TERSEDIA" | "DIRESERVASI" | "DIPINJAM" | "DALAM_PERBAIKAN" | "TIDAK_TERSEDIA") {
+        await this.query(ctx).updateTable("assets").set({ status, updated_by: ctx.userId }).where("id", "=", id).execute();
+    }
+    constructor(executor: QueryExecutor) {
+        super(executor);
+    }
+
+    /** PR-02-47: filter identik katalog, irisan hak baca/ekspor sebelum LIMIT. */
+    private exportQuery(ctx: AuthContext, filter: AssetCatalogFilter) {
+        let query = this.dasarKatalog(ctx, filter);
+        if (ctx.scopeOf("asset.view") === "own" || ctx.scopeOf("asset.export") === "own") query = query.where("penanggung_jawab_id", "=", String(ctx.userId));
+        return query;
+    }
+    async exportRows(ctx: AuthContext, filter: Omit<ListAssetsFilter, "page" | "perPage">, limit: number, access: { readonly financial: boolean }) {
+        if (filter.importJobId !== undefined) {
+            const job = await this.query(ctx).selectFrom("asset_import_jobs").select("id").where("id", "=", String(filter.importJobId)).where("created_by", "=", String(ctx.userId)).executeTakeFirst();
+            if (!job) throw new NotFoundError("Pekerjaan impor aset tidak ditemukan.");
+        }
+        const base = this.exportQuery(ctx, filter)
+            .$if(filter.importJobId !== undefined, q => q.where("import_job_id", "=", String(filter.importJobId)))
+            .orderBy(KOLOM_URUT[filter.sort], arahUrut(filter.sort)).orderBy("id", arahUrut(filter.sort)).limit(limit + 1)
+            .select(["kode_barang", "nama", "merek", "model", "nomor_seri", "kondisi", "status", "tahun_perolehan", "dapat_dipinjam", "boleh_dipinjam_siswa", "qr_terpasang",
+                sql<string>`(select c.nama from asset_categories c where c.id=assets.category_id)`.as("kategori"),
+                sql<string>`(select r.nama from rooms r where r.id=assets.room_id)`.as("ruangan"),
+                sql<string>`(select b.nama from rooms r join areas ar on ar.id=r.area_id join buildings b on b.id=ar.building_id where r.id=assets.room_id)`.as("gedung"),
+                sql<string | null>`(select u.nama from users u where u.id=assets.penanggung_jawab_id)`.as("penanggung_jawab")]);
+        return access.financial ? base.select(["sumber_perolehan", "nilai_perolehan"]).execute() : base.execute();
+    }
+    async exportScopeHash(ctx: AuthContext) {
+        const query = this.exportQuery(ctx, {}).select("id");
+        return (await sql<{ hash: string }>`select encode(digest(coalesce(string_agg(id::text,',' order by id),''),'sha256'),'hex') hash from (${query}) visible`.execute(this.query(ctx))).rows[0]!.hash;
+    }
+
+    /**
+     * Kueri dasar katalog aset (FR-04.2, dipakai bersama `GET /assets` dan
+     * `GET /rooms/{id}/assets`). `dihapuskan = false` SELALU diterapkan (BR-008:
+     * aset terhapuskan tetap tertelusuri, tetapi bukan pada katalog biasa).
+     * Scope `restricted` (Siswa/OSIS, `SDD-AUTH-03 §4.2`) hanya melihat
+     * `boleh_dipinjam_siswa = true` (`BR-073`, `FR-04.2 A1`).
+     */
+    private dasarKatalog(ctx: AuthContext, filter: AssetCatalogFilter) {
+        let q = this.query(ctx)
+            .selectFrom("assets")
+            .where("dihapuskan", "=", false);
+        if (filter.roomId !== undefined) q = q.where("room_id", "=", String(filter.roomId));
+        if (filter.categoryId !== undefined) q = q.where("category_id", "=", String(filter.categoryId));
+        if (filter.kondisi !== undefined) q = q.where("kondisi", "=", filter.kondisi);
+        if (filter.status !== undefined) q = q.where("status", "=", filter.status);
+        if (filter.tahunPerolehan !== undefined) q = q.where("tahun_perolehan", "=", filter.tahunPerolehan);
+        if (filter.dapatDipinjam !== undefined) q = q.where("dapat_dipinjam", "=", filter.dapatDipinjam);
+        if (filter.qrTerpasang !== undefined) q = q.where("qr_terpasang", "=", filter.qrTerpasang);
+        if (filter.q !== undefined && filter.q.length > 0) {
+            const kata = `%${filter.q}%`;
+            q = q.where((eb) =>
+                eb.or([
+                    eb("kode_barang", "ilike", kata),
+                    eb("nama", "ilike", kata),
+                    eb("merek", "ilike", kata),
+                    eb("nomor_seri", "ilike", kata),
+                ]),
+            );
+        }
+        if (ctx.scopeOf("asset.view") === "restricted") {
+            q = q.where("boleh_dipinjam_siswa", "=", true);
+        }
+        return q;
+    }
+
+    /**
+     * `GET /assets` (FR-04.2) dan `GET /rooms/{id}/assets` (FR-03.2, roomId
+     * terisi). `total` dihitung `COUNT(*) OVER ()` pada kueri yang sama
+     * (`SDD-API-05 §4.5`), bukan kueri kedua.
+     */
+    async list(ctx: AuthContext, filter: ListAssetsFilter): Promise<ListAssetsResult> {
+        if (filter.importJobId !== undefined) {
+            const job = await this.query(ctx).selectFrom("asset_import_jobs").select("id").where("id", "=", String(filter.importJobId)).where("created_by", "=", String(ctx.userId)).executeTakeFirst();
+            if (job === undefined) throw new NotFoundError("Pekerjaan impor aset tidak ditemukan.");
+        }
+        const dasar = this.dasarKatalog(ctx, filter)
+            .$if(filter.importJobId !== undefined, (query) => query.where("import_job_id", "=", String(filter.importJobId)))
+            .orderBy(KOLOM_URUT[filter.sort], arahUrut(filter.sort))
+            .orderBy("id", arahUrut(filter.sort))
+            .limit(filter.perPage)
+            .offset((filter.page - 1) * filter.perPage)
+            .select(sql<string>`count(*) over()`.as("total"));
+
+        const rows = ctx.can("asset.view_financial")
+            ? await dasar.select([...KOLOM_KATALOG_BASE, ...KOLOM_KATALOG_FINANSIAL, ...KOLOM_KATALOG_NAMA]).execute()
+            : await dasar.select([...KOLOM_KATALOG_BASE, ...KOLOM_KATALOG_NAMA]).execute();
+
+        const total = rows.length > 0 ? Number((rows[0] as { total: string }).total) : 0;
+        return {
+            rows: rows.map((baris) => {
+                const sisanya: Record<string, unknown> = { ...baris };
+                const lokasi = { ruang: sisanya["ruang_nama"], gedung: sisanya["gedung_nama"] };
+                for (const k of ["total", "ruang_nama", "gedung_nama"]) delete sisanya[k];
+                return { ...sisanya, lokasi };
+            }),
+            total,
+        };
+    }
+
+    /**
+     * Ringkasan kondisi/status SELURUH aset ruangan (FR-03.2 langkah 2),
+     * TANPA paginasi/filter daftar — kartu ringkasan selalu menghitung
+     * keseluruhan isi ruangan, bukan hasil filter yang sedang ditampilkan.
+     */
+    async ringkasanRuangan(ctx: AuthContext, roomId: number): Promise<readonly RingkasanBarisRow[]> {
+        let q = this.query(ctx)
+            .selectFrom("assets")
+            .select(["kondisi", "status", sql<string>`count(*)`.as("jumlah")])
+            .where("room_id", "=", String(roomId))
+            .where("dihapuskan", "=", false)
+            .groupBy(["kondisi", "status"]);
+        if (ctx.scopeOf("asset.view") === "restricted") {
+            q = q.where("boleh_dipinjam_siswa", "=", true);
+        }
+        return q.execute();
+    }
+
+    async roomExists(ctx: AuthContext, roomId: number): Promise<boolean> {
+        return (
+            (await this.query(ctx)
+                .selectFrom("rooms")
+                .select("id")
+                .where("id", "=", String(roomId))
+                .executeTakeFirst()) !== undefined
+        );
+    }
+
+    async findKategoriById(ctx: AuthContext, id: number): Promise<KategoriRow | undefined> {
+        return this.query(ctx)
+            .selectFrom("asset_categories")
+            .select(["id", "kode"])
+            .where("id", "=", String(id))
+            .executeTakeFirst();
+    }
+
+    /** BR-009: lokasi penempatan wajib AKTIF (pola `work_unit_id`, SDD-05 §4.7c). */
+    async findRuanganAktifById(ctx: AuthContext, id: number): Promise<RuanganRow | undefined> {
+        return this.query(ctx)
+            .selectFrom("rooms")
+            .select(["id", "kode"])
+            .where("id", "=", String(id))
+            .where("status", "=", "AKTIF")
+            .executeTakeFirst();
+    }
+
+    /** BR-003 A1: nomor seri duplikat ditolak dengan pesan spesifik sebelum INSERT. */
+    async existsNomorSeri(ctx: AuthContext, nomorSeri: string): Promise<boolean> {
+        return (
+            (await this.query(ctx)
+                .selectFrom("assets")
+                .select("id")
+                .where("nomor_seri", "=", nomorSeri)
+                .executeTakeFirst()) !== undefined
+        );
+    }
+
+    async ambilPengaturanKodeAset(ctx: AuthContext): Promise<PengaturanKodeAset> {
+        const baris = await this.query(ctx)
+            .selectFrom("system_settings")
+            .select(["key", "value"])
+            .where("key", "in", ["kode_aset.pola", "kode_aset.pemisah", "kode_aset.panjang_urut"])
+            .execute();
+        const peta = new Map(baris.map((b) => [b.key, b.value]));
+        const pola = peta.get("kode_aset.pola");
+        const pemisah = peta.get("kode_aset.pemisah");
+        const panjangUrut = peta.get("kode_aset.panjang_urut");
+        if (typeof pola !== "string" || typeof pemisah !== "string" || typeof panjangUrut !== "number") {
+            throw new Error("Pengaturan kode_aset.* hilang atau berbentuk salah (migration 0027).");
+        }
+        return { pola, pemisah, panjangUrut };
+    }
+
+    /**
+     * Nomor urut berikutnya untuk kombinasi (kategori, ruangan) — pola
+     * `document_counters` (SDD-AVL-09): `ON CONFLICT DO UPDATE` mengunci baris
+     * sehingga permintaan bersamaan atas kombinasi yang sama diserialisasi
+     * basis data, bukan kunci aplikasi yang dapat dilewati proses lain.
+     */
+    async nomorUrutBerikutnya(ctx: AuthContext, categoryId: number, roomId: number): Promise<string> {
+        const hasil = await sql<{ value: string }>`
+            INSERT INTO asset_code_counters (category_id, room_id, value)
+            VALUES (${categoryId}, ${roomId}, 1)
+            ON CONFLICT (category_id, room_id) DO UPDATE SET value = asset_code_counters.value + 1
+            RETURNING value
+        `.execute(this.query(ctx));
+        const urut = hasil.rows[0]?.value;
+        if (urut === undefined) {
+            throw new Error("Penghitung kode aset tidak mengembalikan nilai.");
+        }
+        return urut;
+    }
+
+    async insertAsset(ctx: AuthContext, data: AssetFields): Promise<AssetRow> {
+        return this.query(ctx)
+            .insertInto("assets")
+            .values({
+                kode_barang: data.kodeBarang,
+                nama: data.nama,
+                category_id: data.categoryId,
+                merek: data.merek,
+                model: data.model,
+                nomor_seri: data.nomorSeri,
+                tahun_perolehan: data.tahunPerolehan,
+                sumber_perolehan: data.sumberPerolehan,
+                nilai_perolehan: data.nilaiPerolehan,
+                room_id: data.roomId,
+                kondisi: data.kondisi,
+                dapat_dipinjam: data.dapatDipinjam,
+                boleh_dipinjam_siswa: data.bolehDipinjamSiswa,
+                penanggung_jawab_id: data.penanggungJawabId,
+                procurement_id: data.procurementId,
+                import_job_id: data.importJobId ?? null,
+                created_by: ctx.userId,
+                updated_by: ctx.userId,
+            })
+            .returning(KOLOM_ASSET)
+            .executeTakeFirstOrThrow();
+    }
+
+    /** Id yang benar-benar ada di antara `ids` — tautan dokumen M-06 (FR-06.1 A3, PR-03-06). */
+    async idTerdaftar(ctx: AuthContext, ids: readonly number[]): Promise<readonly number[]> {
+        if (ids.length === 0) return [];
+        const baris = await this.query(ctx).selectFrom("assets").select("id").where("id", "in", ids.map(String)).execute();
+        return baris.map((b) => Number(b.id));
+    }
+
+    /** `PATCH /assets/{id}/condition` (FR-04.3 langkah 1): baris lengkap, termasuk `status` saat ini. */
+    /** `PUT /assets/{id}` (PR-02-46): baris aset terkunci + penanda terhapuskan. */
+    async kunciUntukUbah(ctx: AuthContext, id: number): Promise<(AssetRow & { readonly dihapuskan: boolean }) | undefined> {
+        return this.query(ctx)
+            .selectFrom("assets")
+            .select([...KOLOM_ASSET, "dihapuskan"])
+            .where("id", "=", String(id))
+            .forUpdate()
+            .executeTakeFirst();
+    }
+    async markDisposed(ctx: AuthContext, id: string, tanggal: Date) {
+        await this.query(ctx).updateTable("assets").set({ dihapuskan: true, tanggal_penghapusan: tanggal, status: "TIDAK_TERSEDIA", updated_by: ctx.userId }).where("id", "=", id).execute();
+    }
+    async reinstateDisposed(ctx: AuthContext, id: string, roomId: string, kondisi: "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT") {
+        await this.query(ctx).updateTable("assets").set({ dihapuskan: false, tanggal_penghapusan: null, room_id: roomId, kondisi, status: kondisi === "RUSAK_BERAT" ? "TIDAK_TERSEDIA" : "TERSEDIA", updated_by: ctx.userId }).where("id", "=", id).execute();
+    }
+
+    /** BR-003 pada penyuntingan: nomor seri unik di antara aset LAIN. */
+    async nomorSeriDipakaiLain(ctx: AuthContext, nomorSeri: string, id: number): Promise<boolean> {
+        return (await this.query(ctx).selectFrom("assets").select("id").where("nomor_seri", "=", nomorSeri).where("id", "!=", String(id)).executeTakeFirst()) !== undefined;
+    }
+
+    /** Atribut deskriptif FR-04.3 langkah 2 (keputusan 93e) — lokasi, kondisi, status, kode, dan kategori tidak di sini. */
+    async updateAtribut(ctx: AuthContext, id: number, data: AtributAset): Promise<AssetRow> {
+        return this.query(ctx)
+            .updateTable("assets")
+            .set({
+                nama: data.nama,
+                merek: data.merek,
+                model: data.model,
+                nomor_seri: data.nomorSeri,
+                tahun_perolehan: data.tahunPerolehan,
+                dapat_dipinjam: data.dapatDipinjam,
+                boleh_dipinjam_siswa: data.bolehDipinjamSiswa,
+                penanggung_jawab_id: data.penanggungJawabId,
+                ...(data.sumberPerolehan === undefined ? {} : { sumber_perolehan: data.sumberPerolehan, nilai_perolehan: data.nilaiPerolehan ?? null }),
+                updated_by: ctx.userId,
+            })
+            .where("id", "=", String(id))
+            .returning(KOLOM_ASSET)
+            .executeTakeFirstOrThrow();
+    }
+
+    async findById(ctx: AuthContext, id: number): Promise<AssetRow | undefined> {
+        return this.query(ctx)
+            .selectFrom("assets")
+            .select(KOLOM_ASSET)
+            .where("id", "=", String(id))
+            .executeTakeFirst();
+    }
+
+    /**
+     * FR-04.3 langkah 4: memperbarui `kondisi`, dan `status` HANYA bila
+     * dinyatakan (BR-006/FR-04.3 A1/A2: `RUSAK_BERAT`/`HILANG` → `TIDAK_TERSEDIA`
+     * ditentukan pemanggil, bukan di sini — repository tidak berisi aturan bisnis).
+     */
+    async updateKondisi(
+        ctx: AuthContext,
+        id: number,
+        data: { kondisi: AssetCondition; status?: AssetStatus },
+    ): Promise<AssetRow> {
+        return this.query(ctx)
+            .updateTable("assets")
+            .set({
+                kondisi: data.kondisi,
+                ...(data.status === undefined ? {} : { status: data.status }),
+                updated_by: ctx.userId,
+            })
+            .where("id", "=", String(id))
+            .returning(KOLOM_ASSET)
+            .executeTakeFirstOrThrow();
+    }
+
+    /**
+     * FR-04.4 langkah 4: memindahkan `room_id`; `penanggung_jawab_id` HANYA bila
+     * dinyatakan (langkah 2 "penanggung jawab baru" opsional — tanpa itu, yang
+     * lama dipertahankan).
+     */
+    async updateLokasi(
+        ctx: AuthContext,
+        id: number,
+        data: { roomId: number; penanggungJawabId?: number },
+    ): Promise<AssetRow> {
+        return this.query(ctx)
+            .updateTable("assets")
+            .set({
+                room_id: data.roomId,
+                ...(data.penanggungJawabId === undefined ? {} : { penanggung_jawab_id: data.penanggungJawabId }),
+                updated_by: ctx.userId,
+            })
+            .where("id", "=", String(id))
+            .returning(KOLOM_ASSET)
+            .executeTakeFirstOrThrow();
+    }
+
+    /** FR-04.4 AC: riwayat mutasi memuat lokasi asal, tujuan, tanggal, pelaku, dan alasan. */
+    async insertMutasi(
+        ctx: AuthContext,
+        data: {
+            readonly documentId: string;
+            readonly assetId: number;
+            readonly roomAsalId: string;
+            readonly roomTujuanId: number;
+            readonly tanggal: string;
+            readonly alasan: string;
+            readonly dilakukanOleh: number;
+        },
+    ): Promise<void> {
+        await this.query(ctx)
+            .insertInto("asset_movements")
+            .values({
+                document_id: data.documentId,
+                asset_id: data.assetId,
+                room_asal_id: data.roomAsalId,
+                room_tujuan_id: data.roomTujuanId,
+                tanggal: data.tanggal,
+                alasan: data.alasan,
+                dilakukan_oleh: data.dilakukanOleh,
+            })
+            .execute();
+    }
+
+    /** BR-007: setiap perubahan kondisi wajib tercatat (nilai lama → baru, pelaku, waktu, alasan). */
+    async insertRiwayatKondisi(
+        ctx: AuthContext,
+        data: {
+            readonly assetId: number;
+            readonly kondisiLama: AssetCondition;
+            readonly kondisiBaru: AssetCondition;
+            readonly alasan: string;
+            readonly referensiJenis: string | null;
+            readonly referensiId: number | null;
+            readonly diubahOleh: number;
+            readonly diubahPada: Date;
+        },
+    ): Promise<void> {
+        await this.query(ctx)
+            .insertInto("asset_condition_history")
+            .values({
+                asset_id: data.assetId,
+                kondisi_lama: data.kondisiLama,
+                kondisi_baru: data.kondisiBaru,
+                alasan: data.alasan,
+                referensi_jenis: data.referensiJenis,
+                referensi_id: data.referensiId,
+                diubah_oleh: data.diubahOleh,
+                diubah_pada: data.diubahPada,
+            })
+            .execute();
+    }
+}
+
+/** Gerbang kompilasi `ScopedRepository` (SDD-AUTH-02). */
+export function createAssetRepository(executor: QueryExecutor): AssetRepository {
+    return defineRepository(new AssetRepository(executor));
+}

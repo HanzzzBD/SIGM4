@@ -1,0 +1,169 @@
+// Skema Zod M-04 (SDD-API-01). Uji negatif adalah acceptance PR-01-07 yang
+// sebenarnya: permintaan yang tidak sah wajib ditolak SEBELUM lapisan layanan.
+
+import { describe, expect, it } from "vitest";
+import {
+    AssetIdParamSchema,
+    CreateAssetBodySchema,
+    ListRoomAssetsQuerySchema,
+    MoveAssetsBodySchema,
+    RoomIdParamSchema,
+    UpdateAssetConditionBodySchema,
+} from "../../../src/modules/m04-assets/schemas/asset.schema.js";
+
+const DASAR = {
+    nama: "Kursi Kelas",
+    category_id: "1",
+    tahun_perolehan: "2024",
+    sumber_perolehan: "PEMBELIAN",
+    room_id: "1",
+    kondisi: "BAIK",
+};
+
+describe("ListRoomAssetsQuerySchema (FR-03.2 langkah 4)", () => {
+    it("berbawaan page=1, per_page=25 tanpa filter apa pun", () => {
+        const hasil = ListRoomAssetsQuerySchema.parse({});
+        expect(hasil.page).toBe(1);
+        expect(hasil.per_page).toBe(25);
+        expect(hasil.kategori_id).toBeUndefined();
+        expect(hasil.kondisi).toBeUndefined();
+        expect(hasil.status).toBeUndefined();
+    });
+
+    it("menerima kombinasi filter kategori, kondisi, dan status (dapat digabung)", () => {
+        const hasil = ListRoomAssetsQuerySchema.parse({
+            kategori_id: "3",
+            kondisi: "RUSAK_RINGAN",
+            status: "DIPINJAM",
+        });
+        expect(hasil.kategori_id).toBe(3);
+        expect(hasil.kondisi).toBe("RUSAK_RINGAN");
+        expect(hasil.status).toBe("DIPINJAM");
+    });
+
+    it("menolak kondisi di luar katalog asset_condition (0002)", () => {
+        expect(() => ListRoomAssetsQuerySchema.parse({ kondisi: "SEDANG_DIPERBAIKI" })).toThrow();
+    });
+
+    it("menolak status di luar katalog asset_status (0002)", () => {
+        expect(() => ListRoomAssetsQuerySchema.parse({ status: "HILANG" })).toThrow();
+    });
+
+    it("menolak per_page di atas 100", () => {
+        expect(() => ListRoomAssetsQuerySchema.parse({ per_page: "101" })).toThrow();
+    });
+});
+
+describe("RoomIdParamSchema", () => {
+    it("menolak id bukan angka positif", () => {
+        expect(() => RoomIdParamSchema.parse({ id: "0" })).toThrow();
+        expect(() => RoomIdParamSchema.parse({ id: "-1" })).toThrow();
+    });
+});
+
+describe("CreateAssetBodySchema (FR-04.1 langkah 2-3, PR-02-11)", () => {
+    it("berbawaan dapat_dipinjam=true, boleh_dipinjam_siswa=false, jumlah_unit=1", () => {
+        const hasil = CreateAssetBodySchema.parse(DASAR);
+        expect(hasil.dapat_dipinjam).toBe(true);
+        expect(hasil.boleh_dipinjam_siswa).toBe(false);
+        expect(hasil.jumlah_unit).toBe(1);
+        expect(hasil.merek).toBeUndefined();
+        expect(hasil.nomor_seri).toBeUndefined();
+    });
+
+    it("menerima jumlah_unit hingga 500 (conventions.md E.5.1)", () => {
+        expect(CreateAssetBodySchema.parse({ ...DASAR, jumlah_unit: "500" }).jumlah_unit).toBe(500);
+    });
+
+    it("menolak jumlah_unit di luar 1..500", () => {
+        expect(() => CreateAssetBodySchema.parse({ ...DASAR, jumlah_unit: "0" })).toThrow();
+        expect(() => CreateAssetBodySchema.parse({ ...DASAR, jumlah_unit: "501" })).toThrow();
+    });
+
+    it("menolak sumber_perolehan di luar katalog Bab 11.3", () => {
+        expect(() => CreateAssetBodySchema.parse({ ...DASAR, sumber_perolehan: "SEWA" })).toThrow();
+    });
+
+    it("menolak kondisi di luar katalog asset_condition", () => {
+        expect(() => CreateAssetBodySchema.parse({ ...DASAR, kondisi: "SEDANG_DIPERBAIKI" })).toThrow();
+    });
+
+    it("menolak tahun_perolehan di luar pagar teknis 1900-2100", () => {
+        expect(() => CreateAssetBodySchema.parse({ ...DASAR, tahun_perolehan: "1899" })).toThrow();
+        expect(() => CreateAssetBodySchema.parse({ ...DASAR, tahun_perolehan: "2101" })).toThrow();
+    });
+
+    it("menerima nomor_seri/merek/model/nilai_perolehan/penanggung_jawab_id/procurement_id opsional", () => {
+        const hasil = CreateAssetBodySchema.parse({
+            ...DASAR,
+            merek: "Chitose",
+            model: "Galva",
+            nomor_seri: "SN-001",
+            nilai_perolehan: "150000",
+            penanggung_jawab_id: "2",
+            procurement_id: "9",
+        });
+        expect(hasil.merek).toBe("Chitose");
+        expect(hasil.nilai_perolehan).toBe(150000);
+        expect(hasil.penanggung_jawab_id).toBe(2);
+        expect(hasil.procurement_id).toBe(9);
+    });
+});
+
+describe("AssetIdParamSchema", () => {
+    it("menolak id bukan angka positif", () => {
+        expect(() => AssetIdParamSchema.parse({ id: "0" })).toThrow();
+        expect(() => AssetIdParamSchema.parse({ id: "-1" })).toThrow();
+    });
+});
+
+describe("UpdateAssetConditionBodySchema (FR-04.3 langkah 2-3, PR-02-13)", () => {
+    it("menerima kondisi + alasan tanpa referensi (bentuk minimal)", () => {
+        const hasil = UpdateAssetConditionBodySchema.parse({ kondisi: "RUSAK_RINGAN", alasan: "Tergores saat pemindahan" });
+        expect(hasil.kondisi).toBe("RUSAK_RINGAN");
+        expect(hasil.referensi_jenis).toBeUndefined();
+        expect(hasil.referensi_id).toBeUndefined();
+    });
+
+    it("BR-007: menolak alasan kosong", () => {
+        expect(() => UpdateAssetConditionBodySchema.parse({ kondisi: "RUSAK_RINGAN", alasan: "" })).toThrow();
+        expect(() => UpdateAssetConditionBodySchema.parse({ kondisi: "RUSAK_RINGAN", alasan: "   " })).toThrow();
+    });
+
+    it("menolak kondisi di luar katalog asset_condition", () => {
+        expect(() => UpdateAssetConditionBodySchema.parse({ kondisi: "SEDANG_DIPERBAIKI", alasan: "x" })).toThrow();
+    });
+
+    it("BR-012: menerima referensi_jenis + referensi_id (kewajibannya saat HILANG diperiksa service, bukan skema)", () => {
+        const hasil = UpdateAssetConditionBodySchema.parse({
+            kondisi: "HILANG",
+            alasan: "Tidak ditemukan saat stock opname",
+            referensi_jenis: "STOCK_OPNAME",
+            referensi_id: "42",
+        });
+        expect(hasil.referensi_jenis).toBe("STOCK_OPNAME");
+        expect(hasil.referensi_id).toBe(42);
+    });
+});
+
+describe("MoveAssetsBodySchema (FR-04.4 langkah 1-2, PR-02-14)", () => {
+    const DASAR_MUTASI = { asset_ids: ["1", "2"], room_tujuan_id: "3", tanggal_mutasi: "2026-09-26", alasan: "Penataan ulang" };
+
+    it("menerima bentuk minimal; penanggung_jawab_baru_id opsional", () => {
+        const hasil = MoveAssetsBodySchema.parse(DASAR_MUTASI);
+        expect(hasil.asset_ids).toEqual([1, 2]);
+        expect(hasil.penanggung_jawab_baru_id).toBeUndefined();
+    });
+
+    it("AC: menerima tepat 50 aset, menolak 0 dan 51", () => {
+        const n = (k: number) => Array.from({ length: k }, (_, i) => String(i + 1));
+        expect(MoveAssetsBodySchema.parse({ ...DASAR_MUTASI, asset_ids: n(50) }).asset_ids).toHaveLength(50);
+        expect(() => MoveAssetsBodySchema.parse({ ...DASAR_MUTASI, asset_ids: [] })).toThrow();
+        expect(() => MoveAssetsBodySchema.parse({ ...DASAR_MUTASI, asset_ids: n(51) })).toThrow();
+    });
+
+    it("menolak tanggal_mutasi bukan tanggal ISO dan alasan kosong", () => {
+        expect(() => MoveAssetsBodySchema.parse({ ...DASAR_MUTASI, tanggal_mutasi: "26/09/2026" })).toThrow();
+        expect(() => MoveAssetsBodySchema.parse({ ...DASAR_MUTASI, alasan: "   " })).toThrow();
+    });
+});

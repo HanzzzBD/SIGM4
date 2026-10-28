@@ -1,0 +1,17 @@
+// Permukaan publik m01-auth web (SDD-11 §4.1a): hanya berkas ini yang boleh diimpor dari luar modul.
+export { AktivasiDuaFaktorPage } from "./AktivasiDuaFaktorPage";
+export { GantiPasswordPage } from "./GantiPasswordPage";
+export { BannerSesiIdle, useSesiIdle } from "./idle";
+export { KerangkaMasuk, LoginPage, tujuanAman } from "./LoginPage";
+export type { AlasanLogin } from "./LoginPage";
+export { VerifikasiDuaFaktorPage } from "./VerifikasiDuaFaktorPage";
+export { ambilTantangan, login, logout, logoutSemua, perluDuaFaktor } from "./api";
+export type { HasilLogin, HasilLoginSesi, HasilLoginTantangan } from "./api";
+// Render QR SVG bertoken — dipakai juga P-18 (PR-02-45).
+export { KodeQr } from "./qr";
+export const loadForgotPasswordPage = () => import("./ForgotPasswordPage");
+export const loadProfilePage = () => import("./ProfilePage");
+export const loadSecurityPage = () => import("./SecurityPage");
+export const loadResetRequestsPage = () => import("./ResetRequestsPage");
+export { STATUS_RESET } from "./account-api";
+export type { StatusReset } from "./account-api";

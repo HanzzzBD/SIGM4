@@ -13,7 +13,7 @@ Berkas ini memuat bagian **normatif**: daftar role, matriks akses, katalog kode 
 | Bab 5 — daftar role & aturan role | Normatif | Berkas ini (PRD) |
 | Bab 18 — matriks permission per role | Normatif (ringkasan bagi non-teknis) | Berkas ini (PRD) |
 | Lampiran C.1 — konvensi penamaan & scope | Normatif | Berkas ini (PRD) |
-| Lampiran C.2 — katalog 78 kode permission | Normatif — sumber kebenaran tunggal RBAC | Berkas ini (PRD) |
+| Lampiran C.2 — katalog 81 kode permission | Normatif — sumber kebenaran tunggal RBAC | Berkas ini (PRD) |
 | Lampiran C.3 — aturan penegakan (`PM-01`…`PM-06`) | Normatif | Berkas ini (PRD) |
 | Middleware, `AuthContext`, scope di repository, serializer | **Rancangan** | [`../../SDD/03-authorization.md`](../../SDD/03-authorization.md) |
 | Cache permission, urutan gerbang sesi, otorisasi tool AI | **Rancangan** | [`../../SDD/03-authorization.md`](../../SDD/03-authorization.md) |
@@ -146,6 +146,7 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 - Format kode: `{domain}.{aksi}` — huruf kecil, titik sebagai pemisah.
 - Aksi baku: `view` · `create` · `update` · `delete` · `approve` · `execute` · `export` · `manage` (`manage` = create + update + delete pada domain tersebut).
 - Cakupan data (*scope*) bersifat ortogonal terhadap permission dan bernilai: `all` (seluruh data), `own` (hanya milik sendiri), `assigned` (hanya yang ditugaskan), `restricted` (subset terbatas, mis. katalog siswa). Simbol 🟡 pada Bab 18 setara dengan scope selain `all`.
+- **Cakupan lokasi** (`PM-07`…`PM-10`) adalah lapisan kedua yang **mengiris** hasil scope di atas menurut lokasi objek: pengguna role staf dapat dibatasi pada gedung, area, atau ruangan tertentu (keputusan pemilik produk 26 Oktober 2026). Pengguna tanpa cakupan lokasi tidak dibatasi.
 - Permission bertanda 🔒 adalah **permission inti** yang tidak dapat dicabut dari role Administrator (FR-02.2 A1).
 
 ### C.2 Katalog
@@ -171,6 +172,7 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 | `asset.export` | Aset | Mengekspor daftar aset | Admin, Petugas, Pimpinan |
 | `asset.qr_print` | Aset | Mencetak label QR | Admin, Petugas |
 | `asset.qr_regenerate` 🔒 | Aset | Meregenerasi UUID QR | Admin |
+| `asset_movement_document.view` | Aset | Melihat & mengunduh berita acara mutasi (M-04) | Admin, Petugas, Pimpinan |
 | `asset_document.view` | Dokumen | Melihat & mengunduh dokumen aset | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf |
 | `asset_document.manage` | Dokumen | Unggah & hapus dokumen aset | Admin, Petugas |
 | `reservation.view` | Reservasi | Melihat kalender & daftar reservasi | Semua (scope berbeda) |
@@ -179,6 +181,7 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 | `reservation.cancel_any` | Reservasi | Membatalkan reservasi pihak lain | Admin, Petugas |
 | `reservation.urgent` | Reservasi | Mengajukan di luar tenggat H-1 (BR-020) | Admin, Petugas |
 | `reservation.fixed_schedule` | Reservasi | Mengelola blokade jadwal tetap ruangan (FR-07.5) | Admin, Petugas |
+| `reservation.record_usage` | Reservasi | Mencatat penggunaan & kondisi ruangan pasca-kegiatan (FR-07.4) | Admin, Petugas |
 | `loan.view` | Peminjaman | Melihat transaksi peminjaman | Semua (scope berbeda) |
 | `loan.manage` | Peminjaman | Serah terima & pengembalian | Admin, Petugas |
 | `loan.direct` | Peminjaman | Peminjaman langsung tanpa reservasi | Admin, Petugas |
@@ -214,9 +217,9 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 | `disposal.approve` | Penghapusan | Menyetujui penghapusan | Pimpinan |
 | `disposal.execute` | Penghapusan | Mencatat pelaksanaan & menghapuskan | Admin, Petugas |
 | `disposal.reinstate` 🔒 | Penghapusan | Memulihkan aset terhapus | Admin |
-| `material.view` | Bahan | Melihat bahan, saldo, dan kartu stok | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf |
+| `material.view` | Bahan | Melihat bahan, saldo, dan kartu stok | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa(`restricted`) |
 | `material.manage` | Bahan | Kelola master bahan & kategori bahan | Admin, Petugas |
-| `material.request` | Bahan | Mengajukan & membatalkan permintaan bahan | Admin, Petugas, Teknisi, Guru, Staf |
+| `material.request` | Bahan | Mengajukan & membatalkan permintaan bahan | Admin, Petugas, Teknisi, Guru, Staf, Siswa(`restricted`) |
 | `material.receive` | Bahan | Mencatat penerimaan bahan | Admin, Petugas |
 | `material.issue` | Bahan | Menyerahkan bahan kepada pemohon | Admin, Petugas |
 | `material.adjust` | Bahan | Menyesuaikan saldo dengan alasan wajib | Admin, Petugas |
@@ -236,9 +239,13 @@ Sistem menggunakan **Role-Based Access Control (RBAC)**. Terdapat 7 role bawaan.
 
 | Kode | Requirement |
 |---|---|
-| PM-01 | Setiap endpoint pada Bab 17 wajib mendeklarasikan **tepat satu** permission dari katalog ini; endpoint tanpa deklarasi ditolak pada tahap *code review* |
+| PM-01 | Setiap endpoint pada Bab 17 wajib mendeklarasikan **tepat satu** permission dari katalog ini; endpoint tanpa deklarasi ditolak pada tahap *code review*. Dua golongan endpoint tidak punya permission katalog dan **wajib menyatakannya eksplisit**, bukan diam: endpoint *publik* (tanpa autentikasi, mis. login) dan endpoint *"Bearer"* (hanya menuntut autentikasi karena datanya milik pemanggil sendiri, mis. `/me`, logout, daftar perangkat) |
 | PM-02 | Penegakan dilakukan sebagai *middleware* server; UI hanya menyembunyikan menu sebagai kenyamanan, bukan sebagai kontrol (NFR-S-05) |
 | PM-03 | *Scope* data (`all`/`own`/`assigned`/`restricted`) diterapkan pada lapisan repository sebagai filter wajib, bukan sebagai parameter opsional yang bisa dilupakan pemanggil |
 | PM-04 | Endpoint `GET /me` mengembalikan daftar kode permission efektif beserta scope-nya, dan menjadi satu-satunya sumber bagi klien untuk merender menu dan kartu dashboard (19.1) |
 | PM-05 | Perubahan matriks berlaku pada permintaan berikutnya tanpa restart; cache permission per pengguna maksimum 60 detik |
+| PM-07 | **Cakupan lokasi pengguna** (`FR-02.3`): himpunan simpul lokasi — gedung, area, atau ruangan — yang ditetapkan Administrator per pengguna. Sebuah simpul mencakup seluruh turunannya, termasuk area dan ruangan yang ditambahkan kemudian. Himpunan kosong berarti **tidak dibatasi**, sehingga akun yang ada tetap berperilaku sama |
+| PM-08 | Cakupan lokasi diterapkan pada lapisan repository **setelah** scope `PM-03`, sebagai irisan wajib yang sama mengikatnya. Objek dinilai menurut lokasinya: aset — ruangannya; saldo & transaksi bahan — lokasi penyimpanannya; reservasi — ruangan atau aset yang dipesan; peminjaman, kerusakan, work order, jadwal pemeliharaan, penghapusan — aset/ruangan terkait; sesi opname — seluruh lokasi cakupannya harus berada dalam cakupan pengguna; usulan pengadaan — lokasi tujuannya (`FR-14.1`); permintaan bahan — lokasi penyimpanan asalnya (`FR-22.4`). Laporan, dashboard, dan analitik hanya menghitung lokasi dalam cakupan. Objek tanpa lokasi hanya terlihat oleh pengguna tanpa cakupan lokasi. Objek yang menyentuh beberapa lokasi terlihat bila **seluruh** lokasinya berada dalam cakupan |
+| PM-09 | Operasi tulis yang memindahkan objek antar-lokasi — mutasi aset, pemindahan stok bahan, penerimaan pengadaan ke ruangan — wajib memiliki lokasi asal **dan** tujuan di dalam cakupan pemanggil; selain itu ditolak `403` tanpa efek |
+| PM-10 | `GET /me` mengembalikan cakupan lokasi pengguna (daftar simpul, atau kosong). Klien memakainya hanya untuk menyaring pilihan lokasi dan menampilkan penanda cakupan; penegakan tetap di server (`PM-02`) |
 | PM-06 | Bab 18 (matriks level modul) bersifat **ringkasan bagi pemangku kepentingan non-teknis**; bila terjadi perbedaan, **Lampiran C yang mengikat** |

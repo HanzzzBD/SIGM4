@@ -1,0 +1,4 @@
+nama_lengkap,email,nip_nis,kode_role,kode_unit_kerja,kelas,telepon,consent_wali
+Contoh Guru,guru.contoh@sekolah.example,198001012005011001,R-05,MAPEL-MTK,,081234567890,
+Contoh Staf TU,staf.contoh@sekolah.example,199002022015012002,R-06,TU-01,,,
+Contoh Siswa,siswa.contoh@sekolah.example,0012345678,R-07,KELAS-X1,X-1,,true

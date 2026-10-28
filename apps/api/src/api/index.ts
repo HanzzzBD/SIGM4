@@ -1,0 +1,807 @@
+import { assetExportsRouter,assetExportRoutes,reportExportsRouter,reportExportRoutes,analyticsRouter,analyticsRoutes } from "../modules/m16-analytics/index.js";
+import type { AnalyticsProviderRegistry } from "../modules/m16-analytics/index.js";
+import { materialsRouter,materialRoutes, materialBusinessRouter, materialBusinessRoutes } from "../modules/m22-materials/index.js";
+import { materialUnitsRouter,materialUnitRoutes } from "../modules/m20-settings/index.js";
+import { materialQrRouter,materialQrPrintRoute } from "../modules/m05-qr/index.js";
+// Entrypoint HTTP sigm4-api (SDD-SYS-08). Satu basis kode, dua entrypoint —
+// worker/index.ts adalah yang kedua, dan keduanya dibangun menjadi satu image
+// (SDD-REPO-04, SDD-INF-01).
+//
+// Yang dibangun PR-00-09 adalah GERBANG bootstrap-nya: registri route divalidasi
+// sebelum apa pun berjalan, dan dokumen OpenAPI diturunkan darinya. PR-00-14
+// merakit server Express minimal agar kedua probe kesehatan dapat dipanggil;
+// PR-00-15 memasang dari rantai SDD-06 §4.2: `requestId`, header keamanan, rate
+// limit, 404, dan `errorMapper`. Middleware permission (`authorize`, PM-02) ada
+// sejak PR-01-15; `authenticate` — verifikasi token — sejak PR-02-02.
+
+import type { Server } from "node:http";
+import { pathToFileURL } from "node:url";
+import express from "express";
+import type { Express } from "express";
+import type { Kysely } from "kysely";
+import { AuditLogger } from "../shared/audit/index.js";
+import { closeRedis, getRedis } from "../shared/cache/index.js";
+import type { Clock } from "../shared/clock/index.js";
+import { SystemClock } from "../shared/clock/index.js";
+import { readApiConfig, zonaProses } from "../shared/config/index.js";
+import type { DocumentationConfig } from "../shared/config/index.js";
+import { documentationRouter } from "./documentation.js";
+import type { PembangkitPdf } from "../shared/pdf/index.js";
+import { objectStorageCheck, PenyimpananS3 } from "../shared/storage/index.js";
+import type { PenyimpananObjek } from "../shared/storage/index.js";
+import { DomainError } from "../shared/errors/index.js";
+import { PembangkitPdfChromium } from "../shared/pdf/index.js";
+import {
+    assertDatabaseTimeZoneUtc,
+    closeDb,
+    getDb,
+} from "../shared/db/index.js";
+import type { Database } from "../shared/db/index.js";
+import {
+    PermissionCache,
+    SessionStore,
+    authenticate,
+    authenticated,
+    authorize,
+    gerbangGantiPassword,
+} from "../shared/auth/index.js";
+import type { SessionChecker } from "../shared/auth/index.js";
+
+import type { JwtKeys, KotakRahasia } from "../shared/security/index.js";
+import { RedisRateLimiter, RouteRegistry } from "../shared/http/index.js";
+import type { RateLimiter } from "../shared/http/index.js";
+import { Penghenti, tutupServer } from "../shared/lifecycle/index.js";
+import type { LangkahHenti } from "../shared/lifecycle/index.js";
+import {
+    HealthRegistry,
+    Logger,
+    databaseCheck,
+    redisCheck,
+} from "../shared/observability/index.js";
+import type { AuthModuleDeps, PenyimpanTantangan } from "../modules/m01-auth/index.js";
+import {
+    PenyimpanTantanganRedis,
+    authRouter,
+    buatPenerbitPasswordSementara,
+    buatPengelolaDuaFaktor,
+    cabutSesiRoute,
+    enrollDuaFaktorRoute,
+    forgotPasswordRoute,
+    gantiPasswordRoute,
+    kodeCadanganBaruRoute,
+    konfirmasiDuaFaktorRoute,
+    lihatProfilRoute,
+    listPermintaanResetRoute,
+    listSesiRoute,
+    statusDuaFaktorRoute,
+    loginRoute,
+    logoutRoute,
+    logoutSemuaRoute,
+    perbaruiProfilRoute,
+    listToursRoute,
+    updateTourRoute,
+    refreshRoute,
+    terbitkanResetRoute,
+    tolakResetRoute,
+    verifyDuaFaktorRoute,
+} from "../modules/m01-auth/index.js";
+import {
+    createUserRoute,
+    getUserRoute,
+    getUserImportRoute,
+    userImportTemplateRoute,
+    classPromotionRoute,
+    importUsersRoute,
+    createRoleRoute,
+    listPermissionsRoute,
+    listRolesRoute,
+    listUsersRoute,
+    resetUserDuaFaktorRoute,
+    resetUserPasswordRoute,
+    terbitkanKodeAktivasiRoute,
+    updateRolePermissionsRoute,
+    updateUserRoute,
+    updateUserStatusRoute,
+    usersRouter,
+} from "../modules/m02-users/index.js";
+import {
+    createAreaRoute,
+    createBuildingRoute,
+    createRoomRoute,
+    getLocationTreeRoute,
+    getRoomRoute,
+    exportLocationRoute,
+    locationsRouter,
+    updateBuildingStatusRoute,
+    updateRoomRoute,
+    updateRoomStatusRoute,
+} from "../modules/m03-locations/index.js";
+import {
+    assetsRouter,
+    createAssetRoute,
+    createCategoryRoute,
+    deleteCategoryRoute,
+    listCategoriesRoute,
+    updateCategoryRoute,
+    listAssetsRoute,
+    listRoomAssetsRoute,
+    moveAssetsRoute,
+    updateAssetConditionRoute,
+    getAssetRoute,
+    assetTimelineRoute,
+    assetPhotosRoute,
+    updateAssetRoute,
+    importAssetsRoute, getAssetImportRoute, assetImportTemplateRoute, movementDocumentRoute, movementDocumentDownloadRoute,
+} from "../modules/m04-assets/index.js";
+import { assetByUuidRoute, printQrRoute, publicAssetRoute, qrConfigRoute, qrRouter, qrTerpasangRoute, regenerateQrRoute } from "../modules/m05-qr/index.js";
+import {
+    approvalRouter,
+    createRuleRoute,
+    decideRoute,
+    delegateRoute,
+    historyRoute,
+    listPendingRoute,
+    listRulesRoute,
+    previewRuleRoute,
+    ruleStatusRoute,
+    updateRuleRoute,
+} from "../modules/m10-approval/index.js";
+import type { PenanganHasil } from "../modules/m10-approval/index.js";
+import {
+    KlienClamd,
+    avScannerCheck,
+    buatPengelolaFotoProfil,
+    confirmRoute,
+    createDocumentRoute,
+    deleteDocumentRoute,
+    downloadDocumentRoute,
+    filesRouter,
+    listDocumentsRoute,
+    listAllDocumentsRoute,
+    presignRoute,
+    renewUploadRoute,
+} from "../modules/m06-documents/index.js";
+import { cancelReservationRoute, createBlockRoute, createReservationRoute, deactivateFixedScheduleRoute, deactivateManualBlockRoute, listBlocksRoute, previewBlockRoute, getReservationRoute, listReservationsRoute, previewReservationRoute, recordUsageRoute, reservationsRouter, roomAvailabilityRoute } from "../modules/m07-reservation-room/index.js";
+import { assetAvailabilityRoute, assetAvailabilityRouter } from "../modules/m08-reservation-item/index.js";
+import { workOrdersRouter, workOrderRoutes, maintenanceSchedulesRouter, maintenanceScheduleRoutes } from "../modules/m12-maintenance/index.js";
+import { procurementsRouter,procurementRoutes,PROCUREMENT_POLICY } from "../modules/m14-procurement/index.js";
+import { installStudentObligations, loanManagementRoutes, loanManagementRouter, loansRouter, readyCheckoutRoute, loanByAssetRoute, checkoutRoute, loanDetailRoute, checkinRoute, checkinPreviewRoute, loanResolveRoute, loanBorrowersRoute } from "../modules/m09-loans/index.js";
+import { privacyRouter, pseudonymizeUserRoute } from "../modules/m02-users/index.js";
+import { addDamageReportNoteRoute, createDamageReportRoute, damageReportsRouter, getDamageReportRoute, listDamageReportsRoute, openDamageReportRoute, verifyDamageReportRoute } from "../modules/m11-damage-reports/index.js";
+import { dashboardCardRoute, dashboardManifestRoute, dashboardRouter } from "../modules/m15-dashboard/index.js";
+import type { HubSse } from "../modules/m17-notifications/index.js";
+import {
+    buatHubSse,
+    deleteDeviceTokenRoute,
+    fcmCheck,
+    getPreferencesRoute,
+    updatePreferencesRoute,
+    registerDeviceTokenRoute,
+    listNotificationsRoute,
+    markAllReadRoute,
+    markReadRoute,
+    notificationsRouter,
+    streamNotificationsRoute,
+} from "../modules/m17-notifications/index.js";
+import {
+    activityLogRouter,
+    exportActivityLogsRoute,
+    getActivityLogRoute,
+    listActivityLogsRoute,
+} from "../modules/m18-activity-log/index.js";
+import {
+    activateAcademicYearRoute,
+    createAcademicYearRoute,
+    createHolidayRoute,
+    createWorkUnitRoute,
+    deleteHolidayRoute,
+    getSettingsRoute,
+    getWorkDaysRoute,
+    listAcademicYearsRoute,
+    listHolidaysRoute,
+    listWorkUnitsRoute,
+    settingsRouter,
+    updateAcademicYearRoute,
+    updateHolidayRoute,
+    updateSettingsRoute,
+    updateWorkDaysRoute,
+    updateWorkUnitRoute,
+    updateWorkUnitStatusRoute,
+} from "../modules/m20-settings/index.js";
+import {
+    healthLiveRoute,
+    healthReadyRoute,
+    healthRouter,
+    healthSummaryRoute,
+    healthSummaryRouter,
+} from "./health.js";
+import { roomScheduleImportRoutes } from "../modules/m07-reservation-room/index.js";
+import { BASE_PATH } from "./openapi.js";
+import { awalRantai, ujungRantai } from "./chain.js";
+import { rateLimit } from "./security.js";
+import type { SecurityConfig } from "./security.js";
+
+/** Port container — `EXPOSE 3000` pada Dockerfile (SDD-16 §4.1). */
+const PORT = 3000;
+
+/**
+ * Registri milik proses ini. Hanya route yang benar-benar dipasang yang
+ * didaftarkan, agar OpenAPI tidak mengiklankan endpoint yang tidak dilayani.
+ */
+export const registry = new RouteRegistry().register(
+    ...roomScheduleImportRoutes,
+    ...analyticsRoutes,
+    ...reportExportRoutes,
+    ...assetExportRoutes,
+    healthLiveRoute,
+    healthReadyRoute,
+    healthSummaryRoute,
+    ...chatRoutes,
+    loginRoute,
+    verifyDuaFaktorRoute,
+    enrollDuaFaktorRoute,
+    konfirmasiDuaFaktorRoute,
+    kodeCadanganBaruRoute,
+    refreshRoute,
+    logoutRoute,
+    logoutSemuaRoute,
+    listSesiRoute,
+    statusDuaFaktorRoute,
+    cabutSesiRoute,
+    forgotPasswordRoute,
+    listPermintaanResetRoute,
+    terbitkanResetRoute,
+    tolakResetRoute,
+    lihatProfilRoute,
+    perbaruiProfilRoute,
+    listToursRoute,
+    updateTourRoute,
+    gantiPasswordRoute,
+    listUsersRoute,
+    createUserRoute,
+    getUserRoute,
+    pseudonymizeUserRoute,
+    updateUserRoute,
+    updateUserStatusRoute,
+    resetUserPasswordRoute,
+    resetUserDuaFaktorRoute,
+    terbitkanKodeAktivasiRoute,
+    importUsersRoute,
+    userImportTemplateRoute,
+    getUserImportRoute,
+    listRolesRoute,
+    createRoleRoute,
+    updateRolePermissionsRoute,
+    listPermissionsRoute,
+    getLocationTreeRoute,
+    getRoomRoute,
+    exportLocationRoute,
+    createBuildingRoute,
+    createAreaRoute,
+    createRoomRoute,
+    updateRoomRoute,
+    updateBuildingStatusRoute,
+    updateRoomStatusRoute,
+    listRoomAssetsRoute,
+    createAssetRoute,
+    importAssetsRoute, getAssetImportRoute, assetImportTemplateRoute, movementDocumentRoute, movementDocumentDownloadRoute,
+    listAssetsRoute,
+    getAssetRoute,
+    assetTimelineRoute,
+    assetPhotosRoute,
+    updateAssetRoute,
+    updateAssetConditionRoute,
+    moveAssetsRoute,
+    assetByUuidRoute,
+    publicAssetRoute,
+    qrConfigRoute,
+    printQrRoute,
+    regenerateQrRoute,
+    qrTerpasangRoute,
+    presignRoute,
+    renewUploadRoute,
+    confirmRoute,
+    listDocumentsRoute,
+    listAllDocumentsRoute,
+    createDocumentRoute,
+    deleteDocumentRoute,
+    downloadDocumentRoute,
+    roomAvailabilityRoute,
+    assetAvailabilityRoute,
+    ...workOrderRoutes, ...procurementRoutes, ...materialRoutes, ...materialBusinessRoutes, ...materialUnitRoutes, materialQrPrintRoute,
+    ...maintenanceScheduleRoutes,
+    ...stocktakeRoutes,
+    ...disposalRoutes,
+    ...loanManagementRoutes, readyCheckoutRoute, loanByAssetRoute, checkoutRoute, loanDetailRoute, checkinRoute, checkinPreviewRoute,
+    loanResolveRoute, loanBorrowersRoute,
+    previewReservationRoute,
+    createReservationRoute,
+    cancelReservationRoute,
+    recordUsageRoute,
+    listReservationsRoute,
+    getReservationRoute,
+    listBlocksRoute,
+    previewBlockRoute,
+    createBlockRoute,
+    deactivateFixedScheduleRoute,
+    deactivateManualBlockRoute,
+    openDamageReportRoute,
+    listDamageReportsRoute,
+    createDamageReportRoute,
+    getDamageReportRoute,
+    verifyDamageReportRoute,
+    addDamageReportNoteRoute,
+    listCategoriesRoute,
+    createCategoryRoute,
+    updateCategoryRoute,
+    deleteCategoryRoute,
+    delegateRoute,
+    listPendingRoute,
+    decideRoute,
+    historyRoute,
+    listRulesRoute,
+    createRuleRoute,
+    updateRuleRoute,
+    ruleStatusRoute,
+    previewRuleRoute,
+    listNotificationsRoute,
+    streamNotificationsRoute,
+    markAllReadRoute,
+    markReadRoute,
+    getPreferencesRoute,
+    updatePreferencesRoute,
+    registerDeviceTokenRoute,
+    deleteDeviceTokenRoute,
+    dashboardManifestRoute,
+    dashboardCardRoute,
+    listActivityLogsRoute,
+    exportActivityLogsRoute,
+    getActivityLogRoute,
+    getSettingsRoute,
+    updateSettingsRoute,
+    classPromotionRoute,
+    listAcademicYearsRoute,
+    createAcademicYearRoute,
+    updateAcademicYearRoute,
+    activateAcademicYearRoute,
+    listHolidaysRoute,
+    createHolidayRoute,
+    updateHolidayRoute,
+    deleteHolidayRoute,
+    getWorkDaysRoute,
+    updateWorkDaysRoute,
+    listWorkUnitsRoute,
+    createWorkUnitRoute,
+    updateWorkUnitRoute,
+    updateWorkUnitStatusRoute,
+);
+
+/**
+ * Gerbang bootstrap (`PM-01`, `SDD-AUTH-01`). Dipanggil sebelum server menerima
+ * trafik: route tanpa deklarasi permission menggagalkan startup, bukan diam-diam
+ * terbuka.
+ */
+export function bootstrap(): RouteRegistry {
+    return registry.validateOrThrow();
+}
+
+export interface AppDeps {
+    /** Calculations are registered by PR-06-03…07; an absent registry exposes readiness only. */
+    readonly analyticsProviders?: AnalyticsProviderRegistry;
+    /** SDD-APR-17: daftar penangan hasil eksplisit (uji mesin approval generik); tanpa ini registri proses. */
+    readonly penanganHasil?: readonly PenanganHasil[];
+    readonly chat?: {readonly enabled:boolean;readonly provider:ChatProvider|null;readonly quota:ChatQuota|null};
+    /** PR-00-19: konfigurasi absent/production tidak memasang /api/docs. */
+    readonly documentation?: DocumentationConfig;
+    readonly health: HealthRegistry;
+    readonly limiter: RateLimiter;
+    readonly security: SecurityConfig;
+    readonly logger: Logger;
+    /** AuditLogger (AL-01) dan `withTransaction` butuh Clock — SDD-SYS-07. */
+    readonly clock: Clock;
+    /** `APP_BASE_URL` tervalidasi — dasar payload QR permanen (FR-05.1, PR-03-01). */
+    readonly appBaseUrl: string;
+    /** Pool Kysely bagi modul yang menulis basis data — m02-users sejak PR-01-02. */
+    readonly db: Kysely<Database>;
+    /** Penandatangan/pemverifikasi access token (SDD-SESS-02) dan permission efektif (PM-05). */
+    readonly auth: {
+        readonly jwtKeys: JwtKeys;
+        readonly permissions: PermissionCache;
+        /** Pemeriksa sesi hidup: access token dari sesi yang dicabut ditolak seketika (`PR-02-04`). */
+        readonly sessions: SessionChecker;
+        /** 2FA TOTP (`PR-02-07`): kunci enkripsi secret (`SDD-SESS-08`) dan penyimpan challenge (`SDD-SESS-10`). */
+        readonly twoFactor: {
+            readonly kotak: KotakRahasia;
+            readonly tantangan: PenyimpanTantangan;
+        };
+    };
+    /** Hub SSE proses ini (SDD-08 §4.3a) — ditutup saat berhenti; tanpa ini dibuat malas saat aliran pertama. */
+    readonly notifikasi?: { readonly hub: HubSse } | undefined;
+    /** Pembangkit PDF label QR (SDD-FS-12, `PR-03-02`); tanpa ini dipakai Chrome terpasang. */
+    readonly pdf?: PembangkitPdf | undefined;
+    /** Object storage (SDD-09, `PR-03-25`); tanpa ini unggah/unduh menjawab `503 STORAGE_UNAVAILABLE`. */
+    readonly penyimpanan?: PenyimpananObjek | undefined;
+}
+
+/** Penyimpanan yang tidak terpasang: setiap operasi gagal sebagai layanan eksternal tak tersedia (Bab 17.3). */
+const TANPA_PENYIMPANAN: PenyimpananObjek = {
+    urlUnggah: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
+    urlUnduh: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
+    info: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
+    ambil: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
+    hapus: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
+    simpan: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
+    periksa: () => Promise.reject(new DomainError("STORAGE_UNAVAILABLE")),
+};
+
+/** Merakit aplikasi tanpa membuka port — dipakai proses dan uji. */
+export function createApp(deps: AppDeps): Express {
+    bootstrap();
+    installStudentObligations();
+    const app = express();
+    // Satu hop: trafik produksi masuk lewat Nginx (SDD-16 §4.2), sehingga `req.ip`
+    // adalah IP klien — kunci rate limit bagi permintaan tanpa pengguna.
+    app.set("trust proxy", 1);
+    app.use(awalRantai(deps));
+    app.use(documentationRouter(registry, deps.documentation, deps.limiter, deps.logger));
+    // SDD-AUTH-09: authenticate → gerbang ganti password → (per route) permission.
+    app.use(
+        authenticate({
+            jwtKeys: deps.auth.jwtKeys,
+            permissions: deps.auth.permissions,
+            sessions: deps.auth.sessions,
+            clock: deps.clock,
+        }),
+    );
+    app.use(gerbangGantiPassword(`${BASE_PATH}/auth/`));
+    const penyimpanan = deps.penyimpanan ?? TANPA_PENYIMPANAN;
+    app.use(BASE_PATH, reportExportsRouter({db:deps.db,clock:deps.clock,audit:new AuditLogger({clock:deps.clock,logger:deps.logger}),storage:penyimpanan,...(deps.analyticsProviders?{providers:deps.analyticsProviders}:{})},r=>rateLimit(r,deps.limiter,deps.logger),authorize));
+    app.use(BASE_PATH,assetExportsRouter({db:deps.db,clock:deps.clock,audit:new AuditLogger({clock:deps.clock,logger:deps.logger}),storage:penyimpanan},r=>rateLimit(r,deps.limiter,deps.logger),authorize));
+    app.use(BASE_PATH,analyticsRouter({db:deps.db,clock:deps.clock,...(deps.analyticsProviders?{providers:deps.analyticsProviders}:{})},r=>rateLimit(r,deps.limiter,deps.logger),authorize));
+    app.use(BASE_PATH,chatRouter({db:deps.db,clock:deps.clock,audit:new AuditLogger({clock:deps.clock,logger:deps.logger}),enabled:deps.chat?.enabled??false,provider:deps.chat?.provider??null,quota:deps.chat?.quota??null},r=>rateLimit(r,deps.limiter,deps.logger),authorize));
+    // M-01 dipakai dua tempat: routernya sendiri dan pintu reset password langsung milik M-02
+    // (`POST /users/{id}/reset-password`) — satu deps, tanpa m02 mengimpor internal m01.
+    const authDeps: AuthModuleDeps = {
+        db: deps.db,
+        jwtKeys: deps.auth.jwtKeys,
+        permissionCache: deps.auth.permissions,
+        auditLogger: new AuditLogger({
+            clock: deps.clock,
+            logger: deps.logger,
+        }),
+        clock: deps.clock,
+        logger: deps.logger,
+        kotakTotp: deps.auth.twoFactor.kotak,
+        penyimpanTantangan: deps.auth.twoFactor.tantangan,
+        fotoProfil: buatPengelolaFotoProfil(deps.db, penyimpanan, deps.clock),
+    };
+    app.use(
+        BASE_PATH,
+        authRouter(
+            authDeps,
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authenticated,
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        healthRouter(deps.health, (route) =>
+            rateLimit(route, deps.limiter, deps.logger),
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        healthSummaryRouter(
+            deps.health,
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        usersRouter(
+            {
+                db: deps.db,
+                auditLogger: new AuditLogger({
+                    clock: deps.clock,
+                    logger: deps.logger,
+                }),
+                logger: deps.logger,
+                clock: deps.clock,
+                penerbitPassword: buatPenerbitPasswordSementara(authDeps),
+                pengelolaDuaFaktor: buatPengelolaDuaFaktor(authDeps),
+            },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        locationsRouter(
+            {
+                db: deps.db,
+                clock: deps.clock,
+                pdf: deps.pdf ?? new PembangkitPdfChromium(null),
+                auditLogger: new AuditLogger({
+                    clock: deps.clock,
+                    logger: deps.logger,
+                }),
+            },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        assetAvailabilityRouter({ db: deps.db, clock: deps.clock, storage: penyimpanan }, (route) => rateLimit(route, deps.limiter, deps.logger), authorize),
+    );
+    app.use(BASE_PATH, maintenanceSchedulesRouter({ db: deps.db, clock: deps.clock, audit: new AuditLogger({ clock: deps.clock, logger: deps.logger }) }, (route) => rateLimit(route, deps.limiter, deps.logger), authorize));
+    app.use(BASE_PATH, disposalsRouter({ db: deps.db, clock: deps.clock, storage: penyimpanan, pdf: deps.pdf ?? new PembangkitPdfChromium(null), audit: new AuditLogger({ clock: deps.clock, logger: deps.logger }) }, route => rateLimit(route, deps.limiter, deps.logger), authorize));
+    app.use(BASE_PATH, stocktakeRouter({ db: deps.db, clock: deps.clock, storage: penyimpanan, audit: new AuditLogger({ clock: deps.clock, logger: deps.logger }) }, (route) => rateLimit(route, deps.limiter, deps.logger), authorize));
+    app.use(BASE_PATH, workOrdersRouter({ db: deps.db, clock: deps.clock, storage:penyimpanan, audit: new AuditLogger({ clock: deps.clock, logger: deps.logger }) }, (route) => rateLimit(route, deps.limiter, deps.logger), authorize));
+    app.use(BASE_PATH, materialsRouter({db:deps.db,audit:new AuditLogger({clock:deps.clock,logger:deps.logger}),appBaseUrl:deps.appBaseUrl},r=>rateLimit(r,deps.limiter,deps.logger),authorize));
+    app.use(BASE_PATH, materialBusinessRouter({ db: deps.db, clock: deps.clock, audit: new AuditLogger({ clock: deps.clock, logger: deps.logger }), storage: penyimpanan }, r => rateLimit(r, deps.limiter, deps.logger), authorize));
+    app.use(BASE_PATH, materialUnitsRouter({db:deps.db,audit:new AuditLogger({clock:deps.clock,logger:deps.logger})},r=>rateLimit(r,deps.limiter,deps.logger),authorize));
+    app.use(BASE_PATH, materialQrRouter({db:deps.db,audit:new AuditLogger({clock:deps.clock,logger:deps.logger}),appBaseUrl:deps.appBaseUrl,pdf:deps.pdf??new PembangkitPdfChromium(null)},r=>rateLimit(r,deps.limiter,deps.logger),authorize));
+    app.use(BASE_PATH, procurementsRouter({db:deps.db,clock:deps.clock,storage:penyimpanan,audit:new AuditLogger({clock:deps.clock,logger:deps.logger}),policy:PROCUREMENT_POLICY},route=>rateLimit(route,deps.limiter,deps.logger),authorize));
+    app.use(
+        BASE_PATH,
+        assetsRouter(
+            {
+                penyimpanan,
+                db: deps.db,
+                auditLogger: new AuditLogger({
+                    clock: deps.clock,
+                    logger: deps.logger,
+                }),
+                clock: deps.clock,
+                appBaseUrl: deps.appBaseUrl,
+            },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        qrRouter(
+            {
+                db: deps.db,
+                auditLogger: new AuditLogger({ clock: deps.clock, logger: deps.logger }),
+                appBaseUrl: deps.appBaseUrl,
+                pdf: deps.pdf ?? new PembangkitPdfChromium(null),
+            },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        filesRouter(
+            { db: deps.db, penyimpanan, auditLogger: new AuditLogger({ clock: deps.clock, logger: deps.logger }), clock: deps.clock },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authenticated,
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        reservationsRouter(
+            { db: deps.db, clock: deps.clock, auditLogger: new AuditLogger({ clock: deps.clock, logger: deps.logger }) },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(BASE_PATH, privacyRouter({ db: deps.db, clock: deps.clock, audit: new AuditLogger({ clock: deps.clock, logger: deps.logger }) }, route => rateLimit(route, deps.limiter, deps.logger), authorize));
+    app.use(BASE_PATH, loanManagementRouter({ db: deps.db, clock: deps.clock, audit: new AuditLogger({ clock: deps.clock, logger: deps.logger }), pdf: deps.pdf ?? new PembangkitPdfChromium(null) }, (route) => rateLimit(route, deps.limiter, deps.logger), authorize));
+    app.use(
+        BASE_PATH,
+        loansRouter({ db: deps.db, clock: deps.clock, audit: new AuditLogger({ clock: deps.clock, logger: deps.logger }), storage: penyimpanan }, (route) => rateLimit(route, deps.limiter, deps.logger), authorize),
+    );
+    app.use(
+        BASE_PATH,
+        damageReportsRouter(
+            { db: deps.db, clock: deps.clock, auditLogger: new AuditLogger({ clock: deps.clock, logger: deps.logger }), penyimpanan },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        approvalRouter(
+            {
+                db: deps.db,
+                auditLogger: new AuditLogger({
+                    clock: deps.clock,
+                    logger: deps.logger,
+                }),
+                clock: deps.clock,
+                ...(deps.penanganHasil ? { penanganHasil: deps.penanganHasil } : {}),
+            },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        notificationsRouter(
+            { db: deps.db, clock: deps.clock, logger: deps.logger, hub: deps.notifikasi?.hub },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        dashboardRouter(
+            {
+                db: deps.db,
+                clock: deps.clock,
+                auditLogger: new AuditLogger({
+                    clock: deps.clock,
+                    logger: deps.logger,
+                }),
+                health: deps.health,
+            },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        activityLogRouter(
+            {
+                db: deps.db,
+                auditLogger: new AuditLogger({
+                    clock: deps.clock,
+                    logger: deps.logger,
+                }),
+            },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(
+        BASE_PATH,
+        settingsRouter(
+            {
+                db: deps.db,
+                auditLogger: new AuditLogger({
+                    clock: deps.clock,
+                    logger: deps.logger,
+                }),
+            },
+            (route) => rateLimit(route, deps.limiter, deps.logger),
+            authorize,
+        ),
+    );
+    app.use(ujungRantai(deps));
+    return app;
+}
+
+/**
+ * Tenggat henti API. `stop_grace_period` api pada deploy/staging adalah 30 s; sisa
+ * 5 s milik pemaksaan dan penulisan log sebelum SIGKILL datang (keputusan 59).
+ */
+export const BATAS_HENTI_API_MS = 25_000;
+
+/**
+ * Urutan henti sigm4-api (`SDD-INF-04`, keputusan 58): readiness tidak siap,
+ * port berhenti menerima koneksi baru sementara permintaan berjalan dituntaskan,
+ * lalu koneksi ditutup. Proxy memindahkan trafik ke instance lain karena koneksi
+ * baru ke instance ini ditolak.
+ */
+export function langkahHentiApi(
+    health: HealthRegistry,
+    server: Server,
+    hub?: HubSse,
+): LangkahHenti[] {
+    return [
+        {
+            nama: "tandai-berhenti",
+            jalankan: () => {
+                health.tandaiBerhenti();
+                return Promise.resolve();
+            },
+        },
+        // Aliran SSE tak pernah selesai sendiri: tanpa ditutup lebih dulu, `server.close`
+        // menunggu sampai tenggat (SDD-INF-05, SDD-08 §4.3a).
+        ...(hub === undefined ? [] : [{ nama: "tutup-sse", jalankan: () => hub.tutup() }]),
+        {
+            nama: "tutup-server",
+            jalankan: () => tutupServer(server),
+            // Lewat tenggat: permintaan yang masih menggantung diputus.
+            paksa: () => {
+                server.closeAllConnections();
+                return Promise.resolve();
+            },
+        },
+        {
+            nama: "koneksi",
+            jalankan: async () => {
+                await closeRedis();
+                await closeDb();
+            },
+        },
+    ];
+}
+
+export async function start(
+    env: NodeJS.ProcessEnv = process.env,
+    zona: string = zonaProses(),
+): Promise<Penghenti> {
+    // Konfigurasi divalidasi sebelum koneksi apa pun dibuka: proses menolak menyala
+    // dengan konfigurasi tidak valid atau zona waktu bukan UTC (SDD-INF-08/09).
+    const config = readApiConfig(env, zona);
+    // Sesi basis data dipaksa UTC oleh createDb; pemeriksaan ini membuktikan
+    // paksaannya bekerja pada basis data yang sebenarnya (SDD-INF-09).
+    await assertDatabaseTimeZoneUtc(getDb());
+    const clock = new SystemClock();
+    const penyimpanan = new PenyimpananS3(config.objectStorage, clock);
+    const modelSetting=config.chat.enabled?await getDb().selectFrom("system_settings").select("value").where("key","=","chat.model").executeTakeFirst():undefined;
+    const chatProvider=config.chat.enabled&&config.chat.apiKey?new GeminiChatProvider(config.chat.apiKey,String(modelSetting?.value??DEFAULT_CHAT_MODEL)):null;
+    const health = new HealthRegistry().register(
+        databaseCheck(getDb()),
+        redisCheck(getRedis()),
+        // OBS-06: menentukan `ready` (SDD-15 §4.5) — tanpa object storage, unggah/unduh gagal.
+        objectStorageCheck(penyimpanan),
+        // OBS-06: clamd + kedalaman antrean pindai; tidak menentukan `ready` (SDD-15 §4.5, PR-03-05).
+        avScannerCheck(new KlienClamd(config.antivirus), getDb()),
+        // OBS-06: dilaporkan, tidak menentukan `ready` (SDD-15 §4.5, keputusan 80a).
+        fcmCheck(config.fcm),
+        {name:"llm",probe:async()=>{if(!chatProvider)return {status:"degraded",note:"Chatbot dinonaktifkan pada konfigurasi instalasi."};try{await chatProvider.probe();return {status:"up"};}catch{return {status:"down",note:"Layanan chatbot tidak tersedia; modul lain tetap berjalan."};}}},
+    );
+    const logger = new Logger({
+        clock,
+        modulBawaan: "api",
+        level: config.logLevel,
+    });
+    const hub = buatHubSse(clock, logger);
+    const server = createApp({
+        chat:{enabled:config.chat.enabled,provider:chatProvider,quota:config.chat.enabled?new RedisChatQuota(getRedis()):null},
+        documentation: config.documentation,
+        notifikasi: { hub },
+        health,
+        limiter: new RedisRateLimiter(getRedis(), clock),
+        security: { objectStorageOrigin: config.objectStoragePublicOrigin },
+        appBaseUrl: config.appBaseUrl,
+        pdf: new PembangkitPdfChromium(config.chromiumExecutablePath),
+        penyimpanan,
+        logger,
+        clock,
+        db: getDb(),
+        auth: {
+            jwtKeys: config.jwtKeys,
+            permissions: new PermissionCache(getDb(), getRedis()),
+            sessions: new SessionStore(getDb()),
+            twoFactor: { kotak: config.totpKey, tantangan: new PenyimpanTantanganRedis(getRedis()) },
+        },
+    }).listen(PORT);
+    return new Penghenti(langkahHentiApi(health, server, hub), {
+        batasMs: BATAS_HENTI_API_MS,
+        logger,
+    });
+}
+
+// Hanya bila berkas ini dijalankan sebagai proses (CMD Dockerfile), bukan saat diimpor.
+if (
+    process.argv[1] !== undefined &&
+    import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+    // SIGTERM/SIGINT hanya ditangkap di sini, saat berjalan sebagai proses: tanpa
+    // penangkap, `node` sebagai PID 1 container mengabaikan SIGTERM (SDD-INF-04).
+    start()
+        .then((penghenti) => penghenti.pasang())
+        .catch((galat: unknown) => {
+            // Level eksplisit: LOG_LEVEL yang tidak valid bisa jadi penyebab kegagalannya.
+            new Logger({
+                clock: new SystemClock(),
+                modulBawaan: "api",
+                level: "error",
+            }).error("Proses gagal menyala", galat);
+            process.exit(1);
+        });
+}
+import { stocktakeRouter, stocktakeRoutes } from "../modules/m13-audit-stocktake/index.js";
+import { disposalsRouter, disposalRoutes } from "../modules/m21-disposal/index.js";
+import { chatRouter,chatRoutes,GeminiChatProvider,RedisChatQuota,DEFAULT_CHAT_MODEL } from "../modules/m19-chatbot/index.js";
+import type { ChatProvider,ChatQuota } from "../modules/m19-chatbot/index.js";

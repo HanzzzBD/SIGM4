@@ -1,0 +1,81 @@
+// SDD-FE-08 (label enum = Bab 11.3), UX §5.3/UXD-01 (sidebar per permission & halaman terdaftar),
+// UX §8.3 (drill-down), keputusan 83.
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { FIELD_DSL, LABEL_ALASAN_PENGHAPUSAN, LABEL_JENIS_PENGAJUAN, LABEL_JENIS_RUANGAN, LABEL_KONDISI_ASET, LABEL_PRIORITAS, LABEL_STATUS_ASET, LABEL_STATUS_INSTANCE_APPROVAL, labelEnum } from "@sigm4/schemas";
+import { describe, expect, it } from "vitest";
+import { QueryClient } from "@tanstack/react-query";
+import { buatRouter } from "../../src/app/router";
+import { HALAMAN_TERDAFTAR, NAVIGASI, bisaDariScope, jalurDrilldown, navigasiTerlihat } from "../../src/shared/navigasi";
+
+const bab113 = readFileSync(resolve(process.cwd(), "../../docs/PRD/03-architecture/data-model.md"), "utf8");
+const nilaiBab = (kelompok: string): string[] => {
+    const baris = bab113.split("\n").find((l) => l.startsWith(`| **${kelompok}** |`));
+    return (baris?.split("|")[2] ?? "").split(",").map((s) => s.trim());
+};
+
+describe("peta label enum (SDD-FE-08) = PRD Bab 11.3 kata per kata", () => {
+    it.each([
+        ["Kondisi Aset", LABEL_KONDISI_ASET],
+        ["Status Aset", LABEL_STATUS_ASET],
+        ["Status Instance Approval", LABEL_STATUS_INSTANCE_APPROVAL],
+        ["Jenis Pengajuan (Approval)", LABEL_JENIS_PENGAJUAN],
+        ["Jenis Ruangan", LABEL_JENIS_RUANGAN],
+        ["Alasan Penghapusan", LABEL_ALASAN_PENGHAPUSAN],
+        ["Prioritas", LABEL_PRIORITAS],
+    ] as const)("%s", (kelompok, peta) => {
+        expect(Object.values(peta)).toEqual(nilaiBab(kelompok));
+    });
+
+    it("kode tertutup kamus D.2 bersama (PR-02-34) = kunci peta label Bab 11.3 — tidak ada nilai kondisi tanpa label", () => {
+        expect(FIELD_DSL["room_type"]?.nilaiSah).toEqual(Object.keys(LABEL_JENIS_RUANGAN));
+        expect(FIELD_DSL["disposal_reason"]?.nilaiSah).toEqual(Object.keys(LABEL_ALASAN_PENGHAPUSAN));
+        expect(FIELD_DSL["priority"]?.nilaiSah).toEqual(Object.keys(LABEL_PRIORITAS));
+    });
+
+    it("kode tak dikenal tidak pernah dirender mentah", () => {
+        expect(labelEnum(LABEL_KONDISI_ASET, "RUSAK_TOTAL")).toBe("Tidak diketahui");
+    });
+});
+
+describe("registri navigasi", () => {
+    const semua = (...p: string[]) => (x: string) => p.includes(x);
+
+    it("struktur UXD-01: Beranda + lima grup domain, Sistem terakhir; accent sesuai DSD-03", () => {
+        expect(NAVIGASI.map((g) => [g.label, g.accent])).toEqual([
+            ["Beranda", null],
+            ["Aset & Bahan", "accent-blue"],
+            ["Pemanfaatan", "accent-green"],
+            ["Perawatan", "accent-yellow"],
+            ["Pengawasan", "accent-purple"],
+            ["Sistem", "accent-gray"],
+        ]);
+    });
+
+    it("entri dirender hanya bila halamannya terdaftar DAN permission dipegang; grup kosong hilang", () => {
+        expect(navigasiTerlihat(bisaDariScope({ "dashboard.view": "all", "loan.view": "all", "material.view": "all" })).map((g) => [g.label, g.entri.map((e) => e.label)])).toEqual([["Beranda", ["Dashboard"]], ["Aset & Bahan", ["Bahan", "Scan QR"]], ["Pemanfaatan", ["Peminjaman", "Katalog Bahan", "Permintaan Bahan"]]]);
+        expect(navigasiTerlihat(semua("loan.view")).map((g) => g.entri.map((e) => e.label))).toEqual([["Peminjaman"]]);
+    });
+
+    it("BR-091a: material.view restricted (Siswa) menampilkan Katalog & Permintaan Bahan, bukan master Bahan P-80", () => {
+        const label = navigasiTerlihat(bisaDariScope({ "material.view": "restricted" })).flatMap((g) => g.entri.map((e) => e.label));
+        expect(label).toEqual(expect.arrayContaining(["Katalog Bahan", "Permintaan Bahan"]));
+        expect(label).not.toContain("Bahan");
+    });
+
+    it("HALAMAN_TERDAFTAR identik dengan route yang benar-benar ada di router", () => {
+        const router = buatRouter(new QueryClient());
+        const path = Object.keys(router.routesByPath).map((x) => (x.length > 1 && x.endsWith("/") ? x.slice(0, -1) : x));
+        // P-79 adalah anchor Perangkat pada P-77, bukan route kedua.
+        expect([...new Set(path)].sort()).toEqual([...new Set(Object.values(HALAMAN_TERDAFTAR).map((p) => p.split("#")[0]))].sort());
+    });
+
+    it("drill-down hanya menjadi tautan bila halaman sasarannya terdaftar; filter URL dipertahankan", () => {
+        expect(jalurDrilldown("P-75")).toBe("/monitoring-chatbot");
+        expect(jalurDrilldown("P-73?filter[aksi]=LOGIN_SUCCESS")).toBe("/activity-log?filter[aksi]=LOGIN_SUCCESS");
+        expect(jalurDrilldown("P-60?filter[status]=AKTIF")).toBe("/pengguna?filter[status]=AKTIF");
+        expect(jalurDrilldown(null)).toBeNull();
+        expect(jalurDrilldown("P-12?rentang=7_hari")).toBe("/?rentang=7_hari");
+        expect(jalurDrilldown("P-12 · P-70")).toBe("/");
+    });
+});

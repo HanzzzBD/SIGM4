@@ -114,9 +114,27 @@ _Tidak ada aturan bisnis yang dimiliki modul ini._
 
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
+| GET | `/public/qr/config` | Publik | Domain resmi `APP_BASE_URL` yang sama dengan pencetak PDF, untuk validasi origin oleh pemindai (FR-05.1/FR-05.2) |
 | GET | `/assets/by-uuid/{uuid}` | `asset.view` | Detail aset dari hasil scan QR |
 | GET | `/public/assets/{uuid}` | Publik | Info dasar aset untuk scan kamera bawaan |
-| POST | `/assets/qr/print` | `asset.update` | Hasilkan PDF label QR massal |
+| POST | `/assets/qr/print` | `asset.qr_print` | Hasilkan PDF label QR massal (1–200 aset; FR-05.1 langkah 2–4, A1) |
+| POST | `/materials/qr/print` | `material.qr_print` | PDF label untuk 1–200 jenis Bahan berbeda, tanpa kode aset; A4 3×8 / 4×10 / 2×5 |
+| POST | `/assets/{id}/qr/regenerate` | `asset.qr_regenerate` | Regenerasi UUID aset — QR lama otomatis tidak berlaku; alasan wajib (FR-05.1 A2, UX-04) |
+| PATCH | `/assets/qr-terpasang` | `asset.qr_print` | Menandai label QR terpasang (atau dilepas) untuk 1–200 aset sekaligus (FR-05.1 langkah 5) |
+
+Keputusan pengguna PR-05-23 (14 Oktober 2026): QR Bahan memuat
+`https://{domain}/b/{uuid}`. Kamera bawaan membuka alias privat Detail Bahan
+P-82; login dan `material.view` wajib sebelum membaca saldo. Tidak ada profil
+publik Bahan. Resolver privat `GET /materials/by-uuid/{uuid}` dimiliki M-22.
+Pemindai web/mobile mengenali namespace `/b/` sebagai jenis Bahan dan `/a/`
+sebagai unit Aset; UUID sama pada kedua tabel tetap tidak menyilangkan domain.
+Origin resmi dibaca pemindai dari konfigurasi backend, bukan alamat halaman
+peramban atau alamat transport API. Karena itu, label PDF tetap dapat dipindai
+ketika aplikasi dibuka melalui localhost pada pengembangan. Konfigurasi publik
+hanya memuat `app_base_url`; tidak memuat kredensial atau data aset.
+QR Bahan harus berupa HTTPS origin aplikasi, UUIDv4 persis, tanpa query,
+fragment atau kredensial URL. PDF memakai UUID yang sudah ada, ukuran QR minimal
+20 mm, koreksi M; satu label per jenis, nama opsional dan tanpa kode aset.
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
@@ -156,6 +174,7 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 |---|---|
 | `ASSET_QR_REGENERATED` | Regenerasi UUID QR |
 | `ASSET_QR_PRINTED` | Pencetakan label beserta jumlah |
+| `MATERIAL_QR_PRINTED` | Pencetakan label per jenis Bahan beserta ID, jumlah dan tata letak |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
 

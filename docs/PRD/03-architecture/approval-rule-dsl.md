@@ -38,8 +38,9 @@ Bila SDD dan lampiran ini berbeda, **lampiran ini yang berlaku** dan SDD wajib d
 
 - Node bertipe **grup** memiliki `operator` (`AND` \| `OR`) dan `conditions` (array).
 - Node bertipe **predikat** memiliki `field`, `op`, dan `value`.
-- Kedalaman bersarang maksimum **3 tingkat**; melebihi itu ditolak saat penyimpanan.
+- Kedalaman bersarang maksimum **3 tingkat grup** — grup akar adalah tingkat 1 dan predikat tidak menambah tingkat; grup tingkat ke-4 ditolak saat penyimpanan.
 - Kondisi kosong (`{}`) berarti **selalu cocok** — dipakai untuk aturan bawaan (BR-036).
+- Nilai field bertipe enum ditulis sebagai **kode teknis** (`R-07`, `LABORATORIUM`, `HILANG`), bukan label; label pada contoh lampiran ini bersifat ilustratif.
 
 ### D.2 Field yang Tersedia per Jenis Pengajuan
 
@@ -51,28 +52,32 @@ Bila SDD dan lampiran ini berbeda, **lampiran ini yang berlaku** dan SDD wajib d
 | `total_value` | decimal | Pengadaan, Penghapusan | Total estimasi / total nilai perolehan |
 | `item_count` | integer | Reservasi Aset, Pengadaan, Penghapusan, Permintaan Bahan | Jumlah unit/item |
 | `material_category_id` | integer[] | Permintaan Bahan | Kategori bahan yang diminta |
-| `material_qty_total` | integer | Permintaan Bahan | Total kuantitas bahan yang diminta — dasar ambang `BR-086` |
-| `material_value_total` | decimal | Permintaan Bahan | Perkiraan nilai total bahan yang diminta |
+| `material_qty_total` | integer | Permintaan Bahan | Total kuantitas untuk pemilihan rules; gate BR-086 menghitung setiap jenis tersendiri |
+| `material_value_total` | decimal | Belum diaktifkan | Menunggu sumber harga referensi sah; tidak tersedia pada validator/editor |
 | `duration_days` | integer | Reservasi Aset, Perpanjangan | Selisih hari mulai–selesai |
-| `duration_hours` | integer | Reservasi Ruangan | Durasi penggunaan ruangan |
+| `duration_hours` | integer | Reservasi Ruangan, Reservasi Aset | Durasi penggunaan ruangan |
 | `asset_category_id` | integer[] | Reservasi Aset, Penghapusan | Kategori aset yang diminta |
 | `asset_value_max` | decimal | Reservasi Aset | Nilai perolehan tertinggi di antara unit yang diminta |
-| `room_type` | enum | Reservasi Ruangan | Jenis ruangan |
-| `room_id` | integer[] | Reservasi Ruangan | Ruangan yang diminta |
-| `participant_count` | integer | Reservasi Ruangan | Perkiraan jumlah peserta |
-| `is_recurring` | boolean | Reservasi Ruangan | Pengajuan berulang atau tunggal |
-| `is_outside_operating_hours` | boolean | Reservasi Ruangan | Di luar jam operasional |
+| `room_type` | enum | Reservasi Ruangan, Reservasi Aset | Jenis ruangan |
+| `room_id` | integer[] | Reservasi Ruangan, Reservasi Aset | Ruangan yang diminta |
+| `participant_count` | integer | Reservasi Ruangan, Reservasi Aset | Perkiraan jumlah peserta |
+| `is_recurring` | boolean | Reservasi Ruangan, Reservasi Aset | Pengajuan berulang atau tunggal |
+| `is_outside_operating_hours` | boolean | Reservasi Ruangan, Reservasi Aset | Di luar jam operasional |
 | `lead_time_hours` | integer | Reservasi | Selisih waktu pengajuan ke waktu mulai |
 | `disposal_reason` | enum | Penghapusan | Alasan penghapusan |
 | `priority` | enum | Pengadaan | Prioritas usulan |
+
+Pada reservasi gabungan, satu instance `RESERVASI_ASET` menerima fakta aset dan ruangan. Fakta `room_type`, `room_id`, `participant_count`, dan `is_outside_operating_hours` hanya disediakan jika ada ruangan pendukung; `asset_value_max` dihitung dari unit yang benar-benar dialokasikan.
+
+Field di luar tabel ini, atau field yang tidak berlaku bagi `jenis_pengajuan` aturan, **ditolak saat penyimpanan** (`RE-08`). `RE-02` tetap berlaku sebagai pengaman saat evaluasi.
 
 ### D.3 Operator
 
 | `op` | Berlaku untuk tipe | Semantik |
 |---|---|---|
-| `eq` / `neq` | semua | Sama dengan / tidak sama dengan |
+| `eq` / `neq` | semua kecuali array | Sama dengan / tidak sama dengan |
 | `gt` / `gte` / `lt` / `lte` | numerik | Perbandingan numerik |
-| `in` / `not_in` | enum, array | Keanggotaan himpunan |
+| `in` / `not_in` | enum, array | Keanggotaan himpunan. Pada field array bermakna **irisan**: `in` cocok bila sedikitnya satu elemen ada di `value`; `not_in` cocok bila tidak satu pun ada. `value` berupa array tidak kosong |
 | `between` | numerik | `value` berupa `[min, max]`, inklusif |
 | `is_true` / `is_false` | boolean | Tanpa `value` |
 
@@ -118,7 +123,7 @@ Bila SDD dan lampiran ini berbeda, **lampiran ini yang berlaku** dan SDD wajib d
 |---|---|---|
 | `approver_type` | `role` \| `user` | Berdasarkan role atau pengguna spesifik |
 | `on_sla_breach` | `remind` \| `escalate` | Perilaku saat SLA terlampaui |
-| `fallback_approver` | `{ approver_type, approver_role \| approver_user_id }` | **Opsional, tingkat aturan** (bukan tingkat langkah). Dipakai bila seluruh langkah terlewati (`RE-11`). Bila tidak diisi, berlaku role Administrator |
+| `fallback_approver` | `{ approver_type, approver_role \| approver_user_id }` | **Opsional, tingkat aturan** (bukan tingkat langkah). Dipakai bila seluruh langkah terlewati (`RE-11`). Bila tidak diisi, berlaku role Administrator. Langkah fallback yang terbentuk ber-SLA **24 jam kerja** dengan `on_sla_breach = remind`, sama dengan aturan bawaan (RE-06) |
 | `terminal_on_exhausted_escalation` | `hold_and_alert` \| `auto_reject` | **Menutup celah menggantung**: perilaku bila seluruh eskalasi habis dan tetap tidak ada keputusan. Nilai bawaan `hold_and_alert` — pengajuan tetap menunggu namun Administrator dan Petugas Sarpras dialarmi (NT-47) |
 
 ### D.6 Contoh Aturan Lengkap
@@ -160,4 +165,13 @@ Bila SDD dan lampiran ini berbeda, **lampiran ini yang berlaku** dan SDD wajib d
 | RE-10 | Approver yang identik dengan pemohon menyebabkan langkah **dilewati** dan dicatat `dilewati — konflik kepentingan` (BR-039) |
 | RE-11 | Bila **seluruh** langkah terlewati, pengajuan diarahkan ke *fallback approver* — field **opsional** tingkat aturan (Lampiran D.5). Bila aturan tidak menetapkannya, berlaku role Administrator. Pengajuan tidak pernah otomatis disetujui karena kekosongan approver |
 | RE-12 | Delegasi (FR-10.2 A3) tidak memindahkan tanggung jawab audit: linimasa mencatat approver asli dan penerima delegasi |
+| RE-14 | Langkah bertipe `role` hanya menjadikan approver pemegang role yang **cakupan lokasinya meliputi seluruh lokasi objek pengajuan** (`PM-07`, `PM-08`). Bila tidak ada, approver adalah pemegang role itu yang **tanpa cakupan lokasi**; bila tetap tidak ada, langkah dilewati dan berlaku `RE-11`. Penyaringan dihitung saat langkah diaktifkan, bukan saat aturan disimpan |
 | RE-13 | Langkah yang approver-nya bertipe `user` dan pengguna tersebut **nonaktif saat langkah hendak diaktifkan** ditandai **dilewati** dengan alasan `dilewati — approver nonaktif`, dan pemrosesan lanjut ke langkah berikutnya. Bila seluruh langkah menjadi tidak tersedia karena sebab apa pun — konflik kepentingan (RE-10), approver nonaktif, atau gabungan keduanya — berlaku jalur fallback RE-11 yang sama. Administrator dialarmi (NT-47). Penonaktifan pengguna tidak pernah tertahan oleh instance yang sedang berjalan |
+
+### PR-05-19 — ambang bahan per jenis (14 Oktober 2026)
+
+Permintaan memakai jumlah per jenis master, lintas lokasi, dibandingkan batas M-20.
+Fakta material_qty_total dan material_category_id tersedia untuk pemilihan aturan
+di atas ambang. Field material_value_total dinonaktifkan sampai harga referensi sah
+tersedia; validator/editor tidak menawarkan kondisi nominal Bahan. Nilai estimasi
+usulan pengadaan tetap menjadi fakta M-14 sendiri.

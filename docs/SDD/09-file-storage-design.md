@@ -32,6 +32,8 @@
 | **SDD-FS-08** | Bucket bersifat **privat sepenuhnya**. Tidak ada objek yang dapat diakses tanpa tanda tangan, termasuk foto pada halaman publik QR — karena halaman itu memang tidak menampilkan foto (`DP-05`). |
 | **SDD-FS-09** | Berkas yatim (terunggah tetapi tidak pernah ditautkan ke entitas) dibersihkan job harian setelah **24 jam**. |
 | **SDD-FS-11** | Foto berwajah **tidak ikut dipseudonimkan maupun dihapus** saat `DP-04` dilayani (`DP-05a`). Tidak ada pipeline pengaburan wajah di sistem ini. Perlindungan foto tetap bersandar sepenuhnya pada `DP-05`: permission eksplisit, URL bertanda tangan berbatas waktu, dan larangan mutlak muncul di halaman publik QR (`SDD-FS-08`). Menutup `TBD-FS-A` (keputusan pemilik produk, 25 Agustus 2026; `UXD-14`). |
+| **SDD-FS-12** | PDF yang dihasilkan sistem (§4.6 — berita acara `FR-04.4`/`FR-13.3`/`FR-21.2`, label QR `NFR-P-07`) dirender **worker** dari HTML+CSS cetak memakai **Playwright (Chromium)**, mesin yang sama dengan E2E Web (`SDD-REPO-11`). Kepatuhan `NFR-C-07` (PDF 1.7, A4) diverifikasi uji, bukan diasumsikan. Chromium ikut ke dalam image bersama (`SDD-INF-01`) — konsekuensinya dicatat [SDD-16 §5](16-infrastructure-deployment.md). |
+| **SDD-FS-13** | URL object storage memakai gaya **path-style** (`{endpoint}/{bucket}/{key}`), didukung AWS S3 maupun MinIO tanpa DNS wildcard, sehingga seluruh berkas berbagi satu origin bagi CSP `img-src`. Dua endpoint dibedakan: `S3_ENDPOINT` untuk operasi sisi server (worker, API), dan `S3_PUBLIC_ENDPOINT` — origin yang dapat dijangkau peramban dan aplikasi mobile — untuk menandatangani presigned URL dan menyusun `img-src` ([SDD-13 §4.2](13-security-design.md)). SDK: **AWS SDK v3** (`@aws-sdk/client-s3` + `s3-request-presigner`), penyedia produksi **Backblaze B2** lewat API S3-compatible; `S3_REGION` wajib karena SigV4 B2 mengikat region bucket. `Content-Type` dan `Content-Length` ikut ditandatangani pada presigned PUT sehingga kebijakan §4.3 tidak dapat ditukar klien; waktu tanda tangan dari `Clock` (`SDD-SYS-07`) (`PR-03-04`, keputusan 5 log phase-03). |
 
 ---
 
@@ -46,6 +48,12 @@
 **SDD-FS-06 — kunci buram.** Nama berkas asli sering memuat informasi (`Faktur-Proyektor-Lab2-2026.pdf`) dan nama orang. Karena bucket privat, kebocoran nama objek seharusnya tidak terjadi — tetapi kunci buram menghilangkan seluruh kelas risiko itu, termasuk dari log akses object storage.
 
 **SDD-FS-07 — thumbnail asinkron.** Katalog aset dan daftar tiket kerusakan menampilkan banyak gambar sekaligus. Menyalurkan foto 1600 px (`MOB-MED-01`) untuk setiap kartu akan melanggar anggaran `NFR-P-03` (LCP ≤ 2,5 detik pada 4G).
+
+**SDD-FS-12 — satu mesin render, dipakai dua kali.** Dua keluaran PDF sistem ini menuntut hal yang berlawanan: 200 label QR (`NFR-P-07`, ≤ 30 detik) adalah tata letak berulang yang sederhana, sedangkan berita acara (`FR-13.3`, `FR-21.2`) adalah dokumen berformat yang isinya akan berubah seiring PRD. **pdfkit** unggul pada yang pertama — nol biner tambahan, memori kecil dan terduga pada worker satu instance (`JOB-02`) — dan mahal pada yang kedua, karena setiap perubahan tata letak menjadi penyesuaian koordinat.
+
+Playwright dipilih karena `SDD-REPO-11` sudah memasukkannya ke dalam repositori untuk E2E Web: mesin rendernya sudah ada, dan tim sudah harus mengenalnya. Tata letak menjadi HTML+CSS cetak — grid label dan dokumen berformat sama-sama menjadi pekerjaan CSS biasa, dan pratinjaunya dapat dibuka di peramban saat ditulis. **@react-pdf/renderer** ditolak di tengah: ia menghindari Chromium tetapi hanya mendukung subset CSS, sehingga `NFR-C-07` dan tata letak cetak justru menjadi verifikasi tambahan tanpa menghilangkan pekerjaan tata letaknya.
+
+Harganya tidak disembunyikan dan tidak kecil: Chromium ikut ke image yang dibagi API dan worker (`SDD-INF-01`), memperbesar image dan permukaan pindai `CD-01`. Ia diterima sebagai konsekuensi tercatat di [SDD-16 §5](16-infrastructure-deployment.md), dengan satu batas: bila ukuran image menjadi persoalan nyata, jalannya adalah **memisahkan image** — perubahan pada `SDD-INF-01` yang dinyatakan — bukan mengganti pembangkit PDF diam-diam. `NFR-P-07` diukur pada uji beban, bukan diasumsikan dari pilihan ini.
 
 **SDD-FS-11 — foto mengikuti penalaran `DP-04`, bukan mengecualikannya.** `DP-04` sudah menghadapi pertanyaan yang sama untuk data teks dan menjawabnya: permintaan penghapusan dilayani lewat **pseudonimisasi**, bukan penghapusan, justru agar catatan transaksi bertahan bagi audit sekolah (`BR-008`, `AL-03`). Memperlakukan foto secara berbeda akan membalik penalaran itu pada satu jenis data saja, tanpa alasan yang membedakannya.
 
@@ -69,13 +77,15 @@ CREATE TABLE stored_files (
     object_key   text        NOT NULL UNIQUE,   -- SDD-FS-06
     mime         text        NOT NULL,
     ukuran       bigint      NOT NULL,
-    checksum     text,                          -- SHA-256, diisi saat confirm
+    checksum     text,                          -- SHA-256, diisi saat confirm; NULL = belum dikonfirmasi
     scan_status  file_scan_status NOT NULL DEFAULT 'PENDING',
     scanned_at   timestamptz,
-    owner_type   text,                          -- 'asset_document' | 'damage_photo' | …
+    owner_type   file_owner_type NOT NULL,      -- Bab 11.3 "Jenis Pemilik Berkas"; jenis ditetapkan sejak presign (§4.3)
     owner_id     bigint,                        -- NULL = yatim (SDD-FS-09)
     uploaded_by  bigint NOT NULL REFERENCES users(id),
-    created_at   timestamptz NOT NULL DEFAULT now()
+    created_at   timestamptz NOT NULL DEFAULT now(),
+    thumb_key    text UNIQUE,                   -- turunan §4.5 (PR-03-07); NULL = jatuh ke asli
+    medium_key   text UNIQUE
 );
 
 CREATE INDEX stored_files_orphan
@@ -98,7 +108,8 @@ CREATE INDEX stored_files_pending_scan
      stored_files.scan_status = PENDING
      terbitkan event FileUploaded                  -> SDD-07
 
-4. Worker: ClamAV memindai
+4. Worker: magic bytes vs MIME (§4.3), lalu ClamAV memindai   antrean file-scan
+     setiap putusan akhir dicatat FILE_SCANNED (pelaku SYSTEM)
      bersih    -> CLEAN
      terinfeksi-> INFECTED + hapus objek + alarm keamanan
      gagal     -> FAILED, coba ulang maksimum 3x
@@ -110,6 +121,8 @@ CREATE INDEX stored_files_pending_scan
 
 Langkah 3 dan 5 sengaja terpisah: berkas dapat diunggah lebih dulu (mis. antrean unggah mobile, `MOB-OFF-02`) lalu ditautkan ketika transaksi bisnisnya siap.
 
+Urutan sebaliknya sah untuk **foto laporan kerusakan** (`FR-11.1 A2`, `MOB-OFF-02`/`MOB-OFF-04`; keputusan 20b log phase-03): `POST /damage-reports` menautkan pesanan `DAMAGE_PHOTO` hasil langkah 1 — milik pelapor, belum dimiliki, tidak `INFECTED` — sebelum langkah 3, sehingga tiket tercatat walau unggahannya masih di antrean perangkat. Foto yang belum dikonfirmasi = "foto tertunda" (`checksum` kosong); langkah 3 tetap berjalan sesudahnya tanpa syarat pemilik. Foto opname STOCKTAKE_PHOTO mengikuti urutan pesanan ditautkan sebelum unggah yang sama (keputusan M-13, 14 Oktober 2026); foto belum siap menghalangi submit, hanya CLEAN ditampilkan. Jenis lain tetap menuntut berkas terkonfirmasi saat ditautkan.
+
 ### 4.3 Kebijakan per jenis berkas
 
 | Jenis | MIME diizinkan | Maks | Sumber |
@@ -120,7 +133,8 @@ Langkah 3 dan 5 sengaja terpisah: berkas dapat diunggah lebih dulu (mis. antrean
 | Foto hasil work order | JPG, PNG | 2 MB | `FR-12.3` |
 | Foto opname | JPG, PNG | 2 MB | `FR-13.2` |
 | Foto profil | JPG, PNG | 2 MB | `FR-01.4` |
-| Berita acara PDF (dihasilkan sistem) | PDF | — | `FR-13.3`, `FR-21.2` |
+| Foto aset (`asset_photos`) | JPG, PNG | 2 MB | `MOB-MED-01` — disamakan dengan foto lain (`PR-03-25`, keputusan 7a log phase-03) |
+| Berita acara PDF (dihasilkan sistem) | PDF | — | `FR-04.4`, `FR-13.3`, `FR-21.2` |
 
 Validasi MIME dilakukan **dua kali**: saat presign (berdasarkan deklarasi klien) dan saat pemindaian (berdasarkan *magic bytes* isi berkas). Ketidakcocokan menandai berkas `INFECTED`.
 
@@ -128,7 +142,7 @@ Validasi MIME dilakukan **dua kali**: saat presign (berdasarkan deklarasi klien)
 
 ```
 GET /assets/{id}/documents/{docId}/download
-   1. permission asset_document.view + scope         PM-03
+   1. permission asset_movement_document.view + scope         PM-03
    2. stored_files.scan_status = CLEAN?  bila tidak -> 409 FILE_NOT_SCANNED
    3. terbitkan presigned GET, 15 menit               FR-06.1
    4. catat DOCUMENT_DOWNLOADED                       AL-* (FR-06.1 AC)
@@ -145,15 +159,18 @@ Respons berupa URL, bukan redirect, agar klien dapat menampilkan pratinjau tanpa
 | `medium` | 800 px | Pratinjau detail |
 | asli | ≤1600 px (dari `MOB-MED-01`) | Unduhan, bukti |
 
-Dibuat worker saat `FileUploaded` untuk MIME gambar. Kegagalan pembuatan turunan tidak menggagalkan apa pun; klien jatuh kembali ke berkas asli.
+Dibuat worker untuk MIME gambar (JPG/PNG) **setelah berkas diputus `CLEAN`** — konsumen event `FileScanned` menjadwalkan pekerjaan `file-derivatives`, sehingga pengolah gambar tidak pernah membuka berkas yang belum lolos ClamAV dan magic bytes (`PR-03-07`, keputusan 10b log phase-03). Pustaka **sharp** (libvips); keluaran **WebP**, sisi terpanjang tanpa pembesaran, orientasi EXIF diterapkan lalu seluruh metadata dibuang (lokasi GPS foto ponsel tidak ikut). Kuncinya `{kunci asli tanpa ekstensi}-{thumb|medium}.webp` dan dicatat `stored_files.thumb_key`/`medium_key`; penerbit URL memilih varian dan jatuh ke asli bila kolomnya NULL. Kegagalan pembuatan turunan tidak menggagalkan apa pun; klien jatuh kembali ke berkas asli. Turunan adalah cache teknis yang dapat dibuat ulang, tidak dicatat activity log.
 
 ### 4.6 Retensi & penghapusan
 
+**PDF mutasi sistem (`FR-04.4`, PR-02-39, SDD-FS-12).** Worker merender HTML cetak A4 dari snapshot tetap. Seluruh teks pengguna di-escape; JavaScript dan jaringan Chromium dimatikan. Worker memverifikasi header PDF 1.7, menyimpan pada bucket privat memakai kunci UUID yang telah dicatat operasi, lalu permukaan publik M-06 mendaftarkan `stored_files` dengan SHA-256, MIME PDF, ukuran aktual, owner_type `ASSET_MOVEMENT_DOCUMENT` dan owner_id operasi. Keluaran renderer terpercaya ini menjadi CLEAN langsung (bukan unggahan klien; ClamAV unggahan tetap wajib). Registrasi + status SIAP + audit atomik; hanya pelaku SYSTEM dapat mendaftarkan keluaran ini. Jenisnya tidak tersedia pada `/files/presign`. Pengulangan memakai advisory lock dan kunci tetap; setelah SIAP tidak merender/menulis lagi. Objek yang sempat terunggah sebelum transaksi registrasi gagal dihapus pada kegagalan percobaan; mutasi tidak diulang. Status GAGAL dapat dibaca, tidak menyediakan tombol eksekusi ulang (`SDD-EVT-10`). URL unduh melewati penjaga CLEAN M-06, 15 menit, diaudit oleh M-04.
+
 | Kondisi | Tindakan |
 |---|---|
-| Berkas yatim > 24 jam | Objek dan baris dihapus (`SDD-FS-09`) |
+| Berkas yatim > 24 jam | Baris lalu objek beserta turunannya dihapus (`SDD-FS-09`) oleh job harian `orphan-file-cleanup` 02:00 WIB, berpelaku SYSTEM dengan ringkasan `JOB-05`; baris dihapus lebih dulu dengan syarat masih yatim, sehingga berkas yang ditautkan tepat saat itu tidak kehilangan objeknya. Baris `INFECTED` dilewati — jejaknya dipertahankan (keputusan 10d log phase-03) |
 | Entitas induk dihapuskan | Berkas **tetap** disimpan — Bab 11.4 mengikat masa hidup berkas pada entitas induk yang sendiri tidak pernah dihapus permanen (`BR-008`) |
 | Dokumen dihapus pengguna | `stored_files` ditandai, objek dipertahankan, penghapusan tercatat (`FR-06.1 A2`) |
+| Foto profil diganti atau dihapus pemiliknya (`PUT /me`) | Foto lama dilepas (`owner_id` NULL) menjadi yatim dan dibersihkan `SDD-FS-09`; pergantiannya tercatat `PROFILE_UPDATED` (`PR-03-25`, keputusan 7b log phase-03) |
 | Berkas `INFECTED` | Objek dihapus segera; baris dipertahankan sebagai jejak |
 | Pseudonimisasi subjek data (`DP-04`) | Foto **tidak disentuh** — tidak dikaburkan, tidak dihapus (`DP-05a`, `SDD-FS-11`). Yang dipseudonimkan adalah kolom identitas pada `users`; foto tetap menjadi bukti, dilindungi `DP-05` |
 
@@ -196,3 +213,73 @@ Dibuat worker saat `FileUploaded` untuk MIME gambar. Kegagalan pembuatan turunan
 | **TBD-FS-B** | Apakah berkas perlu disalin ke penyimpanan dingin setelah entitasnya tidak aktif bertahun-tahun, atau cukup satu kelas penyimpanan. Berkaitan dengan estimasi biaya (PRD 27.9). |
 
 **Tertutup 25 Agustus 2026:** `TBD-FS-A` → `SDD-FS-11` · `DP-05a`.
+
+### Pembaruan URL unggah (PR-04-15)
+
+`SDD-MOB-04` menggunakan `POST /files/{id}/presign` untuk mengambil URL baru bagi pesanan yang belum dikonfirmasi. Object key/MIME/ukuran berasal dari registri berkas, bukan masukan klien; tidak menulis baris baru atau mengubah entitas. Kegagalan kepemilikan tidak membedakan berkas asing dan berkas yang tidak ada. Bila respons confirm hilang, klien mencoba confirm idempoten dengan checksum yang sama sebelum meminta URL baru.
+
+
+### Baca foto aset PR-05-32
+
+GET /assets/{id}/photos memeriksa asset.view dan scope melalui repository detail aset
+sebelum membaca asset_photos. Hanya tautan ke stored_files owner_type ASSET_PHOTO dibaca;
+berkas belum terkonfirmasi atau belum CLEAN mempunyai url/thumbnail_url/expires_at null.
+CLEAN terkonfirmasi diterbitkan melalui urlUnduhBerkas (medium dan thumb, fallback asli,
+900 detik). Metadata publik id/file_id/urutan/is_primary/status tidak membawa identitas
+pengunggah atau object key tersendiri. Respons no-store, paginasi page/per_page <=100,
+primary dahulu lalu urutan/id. Tidak ada endpoint penautan/unggah foto pada PR ini.
+
+### Jenis berkas pengadaan (PR-03-17/19)
+
+Kebijakan tiga owner_type pengadaan mengikuti kontrak M-06 dan FR-14.3 pada PRD
+M-14 §7. Penautan berlangsung setelah confirm: lampiran boleh PENDING saat
+pengajuan; dokumen/foto penerimaan wajib CLEAN. Pemilik registri dipertahankan
+pada penerimaan asal, sedangkan asset_documents dan asset_document_links menjadi
+jalur dokumen M-04/M-06 untuk setiap unit hasil penerimaan (`BR-065`).
+
+### Bukti penerimaan langsung Bahan — PR-05-18
+
+MATERIAL_RECEIPT_DOCUMENT memerlukan material.receive untuk presign, maksimal
+10 MB PDF/JPG/PNG/DOCX/XLSX. Confirm checksum dan worker pemindaian tetap M-06.
+Penerimaan hanya mengklaim berkas milik actor, terkonfirmasi CLEAN dan belum dipakai
+receipt lain; header/file link/ledger/audit commit bersama. Pembaca material.view
+membuka bukti melalui history terpaginasikan, URL CLEAN lewat urlUnduhBerkas M-06.
+Bukti pengadaan BAHAN memakai PROCUREMENT_RECEIPT_DOCUMENT pada receipt M-14,
+tidak disalin sebagai dokumen Aset ketika tidak ada unit Aset.
+
+
+### Ekspor privat M-16 — PR-06-08
+
+REPORT_EXPORT adalah keluaran renderer sistem terpercaya (PDF1.7/XLSX) yang
+terdaftar CLEAN/checksum pada stored_files. Client tidak dapat memesan owner_type
+ini lewat presign. Object key acak per pemohon/job, storage privat; registrasi
+file, status SIAP, audit dan ExportReady commit bersama setelah PUT. File berlaku
+24jam sejak siap; URL GET attachment paling lama300detik atau sisa umur file.
+Revalidasi SQL izin/role/version/scope dan membership own/assigned/restricted
+mendahului penandatanganan; Administrator tidak mengambil file pemohon lain.
+Cleanup15menit menghapus objek expired/terminal, melepas owner_id registri agar
+lifecycle yatim M-06 menghapus metadata, dan menandai object_removed_at untuk
+retry idempoten. Referensi file_id pada job dilepas sebelum GC; audit tidak dihapus.
+Job menyimpan key sejak awal sehingga objek dari worker terputus dapat dibersihkan.
+
+### Ekspor katalog M-04 — PR-02-47
+
+Kontrak [M-04 FR-04.2 A3](../PRD/02-modules/m04-assets.md) memakai job/file dan
+worker M-16 yang sama dengan jenis assets. M-04 menyediakan pembacaan scoped
+dan pemilihan kolom melalui index publik; M-16 merender/menyimpan keluaran.
+Route metadata milik M-04 disajikan adaptor infrastruktur sebelum /assets/:id.
+GET pengajuan memerlukan Idempotency-Key dan no-store; tidak boleh diprefetch.
+Filter dan metadata JSON tidak menyimpan isi aset atau file publik. Status/list/
+download khusus katalog hanya menerima jenis assets dan asset.export; route
+report.export tidak menjadi syarat tersembunyi bagi katalog. Query hash scope
+memakai predicate keanggotaan yang sama dengan ekspor. Retensi/cleanup/registrasi
+CLEAN mengikuti REPORT_EXPORT di atas, tanpa owner_type/migration baru.
+### Retensi laporan galat impor — PR-05-26
+
+Laporan impor pengguna/aset saat ini disimpan sebagai JSON dalam job, bukan objek
+unduh tersimpan pada M-06. Retensi 30×24 jam berlaku pada JSON galat, pesan galat,
+nama asli dan byte berkas tersisa sesudah job terminal. personal-data-retention
+membersihkannya melalui pemilik modul dan menandai report_purged_at, tanpa
+menghapus job/hitungan/audit/aset hasil impor. API dan UI menutup rincian pada
+tenggat walau cleanup tertunda. Unduhan CSV yang dirakit klien tidak menciptakan
+objek bucket; salinan yang telah diunduh berada di luar lifecycle server.

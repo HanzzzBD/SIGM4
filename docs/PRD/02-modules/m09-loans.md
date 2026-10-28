@@ -98,7 +98,7 @@ sequenceDiagram
 
     alt Tanggal kembali > jatuh tempo
         LOAN->>FINE: Hitung denda
-        FINE->>DB: Ambil tarif berlaku saat jatuh tempo
+        FINE->>DB: Ambil snapshot kebijakan saat check-out (BR-029)
         FINE->>FINE: denda = ceil(hari_terlambat) x tarif
         FINE->>DB: INSERT fine (status: Belum Dibayar)
     end
@@ -222,7 +222,7 @@ flowchart TB
 **Post Conditions** — Unit kembali tersedia atau masuk alur perbaikan; denda tercatat bila ada; riwayat peminjaman lengkap.
 
 **Acceptance Criteria**
-- [ ] Perhitungan denda tepat sesuai jumlah hari keterlambatan dan tarif yang berlaku saat jatuh tempo.
+- [ ] Perhitungan denda tepat sesuai jumlah hari keterlambatan dan snapshot kebijakan saat check-out (BR-029).
 - [ ] Pembebasan denda hanya dapat dilakukan role berwenang dan wajib menyertakan alasan.
 - [ ] Foto kondisi akhir wajib ada minimal 1 berkas.
 - [ ] Pengembalian sebagian tidak menutup transaksi induk.
@@ -330,7 +330,7 @@ flowchart TB
 | BR-028c | Hari libur sekolah **tetap dihitung** sebagai hari keterlambatan, kecuali Administrator mengaktifkan parameter "kecualikan hari libur". Kebijakan yang dipilih wajib disosialisasikan kepada pengguna sebelum go-live (RS-16). |
 | BR-028d | Aset yang dinyatakan `Hilang` atau rusak berat akibat kelalaian peminjam menimbulkan **kewajiban ganti rugi** terpisah dari denda keterlambatan, sebesar nilai perolehan aset atau nilai penggantian yang ditetapkan Petugas Sarpras dengan persetujuan Pimpinan Sekolah. Kewajiban ini dicatat dengan jenis `Ganti Rugi` dan mengikuti alur status yang sama dengan denda. |
 | BR-028e | Kewajiban berjenis `Ganti Rugi` dapat dibebaskan sepenuhnya atau sebagian **hanya oleh Pimpinan Sekolah**, melalui permission `fine.waive_compensation`, dengan alasan wajib dan tercatat pada activity log. Petugas Sarpras maupun Administrator tidak berwenang membebaskannya — `fine.waive` (BR-031) tidak berlaku atas jenis ini. Pembebasan sebagian mengisi `jumlah_dibebaskan` dan menyisakan tagihan sebesar `jumlah − jumlah_dibebaskan` dengan status `Dibebaskan Sebagian`; kewajiban tersisa tetap diperhitungkan pada ambang pemblokiran BR-030. |
-| BR-029 | Tarif denda yang berlaku adalah tarif pada saat tanggal jatuh tempo, bukan tarif saat pengembalian. |
+| BR-029 | Tarif harian, cap nominal, cap persentase, dan kebijakan pengecualian libur disimpan sebagai snapshot saat check-out; perubahan setting berikutnya tidak mengubah perhitungan pinjaman berjalan. Tarif harian dan cap nominal wajib dikonfigurasi Administrator sebelum check-out; keduanya tidak memiliki nominal bawaan (keputusan produk 13 Oktober 2026). |
 | BR-030 | Pengguna yang memiliki peminjaman terlambat yang belum dikembalikan, atau denda `Belum Dibayar` melebihi ambang yang dikonfigurasi, diblokir dari mengajukan reservasi/peminjaman baru sampai kewajibannya diselesaikan. |
 | BR-031 | Pembebasan denda berjenis `Keterlambatan` hanya dapat dilakukan oleh Administrator atau Petugas Sarana Prasarana, wajib menyertakan alasan, dan tercatat pada activity log. Pembebasan berjenis `Ganti Rugi` tunduk pada BR-028e, bukan aturan ini. |
 | BR-032 | Aset yang kembali dalam kondisi rusak otomatis menghasilkan tiket Laporan Kerusakan yang tertaut ke transaksi peminjaman dan peminjamnya. |
@@ -349,6 +349,10 @@ flowchart TB
 |---|---|---|---|
 | GET | `/loans/ready-checkout` | `loan.manage` | Reservasi siap diserahkan hari ini |
 | POST | `/loans/checkout` | `loan.manage` | Proses serah terima |
+| GET | `/loans/{id}` | `loan.view` | Detail dan bukti privat peminjaman, tersaring scope peminjam |
+| GET | `/loans/units/resolve` | `loan.manage` | Verifikasi kode aset atau UUID: identitas minimum, kondisi dan kelayakan; tanpa nilai finansial |
+| GET | `/loans/borrowers` | `loan.manage` | Pemilih peminjam aktif, nama/role, berpaginasi; scope selain all hanya diri sendiri |
+| POST | `/loans/{id}/checkin/preview` | `loan.manage` | Tinjauan pengembalian/kewajiban per unit tanpa efek tulis |
 | GET | `/loans/by-asset/{uuid}` | `loan.manage` | Peminjaman aktif atas suatu unit |
 | POST | `/loans/{id}/checkin` | `loan.manage` | Proses pengembalian |
 | POST | `/loans/{id}/extend` | `loan.extend` | Ajukan perpanjangan |
@@ -357,6 +361,35 @@ flowchart TB
 | PATCH | `/fines/{id}/pay` | `fine.manage` | Tandai lunas |
 | PATCH | `/fines/{id}/waive` | `fine.waive` | Bebaskan denda keterlambatan + alasan |
 | PATCH | `/fines/{id}/waive-compensation` | `fine.waive_compensation` | Bebaskan ganti rugi penuh/sebagian + alasan |
+| GET | `/fines/{id}` | `fine.view` | Rincian kewajiban, sisa tagihan dan riwayat tindakan |
+| POST | `/fines/{id}/replacement-proposals` | `fine.manage` | Usulkan nilai penggantian beralasan |
+| POST | `/fines/{id}/replacement-proposals/{proposalId}/decide` | `approval.decide` | Pimpinan memutus usulan nilai penggantian |
+| GET | `/loans/export` | `report.export` | Ekspor daftar peminjaman tersaring scope ke XLSX/PDF |
+| GET | `/fines/export` | `report.export` | Ekspor rekap kewajiban tersaring scope ke XLSX/PDF |
+| PATCH | `/fines/{id}/reopen` | `fine.manage` | Administrator mengoreksi status lunas beralasan |
+| GET | `/loans/filter-options` | `loan.view` | Pilihan peminjam/kategori yang mempunyai transaksi dalam scope |
+| GET | `/fines/filter-options` | `fine.view` | Pilihan peminjam berkewajiban dalam scope |
+| GET | `/loan-extensions/{id}` | `approval.view` | Konteks perpanjangan setelah otorisasi pembaca instance |
+
+Kontrak PR-05-01..04: check-out menerima `reservation_id` tanggal yang disetujui, atau `langsung: {peminjam_id, tanggal_jatuh_tempo, keperluan, lokasi_penggunaan, alasan}` dengan tambahan permission `loan.direct`. Bukti berisi `nama_penerima`, `diwakilkan`, `signature_file_id` PNG, dan `unit: [{asset_id, allocated_asset_id?, verification_code, kondisi_awal, foto_file_ids, alasan_substitusi?, alasan_kondisi_awal?}]`. `verification_code` harus cocok dengan kode atau UUID unit fisik. Substitusi sekategori wajib beralasan. Pemeriksaan fisik yang mengubah kondisi awal wajib beralasan; penerima menandatangani bukti kondisi tersebut. Tanggal induk berulang tidak dapat di-check-out; realisasi dilakukan per tanggal turunan.
+
+Check-in/pratinjau menerima `unit: [{loan_item_id, verification_code, kondisi_akhir, foto_file_ids, catatan?, kelalaian?}]`, mencakup sebagian atau seluruh unit yang belum kembali. Tidak Lengkap dicatat tersendiri dan dipetakan ke Rusak Ringan untuk kondisi aset; unit tetap Tidak Tersedia sampai alur perbaikan menutupnya. Hilang/rusak berat akibat kelalaian mencatat ganti rugi nilai perolehan snapshot; nilai tak diketahui menghasilkan `menunggu_penetapan=true` dengan jumlah null. Penetapan nilai penggantian/persetujuan Pimpinan serta pelunasan/pembebasan mengikuti PR-05-06/07 sesuai batas produk. Check-out/check-in wajib `Idempotency-Key`; pratinjau tanpa key dan tanpa menyimpan.
+
+Foto dan tanda tangan memakai `HANDOVER_PHOTO` milik petugas di registri M-06, minimal satu foto per unit, 1-5 foto per tahap. Web wajib menyelesaikan unggah/confirm sebelum transaksi; status PENDING boleh ditautkan, URL hanya CLEAN. Gagal/terinfeksi, berkas asing, atau berkas dipakai berulang ditolak atomik. Bukti privat terlindungi scope objek/permission `loan.view` atau alur scan `loan.manage`; foto/tanda tangan tidak dipseudonimkan maupun dihapus melalui alur identitas (DP-05a).
+
+Antrean hanya tanggal hari ini dengan jatuh tempo belum lewat, mendukung paginasi dan `reservation_id`. Pemilih peminjam mendukung `q`/`page`; verifikasi memakai `code`. Detail menyajikan kondisi/bukti/kewajiban per unit tanpa nilai perolehan aset. P-31 mendapat tautan realisasi yang hanya diberikan jika caller berizin melihat loan. Linimasa aset PEMINJAMAN tersaring `loan.view` dan scope milik peminjam.
+
+Parameter baru `denda.tarif_per_hari` dan `denda.cap_nominal` bertipe bilangan bulat rupiah nonnegatif, value/nilai_bawaan JSON null sampai dikonfigurasi. Nol yang diisi eksplisit sah; null berarti belum dikonfigurasi dan menolak check-out. `denda.kecualikan_hari_libur` bawaan false mengikuti BR-028c; cap persen memakai katalog yang sudah ada. Semua kebijakan dan nilai perolehan unit disnapshot saat serah terima, menurut keputusan produk yang menggantikan BR-029 sebelumnya.
+
+Kontrak PR-05-05..08 (keputusan produk 13 Oktober 2026): job harian hanya menghitung estimasi denda berjalan; kewajiban final diterbitkan pada check-in/penetapan hilang. Status terlambat dan blokir memakai jatuh tempo aktual tanpa menunggu job. Pengingat NT-11/12/13 dideduplikasi per hari WIB dan objek; NT-11 juga mengikuti versi jatuh tempo. Perubahan kebijakan berikutnya tidak mengubah snapshot BR-029.
+
+Parameter `denda.ambang_blokir` bilangan bulat rupiah nonnegatif tidak memiliki nominal bawaan (JSON null). Administrator wajib mengisinya sebelum pengajuan reservasi/peminjaman baru; konfigurasi kosong menolak pengajuan dengan pesan konfigurasi belum lengkap. BR-030 menjumlahkan sisa denda/kewajiban terbit berstatus Belum Dibayar/Dibebaskan Sebagian; jumlah yang belum ditetapkan ditampilkan sebagai belum diketahui, tidak diasumsikan nol rupiah.
+
+Pelunasan mencatat tanggal pembayaran dan nomor bukti luring. Pembebasan keterlambatan memakai fine.waive; ganti rugi hanya role Pimpinan dan fine.waive_compensation, dengan alasan serta nilai penuh/sebagian. Pembebasan berulang menambah jumlah_dibebaskan tanpa melebihi sisa. Kewajiban menunggu nilai tidak dapat dibayar/dibebaskan nominalnya. Petugas/Admin berizin fine.manage dapat mengusulkan nilai penggantian beralasan; Pimpinan berizin approval.decide menyetujui/menolak usulan langsung di P-36, dengan audit dan riwayat terpisah dari jenis mesin approval. Usulan tidak mengubah jumlah sampai disetujui. Pemutusan oleh pengusul sendiri ditolak. Pembayaran, pembebasan dan pemutusan serentak mengunci kewajiban dan bersifat idempoten.
+
+Perpanjangan membentuk pengajuan tersendiri jenis PERPANJANGAN_PEMINJAMAN, satu instance approval per pengajuan, mempertahankan riwayat jadwal lama/baru. Slot tambahan tentative menjaga interval sesudah jatuh tempo lama sampai jadwal baru, dengan TTL parameter reservasi (dibatasi jadwal baru); slot ACTIVE lama tetap ada. Persetujuan melepas hold dan memperpanjang slot ACTIVE secara atomik melalui SlotService; penolakan, revisi, expiry atau pengembalian melepas hold dan menutup pengajuan. Pemeriksaan ulang dilakukan saat keputusan. Jika keputusan melewati jatuh tempo lama, hari terlambat sampai persetujuan disimpan per unit yang belum kembali, lalu ditambahkan pada perhitungan final, memakai satu cap per unit. Jadwal baru harus masih di masa depan. Pengembalian mengakhiri pengajuan perpanjangan tertunda; unit yang sudah kembali tidak diperpanjang. TTL diperiksa saat keputusan walaupun job expiry belum berjalan. Perpanjangan hanya menyasar aset; ruangan gabungan mempertahankan jadwal penggunaannya.
+
+GET /loans mendukung tab aktif/akan_jatuh_tempo/terlambat/selesai, q, peminjam, kategori dan rentang tanggal WIB; GET /fines mendukung jenis/status/peminjam/tanggal. Semua tersaring scope dan berpaginasi. GET /fines/{id} menyediakan rincian, sisa tagihan, riwayat tindakan/usulan dan aksi yang diizinkan. Endpoint ekspor XLSX/PDF memerlukan report.export dan hak lihat domain; scope domain tetap berlaku. P-32/P-35/P-36 dan perpanjangan P-34 dibangun bersama backend sesuai pilihan produk; transaksi hanya online.
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
@@ -367,8 +400,17 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **loans** | Transaksi peminjaman | id, nomor, reservation_id, peminjam_id, petugas_serah_id, tanggal_pinjam, tanggal_jatuh_tempo, tanggal_kembali, status | ± 2.500 |
-| **loan_items** | Unit yang dipinjam & kondisinya | id, loan_id, asset_id, kondisi_awal, kondisi_akhir, foto_awal, foto_akhir, status_kembali | ± 5.000 |
+| **loans** | Transaksi peminjaman | id, nomor, reservation_id, peminjam_id, petugas_serah_id, tanggal_pinjam, tanggal_jatuh_tempo, tanggal_kembali, status, nama_penerima, diwakilkan, signature_file_id, kebijakan_denda, tanggal_jatuh_tempo_asli, jumlah_perpanjangan | ± 2.500 |
+| **loan_items** | Unit yang dipinjam & kondisinya | id, loan_id, asset_id, kondisi_awal, kondisi_akhir, foto_awal/foto_akhir (loan_item_photos), status_kembali, slot_id, allocated_asset_id, alasan_substitusi, nilai_perolehan_snapshot, tidak_lengkap, tanggal_kembali, hari_terlambat_terakumulasi | ± 5.000 |
+| **loan_item_photos** | Bukti kondisi per tahap | id, loan_item_id, file_id, tahap, urutan | Privat; FK stored_files |
+| **loan_item_damage_reports** | Laporan otomatis atau tiket terbuka terkait pengembalian | loan_item_id, damage_report_id | Satu tautan per unit |
+| **loan_extensions** | Pengajuan dan riwayat perpanjangan | id, loan_id, pemohon_id, jadwal lama/baru, status, alasan, approval_instance_id, diputuskan_pada, kedaluwarsa_pada | Satu pengajuan tertunda per loan |
+| **loan_extension_items** | Hold tambahan per unit | extension_id, loan_item_id, slot_id | Slot tentative tambahan |
+| **fine_actions** | Riwayat pengelolaan kewajiban | fine_id, aksi, jumlah, alasan, oleh, pada | Audit tindakan per kewajiban |
+| **compensation_proposals** | Usulan nilai penggantian | fine_id, jumlah, alasan, status, pengusul/pemutus dan waktu | Satu usulan tertunda per kewajiban |
+| **borrower_blocks** | Jejak transisi blokir | user_id, aktif, alasan, updated_at | Keputusan akses tetap membaca kewajiban langsung |
+| **loan_daily_events** | Deduplikasi reminder tahan restart | loan_id, tanggal WIB, jenis, jatuh_tempo | NT-11/12 |
+| **loan_recap_days** | Deduplikasi rekap harian | tanggal WIB | NT-13 |
 | **fines** | Denda keterlambatan & ganti rugi | id, **loan_item_id**, loan_id, peminjam_id, jenis (`Keterlambatan`/`Ganti Rugi`), hari_terlambat, tarif_per_hari, jumlah_sebelum_cap, jumlah, status, tanggal_bayar, nomor_bukti, jumlah_dibebaskan, alasan_pembebasan, dibebaskan_oleh | ± 300 |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
@@ -384,7 +426,7 @@ Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-archit
 | **NT-12** | Peminjaman terlambat (harian) | Peminjam | In-app + Push | ✅ | "{aset} terlambat {n} hari. Denda berjalan Rp{jumlah}." |
 | **NT-13** | Rekap keterlambatan harian | Petugas Sarpras | In-app | ❌ | "{n} peminjaman terlambat perlu ditindaklanjuti." |
 | **NT-14** | Pengembalian tercatat | Peminjam | In-app + Push | ❌ | "Pengembalian {aset} tercatat pada {tanggal}." |
-| **NT-15** | Denda terbit | Peminjam | In-app + Push | ✅ | "Denda keterlambatan Rp{jumlah} terbit atas peminjaman {nomor}." |
+| **NT-15** | Denda atau kewajiban ganti rugi terbit | Peminjam; Pimpinan juga untuk ganti rugi | In-app + Push | ✅ | "Denda keterlambatan Rp{jumlah} terbit atas peminjaman {nomor}." |
 | **NT-16** | Denda dilunasi | Peminjam | In-app | ❌ | "Denda Rp{jumlah} telah dinyatakan lunas." |
 | **NT-17** | Denda atau ganti rugi dibebaskan, penuh maupun sebagian | Peminjam | In-app | ❌ | "Kewajiban Rp{jumlah_dibebaskan} dibebaskan. Sisa tagihan Rp{sisa}. Alasan: {alasan}." |
 | **NT-18** | Pemohon diblokir karena kewajiban tertunggak | Pemohon | In-app + Push | ✅ | "Anda tidak dapat mengajukan peminjaman baru hingga kewajiban diselesaikan." |
@@ -417,8 +459,12 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | `LOAN_CHECKOUT` | Serah terima beserta unit dan kondisi awal |
 | `LOAN_UNIT_SUBSTITUTED` | Penggantian unit saat serah terima beserta alasan |
 | `LOAN_CHECKIN` | Pengembalian beserta kondisi akhir |
+| `LOAN_EXTENSION_REQUESTED` / `LOAN_EXTENSION_CLOSED` | Pengajuan serta penutupan/expiry perpanjangan |
+| `LOAN_OVERDUE` | Perubahan status menjadi terlambat |
+| `COMPENSATION_PROPOSED` / `COMPENSATION_DECIDED` | Usulan serta keputusan Pimpinan atas nilai penggantian |
 | `LOAN_EXTENDED` | Perpanjangan yang disetujui |
 | `LOAN_MARKED_LOST` | Penetapan aset hilang |
+| `FINE_REOPENED` | Koreksi status lunas oleh Administrator, dengan alasan wajib |
 | `FINE_ISSUED` / `FINE_PAID` / `FINE_WAIVED` | Termasuk alasan pembebasan |
 | `COMPENSATION_WAIVED` | Pembebasan ganti rugi oleh Pimpinan beserta alasan dan nilai yang dibebaskan (BR-028e) |
 | `BORROWER_BLOCKED` / `BORROWER_UNBLOCKED` | Pemblokiran akibat kewajiban tertunggak |

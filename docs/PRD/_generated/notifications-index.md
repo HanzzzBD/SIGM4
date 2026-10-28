@@ -5,7 +5,7 @@
 # Indeks Notifikasi
 
 > Setiap notifikasi dimiliki modul yang menerbitkan event-nya.
-> Total: **52** baris, dikumpulkan dari 22 berkas modul.
+> Total: **58** baris, dikumpulkan dari 22 berkas modul.
 
 | Kode | Event | Penerima | Kanal | Wajib | Contoh | Pemilik |
 |---|---|---|---|:---:|---|---|
@@ -23,7 +23,7 @@
 | **NT-12** | Peminjaman terlambat (harian) | Peminjam | In-app + Push | ✅ | "{aset} terlambat {n} hari. Denda berjalan Rp{jumlah}." | [M-09](../02-modules/m09-loans.md) |
 | **NT-13** | Rekap keterlambatan harian | Petugas Sarpras | In-app | ❌ | "{n} peminjaman terlambat perlu ditindaklanjuti." | [M-09](../02-modules/m09-loans.md) |
 | **NT-14** | Pengembalian tercatat | Peminjam | In-app + Push | ❌ | "Pengembalian {aset} tercatat pada {tanggal}." | [M-09](../02-modules/m09-loans.md) |
-| **NT-15** | Denda terbit | Peminjam | In-app + Push | ✅ | "Denda keterlambatan Rp{jumlah} terbit atas peminjaman {nomor}." | [M-09](../02-modules/m09-loans.md) |
+| **NT-15** | Denda atau kewajiban ganti rugi terbit | Peminjam; Pimpinan juga untuk ganti rugi | In-app + Push | ✅ | "Denda keterlambatan Rp{jumlah} terbit atas peminjaman {nomor}." | [M-09](../02-modules/m09-loans.md) |
 | **NT-16** | Denda dilunasi | Peminjam | In-app | ❌ | "Denda Rp{jumlah} telah dinyatakan lunas." | [M-09](../02-modules/m09-loans.md) |
 | **NT-17** | Denda atau ganti rugi dibebaskan, penuh maupun sebagian | Peminjam | In-app | ❌ | "Kewajiban Rp{jumlah_dibebaskan} dibebaskan. Sisa tagihan Rp{sisa}. Alasan: {alasan}." | [M-09](../02-modules/m09-loans.md) |
 | **NT-18** | Pemohon diblokir karena kewajiban tertunggak | Pemohon | In-app + Push | ✅ | "Anda tidak dapat mengajukan peminjaman baru hingga kewajiban diselesaikan." | [M-09](../02-modules/m09-loans.md) |
@@ -32,7 +32,7 @@
 | **NT-21** | Laporan diverifikasi / ditolak | Pelapor | In-app + Push | ❌ | "Laporan {nomor} telah {diverifikasi/ditolak}. {catatan}" | [M-11](../02-modules/m11-damage-reports.md) |
 | **NT-22** | Work order ditugaskan | Teknisi | In-app + Push | ✅ | "Work order {nomor} ditugaskan kepada Anda. Prioritas: {prioritas}." | [M-12](../02-modules/m12-maintenance.md) |
 | **NT-23** | Work order melewati target selesai | Teknisi + Petugas Sarpras | In-app + Push | ✅ | "Work order {nomor} melewati target selesai {tanggal}." | [M-12](../02-modules/m12-maintenance.md) |
-| **NT-24** | Work order menunggu verifikasi | Petugas Sarpras | In-app + Push | ❌ | "Work order {nomor} selesai dikerjakan dan menunggu verifikasi." | [M-12](../02-modules/m12-maintenance.md) |
+| **NT-24** | WO membutuhkan tindakan: menunggu verifikasi, Tertunda, atau revisi estimasi menunggu persetujuan | Petugas Sarpras + Administrator | In-app + Push | ❌ | "Work order {nomor} selesai dikerjakan dan menunggu verifikasi." Judul/isi menyesuaikan kejadian. | [M-12](../02-modules/m12-maintenance.md) |
 | **NT-25** | Work order dikembalikan ke teknisi | Teknisi | In-app + Push | ✅ | "Work order {nomor} dikembalikan. Catatan: {catatan}." | [M-12](../02-modules/m12-maintenance.md) |
 | **NT-26** | Work order selesai & diverifikasi | Pelapor + Teknisi | In-app + Push | ❌ | "Perbaikan {aset} telah selesai dan diverifikasi." | [M-12](../02-modules/m12-maintenance.md) |
 | **NT-27** | Reservasi dibatalkan karena aset masuk perbaikan | Pemohon terdampak | In-app + Push | ✅ | "Reservasi {nomor} dibatalkan karena {aset} sedang diperbaiki." | [M-12](../02-modules/m12-maintenance.md) |
@@ -43,13 +43,14 @@
 | **NT-32** | Hasil opname disetujui / ditolak | Petugas pelaksana | In-app + Push | ❌ | "Laporan opname {nama} telah {disetujui/ditolak}." | [M-13](../02-modules/m13-audit-stocktake.md) |
 | **NT-33** | Aset dinyatakan hilang | Pimpinan Sekolah + Petugas Sarpras | In-app + Push | ✅ | "{aset} dinyatakan hilang berdasarkan {referensi}." | [M-13](../02-modules/m13-audit-stocktake.md) |
 | **NT-34** | Usulan pengadaan diajukan | Approver | In-app + Push | ✅ | "Usulan pengadaan {nomor} senilai Rp{total} menunggu persetujuan." | [M-14](../02-modules/m14-procurement.md) |
-| **NT-35** | Keputusan usulan pengadaan | Pengusul | In-app + Push | ✅ | "Usulan {nomor} {disetujui/disetujui sebagian/ditolak}." | [M-14](../02-modules/m14-procurement.md) |
-| **NT-36** | Barang pengadaan diterima & didaftarkan | Pengusul + Petugas Sarpras | In-app | ❌ | "{n} unit dari usulan {nomor} telah diterima dan terdaftar sebagai aset." | [M-14](../02-modules/m14-procurement.md) |
+| **NT-35** | Perubahan status usulan pengadaan | Pengusul | In-app + Push | ✅ | "Usulan {nomor} {status}. {catatan}" | [M-14](../02-modules/m14-procurement.md) |
+| **NT-36** | Pencatatan penerimaan barang | Pengusul + Petugas Sarpras/Admin | In-app | ❌ | "{n} unit diterima dan terdaftar; {ditolak} unit ditolak saat penerimaan usulan {nomor}." | [M-14](../02-modules/m14-procurement.md) |
 | **NT-37** | Permintaan reset password masuk | Administrator | In-app + Push | ✅ | "{pengguna} mengajukan reset password." | [M-01](../02-modules/m01-auth.md) |
 | **NT-38** | Password sementara diterbitkan | **Administrator penerbit** | In-app | ✅ | "Password sementara untuk {pengguna} diterbitkan {waktu}. Serahkan langsung kepada yang bersangkutan." — *Direvisi pada audit: sebelumnya ditujukan kepada pengguna terkait, padahal yang bersangkutan sedang tidak dapat login sehingga notifikasi in-app tidak akan pernah terbaca.* | [M-01](../02-modules/m01-auth.md) |
 | **NT-38a** | Password berhasil diganti setelah reset | Pengguna terkait | In-app + Push | ✅ | "Password Anda berhasil diperbarui pada {waktu}. Bila ini bukan Anda, segera hubungi Administrator." | [M-01](../02-modules/m01-auth.md) |
 | **NT-39** | Akun terkunci karena percobaan login gagal | Pengguna + Administrator | In-app | ✅ | "Akun terkunci sementara akibat 5 percobaan login gagal." | [M-01](../02-modules/m01-auth.md) |
-| **NT-40** | Role atau status akun diubah | Pengguna terkait | In-app | ✅ | "Role akun Anda diubah menjadi {role}." | [M-02](../02-modules/m02-users.md) |
+| **NT-39a** | 2FA diaktifkan pada sebuah akun | Administrator | In-app | ✅ | "{pengguna} mengaktifkan 2FA pada {waktu} dari {perangkat}. Bila pengguna tidak mengenalinya, reset 2FA dari detail pengguna." | [M-01](../02-modules/m01-auth.md) |
+| **NT-40** | Role, status, atau cakupan lokasi akun diubah (`FR-02.3`) | Pengguna terkait | In-app | ✅ | "Role akun Anda diubah menjadi {role}." · "Cakupan lokasi Anda kini: {lokasi}." | [M-02](../02-modules/m02-users.md) |
 | **NT-41** | Ringkasan harian operasional | Petugas Sarpras + Pimpinan Sekolah | In-app | ❌ | "Ringkasan hari ini: {n} pengajuan baru, {n} pengembalian, {n} kerusakan." | [M-15](../02-modules/m15-dashboard.md) |
 | **NT-42** | Berkas ekspor asinkron siap diunduh | Pemohon ekspor | In-app + Push | ❌ | "Laporan {jenis} siap diunduh." | [M-16](../02-modules/m16-analytics.md) |
 | **NT-43** | Usulan penghapusan aset diajukan | Approver (Pimpinan Sekolah) | In-app + Push | ✅ | "Usulan penghapusan {nomor} atas {n} unit aset menunggu persetujuan Anda." | [M-21](../02-modules/m21-disposal.md) |
@@ -61,3 +62,8 @@
 | **NT-49** | Saldo bahan mencapai / turun di bawah stok minimum | Petugas Sarpras + Administrator | In-app + Push | ✅ | "Stok {bahan} tersisa {saldo} {satuan}, di bawah minimum {ambang}." | [M-22](../02-modules/m22-materials.md) |
 | **NT-50** | Permintaan bahan siap diambil | Pemohon | In-app + Push | ❌ | "Permintaan {nomor} siap diambil di {lokasi}." | [M-22](../02-modules/m22-materials.md) |
 | **NT-51** | Bahan diserahkan | Pemohon | In-app | ❌ | "{jumlah} {satuan} {bahan} telah diserahkan pada {tanggal}." | [M-22](../02-modules/m22-materials.md) |
+| **NT-52** | Impor massal pengguna selesai diproses (`IMPT-04`) | Administrator pengunggah | In-app | ✅ | "Impor pengguna selesai: {sukses} berhasil, {gagal} gagal dari {total} baris." | [M-02](../02-modules/m02-users.md) |
+| **NT-53** | Pemulihan darurat Administrator dijalankan (break-glass, `FR-01.6`) | Seluruh Pimpinan Sekolah | In-app + Push | ✅ | "Pemulihan darurat dijalankan untuk akun Administrator {email} pada {waktu}. Seluruh sesi di sistem telah dikeluarkan; pastikan ini sah." | [M-01](../02-modules/m01-auth.md) |
+| **NT-54** | Pemakaian ulang refresh token terdeteksi (`SDD-SESS-04`, `NFR-S-03`) | Administrator | In-app + Push | ✅ | "Pemakaian ulang token sesi terdeteksi pada akun {pengguna} pada {waktu}. Seluruh sesi turunannya telah dicabut; bila berulang, periksa akun ini." | [M-01](../02-modules/m01-auth.md) |
+| **NT-55** | Impor aset >200 baris berakhir, termasuk pekerjaan gagal (`IMPT-04`) | Pengunggah | In-app + Push | ✅ | "Impor aset {status}: {sukses} berhasil, {gagal} gagal dari {total} baris; {unit} unit dibuat." | [M-04](../02-modules/m04-assets.md) |
+| **NT-56** | Impor jadwal tetap >200 baris berakhir, termasuk gagal sistem | Pengunggah | In-app + Push | ✅ | "Impor jadwal tetap {status}: {sukses} berhasil, {gagal} gagal dari {total} baris." | [M-07](../02-modules/m07-reservation-room.md) |

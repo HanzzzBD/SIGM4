@@ -1,0 +1,131 @@
+// Repository profil & ganti password sendiri (FR-01.4, SDD-AUTH-05). Semua metode terbatas
+// pada baris milik pemanggil sendiri (`ctx.userId`) — scope `own`, tidak menerima id lain.
+//
+// PRIVAT terhadap modul (SDD-SYS-03).
+
+import type { AuthContext } from "../../../shared/auth/index.js";
+import { BaseRepository, defineRepository } from "../../../shared/db/index.js";
+import type { QueryExecutor } from "../../../shared/db/index.js";
+import {sql} from "kysely";
+
+export interface ProfilRow {
+    readonly id: string;
+    readonly nama: string;
+    readonly email: string;
+    readonly telepon: string | null;
+    readonly role_kode: string;
+    readonly must_change_password: boolean;
+    readonly two_factor_enabled?: boolean;
+    readonly remaining_backup_codes?: number;
+    /** `stored_files(id)` (FR-01.4, PR-03-25); keadaan berkasnya milik M-06. */
+    readonly foto_file_id: string | null;
+}
+
+/** Bahan verifikasi password lama dan kebijakan password baru (`NFR-S-03a`). */
+export interface KredensialRow {
+    readonly password_hash: string;
+    readonly nama: string;
+    readonly email: string;
+    readonly nip_nis: string | null;
+}
+
+export interface PembaruanProfil {
+    readonly nama?: string | undefined;
+    readonly telepon?: string | null | undefined;
+    /** `null` = hapus foto. Kepemilikan & jenis berkas sudah diperiksa M-06 dalam transaksi yang sama. */
+    readonly fotoFileId?: number | null | undefined;
+}
+
+export class ProfileRepository extends BaseRepository {
+    constructor(executor: QueryExecutor) {
+        super(executor);
+    }
+
+    async ambil(ctx: AuthContext): Promise<ProfilRow | undefined> {
+        return this.query(ctx)
+            .selectFrom("users as u")
+            .innerJoin("roles as r", "r.id", "u.role_id")
+            .select(["u.id", "u.nama", "u.email", "u.telepon", "r.kode as role_kode", "u.must_change_password", "u.foto_file_id"])
+            .select([sql<boolean>`u.totp_enabled_at is not null`.as("two_factor_enabled"),sql<number>`(select count(*)::int from totp_backup_codes b where b.user_id=u.id and b.used_at is null)`.as("remaining_backup_codes")])
+            .where("u.id", "=", String(ctx.userId))
+            .executeTakeFirst();
+    }
+
+    /** FR-01.4 langkah 5: nama/telepon/foto — email dan role tidak diterima di sini (BR-069). */
+    async perbarui(ctx: AuthContext, input: PembaruanProfil): Promise<ProfilRow> {
+        await this.query(ctx)
+            .updateTable("users")
+            .set({
+                ...(input.nama === undefined ? {} : { nama: input.nama }),
+                ...(input.telepon === undefined ? {} : { telepon: input.telepon }),
+                ...(input.fotoFileId === undefined ? {} : { foto_file_id: input.fotoFileId }),
+            })
+            .where("id", "=", String(ctx.userId))
+            .execute();
+        const setelah = await this.ambil(ctx);
+        if (setelah === undefined) throw new Error("Profil tidak ditemukan setelah diperbarui.");
+        return setelah;
+    }
+
+    /** Mengunci baris pemanggil untuk ganti password (FR-01.4 langkah 2-4): serialisasi permintaan serentak. */
+    async kunciUntukGantiPassword(ctx: AuthContext): Promise<KredensialRow | undefined> {
+        return this.query(ctx)
+            .selectFrom("users")
+            .select(["password_hash", "nama", "email", "nip_nis"])
+            .where("id", "=", String(ctx.userId))
+            .forUpdate()
+            .executeTakeFirst();
+    }
+
+    /** SDD-SESS-19: hash 3 password terakhir pemanggil (diisi trigger `users_catat_riwayat_password`). */
+    async riwayatHash(ctx: AuthContext): Promise<readonly string[]> {
+        const baris = await this.query(ctx)
+            .selectFrom("password_history")
+            .select("password_hash")
+            .where("user_id", "=", String(ctx.userId))
+            .orderBy("berlaku_sejak", "desc")
+            .orderBy("id", "desc")
+            .limit(3)
+            .execute();
+        return baris.map((b) => b.password_hash);
+    }
+
+    async simpanPasswordBaru(ctx: AuthContext, hash: string): Promise<void> {
+        await this.query(ctx)
+            .updateTable("users")
+            .set({ password_hash: hash, must_change_password: false })
+            .where("id", "=", String(ctx.userId))
+            .execute();
+    }
+
+    /**
+     * Penerbitan reset password milik pemanggil yang masih `DITERBITKAN`, dikunci. Bila ada,
+     * password baru ini menyelesaikannya (FR-01.3 -> `NT-38a`, `phase-02.md` §3 keputusan `PR-02-06`).
+     */
+    async kunciPenerbitanDiterbitkan(ctx: AuthContext): Promise<{ readonly id: string } | undefined> {
+        return this.query(ctx)
+            .selectFrom("password_reset_requests")
+            .select("id")
+            .where("user_id", "=", String(ctx.userId))
+            .where("status", "=", "DITERBITKAN")
+            .orderBy("diproses_pada", "desc")
+            .orderBy("id", "desc")
+            .limit(1)
+            .forUpdate()
+            .executeTakeFirst();
+    }
+
+    async tandaiSelesai(ctx: AuthContext, id: string): Promise<void> {
+        await this.query(ctx)
+            .updateTable("password_reset_requests")
+            .set({ status: "SELESAI" })
+            .where("id", "=", id)
+            .where("status", "=", "DITERBITKAN")
+            .execute();
+    }
+}
+
+/** Pintu masuk repository: `defineRepository` menolak metode yang tidak menerima `AuthContext` (SDD-AUTH-02). */
+export function createProfileRepository(executor: QueryExecutor): ProfileRepository {
+    return defineRepository(new ProfileRepository(executor));
+}

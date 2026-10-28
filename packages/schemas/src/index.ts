@@ -1,0 +1,110 @@
+// Permukaan publik satu-satunya paket bersama (SDD-REPO-05).
+export { MoveAssetsBodySchema, AssetMovementReceiptSchema, AssetMovementSnapshotSchema, AssetMovementDocumentSchema, AssetMovementDocumentResponseSchema, AssetMovementDownloadResponseSchema } from "./asset-movement.js";
+export type { AssetMovementSnapshot, AssetMovementDocument } from "./asset-movement.js";
+// Isinya: skema Zod (SDD-FE-05, SDD-API-11) dan peta kode -> label enum
+// (SDD-FE-08, SDD-MOB-01). Keduanya ditambahkan oleh modul yang membutuhkannya.
+// Berkas ini menetapkan bahwa satu-satunya jalur berbagi lintas pohon melewati sini.
+export {
+    LABEL_ALASAN_PENGHAPUSAN,
+    LABEL_JENIS_PENGAJUAN,
+    LABEL_JENIS_RUANGAN,
+    LABEL_KELOMPOK_NOTIFIKASI,
+    LABEL_PRIORITAS,
+    LABEL_KONDISI_ASET,
+    LABEL_STATUS_ASET,
+    LABEL_STATUS_INSTANCE_APPROVAL,
+    labelEnum,
+} from "./enum-labels.js";
+export type { DefinisiField, JenisPengajuan, Operator, TipeField } from "./approval-dsl.js";
+export { FIELD_DSL, JENIS_PENGAJUAN, KEDALAMAN_GRUP_MAKS, OPERATOR_PER_TIPE, fieldBerlaku } from "./approval-dsl.js";
+export { ASSET_IMPORT_COLUMNS, ASSET_IMPORT_REQUIRED_COLUMNS, ASSET_IMPORT_SYNC_LIMIT, AssetImportJobSchema, AssetImportResponseSchema, ImportAssetsBodySchema, importAssetRowSchema } from "./asset-import.js";
+export type { AssetImportJob, AssetImportFailure } from "./asset-import.js";
+export { KEADAAN_SLOT, LABEL_KEADAAN_SLOT, RENTANG_KETERSEDIAAN_MAKS_HARI, RoomAvailabilityQuerySchema, RoomAvailabilityResponseSchema, RoomAvailabilitySchema } from "./room-availability.js";
+export type { KeadaanSlot, RoomAvailability, RuanganKetersediaan, SlotKetersediaan } from "./room-availability.js";
+export { CancelReservationBodySchema, KEADAAN_TANGGAL, PolaPengulanganSchema, RoomReservationBodySchema, RoomReservationCreatedResponseSchema, RoomReservationCreatedSchema, RoomReservationPreviewResponseSchema, RoomReservationPreviewSchema, ReservationCancelledResponseSchema, ReservationCancelledSchema, ReservationIdParamSchema, HASIL_PENGGUNAAN, RecordUsageBodySchema, ReservationUsageResponseSchema, ReservationUsageSchema, STATUS_RESERVASI, ReservationListQuerySchema, ReservationListItemSchema, ReservationListResponseSchema, ReservationDetailSchema, ReservationDetailResponseSchema } from "./reservation.js";
+export type { CancelReservationBody, KeadaanTanggal, ReservationCancelled, HasilPenggunaan, RecordUsageBody, ReservationUsage, StatusReservasi, ReservationListQuery, ReservationListItem, ReservationDetail, RoomReservationBody, RoomReservationCreated, RoomReservationPreview, TanggalPengajuanRuangan } from "./reservation.js";
+export { HistoryResponseSchema } from "./approval-history.js";
+export type { LinimasaPersetujuan } from "./approval-history.js";
+export {
+    BlockDeactivatedResponseSchema,
+    BlockDeactivatedSchema,
+    BlockIdParamSchema,
+    BlockStatusBodySchema,
+    JENIS_BLOKADE,
+    RoomBlockCreateSchema,
+    RoomBlockCreatedResponseSchema,
+    RoomBlockCreatedSchema,
+    RoomBlockInputSchema,
+    RoomBlockListResponseSchema,
+    RoomBlockListSchema,
+    RoomBlockPreviewResponseSchema,
+    RoomBlockPreviewSchema,
+    RoomIdParamSchema,
+    STATUS_BLOKADE,
+} from "./room-blocks.js";
+export type { BlockDeactivated, JenisBlokade, RoomBlockCreate, RoomBlockCreated, RoomBlockInput, RoomBlockList, RoomBlockPreview } from "./room-blocks.js";
+export {
+    DamageReportCreateSchema,
+    DamageReportDetailResponseSchema,
+    DamageReportDetailSchema,
+    DamageReportIdParamSchema,
+    DamageReportCreatedResponseSchema,
+    DamageReportCreatedSchema,
+    DamageReportListItemSchema,
+    DamageReportListQuerySchema,
+    DamageReportListResponseSchema,
+    DamageReportNoteCreateSchema,
+    DamageReportNoteResponseSchema,
+    DamageReportNoteSchema,
+    DamageReportOpenQuerySchema,
+    DamageReportOpenResponseSchema,
+    DamageReportOpenSchema,
+    DamageReportVerifiedResponseSchema,
+    DamageReportVerifiedSchema,
+    DamageReportVerifySchema,
+    KEPUTUSAN_VERIFIKASI_KERUSAKAN,
+    STATUS_LAPORAN_KERUSAKAN,
+    URGENSI_KERUSAKAN,
+} from "./damage-reports.js";
+export type { DamageReportCreate, DamageReportCreated, DamageReportDetail, DamageReportListItem, DamageReportListQuery, DamageReportNote, DamageReportNoteCreate, DamageReportOpen, DamageReportVerified, DamageReportVerify } from "./damage-reports.js";
+export { AssetDetailResponseSchema, AssetDetailSchema, AssetTimelineQuerySchema, AssetTimelineResponseSchema, EntriLinimasaAsetSchema, JENIS_LINIMASA_ASET } from "./asset-detail.js";
+export type { AssetDetail, EntriLinimasaAset } from "./asset-detail.js";
+export { AssetPhotoSchema, AssetPhotosResponseSchema } from "./asset-photos.js";
+export type { AssetPhoto } from "./asset-photos.js";
+export { DashboardManifestResponseSchema, DashboardCardResponseSchema, DashboardPeriodSchema } from "./dashboard.js";
+export type { DashboardCard, DashboardPeriod } from "./dashboard.js";
+export { NotificationSchema, NotificationsResponseSchema, NotificationGroupSchema } from "./notifications.js";
+export type { Notification } from "./notifications.js";
+export { JENIS_DOKUMEN_ASET, JenisDokumenAsetSchema, DokumenAsetSchema, DaftarDokumenAsetResponseSchema, DokumenAsetResponseSchema, DokumenLintasAsetSchema, DaftarDokumenLintasAsetResponseSchema } from "./asset-documents.js";
+export type { DokumenAset, DokumenLintasAset } from "./asset-documents.js";
+
+export { DecideBodySchema, DecideResponseSchema, ListPendingQuerySchema, ListPendingResponseSchema } from "./approval-decisions.js";
+export type { ApprovalPending, ApprovalDecision, ApprovalDecisionResult } from "./approval-decisions.js";
+export { AssetAvailabilityQuerySchema, AssetAvailabilityGroupSchema, AssetAvailabilityResponseSchema } from "./asset-availability.js";
+export type { AssetAvailabilityQuery, AssetAvailabilityGroup, AssetAvailabilityResponse } from "./asset-availability.js";
+export { AssetReservationBodySchema, AssetReservationSelectionSchema, ReservationSubmissionBodySchema } from "./asset-reservation.js";
+export type { AssetReservationBody } from "./asset-reservation.js";
+export * from "./loans.js";
+export * from "./loan-management.js";
+export { WorkOrderAssignmentSchema, WorkOrderCreateSchema, WorkOrderQuerySchema, WorkOrderResponseSchema } from "./work-orders.js";
+export type { WorkOrderAssignment, WorkOrderCreate } from "./work-orders.js";
+export * from "./work-order-lifecycle.js";
+export * from "./procurement.js";
+export * from "./maintenance-schedules.js";
+export * from "./stocktake.js";
+export * from "./disposals.js";
+
+export * from "./materials.js";
+export * from "./material-operations.js";
+export * from "./material-requests.js";
+export * from "./material-stocktake.js";
+export * from "./chat.js";
+export * from "./chat-stream.js";
+export * from "./analytics.js";
+
+export * from "./report-exports.js";
+export * from "./asset-export.js";
+export * from "./user-privacy.js";
+export * from "./room-schedule-import.js";
+export { QrConfigResponseSchema } from "./qr.js";
+export { LABEL_ROLE, roleLabel } from "./role-labels.js";

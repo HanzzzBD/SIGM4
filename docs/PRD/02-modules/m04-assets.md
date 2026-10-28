@@ -130,6 +130,8 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 - **A1 — Aset sedang dipinjam/direservasi pada tanggal mutasi:** Sistem menolak dan menampilkan transaksi yang menghalangi.
 - **A2 — Mutasi massal via scan QR:** Petugas memindai beberapa QR berurutan di aplikasi mobile lalu menetapkan satu lokasi tujuan.
 
+**Kontrak pemeriksaan tanggal (PR-02-48).** Tanggal mutasi mencakup `[00:00 WIB, 00:00 WIB hari berikutnya)`, sesuai rentang half-open SDD-AVL-02. Slot aset asal `reservation`/`loan` berstatus `TENTATIVE`, `CONFIRMED`, atau `ACTIVE` yang beririsan menolak batch dengan `409 ASSET_NOT_AVAILABLE`. Slot yang sudah `RELEASED`, berakhir tepat saat hari dimulai, atau mulai tepat pada hari berikutnya tidak menghalangi. Slot pemeliharaan tidak menambah larangan di luar prasyarat status `Tersedia`/`Dalam Perbaikan`. Seluruh aset dikunci terurut sebelum pembacaan slot; pengecekan selesai sebelum perubahan lokasi, riwayat, snapshot, audit atau outbox. Respons memakai `error.details[{field:asset_ids,message}]` untuk kode aset, jenis/ID transaksi, status dan rentang WIB tanpa data pribadi pemohon. P-20 menampilkan seluruh transaksi penghalang serta mempertahankan isian dan pilihan saat ditolak.
+
 **Post Conditions** — Lokasi aset terbarui; riwayat mutasi tersimpan permanen.
 
 **Acceptance Criteria**
@@ -153,6 +155,8 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 **Alternative Flow**
 - **A1 — Kode kategori duplikat:** Sistem menolak.
 - **A2 — Menghapus kategori yang masih dipakai aset:** Sistem menolak dan menampilkan jumlah aset terkait.
+- **A3 — Menghapus kategori yang masih memiliki subkategori:** Sistem menolak dan menampilkan jumlah subkategori terkait; subkategori dipindahkan atau dihapus lebih dulu.
+- **A4 — Mengubah kode kategori yang sudah dipakai aset:** Sistem menolak. Kode kategori menjadi awalan kode aset (FR-20.1), dan kode aset yang sudah terbentuk tidak berubah (BR-002); atribut lain tetap dapat diubah.
 
 **Post Conditions** — Daftar kategori terbarui; interval preventif menjadi dasar penjadwalan maintenance (FR-12.2).
 
@@ -183,20 +187,34 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 
 ## 7. API Endpoints
 
+**Filter drill-down QR (PR-02-50).** `GET /assets` menerima query opsional `filter[qr_terpasang]=true|false`, digabungkan dengan filter katalog lain menggunakan AND. Nilai selain boolean tersebut ditolak (422); parameter yang tidak diberikan tidak menyaring status label. `false` mempertahankan scope `asset.view` (termasuk `restricted`) dan pengecualian aset dihapuskan. P-24 memakai URL web `?belum=true` untuk memuat daftar ini tanpa pencarian manual, dengan paginasi 25 aset.
+
 ### Endpoint
 
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
-| GET | `/rooms/{id}/assets` | `asset.view` | Aset dalam satu ruangan |
-| GET | `/assets` | `asset.view` | Daftar aset (filter & pencarian) |
+| GET | `/rooms/{id}/assets` | `asset.view` | Daftar aset terpaginasi dan ringkasan seluruh ruangan (`FR-03.2`); `q` digabung saringan lokasi |
+| GET | `/assets` | `asset.view` | Daftar aset (filter & pencarian); tiap item membawa nama kategori dan lokasi (ruang, gedung) |
 | POST | `/assets` | `asset.create` | Buat aset (mendukung `jumlah_unit` untuk N record) |
-| GET | `/assets/{id}` | `asset.view` | Detail aset |
-| PUT | `/assets/{id}` | `asset.update` | Perbarui aset |
+| GET | `/assets/{id}` | `asset.view` | Detail aset — identitas lengkap, QR, kategori & lokasi (FR-04.2 langkah 5) |
+| GET | `/assets/{id}/photos` | `asset.view` | Foto aset terpaginasi (page/per_page, maksimum 100), scope sama dengan detail; metadata id/file_id/urutan/is_primary/status; URL medium/thumbnail 15 menit hanya setelah berkas terkonfirmasi CLEAN, tanpa object key tersendiri atau identitas pengunggah (keputusan pemilik produk 12 Oktober 2026, PR-05-32) |
+| GET | `/assets/{id}/timeline` | `asset.view` | Linimasa riwayat aset terpaginasi: kondisi, mutasi, dan riwayat yang diisi modul lain (peminjaman, pemeliharaan, kerusakan, dokumen) — jenis sensitif disembunyikan bagi scope `restricted` (FR-04.2 langkah 5, A1) |
+| PUT | `/assets/{id}` | `asset.update` | Perbarui atribut deskriptif aset (nama, merek, model, nomor seri, tahun, kelayakan pinjam, penanggung jawab; perolehan hanya bagi `asset.view_financial`) — kategori, lokasi, kode, status tetap. `kondisi` opsional: bila berubah, `alasan` wajib, menuntut juga `asset.update_condition`, dan dijalankan atomik bersama atribut (FR-04.3) |
 | PATCH | `/assets/{id}/condition` | `asset.update` | Ubah kondisi + alasan |
 | POST | `/assets/move` | `asset.update` | Mutasi lokasi (massal) |
-| POST | `/assets/import` | `asset.create` | Impor massal |
+| GET | `/assets/movements/{id}/document` | `asset_movement_document.view` | Status dan data tetap berita acara satu operasi mutasi |
+| GET | `/assets/movements/{id}/document/download` | `asset_movement_document.view` | URL privat PDF siap, berlaku 15 menit; setiap penerbitan diaudit |
+| POST | `/assets/import` | `asset.create` | Impor CSV/XLSX (`filename`, `content_base64`): ≤200 baris sinkron, >200 asinkron; replay hash 24 jam per pengunggah (`IMPT-03/04`) |
+| GET | `/assets/import/template` | `asset.create` | Unduh template XLSX E.5.1 beserta contoh (`IMPT-05`) |
+| GET | `/assets/import/{id}` | `asset.create` | Status, hitungan baris sukses/gagal, unit dibuat, alasan dan isian asli baris gagal untuk koreksi (`IMPT-02`); hanya pengunggah |
 | GET | `/assets/export` | `asset.export` | Ekspor XLSX/PDF |
+| GET | `/assets/exports` | `asset.export` | 25 pekerjaan ekspor katalog terbaru milik pemanggil; juga mensyaratkan `asset.view`, izin dibaca ulang dari data pengguna saat ini |
+| GET | `/assets/exports/{id}` | `asset.export` | Status pekerjaan ekspor katalog milik pemanggil |
+| GET | `/assets/exports/{id}/download` | `asset.export` | URL privat berkas siap setelah pemeriksaan ulang izin dan scope |
 | GET | `/asset-categories` | `asset.view` | Daftar kategori |
+| POST | `/asset-categories` | `category.manage` | Buat kategori |
+| PUT | `/asset-categories/{id}` | `category.manage` | Perbarui kategori |
+| DELETE | `/asset-categories/{id}` | `category.manage` | Hapus kategori yang tidak dipakai |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
@@ -209,17 +227,31 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 |---|---|---|---|
 | **assets** | Unit aset (serialized) | id, uuid, kode_barang, nama, category_id, merek, model, nomor_seri, tahun_perolehan, sumber_perolehan, nilai_perolehan, room_id, kondisi, status, dapat_dipinjam, boleh_dipinjam_siswa, penanggung_jawab_id, qr_terpasang, procurement_id, dihapuskan, tanggal_penghapusan — *foto dipindahkan ke tabel `asset_photos` karena satu aset dapat memiliki banyak foto* | Petugas Sarpras |
 | **asset_categories** | Kategori & subkategori aset | id, parent_id, nama, kode, umur_teknis_tahun, interval_preventif_hari | Petugas Sarpras |
-| **asset_movements** | Riwayat mutasi lokasi | id, asset_id, room_asal_id, room_tujuan_id, tanggal, alasan, dilakukan_oleh | ± 1.000 |
+| **asset_movements** | Riwayat mutasi lokasi | id, document_id, asset_id, room_asal_id, room_tujuan_id, tanggal, alasan, dilakukan_oleh | ± 1.000; document_id nullable untuk riwayat lama |
+| **asset_movement_documents** | Satu berita acara per operasi mutasi | id, snapshot, object_key, status, file_id, pesan_galat, selesai_pada, kolom baku | Snapshot 1–50 unit disimpan bersama mutasi; PDF di `stored_files` |
 | **asset_condition_history** | Riwayat perubahan kondisi | id, asset_id, kondisi_lama, kondisi_baru, alasan, referensi_jenis, referensi_id, diubah_oleh, diubah_pada | ± 1.500 |
-| **asset_photos** | Foto aset (menggantikan field tunggal `assets.foto`) | id, asset_id, path, urutan, is_primary, diunggah_oleh | ± 6.000 |
+| **asset_photos** | Foto aset (menggantikan field tunggal `assets.foto`) | id, asset_id, file_id (FK stored_files), urutan, is_primary, diunggah_oleh | ± 6.000 |
+| **asset_import_jobs** | Pekerjaan impor aset sinkron/asinkron (`IMPT-02/03/04`) | id, file_hash, nama_berkas, status, total_baris, baris_terproses, sukses, gagal, unit_dibuat, laporan_gagal, pesan_galat, selesai_pada | Pengunggah; `assets.import_job_id` menautkan hasil |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
 
+**Deteksi CSV (PR-02-51).** Impor mengenali koma atau titik koma secara otomatis dari header logis pertama, menghitung hanya pemisah di luar kutipan. Kutipan ganda yang di-escape, BOM UTF-8, CRLF, isi data berkutip dan nilai teks berawalan nol tetap ditangani parser CSV. Jumlah pemisah seri atau nol memakai koma agar kompatibel dengan berkas lama. Jalur sinkron dan worker memakai aturan yang sama; XLSX tetap memakai pembaca XLSX.
+
+**Kontrak impor aset (keputusan produk 8 Oktober 2026, PR-02-38).** Setiap impor yang dapat dibaca mempunyai satu `asset_import_jobs`. Header wajib mengikuti kolom wajib E.5.1; header hilang/duplikat, berkas rusak atau tanpa baris ditolak sebelum job dibuat. Nomor baris laporan mengikuti baris fisik berkas (header baris 1). Kolom opsional kosong menjadi NULL; nomor seri tetap teks dan hanya sah untuk `jumlah_unit = 1` (`BR-003`). Enum menerima label Indonesia maupun kode teknis; boolean menerima `true`/`false`. Tahun memakai tahun berjalan WIB. `penanggung_jawab_id` dan `procurement_id` tidak ada pada E.5.1 dan tetap NULL. Semua unit satu baris beserta progresnya atomik; baris lain tetap diproses (`IMPT-01`). Laporan dan replay hanya milik pengunggah, termasuk pemegang scope `all`; pemanggil lain memperoleh 404. Kolom `assets.import_job_id` menghubungkan hasil dengan job untuk filter katalog (`filter[import_job_id]`). Berkas mentah dikosongkan saat job berakhir; laporan tetap dapat ditinjau melalui ID job (`UXD-06`).
+
 ## 9. Notification
+
+**Kontrak berita acara mutasi (keputusan produk 8 Oktober 2026, PR-02-39).** `POST /assets/move` mempertahankan array aset pada `data` dan menambah `meta.berita_acara = {id,status:MENUNGGU}`. Satu operasi (1–50 unit) mempunyai satu ID berita acara dan satu snapshot tetap: kode/nama/nomor seri aset, asal/tujuan beserta hierarki lokasi, tanggal mutasi, waktu transaksi, nama/ID pelaku, alasan serta penanggung jawab lama/baru. Nilai finansial tidak dimuat. Snapshot, perubahan lokasi, riwayat, audit dan event outbox `AssetMovementDocumentRequested` atomik; mutasi gagal tidak menghasilkan dokumen/job. Worker setelah commit membuat PDF A4/1.7; kegagalan render/storage tidak membatalkan mutasi. Status `MENUNGGU → BERJALAN → SIAP/GAGAL` ditampilkan pada P-20 `/aset/mutasi?document={id}`; percobaan worker maksimum tiga, tanpa tombol proses ulang bisnis. Riwayat lama tanpa snapshot tidak dibuatkan PDF retrospektif.
+
+Pembaca bawaan: Administrator, Petugas, Pimpinan melalui permission khusus M-04 `asset_movement_document.view`; scope `all` membaca semua, `own` hanya operasi pelaku sendiri, scope lain tidak membaca operasi. Pembaca di luar scope/ID hilang memperoleh 404; tanpa permission 403. Status mengembalikan snapshot dan pesan kegagalan aman, tanpa object key/URL privat. Unduhan sebelum SIAP/CLEAN memperoleh `409 FILE_NOT_SCANNED`; setelah siap mengembalikan `{url,expires_at,nama_berkas}` tanpa byte melalui API. Setiap URL yang berhasil diterbitkan dicatat `ASSET_MOVEMENT_DOCUMENT_DOWNLOADED` sebelum respons. Penomoran formal/tanda tangan tidak ditetapkan; dokumen memakai ID operasi. Perubahan nama master setelah transaksi tidak mengubah isi PDF.
 
 ### Notifikasi diterbitkan modul ini
 
-_Modul ini tidak menerbitkan notifikasi._
+| Kode | Pemicu | Penerima | Kanal | Wajib | Pesan |
+|---|---|---|---|---|---|
+| **NT-55** | Impor aset >200 baris berakhir, termasuk pekerjaan gagal (`IMPT-04`) | Pengunggah | In-app + Push | ✅ | "Impor aset {status}: {sukses} berhasil, {gagal} gagal dari {total} baris; {unit} unit dibuat." |
+
+Tautan hasil menuju P-17 `/aset/impor?job={id}`. Worker mengecek akun aktif dan permission `asset.create` terbaru sebelum memproses; pencabutan izin menutup pekerjaan GAGAL dan mempertahankan unit yang sudah tersimpan.
 
 Ketentuan umum kanal, latensi, dan preferensi: [`m17-notifications.md`](m17-notifications.md).
 
@@ -234,6 +266,7 @@ Ketentuan umum kanal, latensi, dan preferensi: [`m17-notifications.md`](m17-noti
 | `asset.view_financial` | Aset | Melihat nilai & sumber perolehan | Admin, Petugas, Pimpinan |
 | `asset.create` | Aset | Membuat & mengimpor aset | Admin, Petugas |
 | `asset.update` | Aset | Menyunting aset & mutasi lokasi | Admin, Petugas |
+| `asset_movement_document.view` | Aset | Melihat & mengunduh berita acara mutasi | Admin, Petugas, Pimpinan |
 | `asset.update_condition` | Aset | Mengubah kondisi aset | Admin, Petugas, Teknisi(`assigned`) |
 | `asset.deactivate` | Aset | Menonaktifkan aset (bukan penghapusan formal) | Admin, Petugas |
 | `asset.export` | Aset | Mengekspor daftar aset | Admin, Petugas, Pimpinan |
@@ -250,7 +283,16 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | `ASSET_CONDITION_CHANGED` | Wajib menyertakan alasan |
 | `ASSET_STATUS_CHANGED` | Perubahan status termasuk yang otomatis oleh sistem |
 | `ASSET_MOVED` | Mutasi lokasi beserta asal dan tujuan |
+| `ASSET_MOVEMENT_DOCUMENT_REQUESTED` | Snapshot dan permintaan PDF atomik dengan mutasi |
+| `ASSET_MOVEMENT_DOCUMENT_STARTED` | Worker mulai mencoba pembuatan dokumen |
+| `ASSET_MOVEMENT_DOCUMENT_READY` / `ASSET_MOVEMENT_DOCUMENT_FAILED` | Hasil akhir worker; mutasi tetap tersimpan |
+| `ASSET_MOVEMENT_DOCUMENT_DOWNLOADED` | Setiap penerbitan URL PDF privat, termasuk pelaku dan ID operasi |
 | `ASSET_IMPORTED` | Impor massal |
+| `ASSET_EXPORT_REQUESTED` | Pengajuan ekspor katalog, format dan filter; atomik dengan job/outbox |
+| `ASSET_EXPORTED` | Berkas katalog siap, format/filter/jumlah baris dan referensi berkas |
+| `ASSET_IMPORT_REQUESTED` | Penerimaan pekerjaan sinkron/asinkron beserta outbox dalam satu transaksi |
+| `ASSET_IMPORT_ROW_PROCESSED` | Progres satu baris, jumlah unit atau alasan gagal; atomik dengan aset yang dibuat |
+| `ASSET_IMPORT_REPORT_PURGED` | Rincian galat/nama berkas impor melewati retensi 30 hari dibersihkan; ID/status/hitungan tetap tersimpan |
 | `CATEGORY_CREATED` / `CATEGORY_UPDATED` / `CATEGORY_DELETED` | Perubahan kategori |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
@@ -276,3 +318,50 @@ Strategi pengujian: [`../06-quality/test-strategy.md`](../06-quality/test-strate
 ## 15. Open Issues
 
 _Tidak ada isu terbuka._
+
+### Keputusan pengguna PR-02-47 — 15 Oktober 2026
+
+Dua jawaban AskUserQuestion menetapkan ekspor katalog:
+
+- Seluruh ekspor melalui worker dengan status/unduh pada P-15, memakai
+  infrastruktur ekspor yang ada. Hak `asset.export` bersama `asset.view` cukup;
+  tidak memerlukan `report.export` atau `report.view`.
+- Kolom lengkap: kode/nama/merek/model/nomor seri, kategori, gedung/ruangan,
+  kondisi/status, tahun, kelayakan pinjam/siswa, penanggung jawab dan QR terpasang.
+  Sumber/nilai perolehan hanya sesuai izin finansial. Tidak memuat dokumen,
+  foto, histori transaksi, data kontak atau biaya pemeliharaan.
+
+GET /assets/export menerima format=XLSX|PDF serta q, sort dan filter katalog
+yang sama (kategori/lokasi/kondisi/status/tahun/kelayakan/QR/hasil impor), tanpa
+page/per_page. Seluruh hasil filter diekspor, bukan halaman aktif. Parameter
+tak dikenal ditolak. Respons 202 berisi job; Idempotency-Key UUIDv4 wajib agar
+pengulangan pengiriman tidak membuat job ganda. Respons private/no-store.
+Worker memakai keadaan data saat pemrosesan, bukan snapshot saat tombol ditekan.
+
+Scope baca all/own/restricted dan ekspor all/own beririsan sebelum query; own
+adalah penanggung jawab aset. Restricted mengikuti boleh_dipinjam_siswa. Scope
+lain tanpa aturan ditolak. Aset dihapuskan tidak masuk katalog/ekspor biasa.
+Filter hasil impor hanya milik pengunggah. Nilai/sumber tidak dipilih SQL jika
+izin finansial tidak cukup: all membuka kolom, own hanya jika seluruh dataset
+sudah dibatasi ke aset pemanggil; selainnya kedua kolom dihilangkan. R-07 tidak
+mendapat field finansial sekalipun permission itu diberikan secara kustom.
+
+Batas infrastruktur yang dipakai ulang: XLSX 100.000/PDF 5.000 baris; hasil lebih
+besar gagal dengan penjelasan untuk mempersempit filter, tanpa berkas terpotong.
+PDF memerlukan Nama sekolah terkonfigurasi dan memuat filter/waktu WIB/pencetak.
+Teks spreadsheet tetap teks, nilai DECIMAL tetap presisi. Job/audit/outbox atomik;
+berkas siap terdaftar privat dan NT-42 menautkan /aset?ekspor={id}. File berlaku
+24 jam, URL unduh paling lama lima menit. Izin akun dan keanggotaan scope dibaca
+ulang saat pemrosesan/unduh; perubahan membatalkan akses file lama. Pemanggil
+lain, termasuk Admin, tidak membaca pekerjaan milik pengguna lain.
+### Retensi laporan impor aset — PR-05-26
+
+Keputusan AskUserQuestion 15 Oktober 2026 menetapkan retensi 30×24 jam sejak job
+SELESAI/GAGAL bagi laporan galat pengguna dan aset. API menutup rincian pada
+tenggat tanpa bergantung jadwal cleanup. Worker personal-data-retention menghapus
+rincian galat, pesan galat dan isi berkas tersisa, mengganti nama berkas dengan
+penanda serta mengisi report_purged_at. ID/status/hitungan dan audit tetap;
+aset hasil impor tidak disentuh. Job berjalan tidak dipurge. Waktu terminal lama
+yang tidak diketahui dihitung konservatif sejak migration. Respons menyediakan
+report_expires_at/report_expired; P-17 menampilkan tenggat WIB dan tidak menawarkan
+laporan/koreksi yang telah kedaluwarsa.

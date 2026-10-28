@@ -5,7 +5,7 @@
 # Indeks Business Rules
 
 > Setiap aturan dimiliki satu modul. Sunting di berkas modulnya, bukan di sini.
-> Total: **119** baris, dikumpulkan dari 22 berkas modul.
+> Total: **125** baris, dikumpulkan dari 22 berkas modul.
 
 | Kode | Business Rule | Pemilik |
 |---|---|---|
@@ -33,7 +33,7 @@
 | BR-020 | Pengajuan reservasi wajib dilakukan minimal H-1 sebelum waktu penggunaan, kecuali oleh pengguna dengan permission `reservation.urgent`. | [M-07](../02-modules/m07-reservation-room.md) |
 | BR-021 | Durasi maksimum peminjaman aset ditetapkan per role melalui konfigurasi sistem; nilai bawaan: Guru & Staf 7 hari, Siswa/OSIS 3 hari. | [M-07](../02-modules/m07-reservation-room.md) |
 | BR-022 | Role Siswa/OSIS hanya dapat mereservasi aset dengan penanda `boleh_dipinjam_siswa = true` dan ruangan dengan penanda `boleh_direservasi_siswa = true`. | [M-07](../02-modules/m07-reservation-room.md) |
-| BR-023 | Reservasi yang telah disetujui namun tidak diambil dalam 1×24 jam sejak waktu mulai otomatis berstatus `Kedaluwarsa` dan unitnya dibebaskan. | [M-07](../02-modules/m07-reservation-room.md) |
+| BR-023 | Reservasi yang telah disetujui namun tidak diambil dalam 1×24 jam sejak waktu mulai otomatis berstatus `Kedaluwarsa` dan unitnya dibebaskan. Berlaku bagi reservasi **aset** (diambil = check-out, FR-09.1); reservasi ruangan yang tidak dipakai berstatus `Tidak Digunakan` (FR-07.4). | [M-07](../02-modules/m07-reservation-room.md) |
 | BR-023a | Setiap pemohon dibatasi jumlah pengajuan berstatus `Menunggu Persetujuan` yang boleh berjalan bersamaan (nilai bawaan: Guru & Staf 5, Siswa/OSIS 2; dikonfigurasi Administrator). Pengajuan melebihi kuota ditolak. | [M-07](../02-modules/m07-reservation-room.md) |
 | BR-023b | Slot `Tentative` memiliki masa berlaku (TTL) yang dikonfigurasi Administrator (bawaan 48 jam, atau hingga H-1 waktu mulai — mana yang lebih dulu). Bila pengajuan belum diputuskan sampai TTL habis, slot dibebaskan otomatis dan pengajuan berstatus `Kedaluwarsa`. Aturan ini mencegah penguncian ketersediaan oleh pengajuan menggantung. | [M-07](../02-modules/m07-reservation-room.md) |
 | BR-023c | Reservasi berulang (BR-024a) tidak boleh menahan slot lebih dari horizon pemesanan yang dikonfigurasi (bawaan 90 hari ke depan). | [M-07](../02-modules/m07-reservation-room.md) |
@@ -50,7 +50,7 @@
 | BR-028c | Hari libur sekolah **tetap dihitung** sebagai hari keterlambatan, kecuali Administrator mengaktifkan parameter "kecualikan hari libur". Kebijakan yang dipilih wajib disosialisasikan kepada pengguna sebelum go-live (RS-16). | [M-09](../02-modules/m09-loans.md) |
 | BR-028d | Aset yang dinyatakan `Hilang` atau rusak berat akibat kelalaian peminjam menimbulkan **kewajiban ganti rugi** terpisah dari denda keterlambatan, sebesar nilai perolehan aset atau nilai penggantian yang ditetapkan Petugas Sarpras dengan persetujuan Pimpinan Sekolah. Kewajiban ini dicatat dengan jenis `Ganti Rugi` dan mengikuti alur status yang sama dengan denda. | [M-09](../02-modules/m09-loans.md) |
 | BR-028e | Kewajiban berjenis `Ganti Rugi` dapat dibebaskan sepenuhnya atau sebagian **hanya oleh Pimpinan Sekolah**, melalui permission `fine.waive_compensation`, dengan alasan wajib dan tercatat pada activity log. Petugas Sarpras maupun Administrator tidak berwenang membebaskannya — `fine.waive` (BR-031) tidak berlaku atas jenis ini. Pembebasan sebagian mengisi `jumlah_dibebaskan` dan menyisakan tagihan sebesar `jumlah − jumlah_dibebaskan` dengan status `Dibebaskan Sebagian`; kewajiban tersisa tetap diperhitungkan pada ambang pemblokiran BR-030. | [M-09](../02-modules/m09-loans.md) |
-| BR-029 | Tarif denda yang berlaku adalah tarif pada saat tanggal jatuh tempo, bukan tarif saat pengembalian. | [M-09](../02-modules/m09-loans.md) |
+| BR-029 | Tarif harian, cap nominal, cap persentase, dan kebijakan pengecualian libur disimpan sebagai snapshot saat check-out; perubahan setting berikutnya tidak mengubah perhitungan pinjaman berjalan. Tarif harian dan cap nominal wajib dikonfigurasi Administrator sebelum check-out; keduanya tidak memiliki nominal bawaan (keputusan produk 13 Oktober 2026). | [M-09](../02-modules/m09-loans.md) |
 | BR-030 | Pengguna yang memiliki peminjaman terlambat yang belum dikembalikan, atau denda `Belum Dibayar` melebihi ambang yang dikonfigurasi, diblokir dari mengajukan reservasi/peminjaman baru sampai kewajibannya diselesaikan. | [M-09](../02-modules/m09-loans.md) |
 | BR-031 | Pembebasan denda berjenis `Keterlambatan` hanya dapat dilakukan oleh Administrator atau Petugas Sarana Prasarana, wajib menyertakan alasan, dan tercatat pada activity log. Pembebasan berjenis `Ganti Rugi` tunduk pada BR-028e, bukan aturan ini. | [M-09](../02-modules/m09-loans.md) |
 | BR-032 | Aset yang kembali dalam kondisi rusak otomatis menghasilkan tiket Laporan Kerusakan yang tertaut ke transaksi peminjaman dan peminjamnya. | [M-09](../02-modules/m09-loans.md) |
@@ -99,10 +99,14 @@
 | BR-067 | Akun pengguna tidak dapat dihapus permanen; hanya dapat dinonaktifkan. | [M-02](../02-modules/m02-users.md) |
 | BR-068 | Sistem wajib memiliki minimal satu akun Administrator berstatus aktif. | [M-02](../02-modules/m02-users.md) |
 | BR-069 | Pengguna tidak dapat mengubah email dan rolenya sendiri. | [M-02](../02-modules/m02-users.md) |
+| BR-069a | Role Administrator (R-01), Pimpinan Sekolah (R-03), dan Siswa/OSIS (R-07) tidak dapat dijadikan template role kustom: kewajiban 2FA (`BR-070`) dan perlindungan siswa (`DP-02`, `SL-01` … `SL-06`) melekat pada kode role, sehingga salinannya akan lolos dari perlindungan tersebut. | [M-02](../02-modules/m02-users.md) |
+| BR-069b | Cakupan lokasi (`FR-02.3`) hanya dapat diberikan kepada pengguna berrole Petugas Sarana Prasarana (R-02), Teknisi (R-04), atau role kustom (`RK-*`). Administrator dan Pimpinan Sekolah mengawasi seluruh sekolah; Guru, Staf/Tata Usaha, dan Siswa/OSIS sudah dibatasi pada data miliknya sendiri. | [M-02](../02-modules/m02-users.md) |
 | BR-070 | Role Administrator dan Pimpinan Sekolah wajib mengaktifkan 2FA. | [M-01](../02-modules/m01-auth.md) |
 | BR-070a | Sistem wajib memiliki **minimal dua** akun Administrator aktif; instalasi awal tidak dianggap selesai sebelum syarat ini terpenuhi (RS-19). | [M-01](../02-modules/m01-auth.md) |
 | BR-070b | Kehilangan total akses Administrator dipulihkan melalui prosedur *break-glass* berbasis CLI di sisi server dengan otorisasi tertulis Kepala Sekolah (FR-01.6). Prosedur ini tidak pernah tersedia melalui antarmuka web atau API. | [M-01](../02-modules/m01-auth.md) |
 | BR-070c | Kode cadangan 2FA disimpan dalam bentuk hash dan hanya ditampilkan satu kali pada saat pembuatan. | [M-01](../02-modules/m01-auth.md) |
+| BR-070d | Pendaftaran 2FA pertama akun role wajib 2FA — juga pendaftaran ulang setelah reset 2FA atau *break-glass* — hanya dapat diselesaikan dengan **kode aktivasi 2FA** sekali pakai; password saja tidak cukup. Kode diterbitkan oleh Administrator lain (setelah memverifikasi identitas pemilik akun luring) atau oleh CLI server, tampil satu kali, disimpan sebagai hash, berlaku 72 jam, dan hangus setelah 5 kesalahan. Kode diserahkan langsung kepada pemilik akun, bukan lewat pesan instan atau pihak ketiga (FR-01.5). | [M-01](../02-modules/m01-auth.md) |
+| BR-070e | Pendaftaran 2FA yang berhasil pada akun mana pun mencabut seluruh sesi lain pemilik akun itu dan menghasilkan notifikasi kepada Administrator (`NT-39a`) (FR-01.5). | [M-01](../02-modules/m01-auth.md) |
 | BR-071 | Seluruh operasi tulis wajib tercatat pada activity log. | [M-18](../02-modules/m18-activity-log.md) |
 | BR-072 | Activity log bersifat *append-only* dan tidak dapat disunting maupun dihapus oleh role mana pun melalui aplikasi. | [M-18](../02-modules/m18-activity-log.md) |
 | BR-073 | Role Siswa/OSIS tidak boleh mengakses data finansial aset, biaya pemeliharaan, data pengadaan, dokumen aset, maupun data pribadi pengguna lain. | [M-02](../02-modules/m02-users.md) |
@@ -119,11 +123,13 @@
 | BR-084 | Satuan bahan hanya boleh berasal dari master satuan yang dikelola Administrator (`FR-20.1`), tidak dapat diketik bebas. | [M-22](../02-modules/m22-materials.md) |
 | BR-085 | Stok minimum ditetapkan per bahan dan dievaluasi terhadap **saldo total** seluruh lokasi penyimpanan. | [M-22](../02-modules/m22-materials.md) |
 | BR-086 | Permintaan bahan melewati approval engine hanya bila melampaui ambang yang dikonfigurasi Administrator; di bawah ambang permintaan berstatus `Disetujui` tanpa instance approval. | [M-22](../02-modules/m22-materials.md) |
+| BR-086a | Permintaan bahan oleh Siswa/OSIS **tidak** melewati approval engine, berapa pun jumlahnya (pengecualian `BR-086`): permintaan langsung `Disetujui` dan Petugas menilainya saat penyerahan — menyerahkan penuh, sebagian, atau menutup sisa dengan alasan (`FR-22.5`). Keputusan pemilik produk 26 Oktober 2026. | [M-22](../02-modules/m22-materials.md) |
 | BR-087 | Bahan yang telah diserahkan **tidak memiliki kewajiban pengembalian**. Tidak berlaku jadwal pengembalian, denda keterlambatan (`BR-028`), maupun ganti rugi. | [M-22](../02-modules/m22-materials.md) |
 | BR-088 | Setiap transaksi `PENYESUAIAN` wajib menyertakan alasan sebelum dapat disimpan. | [M-22](../02-modules/m22-materials.md) |
 | BR-089 | Jumlah bahan yang diserahkan tidak boleh melebihi jumlah yang disetujui pada permintaan. | [M-22](../02-modules/m22-materials.md) |
 | BR-090 | QR bahan mengikat satu **jenis bahan** dan tidak pernah bermakna unit individual. | [M-22](../02-modules/m22-materials.md) |
 | BR-091 | Bahan berstatus nonaktif tidak dapat diminta, namun saldo dan seluruh riwayat transaksinya tetap dapat ditelusuri. | [M-22](../02-modules/m22-materials.md) |
+| BR-091a | Siswa/OSIS (scope `restricted` pada `material.view` dan `material.request`) hanya melihat dan meminta bahan aktif bertanda `boleh_diminta_siswa`. Saldo ditampilkan sebagai status — **Tersedia** (di atas stok minimum), **Terbatas** (di atas 0 dan tidak melebihi stok minimum), **Habis** (0) — tanpa angka, lokasi lain, maupun kartu stok; lokasi asal permintaannya adalah `room_id_default` bahan. | [M-22](../02-modules/m22-materials.md) |
 | BR-092 | Setiap transaksi bahan menyimpan `saldo_sesudah` sehingga kartu stok dapat direkonstruksi tanpa menghitung ulang seluruh riwayat. | [M-22](../02-modules/m22-materials.md) |
 | BR-093 | Satu sesi stock opname hanya mencakup **satu domain**: Aset atau Bahan. Sesi tidak pernah mencampur keduanya. `BR-054`…`BR-058` berlaku bagi sesi domain **Aset**. | [M-13](../02-modules/m13-audit-stocktake.md) |
 | BR-094 | Hasil opname bahan baru diterapkan ke saldo setelah laporan rekonsiliasi disetujui Pimpinan Sekolah — sejajar dengan `BR-057` pada sesi aset. | [M-13](../02-modules/m13-audit-stocktake.md) |

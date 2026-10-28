@@ -15,7 +15,7 @@
 
 | Milestone | Isi | Kriteria keluar |
 |---|---|---|
-| **M0 — Fondasi Teknis** | Kerangka proyek, skema basis data inti, migration, CI/CD, tiga lingkungan, observability dasar, katalog permission (Lampiran C) ter-*seed* | Pipeline hijau; deploy ke staging otomatis; `/health` melaporkan seluruh dependensi |
+| **M0 — Fondasi Teknis** | Kerangka proyek, skema basis data inti, migration, CI/CD, tiga lingkungan, observability dasar, katalog permission (Lampiran C) ter-*seed* | Pipeline hijau; deploy ke staging otomatis; `/health` memisahkan *liveness* dan *readiness* dan melaporkan dependensi yang integrasinya sudah dibangun — laporan lengkap `OBS-06` menyusul bersama integrasi terakhirnya |
 | **M1 — Identitas & Data Induk** | M-01, M-02, M-03, M-04, M-05, M-20 + Lampiran C ditegakkan di seluruh endpoint | 500 aset dapat diimpor, QR dicetak & dipindai, RBAC lolos uji otorisasi per role (ST-05) |
 | **M2 — Mesin Persetujuan & Pemesanan** | M-10 (termasuk Lampiran D), M-07, M-08, Bab 26 (`booking_slots`, exclusion constraint) | Uji konkurensi lolos: 50 permintaan simultan atas slot sama → tepat 1 sukses |
 | **M3 — Siklus Operasional** | M-09, M-11, M-12, M-06 | Alur ujung-ke-ujung reservasi → serah terima → pengembalian → denda → tiket kerusakan → work order → selesai, berjalan di staging |

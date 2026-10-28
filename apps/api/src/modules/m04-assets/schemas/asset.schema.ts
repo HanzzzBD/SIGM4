@@ -1,0 +1,230 @@
+// Skema Zod M-04 (SDD-API-01, SDD-API-11, `m04-assets.md` §7).
+
+import { z } from "zod";
+import { AssetExportFilterSchema, MoveAssetsBodySchema, AssetMovementReceiptSchema } from "@sigm4/schemas";
+export { MoveAssetsBodySchema };
+
+/** Katalog `asset_condition`/`asset_status` (0002, Phase 00) — tabel `assets` belum ada. */
+const AssetConditionSchema = z.enum(["BAIK", "RUSAK_RINGAN", "RUSAK_BERAT", "HILANG"]);
+const AssetStatusSchema = z.enum([
+    "TERSEDIA",
+    "DIRESERVASI",
+    "DIPINJAM",
+    "DALAM_PERBAIKAN",
+    "TIDAK_TERSEDIA",
+]);
+
+const SumberPerolehanSchema = z.enum(["PEMBELIAN", "HIBAH", "BANTUAN_PEMERINTAH", "SUMBANGAN", "LAINNYA"]);
+
+export const RoomIdParamSchema = z.object({
+    id: z.coerce.number().int().positive(),
+});
+
+export const AssetIdParamSchema = z.object({
+    id: z.coerce.number().int().positive(),
+});
+
+/**
+ * `POST /assets` (FR-04.1 langkah 2-3, `m04-assets.md` §7). `jumlah_unit`
+ * dibatasi sama dengan rentang impor massal (conventions.md E.5.1: 1-500).
+ * Rentang wajar tahun (1900-2100) HANYA pagar teknis dasar — validasi bisnis
+ * "1950 - tahun berjalan" adalah aturan jalur impor (E.5.1), belum diterapkan
+ * di jalur manual ini.
+ */
+export const CreateAssetBodySchema = z.object({
+    nama: z.string().trim().min(1).max(150),
+    category_id: z.coerce.number().int().positive(),
+    merek: z.string().trim().min(1).max(100).nullable().optional(),
+    model: z.string().trim().min(1).max(100).nullable().optional(),
+    nomor_seri: z.string().trim().min(1).max(100).nullable().optional(),
+    tahun_perolehan: z.coerce.number().int().min(1900).max(2100),
+    sumber_perolehan: SumberPerolehanSchema,
+    nilai_perolehan: z.coerce.number().nonnegative().nullable().optional(),
+    room_id: z.coerce.number().int().positive(),
+    kondisi: z.enum(["BAIK", "RUSAK_RINGAN", "RUSAK_BERAT", "HILANG"]),
+    dapat_dipinjam: z.boolean().default(true),
+    boleh_dipinjam_siswa: z.boolean().default(false),
+    penanggung_jawab_id: z.coerce.number().int().positive().nullable().optional(),
+    procurement_id: z.coerce.number().int().positive().nullable().optional(),
+    jumlah_unit: z.coerce.number().int().min(1).max(500).default(1),
+});
+
+export const AssetSchema = z.object({
+    id: z.string(),
+    uuid: z.string(),
+    kode_barang: z.string(),
+    nama: z.string(),
+    category_id: z.string(),
+    merek: z.string().nullable(),
+    model: z.string().nullable(),
+    nomor_seri: z.string().nullable(),
+    tahun_perolehan: z.number(),
+    sumber_perolehan: SumberPerolehanSchema,
+    nilai_perolehan: z.string().nullable(),
+    room_id: z.string(),
+    kondisi: z.enum(["BAIK", "RUSAK_RINGAN", "RUSAK_BERAT", "HILANG"]),
+    status: z.enum(["TERSEDIA", "DIRESERVASI", "DIPINJAM", "DALAM_PERBAIKAN", "TIDAK_TERSEDIA"]),
+    dapat_dipinjam: z.boolean(),
+    boleh_dipinjam_siswa: z.boolean(),
+    penanggung_jawab_id: z.string().nullable(),
+    procurement_id: z.string().nullable(),
+    /** FR-05.1: payload QR permanen `https://{domain}/a/{uuid}` (PR-03-01). */
+    qr_url: z.string(),
+    qr_terpasang: z.boolean(),
+    created_at: z.string(),
+});
+
+/** FR-04.1 langkah 6: daftar SELURUH unit yang baru dibuat (1..jumlah_unit). */
+export const CreateAssetResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.array(AssetSchema),
+    meta: z.object({ jumlah_unit: z.number() }),
+});
+
+/**
+ * `PATCH /assets/{id}/condition` (FR-04.3 langkah 2-3). `alasan` wajib
+ * (BR-007) — pola `max(500)` sama dengan `alasan` di modul lain
+ * (`password-reset.schema.ts`, `user.schema.ts`). `referensi_jenis`/
+ * `referensi_id` OPSIONAL di skema (bentuk/tipe saja) — kewajibannya HANYA
+ * saat `kondisi = HILANG` adalah aturan bisnis (BR-012), diperiksa
+ * `AssetService.ubahKondisi`, bukan di sini (SDD-API §4.4: galat Zod tidak
+ * berpesan Indonesia).
+ */
+export const UpdateAssetConditionBodySchema = z.object({
+    kondisi: AssetConditionSchema,
+    alasan: z.string().trim().min(1).max(500),
+    referensi_jenis: z.string().trim().min(1).max(50).nullable().optional(),
+    referensi_id: z.coerce.number().int().positive().nullable().optional(),
+});
+
+/** FR-04.3 langkah 4: aset lengkap pasca-perubahan (kondisi + status turunan). */
+export const UpdateAssetConditionResponseSchema = z.object({
+    success: z.literal(true),
+    data: AssetSchema,
+    meta: z.null(),
+});
+
+/**
+ * `POST /assets/move` (FR-04.4 langkah 1-2). `asset_ids` 1..50 (AC mutasi
+ * massal); satu ruangan tujuan untuk seluruhnya. `alasan` pola `max(500)` sama
+ * dengan `alasan` di skema lain; `tanggal_mutasi` pola `z.iso.date()` (M-20).
+ */
+
+/** FR-04.4 langkah 4: seluruh aset yang dipindahkan, pasca-mutasi. */
+export const MoveAssetsResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.array(AssetSchema),
+    meta: z.object({ jumlah_aset: z.number(), berita_acara: AssetMovementReceiptSchema }),
+});
+
+/** `GET /rooms/{id}/assets` (FR-03.2 langkah 4). */
+export const ListRoomAssetsQuerySchema = z.object({
+    q: z.string().trim().max(200).optional(),
+    page: z.coerce.number().int().positive().default(1),
+    per_page: z.coerce.number().int().positive().max(100).default(25),
+    kategori_id: z.coerce.number().int().positive().optional(),
+    kondisi: AssetConditionSchema.optional(),
+    status: AssetStatusSchema.optional(),
+});
+
+const AssetSummarySchema = z.object({
+    kode_barang: z.string(),
+    nama: z.string(),
+    kondisi: AssetConditionSchema,
+    status: AssetStatusSchema,
+});
+
+const RoomAssetsRingkasanSchema = z.object({
+    total: z.number(),
+    per_kondisi: z.record(AssetConditionSchema, z.number()),
+    jumlah_dipinjam: z.number(),
+    jumlah_dalam_perbaikan: z.number(),
+});
+
+/** FR-03.2 langkah 2-3: daftar aset ruangan + ringkasan kondisi/status. */
+export const RoomAssetsResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.object({
+        room_id: z.string(),
+        assets: z.array(AssetSummarySchema),
+        ringkasan: RoomAssetsRingkasanSchema,
+    }),
+    meta: z.object({
+        page: z.number(),
+        per_page: z.number(),
+        total: z.number(),
+        total_pages: z.number(),
+    }),
+});
+
+/** FR-04.2/PR-02-47: katalog dan ekspor memakai kontrak filter yang sama. */
+export const ListAssetsQuerySchema = AssetExportFilterSchema.extend({
+    page: z.coerce.number().int().positive().default(1),
+    per_page: z.coerce.number().int().positive().max(100).default(25),
+}).strip();
+
+/**
+ * Item katalog (FR-04.2). `sumber_perolehan`/`nilai_perolehan` OPSIONAL —
+ * tidak pernah ter-SELECT bagi pemanggil tanpa `asset.view_financial`
+ * (BR-073, SDD-AUTH-06) — bukan `null`, melainkan TIDAK ADA pada respons.
+ */
+export const AssetCatalogItemSchema = z.object({
+    id: z.string(),
+    uuid: z.string(),
+    kode_barang: z.string(),
+    nama: z.string(),
+    category_id: z.string(),
+    merek: z.string().nullable(),
+    model: z.string().nullable(),
+    nomor_seri: z.string().nullable(),
+    tahun_perolehan: z.number(),
+    room_id: z.string(),
+    kondisi: AssetConditionSchema,
+    status: AssetStatusSchema,
+    dapat_dipinjam: z.boolean(),
+    boleh_dipinjam_siswa: z.boolean(),
+    qr_url: z.string(),
+    qr_terpasang: z.boolean(),
+    created_at: z.string(),
+    sumber_perolehan: SumberPerolehanSchema.optional(),
+    nilai_perolehan: z.string().nullable().optional(),
+});
+
+/** Item daftar katalog: + nama kategori & lokasi (keputusan 93b log phase-02). */
+export const AssetCatalogListItemSchema = AssetCatalogItemSchema.extend({ kategori_nama: z.string(), lokasi: z.object({ ruang: z.string(), gedung: z.string() }) });
+
+export const ListAssetsResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.array(AssetCatalogListItemSchema),
+    meta: z.object({
+        page: z.number(),
+        per_page: z.number(),
+        total: z.number(),
+        total_pages: z.number(),
+    }),
+});
+
+/**
+ * `PUT /assets/{id}` (FR-04.3 langkah 2–3; PR-02-46, keputusan 93e/93f log phase-02). Ganti utuh
+ * atribut deskriptif; `sumber_perolehan`/`nilai_perolehan` opsional (hanya pemegang
+ * `asset.view_financial`, BR-073). `kondisi` opsional — bila berubah, `alasan` wajib (aturan bisnis
+ * → 422 di layanan, SDD-API §4.4). Lokasi, kategori, kode, status tidak diterima (`strictObject`).
+ */
+export const UpdateAssetBodySchema = z.strictObject({
+    nama: z.string().trim().min(1).max(150),
+    merek: z.string().trim().min(1).max(100).nullable(),
+    model: z.string().trim().min(1).max(100).nullable(),
+    nomor_seri: z.string().trim().min(1).max(100).nullable(),
+    tahun_perolehan: z.coerce.number().int().min(1900).max(2100),
+    dapat_dipinjam: z.boolean(),
+    boleh_dipinjam_siswa: z.boolean(),
+    penanggung_jawab_id: z.coerce.number().int().positive().nullable(),
+    sumber_perolehan: SumberPerolehanSchema.optional(),
+    nilai_perolehan: z.coerce.number().nonnegative().nullable().optional(),
+    kondisi: AssetConditionSchema.optional(),
+    alasan: z.string().trim().max(500).optional(),
+    referensi_jenis: z.string().trim().min(1).max(50).nullable().optional(),
+    referensi_id: z.coerce.number().int().positive().nullable().optional(),
+});
+
+export const UpdateAssetResponseSchema = UpdateAssetConditionResponseSchema;

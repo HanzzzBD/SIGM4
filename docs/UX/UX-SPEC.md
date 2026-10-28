@@ -98,7 +98,7 @@ Dokumentasi UX terbagi enam berkas. **Berkas ini adalah entry point.**
 
 ## 1.1 Prinsip yang mengikat (dari PRD)
 
-Enam prinsip berikut **bukan milik berkas ini** — ia ditetapkan [`ui-foundation.md §31.1`](../PRD/04-frontend/ui-foundation.md) dan dirujuk di sini karena setiap keputusan pada §5–§1| `UX-01` | Mobile-first untuk alur lapangan, desktop-first untuk alur administratif | Pembagian tegas lingkup web ↔ mobile ([§6.3](PAGE-SPECIFICATION.md#63-batas-lingkup-web--mobile)); mobile hanya memuat alur lapangan (`SDD-MOB` §4.1) |
+Enam prinsip berikut **bukan milik berkas ini** — ia ditetapkan [`ui-foundation.md §31.1`](../PRD/04-frontend/ui-foundation.md) dan dirujuk di sini karena setiap keputusan pada §5–§1| `UX-01` | Mobile-first untuk alur lapangan, desktop-first untuk alur administratif — keduanya tersedia di kedua platform | Prioritas tata letak per platform ([§6.3](PAGE-SPECIFICATION.md#63-batas-lingkup-web--mobile)); sejak **UXD-19** mobile memuat seluruh alur kecuali cetak label QR dan impor massal (`MOB-SCP-01`, `MOB-SCP-02`) |
 | `UX-02` | Scan QR jalan pintas utama; input kode manual selalu tersedia | Scan mendapat posisi permanen di navigasi mobile (**UXD-03**) dan entri sidebar di web; setiap layar pemindai wajib menampilkan tombol "Masukkan kode aset manual" tanpa disembunyikan (`FR-05.2 A1`, `MOB-MED-06`) |
 | `UX-03` | Status selalu disertai teks dan ikon, tidak pernah hanya warna | Satu komponen `LencanaStatus` untuk seluruh enum Bab 11.3 ([§11.4](PAGE-SPECIFICATION.md#114-lencana-status--kalender)); lima keadaan slot kalender dibedakan warna **dan** pola **dan** teks (`CAL-UI-05`) |
 | `UX-04` | Aksi destruktif selalu memerlukan konfirmasi dan alasan | Daftar lengkap aksi berkonfirmasi-beralasan pada [§7.2](PAGE-SPECIFICATION.md#72-pola-aksi-destruktif) |
@@ -157,7 +157,7 @@ Lingkup UX ditetapkan di tiga tempat. Ketiganya mengikat dan tidak boleh ditafsi
 
 | Batas | Ditetapkan di | Isi |
 |---|---|---|
-| **Batas platform** — alur mana berjalan di web, mana di mobile, mana di keduanya | [§6.3 Batas lingkup web ↔ mobile](PAGE-SPECIFICATION.md#63-batas-lingkup-web--mobile) | Tabel 16 alur × dua platform, beserta penanda platform utama. Aplikasi mobile **tidak** memiliki entri untuk 9 dari 21 modul — itu disengaja (`SDD-MOB` §4.1, `UX-01`) |
+| **Batas platform** — alur mana berjalan di web, mana di mobile, mana di keduanya | [§6.3 Batas lingkup web ↔ mobile](PAGE-SPECIFICATION.md#63-batas-lingkup-web--mobile) | Tabel 19 alur × dua platform, beserta penanda platform utama. Sejak **UXD-19** seluruh modul memiliki entri di mobile; cetak label QR dan impor massal mengarah ke web (`MOB-SCP-02`) |
 | **Batas peran** — siapa melihat apa | [§5.3 Sidebar per role](NAVIGATION.md#sidebar-per-role-yang-benar-benar-terlihat) · [§2 User Roles & Goals](#2-user-roles--goals) | Visibilitas bersumber tunggal dari `GET /me` (`PM-04`), bukan dari nama role |
 | **Batas negatif** — layar yang sengaja **tidak** dibuat | [§12.5 Yang sengaja tidak dibuat](DECISIONS.md#125-yang-sengaja-tidak-dibuat) | 13 layar beserta requirement yang melarangnya (`BR-070b`, `BR-072`, `BR-075`, `NO-07`, dan lainnya) |
 
@@ -320,7 +320,7 @@ Tidak seluruh business rule berdampak visual. Tabel ini memuat yang **mengubah a
 | Diagram Mermaid | 30 | — | IA (1), sitemap (3), alur navigasi (1), dan 25 diagram alur |
 | Keadaan global | 6 | 6 | Lima dari 31.5 + keadaan sukses (**UXD-06**) |
 | Keputusan UX diambil | 13 | — | §12.2 — 11 User Decision, 2 turunan PRD/SDD |
-| Keputusan masih terbuka | 5 | — | §12.3 — seluruhnya memetakan TBD kelompok A |
+| Keputusan masih terbuka | 0 | — | §12.3 — kosong sejak 25 Agustus 2026; kelima keputusan pindah ke §12.2 |
 | Konflik ditemukan | 4 | — | §12.4 — seluruhnya tertutup: 2 lewat aturan prioritas, 1 oleh pemilik produk, 1 sudah ditutup PRD |
 
 ---
@@ -343,7 +343,7 @@ Tidak seluruh business rule berdampak visual. Tabel ini memuat yang **mengubah a
 | # | Tindakan | Pemilik |
 |---|---|---|
 | 1 | ~~Perbaiki tabel endpoint `m07` bagian 7: `reservation.cancel` menjadi `reservation.cancel_own` / `reservation.cancel_any` (**K-02**)~~ — **selesai 24 Agustus 2026**: satu endpoint menerima kedua permission, kepemilikan diperiksa di server | Pemilik berkas modul M-07 |
-| 2 | ~~Tutup `TBD-FE-B`, `TBD-MOB-B`, `TBD-NTF-A`~~ — **selesai 22 Agustus 2026**; rancangan `SDD-08 §4.5` serta `SDD-12 §4.8` sudah diselaraskan. Register kini **13 terbuka · 28 tertutup** (empat TBD Bahan ditutup 23 Agustus; dua belas TBD ditutup 25 Agustus dalam empat batch; `TBD-AI-D` dibuka dan ditutup 2 September — kelompok A, C, dan D kosong) | Software Architect |
+| 2 | ~~Tutup `TBD-FE-B`, `TBD-MOB-B`, `TBD-NTF-A`~~ — **selesai 22 Agustus 2026**; rancangan `SDD-08 §4.5` serta `SDD-12 §4.8` sudah diselaraskan. Register kini **13 terbuka · 42 tertutup** (empat TBD Bahan ditutup 23 Agustus; dua belas TBD ditutup 25 Agustus dalam empat batch; `TBD-AI-D` dibuka dan ditutup 2 September — kelompok A, C, dan D kosong) | Software Architect |
 | 3 | ~~Selesaikan `TBD-APR-A`, `TBD-NTF-B`, `TBD-EVT-B`, `TBD-FS-A`, `TBD-AVL-B`~~ — **seluruhnya selesai 25 Agustus 2026** (`UXD-09`, `UXD-10`, `UXD-13`, `UXD-14`, `UXD-15`). Tidak ada lagi bagian UX-SPEC yang tertahan | Pemilik produk |
 | 4 | Naikkan enam kelompok notifikasi (**UXD-05**) ke PRD `M-17` — kini bermukim di `SDD-08 §4.5`, padahal sifatnya kebijakan produk | Pemilik produk |
 | 5 | ~~Pulihkan atau bangun ulang `PRD.v1.1.full.md`; tanpanya `scripts/audit_docs.py` berhenti dengan `FileNotFoundError`~~ — **selesai 24 Agustus 2026**: arsip tidak dipulihkan; `audit_docs.py` dilepaskan dari perbandingan arsip dan kini memeriksa invarian yang berlaku terus-menerus | Pemilik berkas PRD |

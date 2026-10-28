@@ -37,7 +37,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 
 **Main Flow**
 1. Setiap operasi tulis (create/update/delete) dan setiap event keamanan memicu pencatatan log.
-2. Sistem menyimpan: waktu, pelaku, role pelaku, alamat IP, agen pengguna/perangkat, modul, jenis aksi, entitas & ID terdampak, nilai sebelum, nilai sesudah, dan hasil (sukses/gagal).
+2. Sistem menyimpan: waktu, pelaku, role pelaku, alamat IP, agen pengguna/perangkat, modul, jenis aksi, entitas & ID terdampak, nilai sebelum, nilai sesudah, dan hasil (`SUKSES`/`GAGAL`).
 3. Log disimpan dalam tabel khusus yang hanya dapat ditambah (*append-only*).
 
 **Alternative Flow**
@@ -96,6 +96,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 |---|---|---|---|
 | GET | `/activity-logs` | `activity_log.view` | Telusuri activity log |
 | GET | `/activity-logs/export` | `activity_log.export` | Ekspor log |
+| GET | `/activity-logs/{id}` | `activity_log.view` | Detail satu entri beserta nilai sebelum/sesudah (`FR-18.2` langkah 4); akses tercatat `ACTIVITY_LOG_VIEWED` |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
@@ -136,6 +137,7 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | Aksi | Keterangan |
 |---|---|
 | `ACTIVITY_LOG_VIEWED` / `ACTIVITY_LOG_EXPORTED` | Akses terhadap log itu sendiri |
+| `SCHEDULED_JOB_EXECUTED` | Ringkasan satu eksekusi pekerjaan terjadwal (`JOB-05`): nama pekerjaan, waktu mulai/selesai, jumlah record diproses, jumlah galat; pelaku `SYSTEM` (`AL-06`); hasil `gagal` bila pekerjaan itu sendiri gagal (`AL-07`) |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
 

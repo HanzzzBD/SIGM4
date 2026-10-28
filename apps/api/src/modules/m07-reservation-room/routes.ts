@@ -1,0 +1,269 @@
+// Route M-07 (SDD-AUTH-01, PM-01) + perakit router modul. Katalog: m07-reservation-room.md §7.
+
+import {
+    ReservationSubmissionBodySchema,
+    BlockDeactivatedResponseSchema,
+    BlockIdParamSchema,
+    BlockStatusBodySchema,
+    CancelReservationBodySchema,
+    RecordUsageBodySchema,
+    ReservationDetailResponseSchema,
+    ReservationCancelledResponseSchema,
+    ReservationIdParamSchema,
+    ReservationListQuerySchema,
+    ReservationListResponseSchema,
+    ReservationUsageResponseSchema,
+    RoomAvailabilityQuerySchema,
+    RoomBlockCreateSchema,
+    RoomBlockCreatedResponseSchema,
+    RoomBlockInputSchema,
+    RoomBlockListResponseSchema,
+    RoomBlockPreviewResponseSchema,
+    RoomIdParamSchema,
+    RoomAvailabilityResponseSchema,
+    RoomReservationCreatedResponseSchema,
+    RoomReservationPreviewResponseSchema,
+} from "@sigm4/schemas";
+import express from "express";
+import { importRoomSchedulesRoute, getRoomScheduleImportRoute, roomScheduleImportTemplateRoute } from "./import.routes.js";
+import { importRoomSchedulesHandler, getRoomScheduleImportHandler, roomScheduleTemplateHandler } from "./controllers/room-schedule-import.controller.js";
+import { RoomScheduleImportService } from "./services/room-schedule-import.service.js";
+import type { RequestHandler, Router } from "express";
+import type { Kysely } from "kysely";
+import { ApprovalService, RuleConfigService } from "../m10-approval/index.js";
+import { AssetSubmissionService } from "../m08-reservation-item/index.js";
+import { blokirPemohon } from "./services/borrower-block-registry.js";
+import type { AuditLogger } from "../../shared/audit/index.js";
+import { SlotService } from "../../shared/booking/index.js";
+import { BusinessCalendarService } from "../../shared/calendar/index.js";
+import type { Clock } from "../../shared/clock/index.js";
+import type { Database } from "../../shared/db/index.js";
+import { defineRoute } from "../../shared/http/index.js";
+import type { RouteDefinition } from "../../shared/http/index.js";
+import { DocumentNumberService } from "../../shared/numbering/index.js";
+import { roomAvailabilityHandler } from "./controllers/availability.controller.js";
+import { createBlockHandler, deactivateBlockHandler, listBlocksHandler, previewBlockHandler } from "./controllers/block.controller.js";
+import { cancelReservationHandler, createReservationHandler, getReservationHandler, listReservationsHandler, previewReservationHandler, recordUsageHandler } from "./controllers/reservation.controller.js";
+import { daftarkanReservasiRuangan } from "./registration.js";
+import { AvailabilityService } from "./services/availability.service.js";
+import { BlockService } from "./services/block.service.js";
+import { CancellationService } from "./services/cancellation.service.js";
+import { ReservationQueryService } from "./services/reservation-query.service.js";
+import { ReservationService } from "./services/reservation.service.js";
+import { SubmissionService } from "./services/submission.service.js";
+import { UsageService } from "./services/usage.service.js";
+
+/** Pemilik katalog endpoint M-07 (m07-reservation-room.md §7). */
+const MODUL = "m07-reservation-room";
+
+/** FR-07.1 — kalender ketersediaan; rentang ≤ 42 hari (keputusan 12d), tanpa cache (AV-04). */
+export const roomAvailabilityRoute = defineRoute({
+    method: "GET",
+    path: "/rooms/availability",
+    permission: "reservation.view",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Ketersediaan ruangan pada rentang waktu (FR-07.1)",
+    params: RoomAvailabilityQuerySchema,
+    response: RoomAvailabilityResponseSchema,
+});
+
+/** FR-07.2 / P-29 langkah 3 (keputusan 14f): pemeriksaan yang sama dengan pengajuan, tanpa efek. */
+export const previewReservationRoute = defineRoute({
+    method: "POST",
+    path: "/reservations/preview",
+    permission: "reservation.create",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Pratinjau pengajuan reservasi ruangan: tanggal, bentrok, kuota, jalur persetujuan (FR-07.2)",
+    successStatus: 200,
+    body: ReservationSubmissionBodySchema,
+    response: RoomReservationPreviewResponseSchema,
+});
+
+/** FR-07.2, sekuens 15.2; ID-01 (UX P-29 "Idempotensi"). */
+export const createReservationRoute = defineRoute({
+    method: "POST",
+    path: "/reservations",
+    permission: "reservation.create",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Ajukan reservasi ruangan (FR-07.2)",
+    successStatus: 201,
+    idempotent: true,
+    body: ReservationSubmissionBodySchema,
+    response: RoomReservationCreatedResponseSchema,
+});
+
+/**
+ * FR-07.3 (keputusan 15b): gerbang route = `cancel_own` (PM-01, tepat satu permission); membatalkan
+ * reservasi pihak lain menuntut tambahan `cancel_any`, diperiksa layanan atas pemohon di basis data.
+ * Bukan ID-01 — pembatalan berulang ditolak penjaga status, bukan diduplikasi.
+ */
+export const cancelReservationRoute = defineRoute({
+    method: "POST",
+    path: "/reservations/:id/cancel",
+    permission: "reservation.cancel_own",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Batalkan reservasi beserta alasannya; slot dilepas seketika (FR-07.3)",
+    successStatus: 200,
+    params: ReservationIdParamSchema,
+    body: CancelReservationBodySchema,
+    response: ReservationCancelledResponseSchema,
+});
+
+/** FR-07.4 langkah 3 + A1 (keputusan 16): kondisi pasca-kegiatan atau Tidak Digunakan, sekali per tanggal. */
+export const recordUsageRoute = defineRoute({
+    method: "POST",
+    path: "/reservations/:id/usage",
+    permission: "reservation.record_usage",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Catat penggunaan ruangan pasca-kegiatan: Baik, Perlu Perhatian, atau Tidak Digunakan (FR-07.4)",
+    successStatus: 200,
+    params: ReservationIdParamSchema,
+    body: RecordUsageBodySchema,
+    response: ReservationUsageResponseSchema,
+});
+
+/** P-30 (m07 §7, keputusan 17b): satu baris per pengajuan; `restricted` hanya miliknya sendiri. */
+export const listReservationsRoute = defineRoute({
+    method: "GET",
+    path: "/reservations",
+    permission: "reservation.view",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Daftar pengajuan reservasi, tersaring scope (FR-07.3 langkah 1, UX P-30)",
+    params: ReservationListQuerySchema,
+    response: ReservationListResponseSchema,
+});
+
+/** P-31 (m07 §7): detail + aksi yang tersedia + riwayat (keputusan 17); di luar scope → 404. */
+export const getReservationRoute = defineRoute({
+    method: "GET",
+    path: "/reservations/:id",
+    permission: "reservation.view",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Detail reservasi: objek, jadwal, tanggal turunan, penggunaan, riwayat (UX P-31)",
+    params: ReservationIdParamSchema,
+    response: ReservationDetailResponseSchema,
+});
+
+/** FR-07.5 (keputusan 19): daftar jadwal tetap & blokade manual sebuah ruangan. */
+export const listBlocksRoute = defineRoute({
+    method: "GET",
+    path: "/rooms/:id/blocks",
+    permission: "reservation.fixed_schedule",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Daftar jadwal tetap & blokade manual ruangan (FR-07.5)",
+    params: RoomIdParamSchema,
+    response: RoomBlockListResponseSchema,
+});
+
+/** FR-07.5 A1/A4: kemunculan, libur yang dilewati, dan bentrok — tanpa efek. */
+export const previewBlockRoute = defineRoute({
+    method: "POST",
+    path: "/rooms/:id/blocks/preview",
+    permission: "reservation.fixed_schedule",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Pratinjau blokade ruangan: kemunculan, hari libur dilewati, reservasi & blokade yang bentrok (FR-07.5)",
+    successStatus: 200,
+    params: RoomIdParamSchema,
+    body: RoomBlockInputSchema,
+    response: RoomBlockPreviewResponseSchema,
+});
+
+/** FR-07.5 langkah 2-4 + A1: bentrok reservasi → 409 kecuali `batalkan_bentrok` eksplisit (keputusan 19c). */
+export const createBlockRoute = defineRoute({
+    method: "POST",
+    path: "/rooms/:id/blocks",
+    permission: "reservation.fixed_schedule",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Buat jadwal tetap (mingguan) atau blokade manual ruangan (FR-07.5)",
+    successStatus: 201,
+    params: RoomIdParamSchema,
+    body: RoomBlockCreateSchema,
+    response: RoomBlockCreatedResponseSchema,
+});
+
+/** FR-07.5 A3 (keputusan 19f): hanya dinonaktifkan; slot mendatang dilepas. */
+export const deactivateFixedScheduleRoute = defineRoute({
+    method: "PATCH",
+    path: "/room-fixed-schedules/:id/status",
+    permission: "reservation.fixed_schedule",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Nonaktifkan jadwal tetap ruangan; slot mendatang dilepas (FR-07.5 A3)",
+    params: BlockIdParamSchema,
+    body: BlockStatusBodySchema,
+    response: BlockDeactivatedResponseSchema,
+});
+
+export const deactivateManualBlockRoute = defineRoute({
+    method: "PATCH",
+    path: "/room-manual-blocks/:id/status",
+    permission: "reservation.fixed_schedule",
+    rateLimitClass: "default",
+    module: MODUL,
+    summary: "Nonaktifkan blokade manual ruangan; slot yang belum dimulai dilepas (FR-07.5 A3)",
+    params: BlockIdParamSchema,
+    body: BlockStatusBodySchema,
+    response: BlockDeactivatedResponseSchema,
+});
+
+export interface ReservationsModuleDeps {
+    readonly db: Kysely<Database>;
+    readonly clock: Clock;
+    readonly auditLogger: AuditLogger;
+}
+
+/** Router M-07. `batasi`/`otorisasi` datang dari perakit `api/index.ts`. */
+export function reservationsRouter(
+    deps: ReservationsModuleDeps,
+    batasi: (route: RouteDefinition) => RequestHandler,
+    otorisasi: (permission: string) => RequestHandler,
+): Router {
+    // SDD-APR-17 / keputusan 75: penangan hasil + penyedia rincian proses ini (sekali per proses).
+    daftarkanReservasiRuangan(deps.clock, deps.auditLogger);
+    // Jam operasional dari system_settings (BR-018, keputusan 14b) — satu sumber dengan SLA approval.
+    const kalender = new BusinessCalendarService();
+    const approval = new ApprovalService(deps.db, deps.auditLogger, deps.clock, kalender);
+    const pengajuan = new SubmissionService(
+        deps.db,
+        deps.clock,
+        kalender,
+        new ReservationService(new SlotService(deps.clock), new DocumentNumberService(deps.clock), deps.auditLogger),
+        approval,
+        new RuleConfigService(deps.db, deps.auditLogger, approval),
+        blokirPemohon,
+        new AssetSubmissionService({ db: deps.db, clock: deps.clock, calendar: kalender, audit: deps.auditLogger, approval, rules: new RuleConfigService(deps.db, deps.auditLogger, approval), blockers: blokirPemohon }),
+    );
+    const router = express.Router();
+    router.get(roomAvailabilityRoute.path, batasi(roomAvailabilityRoute), otorisasi(roomAvailabilityRoute.permission), roomAvailabilityHandler(new AvailabilityService(deps.db, kalender)));
+    // `/preview` SEBELUM pola `/:id` kelak (PR-03-27) agar tak tertangkap sebagai id.
+    router.post(previewReservationRoute.path, batasi(previewReservationRoute), otorisasi(previewReservationRoute.permission), previewReservationHandler(pengajuan));
+    router.post(createReservationRoute.path, batasi(createReservationRoute), otorisasi(createReservationRoute.permission), createReservationHandler(deps.db, pengajuan));
+    const baca = new ReservationQueryService(deps.db, deps.clock, deps.auditLogger, approval);
+    router.get(listReservationsRoute.path, batasi(listReservationsRoute), otorisasi(listReservationsRoute.permission), listReservationsHandler(baca));
+    router.get(getReservationRoute.path, batasi(getReservationRoute), otorisasi(getReservationRoute.permission), getReservationHandler(baca));
+    const pembatalan = new CancellationService(deps.db, deps.clock, deps.auditLogger, approval);
+    router.post(cancelReservationRoute.path, batasi(cancelReservationRoute), otorisasi(cancelReservationRoute.permission), cancelReservationHandler(pembatalan));
+    // FR-07.5 (PR-03-13). `/preview` sebelum pola tanpa sufiks agar tak tertangkap sebagai id.
+    const blokade = new BlockService(deps.db, deps.clock, kalender, deps.auditLogger, pembatalan);
+    const imports = new RoomScheduleImportService(deps.db, deps.auditLogger, deps.clock, blokade);
+    router.get(roomScheduleImportTemplateRoute.path, batasi(roomScheduleImportTemplateRoute), otorisasi(roomScheduleImportTemplateRoute.permission), roomScheduleTemplateHandler(imports));
+    router.get(getRoomScheduleImportRoute.path, batasi(getRoomScheduleImportRoute), otorisasi(getRoomScheduleImportRoute.permission), getRoomScheduleImportHandler(imports));
+    router.post(importRoomSchedulesRoute.path, batasi(importRoomSchedulesRoute), otorisasi(importRoomSchedulesRoute.permission), importRoomSchedulesHandler(imports));
+    router.get(listBlocksRoute.path, batasi(listBlocksRoute), otorisasi(listBlocksRoute.permission), listBlocksHandler(blokade));
+    router.post(previewBlockRoute.path, batasi(previewBlockRoute), otorisasi(previewBlockRoute.permission), previewBlockHandler(blokade));
+    router.post(createBlockRoute.path, batasi(createBlockRoute), otorisasi(createBlockRoute.permission), createBlockHandler(blokade));
+    router.patch(deactivateFixedScheduleRoute.path, batasi(deactivateFixedScheduleRoute), otorisasi(deactivateFixedScheduleRoute.permission), deactivateBlockHandler(blokade, "JADWAL_TETAP"));
+    router.patch(deactivateManualBlockRoute.path, batasi(deactivateManualBlockRoute), otorisasi(deactivateManualBlockRoute.permission), deactivateBlockHandler(blokade, "BLOKADE_MANUAL"));
+    router.post(recordUsageRoute.path, batasi(recordUsageRoute), otorisasi(recordUsageRoute.permission), recordUsageHandler(new UsageService(deps.db, deps.clock, deps.auditLogger)));
+    return router;
+}

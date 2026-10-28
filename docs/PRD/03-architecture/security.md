@@ -18,7 +18,7 @@
 | NFR-S-04 | 2FA berbasis TOTP wajib bagi role Administrator dan Pimpinan Sekolah |
 | NFR-S-05 | Otorisasi diperiksa di sisi server pada **setiap** endpoint; UI tidak dijadikan satu-satunya penjaga akses |
 | NFR-S-06 | Perlindungan terhadap OWASP Top 10: SQL Injection (query terparameterisasi/ORM), XSS (sanitasi input & escaping output), CSRF (token pada web), SSRF, dan *insecure direct object reference* |
-| NFR-S-07 | Rate limiting **berjenjang per kelas endpoint**, bukan satu batas global: umum 100 permintaan/menit per pengguna · login 5 percobaan/15 menit per akun dan per IP · halaman publik aset 20/menit per IP · ekspor & laporan 10/jam per pengguna · cetak QR massal 5/jam per pengguna · chatbot 10 pesan/menit per pengguna (AI-CTL-06) · unggah berkas 60/jam per pengguna. Header `X-RateLimit-*` disertakan pada seluruh respons |
+| NFR-S-07 | Rate limiting **berjenjang per kelas endpoint**, bukan satu batas global: umum 100 permintaan/menit per pengguna · login 5 percobaan **gagal**/15 menit per akun dan per IP (login yang berhasil tidak dihitung) · halaman publik aset 20/menit per IP · ekspor & laporan 10/jam per pengguna · cetak QR massal 5/jam per pengguna · chatbot 10 pesan/menit per pengguna (AI-CTL-06) · unggah berkas 60/jam per pengguna. Header `X-RateLimit-*` disertakan pada seluruh respons |
 | NFR-S-08 | Berkas unggahan divalidasi jenis MIME dan ekstensi, dipindai anti-malware, disimpan di luar *web root*, dan diakses melalui URL bertanda tangan berbatas waktu |
 | NFR-S-09 | Token mobile disimpan pada Keychain (iOS) / Keystore (Android), bukan pada penyimpanan biasa |
 | NFR-S-10 | Data sensitif tidak pernah muncul di log aplikasi maupun activity log |

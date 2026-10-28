@@ -79,7 +79,7 @@
 | Android — kelas bawah | Android 8, RAM 2 GB — batas bawah dukungan (NFR-C-03) |
 | Android — **kelas menengah** (definisi NFR-P-10) | Android 12+, RAM 4 GB, prosesor 8 inti kelas menengah, terbit ≤ 3 tahun terakhir |
 | Android — kelas atas | Android 14+, RAM ≥ 8 GB |
-| iOS | iPhone dengan iOS 14 (batas bawah) dan iOS terbaru |
+| iOS | iPhone dengan iOS 16.4 (batas bawah) dan iOS terbaru |
 | Resolusi web | 320 px, 768 px, 1366 px, 1920 px (NFR-C-02) |
 
 ## 30.7 Kriteria Masuk & Keluar Pengujian

@@ -32,15 +32,17 @@ Basis teknologi yang sudah ditetapkan dan tidak dibahas ulang: PostgreSQL 15+ (`
 | **SDD-AVL-03** | Larangan irisan ditegakkan oleh **exclusion constraint GiST berpredikat**, bukan oleh pemeriksaan aplikasi. Aplikasi hanya menerjemahkan galatnya. |
 | **SDD-AVL-04** | `resource_id` **tidak** memiliil foreign key (karena polimorfik). Integritas dijaga oleh *trigger* validasi `AFTER INSERT OR UPDATE` dan oleh satu-satunya jalur tulis di service layer. |
 | **SDD-AVL-05** | Alokasi unit otomatis memakai `SELECT … FOR UPDATE SKIP LOCKED`; pemilihan unit manual oleh Petugas memakai `FOR UPDATE NOWAIT` agar konflik langsung terlihat, bukan menunggu. |
-| **SDD-AVL-06** | Penguncian baris **selalu** terurut menaik berdasarkan `assets.id`. Diterapkan sebagai `ORDER BY id` pada kueri pengunci, bukan sebagai konvensi lisan. |
+| **SDD-AVL-06** | Penguncian baris **selalu** terurut menaik berdasarkan `assets.id`. Diterapkan sebagai `ORDER BY id` pada kueri pengunci, bukan sebagai konvensi lisan. Pada `reserve`, baris `rooms` **ikut dikunci** (`FOR UPDATE`, menunggu) terurut `rooms.id` menaik **sesudah** aset — urutan seragam di semua jalur, tanpa siklus (keputusan 68 log phase-02). |
 | **SDD-AVL-07** | `SQLSTATE 23P01` (*exclusion_violation*) dipetakan ke `409 RESERVATION_CONFLICT` / `409 ASSET_NOT_AVAILABLE` oleh *error mapper* terpusat. Tidak ada `try/catch` ad hoc di controller. |
 | **SDD-AVL-08** | Idempotensi memakai tabel `idempotency_keys` + *advisory lock* PostgreSQL untuk mendeteksi permintaan yang sedang berjalan. Bukan Redis, agar berada dalam transaksi yang sama dengan efeknya. |
 | **SDD-AVL-09** | Penomoran dokumen memakai tabel `document_counters` dengan `INSERT … ON CONFLICT DO UPDATE … RETURNING`, bukan `CREATE SEQUENCE` dinamis per tahun. |
 | **SDD-AVL-10** | Penjadwal memakai **BullMQ repeatable job** di atas Redis. Kunci terdistribusi diperoleh dari BullMQ itu sendiri (satu job id per periode), bukan dari `SET NX` manual. |
 | **SDD-AVL-11** | `assets.status` bersifat **turunan**. Hanya empat penulis yang diizinkan: `LoanService`, `MaintenanceService`, `AssetService`, dan job `slot-activation`. Ditegakkan lewat *code ownership* + uji arsitektur. |
-| **SDD-AVL-12** | Reservasi berulang menghasilkan **satu** baris induk `origin='reservation'` tanpa rentang, dan N baris turunan ber-`parent_slot_id`. Induk tidak ikut exclusion constraint. |
+| **SDD-AVL-12** | Reservasi berulang menghasilkan **satu** pengajuan induk dan N tanggal turunan; **pengelompokannya hidup di `reservations.parent_id`** (keputusan 11b & 14h log phase-03): induk **tidak** memegang slot, setiap turunan memegang satu slot `origin='reservation'` ber-`reservation_id` turunan itu. `booking_slots.parent_slot_id` tidak dipakai reservasi — CHECK `slot_range_required` memang tidak mengizinkan baris induk tanpa rentang yang masih aktif, jadi bentuk "induk slot tanpa rentang" tidak pernah sah. |
 | **SDD-AVL-13** | Slot `Released` **tidak dihapus**. Dipindahkan dari partisi aktif melalui kebijakan arsip (lihat TBD-AVL-A). |
 | **SDD-AVL-14** | **Bahan tidak memakai `booking_slots`.** Bahan tidak dapat direservasi maupun dipinjam (`BR-087`), sehingga tidak memiliki dimensi waktu untuk dikunci. Konkurensinya diselesaikan dengan row lock atas `material_balances` (`SDD-DB-14`), bukan exclusion constraint. |
+
+**Penegakan SDD-AVL-11 (PR-02-49).** `tests/shared/asset-status-writers.test.ts` memindai AST seluruh source API/worker. Adapter tulis yang terdaftar tepat per berkas: `m04-assets/repositories/asset.repository.ts` (AssetService), `reservation-status.repository.ts` (slot-activation), `m09-loans/repositories/loan.repository.ts` dan `m12-maintenance/repositories/maintenance.repository.ts` (dua modul terakhir belum diimplementasikan). Tidak ada izin menyeluruh untuk direktori modul. Uji menolak penulisan status melalui chain Kysely, isian variabel/spread/computed, upsert, SQL literal, serta pemanggilan metode penulis status M-04 di luar layanan pemiliknya. Isian update aset yang tak dapat dibuktikan bebas status juga ditolak. Pembacaan status dan perubahan atribut lain diperbolehkan. `.github/CODEOWNERS` mencakup adapter, layanan, job, shared booking, dan uji penjaganya; penambahan adapter/metode baru harus memperbarui penjaga ini dan ditinjau.
 
 ---
 
@@ -64,6 +66,8 @@ Harga yang dibayar: kehilangan foreign key pada `resource_id`. Dimitigasi oleh S
 
 **SDD-AVL-10 — BullMQ, bukan `SET NX` manual.** `JOB-02` menuntut distributed lock. BullMQ repeatable job sudah menjamin satu eksekusi per periode lintas worker, plus percobaan ulang dan riwayat yang `JOB-06` butuhkan. Menulis lock sendiri berarti menulis ulang komponen yang sudah teruji, termasuk kasus tepi lock kedaluwarsa saat job masih berjalan.
 
+
+**SDD-AVL-06 — ruangan dikunci, bukan hanya aset.** Exclusion constraint GiST memutus irisan dengan benar, tetapi tidak menjamin *kode galat* pihak yang kalah: sisipan serentak yang beririsan menulis entri indeksnya lebih dulu lalu saling menunggu, dan PostgreSQL memutus lingkarannya sebagai `40P01` (*deadlock*) — yang tidak dipetakan ErrorMapper sehingga menjadi 500. Diukur pada `reserve` ruangan tanpa kunci: ±7,5% pihak kalah (20 transaksi serentak, pool 25); pada `INSERT` mentah: ±28%. Mengunci baris `rooms` lebih dulu membuat reservasi ruangan yang sama berurutan, sehingga yang kalah selalu melihat baris pemenang yang sudah *commit* dan menerima `23P01` → `409 RESERVATION_CONFLICT`. Kunci **menunggu**, bukan `NOWAIT`: rentang yang tidak beririsan pada ruangan yang sama tetap berhasil serentak, hanya berurutan. Aset sudah aman sejak awal karena `NOWAIT`/`SKIP LOCKED`.
 ---
 
 ## 4. Rancangan
@@ -73,8 +77,13 @@ Harga yang dibayar: kehilangan foreign key pada `resource_id`. Dimitigasi oleh S
 ```sql
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
+-- Nilai booking_status memakai kode huruf besar (SDD-DB-02); nama keadaan pada
+-- §4.3 dan pada prosa dokumen lain adalah label, bukan nilai kolom. booking_resource
+-- dan booking_origin sengaja TIDAK ikut: glossary PRD memakukan resource_type='asset'
+-- sebagai kontrak teknis yang tidak berubah.
+
 CREATE TYPE booking_resource AS ENUM ('room', 'asset');
-CREATE TYPE booking_status   AS ENUM ('Tentative', 'Confirmed', 'Active', 'Released');
+CREATE TYPE booking_status   AS ENUM ('TENTATIVE', 'CONFIRMED', 'ACTIVE', 'RELEASED');
 CREATE TYPE booking_origin   AS ENUM ('reservation', 'loan', 'maintenance',
                                       'fixed_schedule', 'manual_block');
 
@@ -85,43 +94,48 @@ CREATE TABLE booking_slots (
     slot_range      tstzrange,                    -- NULL hanya untuk baris induk berulang
     status          booking_status   NOT NULL,
     origin          booking_origin   NOT NULL,
-    reservation_id  bigint REFERENCES reservations(id),
-    loan_id         bigint REFERENCES loans(id),
-    work_order_id   bigint REFERENCES work_orders(id),
+    -- Tanpa FK saat lahir (PR-02-16): reservations/loans/work_orders dibuat modul
+    -- pemiliknya kemudian, yang menambahkan FK-nya sendiri (expand, SDD-DB-08).
+    reservation_id  bigint,
+    loan_id         bigint,
+    work_order_id   bigint,
     parent_slot_id  bigint REFERENCES booking_slots(id) ON DELETE CASCADE,
     expires_at      timestamptz,                  -- TTL slot Tentative (BR-023b)
     created_by      bigint REFERENCES users(id),
     created_at      timestamptz NOT NULL DEFAULT now(),
 
     CONSTRAINT slot_range_required
-        CHECK (parent_slot_id IS NOT NULL OR slot_range IS NOT NULL OR status = 'Released'),
+        CHECK (parent_slot_id IS NOT NULL OR slot_range IS NOT NULL OR status = 'RELEASED'),
     CONSTRAINT slot_range_bounds
         CHECK (slot_range IS NULL OR (lower_inc(slot_range) AND NOT upper_inc(slot_range))),
     CONSTRAINT tentative_needs_ttl
-        CHECK (status <> 'Tentative' OR expires_at IS NOT NULL)
+        CHECK (status <> 'TENTATIVE' OR expires_at IS NOT NULL)
 );
 
--- CI-01: penegak nol double-booking
+-- CI-01: penegak nol double-booking — SATU constraint per jenis sumber daya, agar
+-- ErrorMapper membedakan 409 aset dari 409 ruangan lewat nama constraint (CI-04,
+-- SDD-06 §4.4). Semantik sama dengan satu constraint ber-`resource_type WITH =`.
 ALTER TABLE booking_slots
-    ADD CONSTRAINT booking_slots_no_overlap
-    EXCLUDE USING gist (
-        resource_type WITH =,
-        resource_id   WITH =,
-        slot_range    WITH &&
-    ) WHERE (status IN ('Tentative','Confirmed','Active') AND slot_range IS NOT NULL);
+    ADD CONSTRAINT booking_slots_room_no_overlap
+    EXCLUDE USING gist (resource_id WITH =, slot_range WITH &&)
+    WHERE (resource_type = 'room' AND status IN ('TENTATIVE','CONFIRMED','ACTIVE') AND slot_range IS NOT NULL);
+
+ALTER TABLE booking_slots
+    ADD CONSTRAINT booking_slots_asset_no_overlap
+    EXCLUDE USING gist (resource_id WITH =, slot_range WITH &&)
+    WHERE (resource_type = 'asset' AND status IN ('TENTATIVE','CONFIRMED','ACTIVE') AND slot_range IS NOT NULL);
 
 -- AV-01
 CREATE INDEX booking_slots_lookup
     ON booking_slots USING gist (resource_type, resource_id, slot_range)
-    WHERE status IN ('Tentative','Confirmed','Active');
+    WHERE status IN ('TENTATIVE','CONFIRMED','ACTIVE');
 
 CREATE INDEX booking_slots_expiry
-    ON booking_slots (expires_at) WHERE status = 'Tentative';
+    ON booking_slots (expires_at) WHERE status = 'TENTATIVE';
 
--- AV-02
-CREATE INDEX assets_availability
-    ON assets (category_id, status, kondisi)
-    WHERE dapat_dipinjam AND NOT dihapuskan;
+-- AV-02: dilayani assets_kandidat_pinjam_idx (0026, PR-02-10) —
+-- (category_id, status, kondisi, dapat_dipinjam, boleh_dipinjam_siswa). Indeks
+-- parsial semula tidak dibuat; pilihan final lewat EXPLAIN ANALYZE (SDD-PERF-07).
 ```
 
 Trigger validasi polimorfik (SDD-AVL-04):
@@ -167,14 +181,14 @@ allocateUnits(categoryId, qty, range, userCtx, preferredIds?):
           AND NOT EXISTS (                          -- AV-01 memakai indeks GiST
                 SELECT 1 FROM booking_slots s
                  WHERE s.resource_type = 'asset' AND s.resource_id = a.id
-                   AND s.status IN ('Tentative','Confirmed','Active')
+                   AND s.status IN ('TENTATIVE','CONFIRMED','ACTIVE')
                    AND s.slot_range && :range)
         ORDER BY a.id                               -- CI-02: urutan lock
         LIMIT :qty
         FOR UPDATE OF a SKIP LOCKED                 -- SDD-AVL-05
 
   5. IF count(candidates) < qty -> ROLLBACK, 409 ASSET_NOT_AVAILABLE
-  6. INSERT booking_slots (status='Tentative', expires_at=ttl()) untuk tiap kandidat
+  6. INSERT booking_slots (status='TENTATIVE', expires_at=ttl()) untuk tiap kandidat
        -> exclusion constraint adalah pemutus akhir (CI-01)
   7. INSERT reservation + reservation_items
   8. buildApprovalInstance()                        -- lihat SDD-02
@@ -213,16 +227,18 @@ Alur (`ID-01` … `ID-05`):
 
 ```
 BEGIN
-  pg_advisory_xact_lock(hashtext(key))              -- serialisasi per kunci
+  IF NOT pg_try_advisory_xact_lock(hashtext(key))
+                           -> 409 REQUEST_IN_PROGRESS        (ID-05)
   row := SELECT * FROM idempotency_keys WHERE key = :key
-  IF row IS NULL           -> INSERT (status_code NULL) ; jalankan bisnis ;
+  IF row IS NULL           -> INSERT ; jalankan bisnis ;
                               UPDATE hasil ; COMMIT ; 201
-  IF row.status_code NULL  -> 409 REQUEST_IN_PROGRESS        (ID-05)
   IF row.request_hash <> h -> 409 IDEMPOTENCY_KEY_REUSED     (ID-04)
   ELSE                     -> kembalikan response tersimpan  (ID-03)
 ```
 
 Advisory lock bersifat transaksional, jadi lepas otomatis saat commit/rollback — tidak ada kunci menggantung bila proses mati.
+
+**Kuncinya `try`, bukan menunggu — dan itu yang membuat `ID-05` ada.** Versi pertama alur ini memakai `pg_advisory_xact_lock` yang memblokir, lalu memeriksa `status_code NULL` untuk mendeteksi permintaan yang sedang berjalan. Pemeriksaan itu **tidak dapat menyala**: `SDD-AVL-08` menempatkan kunci dan efeknya pada satu transaksi, sehingga baris ber-`status_code NULL` tidak pernah terlihat sesi lain — permintaan kedua menunggu sampai yang pertama commit, lalu melihat baris yang sudah selesai. `ID-05` karena itu tidak akan pernah tercapai, dan permintaan kedua menahan satu koneksi pool selama bisnis berjalan. Dengan `pg_try_advisory_xact_lock`, kegagalan mengambil kunci **itu sendiri** adalah bukti ada permintaan berkunci sama yang sedang berjalan — dijawab seketika, tanpa menahan koneksi. Kolom `status_code` tetap ada karena `ID-02` mewajibkannya disimpan, bukan sebagai penanda *in-flight*. Dikoreksi 7 September 2026 (keputusan pemilik produk, `PR-00-10`).
 
 ### 4.5 Penomoran dokumen
 
@@ -246,12 +262,32 @@ Format dirakit aplikasi sesuai `SEQ-01`, divalidasi terhadap regex `SEQ-04` pada
 
 | Job | Jadwal (UTC, lihat `JOB-04`) | Idempoten karena |
 |---|---|---|
-| `slot-activation` | tiap 5 menit | `UPDATE … WHERE status <> target` |
-| `tentative-slot-expiry` | tiap 15 menit | `WHERE status='Tentative' AND expires_at < now()` |
-| `loan-overdue` | 17:05 (= 00:05 WIB) | denda diperiksa unik per `(loan_item_id, tanggal)` |
+| `slot-activation` | tiap 5 menit | `UPDATE … WHERE status <> target`; reservasi ruangan (FR-07.4, `PR-03-12`) bertransisi hanya dari status asal (`Disetujui`/`Berlangsung`) atas baris yang dikunci `FOR UPDATE SKIP LOCKED` terurut id — baris yang sedang dipegang pembatalan/pencatatan dilewati putaran itu, job tak pernah menunggu kunci; transaksi terpisah dari sisi aset M-04 |
+| `fixed-schedule-materialize` | harian 17:30 (= 00:30 WIB) | kemunculan dibuat hanya bila belum ber-slot (tak dilepas) dan tak beririsan apa pun — yang beririsan dilewati, dicoba lagi besok, tak pernah membatalkan; slot mendatang yang kini libur dilepas; satu transaksi per aturan yang dikunci `FOR UPDATE` (`PR-03-13`) |
+| `tentative-slot-expiry` | tiap 15 menit | `WHERE status='TENTATIVE' AND expires_at < now()` |
+| `loan-overdue` | 17:05 (= 00:05 WIB) | estimasi denda; event pengingat unik per loan/hari WIB, NT-11 mengikuti versi jatuh tempo (keputusan produk PR-05-05) |
 | `reservation-expiry` | 16:00 (= 23:00 WIB) | transisi hanya dari `Confirmed` |
+| `approval-sla-check` | tiap 30 menit | pengingat `NT-06` dibatasi 1×/hari per objek; eskalasi hanya dari langkah yang masih aktif |
+| `activity-log-partition` | 17:20 (= 00:20 WIB) | `CREATE TABLE IF NOT EXISTS` atas partisi bulan berjalan + 3 bulan ke depan (`SDD-05 §4.4`) |
+| `activity-log-verify` | 17:40 (= 00:40 WIB) | hanya membaca; rantai diverifikasi, tidak pernah diperbaiki (`NFR-S-03d`, `AL-03a`) |
 
 Setiap job menulis entri `activity_log` berpelaku `SYSTEM` (`JOB-05`, `AL-06`).
+
+### 4.7 Antarmuka `SlotService` (`shared/booking/`)
+
+Ditetapkan pemilik produk saat `PR-02-17` (keputusan 64 [log phase-02](../IMPLEMENTATION/logs/phase-02.md)). Seluruh metode menerima `TransactionScope` **pemanggil** — slot dan dokumen bisnisnya commit atau batal bersama (§4.2 langkah 6-7).
+
+| Metode | Kegunaan | Kunci | Galat |
+|---|---|---|---|
+| `reserve` | Sumber daya eksplisit: ruangan, unit aset pilihan Petugas, blokade pemeliharaan. Status awal `TENTATIVE` (wajib TTL, ditegakkan tipe) atau `CONFIRMED` | Aset `ORDER BY id FOR UPDATE NOWAIT` (CI-02, SDD-AVL-05), lalu ruangan `ORDER BY id FOR UPDATE` menunggu (SDD-AVL-06) | `55P03` diterjemahkan **di dalam** layanan menjadi `409 ASSET_NOT_AVAILABLE`; `23P01` diteruskan ke ErrorMapper (CI-04). Kunci ruangan menjamin pihak kalah selalu `23P01`, tidak pernah `40P01` |
+| `allocate` | Alokasi otomatis per kategori (§4.2 langkah 4-6), selalu `TENTATIVE` | `ORDER BY id … FOR UPDATE OF a SKIP LOCKED` | Unit kurang → `409 ASSET_NOT_AVAILABLE` |
+| `confirm` / `activate` | `TENTATIVE`→`CONFIRMED` (TTL dihapus) / `CONFIRMED`→`ACTIVE` | `UPDATE … WHERE status = asal` | Ada slot yang tak berstatus asal → `409 RESERVATION_CONFLICT`, seluruh transisi batal |
+| `reserveRuanganBerulang` | Blokade jadwal tetap (FR-07.5, `PR-03-13`): **banyak** rentang `CONFIRMED` atas **satu** ruangan dalam satu pernyataan, origin `fixed_schedule` — jalur regenerasi horizon (AC ≤ 10 detik untuk 90 hari × 30 ruangan) | Ruangan `FOR UPDATE` sekali (urutan sama dengan `reserve`, SDD-AVL-06) | `23P01` diteruskan ke ErrorMapper; pemanggil menyaring irisan lebih dulu |
+| `release` | `*`→`RELEASED`, idempoten; baris dipertahankan (TBD-AVL-A) | — | — |
+
+**Rujukan sumber slot** (`PR-03-13`): selain `reservation_id`/`loan_id`/`work_order_id`, slot blokade ruangan membawa `fixed_schedule_id` atau `manual_block_id` (FK ke `room_fixed_schedules`/`room_manual_blocks`, migration `0047`); pembacaannya lewat `slotMilikBlokade` dan kolomnya ikut `daftarSlotTerpakai` (label kalender FR-07.1 A4). `created_by` diisi `pelakuId` — `NULL` bagi pelaku SYSTEM (job materialisasi, `AL-06`), bukan id 0 yang melanggar FK.
+
+Yang **bukan** tanggung jawabnya: aturan reservasi (`BR-030`, `BR-023a`, `BR-023c`) milik M-07/M-08, dan kelayakan aset untuk `reserve` milik pemanggil — blokade pemeliharaan justru menyasar aset rusak. **Activity log** dicatat pemanggil atas aksi bisnisnya dalam transaksi yang sama; tidak ada aksi `SLOT_*` (`AL-01`).
 
 ---
 
@@ -286,6 +322,12 @@ Setiap job menulis entri `activity_log` berpelaku `SYSTEM` (`JOB-05`, `AL-06`).
 
 ---
 
+### Keputusan implementasi reservasi gabungan - 13 Oktober 2026
+
+PR-04-02/03 memakai satu instance `RESERVASI_ASET` dan fakta gabungan sesuai [DSL D.2](../PRD/03-architecture/approval-rule-dsl.md). `reservation_items` menyimpan satu unit fisik per baris; `confirmed_at` menjadi bukti persetujuan unit tanggal tersebut sebelum identitas unit ditampilkan. Alokasi otomatis dapat mengganti unit sekategori. Kunci kuota pemohon sama dengan pengajuan ruangan; semua unit dikunci berurutan sebelum ruangan, lalu seluruh slot dipesan dalam satu transaksi.
+
+Status utama jenis `ASET` menunggu serah terima fisik. `status_penggunaan_ruangan` mencatat DISETUJUI, BERLANGSUNG, SELESAI atau TIDAK_DIGUNAKAN secara terpisah; job waktu hanya mengaktifkan slot ruangan. Pencatatan kondisi ruangan tidak menandai aset sebagai diserahkan/dikembalikan. No-show 24 jam melepaskan aset dan mempertahankan slot ruangan yang sudah digunakan untuk histori. Kerusakan terverifikasi yang membuat unit tidak tersedia membatalkan reservasi mendatang beserta slot pendukung secara atomik. Shared `SlotService` dan dua exclusion constraint tidak diubah.
+
 ## 8. TBD — Menunggu Keputusan
 
 Tidak diisi sendiri. Lihat ringkasan di [`TBD-REGISTER.md`](TBD-REGISTER.md).
@@ -297,3 +339,34 @@ Tidak diisi sendiri. Lihat ringkasan di [`TBD-REGISTER.md`](TBD-REGISTER.md).
 | **TBD-AVL-D** | TTL cache hasil ketersediaan. `AV-04` menetapkan batas atas 30 detik, tetapi nilai operasionalnya (0 = tanpa cache, atau 10–30 detik) belum ditetapkan. |
 
 **Tertutup 25 Agustus 2026 — `TBD-AVL-B`.** Endpoint reservasi **tetap satu rumpun `/reservations`**, dimiliki `M-07` dan dirujuk `M-08` (`UXD-15`, keputusan pemilik produk). Pemisahan `/room-reservations` + `/item-reservations` ditolak karena `BR-017` … `BR-025` berlaku identik bagi kedua jenis: memecah permukaan API di atas perilaku yang sama menghasilkan dua kontrak yang wajib dijaga seragam selamanya, tanpa satu pun requirement yang meminta perbedaannya. Perbedaan jenis diserap **di dalam** muatan permintaan, sebagaimana `SDD-AVL-04` sudah memperlakukan `booking_slots` secara polimorfik. Katalog endpoint tidak berubah; `PR-03-08` dan `PR-04-01` berjalan sesuai rencana.
+
+
+### Realisasi peminjaman - keputusan produk 13 Oktober 2026
+
+PR-05-01..04 memakai SlotService tanpa perubahan: slot aset reservasi CONFIRMED dilepas sebagai histori, lalu slot origin loan dibuat CONFIRMED dan diaktifkan dalam transaksi check-out yang sama. Kedua referensi reservation_id dan loan_id dipertahankan pada slot realisasi. Slot ruangan gabungan tetap menjalani alur penggunaannya sendiri. Loan item menyimpan slot_id sehingga check-in sebagian hanya melepaskan unit yang diproses. Unique index loan_items atas asset_id dengan status BELUM_KEMBALI mencegah penyerahan ulang, termasuk jika slot rentang pinjaman terlambat sudah melewati batas akhir.
+
+LoanService menjadi penulis status aset keempat yang sebelumnya disiapkan SDD-AVL-11. Unit baik saat kembali tersedia langsung, atau DIRESERVASI jika sudah ada slot CONFIRMED yang berlaku; unit rusak/tidak lengkap/hilang TIDAK_TERSEDIA, tanpa menandai Dalam Perbaikan sebelum work order ada. Laporan M-11, pembatalan reservasi mendatang, kewajiban per unit, audit dan outbox atomik dengan check-in. Induk berulang ditutup setelah seluruh realisasi/tanggal turunan terminal, termasuk tanggal terakhir yang dibatalkan/kedaluwarsa.
+
+Tarif/cap belum mempunyai nominal bawaan; parameter JSON null berarti belum dikonfigurasi dan menolak check-out. Nilai eksplisit nol sah. Sesuai keputusan produk yang menggantikan BR-029 lama, snapshot kebijakan saat check-out tidak berubah akibat setting berikutnya. Nilai uang dihitung tepat dalam sen menggunakan bigint, mengikuti kalender WIB dari BusinessCalendarService. Nilai perolehan unit disnapshot untuk cap/ganti rugi; tidak dikirim dalam DTO loan. Kewajiban tanpa nilai perolehan diberi menunggu_penetapan, jumlah null; penetapan nilai penggantian dan persetujuannya ditutup pada PR denda berikutnya.
+
+
+### Realisasi perpanjangan dan pemantauan PR-05-05..08
+
+Perpanjangan mengikuti FR-09.5 dan keputusan kontrak PRD M-09: tabel pengajuan/relasi item menyimpan hold tambahan TENTATIVE, SlotService.extendActive menjadi satu-satunya pemutasi rentang slot ACTIVE. Hook kunciObjek opsional PenanganHasil mengunci domain sebelum langkah keputusan; Check-in mengunci kelompok reservasi lalu loan; perpanjangan mengunci loan sebelum pengajuan/langkah. Kunci loan NOWAIT membuat auto-reject SLA yang sudah memegang langkah dapat gagal cepat dan diulang, tanpa menunggu check-in yang akan menutup instance. Hook tidak mengubah evaluator/aturan persetujuan. API dan worker mendaftarkan handler hasil, rincian notifikasi dan pemeriksa BR-030. Riwayat tindakan kewajiban dan usulan nilai disimpan terpisah agar pembebasan kumulatif dapat ditelusuri. Parameter ambang null mengikuti requirement konfigurasi PRD; tidak ditafsirkan sebagai nominal nol.
+
+### Klaim penghapusan — PR-05-10..14 (14 Oktober 2026)
+
+Keputusan BR-065b/c menambah klaim unik asset_disposal_claims. Pengajuan mengunci
+usulan (untuk revisi), aset dalam urutan ID, lalu memeriksa pinjaman belum kembali,
+slot mendatang/berjalan, WO terbuka dan opname aktif sebelum menulis klaim.
+Trigger slot reservasi/pinjaman mengunci aset yang sama sebelum memeriksa klaim.
+Race pengajuan versus booking hanya membolehkan satu transaksi memegang unit.
+
+SlotService.allocate menambah satu predikat NOT EXISTS klaim agar pemilihan unit
+kategori melewati aset sehat yang direkomendasikan penggantian dan sedang
+diusulkan dihapus. Ini perluasan kelayakan untuk M-21 dari baseline Phase 04;
+algoritme alokasi, rentang, TTL, exclusion constraint dan entry point tetap sama.
+Katalog M-08 memakai predikat yang sama. Pembatalan/penolakan melepas klaim;
+keputusan sebagian melepas hanya unit ditolak; eksekusi melepas klaim dan menandai
+unit terminal secara atomik. Adapter execute/reinstate M-04 merupakan penulis
+status aset terkontrol yang ditambahkan pada whitelist invariant pengujian.

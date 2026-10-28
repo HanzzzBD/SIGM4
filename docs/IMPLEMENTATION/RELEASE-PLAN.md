@@ -10,8 +10,8 @@ Yang ada di sini: **urutan pelaksanaannya** — siapa mengerjakan apa, dalam uru
 
 | | |
 |---|---|
-| Rilis produksi | **Satu kali** — `v1.0.0` |
-| Rilis staging | Setiap phase, 9 kali |
+| Rilis produksi | **Satu kali** bagi sekolah — `v1.0.0`. Sebelumnya boleh pra-rilis `v0.x.y` ke server produksi tanpa pengguna, data uji (`SDD-INF-16` e) |
+| Rilis staging | Setiap phase — **nonaktif** sampai subdomain staging tersedia (`STAGING_AKTIF`, `SDD-INF-16` e); selama itu digantikan pra-rilis `v0.x.y` |
 | Jendela deploy produksi | Di luar jam operasional, diumumkan H-2 (`CD-06`, `NFR-A-03`) |
 | Cutover | Paralel manual + digital maksimum 2 pekan (`IMP-05`) |
 | Hypercare | 8 pekan pasca go-live (`IMP-06`) |

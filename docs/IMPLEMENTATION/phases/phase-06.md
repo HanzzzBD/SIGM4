@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Milestone PRD** | `M5 — Insight, Notifikasi & AI` (M-16) — **menutup M5** |
-| **Status** | `Not Started` |
+| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
 | **Modul PRD** | M-16 Analitik & Laporan |
 | **Bergantung pada** | Phase 05 |
 | **Memblokir** | Phase 07 |
@@ -78,18 +78,19 @@ M-16 tidak memiliki modul hilir. Ia daun terakhir pada graf dependensi.
 
 ## 7. Pull Request Plan
 
-| PR | Judul | Kompleksitas | Bergantung | FR/SDD | Acceptance |
-|---|---|:---:|---|---|---|
-| `PR-06-01` | Kerangka laporan: kontrak kueri, parameter, paginasi | M | Ph05 | `FR-16.1`, `SDD-API-08` | Satu kerangka melayani seluruh laporan |
-| `PR-06-02` | Penerapan scope permission pada kueri agregat | M | 01 | `BR-073` `BR-074`, `PM-03`, `SDD-AUTH-07` | Agregat tidak membocorkan data di luar scope lewat angka total |
-| `PR-06-03` | Laporan pemanfaatan aset & ruangan | M | 02, Ph04 | `FR-16.1` | Angka cocok dengan data `booking_slots` |
-| `PR-06-04` | Laporan kondisi & tren kerusakan | M | 02, Ph03 | `FR-16.1` | Tren mengikuti riwayat kondisi, bukan status terkini |
-| `PR-06-05` | Laporan peminjaman & kepatuhan pengembalian | M | 02, Ph05 | `FR-16.1` | Keterlambatan memakai hari kerja, konsisten dengan `PR-05-05` |
-| `PR-06-06` | Laporan pemeliharaan & biaya | M | 02, Ph04 | `FR-16.1` | Biaya tertelusur ke work order |
-| `PR-06-07` | Laporan pengadaan & penghapusan | M | 02, Ph05 | `FR-16.1` | Aset terhapus tetap terhitung pada periodenya |
-| `PR-06-08` | Ekspor laporan + pencatatan activity log | M | 03 … 07 | `FR-16.1`, `AL-10` | Ekspor besar tidak memblokir permintaan lain |
-| `PR-06-09` | Indeks pendukung + verifikasi `EXPLAIN` | M | 03 … 07 | `SDD-PERF-05`, `SDD-DB-06` | Tidak ada *sequential scan* pada tabel besar |
-| `PR-06-10` | Visualisasi laporan (UI) | L | 03 … 07 | `FR-16.1`, `SDD-FE-10` | Grafik dapat diakses (kontras & label), bukan hanya kanvas |
+| PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
+|---|---|:---:|:---:|---|---|---|
+| `PR-06-01` | Kerangka laporan: kontrak kueri, parameter, paginasi | M | M | Ph05 | `FR-16.1`, `SDD-API-01` `SDD-API-05` `SDD-API-06` `SDD-API-07` `SDD-API-08` | Satu kerangka melayani seluruh laporan |
+| `PR-06-02` | Penerapan scope permission pada kueri agregat | M | L | 01 | `BR-073` `BR-074`, `PM-03`, `SDD-AUTH-07` | Agregat tidak membocorkan data di luar scope lewat angka total |
+| `PR-06-03` | Laporan pemanfaatan aset & ruangan | M | M | 02, Ph04 | `FR-16.1` | Angka cocok dengan data `booking_slots` |
+| `PR-06-04` | Laporan kondisi & tren kerusakan | M | M | 02, Ph03 | `FR-16.1` | Tren mengikuti riwayat kondisi, bukan status terkini |
+| `PR-06-05` | Laporan peminjaman & kepatuhan pengembalian | M | M | 02, Ph05 | `FR-16.1` | Keterlambatan mengikuti snapshot BR-028/029 dan `PR-05-05`; hari libur dikecualikan hanya bila snapshot mengaturnya (keputusan pengguna 14 Okt 2026) |
+| `PR-06-06` | Laporan pemeliharaan & biaya | M | M | 02, Ph04 | `FR-16.1` | Biaya tertelusur ke work order |
+| `PR-06-07` | Laporan pengadaan & penghapusan | M | M | 02, Ph05 | `FR-16.1` | Aset terhapus tetap terhitung pada periodenya |
+| `PR-06-08` | Ekspor laporan + pencatatan activity log | M | M | 03 … 07 | `FR-16.1`, `AL-10` | Ekspor besar tidak memblokir permintaan lain |
+| `PR-06-09` | Indeks pendukung + verifikasi `EXPLAIN` | M | M | 03 … 07 | `SDD-PERF-05`, `SDD-DB-06` | Tidak ada *sequential scan* selektif pada tabel besar (pengecualian agregasi penuh mengikuti keputusan AskUserQuestion 14 Okt2026) |
+| `PR-06-10` | Visualisasi laporan (UI) | L | L | 03 … 07 | `FR-16.1`, `SDD-FE-10` | Grafik dapat diakses (kontras & label), bukan hanya kanvas. *Rekonsiliasi (keputusan 23 log phase-03):* layar P-58 dan P-59 |
+| `PR-06-11` | Ekspor daftar operasional: reservasi P-30 & kerusakan P-39 *(rekonsiliasi 10 Okt, keputusan 23 log phase-03)* | M | M | 08, PR-03-27, PR-03-32 | `FR-07.3`, `FR-11.3`, `AL-10` | Gap 9 + keputusan 22c: isi, format, dan batas baris ditetapkan PRD/UX lebih dulu; memakai jalur ekspor `PR-06-08`; `report.export`; tercatat `AL-10` |
 
 ## 8. Task Breakdown
 
@@ -99,22 +100,25 @@ M-16 tidak memiliki modul hilir. Ia daun terakhir pada graf dependensi.
 - [ ] Jangan tampilkan "total keseluruhan" yang mengungkap data di luar scope (`PM-03`)
 
 ### `PR-06-09` — Indeks
-- [ ] Jalankan `EXPLAIN (ANALYZE, BUFFERS)` pada setiap kueri laporan dengan data uji berskala
-- [ ] Tambah indeks hanya bila `EXPLAIN` membuktikannya — bukan berdasarkan dugaan
-- [ ] Catat rencana kueri sebelum & sesudah di deskripsi PR
-- [ ] Kalibrasi ambang **TBD-PERF-A** dengan data nyata phase ini
+- [x] Jalankan `EXPLAIN (ANALYZE, BUFFERS)` pada setiap kueri laporan dengan data uji berskala — lokal 105.001 aset/riwayat
+- [x] Tambah indeks hanya bila `EXPLAIN` membuktikannya — indeks pemilik 623,398 → 25,592 ms
+- [x] Catat rencana kueri sebelum & sesudah dalam [audit lokal](../audits/pr-06-08-09-10-11-local-2026-10-15.md), siap untuk deskripsi PR
+- [x] Kalibrasi ambang **TBD-PERF-A** M-16 dengan data uji berskala; endpoint domain lain/staging masih terbuka
 
 ### `PR-06-08` — Ekspor
-- [ ] Ekspor besar dijalankan worker, bukan pada permintaan HTTP (`JOB-01`)
-- [ ] Pengguna diberi tahu lewat notifikasi saat berkas siap (`FR-17.1`)
-- [ ] Berkas ekspor tunduk siklus hidup penyimpanan (`SDD-FS-07`)
+- [x] Ekspor besar dijalankan worker, bukan pada permintaan HTTP (`JOB-01`) — HTTP 202 teruji lokal
+- [x] Pengguna diberi tahu lewat notifikasi saat berkas siap (`FR-17.1`) — NT-42/event dedupe teruji lokal
+- [x] Berkas ekspor tunduk siklus hidup penyimpanan (`SDD-FS-07`) — expiry/cleanup/retry teruji lokal
+
+Bukti task di atas tersedia pada [audit PR-06-08…11](../audits/pr-06-08-09-10-11-local-2026-10-15.md).
+Gerbang review, CI, staging dan milestone tetap terbuka.
 
 ## 9. Acceptance Checklist
 
 - [ ] Seluruh AC pada `FR-16.1` terverifikasi
 - [ ] Uji kebocoran agregat lulus untuk minimal tiga role berbeda
 - [ ] Setiap kueri laporan memenuhi anggaran latensi `SDD-PERF`
-- [ ] Tidak ada *sequential scan* pada tabel > 100.000 baris
+- [ ] Tidak ada *sequential scan* selektif pada tabel > 100.000 baris; agregasi penuh hanya dengan bukti EXPLAIN dan target≤5detik (AskUserQuestion14Okt2026)
 - [ ] Setiap ekspor menghasilkan entri activity log (`AL-10`)
 - [ ] Angka laporan direkonsiliasi silang dengan data operasional, bukan hanya "tidak galat"
 
@@ -136,7 +140,10 @@ M-16 tidak memiliki modul hilir. Ia daun terakhir pada graf dependensi.
 | Laporan memberatkan produksi | Matikan endpoint laporan lewat *feature flag*; seluruh modul lain tetap berjalan |
 | Angka salah | Perbaiki kueri; tidak ada data tersimpan yang perlu dimigrasi karena laporan dihitung saat diminta |
 
-Ini phase dengan risiko rollback terendah: seluruh isinya baca-saja.
+Perhitungan laporan bersifat baca-saja. Ekspor menambah job, metadata berkas dan
+objek penyimpanan; saat rollback, hentikan worker ekspor dan tangani berkas
+sesuai lifecycle sebelum menghapus tabel job. Indeks dan parameter identitas
+tidak mengubah data operasional aset.
 
 ## 12. Definition of Done
 

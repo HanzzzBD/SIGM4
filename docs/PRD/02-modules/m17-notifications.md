@@ -63,6 +63,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | NTF-02 | Fanout antar-instance API dilakukan melalui Redis Pub/Sub agar notifikasi sampai meskipun pengguna terhubung ke instance berbeda dari yang menghasilkan event |
 | NTF-03 | Batas 2 koneksi SSE aktif per pengguna; koneksi terlama diputus bila melebihi |
 | NTF-04 | Penulisan notifikasi ke basis data dilakukan **di dalam** transaksi bisnis; pengiriman (SSE/FCM) dilakukan **di luar** transaksi melalui antrean, sehingga kegagalan pengiriman tidak pernah menggagalkan transaksi bisnis (NFR-A-06) |
+| NTF-06 | Notifikasi operasional yang penerimanya ditentukan menurut role (kerusakan, stok bahan, serah terima, opname, pemeliharaan) hanya dikirim kepada pemegang role yang cakupan lokasinya meliputi lokasi objek, **ditambah** pemegang role tanpa cakupan lokasi (`PM-07`). Notifikasi yang penerimanya pengguna tertentu (pemohon, approver, teknisi yang ditugaskan) tidak terpengaruh |
 | NTF-05 | Penghitung belum dibaca dihitung di server dan disiarkan ulang setiap perubahan, bukan dihitung ulang oleh klien |
 
 **Acceptance Criteria**
@@ -133,13 +134,14 @@ _Tidak ada aturan bisnis yang dimiliki modul ini._
 
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
-| GET | `/notifications` | Bearer | Daftar notifikasi pengguna |
-| GET | `/notifications/stream` | Bearer | Aliran notifikasi real-time via SSE (NTF-01) |
-| PATCH | `/notifications/{id}/read` | Bearer | Tandai terbaca |
-| PATCH | `/notifications/read-all` | Bearer | Tandai semua terbaca |
-| PUT | `/notifications/preferences` | Bearer | Atur preferensi notifikasi |
-| POST | `/device-tokens` | Bearer | Daftarkan token perangkat FCM |
-| DELETE | `/device-tokens/{token}` | Bearer | Cabut token perangkat |
+| GET | `/notifications` | `notification.manage_own` | Daftar notifikasi pengguna |
+| GET | `/notifications/stream` | `notification.manage_own` | Aliran notifikasi real-time via SSE (NTF-01) |
+| PATCH | `/notifications/{id}/read` | `notification.manage_own` | Tandai terbaca |
+| PATCH | `/notifications/read-all` | `notification.manage_own` | Tandai semua terbaca |
+| GET | `/notifications/preferences` | `notification.manage_own` | Baca preferensi notifikasi sendiri (enam kelompok × dua kanal) |
+| PUT | `/notifications/preferences` | `notification.manage_own` | Atur preferensi notifikasi |
+| POST | `/device-tokens` | `notification.manage_own` | Daftarkan token perangkat FCM |
+| DELETE | `/device-tokens/{token}` | `notification.manage_own` | Cabut token perangkat |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
@@ -150,8 +152,10 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **notifications** | Notifikasi pengguna | id, user_id, jenis, judul, isi, referensi_jenis, referensi_id, kanal, dibaca_pada, dikirim_pada | ± 40.000 |
-| **device_tokens** | Token perangkat untuk push | id, user_id, token, platform, terakhir_aktif | ± 1.500 |
+| **notifications** | Notifikasi pengguna | id, user_id, jenis, judul, isi, referensi_jenis, referensi_id, dibaca_pada, created_at | ± 40.000 |
+| **notification_deliveries** | Hasil pengiriman **per kanal** untuk satu notifikasi — satu notifikasi dapat dikirim in-app dan push dengan nasib berbeda (`FR-17.2 A3`, `A4`) | id, notification_id, kanal, status, attempts, sent_at | ± 70.000 |
+| **notification_preferences** | Preferensi kanal per kelompok notifikasi (`FR-17.3`, UXD-05); ketiadaan baris = aktif | user_id, jenis (Kelompok Notifikasi), in_app, push | ± 3.000 |
+| **device_tokens** | Token perangkat untuk push | id, user_id, token (unik), platform, family_id (keluarga sesi yang mendaftarkannya — dicabut bersama sesi itu, MOB-SEC-05), terakhir_aktif | ± 1.500 |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
 

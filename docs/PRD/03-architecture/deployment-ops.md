@@ -9,10 +9,10 @@ Menggantikan AS-14 dan AS-16 yang sebelumnya berstatus asumsi terbuka.
 | Kode | Keputusan |
 |---|---|
 | INF-01 | **Basis data: PostgreSQL 15+.** Dipilih karena PRD mensyaratkan kolom JSON terindeks, `tstzrange` + *exclusion constraint* (Bab 26.3), *partial unique index* (`nomor_seri` unik bila diisi), dan partisi tabel bervolume tinggi. MySQL tidak mendukung *exclusion constraint*. |
-| INF-02 | **Penyimpanan objek: S3-compatible** (AWS S3, atau MinIO bila di-*hosting* mandiri). Tidak diizinkan menyimpan berkas pada *filesystem* server aplikasi. |
+| INF-02 | **Penyimpanan objek: S3-compatible** — produksi memakai **Backblaze B2** lewat API S3-compatible-nya (keputusan pemilik produk, 2 Oktober 2026); MinIO untuk dev/CI atau bila di-*hosting* mandiri; AWS S3 tetap kompatibel. Tidak diizinkan menyimpan berkas pada *filesystem* server aplikasi. |
 | INF-03 | **Cache & antrean: Redis 7+**, dipakai untuk cache agregat dashboard, *distributed lock* (JOB-02), *rate limiting*, dan antrean pekerjaan. |
 | INF-04 | **Runtime: Node.js LTS**, dikemas sebagai container OCI. |
-| INF-05 | **Model hosting: VPS terkelola dengan container orchestration sederhana** (Docker Compose untuk instalasi tunggal sekolah; Kubernetes hanya bila sekolah sudah memilikinya). |
+| INF-05 | **Model hosting: container orchestration sederhana** (Docker Compose untuk instalasi tunggal sekolah; Kubernetes hanya bila sekolah sudah memilikinya). **Production berjalan di server milik sekolah** yang dioperasikan IT sekolah; tim pengembang tidak memegang akses ke server itu, sehingga rilis dikirim lewat pipeline yang dijalankan di server tersebut. Staging tetap di VPS (keputusan pemilik produk, 24 Oktober 2026). |
 | INF-06 | **Reverse proxy & TLS**: Nginx/Caddy dengan sertifikat Let's Encrypt yang diperbarui otomatis; HTTP dialihkan permanen ke HTTPS (NFR-S-01). |
 | INF-07 | **Zona waktu server dan basis data ditetapkan UTC.** Konversi ke WIB dilakukan di lapisan penyajian (NFR-C-10). |
 
@@ -84,12 +84,14 @@ flowchart TB
 | Kode | Requirement |
 |---|---|
 | CD-01 | Pipeline wajib menjalankan berurutan: *lint* → *unit test* → *integration test* → *build* → *SAST* → *dependency scan (SCA)* → *container image scan* → *deploy* |
-| CD-02 | Gerbang kualitas: pipeline gagal bila cakupan logika bisnis inti < 70% (NFR-M-03) atau ditemukan kerentanan *High/Critical* |
+| CD-02 | Gerbang kualitas: pipeline gagal bila cakupan logika bisnis inti < 70% (NFR-M-03) atau ditemukan kerentanan *High/Critical* — kecuali advisory tanpa tambalan upstream yang dikecualikan terbatas dalam batas tambal ST-02 (SDD-SEC-13; keputusan pemilik produk, 24 Oktober 2026) |
 | CD-03 | Strategi branching: `main` (production) ← `staging` ← `develop` ← *feature branch*; rilis melalui tag bersemantik `vMAJOR.MINOR.PATCH` |
 | CD-04 | *Database migration* dijalankan sebagai langkah terpisah sebelum instance aplikasi baru menerima trafik, dan **wajib** kompatibel mundur satu versi (*expand → migrate → contract*) agar rollback aplikasi tidak merusak skema |
 | CD-05 | **Rencana rollback**: image versi sebelumnya dipertahankan minimal 5 rilis; rollback aplikasi ≤ 15 menit; rollback skema hanya melalui migration `down` yang telah diuji di staging |
 | CD-06 | Deployment ke production dilakukan di luar jam operasional (NFR-A-03) dan diumumkan H-2 |
 | CD-07 | *Smoke test* otomatis pasca-deploy atas alur kritis: login, cari aset, ajukan reservasi, scan QR, buat tiket kerusakan |
+
+Pelaksanaan `CD-07` di staging memakai akun Petugas, ruangan dan aset khusus bernama `[SMOKE]`. Reservasi uji dibatalkan setelah pemeriksaan, termasuk bila alur berikutnya gagal. Tiket uji dan auditnya tetap tersimpan; akun Petugas smoke menutup tiket lewat verifikasi **Perbaikan Ringan tanpa mengubah kondisi aset**, sehingga fixture dapat dipakai pada deployment berikutnya. Bukti foto sintetis ditandai sebagai data uji. Konfigurasi kredensial/ID fixture yang belum lengkap menggagalkan smoke penuh dengan petunjuk konfigurasi. Pemeriksaan kesehatan saja hanya boleh dijalankan lewat mode eksplisit dan tidak memenuhi bukti kelima alur `CD-07` (keputusan pemilik produk, 15 Oktober 2026).
 
 ## 27.5 Lingkungan
 
@@ -108,7 +110,7 @@ Dilarang keras menyalin data produksi ke staging tanpa anonimisasi (lihat DP-08)
 | OBS-01 | Metrik wajib diekspos: *rate*, *error*, *duration* per endpoint; kedalaman antrean; durasi pekerjaan terjadwal; pool koneksi DB; *hit ratio* cache |
 | OBS-02 | Log aplikasi terstruktur JSON dengan `request_id`, `user_id`, `modul` (NFR-M-06), dikirim ke agregator terpusat, retensi ≥ 30 hari |
 | OBS-03 | *Distributed tracing* pada alur transaksional kritis (reservasi, check-out, check-in, approval, chat) |
-| OBS-04 | *Uptime monitoring* eksternal atas `/health` setiap 60 detik |
+| OBS-04 | *Uptime monitoring* eksternal atas `/health/live` setiap 60 detik — probe inilah yang publik; `/health` menuntut `setting.view` karena membeberkan status dependensi |
 | OBS-05 | **Alert wajib**: 5xx > 1% selama 5 menit · p95 API > 1 detik selama 10 menit · pekerjaan terjadwal gagal · kedalaman antrean > 1.000 · disk > 80% · cadangan gagal · sertifikat TLS < 14 hari · kegagalan tulis activity log (AL-08) · konsumsi kuota atau batas laju Gemini API melewati ambang |
 | OBS-06 | Endpoint `/health` membedakan *liveness* dan *readiness*, serta melaporkan status dependensi (DB, Redis, storage, FCM, LLM) untuk kartu "Kesehatan Integrasi" pada Dashboard Administrator (19.2) |
 | OBS-07 | Ditetapkan penerima alarm (*on-call*) beserta jalur eskalasinya sebelum go-live |
@@ -137,8 +139,8 @@ Dilarang keras menyalin data produksi ke staging tanpa anonimisasi (lihat DP-08)
 
 | Komponen | Estimasi | Catatan |
 |---|---|---|
-| VPS aplikasi + worker | Menengah | 2 API + 1 worker |
-| PostgreSQL terkelola | Menengah | Termasuk PITR |
+| VPS aplikasi + worker | Menengah | 2 API + 1 worker — staging saja; production memakai server sekolah (INF-05) |
+| PostgreSQL terkelola | Menengah | Termasuk PITR — staging saja; production berjalan sebagai container di server sekolah (INF-05) |
 | Redis | Rendah | |
 | Object storage + bandwidth | Rendah–menengah | Tumbuh seiring foto |
 | Firebase FCM | Gratis pada volume ini | |

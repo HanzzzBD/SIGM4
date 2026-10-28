@@ -1,0 +1,359 @@
+// Repository hierarki lokasi (SDD-AUTH-02, PM-03, `FR-03.1`). PRIVAT terhadap
+// modul (SDD-SYS-03) — hanya service/location.service.ts yang boleh memanggilnya.
+//
+// Satu berkas bagi ketiga tabel: `buildings`/`areas`/`rooms` adalah satu
+// hierarki yang selalu berubah bersama (area menunjuk gedungnya, ruangan
+// menunjuk areanya), bukan tiga domain independen.
+
+import type { AuthContext } from "../../../shared/auth/index.js";
+import { sql } from "kysely";
+import type { z } from "zod";
+import type { LocationExportQuerySchema } from "../schemas/location.schema.js";
+import { BaseRepository, defineRepository } from "../../../shared/db/index.js";
+import type { QueryExecutor } from "../../../shared/db/index.js";
+
+export type RoomType =
+    | "KELAS"
+    | "LABORATORIUM"
+    | "AULA"
+    | "PERPUSTAKAAN"
+    | "KANTOR"
+    | "GUDANG"
+    | "LAPANGAN"
+    | "LAINNYA";
+export type LocationStatus = "AKTIF" | "NONAKTIF";
+
+export interface RuanganReservasiRow {
+    readonly id: string;
+    readonly nama: string;
+    readonly kode: string;
+    readonly jenis: RoomType;
+    readonly kapasitas: number | null;
+    readonly status: LocationStatus;
+    readonly dapat_direservasi: boolean;
+    readonly boleh_direservasi_siswa: boolean;
+    readonly status_gedung: LocationStatus;
+}
+
+const KOLOM_BUILDING =["id", "nama", "kode", "keterangan", "status", "created_at", "updated_at"] as const;
+export interface BuildingRow {
+    readonly id: string;
+    readonly nama: string;
+    readonly kode: string;
+    readonly keterangan: string | null;
+    readonly status: LocationStatus;
+    readonly created_at: Date;
+    readonly updated_at: Date;
+}
+
+const KOLOM_AREA = ["id", "building_id", "nama", "kode", "lantai", "created_at", "updated_at"] as const;
+export interface AreaRow {
+    readonly id: string;
+    readonly building_id: string;
+    readonly nama: string;
+    readonly kode: string;
+    readonly lantai: number | null;
+    readonly created_at: Date;
+    readonly updated_at: Date;
+}
+
+const KOLOM_ROOM = [
+    "id",
+    "area_id",
+    "nama",
+    "kode",
+    "jenis",
+    "kapasitas",
+    "penanggung_jawab_id",
+    "dapat_direservasi",
+    "boleh_direservasi_siswa",
+    "status",
+    "created_at",
+    "updated_at",
+] as const;
+export interface RoomRow {
+    readonly id: string;
+    readonly area_id: string;
+    readonly nama: string;
+    readonly kode: string;
+    readonly jenis: RoomType;
+    readonly kapasitas: number | null;
+    readonly penanggung_jawab_id: string | null;
+    readonly dapat_direservasi: boolean;
+    readonly boleh_direservasi_siswa: boolean;
+    readonly status: LocationStatus;
+    readonly created_at: Date;
+    readonly updated_at: Date;
+}
+
+export interface CreateBuildingData {
+    readonly nama: string;
+    readonly kode: string;
+    readonly keterangan: string | null;
+}
+
+export interface CreateAreaData {
+    readonly buildingId: number;
+    readonly nama: string;
+    readonly kode: string;
+    readonly lantai: number | null;
+}
+
+export interface RoomFields {
+    readonly areaId: number;
+    readonly nama: string;
+    readonly kode: string;
+    readonly jenis: RoomType;
+    readonly kapasitas: number | null;
+    readonly penanggungJawabId: number | null;
+    readonly dapatDireservasi: boolean;
+    readonly bolehDireservasiSiswa: boolean;
+}
+
+export class LocationRepository extends BaseRepository {
+    async roomIdByCode(ctx: AuthContext, code: string) {
+        return this.query(ctx).selectFrom("rooms").select("id").where("kode", "=", code).executeTakeFirst();
+    }
+    async exportIdentity(ctx: AuthContext, id: number) {
+        return this.query(ctx).selectFrom("rooms as r").innerJoin("areas as a", "a.id", "r.area_id").innerJoin("buildings as b", "b.id", "a.building_id").select(["r.nama", "r.kode", "a.nama as area", "b.nama as gedung"]).where("r.id", "=", String(id)).executeTakeFirst();
+    }
+
+    async printer(ctx: AuthContext) {
+        return this.query(ctx).selectFrom("users").select("nama").where("id", "=", String(ctx.userId)).executeTakeFirstOrThrow();
+    }
+
+    async exportAssets(ctx: AuthContext, id: number, filter: z.infer<typeof LocationExportQuerySchema>) {
+        let query = this.query(ctx).selectFrom("assets").select(["kode_barang", "nama", "kondisi", "status"]).where("room_id", "=", String(id)).where("dihapuskan", "=", false);
+        if (filter.kategori_id !== undefined) query = query.where("category_id", "=", String(filter.kategori_id));
+        if (filter.kondisi !== undefined) query = query.where("kondisi", "=", filter.kondisi);
+        if (filter.status !== undefined) query = query.where("status", "=", filter.status);
+        if (ctx.can("asset.view") && ctx.scopeOf("asset.view") === "restricted") query = query.where("boleh_dipinjam_siswa", "=", true);
+        for (const permission of ["report.export", ...(ctx.can("asset.view") ? ["asset.view"] : [])]) {
+            const scope = ctx.scopeOf(permission);
+            if (scope === "restricted" && permission === "report.export") query = query.where("boleh_dipinjam_siswa", "=", true);
+            if (scope === "own") query = query.where("created_by", "=", String(ctx.userId));
+            if (scope === "assigned") query = query.where("penanggung_jawab_id", "=", String(ctx.userId));
+        }
+        if (filter.q) query = query.where((eb) => eb.or([eb("kode_barang", "ilike", `%${filter.q}%`), eb("nama", "ilike", `%${filter.q}%`), eb("merek", "ilike", `%${filter.q}%`), eb("nomor_seri", "ilike", `%${filter.q}%`)]));
+        return query.orderBy("kode_barang").execute();
+    }
+    async assetCounts(ctx: AuthContext) {
+        let q = this.query(ctx).selectFrom("assets").select(["room_id", sql<string>`count(*)`.as("jumlah")]).where("dihapuskan", "=", false).groupBy("room_id");
+        if (ctx.can("asset.view") && ctx.scopeOf("asset.view") === "restricted") q = q.where("boleh_dipinjam_siswa", "=", true);
+        return q.execute();
+    }
+    constructor(executor: QueryExecutor) {
+        super(executor);
+    }
+
+    // --- Buildings (BR-013, BR-014) ---
+
+    async existsBuildingByKode(ctx: AuthContext, kode: string): Promise<boolean> {
+        return (
+            (await this.query(ctx)
+                .selectFrom("buildings")
+                .select("id")
+                .where("kode", "=", kode)
+                .executeTakeFirst()) !== undefined
+        );
+    }
+
+    async insertBuilding(ctx: AuthContext, data: CreateBuildingData): Promise<BuildingRow> {
+        return this.query(ctx)
+            .insertInto("buildings")
+            .values({
+                nama: data.nama,
+                kode: data.kode,
+                keterangan: data.keterangan,
+                created_by: ctx.userId,
+                updated_by: ctx.userId,
+            })
+            .returning(KOLOM_BUILDING)
+            .executeTakeFirstOrThrow();
+    }
+
+    // --- Areas (BR-013, BR-014) ---
+
+    async findBuildingById(ctx: AuthContext, id: number): Promise<BuildingRow | undefined> {
+        return this.query(ctx)
+            .selectFrom("buildings")
+            .select(KOLOM_BUILDING)
+            .where("id", "=", String(id))
+            .executeTakeFirst();
+    }
+
+    async existsAreaByKode(ctx: AuthContext, kode: string): Promise<boolean> {
+        return (
+            (await this.query(ctx)
+                .selectFrom("areas")
+                .select("id")
+                .where("kode", "=", kode)
+                .executeTakeFirst()) !== undefined
+        );
+    }
+
+    async insertArea(ctx: AuthContext, data: CreateAreaData): Promise<AreaRow> {
+        return this.query(ctx)
+            .insertInto("areas")
+            .values({
+                building_id: data.buildingId,
+                nama: data.nama,
+                kode: data.kode,
+                lantai: data.lantai,
+                created_by: ctx.userId,
+                updated_by: ctx.userId,
+            })
+            .returning(KOLOM_AREA)
+            .executeTakeFirstOrThrow();
+    }
+
+    // --- Rooms (BR-013, BR-014, BR-016) ---
+
+    async findAreaById(ctx: AuthContext, id: number): Promise<AreaRow | undefined> {
+        return this.query(ctx)
+            .selectFrom("areas")
+            .select(KOLOM_AREA)
+            .where("id", "=", String(id))
+            .executeTakeFirst();
+    }
+
+    async findRoomById(ctx: AuthContext, id: number): Promise<RoomRow | undefined> {
+        return this.query(ctx)
+            .selectFrom("rooms")
+            .select(KOLOM_ROOM)
+            .where("id", "=", String(id))
+            .executeTakeFirst();
+    }
+
+    /** Bahan kelayakan reservasi ruangan (BR-016, BR-019, BR-022) — ruangan beserta status gedungnya. */
+    async findRoomForReservation(ctx: AuthContext, id: number): Promise<RuanganReservasiRow | undefined> {
+        return this.query(ctx)
+            .selectFrom("rooms as r")
+            .innerJoin("areas as a", "a.id", "r.area_id")
+            .innerJoin("buildings as g", "g.id", "a.building_id")
+            .select(["r.id", "r.nama", "r.kode", "r.jenis", "r.kapasitas", "r.status", "r.dapat_direservasi", "r.boleh_direservasi_siswa", "g.status as status_gedung"])
+            .where("r.id", "=", String(id))
+            .executeTakeFirst();
+    }
+
+    async existsRoomByKode(ctx: AuthContext, kode: string, excludeId?: number): Promise<boolean> {
+        let q = this.query(ctx).selectFrom("rooms").select("id").where("kode", "=", kode);
+        if (excludeId !== undefined) q = q.where("id", "!=", String(excludeId));
+        return (await q.executeTakeFirst()) !== undefined;
+    }
+
+    async insertRoom(ctx: AuthContext, data: RoomFields): Promise<RoomRow> {
+        return this.query(ctx)
+            .insertInto("rooms")
+            .values({
+                area_id: data.areaId,
+                nama: data.nama,
+                kode: data.kode,
+                jenis: data.jenis,
+                kapasitas: data.kapasitas,
+                penanggung_jawab_id: data.penanggungJawabId,
+                dapat_direservasi: data.dapatDireservasi,
+                boleh_direservasi_siswa: data.bolehDireservasiSiswa,
+                created_by: ctx.userId,
+                updated_by: ctx.userId,
+            })
+            .returning(KOLOM_ROOM)
+            .executeTakeFirstOrThrow();
+    }
+
+    async updateRoom(ctx: AuthContext, id: number, data: RoomFields): Promise<RoomRow> {
+        return this.query(ctx)
+            .updateTable("rooms")
+            .set({
+                area_id: data.areaId,
+                nama: data.nama,
+                kode: data.kode,
+                jenis: data.jenis,
+                kapasitas: data.kapasitas,
+                penanggung_jawab_id: data.penanggungJawabId,
+                dapat_direservasi: data.dapatDireservasi,
+                boleh_direservasi_siswa: data.bolehDireservasiSiswa,
+                updated_by: ctx.userId,
+            })
+            .where("id", "=", String(id))
+            .returning(KOLOM_ROOM)
+            .executeTakeFirstOrThrow();
+    }
+
+    // --- Pohon lokasi & penonaktifan berjenjang (FR-03.1 langkah 1, BR-015) ---
+
+    async listAllBuildings(ctx: AuthContext): Promise<readonly BuildingRow[]> {
+        return this.query(ctx).selectFrom("buildings").select(KOLOM_BUILDING).orderBy("nama").execute();
+    }
+
+    async listAllAreas(ctx: AuthContext): Promise<readonly AreaRow[]> {
+        return this.query(ctx).selectFrom("areas").select(KOLOM_AREA).orderBy("nama").execute();
+    }
+
+    async listAllRooms(ctx: AuthContext): Promise<readonly RoomRow[]> {
+        return this.query(ctx).selectFrom("rooms").select(KOLOM_ROOM).orderBy("nama").execute();
+    }
+
+    /**
+     * BR-015 (kerangka hierarki, lihat `location.service.ts`): apakah gedung ini
+     * masih memiliki ruangan AKTIF di bawahnya, lintas seluruh area-nya.
+     */
+    async hasActiveRoomInBuilding(ctx: AuthContext, buildingId: number): Promise<boolean> {
+        return (
+            (await this.query(ctx)
+                .selectFrom("rooms")
+                .innerJoin("areas", "areas.id", "rooms.area_id")
+                .select("rooms.id")
+                .where("areas.building_id", "=", String(buildingId))
+                .where("rooms.status", "=", "AKTIF")
+                .executeTakeFirst()) !== undefined
+        );
+    }
+
+    /**
+     * BR-015 di tingkat ruangan: apakah ruangan ini masih memuat aset yang
+     * belum dihapuskan (`assets.dihapuskan = false`, `PR-02-10`). Mengueri
+     * `assets` LANGSUNG — tabel milik M-04, bukan lewat repository modul
+     * lain (dilarang lintas modul, `SDD-00 §4.2`); pola yang sama dengan
+     * `AssetRepository.roomExists` yang mengueri `rooms` langsung dari M-04.
+     * Aset yang dihapuskan (M-21) tidak lagi dianggap "memuat" ruangan —
+     * BR-015 hanya menuntut aset AKTIF dipindahkan sebelum penonaktifan.
+     */
+    async hasAssetsInRoom(ctx: AuthContext, roomId: number): Promise<boolean> {
+        return (
+            (await this.query(ctx)
+                .selectFrom("assets")
+                .select("id")
+                .where("room_id", "=", String(roomId))
+                .where("dihapuskan", "=", false)
+                .executeTakeFirst()) !== undefined
+        );
+    }
+
+    async updateBuildingStatus(
+        ctx: AuthContext,
+        id: number,
+        status: LocationStatus,
+    ): Promise<BuildingRow> {
+        return this.query(ctx)
+            .updateTable("buildings")
+            .set({ status, updated_by: ctx.userId })
+            .where("id", "=", String(id))
+            .returning(KOLOM_BUILDING)
+            .executeTakeFirstOrThrow();
+    }
+
+    async updateRoomStatus(ctx: AuthContext, id: number, status: LocationStatus): Promise<RoomRow> {
+        return this.query(ctx)
+            .updateTable("rooms")
+            .set({ status, updated_by: ctx.userId })
+            .where("id", "=", String(id))
+            .returning(KOLOM_ROOM)
+            .executeTakeFirstOrThrow();
+    }
+}
+
+/** Gerbang kompilasi `ScopedRepository` (SDD-AUTH-02). */
+export function createLocationRepository(executor: QueryExecutor): LocationRepository {
+    return defineRepository(new LocationRepository(executor));
+}

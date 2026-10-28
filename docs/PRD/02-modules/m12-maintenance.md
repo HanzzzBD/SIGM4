@@ -101,7 +101,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 **Alternative Flow**
 - **A1 — Pekerjaan tertunda** (mis. menunggu sparepart): Teknisi menandai `Tertunda` beserta alasan dan perkiraan tanggal lanjut; sistem menotifikasi Petugas Sarpras.
 - **A2 — Aset tidak dapat diperbaiki:** Teknisi menandai `Tidak Dapat Diperbaiki` dengan rekomendasi; Petugas menindaklanjuti dengan mengubah kondisi aset menjadi `Rusak Berat` dan/atau mengusulkan penghapusan.
-- **A3 — Kerusakan berbeda dari laporan awal:** Teknisi memperbarui deskripsi temuan dan estimasi biaya; jika biaya melebihi ambang tertentu, sistem meminta persetujuan ulang.
+- **A3 — Kerusakan berbeda dari laporan awal:** Teknisi memperbarui deskripsi temuan dan estimasi biaya; jika estimasi revisi melebihi `maintenance.ambang_persetujuan_estimasi`, Petugas Sarpras/Administrator menyetujui atau menolak di detail WO dengan catatan. Ambang rupiah wajib dikonfigurasi sebelum revisi estimasi dipakai.
 - **A4 — Teknisi memindai QR aset di lokasi:** Sistem langsung membuka work order aktif untuk aset tersebut.
 
 **Post Conditions** — Progres, biaya, dan dokumentasi pekerjaan tercatat; work order menunggu verifikasi.
@@ -110,7 +110,7 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 - [ ] Teknisi hanya dapat mengakses work order yang ditugaskan kepadanya.
 - [ ] Waktu mulai dan selesai tercatat otomatis untuk pengukuran durasi perbaikan.
 - [ ] Foto hasil pekerjaan wajib ada minimal 1 berkas.
-- [ ] Seluruh alur ini dapat diselesaikan sepenuhnya dari aplikasi mobile.
+- [ ] Seluruh alur dapat diselesaikan dari aplikasi mobile. Mulai/progres/tertunda/revisi estimasi/selesai wajib daring; hanya berkas foto diantrekan luring dan bertahan setelah aplikasi ditutup (keputusan pengguna 14 Oktober 2026; SDD-MOB-07, MOB-SEC-06).
 
 ### FR-12.4 Verifikasi & Penutupan Work Order
 
@@ -186,26 +186,117 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
 | POST | `/work-orders` | `workorder.create` | Buat work order |
+| GET | `/work-orders` | `workorder.view` | Daftar berhalaman sesuai scope; urut prioritas lalu target selesai |
+| GET | `/work-orders/technicians` | `workorder.create` | Teknisi aktif dan jumlah work order aktif untuk penugasan (FR-12.1 A1) |
+| GET | `/work-orders/{id}` | `workorder.view` | Detail; Teknisi hanya melihat penugasannya, objek asing 404 |
 | GET | `/work-orders/mine` | `workorder.execute` | Work order yang ditugaskan kepada saya |
 | PATCH | `/work-orders/{id}/start` | `workorder.execute` | Mulai kerjakan |
-| PATCH | `/work-orders/{id}/progress` | `workorder.execute` | Perbarui progres, biaya, foto |
+| PATCH | `/work-orders/{id}/progress` | `workorder.execute` | Perbarui catatan, checklist dan rincian biaya |
+| POST | `/work-orders/{id}/photos` | `workorder.execute` | Tautkan unggahan hasil milik Teknisi; pending ditandai |
+| DELETE | `/work-orders/{id}/photos/{fileId}` | `workorder.execute` | Lepas bukti sebelum pengajuan penyelesaian, termasuk foto gagal scan |
+| POST | `/work-orders/{id}/pause` | `workorder.execute` | Tertunda dengan alasan dan tanggal lanjut |
+| POST | `/work-orders/{id}/irreparable` | `workorder.execute` | Tidak dapat diperbaiki dengan rekomendasi dan bukti |
+| POST | `/work-orders/{id}/estimate` | `workorder.execute` | Ajukan estimasi revisi; ambang konfigurasi wajib |
+| POST | `/work-orders/{id}/estimate/decide` | `workorder.verify` | Setujui/tolak estimasi dengan catatan di detail WO |
 | POST | `/work-orders/{id}/complete` | `workorder.execute` | Ajukan penyelesaian |
 | POST | `/work-orders/{id}/verify` | `workorder.verify` | Verifikasi & tutup |
-| GET | `/assets/{id}/service-history` | `asset.view` | Riwayat servis aset |
+| GET | `/assets/{id}/service-history` | `asset.view` | Riwayat servis; juga mensyaratkan workorder.view, scope penugasan dan penyamaran biaya |
 | POST | `/maintenance-schedules` | `maintenance.manage` | Buat jadwal preventif |
+| GET | `/maintenance-schedules` | `maintenance.manage` | Daftar berhalaman; filter status dan jatuh tempo dalam jumlah hari |
+| GET | `/maintenance-schedules/options` | `maintenance.manage` | Kategori beserta usulan interval preventif dan Teknisi aktif |
+| GET | `/maintenance-schedules/assets` | `maintenance.manage` | Pemilih aset kategori, 100 aset per halaman |
+| GET | `/maintenance-schedules/{id}` | `maintenance.manage` | Detail jadwal, checklist, teknisi, jatuh tempo berikutnya |
+| PUT | `/maintenance-schedules/{id}` | `maintenance.manage` | Ubah konfigurasi jadwal; cakupan tetap |
+| POST | `/maintenance-schedules/{id}/deactivate` | `maintenance.manage` | Nonaktifkan dengan alasan wajib; WO yang terbit tetap berjalan |
+| POST | `/maintenance-schedules/{id}/skip` | `maintenance.manage` | Lewati sekali dengan alasan wajib; ditolak bila ada WO siklus terbuka |
+| GET | `/maintenance-schedules/{id}/work-orders` | `maintenance.manage` | WO yang diterbitkan jadwal, 20 per halaman |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
 
 ## 8. Database Entity
 
+**Kontrak jadwal preventif (keputusan pengguna melalui pertanyaan interaktif, 14 Oktober 2026; PR-04-07).**
+Jadwal memiliki `nama`, tepat satu `asset_id`/`category_id`, `interval_hari` (1–3650),
+`tanggal_mulai`, checklist teks (1–100 pekerjaan), dan `teknisi_default_id` Teknisi aktif.
+Interval kategori diusulkan saat memilih kategori/aset dan dapat diubah; preset 1/7/30/90/365
+tetap jumlah hari, bukan penambahan bulan kalender. Tanggal mulai adalah jatuh tempo pertama.
+Hari nonoperasional (`work_days`) dan hari libur (`holidays`) digeser ke hari kerja berikutnya;
+H-7 dihitung sebagai tujuh hari kalender WIB. Job harian berjalan pukul 06.00 WIB dan mengejar
+siklus yang terlambat saat worker kembali hidup. Prioritas preventif bawaan Sedang; target
+selesai sama dengan jatuh tempo. Penerbitan tidak langsung menonaktifkan aset.
+
+Keanggotaan kategori diperiksa saat setiap job; satu WO per aset per siklus. Siklus per aset
+disimpan di `maintenance_schedule_assets`, terkunci oleh jadwal dan diikat unik pada WO melalui
+`(maintenance_schedule_id, asset_id, preventive_due_date)`. WO terbuka mencegah penerbitan ulang.
+Checklist WO adalah snapshot `{id, label, selesai:false}`; perubahan konfigurasi hanya berlaku
+untuk WO berikutnya. Aset yang belum Tersedia ditandai `menunggu_ketersediaan_aset` dan belum
+dapat mulai dikerjakan. Job menghapus penanda dan menotifikasi teknisi WO ketika aset Tersedia.
+Penutupan terverifikasi memanggil hook dalam transaksi yang sama: tanggal selesai pekerjaan
+ditambah interval, lalu digeser ke hari kerja berikutnya; hook idempoten per WO.
+
+Lewati sekali memajukan satu interval per aset dengan alasan wajib, tersimpan dalam
+`maintenance_schedule_skips`, activity log, dan linimasa aset. Jadwal dengan WO siklus yang
+sudah terbit tidak dapat dilewati. Nonaktifkan menghentikan penerbitan berikutnya, tanpa
+membatalkan WO. Mutasi jadwal memakai `Idempotency-Key`. Cakupan tidak dapat diganti pada PUT;
+tanggal mulai yang diubah berlaku bagi siklus yang belum diterbitkan. Daftar/detail dan
+pengelolaan jadwal khusus `maintenance.manage` (Petugas/Admin); Pimpinan membaca riwayat servis
+melalui aset, bukan daftar jadwal (penyelarasan P-45, keputusan pengguna).
+
+**Kontrak pembuatan korektif (keputusan pemilik produk, 14 Oktober 2026; PR-04-05/06).**
+`POST /work-orders` menerima `Idempotency-Key`, `teknisi_id`, `target_selesai` (tanggal WIB,
+tidak sebelum hari ini), `deskripsi`, `prioritas`, serta tepat satu `asset_id`/`room_id`,
+atau `damage_report_id` yang sudah Diverifikasi. `estimasi_biaya` opsional default nol;
+`nonaktifkan_aset` opsional default true. Untuk sumber tiket, objek/deskripsi diambil ulang
+dari tiket dan prioritas mengikuti urgensinya; target diisi petugas, tanpa durasi tenggat
+buatan per tingkat kerusakan. Teknisi harus aktif dan berrole R-04. Satu tiket menghasilkan
+paling banyak satu work order, termasuk jika permintaan manual bersaing dengan worker.
+Respons pembuatan/detail memuat `garansi_aktif` untuk BR-052; null bila pemanggil tidak
+memiliki izin membaca dokumen garansi. Estimasi/biaya pada respons disamarkan menjadi
+null tanpa `maintenance.view_cost`. Perawatan ringan mempertahankan aset Tersedia;
+aset yang masih Dipinjam harus dikembalikan dahulu sebelum dinonaktifkan untuk perbaikan.
+
+Saat memverifikasi tiket dengan keputusan Tindak Lanjut, petugas memilih teknisi, target
+selesai, estimasi biaya, dan opsi nonaktifkan aset. Penugasan disimpan bersama verifikasi;
+work order dibentuk worker dari event setelah commit. Pembuatan work order, perubahan
+status aset, pembatalan reservasi mendatang, status tiket Dalam Perbaikan, audit, dan
+event penugasan dilakukan dalam satu transaksi. NT-22 dan NT-27 diterbitkan setelah commit.
+
+**Kontrak eksekusi/penutupan (keputusan pengguna, 14 Oktober 2026; PR-04-08/09/10/18).**
+Mutasi memakai `Idempotency-Key` dan scope penugasan. Checklist harus berasal dari snapshot WO;
+progres mengganti rincian biaya (kuantitas 3 desimal, harga/total 2 desimal, pembulatan per baris)
+dan jumlahnya tidak boleh melewati estimasi yang disetujui. Revisi di atas ambang menunggu
+Petugas/Admin; tanpa konfigurasi, pengajuan revisi ditolak dengan pesan spesifik. Mulai/resume
+dan penyelesaian diblokir selama estimasi menunggu keputusan.
+
+Foto hasil berjenis WORK_ORDER_PHOTO milik Teknisi, paling banyak 20 per WO; unggahan belum
+terkonfirmasi/pending ditampilkan tanpa URL. Pengajuan dan penutupan memerlukan minimal satu
+foto CLEAN terkonfirmasi, serta seluruh foto yang tertaut sudah siap. Foto gagal dapat dilepas
+dan diganti sebelum pengajuan. Penyelesaian normal mensyaratkan checklist lengkap; rekomendasi
+Tidak Dapat Diperbaiki tidak mensyaratkan pekerjaan checklist yang tak dapat dilakukan.
+
+Verifikasi aset memerlukan kondisi akhir; WO ruangan tidak memiliki kondisi aset. Tidak Dapat
+Diperbaiki hanya dapat ditutup dengan kondisi Rusak Berat. Pengembalian mensyaratkan catatan
+dan menghapus waktu selesai agar pengajuan ulang mencatat waktu baru. Penutupan, perubahan
+kondisi/riwayat, pemulihan status aset menurut WO/pinjaman/slot yang masih aktif, penutupan
+tiket, hook jadwal preventif, audit dan outbox merupakan satu transaksi.
+
+Riwayat memuat semua status termasuk dibatalkan dan tidak dapat diperbaiki, dengan biaya,
+durasi dan interval korektif sesuai scope. Ringkasan Teknisi diberi penanda penugasan sendiri.
+`maintenance.ambang_penggantian_persen` tidak memiliki nilai buatan: bila belum diisi,
+rekomendasi belum dapat dihitung. Biaya/rincian/estimasi disamarkan tanpa maintenance.view_cost.
+NT-24 diperluas untuk tindakan Petugas sesuai persetujuan pengguna; NT-25 hanya pengembalian,
+NT-26 penutupan terverifikasi. Pengiriman notifikasi/push tetap sesudah commit melalui outbox.
+
 ### Entitas
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **work_orders** | Perintah kerja pemeliharaan | id, nomor, jenis (preventif/korektif), asset_id, room_id, damage_report_id, teknisi_id, prioritas, deskripsi, target_selesai, waktu_mulai, waktu_selesai, biaya, catatan_teknisi, hasil, status | ± 700 |
+| **work_orders** | Perintah kerja pemeliharaan | id, nomor, jenis (`PREVENTIF`/`KOREKTIF`), asset_id, room_id, damage_report_id, teknisi_id, prioritas, deskripsi, target_selesai, waktu_mulai, waktu_selesai, biaya, catatan_teknisi, hasil, status | ± 700 |
 | **work_order_costs** | Rincian biaya & sparepart | id, work_order_id, deskripsi, jumlah, harga_satuan, total | ± 1.000 |
-| **maintenance_schedules** | Jadwal pemeliharaan preventif | id, asset_id/category_id, interval_hari, tanggal_mulai, checklist (JSON), teknisi_default_id, jatuh_tempo_berikutnya, status | Petugas Sarpras |
+| **maintenance_schedules** | Jadwal pemeliharaan preventif | id, nama, asset_id/category_id, interval_hari, tanggal_mulai, checklist (JSON), teknisi_default_id, status | jatuh_tempo_berikutnya pada respons = minimum siklus per aset |
+| **maintenance_schedule_assets** | Siklus jadwal per aset | schedule_id, asset_id, jatuh_tempo, work_order_id | PK(schedule_id, asset_id); pointer WO terbuka |
+| **maintenance_schedule_skips** | Riwayat preventif dilewati | id, schedule_id, asset_id, jatuh_tempo, alasan, created_at, created_by | Alasan wajib, tampil pada linimasa aset |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
 
@@ -217,7 +308,7 @@ Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-archit
 |---|---|---|---|:---:|---|
 | **NT-22** | Work order ditugaskan | Teknisi | In-app + Push | ✅ | "Work order {nomor} ditugaskan kepada Anda. Prioritas: {prioritas}." |
 | **NT-23** | Work order melewati target selesai | Teknisi + Petugas Sarpras | In-app + Push | ✅ | "Work order {nomor} melewati target selesai {tanggal}." |
-| **NT-24** | Work order menunggu verifikasi | Petugas Sarpras | In-app + Push | ❌ | "Work order {nomor} selesai dikerjakan dan menunggu verifikasi." |
+| **NT-24** | WO membutuhkan tindakan: menunggu verifikasi, Tertunda, atau revisi estimasi menunggu persetujuan | Petugas Sarpras + Administrator | In-app + Push | ❌ | "Work order {nomor} selesai dikerjakan dan menunggu verifikasi." Judul/isi menyesuaikan kejadian. |
 | **NT-25** | Work order dikembalikan ke teknisi | Teknisi | In-app + Push | ✅ | "Work order {nomor} dikembalikan. Catatan: {catatan}." |
 | **NT-26** | Work order selesai & diverifikasi | Pelapor + Teknisi | In-app + Push | ❌ | "Perbaikan {aset} telah selesai dan diverifikasi." |
 | **NT-27** | Reservasi dibatalkan karena aset masuk perbaikan | Pemohon terdampak | In-app + Push | ✅ | "Reservasi {nomor} dibatalkan karena {aset} sedang diperbaiki." |

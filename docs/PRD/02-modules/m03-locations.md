@@ -98,8 +98,17 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
 | GET | `/locations/tree` | `location.view` | Pohon lokasi lengkap |
+| GET | `/rooms/{id}` | `location.view` | Detail ruangan |
+| GET | `/rooms/{id}/assets/export` | `report.export` | Inventaris ruangan XLSX/PDF, tercatat `AL-10` |
 | POST | `/buildings` · `/areas` · `/rooms` | `location.manage` | Buat entitas lokasi |
 | PUT | `/rooms/{id}` | `location.manage` | Perbarui ruangan |
+| PATCH | `/buildings/{id}/status` · `/rooms/{id}/status` | `location.manage` | Aktifkan/nonaktifkan berjenjang (`BR-015`) |
+
+**Kontrak PR-01-21/22/23.** Setiap simpul pohon mempunyai `jumlah_aset` (integer ≥ 0): unit dengan `dihapuskan = false`, dijumlahkan dari ruangan ke area lalu gedung, termasuk lokasi nonaktif. Scope aset `restricted` hanya menghitung unit yang boleh dipinjam siswa. Pohon tidak memuat field finansial.
+
+Daftar aset ruangan menerima `q` (trim, maksimal 200 karakter; pencarian kode, nama, merek, nomor seri), `filter[kategori_id]`, `filter[kondisi]`, `filter[status]`, `page` dan `per_page` (1–100, bawaan 25). Semua saringan digabung AND dengan ID ruangan; ringkasan tetap mencakup seluruh ruangan tanpa saringan/paginasi. Respons memakai `{ data: { room_id, assets, ringkasan }, meta: { page, per_page, total, total_pages } }`.
+
+Ekspor menerima saringan yang sama dan `format=xlsx|pdf`; mengekspor seluruh hasil tersaring tanpa paginasi. Identitas gedung/area/ruangan, tanggal cetak WIB, serta nama/ID pencetak disertakan. Satu gerbang permission `report.export` mengikuti implementasi tergabung #169 (PM-01); location.view bukan gerbang kedua. Scope report.export diiriskan dengan asset.view bila dimiliki: all seluruh aset aktif ruangan, own aset dibuat pemanggil, assigned aset dengan penanggung_jawab_id pemanggil, restricted hanya boleh_dipinjam_siswa. Konten pengguna ditulis sebagai teks (XLSX) atau HTML yang di-escape (PDF). Aksi `DATA_EXPORTED` dicatat sebelum berkas dikirim.
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
@@ -144,6 +153,7 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | Aksi | Keterangan |
 |---|---|
 | `LOCATION_CREATED` / `LOCATION_UPDATED` / `LOCATION_DEACTIVATED` | Perubahan struktur lokasi |
+| `DATA_EXPORTED` | Ekspor inventaris ruangan: format, saringan dan jumlah baris (`AL-10`) |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
 

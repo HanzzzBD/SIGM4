@@ -1,0 +1,215 @@
+// Registri halaman & navigasi (UX §5.3, §6; UXD-01, UXD-16; keputusan 83). Struktur sidebar
+// ditetapkan PENUH di sini; sebuah entri — dan tautan drill-down kartu dashboard — hanya
+// dirender bila halamannya TERDAFTAR di build ini (`HALAMAN_TERDAFTAR`) dan permission-nya
+// dipegang menurut `/me` (PM-04, UXP-02). PR halaman berikutnya cukup mendaftarkan ID-nya.
+
+import type { NamaIkon } from "../ui/icon";
+
+/** Halaman yang route-nya ada di build ini: ID UX §6 → path. Dijaga sama dengan router (diuji). */
+export const HALAMAN_TERDAFTAR: Readonly<Record<string, string>> = {
+    "P-58": "/analitik", "P-59": "/analitik/$jenis",
+    "P-14":"/chat","P-75":"/monitoring-chatbot",
+    "P-84":"/katalog-bahan", "P-85":"/permintaan-bahan/baru", "P-86":"/permintaan-bahan", "P-87":"/permintaan-bahan/$id",
+    "P-80":"/bahan", "P-81":"/bahan/baru", "P-81 · Ubah":"/bahan/$id/ubah", "P-82":"/bahan/$id", "P-82 · QR":"/b/$uuid", "P-83":"/kategori-bahan",
+    "P-55": "/penghapusan", "P-56": "/penghapusan/baru", "P-57": "/penghapusan/$id",
+    "P-51":"/pengadaan","P-52":"/pengadaan/baru","P-53":"/pengadaan/$id","P-54":"/pengadaan/$id/penerimaan",
+    "P-47": "/opname", "P-48": "/opname/baru", "P-49": "/opname/$id", "P-50": "/opname/$id/rekonsiliasi",
+    "P-42":"/work-order",
+    "P-43":"/work-order/baru",
+    "P-44":"/work-order/$id",
+    "P-45": "/jadwal-pemeliharaan",
+    "P-46": "/jadwal-pemeliharaan/$id",
+    "P-01": "/login",
+    "P-02": "/login/2fa",
+    "P-03": "/login/2fa/aktivasi",
+    "P-04": "/lupa-password",
+    "P-05": "/ganti-password",
+    "P-06": "/a/$uuid",
+    "P-08": "/tidak-punya-akses",
+    "P-09": "/data-tidak-tersedia",
+    "P-10": "/gangguan",
+    "P-11": "/tidak-ditemukan",
+    "P-12": "/",
+    "P-13": "/notifikasi",
+    "P-15": "/aset",
+    "P-16": "/aset/baru",
+    "P-17": "/aset/impor",
+    "P-18": "/aset/$id",
+    /** Tab Riwayat P-18 sebagai segmen URL (UXP-01). */
+    "P-18 · Riwayat": "/aset/$id/riwayat",
+    "P-18 · Dokumen": "/aset/$id/dokumen",
+    "P-19": "/aset/$id/ubah",
+    "P-20": "/aset/mutasi",
+    "P-21": "/kategori-aset",
+    "P-22": "/lokasi",
+    "P-23": "/lokasi/ruangan/$id",
+    "P-24": "/label-qr",
+    "P-25": "/scan",
+    "P-26": "/dokumen-aset",
+    "P-27": "/kalender-ruangan",
+    "P-28": "/katalog-aset",
+    "P-29": "/reservasi/baru",
+    "P-30": "/reservasi",
+    "P-31": "/reservasi/$id",
+    "P-32": "/peminjaman",
+    "P-35": "/denda",
+    "P-36": "/denda/$id",
+    "P-33": "/peminjaman/serah-terima",
+    "P-34": "/peminjaman/$id",
+    "P-37": "/persetujuan",
+    "P-38": "/persetujuan/$id",
+    "P-39": "/kerusakan",
+    "P-40": "/kerusakan/baru",
+    "P-41": "/kerusakan/$id",
+    "P-60": "/pengguna",
+    "P-61": "/pengguna/baru",
+    "P-62": "/pengguna/impor",
+    "P-63": "/pengguna/$id",
+    "P-64": "/pengguna/kenaikan-kelas",
+    "P-65": "/role",
+    "P-66": "/role/$id",
+    "P-67": "/permintaan-reset-password",
+    "P-68": "/approval-rules",
+    "P-69": "/approval-rules/$id",
+    "P-70": "/pengaturan",
+    "P-71": "/pengaturan/kalender-akademik",
+    "P-72": "/pengaturan/unit-kerja",
+    "P-73": "/activity-log",
+    "P-74": "/activity-log/$id",
+    "P-78": "/profil/notifikasi",
+    "P-76": "/profil",
+    "P-77": "/profil/keamanan",
+    "P-79": "/profil/keamanan#perangkat",
+};
+
+export interface EntriNav {
+    readonly label: string;
+    readonly halaman: string;
+    /** Salah satu cukup (mis. Parameter Sistem: lihat ATAU kelola). */
+    readonly permission: readonly string[];
+    readonly ikon: NamaIkon;
+    /**
+     * Tujuan cadangan berurutan bila tujuan utama tak terdaftar atau izinnya tak dipegang — mis. "Pengguna &
+     * Role" menuju P-65 bagi pemegang `role.view` tanpa `user.view` (UX §5.3 satu entri untuk M-02).
+     */
+    readonly alternatif?: readonly { readonly halaman: string; readonly permission: readonly string[] }[];
+}
+
+export interface GrupNav {
+    readonly label: string;
+    /** Penanda 3px grup domain (DSD-03); Beranda tanpa penanda. */
+    readonly accent: "accent-blue" | "accent-green" | "accent-yellow" | "accent-purple" | "accent-gray" | null;
+    readonly entri: readonly EntriNav[];
+}
+
+const e = (label: string, halaman: string, ikon: NamaIkon, ...permission: string[]): EntriNav => ({ label, halaman, ikon, permission });
+
+/** UX §5.3 — urutan tetap untuk semua role; grup Sistem selalu terakhir. */
+export const NAVIGASI: readonly GrupNav[] = [
+    { label: "Beranda", accent: null, entri: [e("Dashboard", "P-12", "dashboard", "dashboard.view"), e("Notifikasi", "P-13", "notifikasi", "notification.manage_own")] },
+    {
+        label: "Aset & Bahan",
+        accent: "accent-blue",
+        entri: [
+            e("Inventaris Aset", "P-15", "aset", "asset.view"),
+            e("Kategori Aset", "P-21", "kategori", "category.manage"),
+            e("Bahan", "P-80", "bahan", "material.view:penuh"),
+            e("Kategori Bahan", "P-83", "kategoriBahan", "material.manage"),
+            e("Lokasi", "P-22", "lokasi", "location.view"),
+            e("Label QR", "P-24", "qr", "asset.qr_print"),
+            e("Dokumen Aset", "P-26", "dokumen", "asset_document.view"),
+            e("Scan QR", "P-25", "pindai", "asset.view","material.view"),
+        ],
+    },
+    {
+        label: "Pemanfaatan",
+        accent: "accent-green",
+        entri: [
+            e("Kalender Ruangan", "P-27", "kalender", "reservation.view"),
+            e("Katalog Aset", "P-28", "katalog", "reservation.view"),
+            e("Reservasi", "P-30", "reservasi", "reservation.view"),
+            e("Peminjaman", "P-32", "peminjaman", "loan.view"),
+            e("Antrean Serah Terima", "P-33", "serahTerima", "loan.manage"),
+            e("Denda & Kewajiban", "P-35", "denda", "fine.view"),
+            e("Katalog Bahan", "P-84", "permintaan", "material.view"),
+            e("Permintaan Bahan", "P-86", "permintaan", "material.view"),
+            e("Persetujuan Saya", "P-37", "persetujuan", "approval.decide"),
+        ],
+    },
+    {
+        label: "Perawatan",
+        accent: "accent-yellow",
+        entri: [
+            e("Laporan Kerusakan", "P-39", "kerusakan", "damage.view"),
+            e("Work Order", "P-42", "workOrder", "workorder.view"),
+            e("Jadwal Pemeliharaan", "P-45", "jadwal", "maintenance.manage"),
+        ],
+    },
+    {
+        label: "Pengawasan",
+        accent: "accent-purple",
+        entri: [
+            e("Stock Opname", "P-47", "opname", "audit.view"),
+            e("Pengadaan", "P-51", "pengadaan", "procurement.view"),
+            e("Penghapusan Aset", "P-55", "penghapusan", "disposal.view"),
+            e("Statistik & Analitik", "P-58", "analitik", "report.view"),
+        ],
+    },
+    {
+        label: "Sistem",
+        accent: "accent-gray",
+        entri: [
+            { ...e("Pengguna & Role", "P-60", "pengguna", "user.view"), alternatif: [{ halaman: "P-65", permission: ["role.view"] }] },
+            e("Permintaan Reset Password", "P-67", "kunci", "user.reset_password"),
+            e("Approval Rules", "P-68", "aturan", "approval_rule.view"),
+            e("Parameter Sistem", "P-70", "pengaturan", "setting.view", "setting.manage"),
+            e("Activity Log", "P-73", "log", "activity_log.view"),
+            e("Monitoring Chatbot", "P-75", "monitoringChatbot", "chat.monitor"),
+        ],
+    },
+];
+
+/**
+ * Grup berisi entri yang boleh dirender; grup kosong ikut hilang (UXD-01). Entri bertujuan cadangan memakai
+ * tujuan PERTAMA yang terdaftar di build ini dan izinnya dipegang.
+ */
+/**
+ * Penggerbang entri dari `/me` (PM-04). Kode bersufiks `:penuh` hanya lolos bila scope-nya bukan
+ * `restricted` — mis. master Bahan P-80 tidak tampil bagi Siswa/OSIS (UX §5.3, BR-091a).
+ */
+export function bisaDariScope(permissions: Readonly<Record<string, string>>): (permission: string) => boolean {
+    return (permission) => {
+        const [kode = "", syarat] = permission.split(":");
+        const scope = permissions[kode];
+        return scope !== undefined && (syarat !== "penuh" || scope !== "restricted");
+    };
+}
+
+export function navigasiTerlihat(can: (permission: string) => boolean): readonly GrupNav[] {
+    const pilih = (x: EntriNav): EntriNav | null => {
+        const tujuan = [{ halaman: x.halaman, permission: x.permission }, ...(x.alternatif ?? [])].find((t) => HALAMAN_TERDAFTAR[t.halaman] !== undefined && t.permission.some(can));
+        return tujuan === undefined ? null : { ...x, halaman: tujuan.halaman, permission: tujuan.permission };
+    };
+    return NAVIGASI.map((g) => ({ ...g, entri: g.entri.map(pilih).filter((x): x is EntriNav => x !== null) })).filter((g) => g.entri.length > 0);
+}
+
+/**
+ * Deep link notifikasi (path relatif aplikasi, SDD-NTF-09) → apakah route-nya ada di build
+ * ini. Segmen `$param` cocok dengan satu segmen apa pun; query diabaikan.
+ */
+export function jalurTerdaftar(deepLink: string): boolean {
+    const path = deepLink.split(/[?#]/)[0] ?? "";
+    if(path.startsWith("/b/"))return /^\/b\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(path);
+    return Object.values(HALAMAN_TERDAFTAR).some((pola) => new RegExp(`^${pola.replace(/\$[^/]+/g, "[^/]+")}$`).test(path));
+}
+
+/**
+ * Sasaran drill-down UX §8.3 (mis. `P-60?filter[status]=AKTIF`, `P-68 · P-70`) → path bila
+ * halaman pertamanya terdaftar; `null` bila belum — kartu tetap tampil tanpa tautan.
+ */
+export function jalurDrilldown(sasaran: string | null): string | null {
+    if (sasaran === null) return null;
+    const cocok = /^(P-\d+)(\?.*)?/.exec(sasaran.split(" · ")[0] ?? "");
+    const path = cocok?.[1] === undefined ? undefined : HALAMAN_TERDAFTAR[cocok[1]];
+    return path === undefined ? null : `${path}${cocok?.[2] ?? ""}`;
+}

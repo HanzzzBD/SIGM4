@@ -50,3 +50,11 @@
 
 
 > Pengujian keamanan & manajemen kerentanan (Bab 28.5) berada di [`security.md`](security.md).
+
+Pelaksanaan DP-04/10 dan SL-04/05 mengikuti keputusan AskUserQuestion 15 Oktober
+2026 pada [M-02](../02-modules/m02-users.md): akun nonaktif tanpa kewajiban,
+verifikasi Administrator, pseudonimisasi satu arah dan retensi dua tahun WIB.
+Prosedur penerimaan, verifikasi, pencatatan hasil/penundaan serta respons maksimum
+3×24 jam ada pada [runbook privasi](../../IMPLEMENTATION/runbooks/permintaan-privasi.md).
+Operasi mengganti identitas users; audit/snapshot transaksi dan foto historis
+tetap dipertahankan sesuai DP-05a, bukan dijanjikan terhapus dari seluruh bukti.

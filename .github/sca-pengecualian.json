@@ -1,0 +1,14 @@
+{
+    "$catatan": "Pengecualian gerbang SCA High/Critical (SDD-SEC-13). Hanya untuk advisory TANPA tambalan upstream, dikunci ke GHSA + path paket persis, dengan tinjau_ulang paling lambat 30 hari (High) / 7 hari (Critical) sejak dicatat (ST-02). Setiap entri disetujui pemilik produk dan dicatat di log phase. Dibaca scripts/sca-gerbang.mjs dan job dependency-review.",
+    "pengecualian": [
+        {
+            "ghsa": "GHSA-mrhx-c7xc-m3w5",
+            "paket": "zod (salinan @expo/cli)",
+            "path": ["node_modules/@expo/cli/node_modules/zod"],
+            "alasan": "@expo/cli 57 meminta zod ^3.25.76; tambalan hanya ada di lini 4 (4.6.6), sehingga override merusak CLI. Perkakas build saja. Salinan zod runtime (root, api, web, mobile) sudah 4.6.7 dan tetap digerbang.",
+            "disetujui": "pemilik produk, 24 Oktober 2026 (log phase-04 keputusan 1)",
+            "dicatat": "2026-10-24",
+            "tinjau_ulang": "2026-11-23"
+        }
+    ]
+}

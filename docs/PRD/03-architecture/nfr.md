@@ -94,7 +94,7 @@ Seluruh target di bawah ini ditetapkan berdasarkan skala terkonfirmasi: **± 5.0
 |---|---|
 | NFR-C-01 | Peramban web: Chrome, Edge, Firefox, dan Safari — dua versi mayor terakhir |
 | NFR-C-02 | Web responsif pada lebar layar 320 px hingga 1920 px |
-| NFR-C-03 | Aplikasi mobile: Android 8.0 (API 26) ke atas; iOS 14 ke atas |
+| NFR-C-03 | Aplikasi mobile: Android 8.0 (API 26) ke atas; iOS 16.4 ke atas (keputusan pemilik produk 12 Oktober 2026, PR-04-16) |
 | NFR-C-04 | Aplikasi mobile mendukung mode potret; mode lanskap didukung pada tampilan tabel dan kalender |
 | NFR-C-05 | Scan QR berfungsi pada kamera perangkat Android dan iOS yang didukung, serta pada peramban web yang mendukung `getUserMedia` |
 | NFR-C-06 | Ekspor XLSX kompatibel dengan Microsoft Excel 2016+, LibreOffice Calc, dan Google Sheets |

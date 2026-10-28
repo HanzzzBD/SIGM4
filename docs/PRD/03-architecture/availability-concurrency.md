@@ -27,7 +27,7 @@ Satu tabel tunggal menampung seluruh pemesanan waktu, baik atas ruangan maupun a
 | `resource_type` | enum | `room` \| `asset` |
 | `resource_id` | bigint | FK ke `rooms.id` atau `assets.id` |
 | `slot_range` | tstzrange | Rentang waktu `[mulai, selesai)` — half-open agar slot berurutan tidak dianggap bentrok |
-| `status` | enum | `Tentative` \| `Confirmed` \| `Active` \| `Released` |
+| `status` | enum | `TENTATIVE` \| `CONFIRMED` \| `ACTIVE` \| `RELEASED` |
 | `origin` | enum | `reservation` \| `loan` \| `maintenance` \| `fixed_schedule` \| `manual_block` |
 | `reservation_id` | bigint FK null | Terisi bila `origin = reservation` |
 | `loan_id` | bigint FK null | Terisi bila `origin = loan` |
@@ -47,28 +47,32 @@ Satu tabel tunggal menampung seluruh pemesanan waktu, baik atas ruangan maupun a
 
 Slot `Released` dipertahankan sebagai arsip untuk analitik utilisasi (SC-05, Bab 16) dan tidak dihapus.
 
+> **Kode teknis kolom `status`.** Nama status pada tabel di atas dan pada prosa di seluruh dokumen adalah **nama keadaan**; nilai yang disimpan basis data adalah kode huruf besar `TENTATIVE`, `CONFIRMED`, `ACTIVE`, `RELEASED` — mengikuti ketetapan pemisahan kode ↔ label pada Bab 11.3. Dua kolom enum lain pada tabel ini **tidak** ikut: `resource_type` (`room`, `asset`) dan `origin` (`reservation`, `loan`, `maintenance`, `fixed_schedule`, `manual_block`) tetap huruf kecil, karena [`glossary.md`](../00-foundation/glossary.md) sudah memakukan `resource_type='asset'` sebagai kontrak teknis yang tidak berubah.
+
 ## 26.3 Penegakan Integritas di Lapisan Basis Data
 
 Validasi aplikasi **tidak cukup** untuk mencegah *race condition* (RS-11). Aturan berikut wajib ditegakkan oleh basis data:
 
 ```sql
--- PostgreSQL 15+, ekstensi btree_gist
+-- PostgreSQL 15+, ekstensi btree_gist. Satu constraint per jenis sumber daya:
+-- namanya yang membedakan respons 409 ruangan dari 409 aset (CI-04).
 ALTER TABLE booking_slots
-  ADD CONSTRAINT booking_slots_no_overlap
-  EXCLUDE USING gist (
-    resource_type WITH =,
-    resource_id   WITH =,
-    slot_range    WITH &&
-  )
-  WHERE (status IN ('Tentative','Confirmed','Active'));
+  ADD CONSTRAINT booking_slots_room_no_overlap
+  EXCLUDE USING gist (resource_id WITH =, slot_range WITH &&)
+  WHERE (resource_type = 'room' AND status IN ('TENTATIVE','CONFIRMED','ACTIVE'));
+
+ALTER TABLE booking_slots
+  ADD CONSTRAINT booking_slots_asset_no_overlap
+  EXCLUDE USING gist (resource_id WITH =, slot_range WITH &&)
+  WHERE (resource_type = 'asset' AND status IN ('TENTATIVE','CONFIRMED','ACTIVE'));
 ```
 
 | Kode | Aturan integritas | Penegakan |
 |---|---|---|
-| CI-01 | Dua slot aktif atas sumber daya yang sama tidak boleh beririsan | *Exclusion constraint* di atas |
+| CI-01 | Dua slot aktif atas sumber daya yang sama tidak boleh beririsan | Dua *exclusion constraint* di atas |
 | CI-02 | Pemesanan multi-unit mengunci baris `assets` terurut menaik berdasarkan `asset_id` | Konvensi wajib pada service layer, untuk mencegah *deadlock* |
 | CI-03 | Seluruh operasi pemesanan dijalankan pada isolasi `READ COMMITTED` dengan `SELECT … FOR UPDATE` atas baris aset yang dialokasikan | Service layer |
-| CI-04 | Pelanggaran `booking_slots_no_overlap` dipetakan ke respons `409 ASSET_NOT_AVAILABLE` / `409 RESERVATION_CONFLICT`, bukan `500` | Error mapper |
+| CI-04 | Pelanggaran `booking_slots_asset_no_overlap` dipetakan ke respons `409 ASSET_NOT_AVAILABLE`, pelanggaran `booking_slots_room_no_overlap` ke `409 RESERVATION_CONFLICT` — bukan `500` | Error mapper |
 | CI-05 | `assets.status` diturunkan (*derived*), tidak pernah ditulis langsung oleh modul reservasi | Hanya `LoanService`, `MaintenanceService`, `AssetService`, dan job `slot-activation` boleh menulisnya |
 
 ## 26.4 Algoritma Perhitungan Ketersediaan
@@ -85,7 +89,7 @@ LANGKAH:
        AND (role = Siswa/OSIS -> boleh_dipinjam_siswa = true)
        AND aset aktif (tidak dihapuskan)
   2. Kurangi kandidat yang memiliki slot beririsan [T1,T2)
-     dengan status IN ('Tentative','Confirmed','Active')
+     dengan status IN ('TENTATIVE','CONFIRMED','ACTIVE')
   3. Kembalikan jumlah tersedia per kategori + daftar unit
 OUTPUT : jumlah tersedia, daftar unit, dan tanggal bebas terdekat bila 0
 ```
@@ -112,14 +116,28 @@ OUTPUT : jumlah tersedia, daftar unit, dan tanggal bebas terdekat bila 0
 
 ## 26.6 Penomoran Dokumen Aman Konkurensi
 
-Berlaku untuk `RSV-RG-…`, `RSV-BR-…`, `PJM-…`, `KRS-…`, `WO-…`, `PGD-…`, `OPN-…`, `HPS-…`.
+Berlaku untuk `RSV-RG-…`, `RSV-BR-…`, `PJM-…`, `KRS-…`, `WO-…`, `PGD-…`, `OPN-…`, `HPS-…`, `PMB-…`.
+
+| Prefiks | Entitas pemilik | Modul |
+|---|---|---|
+| `RSV-RG` | `reservations` (ruangan) | M-07 |
+| `RSV-BR` | `reservations` (aset) | M-08 |
+| `PJM` | `loans` | M-09 |
+| `KRS` | `damage_reports` | M-11 |
+| `WO` | `work_orders` | M-12 |
+| `OPN` | `audit_sessions` | M-13 |
+| `PGD` | `procurements` | M-14 |
+| `HPS` | `asset_disposals` | M-21 |
+| `PMB` | `material_requests` | M-22 |
+
+Tabel ini ada karena dua celah yang saling berlawanan pernah hidup berdampingan di sini: `material_requests` memiliki kolom `nomor` tanpa prefiks — sehingga `NT-50` tidak punya nomor untuk dirender — sementara `OPN` memiliki prefiks tanpa entitas yang menyimpannya, padahal berita acara opname adalah dokumen pertanggungjawaban yang 11.4 simpan permanen. Keduanya ditutup 7 September 2026.
 
 | Kode | Requirement |
 |---|---|
 | SEQ-01 | Format nomor: `{PREFIX}-{TAHUN}-{URUT:4}` dengan urutan direset setiap tahun anggaran, contoh `RSV-RG-2026-0001` |
 | SEQ-02 | Nomor **wajib** dihasilkan dari sequence basis data per (prefix, tahun), bukan dari `MAX(nomor)+1` |
 | SEQ-03 | Nomor bersifat *gap-tolerant*: kegagalan transaksi boleh menyisakan lompatan nomor; nomor tidak pernah digunakan ulang |
-| SEQ-04 | Regex validasi: `^(RSV-RG\|RSV-BR\|PJM\|KRS\|WO\|PGD\|OPN\|HPS)-\d{4}-\d{4,}$` |
+| SEQ-04 | Regex validasi: `^(RSV-RG\|RSV-BR\|PJM\|KRS\|WO\|PGD\|OPN\|HPS\|PMB)-\d{4}-\d{4,}$`. Setiap prefiks memiliki tepat satu entitas pemilik, dan setiap entitas berkolom `nomor` memiliki prefiks — daftar di bawah menutup keduanya. Tanggal turunan reservasi berulang (`BR-024a`) memakai nomor induknya ditambah sufiks `.{n}` dua digit atau lebih (`RSV-RG-2026-0001.03`, `FR-07.2`); sufiks tidak diterbitkan penghitung dan bukan bagian regex ini |
 
 ## 26.7 Eksekusi Pekerjaan Terjadwal pada Lingkungan Multi-Instance
 
@@ -138,8 +156,12 @@ NFR-SC-01 mewajibkan API *stateless* multi-instance, sementara Bab 12.4 mendefin
 
 | Waktu (WIB) | Pekerjaan | Fungsi |
 |---|---|---|
-| Setiap 5 menit | `slot-activation` | Menetapkan `assets.status = Direservasi` saat slot `Confirmed` mulai berlaku, dan mengembalikannya ke `Tersedia` saat slot berakhir tanpa serah terima |
+| Setiap 5 menit | `slot-activation` | Menetapkan `assets.status = Direservasi` saat slot `Confirmed` mulai berlaku, dan mengembalikannya ke `Tersedia` saat slot berakhir tanpa serah terima; reservasi ruangan `Disetujui` → `Berlangsung` (slot `Active`) saat waktu mulai dan `Berlangsung` → `Selesai` saat waktu selesai, induk berulang `Selesai` begitu seluruh tanggalnya berakhir (FR-07.4) |
+| Setiap hari 00:30 | `fixed-schedule-materialize` | Memperpanjang horizon bergulir slot jadwal tetap aktif dan melepas kemunculan mendatang yang kini jatuh pada hari libur; kemunculan yang beririsan slot lain dilewati, tidak pernah membatalkan (FR-07.5 langkah 4, A4) |
 | Setiap 15 menit | `tentative-slot-expiry` | Membebaskan slot `Tentative` yang melewati `expires_at` (BR-023b) |
 | Setiap 30 menit | `approval-sla-check` | Mengirim pengingat SLA dan menjalankan eskalasi (FR-10.2 A2) |
+| Setiap hari 01:30 | `notification-archive` | Memindahkan notifikasi berusia > 90 hari ke `notifications_archive` per batch 5.000 baris (FR-17.1 A2); idempoten (JOB-03) |
+| Setiap hari 00:10 | `student-graduation` | Menonaktifkan akun siswa yang ditandai lulus setelah tahun ajarannya berakhir (SL-03, DP-10); ditolak bila siswa masih berkewajiban (SL-04) |
+| Setiap hari 01:10 | `personal-data-retention` | Pseudonimisasi siswa nonaktif dua tahun tanpa kewajiban serta cleanup laporan galat impor pengguna/aset 30 hari (SL-05, DP-04/10); SYSTEM, idempoten, ringkasan JOB-05 |
 
 ---

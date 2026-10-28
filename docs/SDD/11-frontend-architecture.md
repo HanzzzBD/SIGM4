@@ -35,11 +35,38 @@ Basis teknologi ditetapkan Keputusan #3: **React**. Berkas ini menetapkan bentuk
 | **SDD-FE-09** | Lima keadaan layar (memuat, kosong, galat, tanpa akses, luring) diimplementasikan sebagai **komponen bersama**, bukan ditulis ulang per halaman. |
 | **SDD-FE-10** | Filter tabel disimpan di **URL** sebagai sumber kebenaran, bukan di state komponen (`FR-04.2`). |
 | **SDD-FE-11** | Pustaka server-state yang dimaksud `SDD-FE-02` adalah **TanStack Query**. Seluruh strategi §4.3 dinyatakan dalam istilahnya. |
-| **SDD-FE-12** | Pustaka komponen dasar **dibangun sendiri** di atas primitif *headless* (Radix UI / React Aria) + Tailwind + lapisan token milik sendiri; komponen disalin ke dalam repositori, bukan dikonsumsi sebagai *design system* pihak ketiga. Form memakai react-hook-form dengan resolver Zod (`SDD-FE-05`, `SDD-API-11`). |
+| **SDD-FE-12** | Pustaka komponen dasar **dibangun sendiri** di atas primitif *headless* (`SDD-FE-13`) + Tailwind + lapisan token milik sendiri; komponen disalin ke dalam repositori, bukan dikonsumsi sebagai *design system* pihak ketiga. Form memakai react-hook-form dengan resolver Zod (`SDD-FE-05`, `SDD-API-11`). |
+| **SDD-FE-13** | Primitif *headless* yang dimaksud `SDD-FE-12` adalah **Radix UI sebagai bawaan**, dengan **React Aria hanya untuk yang tidak disediakan Radix**. Pembagiannya tertutup dan tidak boleh diperluas kasus per kasus: React Aria dipakai untuk **pemilih tanggal/kalender** dan **number field**; seluruh *overlay*, navigasi, dan kendali daftar — dialog, popover, dropdown menu, tabs, select, combobox, tooltip, checkbox, radio, switch, accordion — memakai Radix. Komponen yang menuntut primitif di luar daftar ini menaikkan persoalannya ke berkas ini lebih dulu, bukan menambah ketergantungan baru. |
+| **SDD-FE-14** | *Build tool* `apps/web` adalah **Vite**. Keluarannya aset statis murni, disajikan reverse proxy/CDN sesuai [SDD-16 §4.2](16-infrastructure-deployment.md); tidak ada proses Node yang merender di server. |
+| **SDD-FE-15** | Router adalah **TanStack Router**. *Search param* divalidasi skema Zod (`SDD-API-11`) dan ber-tipe, sehingga filter tabel `SDD-FE-10` menjadi kontrak yang diperiksa kompilator, bukan string yang diurai tangan. |
+| **SDD-FE-16** | Klien HTTP `shared/api/` (§4.4) adalah **axios**, dan bentuk yang sama berlaku di mobile (`SDD-MOB-09`). Mutex *refresh* (`SDD-FE-07`) dan gerbang versi `426` (`SDD-MOB-05`) dipasang sebagai **interceptor**; keduanya tetap kode milik kita, bukan fitur pustaka. |
+| **SDD-FE-17** | Pilihan tampilan **Tabel ⇄ Kartu** (`WEB-VIS-04`) adalah **preferensi tampilan** (`SDD-FE-03`). Pilihan disimpan di `localStorage` per halaman daftar dan tidak masuk URL, karena tidak mengubah data yang diminta. Filter tetap di URL (`SDD-FE-10`), sehingga tautan yang dibagikan menghasilkan baris yang sama di tampilan mana pun. |
+| **SDD-FE-18** | **Saran tindakan** (`WEB-VIS-02`/`03`) dihitung **murni di klien** dari respons yang sudah diterima halaman itu, melalui satu registri aturan saran di `shared/` yang setiap butirnya merujuk ID business rule. Saran tidak memiliki endpoint, permission, maupun aksi log baru. Tombol saran memakai gerbang permission yang sama dengan aksinya (`SDD-FE-04`) dan menuju halaman/aksi yang sudah ada. Validasi langsung memakai skema bersama yang sama (`SDD-FE-05`), dalam mode *touched*: diperiksa saat *blur* pertama, lalu setiap perubahan. |
+| **SDD-FE-19** | **Mikro-interaksi** (`WEB-VIS-01`, **DSD-14**) ditulis sebagai transisi CSS ber-token durasi/easing (FOUNDATIONS §9), **tanpa pustaka animasi**. Daftar `SDD-FE-13` tetap tertutup, dan `prefers-reduced-motion` mematikan seluruhnya lewat satu aturan global. |
 
 ---
 
 ## 3. Alasan
+
+**SDD-FE-14 — Vite, karena konfigurasinya sudah dibeli.** `SDD-REPO-11` sudah mengunci **Vitest**, dan Vitest memakai konfigurasi, resolver, serta plugin Vite yang sama. Memilih Vite karena itu berarti satu berkas konfigurasi melayani build dan uji; memilih yang lain berarti dua konfigurasi yang wajib dijaga sinkron dengan `tsconfig` tiap pohon (`SDD-REPO-08`) — dan konfigurasi kembar yang menyimpang menghasilkan uji yang lulus atas modul yang tidak sama dengan yang dibangun.
+
+**Next.js** ditolak bukan karena berat melainkan karena [SDD-16 §4.2](16-infrastructure-deployment.md) sudah menutup seluruh nilai utamanya: web disajikan sebagai aset statis, tanpa proses Node di server, sehingga SSR, route handler, dan ISR tidak dapat dipakai. Yang tersisa adalah kerangka besar yang dipakai sebagian, dengan `output: export` yang justru membatasi dan menambah berat terhadap `NFR-P-03`. **Rsbuild** lebih cepat pada build produksi tetapi konfigurasinya terpisah dari Vitest, sehingga keuntungan di atas hilang.
+
+**SDD-FE-15 — router yang menganggap URL sebagai data.** `SDD-FE-10` menjadikan filter tabel di URL sebagai **sumber kebenaran** (`FR-04.2`), jadi router di sini menopang requirement, bukan sekadar memetakan halaman. Perbedaan kedua kandidat jatuh tepat di titik itu: **React Router** menyerahkan *search param* sebagai `URLSearchParams` mentah, sehingga tipe, nilai bawaan, dan validasi setiap filter menjadi perekat yang kita tulis dan uji sendiri di setiap halaman berdaftar. TanStack Router memvalidasinya dengan skema — dan skema itu boleh Zod, yang sudah dikunci `SDD-API-11` dan sudah dibagi lewat `packages/schemas` (`SDD-FE-05`).
+
+Harganya jujur: ekosistem dan jumlah contohnya lebih kecil daripada React Router. Ditukar dengan hilangnya satu kelas bug yang `SDD-FE-10` justru undang — filter yang berubah bentuk tanpa ada yang gagal.
+
+**SDD-FE-16 — axios, dipakai identik di dua pohon.** `SDD-FE-07` dan `SDD-MOB-09` menuntut serialisasi *refresh* lewat satu mutex, dan `SDD-MOB-05` memasang gerbang `426` sebagai interceptor global. Ketiganya adalah pola interceptor, dan axios menyediakan tempatnya secara eksplisit di kedua platform dengan API yang sama — sehingga `shared/api/` web dan `shared/api/` mobile berbentuk sama meski `SDD-MOB-01` melarang keduanya berbagi kode UI.
+
+**`fetch` + pembungkus sendiri** ditolak tipis: ia sah, dan mutex serta gerbang `426` memang tetap kode kita menurut kedua keputusan di atas. Yang menentukan adalah bahwa pembungkus itu harus dibangun **dua kali** dan dijaga tetap berperilaku sama, padahal justru kesamaan perilaku itulah yang membuat kelas bug sesi tidak muncul hanya di satu platform. **ky** lebih ringan tetapi perilakunya di React Native perlu diverifikasi lebih dulu, dan verifikasi itu tidak dibayar oleh apa pun. Biaya ukuran bundel terhadap `NFR-P-03` dan `MOB-PERF-05` diterima sadar dan diukur pada §5.
+
+**SDD-FE-13 — pembagian yang tertutup, bukan campuran yang tumbuh.** `SDD-FE-12` menulis "Radix UI / React Aria" dengan garis miring, yang bukan pilihan melainkan penundaan: garis miring itu bertahan ke [`DESIGN/DESIGN-SYSTEM.md`](../DESIGN/DESIGN-SYSTEM.md) dan ke tiga komponen di [`COMPONENTS.md`](../DESIGN/COMPONENTS.md), sehingga spesifikasi aksesibilitas mereka merujuk perilaku yang belum ditentukan asalnya.
+
+Radix menjadi bawaan karena bentuknya cocok dengan `SDD-FE-12`: komposisi berbasis komponen yang disalin ke repositori dan dirawat sendiri, tanpa palet bawaan, sehingga lapisan token tetap milik kita. Ia juga menutup celah yang [§3](#3-alasan) sudah catat sebagai alasan menolak Headless UI — kombobox dan menu tersedia.
+
+React Aria tidak ditolak, melainkan dibatasi. Ia menyediakan primitif tanggal dan kalender berlokalisasi yang tidak ada padanannya di Radix, dan `SDD-FE-06` beserta seluruh alur reservasi menuntutnya. Yang berbahaya bukan memakai keduanya, melainkan memakai keduanya **tanpa aturan**: dua model API pada komponen yang sama akan berkembang menjadi pilihan selera per komponen, dan `DS-06` (daftar periksa aksesibilitas per komponen) kehilangan dasar yang seragam. Karena itu daftarnya ditulis tertutup, dan perluasannya adalah suntingan berkas ini — bukan keputusan saat menulis komponen.
+
+Perlu ditegaskan: `SDD-FE-06` (kalender ketersediaan bervirtualisasi) tidak berubah karenanya. Yang diambil dari React Aria adalah primitif pemilih tanggal, bukan komponen kalender §4 — tidak ada pustaka yang menyediakan yang terakhir.
 
 **SDD-FE-01 — folder mengikuti modul.** Konsistensi dengan backend berarti sebuah tugas ("kerjakan M-09") menyentuh dua folder dengan nama yang sama, bukan lima folder tersebar. Ini juga membuat batas modul terlihat di frontend, yang biasanya luput.
 
@@ -59,7 +86,7 @@ Basis teknologi ditetapkan Keputusan #3: **React**. Berkas ini menetapkan bentuk
 
 **Pustaka komponen lengkap ber-design-system sendiri** (MUI, Ant Design, Mantine) ditolak atas dasar itu. Ia memang tercepat sampai ke layar dan membawa mode gelap bawaan, tetapi `DS-01`/`DS-02` lalu membungkus sistem orang lain: validasi kontras saat build (`NFR-AC-01/02`, §4.6) berjalan di atas palet vendor alih-alih token kita; `NFR-AC-06` (lencana = warna **dan** ikon **dan** teks) dan `NFR-AC-08` (satuan relatif, uji perbesaran 200%) menuntut menimpa perilaku bawaan; dan bundelnya lebih berat terhadap `NFR-P-03`. **Tailwind + Headless UI saja** ditolak karena primitifnya tidak mencakup kombobox, menu, dan pola tanggal selengkap yang dituntut filter tabel dan alur kalender — kekurangannya berakhir ditambal sendiri, tanpa jaminan aksesibilitas yang justru menjadi alasan memakai primitif.
 
-Radix UI / React Aria memberi perilaku papan ketik dan ARIA yang dituntut `NFR-AC-03` dan `NFR-AC-05` tanpa membawa palet, sehingga lapisan token tetap milik kita — dan lapisan token yang kita kendalikan itulah yang membuat validasi kontras CI punya sasaran jelas dan membuat **TBD-FE-B** (mode gelap), yang masih terbuka, turun menjadi penambahan satu set token alih-alih pertarungan tema. Kalender (`SDD-FE-06`) tidak terpengaruh pilihan ini: tidak ada pustaka yang menyediakannya, yang dibutuhkan hanya primitif virtualisasi.
+Primitif *headless* (`SDD-FE-13`) memberi perilaku papan ketik dan ARIA yang dituntut `NFR-AC-03` dan `NFR-AC-05` tanpa membawa palet, sehingga lapisan token tetap milik kita — dan lapisan token yang kita kendalikan itulah yang membuat validasi kontras CI punya sasaran jelas dan membuat **TBD-FE-B** (mode gelap) — ditutup 22 Agustus 2026 lewat `UXD-12`, di luar lingkup rilis ini — menjadi persoalan satu set token alih-alih pertarungan tema seandainya ia dibuka kembali. Kalender (`SDD-FE-06`) tidak terpengaruh pilihan ini: tidak ada pustaka yang menyediakannya, yang dibutuhkan hanya primitif virtualisasi.
 
 ---
 
@@ -81,6 +108,17 @@ src/
 │   ├── m01-auth/ … m22-materials/    # cermin struktur backend
 └── pages/                  # perakitan route → modul
 ```
+
+### 4.1a Batas impor di dalam pohon web (`PR-02-30`)
+
+Cermin [SDD-00 §4.2](00-system-architecture.md) sesuai `SDD-FE-01`, ditegakkan `apps/web/eslint.config.js` (`SDD-17 §4.2` menyerahkan batas di dalam pohon kepada berkas ini):
+
+| Dari | Boleh mengimpor | Dilarang |
+|---|---|---|
+| `modules/<m>/**` | `shared/**`, internal `modules/<m>`, `index.ts` modul lain | Internal modul lain · `pages/` · `app/` |
+| `shared/**` | `shared/**`, `packages/schemas` | `modules/` · `pages/` · `app/` |
+| `pages/**` | `index.ts` modul · `shared/**` | Internal modul |
+| `app/**` | seluruhnya | — |
 
 ### 4.2 Gerbang permission
 
@@ -153,6 +191,27 @@ async function onUnauthorized() {
 | Gambar | Selalu memakai turunan `thumb`/`medium` ([SDD-09 §4.5](09-file-storage-design.md)), bukan berkas asli |
 | Tabel besar | Paginasi server; tidak pernah memuat seluruh 5.000 aset ke klien |
 
+### 4.8 Pelaksanaan kerangka (`PR-02-30`, keputusan 83)
+
+| Aspek | Ketentuan |
+|---|---|
+| Cakupan | Kerangka (router, Query, klien HTTP, `/me` + `<Can>`, token, lima keadaan) + shell + halaman P-01, P-08…P-11, P-12. P-02/P-03/P-05 + banner sesi berakhir → `PR-02-36` |
+| Token | `shared/ui/tokens/`: CSS custom property + konstanta TS dari `FOUNDATIONS.md`; Tailwind v4 `@theme` **hanya** memuat token ini (skala bawaan dimatikan), dan nilai arbitrer (`[..]`) ditolak lint — `DS-P-07` |
+| Kontras (`NFR-AC-01/02`, §4.6) | Pasangan teks/latar yang ditetapkan FOUNDATIONS diperiksa skrip saat uji; di bawah 4,5:1 (teks) / 3:1 (kontrol, ikon) menggagalkan CI |
+| Sesi web | Cookie httpOnly (`SDD-SESS-05`): klien tak pernah memegang token. `401` → satu `POST /auth/refresh` bersama (`SDD-FE-07`) lalu ulang sekali; refresh gagal → Login dengan tujuan tersimpan. `403 PASSWORD_CHANGE_REQUIRED`/`TWO_FACTOR_REQUIRED` → route gerbangnya (F-01) |
+| Sidebar & drill-down | Registri navigasi memuat struktur lengkap UXD-01; entri dan tautan drill-down kartu hanya dirender bila **route-nya terdaftar di build** dan permission `/me` dipegang. Halaman baru cukup mendaftarkan route |
+| Topbar | Ciutkan sidebar (preferensi tampilan, `SDD-FE-03`), identitas, penanda WIB, menu pengguna (Keluar · Keluar dari semua perangkat), banner luring. Pencarian global lahir bersama P-15; lonceng bersama P-13 |
+| Grafik | SVG milik sendiri (batang, donat, garis) + legenda teks + tabel data alternatif (C-23); pustaka grafik diputuskan saat M-16 bila dibutuhkan (**DSD-10**) |
+| Ikon | `lucide-react` melalui satu pembungkus (`strokeWidth` 1,5) — **DSD-09** |
+| Uji | Vitest + Testing Library + jsdom + axe-core (`SDD-REPO-11`); E2E peramban menyusul saat alur kritis lengkap |
+| Pengembangan lokal | Vite *dev server* mem-*proxy* `/api` ke proses API — satu origin, cookie `SameSite=Strict` berlaku |
+| Alur masuk (`PR-02-36`, keputusan 85) | `requires_2fa` dari login → P-02 (challenge hanya di memori tab). `403 TWO_FACTOR_REQUIRED` dari `/me` berarti role wajib 2FA **belum terdaftar** (yang terdaftar mendapat challenge, bukan sesi) → **P-03**. `403 PASSWORD_CHANGE_REQUIRED` → P-05; bila penggantian ditolak `TWO_FACTOR_REQUIRED` (gerbang password mendahului gerbang 2FA, `SDD-AUTH-09`), pengguna diarahkan ke P-03 lalu kembali ke P-05. Tujuan awal dibawa parameter `tujuan` sepanjang rantai |
+| QR TOTP | `uqr` (tanpa dependensi) mengodekan `otpauth_uri`; matriksnya dirender SVG milik sendiri dengan warna token — tanpa `innerHTML` |
+| Idle web (`FR-01.2 A2`) | Aktivitas = input pengguna (tombol, klik/sentuh, gulir) di tab SIGM4 mana pun, disinkronkan antar-tab (`localStorage` + `storage` event); permintaan latar tidak dihitung. Menit ke-28: banner `info` "Lanjutkan"; menit ke-30: `POST /auth/logout` lalu Login dengan pesan sesi berakhir dan tujuan tersimpan |
+| Indikator kekuatan password (`FR-01.4` langkah 3, keputusan 85d) | Daftar aturan yang dapat diperiksa klien — ≥ 12 karakter, huruf besar, huruf kecil, angka — sebagai ikon + teks yang berubah saat mengetik, tanpa warna atau komponen baru. Daftar bocor, nama/email, dan 3 password terakhir tetap diputuskan server (`NFR-S-03a`) dan disebut sebagai "diperiksa saat disimpan"; klien tidak pernah menjadi penentu |
+| Konfigurasi approval rule (`PR-02-34`, keputusan 86) | P-68 + P-69 di `modules/m10-approval`. Kamus field D.2 & operator D.3 tinggal di `@sigm4/schemas` (satu sumber bagi validasi API dan penyusun kondisi, `SDD-FE-05`); jalur galat klien sama dengan `error.details[].field` server sehingga `422 INVALID_RULE_DEFINITION` jatuh pada node (`RE-08`). Pemilih pengguna approver: role lebih dulu, lalu pengguna AKTIF role itu (`GET /users` tanpa pencarian nama) |
+| Modal konfirmasi (C-28 `confirm`) | `@radix-ui/react-dialog` (`SDD-FE-13`) di `shared/ui/dialog.tsx`; alasan wajib bagi aksi UX §7.2 — tombol utama nonaktif sampai terisi (`UX-04`). Token `size.modal.sm` dan overlay FOUNDATIONS masuk `tokens.css` |
+
 ---
 
 ## 5. Konsekuensi
@@ -161,7 +220,7 @@ async function onUnauthorized() {
 - Karena filter hidup di URL, setiap halaman daftar wajib mendefinisikan skema parameter URL-nya — sedikit *boilerplate*, ditukar dengan tautan yang dapat dibagikan (`FR-04.2`).
 - Kalender adalah komponen paling mahal untuk dibangun dan diuji; ia menjadi jalur kritis pada milestone M2 ([delivery-plan](../PRD/01-product/delivery-plan.md)).
 - Batas 2 koneksi SSE (`NTF-03`) berarti membuka banyak tab akan memutus tab terlama — UI wajib menjelaskannya, bukan diam ([SDD-08 §5](08-notification-design.md)).
-- `SDD-FE-12` menjadikan `DS-02` pekerjaan nyata di M1: komponen inti ditulis, bukan dipasang. Yang ditukar adalah kepemilikan lapisan token — tanpanya, validasi kontras di CI (`NFR-AC-01/02`) tidak punya berkas untuk divalidasi dan **TBD-FE-B** menjadi mahal. Konsekuensi turunannya: `DS-06` (daftar periksa aksesibilitas per komponen) berlaku atas komponen kita sendiri, sehingga daftar itu benar-benar dapat diselesaikan alih-alih bergantung pada klaim vendor.
+- `SDD-FE-12` menjadikan `DS-02` pekerjaan nyata di M1: komponen inti ditulis, bukan dipasang. Yang ditukar adalah kepemilikan lapisan token — tanpanya, validasi kontras di CI (`NFR-AC-01/02`) tidak punya berkas untuk divalidasi, dan mode gelap (**TBD-FE-B**, ditutup `UXD-12`) akan menjadi mahal seandainya ia dibuka kembali. Konsekuensi turunannya: `DS-06` (daftar periksa aksesibilitas per komponen) berlaku atas komponen kita sendiri, sehingga daftar itu benar-benar dapat diselesaikan alih-alih bergantung pada klaim vendor.
 - Nilai token yang mengisi lapisan `shared/ui/` ditetapkan [`DESIGN/FOUNDATIONS.md`](../DESIGN/FOUNDATIONS.md); spesifikasi tiap komponen ada di [`DESIGN/COMPONENTS.md`](../DESIGN/COMPONENTS.md). `SDD-FE-12` menetapkan **bahwa** komponen dibangun sendiri; kedua berkas itu menetapkan **seperti apa** wujudnya.
 - Karena komponen disalin ke dalam repositori, pembaruan hulu tidak datang otomatis — perbaikan aksesibilitas dari primitif hulu diikuti lewat pemutakhiran Radix/React Aria, sedangkan komponen turunan kita adalah kode yang kita rawat sendiri.
 
@@ -181,7 +240,7 @@ async function onUnauthorized() {
 
 ## 7. Requirement Terkait
 
-`FR-04.2` `FR-07.1` `FR-08.1` `FR-15.1` `FR-17.1` · Bab 19 · `UX-01` … `UX-06` · `CAL-UI-01` … `CAL-UI-09` · `DS-01` … `DS-06` ·
+`FR-04.2` `FR-07.1` `FR-08.1` `FR-15.1` `FR-17.1` · Bab 19 · `UX-01` … `UX-06` · `WEB-VIS-01` … `WEB-VIS-05` · `CAL-UI-01` … `CAL-UI-09` · `DS-01` … `DS-06` ·
 `PM-04` · `NFR-P-03` `NFR-P-04` `NFR-P-05` · `NFR-AC-01` … `NFR-AC-09` · `NFR-C-01` `NFR-C-02` · `NTF-01` `NTF-03` `NTF-05` · `AV-04`
 
 ---

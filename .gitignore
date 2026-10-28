@@ -23,3 +23,20 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+coverage-integration/
+coverage-ci/
+
+# Local temporary files and package caches (also excluded from EAS uploads)
+tmp/
+.npm/
+npm-cache/
+
+# Status lokal perkakas — log Expo memuat isi env yang dimuat (termasuk kunci),
+# log/snapshot Playwright MCP memuat isi halaman sesi uji (SEC-CFG-04).
+.expo/
+.playwright-mcp/
+
+# Artefak pnpm lokal — repositori memakai npm workspaces polos, satu
+# package-lock.json (SDD-REPO-03). Lockfile kedua akan menyimpang diam-diam.
+pnpm-lock.yaml
+pnpm-workspace.yaml

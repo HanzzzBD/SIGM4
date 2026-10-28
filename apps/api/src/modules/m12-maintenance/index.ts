@@ -1,0 +1,16 @@
+export { workOrdersRouter, workOrderRoutes, createWorkOrderRoute, listWorkOrdersRoute, mineWorkOrdersRoute, workOrderTechniciansRoute, getWorkOrderRoute } from "./routes.js";
+export { technicianDashboard } from "./services/dashboard-source.js";
+export { WorkOrderService, EVENT_WORK_ORDER_ASSIGNED, validateWorkOrderTechnician, validateWorkOrderTarget } from "./services/work-order.service.js";
+export { installWorkOrderConsumers } from "./consumers.js";
+export { executionRoutes } from "./execution-routes.js";
+export { registerMaintenanceCompletionHook } from "./services/completion-hooks.js";
+export type { MaintenanceCompletionHook } from "./services/completion-hooks.js";
+export { workOrderNotificationSource } from "./services/notification-source.js";
+export { workOrderForTicket } from "./services/ticket-source.js";
+export { maintenanceSchedulesRouter, maintenanceScheduleRoutes } from "./schedule-routes.js";
+export { MaintenanceScheduleService } from "./services/maintenance-schedule.service.js";
+export { finishPreventiveWorkOrder } from "./services/preventive-completion.js";
+export { disposalMaintenanceFacts, disposalCandidatePredicate } from "./services/disposal-source.js";
+import { registerMaintenanceCompletionHook } from "./services/completion-hooks.js";
+import { finishPreventiveWorkOrder } from "./services/preventive-completion.js";
+registerMaintenanceCompletionHook("preventive-schedule", finishPreventiveWorkOrder);

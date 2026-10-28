@@ -1,0 +1,1161 @@
+import type { ReportExportsTable } from "./report-export-schema.js";
+import type { MaterialUnitsTable,MaterialCategoriesTable,MaterialsTable,MaterialBalancesTable,MaterialTransactionsTable } from "./material-schema.js";
+import type { MaterialReceiptsTable, MaterialReceiptFilesTable, ProcurementReceiptMaterialsTable, MaterialAdjustmentsTable } from "./material-operations-schema.js";
+import type { MaterialRequestsTable, MaterialRequestItemsTable, MaterialRequestCyclesTable, MaterialApprovalThresholdsTable, MaterialIssuesTable, MaterialIssueItemsTable } from "./material-request-schema.js";
+// Tipe tabel Kysely (SDD-DB-15). Ini CERMINAN skema, bukan pendefinisinya:
+// pemilik skema tetap berkas .sql di apps/api/migrations (SDD-DB-08).
+//
+// Aturannya satu, dan SDD-05 §5 menyebutnya eksplisit: setiap migration yang
+// mengubah bentuk tabel menyegarkan tipenya pada PR YANG SAMA. Tipe yang
+// tertinggal berhenti mencerminkan basis data dan berubah menjadi kebohongan
+// yang diperiksa CI.
+//
+// 0001-0002 (PR-00-05) hanya membuat ekstensi dan tipe enum — bukan tabel —
+// sehingga peta ini memang kosong sampai 0003.
+
+import type { ColumnType, Generated, RawBuilder } from "kysely";
+import type { AssetDisposalsTable, AssetDisposalItemsTable, AssetDisposalClaimsTable, AssetDisposalFilesTable } from "./disposal-schema.js";
+
+/**
+ * `document_counters` (0003, PR-00-07). Penghitung nomor dokumen per
+ * (prefix, tahun) — SDD-AVL-09, SEQ-02.
+ *
+ * `value` bertipe `bigint` di basis data dan kembali sebagai **string** dari
+ * driver `pg`. Itu dipertahankan apa adanya: melewatkannya ke `Number()` akan
+ * diam-diam kehilangan presisi di atas 2^53, dan tipe yang berbohong tentang
+ * hal itu lebih berbahaya daripada tipe yang merepotkan.
+ */
+export interface DocumentCountersTable {
+    prefix: string;
+    year: number;
+    value: ColumnType<string, string | number | undefined, string | number>;
+}
+
+/**
+ * `work_days` (0004, PR-00-08). Hari kerja pekanan; `hari` memakai penomoran
+ * ISO-8601 — 1 = Senin … 7 = Minggu (Lampiran E.2, CAL-01).
+ */
+export interface WorkDaysTable {
+    hari: number;
+    aktif: boolean;
+}
+
+/**
+ * `holidays` (0004, PR-00-08; `academic_year_id` 0016, PR-01-11). Kolom itu
+ * NULLABLE: hari libur nasional tidak intrinsik milik satu tahun ajaran.
+ */
+export interface HolidaysTable {
+    id: Generated<string>;
+    tanggal: ColumnType<string, string, string>;
+    nama: string;
+    jenis: "NASIONAL" | "SEKOLAH" | "CUTI_BERSAMA";
+    academic_year_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+}
+
+/**
+ * `idempotency_keys` (0005, PR-00-10). `status_code` dan `response_body` NULL
+ * hanya di dalam transaksi yang sedang menulisnya — deteksi permintaan berjalan
+ * memakai advisory lock, bukan kolom ini (`SDD-01 §4.4`).
+ */
+export interface IdempotencyKeysTable {
+    key: string;
+    endpoint: string;
+    request_hash: string;
+    status_code: number | null;
+    response_body: unknown;
+    created_at: Generated<Date>;
+    expires_at: Generated<Date>;
+}
+
+/**
+ * `event_outbox` (0006, PR-00-12). Transactional outbox — SDD-07 §4.1.
+ *
+ * `id` dan `aggregate_id` bertipe `bigint` di basis data dan kembali sebagai
+ * **string** dari driver `pg`; itu dipertahankan apa adanya dengan alasan yang
+ * sama seperti `document_counters.value`.
+ *
+ * Tiga kolom terakhir adalah pembukuan dispatcher, dan itulah sebabnya tabel ini
+ * **bukan** *append-only*: `SDD-05` §4.2 menggolongkannya infrastruktur, dan
+ * `AL-03b` yang mencabut hak `UPDATE` hanya menyebut `activity_logs`.
+ */
+export interface EventOutboxTable {
+    id: Generated<string>;
+    event_name: string;
+    aggregate_type: string;
+    aggregate_id: ColumnType<string, string | number, string | number>;
+    payload: unknown;
+    actor_id: string | null;
+    request_id: string | null;
+    occurred_at: Generated<Date>;
+    processed_at: Date | null;
+    attempts: Generated<number>;
+    last_error: string | null;
+}
+
+/**
+ * `activity_logs` (0008, PR-00-13). Terpartisi RANGE per bulan (`SDD-DB-07`);
+ * bentuk kolomnya persis `SDD-05` §4.4.
+ *
+ * `waktu` tetap bernama `waktu` — pengecualian tertulis pada `SDD-05` §4.2,
+ * sebab ia kolom partisi dan maknanya *kapan peristiwa terjadi*, bukan kapan
+ * barisnya dibuat.
+ *
+ * Tabel ini **append-only** dan itu ditegakkan basis data: akun aplikasi tidak
+ * memegang `UPDATE`/`DELETE` (`AL-03b`, migration 0007–0008). Tipe ini tidak
+ * dapat mencegah kueri `updateTable('activity_logs')` ditulis, tetapi kueri itu
+ * akan ditolak `42501` saat berjalan.
+ */
+export interface ActivityLogsTable {
+    id: Generated<string>;
+    waktu: ColumnType<Date, Date | string, never>;
+    user_id: string | null;
+    user_nama: string | null;
+    role: string | null;
+    ip: string | null;
+    user_agent: string | null;
+    modul: string;
+    aksi: string;
+    entitas: string | null;
+    entitas_id: string | null;
+    nilai_sebelum: ColumnType<unknown, string | null, never>;
+    nilai_sesudah: ColumnType<unknown, string | null, never>;
+    keterangan: string | null;
+    hasil: "SUKSES" | "GAGAL";
+    request_id: string | null;
+    prev_hash: Buffer | null;
+    row_hash: Buffer;
+}
+
+/**
+ * Kolom baku `SDD-05` §4.2 (0012). `updated_at` dipelihara trigger — tipenya
+ * menolak ditulis aplikasi, dan nilai yang dipaksakan lewat SQL tetap ditimpa.
+ * `created_by` hanya diisi saat baris lahir.
+ */
+interface KolomBaku {
+    created_at: ColumnType<Date, never, never>;
+    updated_at: ColumnType<Date, never, never>;
+    created_by: ColumnType<string | null, string | number | null, never>;
+    updated_by: ColumnType<string | null, string | number | null, string | number | null>;
+}
+
+/**
+ * `roles` (0009, PR-00-16; kolom baku 0012, PR-01-01; `role_version` 0013,
+ * PR-01-04). Tujuh role seed ber-`created_by` NULL: dibuat sistem, bukan
+ * seseorang.
+ *
+ * `role_version` bertipe `bigint` dan kembali sebagai **string** dari driver
+ * `pg`, sama seperti `document_counters.value` — dinaikkan lewat ekspresi SQL
+ * (`role_version + 1`), bukan dibaca-lalu-ditulis dari aplikasi (SDD-AUTH-04).
+ */
+export interface RolesTable extends KolomBaku {
+    id: Generated<string>;
+    kode: string;
+    nama: string;
+    deskripsi: string | null;
+    is_system: Generated<boolean>;
+    role_version: ColumnType<string, string | number | undefined, string | number>;
+}
+
+/**
+ * `users` (0012, PR-01-01). `status` dan `must_change_password` sengaja tanpa
+ * nilai bawaan — keduanya wajib dinyatakan saat akun dibuat (`SL-06`,
+ * `FR-02.1` langkah 4). Foto profil belum ada: milik `SDD-FS-02`.
+ */
+export interface UsersTable extends KolomBaku {
+    id: Generated<string>;
+    nama: string;
+    email: string;
+    password_hash: string;
+    nip_nis: string | null;
+    deactivated_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    pseudonymized_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    role_id: ColumnType<string, string | number, string | number>;
+    /**
+     * Teks bebas warisan (`PR-01-12`, expand): masih dibaca, TIDAK lagi ditulis kode
+     * — `work_unit_id` menggantikannya (WU-01). Dihapus `PR-08-11` (contract).
+     */
+    unit_kerja: ColumnType<string | null, never, never>;
+    work_unit_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    telepon: string | null;
+    status: "AKTIF" | "NONAKTIF";
+    must_change_password: boolean;
+    login_terakhir_pada: Date | null;
+    /** Penghitung kegagalan login dan penguncian akun (0022, PR-02-03; `SDD-SESS-06`). */
+    failed_login_count: ColumnType<number, number | undefined, number>;
+    failed_login_window_start: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    locked_until: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    /**
+     * 2FA TOTP (0024, PR-02-07; `SDD-SESS-08`). `totp_secret_enc` = ciphertext AES-256-GCM; terisi
+     * dengan `totp_enabled_at` NULL berarti pendaftaran belum dikonfirmasi 6 digit. `totp_last_step`
+     * = langkah TOTP terakhir yang diterima (anti pemakaian ulang kode, RFC 6238 §5.2).
+     */
+    totp_secret_enc: ColumnType<Buffer | null, Buffer | null | undefined, Buffer | null>;
+    totp_enabled_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    totp_last_step: ColumnType<number | null, number | null | undefined, number | null>;
+    /** DP-02, SL-06 (0019, PR-01-14): NULL = persetujuan wali belum terekam. Hanya akun Siswa/OSIS. */
+    consent_guardian_at: ColumnType<Date | null, Date | null | undefined, Date | null | undefined>;
+    /** Foto profil FR-01.4 (0038, PR-03-04) → `stored_files(id)` (SDD-FS-02). */
+    foto_file_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+}
+
+/** `permissions` (0009, PR-00-16). Katalog Lampiran C; `inti` = 🔒 (`SDD-AUTH-10`). */
+export interface PermissionsTable {
+    id: Generated<string>;
+    kode: string;
+    modul: string;
+    aksi: string;
+    deskripsi: string;
+    inti: Generated<boolean>;
+}
+
+/** `role_permissions` (0009, PR-00-16). Scope per baris — `SDD-DB-16`. */
+export interface RolePermissionsTable {
+    role_id: ColumnType<string, string | number, string | number>;
+    permission_id: ColumnType<string, string | number, string | number>;
+    scope: "ALL" | "OWN" | "ASSIGNED" | "RESTRICTED";
+}
+
+/** `buildings` (0014, PR-01-05). Tingkat pertama hierarki lokasi (`FR-03.1`). */
+export interface BuildingsTable extends KolomBaku {
+    id: Generated<string>;
+    nama: string;
+    kode: string;
+    keterangan: string | null;
+    status: Generated<"AKTIF" | "NONAKTIF">;
+}
+
+/**
+ * `areas` (0014, PR-01-05). Tingkat kedua — SENGAJA tanpa `status`, lihat
+ * migration `0014` untuk alasannya.
+ */
+export interface AreasTable extends KolomBaku {
+    id: Generated<string>;
+    building_id: ColumnType<string, string | number, string | number>;
+    nama: string;
+    kode: string;
+    lantai: number | null;
+}
+
+/** `rooms` (0014, PR-01-05). Tingkat ketiga — tempat aset & bahan bermukim (`BR-082`). */
+export interface RoomsTable extends KolomBaku {
+    id: Generated<string>;
+    area_id: ColumnType<string, string | number, string | number>;
+    nama: string;
+    kode: string;
+    jenis:
+        | "KELAS"
+        | "LABORATORIUM"
+        | "AULA"
+        | "PERPUSTAKAAN"
+        | "KANTOR"
+        | "GUDANG"
+        | "LAPANGAN"
+        | "LAINNYA";
+    kapasitas: number | null;
+    penanggung_jawab_id: ColumnType<string | null, string | number | null, string | number | null>;
+    dapat_direservasi: Generated<boolean>;
+    boleh_direservasi_siswa: Generated<boolean>;
+    status: Generated<"AKTIF" | "NONAKTIF">;
+}
+
+/**
+ * `system_settings` (0015, PR-01-10). Bukan entitas domain: tanpa `id` dan
+ * `created_*` (`SDD-05 §4.7a`). `value` jsonb ditulis sebagai string JSON
+ * (pola `activity_logs`); `nilai_min`/`nilai_maks` bertipe `numeric` dan kembali
+ * sebagai **string** dari driver `pg` — diubah ke angka di lapisan service.
+ */
+export interface SystemSettingsTable {
+    key: string;
+    kelompok:
+        | "IDENTITAS_SEKOLAH"
+        | "KODE_ASET"
+        | "PEMINJAMAN"
+        | "DENDA"
+        | "RESERVASI"
+        | "MAINTENANCE"
+        | "BAHAN"
+        | "NOTIFIKASI"
+        | "KEAMANAN"
+        | "CHATBOT_AI";
+    tipe: "BILANGAN_BULAT" | "DESIMAL" | "BOOLEAN" | "TEKS";
+    value: ColumnType<unknown, string, string>;
+    nilai_bawaan: ColumnType<unknown, string, never>;
+    nilai_min: ColumnType<string | null, string | number | null | undefined, never>;
+    nilai_maks: ColumnType<string | null, string | number | null | undefined, never>;
+    deskripsi: string;
+    updated_at: ColumnType<Date, never, never>;
+    updated_by: ColumnType<string | null, string | number | null, string | number | null>;
+}
+
+/** `work_units` (0017, PR-01-12). Unit kerja / kelas — Lampiran E.3. */
+export interface WorkUnitsTable extends KolomBaku {
+    id: Generated<string>;
+    nama: string;
+    kode: string;
+    jenis: "MANAJEMEN" | "MATA_PELAJARAN" | "TATA_USAHA" | "EKSTRAKURIKULER" | "KELAS";
+    kepala_unit_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    status: Generated<"AKTIF" | "NONAKTIF">;
+}
+
+/**
+ * `student_enrollments` (0018, PR-01-13). Kelas siswa per tahun ajaran
+ * (Lampiran E.4, SL-01) — bukan kolom pada `users`.
+ */
+export interface StudentEnrollmentsTable extends KolomBaku {
+    id: Generated<string>;
+    user_id: ColumnType<string, string | number, string | number>;
+    academic_year_id: ColumnType<string, string | number, string | number>;
+    kelas_id: ColumnType<string, string | number, string | number>;
+    lulus: Generated<boolean>;
+}
+
+/**
+ * `refresh_tokens` (0021, PR-02-02). Tabel infrastruktur: tanpa kolom baku entitas.
+ * Hanya SHA-256 token yang disimpan (SDD-SESS-03); `family_id` menyatukan rantai rotasi (SDD-SESS-04).
+ */
+export interface RefreshTokensTable {
+    id: Generated<string>;
+    user_id: ColumnType<string, string | number, never>;
+    family_id: string;
+    parent_id: ColumnType<string | null, string | number | null | undefined, never>;
+    token_hash: Buffer;
+    platform: "WEB" | "ANDROID" | "IOS";
+    ip: ColumnType<string | null, string | null | undefined, never>;
+    user_agent: ColumnType<string | null, string | null | undefined, never>;
+    issued_at: ColumnType<Date, Date | undefined, never>;
+    expires_at: ColumnType<Date, Date, never>;
+    rotated_at: ColumnType<Date | null, never, Date | null>;
+    revoked_at: ColumnType<Date | null, never, Date | null>;
+    revoke_reason: ColumnType<string | null, never, string | null>;
+    /**
+     * `amr` sesi ini memuat `otp` (0024, PR-02-07; `SDD-SESS-09`). Diwarisi setiap rotasi, tidak
+     * pernah dari permintaan; hanya konfirmasi pendaftaran 2FA yang menaikkannya pada sesi berjalan.
+     */
+    otp_verified: ColumnType<boolean, boolean | undefined, boolean>;
+}
+
+/**
+ * `totp_backup_codes` (0024, PR-02-07). Kode cadangan 2FA: hanya hash Argon2id yang disimpan
+ * (`BR-070c`); `used_at` mengunci pemakaian satu kali (FR-01.5 AC).
+ */
+/**
+ * `totp_activation_codes` (0025, PR-02-33). Kode aktivasi 2FA (`BR-070d`): hanya hash Argon2id; satu baris aktif
+ * per akun; `verified_at` = dicocokkan pada `enroll`, `consumed_at` = dihabiskan `enroll/confirm`.
+ */
+export interface TotpActivationCodesTable {
+    id: Generated<string>;
+    user_id: ColumnType<string, string | number, never>;
+    code_hash: ColumnType<string, string, never>;
+    /** NULL bila diterbitkan CLI (`SYSTEM:CLI`, `PR-02-08`). */
+    issued_by: ColumnType<string | null, string | number | null | undefined, never>;
+    metode_verifikasi: ColumnType<"KARTU_IDENTITAS_TATAP_MUKA" | "KONFIRMASI_ATASAN_ATAU_WALI_KELAS" | null, string | null | undefined, never>;
+    issued_at: ColumnType<Date, Date, never>;
+    expires_at: ColumnType<Date, Date, never>;
+    failed_attempts: ColumnType<number, number | undefined, number>;
+    verified_at: ColumnType<Date | null, never, Date | null>;
+    consumed_at: ColumnType<Date | null, never, Date | null>;
+}
+
+export interface TotpBackupCodesTable {
+    id: Generated<string>;
+    user_id: ColumnType<string, string | number, never>;
+    code_hash: ColumnType<string, string, never>;
+    created_at: ColumnType<Date, Date | undefined, never>;
+    used_at: ColumnType<Date | null, never, Date | null>;
+}
+
+/**
+ * `password_reset_requests` (0023, PR-02-05). Permintaan reset password administratif (`FR-01.3`).
+ * Bukan entitas berkolom baku: kolom waktunya bermakna sendiri. Password sementara TIDAK
+ * disimpan di sini — hanya hash-nya pada `users.password_hash`.
+ */
+export interface PasswordResetRequestsTable {
+    privacy_revoked_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    id: Generated<string>;
+    user_id: ColumnType<string, string | number, never>;
+    status: ColumnType<
+        "MENUNGGU" | "DITERBITKAN" | "DITOLAK" | "SELESAI" | "KEDALUWARSA",
+        "MENUNGGU" | "DITERBITKAN" | undefined,
+        "MENUNGGU" | "DITERBITKAN" | "DITOLAK" | "SELESAI" | "KEDALUWARSA"
+    >;
+    metode_verifikasi: ColumnType<
+        "KARTU_IDENTITAS_TATAP_MUKA" | "KONFIRMASI_ATASAN_ATAU_WALI_KELAS" | null,
+        "KARTU_IDENTITAS_TATAP_MUKA" | "KONFIRMASI_ATASAN_ATAU_WALI_KELAS" | null | undefined,
+        "KARTU_IDENTITAS_TATAP_MUKA" | "KONFIRMASI_ATASAN_ATAU_WALI_KELAS" | null
+    >;
+    diminta_pada: ColumnType<Date, Date, never>;
+    diproses_oleh: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    diproses_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    kedaluwarsa_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    alasan_penolakan: ColumnType<string | null, string | null | undefined, string | null>;
+}
+
+/** Pendahulu PR-02-38, SDD-DB-24; laporan menyimpan isian untuk berkas koreksi F-05. */
+export interface RoomScheduleImportJobsTable extends Omit<AssetImportJobsTable, "unit_dibuat" | "laporan_gagal"> {
+    laporan_gagal: ColumnType<readonly { baris: number; kode_ruangan: string | null; pesan: string; data: Readonly<Record<string, string>> }[], string | undefined, string | RawBuilder<unknown>>;
+}
+
+export interface AssetImportJobsTable extends Omit<KolomBaku, "created_at" | "updated_at"> {
+    report_purged_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    created_at: ColumnType<Date, Date | undefined, never>;
+    updated_at: ColumnType<Date, Date | undefined, never>;
+    id: Generated<string>;
+    file_hash: string;
+    nama_berkas: string;
+    status: "MENUNGGU" | "BERJALAN" | "SELESAI" | "GAGAL";
+    total_baris: number;
+    baris_terproses: Generated<number>;
+    sukses: Generated<number>;
+    gagal: Generated<number>;
+    unit_dibuat: Generated<number>;
+    laporan_gagal: ColumnType<
+        readonly { baris: number; nama_barang: string | null; pesan: string; data: Readonly<Record<string, string>> }[],
+        string | undefined,
+        string | RawBuilder<unknown>
+    >;
+    berkas: ColumnType<Buffer | null, Buffer | null | undefined, Buffer | null>;
+    pesan_galat: ColumnType<string | null, string | null | undefined, string | null>;
+    selesai_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+}
+
+/**
+ * `user_import_jobs` (0020, PR-01-17). Setiap impor pengguna — jangkar idempotensi
+ * hash-berkas (IMPT-03) dan sumber laporan per baris (IMPT-02). `berkas` hanya
+ * terisi selama menunggu worker (DP-03).
+ */
+export interface UserImportJobsTable extends KolomBaku {
+    report_purged_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    id: Generated<string>;
+    file_hash: string;
+    nama_berkas: string;
+    status: "MENUNGGU" | "BERJALAN" | "SELESAI" | "GAGAL";
+    total_baris: number;
+    baris_terproses: Generated<number>;
+    sukses: Generated<number>;
+    gagal: Generated<number>;
+    laporan_gagal: ColumnType<
+        readonly { baris: number; email: string | null; pesan: string }[],
+        string | undefined,
+        string | RawBuilder<unknown>
+    >;
+    berkas: ColumnType<Buffer | null, Buffer | null | undefined, Buffer | null>;
+    pesan_galat: ColumnType<string | null, string | null | undefined, string | null>;
+    selesai_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+}
+
+/**
+ * `academic_years` (0016, PR-01-11). `tanggal_*` bertipe `date`; driver `pg`
+ * mengembalikan `Date`, jadi repository membacanya lewat `to_char(..., 'YYYY-MM-DD')`
+ * (pola `BusinessCalendarService`). Tepat satu baris
+ * `is_active` ditegakkan basis data — SDD-05 §4.7b.
+ */
+export interface AcademicYearsTable extends KolomBaku {
+    id: Generated<string>;
+    nama: string;
+    tanggal_mulai: ColumnType<string, string, string>;
+    tanggal_selesai: ColumnType<string, string, string>;
+    is_active: Generated<boolean>;
+}
+
+/** `academic_terms` (0016, PR-01-11). Ganjil/Genap per tahun ajaran (Lampiran E.2). */
+export interface AcademicTermsTable extends KolomBaku {
+    id: Generated<string>;
+    academic_year_id: ColumnType<string, string | number, string | number>;
+    nama: "GANJIL" | "GENAP";
+    tanggal_mulai: ColumnType<string, string, string>;
+    tanggal_selesai: ColumnType<string, string, string>;
+}
+
+/**
+ * `asset_categories` (0026, PR-02-10). Self-referencing (`parent_id`) — minimal
+ * dua tingkat induk-anak (`FR-04.5` AC).
+ */
+export interface AssetCategoriesTable extends KolomBaku {
+    id: Generated<string>;
+    parent_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    nama: string;
+    kode: string;
+    umur_teknis_tahun: number | null;
+    interval_preventif_hari: number | null;
+}
+
+/**
+ * `assets` (0026, PR-02-10). `uuid` pengecualian tertulis `SDD-DB-01` (kunci
+ * sekunder ber-indeks unik, bukan kunci primer) — dipakai halaman publik QR
+ * (`FR-05.1`/`FR-05.2 A3`). `status` lahir `TERSEDIA` (`FR-04.1` langkah 5).
+ * `procurement_id` NULLABLE tanpa FK aktif — tabel `procurements` milik M-14
+ * belum ada; ditambahkan migration M-14 sendiri (`expand`).
+ * `nilai_perolehan` bertipe `numeric(14,2)` dan kembali sebagai **string** dari
+ * driver `pg`, sama seperti `system_settings.nilai_min`.
+ */
+export interface AssetsTable extends KolomBaku {
+    id: Generated<string>;
+    uuid: Generated<string>;
+    kode_barang: string;
+    nama: string;
+    category_id: ColumnType<string, string | number, string | number>;
+    merek: string | null;
+    model: string | null;
+    nomor_seri: string | null;
+    tahun_perolehan: number;
+    sumber_perolehan: "PEMBELIAN" | "HIBAH" | "BANTUAN_PEMERINTAH" | "SUMBANGAN" | "LAINNYA";
+    nilai_perolehan: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    room_id: ColumnType<string, string | number, string | number>;
+    kondisi: "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT" | "HILANG";
+    status: Generated<"TERSEDIA" | "DIRESERVASI" | "DIPINJAM" | "DALAM_PERBAIKAN" | "TIDAK_TERSEDIA">;
+    dapat_dipinjam: Generated<boolean>;
+    boleh_dipinjam_siswa: Generated<boolean>;
+    penanggung_jawab_id: ColumnType<string | null, string | number | null, string | number | null>;
+    qr_terpasang: Generated<boolean>;
+    procurement_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    import_job_id: ColumnType<string | null, string | null | undefined, string | null>;
+    dihapuskan: Generated<boolean>;
+    tanggal_penghapusan: ColumnType<Date | null, Date | null | undefined, Date | null>;
+}
+
+/**
+ * `asset_condition_history` (0026, PR-02-10). Append-only (pola
+ * `material_transactions`, `SDD-05 §4.2`): tanpa kolom baku, kolom waktu
+ * bermakna sendiri (`diubah_pada`, bukan `created_at`).
+ * `referensi_jenis`/`referensi_id` polimorfik tanpa FK — sesi stock opname
+ * atau berita acara kehilangan (`FR-04.3 A2`, `BR-012`).
+ */
+export interface AssetConditionHistoryTable {
+    id: Generated<string>;
+    asset_id: ColumnType<string, string | number, string | number>;
+    kondisi_lama: "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT" | "HILANG";
+    kondisi_baru: "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT" | "HILANG";
+    alasan: string;
+    referensi_jenis: string | null;
+    referensi_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    diubah_oleh: ColumnType<string, string | number, string | number>;
+    diubah_pada: ColumnType<Date, Date, Date>;
+}
+
+/**
+ * `asset_code_counters` (0027, PR-02-11). Penghitung nomor urut kode aset per
+ * kombinasi (`category_id`, `room_id`) — pola `document_counters` (SDD-AVL-09),
+ * tanpa dimensi tahun. `value` kembali sebagai **string** dari driver `pg`,
+ * sama seperti `document_counters.value`.
+ */
+export interface AssetCodeCountersTable {
+    category_id: ColumnType<string, string | number, string | number>;
+    room_id: ColumnType<string, string | number, string | number>;
+    value: ColumnType<string, string | number | undefined, string | number>;
+}
+
+/**
+ * `asset_movements` (0029, PR-02-14). Append-only, tanpa kolom baku (pola
+ * `asset_condition_history`): `tanggal` bertipe `date` dipilih pengguna
+ * (`FR-04.4` langkah 2), kembali sebagai string `YYYY-MM-DD` dari driver `pg`.
+ */
+export interface AssetMovementsTable {
+    audit_session_id: ColumnType<string | null, string | null | undefined, never>;
+    id: Generated<string>;
+    document_id: ColumnType<string | null, string | number | null | undefined, never>;
+    asset_id: ColumnType<string, string | number, string | number>;
+    room_asal_id: ColumnType<string, string | number, string | number>;
+    room_tujuan_id: ColumnType<string, string | number, string | number>;
+    tanggal: ColumnType<string, string, string>;
+    alasan: string;
+    dilakukan_oleh: ColumnType<string, string | number, string | number>;
+}
+
+/**
+ * `booking_slots` (0030, PR-02-16; SDD-01 §4.1). `slot_range` `tstzrange` half-open
+ * `[)` (SDD-AVL-02) — driver `pg` mengembalikannya sebagai string literal rentang.
+ * `reservation_id`/`loan_id`/`work_order_id` NULLABLE tanpa FK sampai modul pemiliknya
+ * lahir (keputusan 63) — `reservation_id` ber-FK sejak 0043 (PR-03-08).
+ */
+export interface BookingSlotsTable {
+    id: Generated<string>;
+    resource_type: "room" | "asset";
+    resource_id: ColumnType<string, string | number, string | number>;
+    slot_range: string | null;
+    status: "TENTATIVE" | "CONFIRMED" | "ACTIVE" | "RELEASED";
+    origin: "reservation" | "loan" | "maintenance" | "fixed_schedule" | "manual_block";
+    reservation_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    loan_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    work_order_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    parent_slot_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    expires_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    created_by: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    created_at: Generated<Date>;
+    /** Sumber blokade (0047, PR-03-13; FR-07.5). */
+    fixed_schedule_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    manual_block_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+}
+
+/** Bab 11.3 "Status Blokade Ruangan" (0047). */
+export type StatusBlokadeRuangan = "AKTIF" | "NONAKTIF";
+
+/** `room_fixed_schedules` (0047; FR-07.5 langkah 2) — aturan mingguan, satu hari per baris. */
+export interface RoomFixedSchedulesTable extends KolomBaku {
+    id: Generated<string>;
+    room_id: ColumnType<string, string | number, string | number>;
+    hari: number;
+    /** `HH:MM:SS` (tipe `time`). */
+    jam_mulai: string;
+    jam_selesai: string;
+    label_kegiatan: string;
+    /** `date` — repository membacanya lewat `to_char(…, 'YYYY-MM-DD')` (pola `holidays`), bukan objek `Date`. */
+    berlaku_mulai: ColumnType<string, string, string>;
+    berlaku_sampai: ColumnType<string, string, string>;
+    status: ColumnType<StatusBlokadeRuangan, StatusBlokadeRuangan | undefined, StatusBlokadeRuangan>;
+}
+
+/** `room_manual_blocks` (0047; FR-07.5 langkah 3) — satu rentang menerus = satu slot. */
+export interface RoomManualBlocksTable extends KolomBaku {
+    id: Generated<string>;
+    room_id: ColumnType<string, string | number, string | number>;
+    mulai: Date;
+    selesai: Date;
+    label_kegiatan: string;
+    status: ColumnType<StatusBlokadeRuangan, StatusBlokadeRuangan | undefined, StatusBlokadeRuangan>;
+}
+
+/** Bab 11.3 "Urgensi Kerusakan" / "Status Laporan Kerusakan" (0048). */
+export type UrgensiKerusakan = "RENDAH" | "SEDANG" | "TINGGI" | "KRITIS";
+export type StatusLaporanKerusakan = "DILAPORKAN" | "DIVERIFIKASI" | "DALAM_PERBAIKAN" | "SELESAI" | "DITOLAK";
+
+/** `damage_reports` (0048; FR-11.1) — objek tepat satu: aset atau ruangan. */
+export interface DamageReportsTable extends KolomBaku {
+    work_order_assignment: ColumnType<unknown | null, unknown | undefined, unknown>;
+    loan_id: ColumnType<string | null, string | number | null | undefined, never>;
+    id: Generated<string>;
+    nomor: string;
+    pelapor_id: ColumnType<string, string | number, string | number>;
+    asset_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    room_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    deskripsi: string;
+    urgensi: UrgensiKerusakan;
+    status: ColumnType<StatusLaporanKerusakan, StatusLaporanKerusakan | undefined, StatusLaporanKerusakan>;
+    diverifikasi_oleh: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    diverifikasi_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    /** 0049 (FR-11.2): alasan penolakan / catatan perbaikan ringan — terlihat pelapor. */
+    catatan_verifikasi: ColumnType<string | null, string | null | undefined, string | null>;
+    /** 0050 (FR-11.3, SC-07): tenggat tindak lanjut absolut, ditetapkan saat lapor; NULL = tiket pra-0050. */
+    batas_sla: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    /** 0051 (FR-07.4 A2): reservasi ruangan asal laporan pasca-kegiatan. */
+    reservation_id: ColumnType<string | null, string | number | null | undefined, never>;
+}
+
+/** `damage_report_notes` (0051, FR-11.1 A1) — catatan tambahan append-only atas tiket terbuka. */
+export interface DamageReportNotesTable {
+    id: Generated<string>;
+    damage_report_id: ColumnType<string, string | number, never>;
+    keterangan: string;
+    created_at: ColumnType<Date, never, never>;
+    created_by: ColumnType<string, string | number, never>;
+}
+
+/** `damage_report_note_photos` (0051) — 0–5 foto per catatan; berkas di `stored_files` (SDD-FS-02). */
+export interface DamageReportNotePhotosTable {
+    id: Generated<string>;
+    note_id: ColumnType<string, string | number, never>;
+    file_id: ColumnType<string, string | number, never>;
+    urutan: number;
+    created_at: ColumnType<Date, never, never>;
+    created_by: ColumnType<string | null, string | number | null, never>;
+}
+
+/** `damage_report_photos` (0048) — anak append-only; berkas di `stored_files` (SDD-FS-02). */
+export interface DamageReportPhotosTable {
+    id: Generated<string>;
+    damage_report_id: ColumnType<string, string | number, never>;
+    file_id: ColumnType<string, string | number, never>;
+    urutan: number;
+    created_at: ColumnType<Date, never, never>;
+    created_by: ColumnType<string | null, string | number | null, never>;
+}
+
+/**
+ * `reservations` (0043, PR-03-08; m07 §8). Induk berulang + anak ber-`parent_id` (BR-024a);
+ * nomor anak = nomor induk + `.NN`. Kolom kegiatan wajib bagi `RUANGAN` (CHECK).
+ */
+export type StatusReservasi = "DRAF" | "MENUNGGU_PERSETUJUAN" | "DISETUJUI" | "DITOLAK" | "PERLU_REVISI" | "DIBATALKAN" | "KEDALUWARSA" | "BERLANGSUNG" | "SELESAI" | "TIDAK_DIGUNAKAN";
+
+export interface ReservationsTable extends KolomBaku {
+    bypass_approval: Generated<boolean>;
+    alasan_bypass: ColumnType<string | null, string | null | undefined, string | null>;
+    lokasi_penggunaan: ColumnType<string | null, string | null | undefined, string | null>;
+    status_penggunaan_ruangan: ColumnType<StatusReservasi | null, StatusReservasi | null | undefined, StatusReservasi | null>;
+    id: Generated<string>;
+    nomor: string;
+    jenis: "RUANGAN" | "ASET";
+    pemohon_id: ColumnType<string, string | number, string | number>;
+    room_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    parent_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    nama_kegiatan: string | null;
+    jenis_kegiatan: string | null;
+    waktu_mulai: Date;
+    waktu_selesai: Date;
+    jumlah_peserta: number | null;
+    keperluan: string | null;
+    kebutuhan_tambahan: string | null;
+    keterangan: string | null;
+    status: ColumnType<StatusReservasi, StatusReservasi | undefined, StatusReservasi>;
+    /** FR-07.4 langkah 3 (0046, PR-03-12): diisi sekali oleh pencatat penggunaan. */
+    kondisi_ruangan: ColumnType<KondisiRuanganPasca | null, KondisiRuanganPasca | null | undefined, KondisiRuanganPasca | null>;
+    catatan_penggunaan: ColumnType<string | null, string | null | undefined, string | null>;
+    penggunaan_dicatat_oleh: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    penggunaan_dicatat_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+}
+
+/** Bab 11.3 "Kondisi Ruangan Pasca-Kegiatan" (0046). */
+export type KondisiRuanganPasca = "BAIK" | "PERLU_PERHATIAN";
+
+/**
+ * Mesin persetujuan (0031, PR-02-18; FR-10.1, Lampiran D.5, SDD-APR-03/04/12). Nilai
+ * DSL D.5 disimpan teks ber-CHECK literal lampiran (huruf kecil); status instance
+ * adalah kelompok Bab 11.3 "Status Instance Approval" (keputusan 65).
+ */
+export type JenisPengajuanApproval = "RESERVASI_RUANGAN" | "RESERVASI_ASET" | "PERPANJANGAN_PEMINJAMAN" | "PENGADAAN_BARANG" | "PENGHAPUSAN_ASET" | "PERMINTAAN_BAHAN";
+export type TipeApprover = "role" | "user";
+
+export interface ApprovalRulesTable extends KolomBaku {
+    id: Generated<string>;
+    jenis_pengajuan: JenisPengajuanApproval;
+    kondisi: ColumnType<unknown, unknown | undefined, unknown>;
+    prioritas: number;
+    status_aktif: Generated<boolean>;
+    versi: Generated<number>;
+    fallback_approver_type: TipeApprover | null;
+    fallback_role_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    fallback_user_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    terminal_on_exhausted_escalation: Generated<"hold_and_alert" | "auto_reject">;
+}
+
+export interface ApprovalRuleStepsTable {
+    id: Generated<string>;
+    rule_id: ColumnType<string, string | number, string | number>;
+    urutan: number;
+    approver_type: TipeApprover;
+    approver_role_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    approver_user_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    sla_jam: number;
+    on_sla_breach: Generated<"remind" | "escalate">;
+    eskalasi_ke: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+}
+
+/** `rule_snapshot` BEKU — trigger menolak perubahannya (SDD-APR-03). */
+export interface ApprovalInstancesTable {
+    id: Generated<string>;
+    jenis_pengajuan: JenisPengajuanApproval;
+    referensi_id: ColumnType<string, string | number, string | number>;
+    rule_id: ColumnType<string | null, string | number | null | undefined, never>;
+    rule_snapshot: ColumnType<unknown, unknown, never>;
+    /** BR-039 (0032): pemohon; NULLABLE karena expand, mesin selalu mengisi. */
+    pemohon_id: ColumnType<string | null, string | number | null | undefined, never>;
+    langkah_aktif: number | null;
+    status: Generated<"MENUNGGU" | "DISETUJUI" | "DITOLAK" | "PERLU_REVISI" | "DIBATALKAN">;
+    created_at: Generated<Date>;
+    diselesaikan_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+}
+
+export interface ApprovalStepsTable {
+    rincian_keputusan:ColumnType<unknown,unknown,unknown>;
+    id: Generated<string>;
+    instance_id: ColumnType<string, string | number, string | number>;
+    urutan: number;
+    approver_type: TipeApprover;
+    approver_role_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    approver_user_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    keputusan: "DISETUJUI" | "DITOLAK" | "PERLU_REVISI" | "DILEWATI" | null;
+    catatan: string | null;
+    diputuskan_oleh: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    diputuskan_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    sla_deadline: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    dilewati: Generated<boolean>;
+    alasan_dilewati: string | null;
+    /** RE-12 (0032): approver asli bila diputus penerima delegasi. */
+    atas_nama_user_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    /** SLA & eskalasi (0033, PR-02-22; SDD-02 §4.5). */
+    dieskalasi_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    eskalasi_dari_user_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    pengingat_terakhir_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    alarm_terminal_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+}
+
+/** Delegasi approver (0032, PR-02-20; FR-10.2 A3, SDD-APR-16) — rentang tanggal WIB inklusif. */
+export interface ApprovalDelegationsTable extends KolomBaku {
+    id: Generated<string>;
+    pemberi_id: ColumnType<string, string | number, string | number>;
+    penerima_id: ColumnType<string, string | number, string | number>;
+    mulai: ColumnType<string, string, string>;
+    selesai: ColumnType<string, string, string>;
+}
+
+/** Peta nama tabel -> bentuk barisnya. Diisi bersama migration pemiliknya. */
+/** SDD-08 §4.5 (UXD-05): kelompok preferensi notifikasi. */
+export type KelompokNotifikasi = "PERSETUJUAN" | "RESERVASI_PEMINJAMAN" | "DENDA_KEWAJIBAN" | "KERUSAKAN_PERAWATAN" | "OPNAME_PENGADAAN" | "AKUN_SISTEM";
+
+/** Notifikasi pengguna (0034, PR-02-25; SDD-08 §4.1). Arsip berskema identik (§4.6). */
+export interface NotificationsTable {
+    id: Generated<string>;
+    user_id: ColumnType<string, string | number, string | number>;
+    kode: string;
+    jenis: KelompokNotifikasi;
+    judul: string;
+    isi: string;
+    params: ColumnType<unknown, string | undefined, string>;
+    referensi_jenis: string | null;
+    referensi_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    deep_link: string | null;
+    wajib: Generated<boolean>;
+    dibaca_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    created_at: ColumnType<Date, Date, Date>;
+    dedupe_key: string | null;
+}
+
+/** Bab 11.3 "Status Pengiriman Notifikasi" (0035, keputusan 80c). */
+export type StatusPengiriman = "MENUNGGU" | "TERKIRIM" | "GAGAL" | "DILEWATI";
+
+/** Token perangkat FCM (0035, PR-02-27; MOB-SEC-05). */
+export interface DeviceTokensTable {
+    id: Generated<string>;
+    user_id: ColumnType<string, string | number, string | number>;
+    token: string;
+    platform: "ANDROID" | "IOS";
+    family_id: string;
+    terakhir_aktif: ColumnType<Date, Date, Date>;
+    created_at: ColumnType<Date, Date, Date>;
+}
+
+/** Hasil pengiriman per kanal (0035; SDD-08 §4.1/§4.4a). */
+export interface NotificationDeliveriesTable {
+    id: Generated<string>;
+    notification_id: ColumnType<string, string | number, string | number>;
+    kanal: "IN_APP" | "PUSH";
+    status: StatusPengiriman;
+    attempts: ColumnType<number, number | undefined, number>;
+    last_error: string | null;
+    sent_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+}
+
+/** Preferensi kanal per kelompok (0036; SDD-08 §4.5, keputusan 81). Ketiadaan baris = aktif. */
+export interface NotificationPreferencesTable {
+    user_id: ColumnType<string, string | number, string | number>;
+    jenis: KelompokNotifikasi;
+    in_app: ColumnType<boolean, boolean | undefined, boolean>;
+    push: ColumnType<boolean, boolean | undefined, boolean>;
+}
+
+/** Progres tur produk per akun (0075). Ketiadaan baris = tur belum diselesaikan/dilewati. */
+export interface ProductTourProgressTable {
+    user_id: ColumnType<string, string | number, never>;
+    kunci_tur: ColumnType<string, string, never>;
+    status: "SELESAI" | "DILEWATI";
+    versi: number;
+    created_at: ColumnType<Date, Date, never>;
+    updated_at: ColumnType<Date, Date, Date>;
+}
+
+/** Riwayat hash password (0037; SDD-SESS-19). Diisi trigger — aplikasi hanya membaca. */
+export interface PasswordHistoryTable {
+    id: Generated<string>;
+    user_id: ColumnType<string, string | number, never>;
+    password_hash: string;
+    berlaku_sejak: ColumnType<Date, Date, never>;
+}
+
+export type FileScanStatus = "PENDING" | "CLEAN" | "INFECTED" | "FAILED";
+export type FileOwnerType = "REPORT_EXPORT" | "MATERIAL_RECEIPT_DOCUMENT" | "DISPOSAL_ATTACHMENT" | "DISPOSAL_EXECUTION_PHOTO" | "DISPOSAL_REPORT" | "PROCUREMENT_ATTACHMENT" | "PROCUREMENT_RECEIPT_DOCUMENT" | "PROCUREMENT_REJECTION_PHOTO" | "ASSET_DOCUMENT" | "ASSET_PHOTO" | "USER_PHOTO" | "HANDOVER_PHOTO" | "DAMAGE_PHOTO" | "WORK_ORDER_PHOTO" | "STOCKTAKE_PHOTO" | "ASSET_MOVEMENT_DOCUMENT" | "STOCKTAKE_REPORT";
+
+/** Satu berita acara per operasi; snapshot hanya ditulis saat penerimaan (0042). */
+export interface AssetMovementDocumentsTable extends KolomBaku {
+    id: Generated<string>;
+    snapshot: ColumnType<unknown, string, never>;
+    object_key: ColumnType<string, string, never>;
+    status: ColumnType<"MENUNGGU" | "BERJALAN" | "SIAP" | "GAGAL", "MENUNGGU" | undefined, "BERJALAN" | "SIAP" | "GAGAL">;
+    file_id: ColumnType<string | null, undefined, string>;
+    pesan_galat: ColumnType<string | null, undefined, string>;
+    selesai_pada: ColumnType<Date | null, undefined, Date>;
+}
+
+/** Registri berkas (0038, PR-03-04; SDD-FS-02). Infrastruktur — tanpa kolom baku. */
+export interface StoredFilesTable {
+    id: Generated<string>;
+    object_key: string;
+    mime: string;
+    ukuran: ColumnType<string, string | number, never>;
+    /** SHA-256; NULL = belum dikonfirmasi (SDD-09 §4.2 langkah 3). */
+    checksum: ColumnType<string | null, string | null | undefined, string | null>;
+    scan_status: ColumnType<FileScanStatus, FileScanStatus | undefined, FileScanStatus>;
+    scanned_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    owner_type: ColumnType<FileOwnerType, FileOwnerType, never>;
+    owner_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    uploaded_by: ColumnType<string, string | number, never>;
+    created_at: ColumnType<Date, Date | undefined, never>;
+    /** Turunan WebP (0040, PR-03-07; SDD-FS-07); NULL = jatuh ke berkas asli. */
+    thumb_key: ColumnType<string | null, string | null | undefined, string | null>;
+    medium_key: ColumnType<string | null, string | null | undefined, string | null>;
+}
+
+/** Bab 11.3 "Jenis Dokumen Aset" (0002). */
+export type AssetDocumentType = "FAKTUR" | "GARANSI" | "SERTIFIKAT" | "MANUAL" | "BERITA_ACARA" | "LAINNYA";
+
+/** Dokumen aset (0039, PR-03-06; FR-06.1). Soft delete `dihapus` (SDD-DB-04). */
+export interface AssetDocumentsTable extends KolomBaku {
+    id: Generated<string>;
+    file_id: ColumnType<string, string | number, never>;
+    jenis: AssetDocumentType;
+    nama_berkas: string;
+    keterangan: string | null;
+    /** `date`: dibaca lewat `to_char(..., YYYY-MM-DD)`, ditulis sebagai string (pola `academic_years`). */
+    garansi_mulai: ColumnType<string | null, string | null | undefined, string | null>;
+    garansi_selesai: ColumnType<string | null, string | null | undefined, string | null>;
+    dihapus: ColumnType<boolean, boolean | undefined, boolean>;
+    dihapus_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    dihapus_oleh: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+}
+
+/** Tautan dokumen ↔ aset (0039, FR-06.1 A3). Dilepas, tidak dihapus. */
+export interface AssetDocumentLinksTable {
+    id: Generated<string>;
+    document_id: ColumnType<string, string | number, never>;
+    asset_id: ColumnType<string, string | number, never>;
+    aktif: ColumnType<boolean, boolean | undefined, boolean>;
+    dilepas_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    dilepas_oleh: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    created_at: ColumnType<Date, Date | undefined, never>;
+    created_by: ColumnType<string | null, string | number | null | undefined, never>;
+}
+
+export interface LoansTable extends KolomBaku {
+    id: Generated<string>; nomor: string;
+    reservation_id: ColumnType<string, string | number, never>;
+    peminjam_id: ColumnType<string, string | number, never>;
+    petugas_serah_id: ColumnType<string, string | number, never>;
+    nama_penerima: string; diwakilkan: boolean;
+    tanggal_pinjam: Date; tanggal_jatuh_tempo: Date;
+    tanggal_kembali: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    status: ColumnType<"DIPINJAM" | "SEBAGIAN_DIKEMBALIKAN" | "DIKEMBALIKAN" | "TERLAMBAT" | "HILANG", "DIPINJAM" | undefined, "DIPINJAM" | "SEBAGIAN_DIKEMBALIKAN" | "DIKEMBALIKAN" | "TERLAMBAT" | "HILANG">;
+    signature_file_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    kebijakan_denda: ColumnType<unknown, unknown, never>;
+    tanggal_jatuh_tempo_asli: ColumnType<Date | null, Date | null | undefined, never>;
+    jumlah_perpanjangan: Generated<number>;
+}
+export interface LoanItemsTable {
+    id: Generated<string>; loan_id: ColumnType<string, string | number, never>;
+    asset_id: ColumnType<string, string | number, never>; allocated_asset_id: ColumnType<string, string | number, never>;
+    slot_id: ColumnType<string, string | number, never>;
+    alasan_substitusi: ColumnType<string | null, string | null | undefined, never>;
+    kondisi_awal: AssetsTable["kondisi"];
+    kondisi_akhir: ColumnType<AssetsTable["kondisi"] | null, AssetsTable["kondisi"] | null | undefined, AssetsTable["kondisi"] | null>;
+    tidak_lengkap: Generated<boolean>;
+    status_kembali: ColumnType<"BELUM_KEMBALI" | "DIKEMBALIKAN" | "HILANG", "BELUM_KEMBALI" | undefined, "BELUM_KEMBALI" | "DIKEMBALIKAN" | "HILANG">;
+    tanggal_kembali: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    petugas_kembali_id: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    catatan_pengembalian: ColumnType<string | null, string | null | undefined, string | null>;
+    nilai_perolehan_snapshot: ColumnType<string | null, string | null | undefined, never>;
+    hari_terlambat_terakumulasi: Generated<number>;
+}
+export interface FinesTable extends KolomBaku {
+    id: Generated<string>; loan_item_id: ColumnType<string, string | number, never>;
+    loan_id: ColumnType<string, string | number, never>; peminjam_id: ColumnType<string, string | number, never>;
+    jenis: "KETERLAMBATAN" | "GANTI_RUGI"; hari_terlambat: number; tarif_per_hari: string;
+    jumlah_sebelum_cap: string | null; jumlah: string | null; menunggu_penetapan: boolean;
+    status: ColumnType<"BELUM_DIBAYAR" | "LUNAS" | "DIBEBASKAN" | "DIBEBASKAN_SEBAGIAN", "BELUM_DIBAYAR" | undefined, "BELUM_DIBAYAR" | "LUNAS" | "DIBEBASKAN" | "DIBEBASKAN_SEBAGIAN">;
+    tanggal_bayar: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    nomor_bukti: ColumnType<string | null, string | null | undefined, string | null>;
+    jumlah_dibebaskan: Generated<string>;
+    alasan_pembebasan: ColumnType<string | null, string | null | undefined, string | null>;
+    dibebaskan_oleh: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+}
+export interface MaintenanceSchedulesTable extends KolomBaku {
+    id: Generated<string>; nama: string; asset_id: string | null; category_id: string | null;
+    interval_hari: number; tanggal_mulai: string; checklist: unknown; teknisi_default_id: string;
+    status: Generated<"AKTIF" | "NONAKTIF">;
+}
+export interface WorkOrdersTable extends KolomBaku {
+    checklist: ColumnType<unknown, string | undefined, string>;
+    alasan_tertunda: ColumnType<string | null,string | null | undefined,string | null>;
+    tanggal_lanjut: ColumnType<string | null,string | null | undefined,string | null>;
+    rekomendasi: ColumnType<string | null,string | null | undefined,string | null>;
+    kondisi_pasca: ColumnType<"BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT" | "HILANG" | null,string | null | undefined,"BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT" | null>;
+    diverifikasi_oleh: ColumnType<string | null,string | number | null | undefined,string | number | null>;
+    diverifikasi_pada: ColumnType<Date | null,Date | null | undefined,Date | null>;
+    catatan_verifikasi: ColumnType<string | null,string | null | undefined,string | null>;
+    estimasi_diusulkan: ColumnType<string | null,string | null | undefined,string | null>;
+    status_estimasi: Generated<"TIDAK_ADA" | "MENUNGGU" | "DISETUJUI" | "DITOLAK">;
+    alasan_estimasi: ColumnType<string | null,string | null | undefined,string | null>;
+    estimasi_diputuskan_oleh: ColumnType<string | null,string | number | null | undefined,string | number | null>;
+    estimasi_diputuskan_pada: ColumnType<Date | null,Date | null | undefined,Date | null>;
+    maintenance_schedule_id: ColumnType<string | null, string | null | undefined, string | null>;
+    preventive_due_date: ColumnType<string | null, string | null | undefined, string | null>;
+    menunggu_ketersediaan_aset: Generated<boolean>;
+    id: Generated<string>; nomor: string; jenis: Generated<"KOREKTIF" | "PREVENTIF">;
+    asset_id: string | null; room_id: string | null; damage_report_id: string | null;
+    teknisi_id: string; prioritas: "RENDAH" | "SEDANG" | "TINGGI" | "KRITIS";
+    deskripsi: string; target_selesai: string; estimasi_biaya: string;
+    nonaktifkan_aset: boolean; status: Generated<string>;
+    waktu_mulai: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    waktu_selesai: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    biaya: Generated<string>;
+    catatan_teknisi: ColumnType<string | null, string | null | undefined, string | null>;
+    hasil: ColumnType<string | null, string | null | undefined, string | null>;
+}
+export interface AuditSessionsTable extends KolomBaku {
+    id: Generated<string>; nomor: string; nama: string; domain: Generated<"ASET"|"BAHAN">; periode_mulai: string; periode_selesai: string; cakupan: unknown;
+    status: Generated<"BERJALAN" | "MENUNGGU_PERSETUJUAN" | "SELESAI" | "DIBATALKAN">;
+    finalized_at: ColumnType<Date | null, Date | null | undefined, Date | null>; catatan_keputusan: ColumnType<string | null, string | null | undefined, string | null>;
+    disetujui_oleh: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    disetujui_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    report_snapshot: ColumnType<unknown, string | null | undefined, string | null>;
+    report_status: Generated<"BELUM" | "MENUNGGU" | "SIAP" | "GAGAL">;
+    report_file_id: ColumnType<string | null, string | null | undefined, string | null>;
+    report_object_key: ColumnType<string | null, string | null | undefined, string | null>;
+}
+export interface AuditItemsTable {
+    id: Generated<string>; session_id: string; asset_id: string; nama: string; kode_barang: string; uuid: string;
+    room_id_sistem: string; lokasi_sistem: string; kondisi_sistem: AssetsTable["kondisi"]; status_sistem: string;
+    room_id_aktual: ColumnType<string | null, string | null | undefined, string | null>;
+    kondisi_aktual: ColumnType<AssetsTable["kondisi"] | null, AssetsTable["kondisi"] | null | undefined, AssetsTable["kondisi"] | null>;
+    hasil: Generated<"BELUM_DIPERIKSA" | "DITEMUKAN" | "SALAH_LOKASI" | "PERBEDAAN_KONDISI" | "TIDAK_DITEMUKAN" | "DIPINJAM">;
+    salah_lokasi: Generated<boolean>; beda_kondisi: Generated<boolean>;
+    catatan: ColumnType<string | null, string | null | undefined, string | null>;
+    diperiksa_oleh: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+    diperiksa_pada: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    keterangan: ColumnType<string | null, string | null | undefined, string | null>; tindakan: ColumnType<string | null, string | null | undefined, string | null>;
+    basis_room_id: ColumnType<string | null, string | null | undefined, string | null>;
+    basis_kondisi: ColumnType<AssetsTable["kondisi"] | null, AssetsTable["kondisi"] | null | undefined, AssetsTable["kondisi"] | null>;
+}
+export interface ProcurementTable extends KolomBaku {
+ id:Generated<string>;nomor:string;judul:string;pengusul_id:string;work_unit_id:string|null;tahun_anggaran:number;
+ prioritas:"RENDAH"|"SEDANG"|"TINGGI"|"MENDESAK";justifikasi:string;total_estimasi:string;
+ status:"DRAF"|"MENUNGGU_PERSETUJUAN"|"DISETUJUI"|"DISETUJUI_SEBAGIAN"|"DITOLAK"|"PERLU_REVISI"|"DITERIMA_SEBAGIAN"|"SELESAI"|"TIDAK_DIREALISASIKAN";
+ approval_instance_id:ColumnType<string|null,string|null|undefined,string|null>;source_asset_id:string|null;alasan_penutupan:ColumnType<string|null,string|null|undefined,string|null>;
+}
+export interface ProcurementItemsTable {
+ material_id:ColumnType<string|null,string|null|undefined,string|null>;
+ material_satuan_id:ColumnType<string|null,string|null|undefined,string|null>;
+ id:Generated<string>;procurement_id:string;jenis:"ASET"|"BAHAN";nama_barang:string;category_id:string|null;spesifikasi:string;satuan:string;
+ jumlah_diusulkan:number;jumlah_disetujui:ColumnType<number|null,number|null|undefined,number|null>;jumlah_diterima:Generated<number>;estimasi_harga_satuan:string;keterangan:string|null;
+}
+export interface ProcurementAttachmentsTable {id:Generated<string>;procurement_id:string;file_id:string;nama_berkas:string;created_at:Generated<Date>;created_by:string|null;}
+export interface ProcurementReceiptsTable {id:Generated<string>;procurement_id:string;tanggal_terima:ColumnType<string|Date,string,never>;nomor_dokumen:string;diterima_oleh:string;catatan:string|null;created_at:Generated<Date>;}
+export interface ProcurementReceiptItemsTable {id:Generated<string>;receipt_id:string;item_id:string;jumlah:number;status:"DITERIMA"|"DITOLAK_SAAT_PENERIMAAN";alasan:string|null;}
+export interface ProcurementReceiptFilesTable {id:Generated<string>;receipt_id:string;receipt_item_id:string|null;file_id:string;nama_berkas:string;jenis:AssetDocumentType;document_id:ColumnType<string|null,string|null|undefined,string|null>;}
+export interface ProcurementReceiptAssetsTable {receipt_item_id:string;asset_id:string;}
+export interface Database {
+    report_exports: ReportExportsTable;
+    chat_sessions:ChatSessionsTable;
+    chat_messages:ChatMessagesTable;
+    chat_usage_daily:ChatUsageDailyTable;
+    chat_evaluations:ChatEvaluationsTable;
+    chat_restrictions:{user_id:string;blocked:boolean;updated_at:Date;updated_by:string};
+    material_requests: MaterialRequestsTable;
+    material_request_items: MaterialRequestItemsTable;
+    material_request_cycles: MaterialRequestCyclesTable;
+    material_approval_thresholds: MaterialApprovalThresholdsTable;
+    material_issues: MaterialIssuesTable;
+    material_issue_items: MaterialIssueItemsTable;
+    material_receipts: MaterialReceiptsTable;
+    material_receipt_files: MaterialReceiptFilesTable;
+    procurement_receipt_materials: ProcurementReceiptMaterialsTable;
+    material_adjustments: MaterialAdjustmentsTable;
+    material_units:MaterialUnitsTable;
+    material_categories:MaterialCategoriesTable;
+    materials:MaterialsTable;
+    material_balances:MaterialBalancesTable;
+    material_transactions:MaterialTransactionsTable;
+    asset_disposals: AssetDisposalsTable;
+    asset_disposal_items: AssetDisposalItemsTable;
+    asset_disposal_claims: AssetDisposalClaimsTable;
+    asset_disposal_files: AssetDisposalFilesTable;
+ procurements:ProcurementTable;procurement_items:ProcurementItemsTable;procurement_attachments:ProcurementAttachmentsTable;
+ procurement_receipts:ProcurementReceiptsTable;procurement_receipt_items:ProcurementReceiptItemsTable;procurement_receipt_files:ProcurementReceiptFilesTable;procurement_receipt_assets:ProcurementReceiptAssetsTable;
+    audit_sessions: AuditSessionsTable;
+    audit_session_assignees: { session_id: string; user_id: string };
+    audit_session_rooms: { session_id: string; room_id: string; nama: string; completed_at: ColumnType<Date | null, Date | null | undefined, Date | null>; completed_by: ColumnType<string | null, string | number | null | undefined, string | number | null> };
+    audit_items: AuditItemsTable;
+    audit_material_items:AuditMaterialItemsTable;
+    audit_active_assets: { asset_id: string; session_id: string };
+    audit_new_findings: { id: Generated<string>; session_id: string; deskripsi: string; category_id: string; room_id: string; kondisi: AssetsTable["kondisi"]; keterangan: ColumnType<string | null, string | null | undefined, string | null>; pendaftaran: ColumnType<unknown, string | null | undefined, string | null>; asset_id_hasil: ColumnType<string | null, string | null | undefined, string | null>; ditemukan_oleh: string; ditemukan_pada: Date };
+    audit_scans: { session_id: string; client_scan_id: string; payload_hash: string; response: ColumnType<unknown, string, never> };
+    audit_photos: { id: Generated<string>; session_id: string; item_id: string | null; finding_id: string | null; file_id: string };
+    work_order_costs: {id:Generated<string>;work_order_id:string;deskripsi:string;jumlah:string;harga_satuan:string;total:string};
+    work_order_photos: {id:Generated<string>;work_order_id:string;file_id:string;urutan:number;created_at:Generated<Date>;created_by:ColumnType<string|null,string|number|null,never>};
+    maintenance_schedules: MaintenanceSchedulesTable;
+    maintenance_schedule_assets: { schedule_id: string; asset_id: string; jatuh_tempo: string; work_order_id: ColumnType<string | null, string | null | undefined, string | null> };
+    maintenance_schedule_skips: { id: Generated<string>; schedule_id: string; asset_id: string; jatuh_tempo: string; alasan: string; created_at: Generated<Date>; created_by: ColumnType<string | null, string | number | null, never> };
+    work_orders: WorkOrdersTable;
+    loan_extensions: { kedaluwarsa_pada: Date; id: Generated<string>; loan_id: ColumnType<string, string | number, never>; pemohon_id: ColumnType<string, string | number, never>; jatuh_tempo_lama: Date; jatuh_tempo_baru: Date; alasan: string; status: Generated<string>; approval_instance_id: ColumnType<string | null, string | number | null | undefined, string | number | null>; diputuskan_pada: ColumnType<Date | null, Date | null | undefined, Date | null>; created_at: Generated<Date>; created_by: ColumnType<string | null, string | number | null | undefined, never> };
+    loan_extension_items: { extension_id: ColumnType<string, string | number, never>; loan_item_id: ColumnType<string, string | number, never>; slot_id: ColumnType<string, string | number, never> };
+    fine_actions: { id: Generated<string>; fine_id: ColumnType<string, string | number, never>; aksi: string; jumlah: string | null; alasan: string | null; oleh: ColumnType<string, string | number, never>; pada: Date };
+    compensation_proposals: { id: Generated<string>; fine_id: ColumnType<string, string | number, never>; jumlah: string; alasan: string; status: Generated<string>; diusulkan_oleh: ColumnType<string, string | number, never>; diusulkan_pada: Date; diputuskan_oleh: ColumnType<string | null, string | number | null | undefined, string | number | null>; diputuskan_pada: ColumnType<Date | null, Date | null | undefined, Date | null>; catatan_keputusan: ColumnType<string | null, string | null | undefined, string | null> };
+    borrower_blocks: { user_id: ColumnType<string, string | number, never>; aktif: boolean; alasan: unknown; updated_at: Date };
+    loan_daily_events: { loan_id: ColumnType<string, string | number, never>; tanggal: string; jenis: string; jatuh_tempo: Date };
+    loan_recap_days: { tanggal: string };
+    loans: LoansTable;
+    loan_items: LoanItemsTable;
+    loan_item_photos: { id: Generated<string>; loan_item_id: ColumnType<string, string | number, never>; file_id: ColumnType<string, string | number, never>; tahap: "AWAL" | "AKHIR"; urutan: number };
+    loan_item_damage_reports: { loan_item_id: ColumnType<string, string | number, never>; damage_report_id: ColumnType<string, string | number, never> };
+    fines: FinesTable;
+    reservation_items: { id: Generated<string>; reservation_id: ColumnType<string, string | number, never>; asset_id: ColumnType<string, string | number, never>; jumlah: Generated<number>; confirmed_at: ColumnType<Date | null, Date | null | undefined, Date | null> };
+    asset_photos: {
+        id: Generated<string>;
+        asset_id: ColumnType<string, string | number, never>;
+        file_id: ColumnType<string, string | number, never>;
+        urutan: Generated<number>;
+        is_primary: Generated<boolean>;
+        diunggah_oleh: ColumnType<string, string | number, never>;
+    };
+    asset_documents: AssetDocumentsTable;
+    asset_document_links: AssetDocumentLinksTable;
+    document_counters: DocumentCountersTable;
+    stored_files: StoredFilesTable;
+    work_days: WorkDaysTable;
+    holidays: HolidaysTable;
+    idempotency_keys: IdempotencyKeysTable;
+    event_outbox: EventOutboxTable;
+    activity_logs: ActivityLogsTable;
+    roles: RolesTable;
+    permissions: PermissionsTable;
+    role_permissions: RolePermissionsTable;
+    users: UsersTable;
+    buildings: BuildingsTable;
+    areas: AreasTable;
+    rooms: RoomsTable;
+    system_settings: SystemSettingsTable;
+    academic_years: AcademicYearsTable;
+    academic_terms: AcademicTermsTable;
+    work_units: WorkUnitsTable;
+    student_enrollments: StudentEnrollmentsTable;
+    user_import_jobs: UserImportJobsTable;
+    room_schedule_import_jobs: RoomScheduleImportJobsTable;
+    asset_import_jobs: AssetImportJobsTable;
+    refresh_tokens: RefreshTokensTable;
+    password_reset_requests: PasswordResetRequestsTable;
+    totp_backup_codes: TotpBackupCodesTable;
+    totp_activation_codes: TotpActivationCodesTable;
+    asset_categories: AssetCategoriesTable;
+    assets: AssetsTable;
+    asset_condition_history: AssetConditionHistoryTable;
+    asset_code_counters: AssetCodeCountersTable;
+    asset_movements: AssetMovementsTable;
+    asset_movement_documents: AssetMovementDocumentsTable;
+    booking_slots: BookingSlotsTable;
+    reservations: ReservationsTable;
+    room_fixed_schedules: RoomFixedSchedulesTable;
+    room_manual_blocks: RoomManualBlocksTable;
+    damage_reports: DamageReportsTable;
+    damage_report_photos: DamageReportPhotosTable;
+    damage_report_notes: DamageReportNotesTable;
+    damage_report_note_photos: DamageReportNotePhotosTable;
+    approval_rules: ApprovalRulesTable;
+    approval_rule_steps: ApprovalRuleStepsTable;
+    approval_instances: ApprovalInstancesTable;
+    approval_steps: ApprovalStepsTable;
+    approval_delegations: ApprovalDelegationsTable;
+    notifications: NotificationsTable;
+    notifications_archive: NotificationsTable;
+    device_tokens: DeviceTokensTable;
+    notification_deliveries: NotificationDeliveriesTable;
+    notification_preferences: NotificationPreferencesTable;
+    product_tour_progress: ProductTourProgressTable;
+    password_history: PasswordHistoryTable;
+}
+import type { AuditMaterialItemsTable } from "./material-stocktake-schema.js";
+import type { ChatSessionsTable,ChatMessagesTable,ChatUsageDailyTable,ChatEvaluationsTable } from "./chat-schema.js";

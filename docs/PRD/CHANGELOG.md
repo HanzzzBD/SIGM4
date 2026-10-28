@@ -191,3 +191,24 @@ Audit lanjutan atas frasa "biaya" yang tersisa menemukan hal yang tidak dapat di
 |---|---|
 | `SDD-10` §3 — thinking "itu **biaya** tanpa manfaat" | Kiasan atas token dan waktu yang terbuang, bukan klaim tentang tagihan. Kalimatnya sendiri sudah menyebut "menghabiskan token dan waktu" |
 | Bab 27.9 — "**Nol biaya**, terbatas kuota" | Justru pernyataan yang benar setelah tier gratis; disunting pada revisi sebelumnya |
+
+## Revisi — Kelompok "Cakupan Data Permission" pada Bab 11.3 (15 September 2026)
+
+`PR-00-16` menyimpan scope permission (Lampiran C.1) sebagai native enum per baris `role_permissions` (`SDD-DB-16`, keputusan pemilik produk). `SDD-DB-02` mewajibkan setiap himpunan nilai tetap bertipe enum, dan pola sejak `holiday_type` serta `activity_result` mendaftarkan kelompoknya di Bab 11.3.
+
+| Bagian | Perubahan |
+|---|---|
+| Bab 11.3 | Kelompok baru **Cakupan Data Permission**: All, Own, Assigned, Restricted |
+
+**Tidak ada requirement yang berubah isinya.** Keempat nilai sudah didefinisikan Lampiran C.1; yang ditambahkan hanya pendaftarannya sebagai data acuan.
+
+## Revisi — Status Pengguna pada Bab 11.3 & penanda 2FA pada entitas `users` (15 September 2026)
+
+`PR-01-01` membuat tabel `users`. Dua bagian PRD tidak dapat diterapkan apa adanya dan diputuskan pemilik produk ([`logs/phase-01.md` §2](../IMPLEMENTATION/logs/phase-01.md), keputusan 1–2).
+
+| Bagian | Perubahan |
+|---|---|
+| Bab 11.3 | Kelompok baru **Status Pengguna**: Aktif, Nonaktif. ERD sudah menulis `enum status` dan `FR-02.1` memakai kedua nilai, tetapi kelompoknya tidak terdaftar, padahal `SDD-DB-02` mewajibkan native enum |
+| Entitas `users` (`data-model.md`, M-02 §8) · ERD | Atribut `2fa_enabled` (tabel entitas) dan `two_fa_enabled` (ERD) diganti **`totp_enabled_at`**, penanda yang ditetapkan `SDD-04 §4.1`: 2FA aktif berarti kolom itu terisi. `2fa_enabled` juga tidak sah sebagai nama kolom SQL |
+
+**Tidak ada requirement yang berubah isinya.** Kedua status sudah dipakai `FR-02.1` dan `BR-067`, dan kewajiban 2FA tetap milik `FR-01.5`/`BR-070`; yang berubah hanya pendaftaran data acuan dan nama atribut.

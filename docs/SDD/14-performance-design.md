@@ -81,7 +81,7 @@ Indeks kritis (didefinisikan pada SDD terkait, dirangkum di sini):
 | Peminjaman aktif | `loans(status, tanggal_jatuh_tempo)` berpredikat belum kembali | `FR-09.3` |
 | Approval menunggu | `approval_steps(instance_id, urutan)` berpredikat belum diputus | SDD-02 §4.6 |
 | Saldo bahan per lokasi | `material_balances(material_id, room_id)` unik — pembacaan dan `FOR UPDATE` lewat indeks yang sama | `SDD-DB-14` |
-| Kartu stok bahan | `material_transactions(material_id, room_id, dibuat_pada DESC)` | `FR-22.2` |
+| Kartu stok bahan | `material_transactions(material_id, room_id, created_at DESC)` | `FR-22.2` |
 | Bahan di bawah stok minimum | Agregat `SUM(saldo)` per `material_id`, dibandingkan `materials.stok_minimum` | `BR-085` |
 | SLA approval | `approval_steps(sla_deadline)` berpredikat belum diputus | SDD-02 §4.6 |
 | Activity log | `(waktu DESC)`, `(user_id, waktu DESC)`, `(entitas, entitas_id, waktu DESC)` | `FR-18.2` |
@@ -99,6 +99,20 @@ Seluruhnya diverifikasi dengan `EXPLAIN ANALYZE` pada dataset `TD-01` (5.000 ase
 | **Ketersediaan** | — | **tidak di-cache** | Mengandalkan indeks GiST (`AV-04`) |
 | Data referensi | Enum, kategori, lokasi | 10 menit | Dibatalkan saat perubahan master data |
 
+### 4.3a Kerangka dashboard (`PR-02-29`, keputusan 82)
+
+| Aspek | Ketentuan |
+|---|---|
+| Kontrak | `GET /dashboard` → **manifes**: kartu yang boleh dilihat (id, judul, zona, jenis, berperiode, drill-down), tanpa data. `GET /dashboard/cards/{id}?rentang=&segarkan=` → data satu kartu + `diperbarui_pada`. Tiap kartu dimuat mandiri — satu kartu lambat/gagal tidak menahan kartu lain (19.1 A2, UX §8.2) |
+| Seleksi | **Templat role** (kode role 19.2–19.7) memilih tata letak; tiap kartu **mendeklarasikan permission** yang diwajibkannya dan disaring server (`PM-03`): kartu terlarang tidak ada di manifes, dan permintaan langsungnya ditolak `403`. Role tanpa templat (role kustom, atau templat tanpa kartu berdata) → manifes kosong; klien menampilkan keadaan kosong UX §8.4 |
+| Sumber data | Fungsi baca di `index.ts` modul pemilik data (`SDD-SYS-03`), satu kueri ringkasan per kartu (`GROUP BY`/`COUNT`, bukan N+1 — `SDD-PERF-02`); M-15 tidak memiliki tabel |
+| Cache | Redis `dash:{kartu}:{rentang}:{lingkup}` — lingkup `g` untuk kartu global, id pengguna untuk kartu "saya"/kotak masuk; TTL 5 menit (§4.3). Permission diperiksa **sebelum** cache dibaca. `segarkan=true` menghitung ulang dan menimpa cache (tombol muat ulang 19.1) |
+| Rentang | `7_hari` · `30_hari` (bawaan) · `semester` · `tahun_ajaran` — dari `academic_terms`/`academic_years` aktif; `422` bila belum dikonfigurasi. Hanya kartu **berperiode** memakainya; kartu keadaan-kini dan "hari ini" mengabaikannya |
+| Activity log | Tanpa aksi M-15 (§11). Kartu yang menampilkan **entri** activity log (Aktivitas Terbaru) mencatat `ACTIVITY_LOG_VIEWED` (m18 §11) setiap kali disajikan — termasuk dari cache — dengan detail `sumber: dashboard`; kartu hitungan tidak |
+| Status Konfigurasi | Aturan approval aktif per jenis pengajuan + jenis tanpa aturan (jatuh ke aturan bawaan) + **kelengkapan dasar**: tahun ajaran aktif belum ada, tak satu pun hari kerja aktif, parameter `TEKS` kosong |
+| Efek Tertunda Gagal | Jumlah + lima teratas (`event_name`, waktu, galat terakhir) dari `event_outbox` ber-`attempts` ≥ ambang dead letter (`SDD-EVT-10`); isi payload tidak dikirim. Klien tidak merender kartu bila jumlahnya nol (19.2) |
+| Kartu per phase | `PR-02-29` mendaftarkan kartu yang sumbernya sudah ada (M-01/02/04/10/18/20, outbox, health). Kartu Bab 19 lainnya didaftarkan PR modul pemiliknya bersama datanya |
+
 ### 4.4 Pencegahan N+1
 
 ```ts
@@ -112,6 +126,27 @@ test('GET /assets tidak N+1', async () => {
 ```
 
 Ambang ditetapkan per endpoint dan menjadi bagian dari Definition of Done ([delivery-plan §29.5](../PRD/01-product/delivery-plan.md)).
+
+#### M-16 — provider kalkulasi PR-06-03…07
+
+Makna periode/indikator mengikuti keputusan pengguna pada
+[M-16](../PRD/02-modules/m16-analytics.md), bukan status operasional terkini
+yang diasumsikan berlaku surut. Provider murni menerima AnalyticsContext
+(periode, query kanonik, akses, Clock) dan menghasilkan RawBuilder untuk rows
+dan summary. Snapshot kondisi memakai batas bulan dan lookup riwayat dua arah;
+interval utilisasi memakai range_agg/multirange yang diiriskan dengan kalender.
+Helper calendarDaysSql mengikuti BusinessCalendarService dan snapshot pinjaman;
+jumlah hari final dapat dibaca dari fines tanpa memilih nominalnya.
+
+Satu statement CTE membaca total, halaman, ringkasan dan pembanding dengan
+snapshot yang sama di transaksi read-only. Urutan DECIMAL dicast numeric di SQL,
+sedangkan JSON tetap berupa string agar nilai rupiah tidak kehilangan presisi.
+Scope dipasang sebelum agregasi; filter, sort, LIMIT/OFFSET tetap berparameter
+dan sort hanya menerima metadata kolom terdaftar. Tidak ada kueri per baris
+yang dipanggil dari TypeScript, cache bersama, atau tabel materialisasi baru.
+statement_timeout 4.500 ms membatasi statement sinkron; timeout bukan bukti
+terpenuhinya anggaran endpoint. Pengukuran ukuran nyata/EXPLAIN, indeks dan
+jalur ekspor asinkron tetap milik PR-06-09/08.
 
 ### 4.5 Skenario uji beban
 
@@ -131,7 +166,7 @@ Kriteria lulus: p95 tiap kelas dalam anggaran §4.1, degradasi ≤ 20% dibanding
 
 | Pekerjaan | Pemicu | Umpan balik |
 |---|---|---|
-| Impor aset/pengguna > 200 baris | `IMPT-04` | Notifikasi saat selesai (`NT-42`) |
+| Impor aset/pengguna > 200 baris | `IMPT-04` | Notifikasi saat selesai (kode milik modul entitasnya — `NT-52` bagi pengguna) |
 | Ekspor laporan besar | `FR-16.1 A2` | Idem |
 | Cetak QR massal | `FR-05.1` | Idem |
 | Berita acara PDF | `FR-13.3`, `FR-21.2` | Idem |
@@ -188,3 +223,28 @@ Kriteria lulus: p95 tiap kelas dalam anggaran §4.1, degradasi ≤ 20% dibanding
 | **TBD-AVL-C** *(dari SDD-01)* | Ukuran connection pool — bergantung batas koneksi PostgreSQL dari penyedia. Ditetapkan setelah uji beban. |
 | **TBD-AVL-D** *(dari SDD-01)* | TTL cache ketersediaan. Rancangan ini memilih tanpa cache; bila `AV-03` tidak tercapai, nilai dalam batas `AV-04` perlu ditetapkan. |
 | **TBD-PERF-A** | Ambang jumlah kueri per endpoint (`SDD-PERF-02`) belum ditetapkan per endpoint — akan dikalibrasi saat endpoint pertama dibangun. |
+
+
+### Kalibrasi M-16 — PR-06-09
+
+TBD-PERF-A untuk laporan terkalibrasi: katalog0 SQL data, laporan1 SQL data
+(termasuk total/paginasi/ringkasan/pembanding), pilihan filter1 SQL. BEGIN,
+SET READ ONLY/statement_timeout, COMMIT dan autentikasi dihitung terpisah.
+Ambang1 diuji pada lima pembacaan setiap jenis dengan Kysely query logging;
+ambang modul/endpoint lain tetap ditentukan pemiliknya. Tidak ada N+1 per aset.
+
+AskUserQuestion14Oktober2026 menetapkan larangan sequential scan tabel>100000
+untuk kueri selektif. Agregasi yang memang membaca hampir seluruh cakupan boleh
+sequential scan hanya dengan bukti EXPLAIN lebih efisien dan anggaran=5detik
+terpenuhi. Tidak memaksa enable_seqscan=off atau menambah indeks berdasarkan dugaan.
+
+Runner scripts/qa/analytics-performance.mjs menolak DB biasa: hanya database acak
+lokal sigm4_pr0238_ dari launcher terisolasi. Dataset105001aset/riwayat,5000aset
+target serta5000transaksi tiap domain; EXPLAIN(ANALYZE,BUFFERS,FORMAT JSON) untuk
+rows/summary/statementHTTP setiap laporan. Lima sampel HTTP SQL perjenis mengukur
+latensi dan query budget. Plan sebelum/sesudah disimpan di audit PR-06-09.
+Temuan: agregasi kalender peraset pada fasilitas diganti cache kalender/usage/
+kapasitas permasaaktif dalam SQL yang sama; aturan sumber tetap identik.
+Indeks assets(penanggung_jawab_id,id) baru dipromosikan setelah selective SeqScan
+623ms berubah menjadi Bitmap/IndexScan26ms pada105001aset. Laporan target5000
+p95lokal tertinggi971ms pada run terukur; ini bukan bukti p95staging/150pengguna.

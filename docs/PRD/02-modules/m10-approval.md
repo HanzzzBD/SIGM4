@@ -74,13 +74,13 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 1. Approver menerima notifikasi in-app dan push.
 2. Approver membuka menu "Persetujuan Saya" dan melihat daftar pengajuan menunggu, terurut berdasarkan waktu pengajuan dan urgensi.
 3. Approver membuka detail pengajuan: pemohon, objek yang diminta, jadwal, keperluan, riwayat pemohon (keterlambatan sebelumnya, denda tertunggak), dan ketersediaan objek.
-4. Approver memilih **Setujui** atau **Tolak**, mengisi catatan (wajib bila menolak).
+4. Approver memilih **Setujui** atau **Tolak**, mengisi catatan (wajib bila menolak atau meminta revisi).
 5. Bila disetujui dan masih ada langkah berikutnya, sistem meneruskan ke approver berikutnya dan menotifikasinya.
 6. Bila disetujui pada langkah terakhir, sistem menetapkan pengajuan berstatus `Disetujui` dan menotifikasi pemohon.
 7. Bila ditolak pada langkah mana pun, sistem menghentikan alur, menetapkan status `Ditolak`, dan menotifikasi pemohon beserta alasannya.
 
 **Alternative Flow**
-- **A1 — Approver meminta revisi:** Status berubah menjadi `Perlu Revisi`; pemohon dapat menyunting dan mengirim ulang, dan alur persetujuan dimulai kembali dari langkah pertama.
+- **A1 — Approver meminta revisi:** Status berubah menjadi `Perlu Revisi`; pemohon dapat menyunting dan mengirim ulang, dan alur persetujuan dimulai kembali dari langkah pertama. Catatan revisi wajib diisi — pemohon tidak dapat menindaklanjuti revisi tanpa penjelasan (NT-04).
 - **A2 — SLA terlampaui:** Sistem mengirim pengingat kepada approver; bila aturan mengaktifkan eskalasi, pengajuan diteruskan ke approver eskalasi setelah tenggat. SLA dihitung dalam **jam kerja**, bukan jam kalender (CAL-01).
 - **A2a — Seluruh jalur eskalasi habis tanpa keputusan:** Berlaku `terminal_on_exhausted_escalation` pada definisi aturan (Lampiran D.5). Nilai bawaan `hold_and_alert`: pengajuan tetap menunggu, namun Administrator dan Petugas Sarpras dialarmi (NT-47) untuk tindakan manual. Pengajuan **tidak pernah** disetujui otomatis karena kelalaian approver.
 - **A3 — Approver mendelegasikan:** Approver menetapkan pengganti untuk rentang tanggal tertentu (mis. cuti); pengajuan diarahkan ke pengganti dan tercatat sebagai delegasi. Linimasa tetap mencatat approver asli (RE-12).
@@ -108,17 +108,17 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 **Main Flow**
 1. Pengguna membuka detail pengajuan dan memilih tab Riwayat Persetujuan.
 2. Sistem menampilkan linimasa: pengajuan dibuat → langkah 1 (approver, keputusan, waktu, catatan) → langkah berikutnya → keputusan final.
-3. Sistem menampilkan indikator langkah yang sedang berjalan dan sisa waktu SLA.
+3. Sistem menampilkan indikator langkah yang sedang berjalan dan sisa waktu SLA dalam **jam kerja** (CAL-01).
 
 **Alternative Flow**
-- **A1 — Pemohon:** Hanya dapat melihat riwayat pengajuan miliknya sendiri.
+- **A1 — Pengguna ber-scope `own`:** Hanya dapat melihat riwayat pengajuan miliknya sendiri, atau pengajuan yang salah satu langkahnya pernah ia putuskan (termasuk atas nama approver lain sebagai penerima delegasi, RE-12) atau yang langkah aktifnya kini menjadi wewenangnya. Pengajuan lain dijawab sama dengan pengajuan yang tidak ada.
 - **A2 — Pengajuan yang mengalami eskalasi atau delegasi:** Linimasa menampilkan penanda khusus beserta alasannya.
 
 **Post Conditions** — Tidak ada perubahan data.
 
 **Acceptance Criteria**
 - [ ] Linimasa menampilkan seluruh langkah termasuk yang dilewati beserta alasannya.
-- [ ] Waktu ditampilkan dalam format lokal beserta durasi antar-langkah.
+- [ ] Waktu ditampilkan dalam format lokal beserta durasi antar-langkah (dalam jam kerja, satuan yang sama dengan SLA — CAL-01).
 
 ## 6. Business Rules
 
@@ -145,8 +145,10 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 |---|---|---|---|
 | GET | `/approval-rules` | `approval_rule.view` | Daftar aturan |
 | POST | `/approval-rules` | `approval_rule.manage` | Buat aturan + langkah |
+| PUT | `/approval-rules/{id}` | `approval_rule.manage` | Ganti definisi aturan utuh; `versi` naik, instance berjalan tetap memakai snapshot (FR-10.1 A4, BR-040) |
+| PATCH | `/approval-rules/{id}/status` | `approval_rule.manage` | Aktifkan / nonaktifkan aturan (FR-10.1 A4); menonaktifkan wajib menyertakan `alasan` (UX-04), tercatat pada entri log |
 | POST | `/approval-rules/preview` | `approval_rule.manage` | Pratinjau aturan yang akan berlaku |
-| GET | `/approvals/pending` | `approval.decide` | Pengajuan menunggu keputusan saya |
+| GET | `/approvals/pending` | `approval.decide` | Pengajuan menunggu keputusan saya, terurut tenggat SLA lalu waktu pengajuan; tiap baris membawa sisa SLA langkah dalam **menit kerja** dan penanda terlambat (CAL-01) — bahan urgensi P-37 |
 | POST | `/approvals/{id}/decide` | `approval.decide` | Setujui/tolak/minta revisi |
 | POST | `/approvals/delegate` | `approval.delegate` | Tetapkan approver pengganti |
 | GET | `/approvals/{id}/history` | `approval.view` | Linimasa persetujuan |
@@ -160,10 +162,11 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **approval_rules** | Aturan persetujuan | id, jenis_pengajuan, kondisi (JSON), prioritas, status_aktif, versi | Administrator |
-| **approval_rule_steps** | Langkah dalam aturan | id, rule_id, urutan, approver_type, approver_role_id, approver_user_id, sla_jam, eskalasi_ke | Administrator |
-| **approval_instances** | Instance persetujuan berjalan | id, jenis_pengajuan, referensi_id, rule_id, rule_snapshot (JSON), langkah_aktif, status, dibuat_pada, diselesaikan_pada | ± 3.500 |
-| **approval_steps** | Keputusan per langkah | id, instance_id, urutan, approver_id, keputusan, catatan, diputuskan_pada, sla_deadline, dilewati, alasan_dilewati | ± 5.000 |
+| **approval_rules** | Aturan persetujuan | id, jenis_pengajuan, kondisi (JSON), prioritas, status_aktif, versi, fallback_approver_type, fallback_role_id, fallback_user_id, terminal_on_exhausted_escalation (Lampiran D.5) | Administrator |
+| **approval_rule_steps** | Langkah dalam aturan | id, rule_id, urutan, approver_type, approver_role_id, approver_user_id, sla_jam, on_sla_breach (Lampiran D.5), eskalasi_ke | Administrator |
+| **approval_instances** | Instance persetujuan berjalan | id, jenis_pengajuan, referensi_id, pemohon_id (BR-039 dinilai ulang saat tiap langkah aktif), rule_id, rule_snapshot (JSON), langkah_aktif, status, created_at, diselesaikan_pada | ± 3.500 |
+| **approval_steps** | Keputusan per langkah | id, instance_id, urutan, approver_type, approver_role_id, approver_user_id (target — dapat dialihkan eskalasi), keputusan, catatan, diputuskan_oleh, diputuskan_pada, sla_deadline, dilewati, alasan_dilewati, atas_nama_user_id (approver asli bila diputus penerima delegasi, RE-12), dieskalasi_pada, eskalasi_dari_user_id (target pengguna sebelum dialihkan eskalasi; target role asli tetap di `rule_snapshot`), pengingat_terakhir_pada (NT-06 maks 1×/hari), alarm_terminal_pada (eskalasi habis — NT-47 sekali / ditolak otomatis) | ± 5.000 |
+| **approval_delegations** | Delegasi approver (FR-10.2 A3) | id, pemberi_id, penerima_id, mulai, selesai (tanggal, inklusif); satu delegasi per pemberi per tanggal | Approver |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
 
@@ -209,6 +212,8 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | `APPROVAL_DECIDED` | Keputusan beserta approver, catatan, dan level |
 | `APPROVAL_STEP_SKIPPED` | Termasuk alasan (mis. konflik kepentingan) |
 | `APPROVAL_ESCALATED` | Eskalasi akibat SLA terlampaui |
+| `APPROVAL_SLA_REMINDED` | Pengingat SLA terlampaui terkirim (NT-06, maks 1×/hari per langkah); pelaku `SYSTEM` |
+| `APPROVAL_ESCALATION_EXHAUSTED` | Eskalasi habis tanpa keputusan (Lampiran D.5): ditahan & dialarmi (NT-47) atau ditolak otomatis; pelaku `SYSTEM` |
 | `APPROVAL_DELEGATED` | Penetapan approver pengganti |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
@@ -232,3 +237,21 @@ Strategi pengujian: [`../06-quality/test-strategy.md`](../06-quality/test-strate
 ## 15. Open Issues
 
 _Tidak ada isu terbuka._
+
+### Rincian keputusan domain (PR-03-18)
+
+POST keputusan menerima `rincian_keputusan` opsional yang hanya dipakai pemilik
+pengajuan dengan adapter terdaftar. Jumlah per item untuk pengadaan mengikuti
+FR-14.2 pada PRD M-14 §7; domain lain menolak rincian yang tidak didukung.
+Snapshot dikembalikan pada langkah linimasa tanpa mengubah enum keputusan atau
+aturan snapshot DSL. Klaim first-responder-wins dan perubahan domain satu transaksi.
+
+### Keputusan per aset penghapusan — 14 Oktober 2026
+
+M-21 memakai approval M-10 yang sama, dengan rincian keputusan per item dan
+validasi domain sebelum penulisan keputusan. Snapshot aturan dipilih dari nilai
+perolehan awal, langkah akhir wajib Pimpinan dengan disposal.approve, serta
+pilihan level berikutnya monoton menurun. Rincian histori M-10 menyimpan identitas
+dan keputusan publik saja; nilai perolehan/biaya tidak disalin ke histori.
+Hook sebelumDisetujui menerima waktu keputusan dari Clock M-10 agar pendaftaran
+adapter API/worker tidak menggantikan waktu transaksi keputusan.

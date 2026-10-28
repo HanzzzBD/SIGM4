@@ -1,0 +1,83 @@
+// Peta kode teknis → label Bahasa Indonesia untuk enum PRD Bab 11.3 (SDD-FE-08,
+// SDD-REPO-05, SDD-DB-02). Kode tidak pernah ditampilkan mentah; label mengikuti
+// `data-model.md` Bab 11.3 kata per kata. Kelompok ditambahkan saat layar pertama
+// yang merendernya lahir.
+
+/** Bab 11.3 "Kondisi Aset". */
+export const LABEL_KONDISI_ASET = {
+    BAIK: "Baik",
+    RUSAK_RINGAN: "Rusak Ringan",
+    RUSAK_BERAT: "Rusak Berat",
+    HILANG: "Hilang",
+} as const;
+
+/** Bab 11.3 "Status Aset". */
+export const LABEL_STATUS_ASET = {
+    TERSEDIA: "Tersedia",
+    DIRESERVASI: "Direservasi",
+    DIPINJAM: "Dipinjam",
+    DALAM_PERBAIKAN: "Dalam Perbaikan",
+    TIDAK_TERSEDIA: "Tidak Tersedia",
+} as const;
+
+/** Bab 11.3 "Status Instance Approval". */
+export const LABEL_STATUS_INSTANCE_APPROVAL = {
+    MENUNGGU: "Menunggu",
+    DISETUJUI: "Disetujui",
+    DITOLAK: "Ditolak",
+    PERLU_REVISI: "Perlu Revisi",
+    DIBATALKAN: "Dibatalkan",
+} as const;
+
+/** Bab 11.3 "Jenis Pengajuan (Approval)". */
+export const LABEL_JENIS_PENGAJUAN = {
+    RESERVASI_RUANGAN: "Reservasi Ruangan",
+    RESERVASI_ASET: "Reservasi Aset",
+    PERPANJANGAN_PEMINJAMAN: "Perpanjangan Peminjaman",
+    PENGADAAN_BARANG: "Pengadaan Barang",
+    PENGHAPUSAN_ASET: "Penghapusan Aset",
+    PERMINTAAN_BAHAN: "Permintaan Bahan",
+} as const;
+
+/** Bab 11.3 "Jenis Ruangan" — nilai field DSL `room_type` (D.2). */
+export const LABEL_JENIS_RUANGAN = {
+    KELAS: "Kelas",
+    LABORATORIUM: "Laboratorium",
+    AULA: "Aula",
+    PERPUSTAKAAN: "Perpustakaan",
+    KANTOR: "Kantor",
+    GUDANG: "Gudang",
+    LAPANGAN: "Lapangan",
+    LAINNYA: "Lainnya",
+} as const;
+
+/** Bab 11.3 "Alasan Penghapusan" — nilai field DSL `disposal_reason` (D.2). */
+export const LABEL_ALASAN_PENGHAPUSAN = {
+    RUSAK_BERAT_TIDAK_DAPAT_DIPERBAIKI: "Rusak Berat Tidak Dapat Diperbaiki",
+    HILANG: "Hilang",
+    HABIS_UMUR_TEKNIS: "Habis Umur Teknis",
+    LAINNYA: "Lainnya",
+} as const;
+
+/** Bab 11.3 "Kelompok Notifikasi" (UXD-05) — urutan sama dengan API preferensi. */
+export const LABEL_KELOMPOK_NOTIFIKASI = {
+    PERSETUJUAN: "Persetujuan",
+    RESERVASI_PEMINJAMAN: "Reservasi & Peminjaman",
+    DENDA_KEWAJIBAN: "Denda & Kewajiban",
+    KERUSAKAN_PERAWATAN: "Kerusakan & Perawatan",
+    OPNAME_PENGADAAN: "Opname & Pengadaan",
+    AKUN_SISTEM: "Akun & Sistem",
+} as const;
+
+/** Bab 11.3 "Prioritas" — nilai field DSL `priority` (D.2). */
+export const LABEL_PRIORITAS = {
+    RENDAH: "Rendah",
+    SEDANG: "Sedang",
+    TINGGI: "Tinggi",
+    MENDESAK: "Mendesak",
+} as const;
+
+/** Label kode enum; kode tak dikenal tidak pernah dirender mentah (SDD-FE-08). */
+export function labelEnum(peta: Readonly<Record<string, string>>, kode: string): string {
+    return peta[kode] ?? "Tidak diketahui";
+}

@@ -223,22 +223,37 @@ flowchart TD
 
 | Method | Endpoint | Permission | Deskripsi |
 |---|---|---|---|
-| POST | `/damage-reports` | `damage.create` | Buat tiket kerusakan |
-| GET | `/damage-reports` | `damage.view` | Daftar tiket (tersaring sesuai role) |
-| GET | `/damage-reports/open` | `damage.view` | Tiket terbuka untuk aset tertentu |
-| POST | `/damage-reports/{id}/verify` | `damage.verify` | Verifikasi / tolak tiket |
+| POST | `/damage-reports` | `damage.create` | Buat tiket kerusakan; `reservation_id` opsional menautkan laporan pasca-kegiatan ke reservasi ruangan yang sama berstatus Berlangsung/Selesai — hanya pemegang `reservation.record_usage` (FR-07.4 A2) |
+| GET | `/damage-reports` | `damage.view` | Daftar tiket (tersaring sesuai role; scope `own` = tiket milik sendiri, A1) — saringan langkah 3 (status, urgensi, gedung/ruangan, kategori aset, rentang tanggal lapor, pelapor, `melampaui_sla`), jumlah per status (langkah 2), dan `batas_sla` + `melampaui_sla` per tiket (langkah 4) |
+| POST | `/damage-reports/export` | `report.export` | Ekspor P-39 melalui worker M-16, irisan damage.view |
+| GET | `/damage-reports/{id}` | `damage.view` | Detail tiket beserta foto (foto yang unggahannya tertunda ditandai) dan garansi aktif aset (`BR-052`, bagi pemegang `asset_document.view`); scope `own` = tiket milik sendiri |
+| GET | `/damage-reports/open` | `damage.view` | Tiket terbuka untuk aset atau ruangan tertentu (`asset_id` atau `room_id`) — ringkasan tanpa identitas pelapor, juga bagi scope `own` (FR-11.1 A1) |
+| POST | `/damage-reports/{id}/notes` | `damage.create` | Tambahkan informasi ke tiket yang masih terbuka (Dilaporkan/Diverifikasi/Dalam Perbaikan): keterangan wajib + 0–5 foto milik penulis; terbuka bagi setiap pemegang `damage.create`, termasuk penemu kedua yang ditawari tiket lewat `/open` (FR-11.1 A1) |
+| POST | `/damage-reports/{id}/verify` | `damage.verify` | Verifikasi / tolak tiket dari status `Dilaporkan`: `keputusan` Tindak Lanjut (→ `Diverifikasi`) · Perbaikan Ringan (→ `Selesai`, catatan wajib) · Tolak (→ `Ditolak`, alasan wajib); `kondisi_aset` opsional menuntut juga `asset.update_condition` (langkah 4, A1) |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
 
 ## 8. Database Entity
 
+**Tindak lanjut PR-04-06 (keputusan pemilik produk, 14 Oktober 2026).**
+Keputusan `TINDAK_LANJUT` memerlukan tambahan permission `workorder.create` dan objek
+`work_order` berisi `teknisi_id` pengguna Teknisi aktif, `target_selesai` tanggal WIB,
+serta `estimasi_biaya` dan `nonaktifkan_aset` opsional. Tanpa penugasan, respons 422;
+keputusan Perbaikan Ringan/Tolak tidak menerima penugasan. Verifikasi menyimpan penugasan
+untuk konsumen `DamageReportVerified`; prioritas diambil dari urgensi tiket.
+Kontrak work order dimiliki [M-12 §7–8](m12-maintenance.md). Teknisi berscope own pada
+`damage.view` melihat tiket yang tertaut work order miliknya (FR-11.3 A2), bukan tiket
+Teknisi lain. Pelapor selain Teknisi tetap melihat laporannya sendiri.
+
 ### Entitas
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **damage_reports** | Tiket laporan kerusakan | id, nomor, pelapor_id, asset_id, room_id, deskripsi, urgensi, status, loan_id, verified_by, verified_at | ± 600 |
-| **damage_report_photos** | Foto laporan kerusakan | id, damage_report_id, path, urutan | ± 1.800 |
+| **damage_reports** | Tiket laporan kerusakan | id, nomor, pelapor_id, asset_id, room_id, deskripsi, urgensi, status, loan_id, reservation_id (FR-07.4 A2), diverifikasi_oleh, diverifikasi_pada, catatan_verifikasi, batas_sla | ± 600 |
+| **damage_report_photos** | Foto laporan kerusakan | id, damage_report_id, file_id (→ stored_files, `SDD-FS-02`), urutan | ± 1.800 |
+| **damage_report_notes** | Catatan tambahan atas tiket terbuka (FR-11.1 A1), append-only | id, damage_report_id, keterangan, created_at, created_by | ± 300 |
+| **damage_report_note_photos** | Foto catatan tambahan (0–5 per catatan) | id, note_id, file_id (→ stored_files), urutan | ± 300 |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
 
@@ -273,6 +288,7 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | Aksi | Keterangan |
 |---|---|
 | `DAMAGE_REPORTED` / `DAMAGE_VERIFIED` / `DAMAGE_REJECTED` / `DAMAGE_CLOSED` | Siklus tiket |
+| `DAMAGE_INFO_ADDED` | Informasi tambahan (catatan + foto) ke tiket terbuka (FR-11.1 A1) |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
 
@@ -297,3 +313,18 @@ Strategi pengujian: [`../06-quality/test-strategy.md`](../06-quality/test-strate
 ## 15. Open Issues
 
 - BR-032 (aset kembali rusak menghasilkan tiket otomatis) dimiliki M-09; modul ini adalah konsumennya.
+
+
+### Ekspor P-39 — PR-06-11
+
+Keputusan AskUserQuestion 14 Oktober 2026: POST /damage-reports/export memakai
+report.export + damage.view dan irisan scope melalui pipeline M-16, XLSX/PDF.
+Filter q/status/urgensi/building_id/room_id/category_id/pelapor/dari/sampai/
+melampaui_sla dan urut identik daftar; seluruh hasil, tanpa page/per_page.
+Kolom: Nomor, Objek, Kode aset, Lokasi, Pelapor, Urgensi, Status, Dilaporkan WIB,
+Diverifikasi WIB, Batas SLA WIB, Melewati SLA. Objek ruangan tetap dapat diekspor;
+status/SLA mengikuti perhitungan daftar kanonik. Tanpa deskripsi, foto/dokumen
+atau nilai finansial. Batas XLSX100000/PDF5000 tanpa truncation, kop/filter/
+pencetak, HTTP202, file24jam/URL5menit, NT-42 dan REPORT_EXPORTED mengikuti M-16.
+Cakupan teknisi mengikuti penugasan, sedangkan report.export own juga mensyaratkan
+pelapor = pengguna. Tidak ada perluasan izin lewat ekspor.

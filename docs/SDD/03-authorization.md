@@ -34,14 +34,17 @@ Kegagalan memisahkan keduanya adalah penyebab paling umum kebocoran lintas hak a
 | **SDD-AUTH-01** | Permission dideklarasikan **per route** sebagai metadata, bukan diperiksa di dalam controller. Route tanpa deklarasi **gagal saat startup**, bukan diam-diam terbuka. |
 | **SDD-AUTH-02** | Scope ditegakkan di **repository**, melalui parameter `AuthContext` yang **wajib** ada pada setiap metode kueri. Tidak ada nilai bawaan. |
 | **SDD-AUTH-03** | Scope **tidak** memakai PostgreSQL Row-Level Security. Ditegakkan di lapisan aplikasi. Alasan pada §3. |
-| **SDD-AUTH-04** | Permission efektif pengguna di-*cache* di Redis dengan TTL **60 detik** (`PM-05`), berkunci `perm:{user_id}:{role_version}`. Perubahan matriks menaikkan `role_version` sehingga cache batal seketika. |
+| **SDD-AUTH-04** | Permission efektif pengguna di-*cache* di Redis dengan TTL **60 detik** (`PM-05`), berkunci `perm:{user_id}:{role_id}:{role_version}`. Perubahan matriks menaikkan `role_version` dan perpindahan role mengubah `role_id`, sehingga cache batal seketika pada keduanya (§4.5). |
 | **SDD-AUTH-05** | `GET /me` adalah **satu-satunya** sumber bagi klien untuk merender menu dan kartu dashboard (`PM-04`). Klien tidak pernah menyimpulkan hak akses dari role. |
 | **SDD-AUTH-06** | Penyaringan **field** (mis. `nilai_perolehan`) dilakukan oleh *serializer* ber-*allow-list* per permission, bukan dengan menghapus properti setelah kueri. |
 | **SDD-AUTH-07** | Tool chatbot **tidak** punya jalur data sendiri. Ia memanggil repository yang sama dengan `AuthContext` pengguna penanya (`BR-076`). |
 | **SDD-AUTH-08** | Ketiadaan hak akses terhadap objek yang ada dan objek yang tidak ada menghasilkan **respons yang sama**: `403` tanpa membocorkan keberadaan data (17.5 poin 3). |
 | **SDD-AUTH-09** | Gerbang sesi dijalankan berurutan sebagai middleware: `authenticate` → `mustChangePassword` → `twoFactorVerified` → `permission` → `scope`. Urutan ini tetap dan diuji. |
-| **SDD-AUTH-10** | Permission inti bertanda 🔒 (Lampiran C) ditolak pencabutannya oleh **validator domain**, bukan hanya oleh UI (`FR-02.2 A1`). |
+| **SDD-AUTH-10** | Permission inti bertanda 🔒 (Lampiran C) pada role Administrator ditolak pencabutannya **maupun perubahan scope-nya** oleh **validator domain**, bukan hanya oleh UI (`FR-02.2 A1`). |
 | **SDD-AUTH-11** | **Uji tiga syarat bagi mekanisme teknis.** Sebuah mekanisme boleh ditetapkan pada tingkat SDD tanpa dianggap requirement baru **hanya bila ketiganya terpenuhi**: (1) tidak mengubah perilaku yang dapat diamati pengguna mana pun; (2) tidak menambah atau mengubah business rule, permission, endpoint publik, maupun aksi activity log; (3) semata menjadi **cara** memenuhi requirement yang sudah ada. Gagal pada satu syarat berarti wajib dinaikkan ke PRD lebih dulu. `role_version` (`SDD-AUTH-04`) lolos ketiganya. Menutup `TBD-AUTH-C` (keputusan pemilik produk, 25 Agustus 2026). |
+| **SDD-AUTH-12** | Endpoint yang hanya menuntut **autentikasi** ("Bearer" pada PRD: `/me`, logout, daftar perangkat, ganti password sendiri) dideklarasikan `authenticated: true` — varian ketiga `RouteDefinition`, saling meniadakan dengan `permission` dan `public`. Registri, OpenAPI (`x-authenticated`), dan matriks `SEC-T-01` mengenalnya; route yang tidak menyatakan salah satu dari ketiganya tetap gagal saat bootstrap. Scope `own` ditegakkan repository (`SDD-AUTH-02`), bukan permission. Keputusan pemilik produk, 19 September 2026. |
+| **SDD-AUTH-13** | **Cakupan lokasi** (`PM-07`…`PM-10`) diselesaikan sekali saat `AuthContext` dibentuk menjadi `locationRooms: ReadonlySet<roomId> | null` — simpul gedung/area diperluas ke seluruh ruangan turunannya — dan di-cache bersama permission (`PM-05`, kunci `role_version` + `location_version`). `null` berarti tidak dibatasi. Repository menerapkannya lewat **satu** helper `withinLocation(ctx, qb, kolomRuangan)` setelah filter scope `PM-03`; objek tanpa ruangan dikecualikan bila `locationRooms` tidak `null`. Penulisan antar-lokasi (`PM-09`) memeriksa asal dan tujuan dengan `assertLocation(ctx, roomId)` di service sebelum transaksi menulis. |
+| **SDD-AUTH-14** | Pemilihan approver bertipe `role` (`RE-14`) dan penerima notifikasi berbasis role (`NTF-06`) memakai **resolver yang sama** dengan `SDD-AUTH-13` (`LocationScopeResolver`), dihitung di server saat langkah diaktifkan atau notifikasi diterbitkan. Evaluator DSL tetap murni (`RE-01`): resolver dipanggil lapisan pembentuk langkah, bukan evaluator. |
 
 ---
 
@@ -49,7 +52,11 @@ Kegagalan memisahkan keduanya adalah penyebab paling umum kebocoran lintas hak a
 
 **SDD-AUTH-01 — deklaratif, gagal saat startup.** `PM-01` mewajibkan tiap endpoint memetakan tepat satu permission. Bila pemeriksaan ditulis manual di controller, endpoint baru yang lupa diberi pemeriksaan akan **terbuka** dan tidak ada yang tahu sampai pentest. Dengan deklarasi wajib pada definisi route, aplikasi menolak berjalan bila ada route tanpa permission — kelalaian menjadi mustahil, bukan sekadar tidak disarankan.
 
+*Endpoint pemilik/pihak lain* (mis. `POST /reservations/{id}/cancel`: `cancel_own` · `cancel_any`, m07 §7) tidak melonggarkan aturan satu permission: route mendeklarasikan permission **pemilik** sebagai gerbang, lalu layanan menuntut permission **pihak lain** setelah membaca pemiliknya dari basis data — tidak pernah menyimpulkannya dari role. Akibatnya bertindak atas objek pihak lain menuntut keduanya; seed Lampiran C memberikan keduanya kepada pemegang permission pihak lain. Registri "salah satu dari" ditolak: ia mengubah lapisan permission, matriks `SEC-T-01`, dan OpenAPI demi kasus yang sudah tertutup oleh pemeriksaan kepemilikan (keputusan 15b log phase-03, `PR-03-11`).
+
 **SDD-AUTH-02 — `AuthContext` wajib, bukan opsional.** Bila parameter scope bersifat opsional, suatu hari akan ada pemanggil yang lupa mengirimnya dan kueri mengembalikan seluruh baris. Menjadikannya parameter wajib memindahkan kesalahan itu ke waktu kompilasi/uji, bukan ke produksi.
+
+**Pengecualian tertulis `SDD-AUTH-02`** — hanya di tempat yang memang tidak mungkin memiliki `AuthContext`, masing-masing tanpa `BaseRepository`, satu kueri berkunci pasti, dan tidak pernah mengembalikan daftar: `AuthRepository` (pra-autentikasi, [SDD-04 §4.2](04-authentication-session.md)), `CliRepository` (CLI break-glass, SDD-04), dan **`PublicAssetRepository`** (`GET /public/assets/{uuid}`, `FR-05.2 A3`; `PR-03-03`, keputusan 3 log phase-03) — pengunjung halaman publik tidak login. Pagar penggantinya: kunci UUIDv4 yang tak dapat ditebak, daftar kolom tetap non-sensitif (17.5 butir 2) yang dikunci uji, dan pemanggil tunggal di `m04-assets`. Menambah pengecualian berikutnya menuntut tinjauan arsitek (`BRANCHING-STRATEGY §3.1`).
 
 **SDD-AUTH-03 — menolak Row-Level Security.** RLS terlihat menggoda karena menegakkan scope di lapisan terdalam. Ditolak dengan tiga alasan:
 
@@ -70,6 +77,8 @@ Ketiga syarat itu dipilih karena masing-masing menjaga satu batas yang berbeda. 
 `role_version` diuji dengan ketiganya dan lolos. Pengguna tidak pernah melihatnya; ia tidak menambah baris pada satu pun dari empat katalog; dan ia ada semata agar `PM-05` — pembatalan cache permission — terpenuhi lebih tegas daripada sekadar menunggu TTL 60 detik habis. Yang ditetapkan PRD adalah bahwa perubahan matriks harus berlaku cepat; bagaimana caranya adalah milik berkas ini.
 
 Uji ini dijalankan **sebelum** mekanisme ditulis, dan hasilnya disebut pada deskripsi PR yang memperkenalkannya. Uji yang dijalankan sesudah kode ada akan selalu lulus.
+
+**SDD-AUTH-12 — golongan ketiga, bukan permission palsu.** `PM-01` menuntut tepat satu permission per endpoint, tetapi PRD menandai belasan endpoint sebagai "Bearer" (`/me`, logout, notifikasi, unggah berkas). Dua jalan lain ditolak. *Permission katalog yang diberikan ke ketujuh role* (mis. `session.manage_own`) memenuhi bunyi `PM-01` tetapi menambah baris pada Lampiran C, matriks role, dan seed untuk sesuatu yang bukan hak akses bisnis — dan matriks yang berisi "semua role memegangnya" berhenti menjadi informasi. *Memakai `public: true` lalu memeriksa sesi di controller* meniadakan `SDD-AUTH-01`: kelalaian memeriksa menjadikan endpoint terbuka tanpa ada yang tahu. Varian `authenticated: true` menjaga kedua sifat itu — deklarasi wajib dan eksplisit, gagal saat bootstrap bila hilang — tanpa memalsukan katalog permission.
 
 ---
 
@@ -94,7 +103,9 @@ for (const route of router.stack) {
 }
 ```
 
-Endpoint publik (`/auth/login`, `/auth/password/forgot`, `/public/assets/:uuid`) menandai dirinya `public: true` secara eksplisit — sehingga daftar endpoint tanpa autentikasi dapat di-*review* sebagai satu daftar pendek.
+Endpoint publik (`/auth/login`, `/auth/password/forgot`, `/public/assets/:uuid`, `/health/live`, `/health/ready`) menandai dirinya `public: true` secara eksplisit — sehingga daftar endpoint tanpa autentikasi dapat di-*review* sebagai satu daftar pendek. Kedua *probe* kesehatan ada di daftar ini karena `OBS-04` menuntut pemantauan *uptime* dari luar, dan pemantau luar tidak memegang token; keduanya hanya menjawab hidup/siap. `/health` **tidak** publik — ia membeberkan status DB, Redis, storage, AV, FCM, dan LLM, sehingga menuntut `setting.view` (`SDD-AUTH-08`).
+
+**Endpoint "Bearer"** (`SDD-AUTH-12`) — mis. `POST /auth/logout`, `GET /auth/sessions`, kelak `/me` — menandai dirinya `authenticated: true`. Ia bukan celah `PM-01`: golongannya eksplisit dan dapat ditinjau sebagai daftar pendek (`registry.authenticatedRoutes()`), dan tidak ada permission yang dapat "dilupakan" karena tidak ada yang relevan — data yang disentuhnya milik pemanggil sendiri dan disaring pada `user_id = ctx.userId` oleh repository (`SDD-AUTH-02`). Matriks `SEC-T-01`-nya punya satu penolakan: tanpa autentikasi (`401`, `TOKEN_EXPIRED` bila tokennya kedaluwarsa), dijalankan pada aplikasi terakit sebelum controller.
 
 ### 4.2 `AuthContext`
 
@@ -107,6 +118,8 @@ interface AuthContext {
   permissions: ReadonlySet<string>;
   scopeOf(permission: string): Scope;
   can(permission: string): boolean;
+  /** SDD-AUTH-13: ruangan yang tercakup; null = tidak dibatasi lokasi. */
+  locationRooms: ReadonlySet<number> | null;
 }
 ```
 
@@ -155,12 +168,14 @@ const MATERIAL_FIELDS = {
 };
 ```
 
-Yang tetap dijaga adalah **scope baris** pada permintaan bahan: pemohon hanya melihat permintaannya sendiri kecuali memiliki scope `all`.
+**Pengecualian Siswa/OSIS (`BR-091a`, PR-07-52).** Pemegang `material.view` berscope `restricted` hanya menjangkau bahan aktif bertanda `boleh_diminta_siswa` di repository, dan serializer mengganti `saldo_total`/`stok_minimum` dengan `null` serta mengirim `status_stok` (Tersedia/Terbatas/Habis); saldo per lokasi, kartu stok, dan `saldo_terkini` permintaan tidak dikirim. Ini penyaringan *kuantitas*, bukan finansial — penerapan `SDD-AUTH-06` yang sama.
+
+Yang tetap dijaga adalah **scope baris** pada permintaan bahan: pemohon hanya melihat permintaannya sendiri kecuali memiliki scope `all`. Scope itu dibaca dari **`material.request`**, bukan dari `material.view`: Bab 18 memberi Teknisi, Guru, dan Staf 🔍 — bukan 🟡 — pada saldo dan kartu stok, sehingga `material.view` mereka ber-scope `all` (§4.8). Pemegang `material.view` tanpa `material.request` (Pimpinan) melihat seluruh permintaan secara baca.
 
 ```ts
-switch (ctx.scopeOf('material.view')) {
-  case 'all': break;                                              // Admin, Petugas, Pimpinan
-  case 'own': qb.where('material_requests.pemohon_id', ctx.userId); break;
+// BR-074 — pemohon ber-scope own hanya melihat permintaannya sendiri
+if (ctx.can('material.request') && ctx.scopeOf('material.request') === 'own') {
+  qb.where('material_requests.pemohon_id', ctx.userId);           // Teknisi, Guru, Staf
 }
 ```
 
@@ -170,8 +185,8 @@ Perlu diperhatikan: `material.view` menjaga **saldo dan kartu stok**, sedangkan 
 
 ```
 1. authenticate          -> 401 UNAUTHENTICATED / TOKEN_EXPIRED
-2. mustChangePassword    -> 403, hanya /auth/password/change & /me yang lolos   (FR-01.3)
-3. twoFactorVerified     -> 401, bila role wajib 2FA & sesi belum terverifikasi (BR-070)
+2. mustChangePassword    -> 403, hanya daftar POST eksplisit PRD m01 §7 yang lolos; /me diblokir (FR-01.3, PR-02-41)
+3. twoFactorVerified     -> 403 TWO_FACTOR_REQUIRED, bila role wajib 2FA & amr tanpa otp    (BR-070)
 4. permission            -> 403 INSUFFICIENT_PERMISSION                          (PM-02)
 5. rateLimit(kelas)      -> 429                                                  (NFR-S-07)
 6. controller -> service -> repository(ctx)   -> scope                           (PM-03)
@@ -179,17 +194,31 @@ Perlu diperhatikan: `material.view` menjaga **saldo dan kartu stok**, sedangkan 
 
 Gerbang 2 dan 3 mendahului pemeriksaan permission agar pengguna berstatus `must_change_password` tidak dapat menyentuh endpoint apa pun meski permission-nya mencukupi (`FR-01.1 A4`).
 
+Gerbang 3 memeriksa klaim `amr` (`SDD-SESS-09`), dijawab `403` — bukan `401`: sesinya sah, hanya faktor keduanya belum terbukti, dan `401` akan memicu klien menukar refresh token dan berputar (`SDD-SESS-15`). Ia ditegakkan di `authenticated()` dan `authorize()`, bukan middleware global berdaftar-putih, supaya bawaannya tertutup; hanya route yang menyatakan `twoFactorExempt` — pendaftaran 2FA dan logout — yang melewatinya, dan daftarnya dikunci uji.
+
 ### 4.5 Cache permission
 
 ```
-kunci  : perm:{user_id}:{role_version}
+kunci  : perm:{user_id}:{role_id}:{role_version}
 isi    : { permissions: string[], scopes: Record<string, Scope> }
 TTL    : 60 detik                                   (PM-05)
 batal  : role_version dinaikkan saat PUT /roles/{id}/permissions
          atau saat role/status pengguna berubah
 ```
 
+`role_id` ada di dalam kunci justru untuk memenuhi baris `batal` di atas. `role_version`
+dimiliki **per-role**, bukan global: ketujuh role seed sama-sama berangkat dari `1`, sehingga
+`perm:{user_id}:{role_version}` tidak membedakan "pengguna 13 sebagai Administrator" dari
+"pengguna 13 sebagai Guru". Mengubah **role pengguna** (`PUT /users/{id}`, `FR-02.1`) tidak
+menaikkan `role_version` mana pun — tanpa `role_id` di kunci, entri role LAMA tetap terbaca
+sampai TTL habis, dan pengguna yang diturunkan haknya masih memegang permission lamanya
+hingga 60 detik. Dengan `role_id` di kunci, perpindahan role membuat kunci lama tidak
+pernah terbaca lagi, tanpa penghapusan eksplisit. Status pengguna tidak ikut di-cache sama
+sekali: `users.status` dibaca ulang setiap panggilan (`PM-05`).
+
 Karena kunci memuat `role_version`, perubahan matriks membuat kunci lama tidak pernah terbaca lagi — tidak perlu penghapusan kunci per pengguna.
+
+Bukti `PM-05` pada `PR-01-26` memakai cookie WEB dan Bearer ANDROID hasil login produksi, dua instance API serta PostgreSQL/Redis nyata. Cookie/token yang sama dipakai sesudah perubahan matriks, scope, role dan status lewat endpoint administrasi. Cache lama tetap hidup dan waktu uji tidak dimajukan; tidak ada injeksi AuthContext, login ulang, refresh token, ataupun penghapusan cache untuk memaksakan hasil. Perpindahan role dengan versi yang sama juga diuji agar kunci yang kehilangan `role_id` pasti gagal.
 
 ### 4.6 Otorisasi tool chatbot
 
@@ -218,12 +247,75 @@ if (role.isAdministrator && removed.some(p => CORE_PERMISSIONS.has(p))) {
 }
 ```
 
+### 4.8 Matriks bawaan — tafsir Lampiran C
+
+Seed role bawaan (`SDD-DB-10`, `SDD-05 §4.7`) memberi setiap role permission beserta scope-nya. Kolom "Role bawaan pemilik" Lampiran C dibaca apa adanya bila berisi nama role: `Nama` → scope `all`, `Nama(view)` → `all`, ``Nama(`own`)`` / `` `assigned` `` / `` `restricted` `` → scope tersebut. Tabel pertama memetakan nama singkatnya ke role Bab 5.
+
+| Nama singkat | Role |
+|---|---|
+| Admin | `R-01` |
+| Petugas | `R-02` |
+| Pimpinan | `R-03` |
+| Teknisi | `R-04` |
+| Guru | `R-05` |
+| Staf | `R-06` |
+| Siswa | `R-07` |
+
+Baris yang kolomnya **bukan** daftar role, atau yang Bab 18-nya bertanda 🟡 tanpa anotasi scope, ditafsirkan di bawah. Aturan tafsirnya satu (keputusan pemilik produk, 15 September 2026): **deskriptor non-role diselesaikan lewat Bab 18** — role bersimbol selain ❌ memperoleh permission, dan 🟡 menjadi scope selain `all` menurut tabel "Catatan cakupan" (C.1). Kolom "Tertulis di Lampiran C" wajib sama persis dengan Lampiran C; uji pembanding seed memerah bila Lampiran C berubah tanpa tafsir ini ikut disunting.
+
+| Kode | Tertulis di Lampiran C | Role bawaan (scope) | Dasar |
+|---|---|---|---|
+| `location.view` | Semua kecuali Siswa | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf | Bab 18 "Manajemen Lokasi" |
+| `asset.view` | Semua (scope berbeda) | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa(`restricted`) | Bab 18 "Inventaris Aset — lihat"; catatan "Siswa/OSIS — Inventaris & QR" |
+| `reservation.view` | Semua (scope berbeda) | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa(`restricted`) | Bab 18 "Reservasi Ruangan — lihat kalender"; catatan "Siswa/OSIS — Kalender ruangan" |
+| `reservation.cancel_own` | Semua pemohon | Admin, Petugas, Guru, Staf, Siswa | Pemegang `reservation.create` menurut Lampiran C |
+| `loan.view` | Semua (scope berbeda) | Admin, Petugas, Pimpinan, Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Peminjaman — lihat seluruh transaksi"; Teknisi ❌ |
+| `loan.extend` | Guru, Staf, Siswa, Petugas | Petugas, Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Peminjaman — ajukan perpanjangan" 🟡 |
+| `fine.view` | Semua (scope berbeda) | Admin, Petugas, Pimpinan, Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Denda — lihat seluruh"; Teknisi ❌ |
+| `approval.view` | Semua (scope berbeda) | Admin, Petugas, Pimpinan, Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Approval — lihat riwayat"; Teknisi ❌. `own` = pemohon, pemutus/`atas_nama` langkah mana pun, atau pemutus sah langkah aktif (`FR-10.3 A1`, keputusan 76) |
+| `approval.decide` | Sesuai approval rules | Admin, Petugas, Pimpinan | Bab 18 "Approval — memutuskan"; approval rules tetap menyaring siapa yang benar-benar memutuskan |
+| `approval.delegate` | Approver aktif | Admin, Petugas, Pimpinan | Pemegang `approval.decide` |
+| `damage.create` | Semua role | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa | Bab 18 "Laporan Kerusakan — buat" |
+| `damage.view` | Semua (scope berbeda) | Admin, Petugas, Pimpinan, Teknisi(`own`), Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Laporan Kerusakan — lihat semua"; Teknisi `own` — kerusakan pada work order-nya terlihat lewat `workorder.view` |
+| `procurement.approve` | Sesuai approval rules | Admin, Petugas, Pimpinan | Bab 18 "Pengadaan — setujui" |
+| `material.request` | Admin, Petugas, Teknisi, Guru, Staf, Siswa(`restricted`) | Admin, Petugas, Teknisi(`own`), Guru(`own`), Staf(`own`), Siswa(`restricted`) | `BR-074`, `BR-086a`; §4.3 |
+| `dashboard.view` | Semua role | Admin, Petugas, Pimpinan, Teknisi(`own`), Guru(`own`), Staf(`own`), Siswa(`own`) | Bab 18 "Dashboard" 🟡 |
+| `notification.manage_own` | Semua role | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa | Bab 18 "Notifikasi pribadi" |
+| `chat.use` | Semua role (Siswa `restricted`) | Admin, Petugas, Pimpinan, Teknisi, Guru, Staf, Siswa(`restricted`) | Bab 18 "Chatbot AI" |
+
+Tafsir ini hanya menetapkan **bawaan**. Administrator tetap dapat menyesuaikannya lewat matriks (`FR-02.2`) sejak `PR-01-04`.
+
 ---
+
+### 4.9 Cakupan lokasi (`SDD-AUTH-13`, `SDD-AUTH-14`)
+
+```
+user_location_scopes (user_id, building_id | area_id | room_id)   -- tepat satu terisi
+        |
+        v  diperluas saat AuthContext dibentuk (cache PM-05)
+ctx.locationRooms = {room ids} | null
+        |
+        +-- repository: scope PM-03  -->  withinLocation(ctx, qb, "assets.room_id")
+        +-- service tulis: assertLocation(ctx, asal) + assertLocation(ctx, tujuan)   (PM-09)
+        +-- pembentuk langkah approval / penerbit notifikasi: LocationScopeResolver (RE-14, NTF-06)
+```
+
+| Objek | Kolom ruangan yang dipakai `withinLocation` |
+|---|---|
+| Aset, dokumen aset, label QR, penghapusan | `assets.room_id` |
+| Ruangan, kalender, reservasi ruangan | `rooms.id` |
+| Reservasi aset, peminjaman, denda | `assets.room_id` aset yang dipinjam |
+| Saldo, transaksi, permintaan bahan | `material_balances.room_id` / lokasi asal permintaan |
+| Kerusakan, work order, jadwal pemeliharaan | ruangan aset, atau ruangan tiket bila tanpa aset |
+| Sesi opname | seluruh ruangan cakupan sesi (semua harus tercakup) |
+| Usulan pengadaan | `room_id_tujuan`, atau seluruh ruangan `building_id_tujuan` |
+
+Uji arsitektur menandai repository yang membaca tabel di kolom kiri tanpa memanggil `withinLocation`, sepola dengan uji `ctx` wajib (§6). Seluruh perubahan ini menyentuh lapisan permission/`AuthContext` dan evaluator approval, sehingga wajib tinjauan arsitek (`BRANCHING-STRATEGY §3.1`).
 
 ## 5. Konsekuensi
 
 - **Modul terdampak:** seluruhnya. Tidak ada modul yang boleh mengakses basis data tanpa `AuthContext`.
-- **Batasan yang lahir:** pekerjaan terjadwal dan perintah CLI tidak punya pengguna. Keduanya memakai `SystemAuthContext` khusus berscope `all` yang **hanya** dapat dibentuk dari luar siklus permintaan HTTP, dan setiap pemakaiannya tercatat sebagai pelaku `SYSTEM` (`AL-06`).
+- **Batasan yang lahir:** pekerjaan terjadwal dan perintah CLI tidak punya pengguna. Keduanya memakai `SystemAuthContext` khusus berscope `all` yang **hanya** dapat dibentuk dari luar siklus permintaan HTTP, dan setiap pemakaiannya tercatat sebagai pelaku `SYSTEM` (`AL-06`). Bentuknya (keputusan 71 log phase-02): subtipe `AuthContext` ber-`namaPekerjaan`, dikenali lewat registri identitas (objek tiruan tidak lolos), `userId = 0` sehingga kolom pelaku yang lupa memakai `pelakuId(ctx)` ditolak FK; kolom pelaku (`updated_by`, `created_by`, `event_outbox.actor_id`) bernilai NULL bagi SYSTEM. Pabriknya berada di `shared/auth/system-context.ts`, tidak diekspor `index.ts`, dan lint `import/no-restricted-paths` menutup berkas itu bagi seluruh `src` kecuali `src/worker` dan `shared/auth`. *(CLI break-glass tetap memakai `CliRepository` + `writeCli`, keputusan 53.)*
 - **Beban pengujian:** `SEC-T-01` menuntut matriks endpoint × 7 role. Dengan deklarasi permission per route, matriks ini dapat **digenerate** dari tabel route, bukan ditulis tangan.
 - **Konsekuensi yang diterima:** akses langsung ke PostgreSQL melewati aplikasi tidak tunduk scope (§3). Mitigasinya prosedural (`DP-11`), bukan teknis.
 
@@ -236,15 +328,17 @@ if (role.isAdministrator && removed.some(p => CORE_PERMISSIONS.has(p))) {
 | Repository baru dibuat tanpa `AuthContext` | Kebocoran lintas hak akses | Parameter wajib pada tipe; uji arsitektur menolak metode repository tanpa `ctx` |
 | Cache permission basi setelah perubahan role | Pengguna memakai hak lama ≤60 detik | `role_version` pada kunci membatalkan seketika, bukan menunggu TTL |
 | Serializer lupa menyaring field baru | Data finansial bocor | Allow-list bersifat *opt-in*: field baru tidak muncul sampai sengaja didaftarkan |
-| `SystemAuthContext` dipakai di jalur HTTP | Bypass otorisasi | Pembentukannya dibatasi modul worker; uji arsitektur melarang impornya dari lapisan HTTP |
+| `SystemAuthContext` dipakai di jalur HTTP | Bypass otorisasi | Pembentukannya dibatasi `src/worker`; lint `import/no-restricted-paths` melarang impornya dari `src/api`, `src/modules`, dan `shared/*` lain — dibuktikan uji `tests/shared/auth/system-context.test.ts` |
 | Tool chatbot ditambah tanpa lewat repository | `BR-076` dilanggar | Registry tool hanya menerima metode repository; ditegakkan oleh tipe |
+| Repository baru lupa `withinLocation` | Petugas gedung melihat lokasi lain | Uji arsitektur §4.9 + uji irisan per modul dengan dua pengguna bercakupan berbeda |
+| Ekspansi simpul basi setelah ruangan ditambah | Ruangan baru tidak tercakup ≤60 detik | `location_version` naik saat lokasi atau cakupan berubah, membatalkan cache seketika |
 | Respons 403 vs 404 tidak konsisten | Membocorkan keberadaan data | Error mapper terpusat; diuji `SEC-T-01` |
 
 ---
 
 ## 7. Requirement Terkait
 
-`PM-01` … `PM-06` · `BR-066` `BR-069` `BR-070` `BR-073` `BR-074` `BR-075` `BR-076` ·
+`PM-01` … `PM-10` · `FR-02.3` `BR-069b` `RE-14` `NTF-06` · `BR-066` `BR-069` `BR-070` `BR-073` `BR-074` `BR-075` `BR-076` ·
 `FR-01.1` `FR-01.2` `FR-01.4` `FR-01.5` `FR-01.6` `FR-02.1` `FR-02.2` `FR-04.2` `FR-19.1` ·
 `NFR-S-03` `NFR-S-05` `NFR-S-07` `NFR-S-10` `NFR-S-14` `NFR-S-15` ·
 `DP-03` `DP-05` `DP-11` `DP-AI-01` `DP-AI-02` `DP-AI-03` ·
@@ -259,3 +353,50 @@ if (role.isAdministrator && removed.some(p => CORE_PERMISSIONS.has(p))) {
 | **TBD-AUTH-B** | Rotasi kunci penanda tangan JWT setiap 6 bulan (`SEC-CFG-02`) memerlukan masa tumpang tindih dua kunci. Panjang masa tumpang tindih dan mekanisme distribusinya belum ditetapkan. |
 
 **Tertutup 25 Agustus 2026:** `TBD-AUTH-C` → `SDD-AUTH-11`.
+
+### PR-06-02 — scope agregat M-16
+
+authorizeAnalytics(ctx, jenis, action) mewajibkan AuthContext dan report.view +
+izin semua sumber. Scope report own mengikuti primary/subjek dalam definisi
+laporan; masing-masing sumber memakai scope domainnya. Untuk action export,
+report.export menjadi irisan tambahan. Tidak ada default scope all, bypass
+Administrator, atau SYSTEM yang menggantikan konteks pengguna. Catalog/hasil
+HTTP tidak memakai cache bersama dan mengirim Cache-Control private, no-store.
+
+Alias SQL penjaga sumber: assets a (penanggung_jawab_id), reservations r
+(pemohon_id), loans l (peminjam_id), damage_reports d (pelapor_id), work_orders w
+(teknisi_id), procurements p / asset_disposals ds (pengusul_id), material_requests
+mr (pemohon_id). Predicate wajib dipasang pada baris SEBELUM agregasi. Pemakaian
+sumber yang tidak dideklarasikan pada jenis laporan ditolak.
+
+Report scope all/own didukung; assigned/restricted untuk report belum memiliki
+aturan dan ditolak. Domain asset restricted mengikuti boleh_dipinjam_siswa;
+damage assigned mengikuti EXISTS work_orders teknisi; maintenance assigned
+mengikuti teknisi_id. Domain assigned/restricted lain ditolak. Private draf
+pengadaan tetap hanya terlihat oleh pengusul. Konsumsi Bahan juga menggunakan
+scope baca permintaan M-22, agar material.view all tidak membuka permintaan
+pengguna lain kepada pemohon biasa.
+
+Hak finansial diperiksa sebelum pemilihan kolom SQL. asset.view_financial own
+hanya membuka kolom ketika predicate aset sudah own; scope lainnya yang belum
+terdefinisi tidak membuka kolom. Schema kolom wajib menyebut sensitivitas;
+provider yang mencoba kolom tanpa hak ditolak sebelum eksekusi. Nilai JSON
+harus sesuai tipe/kolom yang dideklarasikan, tanpa kolom tambahan tersembunyi.
+Uji memakai total/ringkasan/pembanding/pagination nyata untuk R-01/R-02/R-03,
+join pinjaman-aset milik pihak berbeda dan filter dengan hasil kosong.
+
+### PR-06-03…07 — sumber tambahan dan indikator global
+
+Sesuai keputusan pengguna pada [M-16](../PRD/02-modules/m16-analytics.md),
+optionalPredicate(procurement/disposal) menghasilkan null jika permission atau
+scope domain tidak didukung; provider menghilangkan SELECT dan metadata sumber
+tambahan itu. Predicate tambahan tetap beririsan dengan report own dan predicate
+aset, termasuk privasi draf. Ini tidak menambah izin sumber wajib ke jenis lain.
+
+restrictedSubjects/restrictedAssets menandai apakah data utama/dimensi telah
+dipersempit. Frekuensi minimum Bahan hanya membangun SQL ledger global ketika
+scope subjek penuh dan tidak ada filter pemohon/unit kerja. Selainnya indikator
+null beserta alasan; tidak mengambil agregat global lalu menyembunyikannya di
+serializer. Utilisasi pada scope subjek terbatas hanya membentuk populasi objek
+dari penggunaan yang terlihat, sehingga objek tanpa transaksi milik pihak lain
+tidak muncul lewat baris pemakaian nol.

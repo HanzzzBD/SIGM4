@@ -24,7 +24,7 @@ Satu mesin melayani **lima** jenis pengajuan. Tidak boleh ada cabang khusus per 
 | ID | Keputusan |
 |---|---|
 | **SDD-APR-01** | Evaluator aturan berjalan di **lapisan aplikasi** sebagai fungsi murni, bukan di basis data. Masukannya objek fakta biasa; tidak menyentuh koneksi DB. |
-| **SDD-APR-02** | Definisi aturan divalidasi terhadap **JSON Schema** saat disimpan, bukan saat dievaluasi. Aturan tidak valid ditolak `422 INVALID_RULE_DEFINITION` (`RE-08`). |
+| **SDD-APR-02** | Definisi aturan divalidasi **saat disimpan**, bukan saat dievaluasi, terhadap skema **Zod** yang menjadi satu-satunya sumber (`SDD-API-01`); JSON Schema, bila dibutuhkan (OpenAPI, editor aturan), **diturunkan** darinya (`z.toJSONSchema`), tidak ditulis terpisah. Aturan tidak valid ditolak `422 INVALID_RULE_DEFINITION` (`RE-08`) beserta seluruh pelanggarannya. |
 | **SDD-APR-03** | `rule_snapshot` disimpan sebagai `jsonb` berisi **definisi aturan utuh** (kondisi + seluruh langkah), bukan sekadar `rule_id` + versi. |
 | **SDD-APR-04** | Instance persetujuan memakai kolom `langkah_aktif` sebagai penunjuk tunggal; baris `approval_steps` dibuat **seluruhnya di muka** saat instance lahir, berstatus `Menunggu`/`Belum Aktif`. |
 | **SDD-APR-05** | Resolusi "first responder wins" (`BR-041`, `RE-09`) memakai **conditional UPDATE + pemeriksaan jumlah baris terpengaruh**, bukan `SELECT` lalu `UPDATE`, dan bukan lock tabel. |
@@ -35,15 +35,19 @@ Satu mesin melayani **lima** jenis pengajuan. Tidak boleh ada cabang khusus per 
 | **SDD-APR-10** | Endpoint pratinjau (`RE-07`) memanggil **evaluator yang sama persis**. Dilarang ada implementasi kedua untuk pratinjau. |
 | **SDD-APR-11** | Ketersediaan objek diverifikasi ulang saat keputusan akhir (`BR-043`) dengan **mengunci** slot terkait, bukan sekadar membacanya. |
 | **SDD-APR-12** | Langkah yang dilewati (`BR-039`) tetap ditulis sebagai baris `approval_steps` berstatus `Dilewati` beserta alasannya — bukan dihapus. |
-| **SDD-APR-13** | `fallback_approver` adalah field **opsional tingkat aturan** pada skema (`RE-11`, Lampiran D.5), bukan field tingkat langkah. Ketiadaannya berarti role Administrator — diselesaikan **saat pembentukan langkah**, bukan saat pembacaan. Menutup `TBD-APR-A` (keputusan pemilik produk, 25 Agustus 2026; `UXD-09`). |
+| **SDD-APR-13** | `fallback_approver` adalah field **opsional tingkat aturan** pada skema (`RE-11`, Lampiran D.5), bukan field tingkat langkah. Ketiadaannya berarti role Administrator — diselesaikan **saat pembentukan langkah**, bukan saat pembacaan. Menutup `TBD-APR-A` (keputusan pemilik produk, 25 Agustus 2026; `UXD-09`). Langkah fallback ber-SLA 24 jam kerja, `on_sla_breach = remind` — sama dengan `DEFAULT_RULE` (keputusan 67 log phase-02). |
 | **SDD-APR-14** | Ketersediaan approver bertipe `user` diperiksa **saat langkah hendak diaktifkan**, bukan saat instance lahir. Approver nonaktif menyebabkan langkah ditandai `Dilewati` beralasan `approver nonaktif` (`RE-13`) dan pemrosesan lanjut; bila seluruh langkah habis, berlaku jalur fallback `SDD-APR-13` yang sama. Menutup `TBD-APR-C` (keputusan pemilik produk, 25 Agustus 2026). |
 | **SDD-APR-15** | Kalender SLA memakai **jam operasional terkonfigurasi** (`conventions.md`, bawaan Senin–Sabtu 06.00–18.00 WIB) persis seperti `CAL-01` menetapkannya. **Tidak ada** rentang jam kerja administratif kedua. Menutup `TBD-APR-B` (keputusan pemilik produk, 25 Agustus 2026). |
+| **SDD-APR-16** | **Delegasi** (`FR-10.2 A3`, `RE-12`) disimpan di `approval_delegations` per rentang **tanggal WIB inklusif**, paling banyak satu per pemberi per tanggal (exclusion constraint). Pemutus sah sebuah langkah dihitung **saat dibutuhkan** (aktivasi, keputusan) dari pemegang yang `AKTIF` — role: seluruh pemegang role; user: pengguna itu — lalu setiap pemegang yang sedang mendelegasikan **digantikan** penerimanya bila penerima `AKTIF` (satu lompatan, tidak berantai). Pemohon dikeluarkan, termasuk sebagai pemberi (`BR-039`). Himpunan kosong karena pemohon → `konflik kepentingan` (`RE-10`); kosong karena sebab lain → `approver nonaktif` (`RE-13`, berlaku juga bagi langkah role). Keputusan penerima menyimpan approver asli di `approval_steps.atas_nama_user_id`. Penerima wajib memegang `approval.decide`. |
+| **SDD-APR-17** | Efek keputusan atas **objek pengajuan** — verifikasi ketersediaan `BR-043` (mengunci, `SDD-APR-11`), promosi slot `Tentative → Confirmed`, pelepasan slot saat ditolak/revisi — dijalankan **penangan hasil per jenis pengajuan** (`PenanganHasil`: `sebelumDisetujui`, `setelahDitutup`) yang didaftarkan modul pengajuan, pola `FactAdapter` (`SDD-APR-09`), di dalam transaksi keputusan. Penangan boleh melempar galat domain untuk membatalkan persetujuan (`FR-10.2 A5`). Jenis tanpa penangan tidak punya objek untuk diperiksa. Penangan didaftarkan **sekali** ke registri proses `penanganHasil` (m10 `index.ts`) yang dibaca `approvalRouter` **dan** job worker `approval-sla-check` saat keputusan diambil, sehingga `auto_reject` melepas objek persis seperti penolakan manusia (keputusan 75). **Urutan kunci seragam di semua jalur: objek pengajuan lalu instance** — penangan dipanggil sebelum status instance ditulis, juga pada penolakan dan `auto_reject`, agar jalur yang menutup instance dari sisi objek (TTL `BR-023b`, kelak pembatalan) tidak membentuk siklus `40P01` dengan approver (keputusan 14j log phase-03). Objek yang berhenti di luar keputusan approver menutup instance-nya lewat `ApprovalService.tutupKarenaObjek` → `DIBATALKAN`, dicatat pada entri log objek itu (`PR-03-10`). Kontrak `POST /approvals/{id}/decide`: body `{ urutan, keputusan, catatan }` + header `Idempotency-Key` (`ID-01`); `urutan` = langkah yang dilihat approver, sehingga layar basi atau klik ganda setelah langkah maju berakhir `409`, tidak memutus langkah berikutnya (keputusan 69). |
 
 ---
 
 ## 3. Alasan
 
 **SDD-APR-01 — evaluator di aplikasi.** Alternatif menyimpan logika di PostgreSQL (`jsonb` + fungsi PL/pgSQL) ditolak karena `RE-07` mewajibkan pratinjau tanpa efek samping, dan karena aturan harus dapat diuji unit secara masif (`NFR-M-03` menyebut approval engine sebagai logika inti). Fungsi murni tanpa I/O dapat diuji ribuan kasus dalam hitungan detik; fungsi PL/pgSQL tidak.
+
+**SDD-APR-02 — Zod, bukan validator JSON Schema terpisah.** Seluruh validasi masukan API sudah memakai Zod (`SDD-API-01`); menulis JSON Schema tangan dan memvalidasinya dengan pustaka kedua (mis. ajv) menghasilkan dua definisi yang dapat menyimpang diam-diam. Validasi berjalan dua lapis: struktur (bentuk grup/predikat, operator dikenal) lalu makna Lampiran D.2/D.3 (field dikenal dan berlaku bagi jenis pengajuan, operator sah per tipe, bentuk `value`, kedalaman grup). Lapis makna tidak dapat diungkapkan JSON Schema secara ringkas — ia bergantung pada `jenis_pengajuan` aturan — sehingga pustaka JSON Schema tidak menghemat apa pun.
 
 **SDD-APR-03 — snapshot definisi utuh, bukan pointer versi.** `BR-040` dan `RE-05` mengharuskan instance berjalan tidak terpengaruh perubahan aturan. Menyimpan `rule_id + versi` tetap membuat pembacaan bergantung pada baris `approval_rules` yang bisa dihapus atau disunting. Menyimpan definisi utuh membuat instance benar-benar mandiri — dan menjadikan `FR-10.3` (linimasa) dapat direkonstruksi bertahun-tahun kemudian meski aturannya sudah lama tidak ada.
 
@@ -87,6 +91,11 @@ Keberatan itu tetap tidak cukup untuk membangun kalender kedua. `SDD-APR-06 §3`
 
 Bila 24 jam terasa terlalu longgar, pengaturnya sudah tersedia dan berada di tempat yang benar: `sla_hours` dapat diatur per langkah pada setiap aturan. Menurunkan angkanya menyelesaikan keluhan tanpa menambah konsep.
 
+**SDD-APR-16 — delegasi dihitung, tidak dicetak ke langkah.** Alternatif menulis ulang target langkah (`approver_user_id`) ke penerima saat delegasi dibuat ditolak: langkah berbasis role tidak punya satu target untuk ditulis ulang, delegasi yang berakhir atau dibatalkan harus "menulis kembali" langkah yang sudah diubah, dan target asli hilang dari linimasa. Menghitung pemutus dari pemegang + delegasi yang berlaku pada tanggal itu membuat keduanya — langkah user maupun role, termasuk kasus umum pemegang tunggal R-03 yang cuti — mengikuti satu aturan, dan jejak `RE-12` tetap utuh karena yang tercatat adalah keputusan (`atas_nama_user_id`), bukan pengalihan. Delegasi tidak berantai agar resolusi tetap satu kueri dan tidak dapat berputar.
+
+
+**SDD-APR-17 — penangan hasil, bukan mesin yang tahu pengajuan.** Verifikasi `BR-043` dan promosi slot wajib atomik dengan keputusan (`SDD-EVT-02`), sehingga tidak dapat diserahkan ke event outbox. Mesin memanggil `SlotService` sendiri akan membuatnya tahu bahwa `referensi_id` sebuah reservasi adalah `booking_slots.reservation_id` dan bahwa pengadaan tidak punya slot — pengetahuan yang `SDD-APR-09` letakkan di modul pengajuan. Penangan per jenis memakai jalur yang sama dengan `FactAdapter`: satu pendaftaran per jenis, nol cabang di mesin.
+
 ---
 
 ## 4. Rancangan
@@ -96,7 +105,7 @@ Bila 24 jam terasa terlalu longgar, pengaturnya sudah tersedia dan berada di tem
 ```
 ApprovalService
 ├── RuleRepository        — baca aturan aktif per jenis pengajuan
-├── RuleValidator         — JSON Schema (SDD-APR-02)
+├── RuleValidator         — Zod + makna D.2/D.3 (SDD-APR-02)
 ├── RuleSelector          — RE-04: prioritas tertinggi, seri -> id terkecil
 ├── ConditionEvaluator    — fungsi murni, RE-01..RE-03
 ├── StepPlanner           — bentuk langkah + terapkan BR-039 / RE-11
@@ -160,14 +169,14 @@ decide(instanceId, stepOrder, actor, decision, note):
     affected := UPDATE approval_steps SET ... WHERE keputusan IS NULL ...   -- SDD-APR-05
     IF affected = 0 -> 409 APPROVAL_ALREADY_DECIDED
 
-    IF decision = Ditolak        -> instance.status = Ditolak; release slot; NT-03; END  -- BR-038
-    IF decision = Perlu Revisi   -> instance.status = PerluRevisi; NT-04; END            -- FR-10.2 A1
+    -- Urutan kunci seragam: objek pengajuan LALU instance (keputusan 14j log phase-03)
+    IF decision = Ditolak        -> penangan.setelahDitutup; instance.status = Ditolak; NT-03; END  -- BR-038
+    IF decision = Perlu Revisi   -> penangan.setelahDitutup; instance.status = PerluRevisi; NT-04; END  -- FR-10.2 A1
 
     next := nextActiveStep()                         -- lihat activate() di bawah
     IF next EXISTS -> langkah_aktif = next; set sla_deadline; NT-05
     ELSE
-       assertObjectStillAvailable(FOR UPDATE)   -- BR-043, SDD-APR-11
-       promote slots Tentative -> Confirmed     -- lihat SDD-01 §4.3
+       penangan.sebelumDisetujui(referensi)     -- BR-043 (kunci, SDD-APR-11) + promosi slot; SDD-APR-17
        instance.status = Disetujui; NT-02
   COMMIT
 ```
@@ -206,7 +215,34 @@ FOR each step aktif WHERE sla_deadline < now():
         auto_reject    -> instance.status = Ditolak + NT-03
 ```
 
+**Semantik yang mengikat** (keputusan 70/73 log phase-02, pemilik produk 28 September 2026):
+
+| Keadaan langkah aktif saat tenggat lewat | Tindakan |
+|---|---|
+| `remind` (termasuk langkah fallback `SDD-APR-13`) | `NT-06` bila belum diingatkan pada hari WIB yang sama (`pengingat_terakhir_pada`); **tidak pernah** terminal — `auto_reject` tidak menolak pengajuan karena langkah `remind` telat |
+| `escalate`, belum dieskalasi, `eskalasi_ke` punya pemutus sah (`SDD-APR-16`, pemohon dikeluarkan) | Target langkah dialihkan ke `eskalasi_ke` (`dieskalasi_pada`, `eskalasi_dari_user_id`), tenggat baru = `sla_jam` langkah itu dalam jam kerja; `NT-07`; `APPROVAL_ESCALATED` |
+| `escalate` yang sudah dieskalasi, **atau** `eskalasi_ke` tidak dapat memutus (nonaktif / pemohon) | Eskalasi habis → `terminal_on_exhausted_escalation`, sekali (`alarm_terminal_pada`): `hold_and_alert` → tetap `Menunggu` + `NT-47`; `auto_reject` → instance `Ditolak` (langkahnya tetap tanpa keputusan manusia), `penangan.setelahDitutup`, `NT-03`; `APPROVAL_ESCALATION_EXHAUSTED` |
+
+Sebelum tenggat diperiksa, langkah aktif yang tidak lagi punya pemutus sah (`RE-13`) dilewati lalu `activate` dijalankan; langkah fallback dan langkah yang sudah dieskalasi dikecualikan (keduanya jalur terakhir). Setiap langkah diproses dalam transaksinya sendiri, mengunci baris langkah **lebih dulu** lalu instance — urutan yang sama dengan `decide` — sehingga keputusan yang masuk bersamaan menang atau membuat job melewatinya. Pelaku `SYSTEM` (`SystemAuthContext`, `PR-02-32`); event `ApprovalSlaBreached` (`SDD-07 §4.3`).
+
 `BR-039a` melarang persetujuan otomatis akibat kelalaian; karena itu `auto_approve` **tidak** termasuk nilai yang sah pada `terminal_on_exhausted_escalation`, dan JSON Schema menolaknya.
+
+### 4.5a Linimasa (`FR-10.3`, keputusan 76)
+
+`GET /approvals/{id}/history` dibaca dari `approval_instances` + `approval_steps` + `rule_snapshot` — bukan dari activity log. Tiap langkah memuat target, keputusan & catatan, pemutus dan `atas_nama` (delegasi, `RE-12`), `dilewati` + alasan, penanda fallback (urutan di luar snapshot), penanda eskalasi (`dieskalasi_pada`, target asal) dan eskalasi habis (`alarm_terminal_pada`). Status langkah turunan: keputusannya bila ada; `AKTIF` bila langkah aktif instance yang menunggu; `BELUM_AKTIF` bila instance masih menunggu; selain itu `TIDAK_DIJALANKAN` (alur berhenti sebelumnya).
+
+Satuan waktu seluruhnya **menit kerja** lewat `BusinessCalendarService` (`SDD-APR-06`): langkah aktif memuat `sisa_menit_kerja` (0 bila lewat) dan `terlambat`; langkah yang selesai memuat `durasi_menit_kerja` sejak ia mulai menunggu (keputusan langkah sebelumnya, atau lahirnya instance) sampai diputus. Scope `own` dievaluasi di layanan; instance di luar hak dijawab `403` sama dengan yang tidak ada (`SDD-AUTH-08`).
+
+### 4.5b Konfigurasi aturan & pratinjau (`FR-10.1`, `RE-07`, keputusan 77)
+
+| Endpoint | Kontrak |
+|---|---|
+| `GET /approval-rules` | Seluruh aturan (aktif & nonaktif) beserta definisi utuhnya dalam bentuk D.5 — cukup bagi P-68 dan P-69 |
+| `POST /approval-rules` · `PUT /approval-rules/{id}` | Body berbentuk **Lampiran D.5 persis**: `jenis_pengajuan`, `prioritas`, `kondisi`, `steps[{order, approver_type, approver_role` (kode, mis. `R-02`) `\| approver_user_id, sla_hours, on_sla_breach, escalate_to_user_id}]`, `fallback_approver`, `terminal_on_exhausted_escalation`. Server memetakan kode role → `roles.id`. `PUT` mengganti definisi utuh dan menaikkan `versi`; instance berjalan tidak tersentuh (`SDD-APR-03`). Tidak ada `DELETE` — `approval_instances.rule_id` merujuknya |
+| `PATCH /approval-rules/{id}/status` | `{ status_aktif, alasan? }` — `alasan` (1–500) wajib bila `status_aktif = false` (`UX-04`, keputusan 86 log phase-02) dan disimpan pada `keterangan` entri log; nonaktif → `APPROVAL_RULE_DEACTIVATED`, aktif kembali → `APPROVAL_RULE_UPDATED` |
+| `POST /approval-rules/preview` | `{ jenis_pengajuan, fakta, pemohon_id?, aturan_draf? }` — dievaluasi terhadap aturan aktif sejenis **ditambah draf** (draf ber-`id` menggantikan versi tersimpannya; draf baru berperingkat setelah seluruh aturan berprioritas sama, sebab `id`-nya akan terbesar — `RE-04`), dengan evaluator dan pemilih yang sama (`SDD-APR-10`). Respons: aturan terpilih (atau bawaan `RE-06`), seluruh yang cocok + prioritas, dan langkah yang akan terbentuk; bila `pemohon_id` diisi, langkah yang akan dilewati (`RE-10`/`RE-13`, `SDD-APR-16`) dan fallback (`RE-11`) ikut ditunjukkan. Tanpa efek samping — tidak menulis apa pun |
+
+**Validasi saat simpan** (`SDD-APR-02`, `RE-08`) dua lapis, seluruh pelanggaran dikembalikan sekaligus sebagai `422 INVALID_RULE_DEFINITION`: struktur (Zod — `order` 1..n berurutan unik, `sla_hours ≥ 1`, `escalate` wajib `escalate_to_user_id`, `terminal` hanya `hold_and_alert`/`auto_reject`) lalu makna (kondisi D.2/D.3 lewat `validateCondition`; kode role ada; pengguna langkah/eskalasi/fallback ada, `AKTIF`, dan memegang `approval.decide`). Draf pratinjau divalidasi sama.
 
 ### 4.6 Indeks pendukung
 
@@ -250,6 +286,18 @@ CREATE INDEX approval_rules_active
 
 ## 7. Requirement Terkait
 
+### Integrasi rincian keputusan pemilik domain (PR-03-18)
+
+`PenanganHasil.saatKeputusan` adalah hook opsional bagi pemilik pengajuan, mengikuti
+`SDD-APR-17`. M-10 mengunci objek melalui `kunciObjek`, mengklaim langkah dengan
+conditional UPDATE (`BR-041`), lalu menjalankan hook dalam transaksi yang sama.
+Hook memvalidasi `rincian_keputusan` dan mengembalikan snapshot JSON untuk
+`approval_steps.rincian_keputusan`; galat membatalkan klaim dan seluruh perubahan.
+Jenis tanpa hook menolak payload rincian. Pembacaan linimasa mengembalikan snapshot
+opsional, sehingga kontrak lama tanpa rincian tetap berlaku. M-10 tidak menghitung
+kuantitas atau mengubah enum keputusan berdasarkan kebutuhan M-14; aturan jumlah
+dan status domain mengikuti kontrak `FR-14.2` pada PRD M-14 §7.
+
 `BR-035` `BR-036` `BR-037` `BR-038` `BR-039` `BR-039a` `BR-040` `BR-041` `BR-042` `BR-043` ·
 `RE-01` … `RE-12` · `FR-10.1` `FR-10.2` `FR-10.3` · `FR-07.2` `FR-08.2` `FR-09.5` `FR-14.1` `FR-14.2` `FR-21.1` `FR-21.2` ·
 `NT-01` … `NT-07` `NT-47` · `CAL-01` · `CC-03` · `NFR-M-03` `NFR-R-06` · `RS-05` `RS-06` · `SC-03`
@@ -262,3 +310,17 @@ CREATE INDEX approval_rules_active
 |---|---|
 
 **Tertutup 25 Agustus 2026:** `TBD-APR-A` → `SDD-APR-13` · `TBD-APR-B` → `SDD-APR-15` · `TBD-APR-C` → `SDD-APR-14`. Seluruh TBD berkas ini tertutup.
+
+### PERMINTAAN_BAHAN — keputusan PR-05-19 (14 Oktober 2026)
+
+Jumlah per jenis dibandingkan batas M-20, tepat batas langsung disetujui tanpa
+instance. Bila salah satu melewati batas, rules aktif yang cocok atau fallback
+Petugas digunakan. Fakta material_qty_total, material_category_id, item_count,
+requester_role/requester_has_overdue tersedia; material_value_total dinonaktifkan
+pada DSL sampai ada harga referensi sah, tanpa fallback nilai nol.
+Keputusan sebagian mengikat setiap item tepat sekali dengan jumlah bulat nol…batas
+sebelumnya dan minimal satu positif. Level berikutnya hanya mempertahankan/mengurangi.
+Adapter M-22 mengunci domain sebelum instance, menyimpan snapshot keputusan per
+langkah dan menerbitkan kesiapan hanya pada keputusan akhir. Revisi/cancel tetap
+menggunakan penutupan M-10, cycle baru tidak menimpa yang lama. Izin dan larangan
+kepentingan sendiri/pemutus sah tetap ditegakkan M-10.

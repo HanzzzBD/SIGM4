@@ -48,7 +48,10 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 - **A1 — Email sudah digunakan:** Sistem menolak dengan pesan spesifik.
 - **A2 — Penonaktifan pengguna yang masih memiliki peminjaman aktif atau denda belum lunas:** Sistem menampilkan peringatan dan meminta konfirmasi; data transaksi tetap tersimpan.
 - **A3 — Penonaktifan pengguna yang menjadi approver aktif:** Sistem memblokir aksi hingga Administrator menetapkan approver pengganti pada approval rules terkait.
-- **A4 — Impor massal:** Administrator mengunggah CSV/XLSX; sistem memvalidasi baris per baris dan menampilkan laporan sukses/gagal.
+- **A4 — Impor massal:** Administrator mengunggah CSV/XLSX; sistem memvalidasi baris per baris dan menampilkan laporan sukses/gagal. Berkas > 200 baris diproses asinkron oleh worker dan Administrator diberi tahu saat selesai (`IMPT-04`, `NT-52`); status dan laporan per baris dapat diambil kapan saja lewat pekerjaan impornya. Berkas identik yang diunggah ulang dalam 24 jam tidak diproses ulang — hasil pekerjaan sebelumnya dikembalikan (`IMPT-03`).
+- **A5 — Akun siswa tanpa persetujuan wali:** Sistem menolak membuat, mengaktifkan kembali, atau mengganti role menjadi Siswa/OSIS bila penanda `consent_guardian_at` belum terekam (`DP-02`, `SL-06`). Administrator merekam persetujuan yang dikumpulkan sekolah secara luring (`consent_wali`); penanda hanya direkam sekali dan tidak dicabut.
+
+**Deteksi CSV (PR-02-51).** Impor pengguna dan aset memakai deteksi koma/titik koma yang sama dari header logis pertama, hanya menghitung pemisah di luar kutipan; jumlah seri atau nol memakai koma. BOM UTF-8, CRLF, kutipan yang di-escape dan data berkutip tetap diproses parser CSV. Semua sel CSV tetap teks untuk mempertahankan NIP/NIS panjang dan nol di depan. Aturan berlaku pada submit sinkron dan pembacaan berkas oleh worker, tanpa pilihan pemisah manual.
 
 **Post Conditions** — Data pengguna tersimpan; pengguna nonaktif tidak dapat login namun riwayat transaksinya tetap utuh.
 
@@ -74,8 +77,8 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 5. Sistem menerapkan perubahan pada permintaan berikutnya dari pengguna terdampak.
 
 **Alternative Flow**
-- **A1 — Menghapus permission inti role Administrator:** Sistem menolak.
-- **A2 — Membuat role kustom:** Administrator menyalin role yang ada sebagai template lalu menyesuaikan.
+- **A1 — Menghapus permission inti role Administrator, atau mengubah cakupan datanya (scope):** Sistem menolak.
+- **A2 — Membuat role kustom:** Administrator menyalin role yang ada sebagai template lalu menyesuaikan. Role kustom memperoleh kode `RK-{id}` dari sistem dan seluruh permission beserta scope role sumbernya; role yang perilakunya terikat kode role tidak dapat dijadikan template (`BR-069a`).
 - **A3 — Menghapus role yang masih memiliki pengguna:** Sistem menolak dan meminta pemindahan pengguna terlebih dahulu.
 
 **Post Conditions** — Matriks permission terbarui dan berlaku pada seluruh titik pemeriksaan otorisasi (API dan UI).
@@ -84,6 +87,33 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 - [ ] Otorisasi diperiksa di sisi server pada setiap endpoint, tidak hanya menyembunyikan menu di UI.
 - [ ] Perubahan permission berlaku tanpa restart layanan.
 - [ ] Perubahan matriks tercatat di activity log.
+
+### FR-02.3 Cakupan Lokasi Pengguna
+
+| Aspek | Uraian |
+|---|---|
+| **Description** | Administrator membatasi pengguna role staf pada gedung, area, atau ruangan tertentu, sehingga ia hanya melihat dan mengelola aset, bahan, dan kegiatan di lokasi itu (`PM-07`…`PM-10`). Keputusan pemilik produk 26 Oktober 2026. |
+| **Actor** | Administrator |
+| **Preconditions** | Administrator login; pengguna sasaran berrole Petugas Sarana Prasarana (R-02), Teknisi (R-04), atau role kustom (`RK-*`) |
+
+**Main Flow**
+1. Administrator membuka detail pengguna dan bagian Cakupan Lokasi.
+2. Sistem menampilkan pohon gedung → area → ruangan beserta simpul yang sudah dipilih.
+3. Administrator memilih satu atau beberapa simpul; memilih gedung atau area otomatis mencakup seluruh turunannya.
+4. Administrator menyimpan; sistem mencatat perubahan dan memberi tahu pengguna terkait (NT-40).
+5. Cakupan berlaku pada permintaan berikutnya dari pengguna itu (`PM-05`).
+
+**Alternative Flow**
+- **A1 — Pengguna berrole Administrator, Pimpinan Sekolah, Guru, Staf/Tata Usaha, atau Siswa/OSIS:** Sistem menolak (`BR-069b`).
+- **A2 — Mengosongkan cakupan:** Pengguna kembali tidak dibatasi lokasi.
+- **A3 — Simpul yang dinonaktifkan kemudian:** Simpul tetap tersimpan dan tetap membatasi; turunannya yang aktif tetap tercakup.
+- **A4 — Pengguna mengubah cakupannya sendiri:** Sistem menolak (`BR-069`).
+- **A5 — Role pengguna diganti ke role yang tidak diizinkan `BR-069b`:** Cakupan lokasinya dihapus dalam transaksi yang sama dan tercatat.
+
+**Acceptance Criteria**
+- [ ] Pengguna bercakupan tidak dapat membaca maupun mengubah objek di luar cakupannya melalui endpoint apa pun, termasuk pencarian, ekspor, dashboard, dan chatbot (`PM-08`, `BR-076`).
+- [ ] Ruangan baru di bawah gedung yang dipilih langsung tercakup tanpa penyuntingan ulang.
+- [ ] Perubahan cakupan tercatat di activity log dengan nilai sebelum dan sesudah.
 
 ## 6. Business Rules
 
@@ -95,6 +125,8 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | BR-067 | Akun pengguna tidak dapat dihapus permanen; hanya dapat dinonaktifkan. |
 | BR-068 | Sistem wajib memiliki minimal satu akun Administrator berstatus aktif. |
 | BR-069 | Pengguna tidak dapat mengubah email dan rolenya sendiri. |
+| BR-069a | Role Administrator (R-01), Pimpinan Sekolah (R-03), dan Siswa/OSIS (R-07) tidak dapat dijadikan template role kustom: kewajiban 2FA (`BR-070`) dan perlindungan siswa (`DP-02`, `SL-01` … `SL-06`) melekat pada kode role, sehingga salinannya akan lolos dari perlindungan tersebut. |
+| BR-069b | Cakupan lokasi (`FR-02.3`) hanya dapat diberikan kepada pengguna berrole Petugas Sarana Prasarana (R-02), Teknisi (R-04), atau role kustom (`RK-*`). Administrator dan Pimpinan Sekolah mengawasi seluruh sekolah; Guru, Staf/Tata Usaha, dan Siswa/OSIS sudah dibatasi pada data miliknya sendiri. |
 | BR-073 | Role Siswa/OSIS tidak boleh mengakses data finansial aset, biaya pemeliharaan, data pengadaan, dokumen aset, maupun data pribadi pengguna lain. |
 | BR-074 | Setiap pengguna hanya dapat melihat riwayat transaksi, denda, dan percakapan chatbot miliknya sendiri, kecuali role yang diberi permission lebih luas. |
 
@@ -109,11 +141,20 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | GET | `/users/{id}` | `user.view` | Detail pengguna |
 | PUT | `/users/{id}` | `user.update` | Perbarui pengguna |
 | PATCH | `/users/{id}/status` | `user.update` | Aktifkan/nonaktifkan |
-| POST | `/users/import` | `user.create` | Impor massal CSV/XLSX |
-| POST | `/users/{id}/reset-password` | `user.reset_password` | Terbitkan password sementara |
-| POST | `/users/{id}/reset-2fa` | `user.reset_2fa` | Reset 2FA pengguna |
+| POST | `/users/import` | `user.create` | Impor massal CSV/XLSX: ≤ 200 baris diproses sinkron, lebih dari itu asinkron (`IMPT-04`); berkas identik dalam 24 jam mengembalikan hasil sebelumnya (`IMPT-03`) |
+| GET | `/users/import/{id}` | `user.create` | Status dan laporan per baris sebuah pekerjaan impor (`IMPT-02`) |
+| GET | `/users/import/template` | `user.create` | Unduh template XLSX E.5.2 beserta petunjuk dan contoh isian (`IMPT-05`) |
+| POST | `/class-promotions` | `user.update` | Kenaikan kelas massal: tetapkan kelas atau tandai lulus per siswa pada satu tahun ajaran (`SL-02`) |
+| POST | `/users/{id}/pseudonymize` | `user.update` | Khusus Administrator R-01 berscope all: pseudonimisasi permanen akun lain yang NONAKTIF dan tanpa kewajiban; alasan, referensi permintaan terverifikasi dan metode verifikasi wajib (`DP-04`, `SL-05`) |
+| GET | `/users/{id}/location-scope` | `user.view` | Cakupan lokasi pengguna: daftar simpul gedung/area/ruangan (`FR-02.3`) |
+| PUT | `/users/{id}/location-scope` | `user.update` | Ganti seluruh cakupan lokasi pengguna; daftar kosong = tidak dibatasi (`FR-02.3`, `BR-069b`) |
+| POST | `/users/{id}/reset-password` | `user.reset_password` | Terbitkan password sementara langsung dari detail pengguna (`FR-01.3 A5`); `metode_verifikasi` wajib; password tampil satu kali; sesi dicabut dan kunci login dibuka. Logikanya milik M-01 |
+| POST | `/users/{id}/reset-2fa` | `user.reset_2fa` | Reset 2FA pengguna (`FR-01.5 A3`): menonaktifkan 2FA, menghapus kode cadangan, mencabut seluruh sesi; `metode_verifikasi` wajib; untuk role wajib 2FA menerbitkan kode aktivasi baru, tampil satu kali (`BR-070d`) |
+| POST | `/users/{id}/2fa-activation-code` | `user.reset_2fa` | Terbitkan kode aktivasi 2FA bagi akun role wajib yang belum ber-2FA (`FR-01.5 A7`, `BR-070d`); `metode_verifikasi` wajib; kode tampil satu kali; tidak untuk akun sendiri |
 | GET | `/roles` | `role.view` | Daftar role |
+| POST | `/roles` | `role.update` | Buat role kustom dengan menyalin role sumber sebagai template (`FR-02.2 A2`, `BR-069a`); kode `RK-{id}` dibangkitkan sistem; nama unik |
 | PUT | `/roles/{id}/permissions` | `role.update` | Perbarui matriks permission |
+| GET | `/permissions` | `role.view` | Katalog permission (kode, modul, aksi, deskripsi, penanda inti 🔒) untuk matriks |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
@@ -124,7 +165,10 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 
 | Entitas | Deskripsi | Atribut Utama | Keterangan |
 |---|---|---|---|
-| **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, unit_kerja, telepon, foto, status, 2fa_enabled, must_change_password, last_login_at | Administrator |
+| **users** | Data pengguna sistem | id, nama, email, password_hash, nip_nis, role_id, work_unit_id, telepon, foto, status, deactivated_at, pseudonymized_at, totp_enabled_at, must_change_password, login_terakhir_pada, failed_login_count, failed_login_window_start, locked_until, consent_guardian_at | Administrator |
+| **student_enrollments** | Kelas siswa per tahun ajaran (Lampiran E.4, `SL-01`) — bukan atribut permanen akun | id, user_id, academic_year_id, kelas_id (unit kerja berjenis Kelas), lulus | Administrator |
+| **user_import_jobs** | Pekerjaan impor pengguna — setiap impor, sinkron maupun asinkron (`IMPT-02`, `IMPT-03`, `IMPT-04`) | id, file_hash, nama_berkas, status, total_baris, baris_terproses, sukses, gagal, laporan_gagal (hanya baris gagal: nomor baris, email, alasan), pesan_galat, selesai_pada | Administrator |
+| **user_location_scopes** | Cakupan lokasi pengguna (`FR-02.3`, `PM-07`) | user_id, building_id / area_id / room_id (tepat satu terisi), created_at, created_by | Administrator |
 | **roles** | Peran pengguna | id, nama, deskripsi, is_system | Administrator |
 | **permissions** | Daftar hak akses granular | id, modul, aksi, kode | Sistem |
 | **role_permissions** | Relasi role–permission | role_id, permission_id | Administrator |
@@ -137,8 +181,9 @@ Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-archit
 
 | Kode | Event Pemicu | Penerima | Kanal | Wajib | Contoh Isi |
 |---|---|---|---|:---:|---|
-| **NT-40** | Role atau status akun diubah | Pengguna terkait | In-app | ✅ | "Role akun Anda diubah menjadi {role}." |
+| **NT-40** | Role, status, atau cakupan lokasi akun diubah (`FR-02.3`) | Pengguna terkait | In-app | ✅ | "Role akun Anda diubah menjadi {role}." · "Cakupan lokasi Anda kini: {lokasi}." |
 | **NT-48** | Persetujuan wali siswa belum terekam | Administrator | In-app | ✅ | "Akun siswa {nama} tidak dapat diaktifkan: persetujuan wali belum terekam (DP-02)." |
+| **NT-52** | Impor massal pengguna selesai diproses (`IMPT-04`) | Administrator pengunggah | In-app | ✅ | "Impor pengguna selesai: {sukses} berhasil, {gagal} gagal dari {total} baris." |
 
 Ketentuan umum kanal, latensi, dan preferensi: [`m17-notifications.md`](m17-notifications.md).
 
@@ -165,8 +210,16 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | Aksi | Keterangan |
 |---|---|
 | `USER_CREATED` / `USER_UPDATED` / `USER_DEACTIVATED` / `USER_REACTIVATED` | Manajemen akun |
-| `USER_IMPORTED` | Impor massal beserta ringkasan hasil |
+| `USER_IMPORT_REQUESTED` | Berkas impor diterima dan tercatat sebagai pekerjaan impor (sinkron atau dijadwalkan asinkron, `IMPT-04`) |
+| `USER_PSEUDONYMIZED` | Identitas akun diganti permanen; alasan/referensi/metode atau sumber retensi otomatis tercatat tanpa menyalin identitas lama |
+| `USER_IMPORT_REPORT_PURGED` | Rincian laporan impor dihapus setelah retensi 30 hari; ID job dan jumlah tetap tercatat |
+| `USER_IMPORTED` | Impor massal beserta ringkasan hasil; pelaku = Administrator pengunggah, juga bila dijalankan worker |
+| `STUDENT_ENROLLMENT_SET` | Kelas siswa pada suatu tahun ajaran ditetapkan atau diubah (`SL-01`, `SL-02`), nilai lama/baru |
+| `STUDENT_MARKED_GRADUATED` | Siswa ditandai lulus pada suatu tahun ajaran (`SL-02`) |
+| `STUDENT_GRADUATION_DEACTIVATED` | Akun siswa lulus dinonaktifkan setelah tahun ajarannya berakhir (`SL-03`); pelaku `SYSTEM` bila dijalankan pekerjaan terjadwal |
+| `USER_LOCATION_SCOPE_UPDATED` | Cakupan lokasi pengguna diganti (`FR-02.3`); daftar simpul sebelum/sesudah |
 | `ROLE_PERMISSION_UPDATED` | Perubahan matriks permission |
+| `ROLE_CREATED` | Pembuatan role kustom dari template (`FR-02.2 A2`) |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
 
@@ -189,3 +242,49 @@ _Tidak ada._
 ## 15. Open Issues
 
 _Tidak ada isu terbuka._
+### Penutupan SL-04 dan pseudonimisasi — keputusan AskUserQuestion 15 Oktober 2026
+
+Pemeriksa M-09 didaftarkan pada proses API dan worker. Kewajiban aktif adalah
+pinjaman yang belum selesai atau masih memiliki unit BELUM_KEMBALI, termasuk
+pengembalian sebagian, serta denda/ganti rugi BELUM_DIBAYAR atau
+DIBEBASKAN_SEBAGIAN. Nominal yang menunggu penetapan tetap merupakan kewajiban;
+tidak memakai ambang nominal blokir reservasi. LUNAS/DIBEBASKAN tidak memblokir.
+Hilang yang belum tuntas tetap tertahan oleh pinjaman terbuka atau ganti rugi.
+Penolakan menampilkan nomor pinjaman/ID kewajiban spesifik kepada Administrator.
+SL-04 membatasi penonaktifan Siswa/OSIS R-07, baik manual maupun kelulusan.
+Pemeriksaan sebelum pseudonimisasi mencakup seluruh role.
+
+DP-04 dilayani Administrator melalui detail akun nonaktif. Body memuat alasan
+3–500 karakter, referensi_permintaan 3–200 karakter dan metode_verifikasi dari
+kamus verifikasi identitas yang sudah ada. Akun sendiri, role selain R-01,
+scope selain all, akun aktif dan akun berkewajiban ditolak. Izin Administrator
+dibaca ulang dari database. Permintaan ulang untuk akun yang sudah diproses
+mengembalikan waktu pseudonimisasi yang sama tanpa menggandakan audit.
+
+Nama menjadi Pengguna Terhapus #id, email deleted+id@invalid.local; NIP/NIS,
+telepon, unit kerja dan teks unit lama dikosongkan. ID/role/relasi transaksi tetap.
+Sesi, password, secret/kode 2FA, perangkat push dan pemulihan password dicabut.
+Akun tidak dapat diaktifkan, disunting atau dipulihkan; denda lunasnya tidak
+dapat dibuka kembali. Foto profil maupun foto bukti tidak dihapus/dikaburkan.
+Audit lama dan snapshot transaksi tetap sesuai AL-03/DP-05a; operasi ini tidak
+menjanjikan penghilangan identitas dari bukti atau audit historis tersebut.
+
+SL-05 diproses harian pada 01:10 WIB, berpelaku SYSTEM, untuk akun siswa NONAKTIF
+yang telah mencapai dua tahun kalender dari deactivated_at terakhir menurut WIB.
+Kewajiban diperiksa ulang dalam transaksi yang mengunci akun. Pengaktifan ulang
+mengosongkan jangkar; penonaktifan berikutnya memulai masa baru. Editing profil
+tidak mengubah jangkar. Saat migration, akun lama memakai keputusan status
+terakhir yang berhasil pada audit; tanpa bukti penonaktifan terakhir yang sah,
+masa retensi dimulai konservatif dari waktu migration, bukan updated_at.
+
+Laporan galat impor pengguna disimpan 30×24 jam sejak selesai/gagal. API menutup
+rincian/nama berkas pada tenggat walau worker belum membersihkannya. Worker
+mengosongkan laporan_gagal, pesan galat dan berkas mentah tersisa; nama berkas
+menjadi penanda impor-ID, report_purged_at menandai cleanup. Job/status/hitungan
+dan audit tidak dihapus. Respons menyediakan report_expires_at/report_expired;
+UI menyebut tenggat WIB dan menutup unduhan/rincian setelah tenggat. Job yang
+masih berjalan tidak dipurge. Terminal lama tanpa waktu selesai memulai retensi
+konservatif dari migration. Impor aset mengikuti kebijakan yang sama pada M-04.
+
+Prosedur verifikasi, respons maksimum 3×24 jam dan batas pemrosesan ada pada
+[runbook permintaan privasi](../../IMPLEMENTATION/runbooks/permintaan-privasi.md).

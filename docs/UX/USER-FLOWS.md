@@ -62,12 +62,11 @@ flowchart TD
 
     D --> E["Masukkan email & password"]
     E --> F{Validasi}
-    F -->|"Salah - 401"| G["Pesan generik<br/>tidak membocorkan email terdaftar"] --> E
-    F -->|"5x gagal - 423"| H["Akun terkunci<br/>tampilkan sisa waktu · FR-01.1 A2"] --> D
+    F -->|"Salah atau terkunci - 401"| G["Pesan generik yang sama<br/>tidak membocorkan email terdaftar<br/>maupun status terkunci · FR-01.1 A1/A2"] --> E
     F -->|"Nonaktif - 403"| I["Hubungi Administrator<br/>FR-01.1 A3"] --> D
     F -->|Benar| K{Role wajib 2FA?}
 
-    K -->|"Ya, belum terdaftar"| L["P-03 Aktivasi 2FA<br/>QR secret + 10 kode cadangan"]
+    K -->|"Ya, belum terdaftar"| L["P-03 Aktivasi 2FA<br/>kode aktivasi (role wajib) · QR secret + 10 kode cadangan"]
     K -->|"Ya, sudah aktif"| M["P-02 Verifikasi 2FA"]
     K -->|Tidak| N
 
@@ -76,7 +75,7 @@ flowchart TD
     L1 -->|Ya| N
 
     M --> M1{Kode benar?}
-    M1 -->|"Salah 5x"| H
+    M1 -->|"Salah 5x - 423"| H["Akun terkunci<br/>sisa waktu boleh ditampilkan: password sudah terbukti benar · FR-01.5 A1"] --> D
     M1 -->|"Kode cadangan dipakai"| M2["Peringatan bila sisa kurang dari 3<br/>FR-01.5 AC"] --> N
     M1 -->|Ya| N
 
@@ -137,10 +136,13 @@ flowchart TD
 
 | Skenario | Jalur UX | Rujukan |
 |---|---|---|
-| Aktivasi pertama | P-01 → P-03: QR secret + 10 kode cadangan, wajib dikonfirmasi dengan 6 digit sebelum dilanjutkan | `FR-01.5` |
+| Aktivasi pertama | P-01 → P-03: role wajib 2FA memasukkan **kode aktivasi** dari Administrator lebih dulu; lalu QR secret + 10 kode cadangan, wajib dikonfirmasi dengan 6 digit sebelum dilanjutkan. Berhasil → sesi lain pemilik akun keluar | `FR-01.5` · `BR-070d` · `BR-070e` |
+| Kode cadangan tampil sekali | Kolom 6 digit baru aktif setelah pengguna mencentang "Saya sudah menyimpan 10 kode cadangan di tempat aman"; tersedia Salin semua & Unduh .txt | `BR-070c` (keputusan 85c log phase-02) |
 | Kode cadangan menipis | Peringatan pada respons login **dan** spanduk pada P-77 saat tersisa 2 atau kurang, dengan tombol buat ulang | `FR-01.5 AC` |
 | Perangkat authenticator hilang | Pengguna memakai kode cadangan; bila habis, mengajukan reset 2FA kepada Administrator (P-63 drawer) | `FR-01.5 A2`, `A3` |
-| Reset 2FA oleh Admin | Pengguna wajib mendaftar ulang saat login berikutnya — diarahkan otomatis ke P-03 | `FR-01.5 A3` |
+| Reset 2FA oleh Admin | Pengguna wajib mendaftar ulang saat login berikutnya — diarahkan otomatis ke P-03; untuk role wajib, Administrator menyerahkan kode aktivasi baru yang tampil satu kali di drawer | `FR-01.5 A3` |
+| Kode aktivasi belum ada, salah, atau hangus | Pesan seragam "Kode aktivasi tidak berlaku. Minta kode baru kepada Administrator." — tidak membedakan sebabnya | `FR-01.5 A5` |
+| Administrator menerbitkan kode aktivasi | P-63 → drawer "Terbitkan Kode Aktivasi 2FA": metode verifikasi wajib, kode tampil satu kali dan dinyatakan sebelum drawer ditutup | `FR-01.5 A7` |
 | Seluruh Administrator kehilangan akses | **Tidak ada jalur antarmuka.** Pemulihan hanya lewat CLI di server dengan otorisasi tertulis Kepala Sekolah | `FR-01.6` · `BR-070b` · `SDD-SESS-11` |
 
 > `FR-01.6` sengaja tidak memiliki halaman. Mencantumkannya di sini justru penting: perancang tidak boleh membuat layar "Pemulihan Darurat" karena keberadaannya akan melanggar `BR-070b`.
@@ -195,7 +197,7 @@ flowchart TD
     C --> D{"Berkas sama diunggah ulang<br/>dalam 24 jam?"}
     D -->|Ya| E(["Dikenali idempoten, hasil sebelumnya<br/>ditampilkan · IMPT-03"])
     D -->|Tidak| F{Jumlah baris}
-    F -->|"Lebih dari 200"| G["Diproses asinkron<br/>NT-42 saat selesai · IMPT-04"]
+    F -->|"Lebih dari 200"| G["Diproses asinkron<br/>notifikasi modul pemilik saat selesai · IMPT-04"]
     F -->|"200 atau kurang"| H["Diproses langsung"]
     G --> I
     H --> I["Validasi baris per baris<br/>baris gagal tidak menggagalkan berkas · IMPT-01"]
@@ -206,6 +208,8 @@ flowchart TD
 ```
 
 **Keadaan sukses impor bukan toast** — ia halaman ringkasan yang dapat ditinjau ulang (**UXD-06**), karena `IMPT-02` mewajibkan alasan galat per nomor baris.
+
+P-17 memakai kontrak M-04 §7–11 dan `NT-55`; parameter `job` pada URL memulihkan laporan saat halaman dibuka ulang atau lewat notifikasi. Unduh koreksi menggunakan isian baris gagal; tautan katalog memakai `filter[import_job_id]`. P-15 dan notifikasi mengikuti ketersediaan halaman pada registri navigasi build.
 
 ### F-06 Perubahan kondisi & mutasi lokasi
 
@@ -226,7 +230,7 @@ flowchart TD
     J -->|"Ada slot aktif pada tanggal mutasi"| L["Tolak + tampilkan transaksi penghalang<br/>FR-04.4 A1"]
     J -->|"Tersedia / Dalam Perbaikan"| M["P-20: lokasi tujuan, tanggal,<br/>alasan, penanggung jawab baru"]
     M --> N["Perbarui lokasi, catat riwayat mutasi"]
-    N --> O["Berita acara mutasi PDF"]
+    N --> O["P-20: status berita acara<br/>worker membuat PDF setelah commit"]
 
     E --> P
     H --> P
@@ -238,6 +242,8 @@ flowchart TD
 ```
 
 **Mutasi massal via scan QR** (`FR-04.4 A2`): pemindai mobile mode beruntun mengumpulkan hingga 50 unit, lalu satu lokasi tujuan diterapkan secara atomik — bila satu unit gagal, seluruh operasi dibatalkan (`FR-04.4 AC`).
+
+P-20 web memilih 1–50 aset melalui pencarian/paginasi, lokasi aktif, tanggal dan alasan wajib, penanggung jawab baru opsional. Setelah sukses, ID hasil tersimpan pada `?document={id}`. MENUNGGU/BERJALAN dipantau otomatis; SIAP menyediakan Unduh PDF, GAGAL menjelaskan mutasi tetap tersimpan. Tombol muat ulang hanya membaca status. Pengguna ber-`asset_movement_document.view` dapat membaca hasil tanpa form mutasi; tanpa permission hasil menampilkan keadaan tanpa akses. Mutasi gagal mempertahankan isian dan tidak menampilkan ID PDF baru.
 
 ## 9.3 Persetujuan
 
@@ -524,7 +530,7 @@ flowchart TD
 
     L -->|"Tidak valid"| M["Drawer Tolak, alasan WAJIB<br/>terlihat oleh pelapor · NT-21"] --> Z2([Selesai])
     L -->|"Perbaikan ringan langsung"| N["Tiket ditutup Selesai + catatan"] --> Z2
-    L -->|"Perlu work order"| O["P-43 Buat Work Order:<br/>teknisi, prioritas, target selesai, estimasi biaya"]
+    L -->|"Perlu work order"| O["Drawer P-41: pilih teknisi, target selesai, estimasi biaya<br/>prioritas mengikuti urgensi tiket<br/>WO dibentuk dari event setelah verifikasi<br/>P-43 untuk kebutuhan korektif manual"]
 
     O --> P["Status aset jadi Dalam Perbaikan<br/>slot mendatang DIBATALKAN OTOMATIS<br/>pemohon dinotifikasi NT-27 · BR-048"]
     P --> Q["NT-22 ke teknisi, status Ditugaskan"]
@@ -897,3 +903,14 @@ flowchart TD
 ```
 
 Satu sesi hanya mencakup **satu domain** — memilih bahan dan aset sekaligus ditolak (`BR-093`). Alur aset yang sepadan adalah `F-18`.
+
+### Penghapusan aset — PR-05-10..14/29
+
+Petugas/Admin: P-55 → P-56 (atau Detail Aset/WO → P-56?aset=) → snapshot kandidat,
+bukti/justifikasi/garansi → aturan aktif M-10 → P-57. Approver: inbox/notifikasi
+→ P-38/P-57 → keputusan per aset dengan catatan → level berikutnya → keputusan
+akhir Pimpinan → Petugas mencatat pelaksanaan → worker PDF → NT-45 → arsip.
+Ditolak/dibatalkan melepaskan klaim; revisi mempertahankan snapshot dan membuka
+siklus M-10 baru. Aset Hilang hasil opname disetujui otomatis menjadi kandidat,
+tetapi pengajuannya tetap manual. Hilang yang ditemukan: Admin → P-57 → alasan,
+lokasi aktif/kondisi → dialog pemulihan → UUID/kode lama aktif, BA tetap utuh.

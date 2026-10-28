@@ -1,0 +1,10 @@
+// Permukaan publik shared/db (SDD-SYS-06): koneksi, transaksi, tipe repository.
+export type { AssetDocumentType, Database, FileOwnerType, FileScanStatus, KelompokNotifikasi, KondisiRuanganPasca, StatusBlokadeRuangan, StatusLaporanKerusakan, StatusPengiriman, StatusReservasi, UrgensiKerusakan } from "./schema.js";
+export type { DatabaseConfig } from "./connection.js";
+export { closeDb, createDb, getDb, readDatabaseConfig } from "./connection.js";
+export { OPSI_SESI_UTC, assertDatabaseTimeZoneUtc } from "./timezone.js";
+export type { QueryExecutor, TransactionScope } from "./transaction.js";
+export { withTransaction } from "./transaction.js";
+export type { ScopedRepository } from "./repository.js";
+export { BaseRepository, defineRepository } from "./repository.js";
+export type { MaintenanceSchedulesTable } from "./schema.js";

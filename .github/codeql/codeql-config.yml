@@ -1,0 +1,34 @@
+# Konfigurasi CodeQL untuk job `sast` (.github/workflows/ci.yml, ST-01).
+#
+# `js/missing-rate-limiting` DIKECUALIKAN, hanya query itu — seluruh
+# `security-extended` yang lain tetap menggerbang CD-02 apa adanya.
+#
+# Kenapa: query ini hanya mengenali beberapa paket npm rate-limiter baku
+# (mis. express-rate-limit) sebagai mitigasi; ia tidak dapat melihat
+# `RedisRateLimiter`/`batasi()` buatan proyek ini (SDD-13 §4.3), yang
+# diterapkan pada SETIAP route lewat parameter `batasi` yang diselesaikan
+# `rateLimit()` di composition root (`apps/api/src/api/index.ts`). Route
+# `m02-users` (PR-01-02) memakai pola persis sama dengan `healthRouter`/
+# `healthSummaryRouter` (PR-01-15, sudah lolos SAST) dan tetap ditolak
+# query ini sebagai temuan High.
+#
+# Penekanan per baris (`// lgtm[rule-id]`) TIDAK dapat dipakai sebagai
+# gantinya: gerbang `sast` menilai `sarif/*.sarif` — keluaran LOKAL
+# `codeql-action/analyze` — dan korelasi penekanan-komentar hanya terjadi
+# di sisi server GitHub SETELAH SARIF diunggah, tidak pernah tertulis balik
+# ke berkas lokal itu. Dibuktikan langsung: komentar `lgtm[...]` dengan
+# sintaks benar tetap tidak mengubah apa pun pada berkas lokal.
+#
+# Keputusan pemilik produk 16 September 2026 (keputusan 18, log phase-01).
+# Bila proyek ini kelak butuh CodeQL mengenali `batasi()` sebagai rate
+# limiter sungguhan, jalannya lewat *data extension* (`codeql/*-models`),
+# bukan pengecualian query ini dibiarkan selamanya.
+
+name: "SIGM4 SAST"
+
+queries:
+    - uses: security-extended
+
+query-filters:
+    - exclude:
+          id: js/missing-rate-limiting

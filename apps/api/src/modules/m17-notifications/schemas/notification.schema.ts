@@ -1,0 +1,65 @@
+// Skema Zod endpoint notifikasi (FR-17.1, SDD-NTF-10; SDD-API-01).
+
+import { z } from "zod";
+
+const KELOMPOK = ["PERSETUJUAN", "RESERVASI_PEMINJAMAN", "DENDA_KEWAJIBAN", "KERUSAKAN_PERAWATAN", "OPNAME_PENGADAAN", "AKUN_SISTEM"] as const;
+
+const Boolean = z.enum(["true", "false"]).transform((v) => v === "true");
+
+/** FR-17.1 A2 (arsip) & A3 (filter jenis + status baca). */
+export const ListNotificationsQuerySchema = z.object({
+    jenis: z.enum(KELOMPOK).optional(),
+    belum_dibaca: Boolean.optional(),
+    arsip: Boolean.default(false),
+    page: z.coerce.number().int().positive().default(1),
+    per_page: z.coerce.number().int().positive().max(100).default(25),
+});
+
+export const NotificationIdParamSchema = z.object({ id: z.coerce.number().int().positive() });
+
+export { NotificationsResponseSchema as ListNotificationsResponseSchema } from "@sigm4/schemas";
+
+export const MarkReadResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.object({ id: z.number(), dibaca_pada: z.string(), unread_count: z.number() }),
+    meta: z.null(),
+});
+
+export const MarkAllReadResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.object({ ditandai: z.number(), unread_count: z.number() }),
+    meta: z.null(),
+});
+
+/** FR-17.2 langkah 1: FID perangkat (keputusan 80e) — hanya platform mobile. */
+export const RegisterDeviceTokenBodySchema = z.strictObject({
+    token: z.string().trim().min(1).max(512),
+    platform: z.enum(["ANDROID", "IOS"]),
+});
+
+export const DeviceTokenParamSchema = z.object({ token: z.string().min(1).max(512) });
+
+export const RegisterDeviceTokenResponseSchema = z.object({
+    success: z.literal(true),
+    data: z.object({ token: z.string(), platform: z.enum(["ANDROID", "IOS"]), terakhir_aktif: z.string() }),
+    meta: z.null(),
+});
+
+const Preferensi = z.object({ jenis: z.enum(KELOMPOK), in_app: z.boolean(), push: z.boolean(), terkunci: z.boolean() });
+
+/** FR-17.3 langkah 3 (keputusan 81): 1–6 kelompok unik; yang tak disebut tidak berubah. */
+export const UpdatePreferencesBodySchema = z.strictObject({
+    preferensi: z
+        .array(z.strictObject({ jenis: z.enum(KELOMPOK), in_app: z.boolean(), push: z.boolean() }))
+        .min(1)
+        .max(KELOMPOK.length)
+        .refine((d) => new Set(d.map((p) => p.jenis)).size === d.length, { message: "Setiap kelompok hanya boleh disebut sekali." }),
+});
+
+export const PreferencesResponseSchema = z.object({ success: z.literal(true), data: z.array(Preferensi), meta: z.null() });
+
+/** `text/event-stream` — badan bukan JSON; skema ini mendokumentasikan isi tiap `data:` (SDD-08 §4.3a). */
+export const StreamEventSchema = z.union([
+    z.object({ jenis: z.literal("notifikasi"), notifikasi: z.object({ id: z.number(), kode: z.string(), judul: z.string(), isi: z.string(), deep_link: z.string().nullable(), created_at: z.string() }), unread_count: z.number() }),
+    z.object({ jenis: z.literal("hitungan"), unread_count: z.number() }),
+]);

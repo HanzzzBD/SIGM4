@@ -127,6 +127,52 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 
 `BR-008` (m04) · `BR-012` (m04) · `BR-035` (m10)
 
+### Keputusan implementasi PR-05-10..14/29 — 14 Oktober 2026
+
+Keputusan pemilik produk melalui pertanyaan interaktif menuntaskan perbedaan
+FR-21.1 (seluruh aset) dengan FR-21.2 (sebagian): keputusan disimpan **per aset**.
+Level berikutnya hanya mempertahankan/mengurangi pilihan; aset ditolak dilepas
+dari blokir pemesanan. Jalur M-10 memakai total nilai perolehan snapshot awal,
+tidak dihitung ulang setelah persetujuan sebagian. Nilai kosong wajib dilengkapi
+pada data aset; form usulan tidak menerima nilai finansial dari klien.
+
+Pengajuan wajib cocok dengan aturan aktif `PENGHAPUSAN_ASET` yang berakhir pada
+role/user Pimpinan R-03. Tanpa konfigurasi cocok, pengajuan ditolak. Langkah awal
+mengikuti aturan; aktor keputusan akhir wajib R-03 dengan `disposal.approve`.
+Fallback Administrator hanya boleh menolak atau meminta revisi pada level akhir.
+Pembuat usulan tidak boleh memutuskan usulannya sendiri sesuai M-10.
+
+Pengajuan ditolak bila ada unit pinjaman `BELUM_KEMBALI` (termasuk saat slotnya
+sudah lewat), slot Tentative/Confirmed/Active berjalan/mendatang, WO belum
+ditutup, atau irisan snapshot opname aktif. Klaim unik per aset menahan pemesanan
+selama Menunggu/Revisi/Disetujui; pembatalan oleh pengusul/Admin sebelum eksekusi
+wajib alasan. Revisi mempertahankan kumpulan aset dan snapshot, membentuk siklus
+approval baru; perubahan operasional sejak snapshot memerlukan batal/ajukan ulang.
+
+Eksekusi seluruh aset disetujui atomik: tanggal WIB tidak mendatang dan tidak
+sebelum persetujuan, tindak lanjut aktual, minimal satu saksi bernama, foto milik
+pelaksana dengan checksum dan scan CLEAN. Khusus Hilang, tindak lanjut wajib
+`ADMINISTRATIF`; foto fisik diganti berita acara kehilangan CLEAN milik usulan
+atau referensi opname disetujui yang diverifikasi server. Lampiran pendukung
+dapat ditautkan setelah checksum saat masih PENDING; seluruhnya wajib CLEAN
+sebelum persetujuan. Garansi aktif selalu memerlukan konfirmasi dan alasan,
+termasuk ketika pengguna tidak memiliki izin melihat dokumen aset.
+
+Kondisi fisik tidak ditambah enum terminal: eksekusi menetapkan `dihapuskan=true`,
+`tanggal_penghapusan`, dan `status=TIDAK_TERSEDIA`. Kode, UUID, baris aset, dan
+riwayat tetap utuh. Pemulihan hanya Administrator dan hanya alasan Hilang:
+alasan wajib, lokasi aktif, serta kondisi ditemukan Baik/Rusak Ringan/Rusak Berat.
+Pemulihan tidak mengubah snapshot berita acara lama.
+
+Kandidat otomatis berasal dari Rusak Berat/Hilang atau rekomendasi penggantian
+M-12 terverifikasi; sumber WO/opname ditampilkan dan pengajuan tetap manual.
+Arsip/rekap PDF dan XLSX menghitung hanya unit dieksekusi berdasarkan snapshot
+lokasi/kategori/tahun pelaksanaan; pemulihan tidak menghapus histori penghapusan.
+`asset.view_financial` mengendalikan nilai perolehan dan versi PDF finansial;
+`maintenance.view_cost` dengan scope all mengendalikan biaya pemeliharaan.
+Worker menerbitkan dua PDF permanen (penuh/redaksi) sebelum NT-45, dengan retry
+idempoten dan kompensasi objek per percobaan.
+
 ## 7. API Endpoints
 
 ### Endpoint
@@ -138,6 +184,14 @@ _Diagram alur khusus modul ini tidak ada pada PRD. Alur lintas modul: [`../03-ar
 | POST | `/asset-disposals/{id}/execute` | `disposal.execute` | Catat pelaksanaan fisik & hapuskan aset |
 | GET | `/asset-disposals/{id}/report` | `disposal.view` | Unduh berita acara penghapusan PDF |
 | POST | `/assets/{id}/reinstate` | `disposal.reinstate` | Pulihkan aset yang telah dihapuskan |
+| GET | `/asset-disposals/candidates` | `disposal.create` | Kandidat dan penghalang otomatis, paginasi |
+| GET | `/asset-disposals/options` | `disposal.view` | Filter kategori dan lokasi aktif |
+| GET | `/asset-disposals/{id}` | `disposal.view` | Snapshot, bukti CLEAN dan status keputusan |
+| PUT | `/asset-disposals/{id}` | `disposal.create` | Revisi usulan dan mulai approval baru |
+| POST | `/asset-disposals/{id}/cancel` | `disposal.create` | Pengusul/Admin, alasan wajib sebelum eksekusi |
+| POST | `/asset-disposals/{id}/report/retry` | `disposal.execute` | Ulangi worker berita acara gagal |
+| GET | `/asset-disposals/export/xlsx` | `disposal.view` | Rekap snapshot dieksekusi sesuai filter |
+| GET | `/asset-disposals/export/pdf` | `disposal.view` | Rekap PDF dengan penyaringan finansial |
 
 Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 [`../03-architecture/api-conventions.md`](../03-architecture/api-conventions.md).
@@ -150,6 +204,8 @@ Konvensi umum, format respons, kode galat, dan ketentuan keamanan API:
 |---|---|---|---|
 | **asset_disposals** | Usulan penghapusan aset | id, nomor, pengusul_id, alasan, justifikasi, tindak_lanjut_fisik, status, disetujui_oleh, disetujui_pada, dilaksanakan_oleh, dilaksanakan_pada, saksi, berita_acara_path | ± 50 |
 | **asset_disposal_items** | Aset dalam usulan penghapusan | id, disposal_id, asset_id, nilai_perolehan_snapshot, biaya_pemeliharaan_snapshot, keputusan, keterangan | ± 300 |
+| **asset_disposal_claims** | Klaim pemesanan selama usulan aktif | asset_id (PK), disposal_id | Unik per unit; dilepas per keputusan/eksekusi |
+| **asset_disposal_files** | Lampiran dan bukti pelaksanaan privat | disposal_id, file_id, jenis, nama_berkas | Kepemilikan dan scan M-06 |
 
 Model data menyeluruh dan ERD: [`../03-architecture/data-model.md`](../03-architecture/data-model.md).
 
@@ -186,7 +242,9 @@ Katalog kanonik & aturan scope: [`../00-foundation/roles-permissions.md`](../00-
 | Aksi | Keterangan |
 |---|---|
 | `ASSET_DISPOSAL_PROPOSED` / `DECIDED` / `EXECUTED` / `CANCELLED` | Siklus penghapusan aset (M-21) |
+| `ASSET_DISPOSAL_EXPORTED` | Unduh/ekspor terfilter; pengajuan ulang dicatat PROPOSED dengan penanda revisi |
 | `ASSET_REINSTATED` | Pemulihan aset yang telah dihapuskan, beserta alasan |
+| `ASSET_DISPOSAL_REPORT_RETRY_REQUESTED` | Pembuatan ulang berita acara penghapusan yang gagal diantrekan (`POST /asset-disposals/{id}/report/retry`); atomik dengan outbox |
 
 Prinsip, struktur entri, dan tamper-evidence: [`../03-architecture/activity-log.md`](../03-architecture/activity-log.md).
 

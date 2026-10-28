@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Milestone PRD** | `M6 — Pengerasan & Kesiapan Rilis` — **menutup M6** dan seluruh gerbang 29.3 |
-| **Status** | `Not Started` |
+| **Status** | Lihat [`IMPLEMENTATION-STATUS.md`](../IMPLEMENTATION-STATUS.md) |
 | **Modul PRD** | — (tidak ada modul baru) |
 | **Bergantung pada** | Phase 07 |
 | **Memblokir** | — (phase terakhir; keluarannya adalah go-live) |
@@ -90,23 +90,28 @@ Keluaran phase ini bukan kode, melainkan **keputusan bahwa sistem boleh dipakai*
 
 ## 7. Pull Request Plan
 
-| PR | Judul | Kompleksitas | Bergantung | FR/SDD | Acceptance |
-|---|---|:---:|---|---|---|
-| `PR-08-01` | Harness uji beban + skenario 150 concurrent user | L | Ph07 | `GL-03`, `SDD-PERF-05` | Skenario mencerminkan pemakaian nyata, bukan satu endpoint |
-| `PR-08-02` | Optimasi hasil uji beban — batch temuan | M | 01 | Bab 9.1 | Setiap optimasi menunjuk angka sebelum/sesudah |
-| `PR-08-03` | Penetapan parameter operasional dari pengukuran (TBD kelompok B) | M | 01 | `TBD-AVL-C/D`, `TBD-PERF-A`, `TBD-EVT-A` | Tiap nilai punya dasar pengukuran, bukan tebakan |
-| `PR-08-04` | Pengerasan keamanan pra-pentest | M | Ph07 | `SDD-SEC-04/05/06`, `NFR-S-07` | Pemindaian otomatis bersih sebelum penguji manusia masuk |
-| `PR-08-05` | Penutupan temuan pentest — batch 1 | M | pentest | `GL-04`, `ST-04` | Nol temuan High/Critical terbuka |
-| `PR-08-06` | Penutupan temuan pentest — batch 2 | M | 05 | `GL-04` | Verifikasi ulang oleh penguji |
-| `PR-08-07` | Backup terverifikasi + skrip pemulihan | M | Ph00 | `BR-DR-01` … `BR-DR-04` | Pemulihan diuji dari backup nyata, bukan asumsi |
-| `PR-08-08` | DR runbook + pelaksanaan drill | M | 07 | `GL-06`, `BR-DR-05` | RTO/RPO terukur dan memenuhi target |
-| `PR-08-09` | Alerting produksi + jalur eskalasi | M | Ph00 | `OBS-07`, `SDD-OBS-07`, **TBD-OBS-B** | Setiap alarm punya penerima bernama |
-| `PR-08-10` | Perkakas migrasi data produksi + validasi | L | Ph07 | `GL-08`, `IMP-01` `IMP-03` | ≥95% aset (`SC-01`), ≥95% ber-QR (`SC-02`) |
-| `PR-08-11` | **Contract**: hapus `users.unit_kerja` | S | Ph07 | `SDD-DB-08`, `WU-01` | Nol pembaca tersisa, dibuktikan pencarian kode |
-| `PR-08-12` | Pemberitahuan privasi + alur persetujuan wali di produksi | M | Ph01 | `GL-07`, `DP-01` `DP-02`, `DP-AI-04`, Bab 28 | Seluruh akun siswa aktif punya persetujuan; pemberitahuan privasi menyatakan konsekuensi tier gratis chatbot sebelum chatbot aktif (`DP-AI-04`) |
-| `PR-08-13` | Pengerasan mobile + versi paksa + berkas rilis store | M | Ph07 | `GL-11`, `SDD-MOB-08/09/10` | Lolos tinjauan kedua store |
-| `PR-08-14` | Uji rencana rollback pada staging berdata produksi tiruan | M | 07 | `GL-12`, `CD-05` | Rollback dijalankan sungguhan dan terukur waktunya |
-| `PR-08-15` | Dokumen serah terima `IMP-08` | L | seluruhnya | `IMP-08` | Delapan dokumen lengkap dan terbaca pihak sekolah |
+| PR | Judul | Kode | Uji | Bergantung | FR/SDD | Acceptance |
+|---|---|:---:|:---:|---|---|---|
+| `PR-08-01` | Harness uji beban + skenario 150 concurrent user | L | L | Ph07 | `GL-03`, `SDD-PERF-05` | Skenario mencerminkan pemakaian nyata, bukan satu endpoint |
+| `PR-08-02` | Optimasi hasil uji beban — batch temuan | M | M | 01 | Bab 9.1 | Setiap optimasi menunjuk angka sebelum/sesudah. *Rekonsiliasi (keputusan 23 log phase-03):* bila cetak 200 label di staging > 5 detik, render PDF label QR pindah ke worker (`SDD-FS-12`) |
+| `PR-08-03` | Penetapan parameter operasional dari pengukuran (TBD kelompok B) | M | M | 01 | `TBD-AVL-C/D`, `TBD-PERF-A`, `TBD-EVT-A` | Tiap nilai punya dasar pengukuran, bukan tebakan |
+| `PR-08-04` | Pengerasan keamanan pra-pentest | M | M | Ph07 | `SDD-SEC-04/05/06`, `NFR-S-07` | Pemindaian otomatis bersih sebelum penguji manusia masuk; CSP halaman web tanpa `unsafe-inline` — `'self'` + hash sha256 build-time (`SDD-SEC-04`) |
+| `PR-08-05` | Penutupan temuan pentest — batch 1 | M | M | pentest | `GL-04`, `ST-04` | Nol temuan High/Critical terbuka |
+| `PR-08-06` | Penutupan temuan pentest — batch 2 | M | M | 05 | `GL-04` | Verifikasi ulang oleh penguji |
+| `PR-08-07` | Backup terverifikasi + skrip pemulihan | M | M | Ph00 | `BR-DR-01` … `BR-DR-04` | Pemulihan diuji dari backup nyata, bukan asumsi |
+| `PR-08-08` | DR runbook + pelaksanaan drill | M | M | 07 | `GL-06`, `BR-DR-05` | RTO/RPO terukur dan memenuhi target; **deferred DoD Phase 02 FR-01.6:** operator melatih admin:recover, alarm/log diterima, sesi dicabut dan akses dua Administrator pulih; owner operator/DevOps/QA, dependency staging nyata + PR-08-07, bukti latihan manusia wajib |
+| `PR-08-09` | Alerting produksi + jalur eskalasi | M | M | Ph00 | `OBS-07`, `SDD-OBS-07`, **TBD-OBS-B** | Setiap alarm punya penerima bernama |
+| `PR-08-10` | Perkakas migrasi data produksi + validasi | L | L | Ph07 | `GL-08`, `IMP-01` `IMP-03` | ≥95% aset (`SC-01`), ≥95% ber-QR (`SC-02`) |
+| `PR-08-11` | **Contract**: hapus `users.unit_kerja` | S | S | Ph07 | `SDD-DB-08`, `WU-01` | Nol pembaca tersisa, dibuktikan pencarian kode |
+| `PR-08-12` | Pemberitahuan privasi + alur persetujuan wali di produksi | M | M | Ph01 | `GL-07`, `DP-01` `DP-02`, `DP-AI-04`, Bab 28 | Seluruh akun siswa aktif punya persetujuan; pemberitahuan privasi menyatakan konsekuensi tier gratis chatbot sebelum chatbot aktif (`DP-AI-04`). *Rekonsiliasi (keputusan 23 log phase-03):* layar P-07 beserta padanan mobile `MS-26` (keputusan 7 log phase-07 — tautan Privasi di Login dan Profil mobile ikut terdaftar di sini); pencabutan persetujuan wali + perlakuan akun siswa (Q4) dirancang di sini |
+| `PR-08-13` | Pengerasan mobile + versi paksa + berkas rilis store | M | M | Ph07 | `GL-11`, `SDD-MOB-08/09/10` | Lolos tinjauan kedua store. *Rekonsiliasi (keputusan 23 log phase-03):* layar MS-04 |
+| `PR-08-14` | Uji rencana rollback pada staging berdata produksi tiruan | M | M | 07 | `GL-12`, `CD-05` | Rollback dijalankan sungguhan dan terukur waktunya |
+| `PR-08-15` | Dokumen serah terima `IMP-08` | L | L | seluruhnya | `IMP-08` | Delapan dokumen lengkap dan terbaca pihak sekolah; **GAP-08-INSTALL (deferred FR-01.6 AC 4):** prosedur/validasi instalasi menolak satu Administrator, rehearsal dua akun beserta aktivasi 2FA; owner DevOps/Backend/dokumentasi |
+| `PR-08-17` | Pipeline rilis production ke server sekolah — self-hosted runner, PostgreSQL container, gerbang `CD-06` *(di luar rencana, 24 Okt — log §4)* | L | S | PR-00-18 | `SDD-INF-14`, `CD-03` … `CD-07`, `SDD-INF-03/04/05` | Tag `vX.Y.Z` di `main` → CI penuh → GHCR + GitHub Release → persetujuan `production` → deploy di runner sekolah → smoke dari luar; rollback = dispatch tag lama tanpa build ulang; deploy di jam operasional ditolak kecuali dipaksa beralasan |
+| `PR-08-18` | Staging di server sekolah — proxy tepi bersama, stack Compose per lingkungan, deploy staging lewat runner *(di luar rencana, 25 Okt — log §4)* | L | S | PR-08-17 | `SDD-INF-15`, `SDD-INF-13`, `CD-03`, `CD-04`, `CD-07` | Push ke `staging` → CI → GHCR + paket web → deploy di runner `sigm4-staging` (proyek `sigm4-staging`) → proxy tepi merender situs per domain (HTTPS setelah sertifikat ada) → smoke dari luar; produksi memakai proxy tepi yang sama tanpa port host di stack; konfigurasi Nginx diuji `nginx -t` di CI |
+| `PR-08-19` | Deploy staging & production lewat Dokploy — Compose app per lingkungan, image web, pemicu API, nginx sekolah di depan *(di luar rencana, 28 Okt — log §4)* | M | S | PR-08-18 | `SDD-INF-16`, `CD-04`, `CD-05`, `CD-07`, `NFR-S-07` | Push ke `staging` → CI → GHCR `sigm4` + `sigm4-web` → tag `staging` dipindah → API Dokploy `compose.deploy` ditunggu sampai `done` → smoke dari luar; produksi sama lewat tag `production` setelah reviewer + `CD-06`; compose menjamin dump → migration → api/worker; nginx sekolah memegang routing, stack hanya membuka port host `api` (3010 produksi) dan `web` statis (3011); `deploy/edge/` dan `deploy.sh` dihapus |
+| `PR-08-20` | Staging nonaktif sampai subdomain tersedia + pra-rilis `v0.x` ke produksi sebelum go-live *(di luar rencana, 28 Okt — log §4)* | S | S | PR-08-19 | `SDD-INF-16` e, `DL-01`, `CD-03` | Job deploy staging dilewati kecuali `STAGING_AKTIF=true`; tag `v0.x.y` di `main` men-deploy produksi lewat jalur rilis biasa; BRANCHING-STRATEGY §3 dan RELEASE-PLAN §1 memuat aturan pra-rilis |
+| `PR-08-16` | DAST OWASP ZAP *baseline scan* terhadap staging per kandidat rilis | S | S | Ph00 | `ST-03`, `SDD-SEC-11` | Dijalankan pipeline setelah smoke test staging; temuan High/Critical menggagalkan kandidat rilis; laporan tersimpan sebagai artefak |
 
 ## 8. Task Breakdown
 
@@ -143,6 +148,7 @@ Keluaran phase ini bukan kode, melainkan **keputusan bahwa sistem boleh dipakai*
 - [ ] `GL-10`: pelatihan selesai; minimal dua Administrator aktif (`BR-070a`)
 - [ ] `GL-11`: aplikasi disetujui Google Play dan App Store
 - [ ] `GL-12`: rencana rollback teruji (`CD-05`)
+- [ ] `ST-03`: DAST berjalan pada kandidat rilis dan tanpa temuan High/Critical terbuka
 - [ ] `IMP-08`: delapan dokumen serah terima lengkap
 - [ ] TBD kelompok B tertutup dengan angka pengukuran; sisa TBD terbuka tercatat sebagai risiko yang diterima secara sadar
 

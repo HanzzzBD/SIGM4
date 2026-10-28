@@ -1,0 +1,488 @@
+# Pipeline CI SIGM4 — PR-00-17.
+#
+# Urutan wajib CD-01: lint → uji berkas → uji integrasi → build → SAST → SCA →
+# pemindaian image. Gerbang CD-02: cakupan logika inti < 70% atau kerentanan
+# High/Critical menggagalkan pipeline. Penyedia GitHub Actions (SDD-INF-12);
+# perkakas Vitest (SDD-REPO-11), CodeQL · dependency-review + npm audit · Trivy
+# (SDD-SEC-11). Deploy staging, DAST, dan smoke test milik PR-00-18.
+#
+# Required status check pada develop/staging/main adalah job `ci-lulus` —
+# satu nama yang tetap, apa pun job yang dilewati penyaringan jalur.
+#
+# Setiap action dipatok ke SHA commit, bukan tag: tag dapat dipindahkan pemiliknya
+# (atau penyerang) tanpa jejak. Dependabot memutakhirkan SHA-nya (dependabot.yml).
+
+name: CI
+
+on:
+    pull_request:
+        branches: [develop, staging, main]
+    push:
+        branches: [develop, staging, main]
+    # Tag rilis v* menjalankan pipeline ini lewat rilis-produksi.yml (PR-08-17), bukan
+    # lewat push langsung — satu run per tag, dan image yang diterbitkan ke produksi
+    # adalah artefak `build` run itu sendiri. `github.ref` tetap tag-nya (SDD-API-12).
+    workflow_call:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+    # Mayor yang sama dengan Dockerfile (node:22-alpine) — INF-04.
+    NODE_VERSION: "22"
+
+jobs:
+    # Penyaringan jalur (SDD-17 §5): perubahan yang tidak menyentuh pohon backend
+    # tidak menjalankan uji integrasi dan build image. docs/PRD dan docs/SDD TIDAK
+    # dilewati — uji pembanding membaca Bab 11.3, Lampiran C, SDD-03, dan SDD-13
+    # langsung, sehingga suntingan dokumen itu dapat memerahkan uji.
+    perubahan:
+        name: Penyaringan jalur
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        outputs:
+            api: ${{ steps.saring.outputs.api }}
+            web: ${{ steps.saring.outputs.web }}
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  fetch-depth: 0
+            - id: saring
+              env:
+                  BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+              run: |
+                  # Dispatch, push pertama sebuah cabang, atau basis yang tidak dikenal:
+                  # jalankan semuanya. Salah ke arah menjalankan lebih banyak, bukan kurang.
+                  if [ -z "$BASE" ] || ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+                      echo "api=true" >> "$GITHUB_OUTPUT"
+                      echo "web=true" >> "$GITHUB_OUTPUT"
+                      exit 0
+                  fi
+                  berubah=$(git diff --name-only "$BASE" HEAD)
+                  printf '%s\n' "$berubah"
+                  pola='^(apps/api/|packages/|scripts/|deploy/|evals/chatbot/|docs/PRD/|docs/SDD/|package(-lock)?\.json$|tsconfig[^/]*\.json$|eslint\.config\.js$|\.prettierrc\.json$|Dockerfile$|\.dockerignore$|docker-compose\.yml$|\.github/workflows/)'
+                  if printf '%s\n' "$berubah" | grep -qE "$pola"; then
+                      echo "api=true" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "api=false" >> "$GITHUB_OUTPUT"
+                  fi
+                  # Pohon web (PR-02-30): uji token/kontras membaca FOUNDATIONS.md, uji label membaca Bab 11.3.
+                  pola_web='^(apps/web/|packages/|docs/DESIGN/FOUNDATIONS\.md$|docs/PRD/03-architecture/data-model\.md$|package(-lock)?\.json$|tsconfig[^/]*\.json$|eslint\.config\.js$|\.github/workflows/)'
+                  if printf '%s\n' "$berubah" | grep -qE "$pola_web"; then
+                      echo "web=true" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "web=false" >> "$GITHUB_OUTPUT"
+                  fi
+
+    lint:
+        name: Lint · typecheck · batas impor
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: npm
+            - run: npm ci
+            - run: npm run lint
+            - run: npm run typecheck
+            # Uji negatif batas modul dan batas antar-pohon (SDD-SYS-02, SDD-17 §4.2).
+            - run: npm run check:boundaries
+
+    uji-berkas:
+        name: Uji berkas
+        needs: [perubahan, lint]
+        if: needs.perubahan.outputs.api == 'true'
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: npm
+            - run: npm ci
+            # Seluruh workspace; untuk apps/api didahului tsc atas uji negatif @ts-expect-error.
+            - run: npm run test
+            - name: Kontrak keamanan dan pembersihan smoke (CD-07)
+              run: |
+                  bash -n deploy/staging/smoke-test.sh
+                  python3 scripts/qa/smoke-critical.test.py
+            # Berkas deploy server sekolah (PR-08-17/19): gerbang CD-06 diuji, skrip dan topologi divalidasi.
+            - name: Berkas deploy produksi
+              run: |
+                  bash deploy/production/jendela-deploy.test.sh
+                  bash -n deploy/production/dokploy-deploy.sh
+                  bash deploy/production/docker-compose.test.sh
+                  bash -n deploy/staging/smoke-test.sh
+
+    # Pohon web (SDD-11, PR-02-30): uji (token & kontras NFR-AC-01/02, lint DS-P-07, alur aplikasi,
+    # axe) lalu build Vite. Tanpa layanan eksternal — server HTTP tiruan pada adapter axios.
+    web:
+        name: Web · uji · build
+        needs: [perubahan, lint]
+        if: needs.perubahan.outputs.web == 'true'
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: npm
+            - run: npm ci
+            - run: npm run test -w apps/web
+            - run: npm run build -w apps/web
+
+    # Uji integrasi terhadap PostgreSQL dan Redis NYATA (SDD-REPO-11) sekaligus
+    # gerbang cakupan gabungan CD-02 (keputusan 46). Uji berkas ikut dijalankan
+    # ulang di sini karena cakupannya harus satu laporan dengan integrasi.
+    uji-integrasi:
+        name: Uji integrasi · cakupan ≥ 70%
+        needs: [perubahan, uji-berkas]
+        if: needs.perubahan.outputs.api == 'true'
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        services:
+            postgres:
+                image: postgres:15-alpine
+                env:
+                    POSTGRES_DB: sigm4
+                    POSTGRES_USER: sigm4
+                    POSTGRES_PASSWORD: sigm4_ci
+                    TZ: UTC
+                    PGTZ: UTC
+                ports: ["5432:5432"]
+                options: >-
+                    --health-cmd "pg_isready -U sigm4 -d sigm4"
+                    --health-interval 5s --health-timeout 5s --health-retries 12
+            redis:
+                image: redis:7-alpine
+                ports: ["6379:6379"]
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 5s --health-timeout 3s --health-retries 12
+            # ClamAV NYATA (PR-03-05, keputusan 8d log phase-03) — image sama dengan docker-compose.yml;
+            # basis data virus ikut di dalam image, jadi yang ditunggu hanya pemuatannya (±1 menit).
+            clamav:
+                image: clamav/clamav:1.4
+                ports: ["3310:3310"]
+                options: >-
+                    --health-cmd "clamdcheck.sh"
+                    --health-interval 10s --health-timeout 10s --health-retries 30
+        env:
+            # Kredensial container sekali-pakai milik job ini, bukan rahasia.
+            DATABASE_URL: postgres://sigm4:sigm4_ci@localhost:5432/sigm4?sslmode=disable
+            REDIS_URL: redis://localhost:6379
+            # AL-03b wajib benar-benar berjalan: sandi akun aplikasi disetel jalur
+            # migration, lalu acceptance terhubung sebagai akun itu.
+            APP_DB_PASSWORD: sigm4_app_ci
+            APP_DATABASE_URL: postgres://sigm4_app:sigm4_app_ci@localhost:5432/sigm4?sslmode=disable
+            # Object storage NYATA (PR-03-04, keputusan 5 log phase-03): MinIO, pengganti lokal Backblaze B2.
+            S3_ENDPOINT: http://localhost:9000
+            S3_PUBLIC_ENDPOINT: http://localhost:9000
+            S3_REGION: us-east-1
+            S3_BUCKET: sigm4-ci
+            S3_ACCESS_KEY: sigm4ci
+            S3_SECRET_KEY: sigm4_ci_secret
+            CLAMAV_URL: tcp://localhost:3310
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: npm
+            - run: npm ci
+            # FR-04.4 AC 3: acceptance PDF memakai renderer Chromium nyata.
+            # CLI dari lockfile memasang browser dan dependensi sistem yang cocok dengan Playwright.
+            - name: Pasang Chromium untuk uji PDF
+              run: node node_modules/playwright-core/cli.js install --with-deps chromium
+            # Service container tidak dapat meneruskan argumen `server /data` milik image MinIO,
+            # jadi dinyalakan sebagai langkah. Image dipatok sama dengan docker-compose.yml (digest
+            # Chainguard — minio/minio tak lagi dapat ditarik, keputusan 6 log phase-03).
+            - name: Nyalakan MinIO + bucket uji
+              run: |
+                  docker run -d --name minio -p 9000:9000 \
+                    -e MINIO_ROOT_USER="$S3_ACCESS_KEY" -e MINIO_ROOT_PASSWORD="$S3_SECRET_KEY" \
+                    chainguard/minio@sha256:0f95aa412a12351a95bb43c3b54b66440eb0aa022bb3f3458942678a489e915b server /data
+                  for i in $(seq 1 30); do curl -sf http://localhost:9000/minio/health/ready && break; sleep 2; done
+                  docker exec minio mc ready local
+                  docker exec minio mc alias set lokal http://localhost:9000 "$S3_ACCESS_KEY" "$S3_SECRET_KEY"
+                  docker exec minio mc mb --ignore-existing "lokal/$S3_BUCKET"
+            - name: Uji berkas + integrasi, gerbang cakupan statements & lines ≥ 70%
+              run: npm run test:ci -w apps/api
+            # Suite yang ter-skip = lingkungan tidak lengkap = FAILED, bukan hijau.
+            - name: Tidak ada uji yang ter-skip
+              if: ${{ !cancelled() }}
+              run: node scripts/assert_no_skipped.mjs apps/api/coverage-ci/vitest-report.json
+            - name: Ringkasan cakupan
+              if: ${{ !cancelled() }}
+              run: cat apps/api/coverage-ci/coverage-summary.json
+
+    build:
+        name: Build · image
+        needs: [perubahan, uji-integrasi]
+        if: needs.perubahan.outputs.api == 'true'
+        runs-on: ubuntu-latest
+        # Tahap `dbmate` membangun biner Go dari sumber tanpa cache (keputusan 56):
+        # ±11 menit terukur lokal.
+        timeout-minutes: 30
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: npm
+            - run: npm ci
+            - run: npm run build
+            - name: OpenAPI dari commit build (SDD-API-12)
+              env:
+                  OPENAPI_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
+              run: node scripts/generate-openapi.mjs "$OPENAPI_VERSION" openapi.json
+            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: openapi-${{ github.sha }}
+                  path: openapi.json
+                  retention-days: 90
+                  if-no-files-found: error
+            # Konteks bersih setiap PR — mitigasi phantom dependency (SDD-17 §6).
+            - name: Build image (SDD-INF-01)
+              run: docker build --build-arg APP_REVISION="${{ github.sha }}" --tag "sigm4:${{ github.sha }}" .
+            - run: docker save "sigm4:${{ github.sha }}" --output image.tar
+            # Yang dipindai Trivy adalah image hasil build INI, bukan hasil build ulang.
+            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: image
+                  path: image.tar
+                  retention-days: 1
+
+    # SAST (ST-01) pada setiap PR. CodeQL sendiri hanya melaporkan; gerbang CD-02
+    # ditegakkan langkah sesudahnya atas temuan ber-security-severity ≥ 7,0.
+    sast:
+        name: SAST · CodeQL
+        needs: [build]
+        if: ${{ !failure() && !cancelled() }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        permissions:
+            contents: read
+            security-events: write
+            actions: read
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+              with:
+                  languages: javascript-typescript
+                  build-mode: none
+                  config-file: ./.github/codeql/codeql-config.yml
+            - uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+              with:
+                  output: sarif
+            - name: Gagal bila ada temuan High/Critical (CD-02)
+              # security-severity ≥ 7,0 = High/Critical menurut skala CVSS CodeQL.
+              run: |
+                  temuan=$(jq -r '.runs[]
+                      | ([.tool.driver.rules[]?, .tool.extensions[]?.rules[]?]
+                         | map({key: .id, value: ((.properties["security-severity"] // "0") | tonumber)})
+                         | from_entries) as $sev
+                      | .results[]?
+                      | select(($sev[.ruleId] // 0) >= 7.0)
+                      | "\(.ruleId)  \(.locations[0].physicalLocation.artifactLocation.uri):\(.locations[0].physicalLocation.region.startLine)"' sarif/*.sarif)
+                  if [ -n "$temuan" ]; then
+                      printf 'Temuan High/Critical:\n%s\n' "$temuan"
+                      exit 1
+                  fi
+                  echo "Tidak ada temuan High/Critical."
+
+    # SCA (ST-02) — keputusan 45. Dependabot tidak dapat menghentikan pipeline,
+    # jadi gerbangnya dua: dependency-review atas dependensi yang DIUBAH sebuah PR,
+    # dan npm audit atas SELURUH pohon. Keduanya membaca GitHub Advisory Database,
+    # basis data yang sama dengan Dependabot.
+    sca:
+        name: SCA · dependency-review + npm audit
+        needs: [sast]
+        if: ${{ !failure() && !cancelled() }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+            # SDD-SEC-13: GHSA yang dikecualikan dibaca dari daftar yang sama dengan gerbang
+            # seluruh pohon; pengunciannya ke path paket ditegakkan langkah terakhir.
+            - name: GHSA berpengecualian
+              id: pengecualian
+              run: echo "ghsa=$(node -p "require('./.github/sca-pengecualian.json').pengecualian.map(e => e.ghsa).join(',')")" >> "$GITHUB_OUTPUT"
+            - name: Dependensi baru ber-High/Critical ditolak
+              if: github.event_name == 'pull_request'
+              uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+              with:
+                  fail-on-severity: high
+                  allow-ghsas: ${{ steps.pengecualian.outputs.ghsa }}
+            - name: Uji gerbang SCA berpengecualian
+              run: node --test scripts/sca-gerbang.test.mjs
+            - name: Seluruh pohon dependensi tanpa High/Critical di luar pengecualian
+              run: node scripts/sca-gerbang.mjs
+
+    # Pemindaian image (CD-01) atas artefak tahap build.
+    image-scan:
+        name: Pindai image · Trivy
+        needs: [perubahan, sca]
+        if: ${{ needs.perubahan.outputs.api == 'true' && !failure() && !cancelled() }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+              with:
+                  name: image
+            - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+              with:
+                  input: image.tar
+                  severity: HIGH,CRITICAL
+                  exit-code: "1"
+                  format: table
+
+    # Satu-satunya required status check. Job yang dilewati penyaringan jalur
+    # dianggap lulus; job yang gagal atau dibatalkan tidak.
+    ci-lulus:
+        name: CI lulus
+        needs: [perubahan, lint, web, uji-berkas, uji-integrasi, build, sast, sca, image-scan]
+        if: always()
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        steps:
+            - env:
+                  HASIL: ${{ join(needs.*.result, ' ') }}
+              run: |
+                  echo "Hasil job: $HASIL"
+                  for r in $HASIL; do
+                      case "$r" in
+                          success|skipped) ;;
+                          *) echo "Ada job berstatus $r"; exit 1 ;;
+                      esac
+                  done
+
+    # ---- Deploy staging (CD-03) — PR-00-18 --------------------------------
+    # Hanya push ke `staging`, dan hanya setelah seluruh gerbang lulus. Yang
+    # diterbitkan adalah artefak job `build` yang SAMA dengan yang dipindai Trivy,
+    # bukan hasil build ulang (keputusan 52).
+    publikasi-image:
+        name: Terbitkan image · GHCR
+        needs: [perubahan, ci-lulus]
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging' && needs.perubahan.outputs.api == 'true'
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        permissions:
+            contents: read
+            packages: write
+        outputs:
+            image: ${{ steps.terbit.outputs.image }}
+        steps:
+            - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+              with:
+                  name: image
+            - id: terbit
+              env:
+                  GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  # Nama repositori GHCR wajib huruf kecil.
+                  image="ghcr.io/${GITHUB_REPOSITORY,,}:${GITHUB_SHA}"
+                  docker load --input image.tar
+                  docker tag "sigm4:${GITHUB_SHA}" "$image"
+                  echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+                  docker push "$image"
+                  echo "image=$image" >> "$GITHUB_OUTPUT"
+            # Image web untuk staging (SDD-FE-14, SDD-INF-16): dibangun di sini, bukan di job
+            # `web`, yang dilewati bila pohon web tidak berubah.
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: npm
+            - run: npm ci
+            - run: npm run build -w apps/web
+            - name: Bangun image web
+              run: docker build -f deploy/production/web.Dockerfile --build-context conf=deploy/production/nginx -t "sigm4-web:${GITHUB_SHA}" apps/web/dist/app
+            - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+              with:
+                  image-ref: sigm4-web:${{ github.sha }}
+                  severity: HIGH,CRITICAL
+                  exit-code: "1"
+                  format: table
+            - name: Dorong image web
+              run: |
+                  web="ghcr.io/${GITHUB_REPOSITORY,,}-web:${GITHUB_SHA}"
+                  docker tag "sigm4-web:${GITHUB_SHA}" "$web"
+                  docker push "$web"
+
+    # Staging berjalan di server sekolah sebagai Compose app `sigm4-staging` di Dokploy
+    # (SDD-INF-16): job ini memindahkan tag `staging` ke image commit ini, lalu memicu
+    # deploy lewat API Dokploy dan menunggu hasilnya. Tidak ada runner di server.
+    # Environment `staging`: variabel DOKPLOY_URL, DOKPLOY_COMPOSE_ID, STAGING_DOMAIN ·
+    # secret DOKPLOY_API_KEY.
+    # Staging belum berjalan sampai subdomainnya tersedia (SDD-INF-16 e): job ini — dan
+    # smoke staging yang bergantung padanya — dilewati kecuali variabel REPOSITORI
+    # STAGING_AKTIF bernilai `true`. Variabel environment tidak terbaca pada `if` job.
+    deploy-staging:
+        name: Deploy staging
+        needs: [publikasi-image]
+        if: vars.STAGING_AKTIF == 'true'
+        runs-on: ubuntu-latest
+        timeout-minutes: 40
+        environment:
+            name: staging
+            url: https://${{ vars.STAGING_DOMAIN }}
+        # Dua deploy tidak pernah berjalan bersamaan; yang datang belakangan menunggu.
+        concurrency:
+            group: deploy-staging
+            cancel-in-progress: false
+        permissions:
+            contents: read
+            packages: write
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - name: Pindahkan tag staging (SDD-INF-16 c)
+              env:
+                  GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+                  for repo in "ghcr.io/${GITHUB_REPOSITORY,,}" "ghcr.io/${GITHUB_REPOSITORY,,}-web"; do
+                      docker buildx imagetools create -t "$repo:staging" "$repo:${GITHUB_SHA}"
+                  done
+            - name: Deploy lewat Dokploy
+              env:
+                  DOKPLOY_URL: ${{ vars.DOKPLOY_URL }}
+                  DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+                  COMPOSE_ID: ${{ vars.DOKPLOY_COMPOSE_ID }}
+              run: bash deploy/production/dokploy-deploy.sh "$COMPOSE_ID" "staging ${GITHUB_SHA::12} run ${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
+
+    # Dari LUAR server, jalur yang sama dengan pengguna: DNS → TLS + routing nginx sekolah → api / web (CD-07).
+    # Secret environment `staging`: SMOKE_EMAIL, SMOKE_PASSWORD, SMOKE_TOTP_SECRET ·
+    # variabel SMOKE_ROOM_ID, SMOKE_ASSET_UUID, SMOKE_START_HOUR_WIB.
+    smoke-staging:
+        name: Smoke test staging (CD-07)
+        needs: [deploy-staging]
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        environment:
+            name: staging
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+            - name: Smoke test penuh
+              env:
+                  SMOKE_BASE_URL: https://${{ vars.STAGING_DOMAIN }}
+                  SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+                  SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+                  SMOKE_TOTP_SECRET: ${{ secrets.SMOKE_TOTP_SECRET }}
+                  SMOKE_ROOM_ID: ${{ vars.SMOKE_ROOM_ID }}
+                  SMOKE_ASSET_UUID: ${{ vars.SMOKE_ASSET_UUID }}
+                  SMOKE_START_HOUR_WIB: ${{ vars.SMOKE_START_HOUR_WIB || '09:00' }}
+                  SMOKE_EXPECTED_REVISION: ${{ github.sha }}
+              run: bash deploy/staging/smoke-test.sh "$SMOKE_BASE_URL" --full

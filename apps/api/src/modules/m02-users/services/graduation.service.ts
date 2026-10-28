@@ -1,0 +1,88 @@
+// GraduationService (SL-03, DP-10, SDD-05 §4.7d): menonaktifkan akun siswa yang
+// ditandai lulus SETELAH tahun ajarannya berakhir. Akun tidak dihapus (BR-067).
+//
+// Idempoten (`JOB-03`): siswa yang sudah nonaktif tidak dipilih lagi, sehingga
+// menjalankannya ulang atas hari yang sama tidak menghasilkan apa pun.
+//
+// Dipasang sebagai pekerjaan worker `student-graduation` berpelaku SYSTEM
+// (`SDD-03`, `AL-06`, PR-02-32) — src/worker/student-graduation.ts. Service ini
+// menerima `AuthContext` dari pemanggil.
+
+import type { Kysely } from "kysely";
+import type { AuthContext } from "../../../shared/auth/index.js";
+import type { Clock } from "../../../shared/clock/index.js";
+import { SystemClock } from "../../../shared/clock/index.js";
+import type { AuditLogger } from "../../../shared/audit/index.js";
+import type { Database } from "../../../shared/db/index.js";
+import { withTransaction } from "../../../shared/db/index.js";
+import { createStudentEnrollmentRepository } from "../repositories/student-enrollment.repository.js";
+import { createUserRepository } from "../repositories/user.repository.js";
+import type { StudentObligation, StudentObligationRegistry } from "./student-obligation-registry.js";
+import { studentObligations } from "./student-obligation-registry.js";
+
+const MODUL = "m02-users";
+
+export interface BlockedGraduate {
+    readonly userId: number;
+    readonly kewajiban: readonly StudentObligation[];
+}
+
+export interface GraduationResult {
+    readonly diproses: number;
+    readonly dinonaktifkan: number;
+    /** SL-04: tetap AKTIF; daftarnya ditampilkan kepada Administrator. */
+    readonly terblokir: readonly BlockedGraduate[];
+}
+
+/** Hari WIB (`YYYY-MM-DD`) dari sebuah instan — batas hari mengikuti `CAL-03`, bukan UTC. */
+export function tanggalWib(instan: Date): string {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(instan);
+}
+
+export class GraduationService {
+    constructor(
+        private readonly db: Kysely<Database>,
+        private readonly audit: AuditLogger,
+        private readonly obligations: StudentObligationRegistry = studentObligations,
+        private readonly clock: Clock = new SystemClock(),
+    ) {}
+
+    /** `hariIni` = hari WIB (`tanggalWib(clock.now())`); tahun ajaran berakhir bila `tanggal_selesai` < `hariIni`. */
+    async deactivateDueGraduates(ctx: AuthContext, hariIni: string): Promise<GraduationResult> {
+        const due = await createStudentEnrollmentRepository(this.db).listDueGraduates(ctx, hariIni);
+
+        let dinonaktifkan = 0;
+        const terblokir: BlockedGraduate[] = [];
+        for (const lulusan of due) {
+            const userId = Number(lulusan.userId);
+            const hasil = await withTransaction(
+                ctx,
+                async (scope) => {
+                    const users = createUserRepository(scope.tx);
+                    const sebelum = await users.findById(scope.ctx, userId, true);
+                    // Diperiksa ulang di dalam transaksi: dapat berubah sejak daftar dibaca.
+                    if (sebelum === undefined || sebelum.status !== "AKTIF" || await users.findRoleKode(scope.ctx, userId) !== "R-07") return "LEWAT" as const;
+
+                    const kewajiban = await this.obligations.cek(scope, userId);
+                    if (kewajiban.length > 0) return { kewajiban };
+
+                    const sesudah = await users.updateStatus(scope.ctx, userId, "NONAKTIF", this.clock.now());
+                    await this.audit.write(scope, {
+                        modul: MODUL,
+                        aksi: "STUDENT_GRADUATION_DEACTIVATED",
+                        entitas: "users",
+                        entitasId: userId,
+                        nilaiSebelum: sebelum,
+                        nilaiSesudah: sesudah,
+                        keterangan: `Lulus — tahun ajaran ${lulusan.academicYearId} berakhir (SL-03).`,
+                    });
+                    return "NONAKTIF" as const;
+                },
+                this.db,
+            );
+            if (hasil === "NONAKTIF") dinonaktifkan += 1;
+            else if (hasil !== "LEWAT") terblokir.push({ userId, kewajiban: hasil.kewajiban });
+        }
+        return { diproses: due.length, dinonaktifkan, terblokir };
+    }
+}

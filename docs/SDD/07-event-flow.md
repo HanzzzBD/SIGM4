@@ -11,7 +11,7 @@ Banyak requirement PRD berbentuk "ketika X terjadi, maka Y juga terjadi" — dan
 | Pemicu | Efek lintas modul | ID |
 |---|---|---|
 | Pengembalian aset rusak | Tiket kerusakan terbit otomatis | `BR-032` |
-| Aset masuk perbaikan | Reservasi mendatang dibatalkan + pemohon dinotifikasi | `BR-048`, `NT-27` |
+| Aset masuk perbaikan | Reservasi mendatang dibatalkan + pemohon dinotifikasi | `BR-048` , `NT-27` |
 | Work order ditutup | Tiket kerusakan asalnya ikut tertutup | `BR-050` |
 | Penerimaan pengadaan | Aset terbentuk + dokumen tertaut | `BR-064`, `BR-065` |
 | Opname disetujui | Penyesuaian lokasi/kondisi/status aset diterapkan | `BR-057` |
@@ -53,6 +53,7 @@ Berkas ini menetapkan **bagaimana** rantai sebab-akibat itu dijalankan tanpa mem
 |---|---|---|
 | Tiket kerusakan dari pengembalian rusak (`BR-032`) | **Sinkron** | Aset tidak boleh berstatus rusak tanpa tiketnya; keduanya satu kebenaran |
 | Pembatalan slot saat aset masuk perbaikan (`BR-048`) | **Sinkron** | Bila gagal, aset "dalam perbaikan" masih bisa dipesan — pelanggaran `BR-047` |
+| Pembentukan WO dari tiket terverifikasi (`FR-11.2`, `FR-12.1`) | Asinkron | Penugasan tahan restart disimpan saat verifikasi; worker membaca ulang dan membentuk tepat satu WO dengan unique `damage_report_id` |
 | Penutupan tiket saat WO ditutup (`BR-050`) | **Sinkron** | Konsistensi status antar dua entitas |
 | Pembentukan aset dari penerimaan (`BR-064`) | **Sinkron** | Penerimaan tanpa aset = data menggantung |
 | Penerapan penyesuaian opname (`BR-057`) | **Sinkron** | Satu persetujuan = satu perubahan atomik |
@@ -117,25 +118,40 @@ service:
     untuk tiap event: jalankan seluruh handler terdaftar
       sukses  -> processed_at = now()
       gagal   -> attempts++, last_error, backoff eksponensial
-      attempts >= 5 -> pindah ke dead-letter + alarm (OBS-05)
+      attempts >= 5 -> berhenti dicoba; baris menjadi dead letter + alarm (OBS-05)
 ```
 
-Dispatcher memakai `SELECT ... FOR UPDATE SKIP LOCKED` sehingga aman meski suatu saat worker diskalakan.
+**Dead letter adalah keadaan baris, bukan tempat lain.** Tidak ada tabel kedua dan tidak ada kolom penanda: sebuah event ber-*dead letter* bila `attempts >= 5 AND processed_at IS NULL`. Skema §4.1 sudah memuat seluruh yang dibutuhkan kartu 19.2 — `event_name` (jenis), `occurred_at` (waktu), `last_error` (galat terakhir) — dan metrik `outbox_dead_letter_count` (`SDD-15` §4.3) adalah `COUNT(*)` atas predikat yang sama. Dua akibatnya mengikat implementasi:
+
+- Kueri pemungutan dispatcher **wajib** membawa `AND attempts < 5`, sebab tanpa itu baris dead letter dipungut ulang selamanya.
+- Indeks `event_outbox_pending` (§4.1) berpredikat `processed_at IS NULL` saja, sehingga ia ikut memuat baris dead letter. Itu disengaja — jumlahnya kecil dan retensinya menjadi urusan `TBD-EVT-A`, bukan alasan menambah kolom.
+
+Dispatcher memakai `SELECT ... FOR UPDATE SKIP LOCKED` sehingga aman meski suatu saat worker diskalakan. **Yang dikunci adalah agregatnya, bukan barisnya** — kunci diambil atas event pending tertua sebuah `(aggregate_type, aggregate_id)`, lalu seluruh event pending agregat itu diproses berurutan `id` di dalam kunci yang sama. Mengunci per baris akan melanggar `SDD-EVT-09` justru pada keadaan yang `SKIP LOCKED` ini siapkan: dispatcher kedua melewati baris yang sedang terkunci dan memungut event **berikutnya dari agregat yang sama**, sehingga urutannya terbalik.
+
+Konsekuensinya, event yang gagal **menahan** event sesudahnya pada agregat yang sama sampai ia berhasil atau menjadi dead letter. Itu memang yang `SDD-EVT-09` minta: notifikasi `NT-14` yang mendahului `NT-15` pada satu peminjaman lebih baik tertunda daripada terbalik.
 
 ### 4.3 Katalog event
 
 | Event | Diterbitkan oleh | Konsumen asinkron |
 |---|---|---|
+| `AssetMovementDocumentRequested` | M-04 | Worker `asset-movement-document`, payload `{document_id}`; job ID tetap `movement-document-{id}`, membaca snapshot transaksi, maksimum 3 percobaan; tidak mengulang mutasi |
 | `ReservationSubmitted` | M-07 / M-08 | Notifikasi `NT-01` |
-| `ApprovalDecided` | M-10 | Notifikasi `NT-02`/`NT-03`/`NT-04`/`NT-05` |
-| `ApprovalSlaBreached` | M-10 (job) | Notifikasi `NT-06`/`NT-07`/`NT-47` |
+| `ApprovalDecided` | M-10 | Notifikasi `NT-02`/`NT-03`/`NT-04`/`NT-05`; payload `instance_id`, `urutan`, `keputusan`, `status` (instance sesudahnya), `langkah_aktif`; agregat `approval_instance`. Hanya terbit di jalur pemenang (`RE-09`) |
+| `ApprovalSlaBreached` | M-10 (job) | Notifikasi `NT-06`/`NT-07`/`NT-47` menurut `tindakan`; payload `instance_id`, `urutan`, `tindakan` (`REMIND` \| `ESCALATE` \| `EXHAUSTED`), `eskalasi_ke` (ESCALATE); agregat `approval_instance`. Penolakan otomatis (`auto_reject`) tidak menerbitkan event ini melainkan `ApprovalDecided` (`NT-03`). Kontrak = skema Zod `ApprovalSlaBreachedPayloadSchema` (m10 `index.ts`, *strict*), divalidasi penerbit sebelum publish; konsumen `PR-02-25` |
+| `ApprovalInstanceCreated` | M-10 | Notifikasi `NT-01` (pemutus sah langkah aktif) bila `jenis_pengajuan` reservasi; payload `instance_id`, `jenis_pengajuan`, `langkah_aktif`; agregat `approval_instance`. Terbit dalam transaksi pembentukan instance, sesudah aktivasi langkah — jadi menyasar langkah fallback bila seluruh langkah terlewati (`PR-03-10`, keputusan 14e log phase-03) |
+| `RoomReservationExpired` | M-07 | Notifikasi `NT-46` (pemohon + pemutus langkah yang aktif saat ditutup); payload `reservation_id` (akar pengajuan), `nomor`, `pemohon_id`, `instance_id`, `langkah_aktif`; agregat `reservation`. Terbit sekali per pengajuan oleh konsumen `TentativeSlotExpired` (`PR-03-10`) |
+| `RoomReservationCancelled` | M-07 | Notifikasi `NT-08` kepada pemohon **hanya bila** `sepihak` (pembatal bukan pemohon, `FR-07.3 A2`); payload `reservation_id` (baris yang diminta), `nomor`, `pemohon_id`, `pelaku_id`, `alasan`, `sepihak`, `dibatalkan` (id yang berpindah ke `DIBATALKAN`); agregat `reservation`. Terbit dalam transaksi pembatalan, sesudah slot dilepas dan instance approval yang berjalan ditutup (`PR-03-11`) |
+| `ApprovalFallbackRouted` | M-10 | Notifikasi `NT-47` (Administrator + Petugas Sarpras) — seluruh langkah terlewati, pengajuan dialihkan ke *fallback approver* (`RE-11`, `RE-13`); payload `instance_id`, `urutan_fallback`; agregat `approval_instance` |
 | `LoanCheckedOut` | M-09 | Notifikasi `NT-10` |
 | `LoanReturned` | M-09 | Notifikasi `NT-14`, metrik utilisasi |
 | `FineIssued` | M-09 | Notifikasi `NT-15` |
 | `BorrowerBlocked` | M-09 | Notifikasi `NT-18` |
 | `DamageReported` | M-11 | Notifikasi `NT-19`/`NT-20` |
+| `DamageReportVerified` | M-11 | Notifikasi `NT-21` (pelapor; bukan bila ia sendiri pemverifikasinya) |
 | `WorkOrderAssigned` | M-12 | Notifikasi `NT-22` |
 | `WorkOrderClosed` | M-12 | Notifikasi `NT-26` |
+| `PreventiveWorkOrderCreated` | M-12 (job) | Notifikasi `NT-28` kepada Teknisi + Petugas; payload `work_order_id`, `nomor`, `teknisi_id`, `aset`, `tanggal`; agregat `work_order`. Terbit satu transaksi dengan WO dan pointer siklus (PR-04-07) |
+| `PreventiveAssetAvailable` | M-12 (job) | Notifikasi `NT-28` kepada teknisi WO yang sudah terbit; payload `work_order_id`, `teknisi_id`, `aset`; agregat `work_order`. Terbit bersama penghapusan penanda menunggu, juga bagi jadwal nonaktif (PR-04-07) |
 | `ReservationCancelledByMaintenance` | M-12 | Notifikasi `NT-27` |
 | `AuditSessionSubmitted` | M-13 | Notifikasi `NT-31` |
 | `AssetMarkedLost` | M-09 / M-13 | Notifikasi `NT-33` |
@@ -143,10 +159,24 @@ Dispatcher memakai `SELECT ... FOR UPDATE SKIP LOCKED` sehingga aman meski suatu
 | `AssetsGenerated` | M-14 | Notifikasi `NT-36` |
 | `DisposalExecuted` | M-21 | Notifikasi `NT-45` |
 | `MaterialIssued` | M-22 | Notifikasi `NT-51` |
-| `MaterialStockLow` | M-22 | Notifikasi `NT-49` |
+| `MaterialLowStock` | M-22 | Notifikasi `NT-49` |
 | `MaterialRequestReady` | M-22 | Notifikasi `NT-50` |
-| `FileUploaded` | M-06 | Pemindaian AV, pembuatan thumbnail |
+| `FileUploaded` | M-06 | Pemindaian AV, pembuatan thumbnail; payload `file_id`; agregat `stored_file`. Terbit dalam transaksi `POST /files/confirm` (`PR-03-25`); konsumen memasukkan pekerjaan `file-scan` (`jobId` per berkas) ke antrean (`PR-03-05`) |
+| `FileScanned` | M-06 | Turunan gambar (`SDD-FS-07`) — konsumen menjadwalkan pekerjaan `file-derivatives` hanya bila `hasil = CLEAN`; payload `file_id`, `hasil`; agregat `stored_file`. Terbit dalam transaksi putusan pindai (`PR-03-07`) |
 | `ExportRequested` | M-16 | Pembuatan berkas, notifikasi `NT-42` |
+| `UserImportRequested` | M-02 | Memasukkan pekerjaan `user-import` ke antrean (`IMPT-04`) |
+| `UserImportCompleted` | M-02 (job) | Notifikasi `NT-52` |
+| `UserAccountChanged` | M-02 | Notifikasi `NT-40` ke pengguna terkait; payload `user_id`, `role_baru` (kode) \| null, `status_baru` \| null — hanya bila role atau status benar-benar berubah; agregat `user` (keputusan 78) |
+| `GuardianConsentMissing` | M-02 | Notifikasi `NT-48` ke Administrator; diterbitkan pada transaksi **terpisah** setelah penolakan `DP-02` di-rollback (`SDD-EVT-04`); payload `user_id` \| null, `nama`; agregat `user` (keputusan 78) |
+| `AccountLocked` | M-01 | Notifikasi `NT-39` (pemilik akun + Administrator); payload `user_id`, `terkunci_sampai`; agregat `user` |
+| `TwoFactorEnabled` | M-01 | Notifikasi `NT-39a` (Administrator); payload `user_id`, `sesi_dicabut`, `platform` (sesi yang mengonfirmasi: `WEB`/`ANDROID`/`IOS`, keputusan 87d); agregat `user`. Terbit dalam transaksi `enroll/confirm` (`BR-070e`, `SDD-SESS-17`) |
+| `PasswordResetRequested` | M-01 | Notifikasi `NT-37` (Administrator, in-app + push); payload `permintaan_id`, `user_id`; agregat `user` |
+| `PasswordResetIssued` | M-01 | Notifikasi `NT-38` (Administrator penerbit, in-app); payload `permintaan_id`, `user_id`, `oleh`, `kedaluwarsa_pada` — **tidak pernah** memuat password sementara (`FR-01.3 AC`); agregat `user` |
+| `PasswordChangedAfterReset` | M-01 | Notifikasi `NT-38a` (pengguna terkait, in-app + push); payload `user_id`, `permintaan_id`; agregat `user` |
+| `AdminBreakGlassRecovery` | M-01 | Notifikasi `NT-53` (seluruh Pimpinan Sekolah, in-app + push); payload `user_id`, `email`, `dipaksa`, `sesi_dicabut`; agregat `user`. Terbit dalam transaksi CLI break-glass (`FR-01.6`) |
+| `RefreshTokenReuseDetected` | M-01 | Notifikasi `NT-54` (Administrator, in-app + push); payload `user_id`, `family_id`, `token_dicabut`; agregat `user`. Terbit dalam transaksi pencabutan keluarga (`SDD-SESS-04`, keputusan 87a) |
+| `TentativeSlotExpired` | `shared/booking` (job `tentative-slot-expiry`) | Pengajuan pemilik slot → `Kedaluwarsa` + notifikasi pemohon & approver (`BR-023b`) — konsumen M-07 `pasangKonsumenReservasi` (ruangan, `PR-03-10`: kelompok pengajuan → `KEDALUWARSA`, instance `DIBATALKAN`, `RESERVATION_EXPIRED`, lalu `RoomReservationExpired`) dan `PR-04-02` (aset); payload `slot_id`, `origin`, `resource_type`, `resource_id`, `reservation_id`, `loan_id`; agregat `booking_slot`. Terbit dalam transaksi pelepasan slot (`PR-02-37`, keputusan 88d) |
+| `SessionRevoked` | M-01 | Menonaktifkan device token FCM sesi itu (`MOB-SEC-05`); payload `user_id`, `family_id`, `platform`, `alasan`; agregat `user` |
 
 Kolom "konsumen asinkron" sengaja didominasi notifikasi — karena efek yang bukan notifikasi umumnya sinkron (SDD-EVT-02).
 
@@ -178,21 +208,21 @@ Rantai ini dipilih sebagai contoh karena memuat keduanya sekaligus — efek yang
 POST /material-requests/{id}/issue
 │
 ├─ BEGIN ─────────────────────────────────────────────── sinkron, satu transaksi
-│   1. SELECT … FOR UPDATE material_balances            (SDD-DB-14)
+│   1. lock request → materials terurut → material_balances            (SDD-DB-14)
 │   2. periksa kecukupan saldo                          (BR-083)  -> tolak bila kurang
 │   3. periksa jumlah <= jumlah_disetujui                (BR-089)  -> tolak bila lebih
-│   4. UPDATE material_balances                          (saldo baru)
-│   5. INSERT material_transactions (saldo_sesudah)      (BR-081, BR-092)
-│   6. UPDATE material_requests -> Diserahkan
+│   4. INSERT ledger; trigger UPDATE material_balances    (saldo baru)
+│   5. ledger menyimpan saldo_sesudah, lalu issue/items      (BR-081, BR-092)
+│   6. UPDATE material_requests -> Diserahkan / Diserahkan Sebagian
 │   7. INSERT activity_logs MATERIAL_ISSUED              (BR-071, AL-01)
 │   8. INSERT event_outbox: MaterialIssued
 │   9. evaluasi stok minimum atas SUM(saldo) bahan       (BR-085)
-│      └─ bila menembus ambang: INSERT event_outbox: MaterialStockLow
+│      └─ bila menembus ambang: INSERT event_outbox: MaterialLowStock
 └─ COMMIT ────────────────────────────────────────────────────────────────────
     │
     └─ worker (setelah commit)                            SDD-EVT-03, SDD-EVT-04
         ├─ MaterialIssued   -> NT-51 ke pemohon
-        └─ MaterialStockLow -> NT-49 ke Petugas Sarpras + Administrator
+        └─ MaterialLowStock -> NT-49 ke Petugas Sarpras + Administrator
 ```
 
 **Yang membuat urutan ini mengikat.** Langkah 9 berada **di dalam** transaksi meskipun akibatnya hanya sebuah notifikasi: bila evaluasi stok minimum dilakukan setelah `COMMIT`, ia membaca saldo yang mungkin sudah diubah transaksi lain, dan peringatan bisa terbit dua kali atau tidak terbit sama sekali. Yang ditunda ke worker hanyalah **pengiriman**-nya, bukan **keputusan**-nya — persis pembagian yang `SDD-EVT-03` tetapkan.
@@ -247,3 +277,60 @@ Sebaliknya, langkah 4 dan 5 tidak boleh dipisah ke worker dengan alasan apa pun:
 | **TBD-EVT-A** | Retensi baris `event_outbox` yang sudah diproses. Berkas ini menyarankan mengikuti pola retensi umum, tetapi durasinya belum ditetapkan — berkaitan dengan **TBD-AVL-A**. |
 
 **Tertutup 25 Agustus 2026:** `TBD-EVT-B` → `SDD-EVT-10`.
+
+### Opname aset — 14 Oktober 2026
+
+AuditSessionCreated → NT-30 pelaksana; AuditSessionSubmitted → NT-31 Pimpinan;
+AuditSessionDecided → NT-32 pelaksana; AssetMarkedLost → NT-33 Petugas/Pimpinan.
+AuditReportRequested → stocktake-report-generate, job ID per session/event agar
+retry permintaan sesudah gagal menghasilkan pekerjaan baru. Semua event dipublikasikan
+dalam transaksi opname, konsumen notifikasi melakukan deduplikasi per event/penerima.
+
+### Siklus penghapusan M-21 — 14 Oktober 2026
+
+Transaksi domain menerbitkan AssetDisposalProposed/Decided melalui outbox untuk
+NT-43/44. Eksekusi atomik menulis snapshot, menandai aset terminal, melepas klaim,
+dan menerbitkan AssetDisposalReportRequested. Worker asset-disposal-report-generate
+mengunci usulan, melewati report SIAP, membuat dua PDF per percobaan (finansial
+dan redaksi), mendaftarkan M-06, lalu menulis SIAP dan AssetDisposalExecuted untuk
+NT-45. Nama job memakai ID usulan/event agar retry manual baru bisa berjalan.
+Kompensasi hanya menghapus objek UUID percobaan yang gagal; kegagalan terakhir
+menulis GAGAL dan API retry tetap idempoten. Berita acara lama tetap immutable
+sesudah ASSET_REINSTATED. Konsumen notifikasi menduplikasi nol saat event diulang.
+
+### Event Bahan PR-05-18…22
+
+MaterialLowStock: aggregate material, payload material_id/bahan/saldo/ambang/satuan/
+transaction_id. Emisi hanya downward crossing aktif atas total semua lokasi,
+di dalam row lock material yang juga dipakai koreksi dan OPNAME. Pemulihan total
+di atas minimum mengaktifkan kembali. Minimum 0 dan bahan nonaktif tidak memicu.
+NT-49 wajib in-app/push Petugas/Admin, dedupe event. Dashboard membaca saldo langsung.
+
+MaterialRequestReady: aggregate material_request, request_id/pemohon_id/revision,
+terbit untuk autoapproval atau keputusan akhir M-10. Consumer memakai snapshot
+lokasi; event siklus lama tidak mengumumkan kesiapan siklus baru. MaterialIssued:
+request_id/issue_id/pemohon_id/tanggal; NT-51 merinci jumlah aktual dengan satuan
+masing-masing jenis. NT-50/51 mengikuti preferensi dan dedupe event. Penerimaan
+BAHAN M-14 menambahkan ringkasan bahan ke ProcurementReceived/NT-36, bukan pesan
+bahwa stok bahan telah terdaftar sebagai aset. Semua event bertransaksi bersama audit.
+
+
+### Ekspor laporan — PR-06-08
+
+ExportRequested membawa export_id, commit bersama job/pengajuan. Consumer worker
+menambahkan report-export-{id} ke BullMQ dengan retry tetap; session advisory
+lock menyerialkan eksekusi/replay perjob selama I/O. Worker membaca ulang actor
+aktif dan izin/scope dari SQL, menjalankan provider yang sama dengan HTTP dalam
+transaksi read-only, membatasi limit+1, lalu render/PUT. Transaksi akhir memeriksa
+akses kembali dan menyimpan registri file/SIAP/REPORT_EXPORTED/ExportReady bersama.
+ExportReady membawa ID saja; M-17 membaca status/pemohon/deeplink terkini dan
+menerbitkan NT-42 dedupe event. Worker replay terminal tidak menggandakan efek.
+
+### Impor jadwal tetap (PR-03-35)
+
+RoomScheduleImportRequested (M-07) → outbox → BullMQ room-schedule-import,
+jobId room-schedule-import-{id}, RETRY_OPTIONS. Worker memuat izin terbaru dan
+memeriksa akun aktif, memproses cursor per baris; percobaan sistem terakhir
+menutup GAGAL dan membuang berkas. RoomScheduleImportCompleted hanya untuk
+>200 baris → M-17 NT-56 wajib In-app/Push, dedupe per event, deep link
+/kalender-ruangan?kelola=true&impor={id}. Proses selesai dan event atomik.

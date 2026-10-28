@@ -1,0 +1,102 @@
+// Controller pengajuan reservasi ruangan (FR-07.2): validasi body (SDD-API-01) lalu
+// SubmissionService. `POST /reservations` berjalan di dalam `runIdempotent` — kunci, pengajuan,
+// slot, instance approval, dan respons tersimpan commit bersama (ID-01 … ID-05, UX P-29).
+// Isian tak sah dijawab `422 VALIDATION_ERROR` per isian (Bab 17.2), bukan 400.
+
+import { AssetReservationBodySchema, CancelReservationBodySchema, RecordUsageBodySchema, ReservationIdParamSchema, ReservationListQuerySchema, RoomReservationBodySchema } from "@sigm4/schemas";
+import type { AssetReservationBody } from "@sigm4/schemas";
+import type { RequestHandler } from "express";
+import type { Kysely } from "kysely";
+import { requireAuthContext } from "../../../shared/auth/index.js";
+import type { Database } from "../../../shared/db/index.js";
+import { DomainError } from "../../../shared/errors/index.js";
+import { runIdempotent } from "../../../shared/http/index.js";
+import type { CancellationService } from "../services/cancellation.service.js";
+import type { ReservationQueryService } from "../services/reservation-query.service.js";
+import type { IsianPengajuan, SubmissionService } from "../services/submission.service.js";
+import type { UsageService } from "../services/usage.service.js";
+
+function urai(body: unknown): IsianPengajuan | AssetReservationBody {
+    const asset = body !== null && typeof body === "object" && "jenis" in body && body.jenis === "ASET";
+    const hasil = asset ? AssetReservationBodySchema.safeParse(body) : RoomReservationBodySchema.safeParse(body);
+    if (!hasil.success) {
+        throw new DomainError("VALIDATION_ERROR", "Isian pengajuan reservasi tidak sah.", {
+            errors: hasil.error.issues.map((i) => ({ field: i.path.map(String).join(".") || "(body)", message: i.message })),
+        });
+    }
+    const b = hasil.data;
+    if ("jenis" in b) return b;
+    if ((b.aset_pendukung?.length ?? 0) > 0) return AssetReservationBodySchema.parse({ jenis: "ASET", aset: b.aset_pendukung, waktu_mulai: b.waktu_mulai, waktu_selesai: b.waktu_selesai, keperluan: b.keperluan, lokasi_penggunaan: b.lokasi_penggunaan, room_id: b.room_id, nama_kegiatan: b.nama_kegiatan, jenis_kegiatan: b.jenis_kegiatan, jumlah_peserta: b.jumlah_peserta, pengulangan: b.pengulangan, lewati: b.lewati });
+    return b;
+}
+
+export function previewReservationHandler(service: SubmissionService): RequestHandler {
+    return async (req, res) => {
+        const data = await service.pratinjau(requireAuthContext(res), urai(req.body));
+        res.status(200).json({ success: true, data, meta: null });
+    };
+}
+
+export function createReservationHandler(db: Kysely<Database>, service: SubmissionService): RequestHandler {
+    return async (req, res) => {
+        const ctx = requireAuthContext(res);
+        const isian = urai(req.body);
+        const hasil = await runIdempotent(db, ctx, { key: req.header("Idempotency-Key") ?? "", endpoint: "POST /reservations", body: req.body }, async (scope) => ({
+            statusCode: 201,
+            body: { success: true as const, data: await service.ajukan(scope, isian), meta: null },
+        }));
+        res.status(hasil.statusCode).json(hasil.body);
+    };
+}
+
+/** FR-07.3 (BR-025): alasan wajib → 422 per isian; id bukan bilangan → 400 (SDD-API-01). */
+export function cancelReservationHandler(service: CancellationService): RequestHandler {
+    return async (req, res) => {
+        const { id } = ReservationIdParamSchema.parse(req.params);
+        const hasil = CancelReservationBodySchema.safeParse(req.body);
+        if (!hasil.success) {
+            throw new DomainError("VALIDATION_ERROR", "Isian pembatalan reservasi tidak sah.", {
+                errors: hasil.error.issues.map((i) => ({ field: i.path.map(String).join(".") || "(body)", message: i.message })),
+            });
+        }
+        const data = await service.batalkan(requireAuthContext(res), id, hasil.data.alasan);
+        res.status(200).json({ success: true, data, meta: null });
+    };
+}
+
+/** FR-07.4 langkah 3 + A1 (keputusan 16): hasil tak sah → 422 per isian. */
+export function recordUsageHandler(service: UsageService): RequestHandler {
+    return async (req, res) => {
+        const { id } = ReservationIdParamSchema.parse(req.params);
+        const hasil = RecordUsageBodySchema.safeParse(req.body);
+        if (!hasil.success) {
+            throw new DomainError("VALIDATION_ERROR", "Isian pencatatan penggunaan tidak sah.", {
+                errors: hasil.error.issues.map((i) => ({ field: i.path.map(String).join(".") || "(body)", message: i.message })),
+            });
+        }
+        const data = await service.catat(requireAuthContext(res), id, hasil.data.hasil, hasil.data.catatan);
+        res.status(200).json({ success: true, data, meta: null });
+    };
+}
+
+/** P-30 (m07 §7): query tak sah → 422 per isian (pola `GET /rooms/availability`, keputusan 12). */
+export function listReservationsHandler(service: ReservationQueryService): RequestHandler {
+    return async (req, res) => {
+        const hasil = ReservationListQuerySchema.safeParse(req.query);
+        if (!hasil.success) {
+            throw new DomainError("VALIDATION_ERROR", "Saringan daftar reservasi tidak sah.", {
+                errors: hasil.error.issues.map((i) => ({ field: i.path.map(String).join(".") || "(query)", message: i.message })),
+            });
+        }
+        const { data, meta } = await service.daftar(requireAuthContext(res), hasil.data);
+        res.status(200).json({ success: true, data, meta });
+    };
+}
+
+/** P-31 (m07 §7): di luar scope → 404 (SDD-AUTH-08). */
+export function getReservationHandler(service: ReservationQueryService): RequestHandler {
+    return async (req, res) => {
+        const { id } = ReservationIdParamSchema.parse(req.params);
+        res.status(200).json({ success: true, data: await service.detail(requireAuthContext(res), id), meta: null });
+    };
+}

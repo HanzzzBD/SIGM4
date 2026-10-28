@@ -1,0 +1,191 @@
+// RoleService (`FR-02.2`). Batas transaksi SDD-07: tulis matriks + `role_version`
+// + AuditLogger.write() sinkron dalam satu transaksi (SDD-EVT-02, AL-01) — cache
+// permission (`PR-01-04` juga) tidak butuh pembatalan eksplisit di sini, sebab
+// kunci Redis-nya sendiri sudah memuat `role_version` (SDD-03 §4.5).
+
+import type { Kysely } from "kysely";
+import type { AuthContext } from "../../../shared/auth/index.js";
+import type { AuditLogger } from "../../../shared/audit/index.js";
+import type { Database } from "../../../shared/db/index.js";
+import { withTransaction } from "../../../shared/db/index.js";
+import { DomainError, NotFoundError } from "../../../shared/errors/index.js";
+import { wajibDuaFaktor } from "../../../shared/auth/index.js";
+import { KODE_ROLE_ADMINISTRATOR } from "../repositories/user.repository.js";
+import { KODE_ROLE_SISWA } from "../repositories/student-enrollment.repository.js";
+import type { PermissionKatalogRow, RolePermissionRow, RoleRow, ScopeDb } from "../repositories/role.repository.js";
+import { createRoleRepository } from "../repositories/role.repository.js";
+
+const MODUL = "m02-users";
+
+export interface RoleSummary extends RoleRow {
+    readonly jumlahPengguna: number;
+    readonly permissions: readonly { kode: string; scope: ScopeDb }[];
+}
+
+export interface CreateRoleInput {
+    readonly sumberRoleId: number;
+    readonly nama: string;
+    readonly deskripsi: string | null;
+}
+
+/**
+ * BR-069a: role yang perilakunya terikat KODE role tidak dapat dijadikan template — wajib 2FA (`BR-070`,
+ * `ROLE_WAJIB_DUA_FAKTOR`) dan perlindungan siswa (`DP-02`, `SL-*`, `KODE_ROLE_SISWA`). Salinan berkode
+ * `RK-{id}` akan lolos dari keduanya.
+ */
+export function bolehJadiTemplate(kode: string): boolean {
+    return !wajibDuaFaktor(kode) && kode !== KODE_ROLE_SISWA;
+}
+
+export interface UpdateRolePermissionsInput {
+    readonly permissions: readonly { kode: string; scope: ScopeDb }[];
+}
+
+function keRingkas(p: RolePermissionRow | { kode: string; scope: ScopeDb }) {
+    return { kode: p.kode, scope: p.scope };
+}
+
+export class RoleService {
+    constructor(
+        private readonly db: Kysely<Database>,
+        private readonly audit: AuditLogger,
+    ) {}
+
+    /** FR-02.2 langkah 2: daftar role beserta jumlah pengguna dan permission aktif. */
+    async list(ctx: AuthContext): Promise<readonly RoleSummary[]> {
+        const repo = createRoleRepository(this.db);
+        const [roles, jumlahPengguna, permissions] = await Promise.all([
+            repo.list(ctx),
+            repo.countUsersByRole(ctx),
+            repo.listPermissionsAllRoles(ctx),
+        ]);
+        return roles.map((r) => ({
+            ...r,
+            jumlahPengguna: jumlahPengguna.get(r.id) ?? 0,
+            permissions: (permissions.get(r.id) ?? []).map(keRingkas),
+        }));
+    }
+
+    /** Katalog Lampiran C bagi matriks P-66 (`GET /permissions`). */
+    async catalog(ctx: AuthContext): Promise<readonly PermissionKatalogRow[]> {
+        return createRoleRepository(this.db).listCatalog(ctx);
+    }
+
+    /**
+     * FR-02.2 A2: role kustom dari template — permission + scope sumber disalin utuh dalam satu
+     * transaksi bersama activity log `ROLE_CREATED` (AL-01). Nama unik tanpa membedakan huruf.
+     */
+    async createFromTemplate(ctx: AuthContext, input: CreateRoleInput): Promise<RoleSummary> {
+        return withTransaction(
+            ctx,
+            async (scope) => {
+                const repo = createRoleRepository(scope.tx);
+                const sumber = await repo.findById(scope.ctx, input.sumberRoleId);
+                if (sumber === undefined) throw new NotFoundError("Role sumber tidak ditemukan.");
+                if (!bolehJadiTemplate(sumber.kode)) {
+                    throw new DomainError("VALIDATION_ERROR", `Role ${sumber.nama} tidak dapat dijadikan template: kewajiban 2FA atau perlindungan siswa melekat pada kode rolenya (BR-069a).`, { rule: "BR-069a", field: "sumber_role_id" });
+                }
+                await repo.lockPembuatanRole(scope.ctx);
+                if (await repo.existsByNama(scope.ctx, input.nama)) {
+                    throw new DomainError("DUPLICATE_CODE", "Nama role sudah digunakan.", { field: "nama" });
+                }
+                const role = await repo.insertCustom(scope.ctx, { nama: input.nama, deskripsi: input.deskripsi });
+                await repo.copyPermissions(scope.ctx, input.sumberRoleId, role.id);
+                const permissions = (await repo.listPermissionsByRole(scope.ctx, Number(role.id))).map(keRingkas);
+                await this.audit.write(scope, {
+                    modul: MODUL,
+                    aksi: "ROLE_CREATED",
+                    entitas: "roles",
+                    entitasId: Number(role.id),
+                    nilaiSesudah: { kode: role.kode, nama: role.nama, deskripsi: role.deskripsi, sumber_role_id: input.sumberRoleId, sumber_kode: sumber.kode, permissions },
+                });
+                return { ...role, jumlahPengguna: 0, permissions };
+            },
+            this.db,
+        );
+    }
+
+    /**
+     * FR-02.2 langkah 3-5: pengganti PENUH matriks sebuah role.
+     * A1 (`SDD-AUTH-10`): permission inti tidak dapat dicabut dari Administrator,
+     * ditolak di sini — lapisan domain, bukan UI.
+     */
+    async updatePermissions(
+        ctx: AuthContext,
+        roleId: number,
+        input: UpdateRolePermissionsInput,
+    ): Promise<RoleSummary> {
+        return withTransaction(
+            ctx,
+            async (scope) => {
+                const repo = createRoleRepository(scope.tx);
+                const role = await repo.findById(scope.ctx, roleId);
+                if (role === undefined) throw new NotFoundError("Role tidak ditemukan.");
+
+                const katalog = await repo.findPermissionsByKodes(
+                    scope.ctx,
+                    input.permissions.map((p) => p.kode),
+                );
+                const petaKatalog = new Map(katalog.map((k) => [k.kode, k]));
+                const takDikenal = input.permissions.filter((p) => !petaKatalog.has(p.kode));
+                if (takDikenal.length > 0) {
+                    throw new DomainError(
+                        "VALIDATION_ERROR",
+                        `Kode permission tidak dikenal: ${takDikenal.map((p) => p.kode).join(", ")}.`,
+                        { field: "permissions" },
+                    );
+                }
+
+                const before = await repo.listPermissionsByRole(scope.ctx, roleId);
+                if (role.kode === KODE_ROLE_ADMINISTRATOR) {
+                    const kodeSesudah = new Set(input.permissions.map((p) => p.kode));
+                    const dicabut = before.filter((p) => p.inti && !kodeSesudah.has(p.kode));
+                    if (dicabut.length > 0) {
+                        throw new DomainError(
+                            "CORE_PERMISSION_LOCKED",
+                            `Permission inti tidak dapat dicabut dari Administrator: ${dicabut
+                                .map((p) => p.kode)
+                                .join(", ")}.`,
+                            { permissions: dicabut.map((p) => p.kode) },
+                        );
+                    }
+                    // FR-02.2 A1 / SDD-AUTH-10: scope permission inti Administrator juga terkunci — mempersempit
+                    // cakupannya (mis. ALL → OWN) sama dengan mencabutnya sebagian.
+                    const scopeSesudah = new Map(input.permissions.map((p) => [p.kode, p.scope]));
+                    const diubah = before.filter((p) => p.inti && scopeSesudah.has(p.kode) && scopeSesudah.get(p.kode) !== p.scope);
+                    if (diubah.length > 0) {
+                        throw new DomainError(
+                            "CORE_PERMISSION_LOCKED",
+                            `Scope permission inti Administrator tidak dapat diubah: ${diubah.map((p) => p.kode).join(", ")}.`,
+                            { permissions: diubah.map((p) => p.kode) },
+                        );
+                    }
+                }
+
+                await repo.replacePermissions(
+                    scope.ctx,
+                    roleId,
+                    input.permissions.map((p) => ({
+                        permissionId: petaKatalog.get(p.kode)!.id,
+                        scope: p.scope,
+                    })),
+                );
+                const roleVersion = await repo.bumpVersion(scope.ctx, roleId);
+
+                const after = input.permissions.map(keRingkas);
+                await this.audit.write(scope, {
+                    modul: MODUL,
+                    aksi: "ROLE_PERMISSION_UPDATED",
+                    entitas: "roles",
+                    entitasId: roleId,
+                    nilaiSebelum: before.map(keRingkas),
+                    nilaiSesudah: after,
+                });
+
+                const jumlahPengguna = (await repo.countUsersByRole(scope.ctx)).get(role.id) ?? 0;
+                return { ...role, role_version: roleVersion, jumlahPengguna, permissions: after };
+            },
+            this.db,
+        );
+    }
+}
