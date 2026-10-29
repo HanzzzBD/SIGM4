@@ -51,6 +51,7 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 | Yang direncanakan | Yang dikerjakan | Sebab | Dampak pada phase berikutnya |
 |---|---|---|---|
 | Staging menerima setiap phase; `main` hanya setelah `GL-01`–`GL-12`; tidak ada tag sebelum `v1.0.0` | Staging nonaktif; pra-rilis `v0.x.y` ke server produksi sebelum go-live | Keputusan 16–17 — subdomain staging belum ada | Sebelum rilis pasca-go-live pertama, staging diaktifkan atau risikonya diterima tertulis (`SDD-16 §6`) |
+| Hotfix (`BRANCHING-STRATEGY` §6) hanya pasca go-live | Perbaikan dbmate untuk pra-rilis `v0.1.1` lewat `hotfix/dbmate-runtime` → `main` (#221); isi sama dibawa ke `develop` lewat #220 | Promosi `develop` → `staging` → `main` ±2 jam untuk satu baris perbaikan; pemilik produk meminta lebih cepat (28 Oktober 2026) | `main` sementara mendahului `staging`; promosi berikutnya membawa perubahan identik tanpa konflik |
 
 ## 4. PR di luar rencana
 
@@ -90,6 +91,7 @@ Setiap TBD yang tertutup wajib juga diperbarui di [`../../SDD/TBD-REGISTER.md`](
 | `deploy.sh` produksi menduplikasi `tunggu_sehat` dari staging | Dua salinan koreografi | Tidak disatukan di PR ini (aturan tanpa refactor sambil lalu); kandidat PR tersendiri | Tidak — `deploy.sh` dihapus `PR-08-19` |
 | Image web dibangun dari `apps/web/dist`, padahal `outDir` Vite adalah `dist/app` (ditemukan 28 Oktober 2026 setelah #202 tergabung, saat pemilik produk menanyakan alamat API web). Cacat yang sama sudah ada sejak `PR-08-17`/`PR-08-18` (`web-dist.tar.gz` dari `apps/web/dist`), tidak pernah terlihat karena belum ada deploy nyata | Web produksi/staging menyajikan 404 — `index.html` berada di `/app/` | Konteks build diganti `apps/web/dist/app`; `web.Dockerfile` gagal bila `index.html` tidak di akar; `docker-compose.test.sh` menguji konteks salah ditolak dan memeriksa workflow serta `outDir` Vite. Uji lama memakai folder tiruan sehingga tidak menangkapnya | Tidak |
 | Push `staging` pertama (#204, 28 Oktober 2026) merah di job *Terbitkan image*: Trivy menemukan 48 HIGH pada paket Alpine image dasar `nginx:1.29-alpine` (brotli, curl, openssl, libexpat, libxml2, pcre2, tiff, …), seluruhnya sudah ada versi perbaikannya. Pindaian image web hanya berjalan pada push `staging`/tag, tidak pada PR | Image web tidak terbit; deploy tertahan | `web.Dockerfile` menjalankan `apk upgrade --no-cache` seperti image API. Terverifikasi pada push `staging` berikutnya | Tidak |
+| Deploy pra-rilis `v0.1.0` (28 Oktober 2026): service `migrate` gagal `Cannot find module 'dbmate/dist/cli.js'`. Sejak #181 tahap build memasang dependensi produksi dengan `npm ci --omit=dev --workspace apps/api --workspace packages/schemas`, yang tidak memasang dependensi akar — dan dbmate adalah dependensi akar. Tidak ada uji yang menjalankan migration dari image; uji integrasi memakai node_modules runner | Migration produksi tidak dapat berjalan; api/worker tidak dinyalakan (pengaman `depends_on` bekerja) | `--include-workspace-root` pada `npm ci` image; job `build` CI kini menjalankan `node scripts/migrate.mjs up` dari image terhadap PostgreSQL kosong | Tidak |
 
 ## 8. Hasil pengukuran
 
