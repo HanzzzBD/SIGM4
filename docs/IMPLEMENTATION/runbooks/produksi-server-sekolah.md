@@ -103,6 +103,8 @@ SIGM4_WEB_PORT=<port web>         # produksi 3011; port host / dari nginx sekola
 # api & worker
 DATABASE_URL=postgres://sigm4_app:<APP_DB_PASSWORD>@postgres:5432/sigm4?sslmode=disable
 S3_ENDPOINT=…  S3_PUBLIC_ENDPOINT=…  S3_REGION=…  S3_BUCKET=…  S3_ACCESS_KEY=…  S3_SECRET_KEY=…   # Backblaze B2 (INF-02)
+# S3_ENDPOINT dan S3_PUBLIC_ENDPOINT: https://s3.<region>.backblazeb2.com — TANPA nama bucket
+# (path-style, SDD-FS-13). S3_REGION = <region> pada alamat itu. Kunci: Application Key, bukan master key.
 JWT_PRIVATE_KEY=…  JWT_PUBLIC_KEY=…    # PEM satu baris, baris baru ditulis \n
 TOTP_ENCRYPTION_KEY=…
 APP_BASE_URL=https://<domain lingkungan ini>
