@@ -85,8 +85,13 @@ services:
         ports:
             - "${SIGM4_HTTP_BIND:-0.0.0.0}:${SIGM4_API_PORT:?SIGM4_API_PORT wajib diisi}:3000"
         stop_grace_period: 30s
+        # Liveness, bukan readiness (SDD-15 §4.5): `/health/ready` memanggil HeadBucket ke B2
+        # setiap probe — tiap 5 s ±17 ribu transaksi Class C/hari, jauh di atas kuota gratis
+        # 2.500 — dan kuota yang habis menolak SELURUH operasi storage. Readiness tetap
+        # diverifikasi sekali per rilis oleh smoke-test.sh (CD-07); nginx sekolah tidak
+        # membaca status ini.
         healthcheck:
-            test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/api/v1/health/ready"]
+            test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/api/v1/health/live"]
             interval: 5s
             timeout: 3s
             retries: 3
