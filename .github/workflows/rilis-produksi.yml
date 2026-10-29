@@ -112,7 +112,7 @@ jobs:
               with:
                   ref: ${{ needs.validasi.outputs.sha }}
             # Image hasil job `build` pada run INI — artefak yang sama dengan yang dipindai Trivy.
-            - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+            - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
               with:
                   name: image
             - name: Dorong image ke GHCR
@@ -148,7 +148,7 @@ jobs:
                   docker tag "sigm4-web:$TAG" "$web"
                   docker push "$web"
             # OpenAPI bertag dari job `build` run ini (SDD-API-12) — bukan dibangkitkan ulang.
-            - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+            - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
               with:
                   name: openapi-${{ needs.validasi.outputs.sha }}
             - name: GitHub Release
