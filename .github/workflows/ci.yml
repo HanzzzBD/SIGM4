@@ -118,7 +118,7 @@ jobs:
             - name: Berkas deploy produksi
               run: |
                   bash deploy/production/jendela-deploy.test.sh
-                  bash -n deploy/production/dokploy-deploy.sh
+                  bash deploy/production/dokploy-deploy.test.sh
                   bash deploy/production/docker-compose.test.sh
                   bash -n deploy/staging/smoke-test.sh
 
@@ -254,6 +254,21 @@ jobs:
             # Konteks bersih setiap PR — mitigasi phantom dependency (SDD-17 §6).
             - name: Build image (SDD-INF-01)
               run: docker build --build-arg APP_REVISION="${{ github.sha }}" --tag "sigm4:${{ github.sha }}" .
+            # Job migration dijalankan dari image INI terhadap PostgreSQL kosong, persis
+            # seperti service `migrate` di server sekolah (SDD-INF-03). Uji berkas dan
+            # uji integrasi memakai node_modules runner, sehingga dependensi yang tidak
+            # ikut ke image (dbmate, v0.1.0) hanya tertangkap di sini.
+            - name: Migration dari image (SDD-INF-03)
+              run: |
+                  docker network create uji-migrate
+                  docker run -d --name uji-pg --network uji-migrate \
+                      -e POSTGRES_USER=pemilik -e POSTGRES_PASSWORD=uji -e POSTGRES_DB=sigm4 postgres:15-alpine
+                  for _ in $(seq 1 30); do docker exec uji-pg pg_isready -U pemilik -d sigm4 >/dev/null 2>&1 && break; sleep 2; done
+                  docker run --rm --network uji-migrate \
+                      -e "MIGRATION_DATABASE_URL=postgres://pemilik:uji@uji-pg:5432/sigm4?sslmode=disable" \
+                      -e APP_DB_PASSWORD=uji-app \
+                      "sigm4:${{ github.sha }}" node scripts/migrate.mjs up
+                  docker rm -f uji-pg >/dev/null && docker network rm uji-migrate >/dev/null
             - run: docker save "sigm4:${{ github.sha }}" --output image.tar
             # Yang dipindai Trivy adalah image hasil build INI, bukan hasil build ulang.
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
