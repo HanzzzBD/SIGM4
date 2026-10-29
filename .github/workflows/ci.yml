@@ -118,7 +118,7 @@ jobs:
             - name: Berkas deploy produksi
               run: |
                   bash deploy/production/jendela-deploy.test.sh
-                  bash -n deploy/production/dokploy-deploy.sh
+                  bash deploy/production/dokploy-deploy.test.sh
                   bash deploy/production/docker-compose.test.sh
                   bash -n deploy/staging/smoke-test.sh
 
