@@ -36,9 +36,12 @@ COPY . .
 # ini: `npm prune --omit=dev` atas seluruh workspace mempertahankan dependensi
 # produksi apps/mobile (Expo, termasuk node-forge tanpa tambalan) dan apps/web,
 # yang tidak pernah berjalan di sini (SDD-INF-01/02; Trivy merah pada #181).
+# `--include-workspace-root`: dbmate adalah dependensi AKAR (package.json), bukan
+# milik apps/api; tanpa flag ini job migration gagal `Cannot find module
+# 'dbmate/dist/cli.js'` (deploy pra-rilis v0.1.0, 28 Oktober 2026).
 RUN npm run build -w apps/api \
     && rm -rf node_modules apps/*/node_modules packages/*/node_modules \
-    && npm ci --omit=dev --workspace apps/api --workspace packages/schemas
+    && npm ci --omit=dev --include-workspace-root --workspace apps/api --workspace packages/schemas
 
 # ---------------------------------------------------------------------------
 # Tahap dbmate — biner migration dibangun dari sumber (keputusan 56)
