@@ -51,6 +51,7 @@ Keputusan teknis yang tidak berasal dari PRD maupun SDD, dan alasannya. Bila seb
 | Yang direncanakan | Yang dikerjakan | Sebab | Dampak pada phase berikutnya |
 |---|---|---|---|
 | Staging menerima setiap phase; `main` hanya setelah `GL-01`–`GL-12`; tidak ada tag sebelum `v1.0.0` | Staging nonaktif; pra-rilis `v0.x.y` ke server produksi sebelum go-live | Keputusan 16–17 — subdomain staging belum ada | Sebelum rilis pasca-go-live pertama, staging diaktifkan atau risikonya diterima tertulis (`SDD-16 §6`) |
+| Hotfix (`BRANCHING-STRATEGY` §6) hanya pasca go-live | Perbaikan dbmate untuk pra-rilis `v0.1.1` lewat `hotfix/dbmate-runtime` → `main` (#221); isi sama dibawa ke `develop` lewat #220 | Promosi `develop` → `staging` → `main` ±2 jam untuk satu baris perbaikan; pemilik produk meminta lebih cepat (28 Oktober 2026) | `main` sementara mendahului `staging`; promosi berikutnya membawa perubahan identik tanpa konflik |
 
 ## 4. PR di luar rencana
 
