@@ -121,7 +121,8 @@ describe.skipIf(!process.env["DATABASE_URL"])("PR-07-52 — permintaan bahan Sis
         const pesan = JSON.stringify((short.json.error as { message?: string; details?: unknown }));
         expect(pesan).toContain("stok tidak mencukupi");
         expect(pesan).not.toContain("saldo tersedia");
-        expect(pesan).not.toMatch(/[^0-9]4[^0-9]/);
+        // Nama bahan memuat penanda heksa acak (mis. `5bf4f8c`) — dibuang dulu agar hanya angka stok yang diperiksa.
+        expect(pesan.replaceAll(/Spidol [0-9a-f]+-[0-9]+/g, "")).not.toMatch(/[^0-9]4[^0-9]/);
     });
 
     it("penanda dikelola lewat master bahan; PATCH tanpa penanda mempertahankannya", async () => {
