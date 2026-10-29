@@ -124,9 +124,13 @@ describe.skipIf(!ADA)("PR-03-31 — catatan tiket kerusakan + tautan reservasi (
     const catat = (siapa: Peran, id: string, body: Record<string, unknown>) => kirim<DamageReportNote>("POST", `/damage-reports/${id}/notes`, siapa, body);
     const detail = (siapa: Peran, id: string) => kirim<DamageReportDetail>("GET", `/damage-reports/${id}`, siapa);
     const log = (aksi: string) => kueri<{ entitas_id: string; nilai_sesudah: Record<string, unknown> }>(`SELECT entitas_id, nilai_sesudah FROM activity_logs WHERE aksi = '${aksi}' AND id > ${String(sejakLog)} ORDER BY id`);
+    // Nomor unik per panggilan: angka acak 3 digit pernah bertabrakan (reservations_nomor_uq)
+    // pada tiga reservasi dalam satu uji (CI #220). Basis acak 9 digit menjauhkan dari nomor
+    // berkas uji lain; penghitung menjamin keunikan di berkas ini.
+    let nomorBerikut = 100_000_000 + Math.floor(Math.random() * 800_000_000);
     const reservasi = async (o: { room: string; status: string; jenis?: string }) =>
         (await kueri<{ id: string }>(`INSERT INTO reservations (nomor, jenis, pemohon_id, room_id, nama_kegiatan, jenis_kegiatan, waktu_mulai, waktu_selesai, jumlah_peserta, status)
-            VALUES ('RSV-RG-2027-${String(9000 + Math.floor(Math.random() * 999))}', 'RUANGAN', ${String(pengguna.pelapor.id)}, ${o.room}, 'Seminar', 'Seminar', '2027-11-07 08:00+07', '2027-11-07 10:00+07', 40, '${o.status}') RETURNING id::text`))[0]?.id ?? "";
+            VALUES ('RSV-RG-2027-${String(nomorBerikut++)}', 'RUANGAN', ${String(pengguna.pelapor.id)}, ${o.room}, 'Seminar', 'Seminar', '2027-11-07 08:00+07', '2027-11-07 10:00+07', 40, '${o.status}') RETURNING id::text`))[0]?.id ?? "";
     const tutupTiket = (id: string) => kueri(`UPDATE damage_reports SET status = 'SELESAI' WHERE id = ${id}`);
 
     describe("POST /damage-reports/{id}/notes (FR-11.1 A1)", () => {
