@@ -9,6 +9,15 @@
             "disetujui": "pemilik produk, 24 Oktober 2026 (log phase-04 keputusan 1)",
             "dicatat": "2026-10-24",
             "tinjau_ulang": "2026-11-23"
+        },
+        {
+            "ghsa": "GHSA-qr28-fpjm-wq7f",
+            "paket": "decode-uri-component (via expo-router 57 → query-string 7)",
+            "path": ["node_modules/decode-uri-component"],
+            "alasan": "Tambalan hanya ada di 0.5.1 yang ESM-only, sedangkan query-string 7 memanggilnya lewat require() sebagai fungsi, sehingga override merusak routing mobile saat runtime. expo-router baru lepas dari query-string di v58 (Expo SDK 58), di luar scope PR berjalan.",
+            "disetujui": "pemilik produk, 30 Oktober 2026 (log phase-07, PR-07-38)",
+            "dicatat": "2026-10-30",
+            "tinjau_ulang": "2026-11-29"
         }
     ]
 }
