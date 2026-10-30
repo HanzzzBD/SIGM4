@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useCan } from "../../shared/auth";
 import { KeadaanGalat, KeadaanMemuat, useDaring } from "../../shared/states";
 import { Isian, KotakCentang, Lencana, Peringatan, Pilihan, Tombol } from "../../shared/ui/primitives";
+import { KotakIkon, PopoverInfo } from "../../shared/ui/visual";
 import { hariIniWib, ketersediaanQuery } from "../m07-reservation-room";
 import { availabilityQuery, previewAssetReservation, submitAssetReservation } from "./api";
 
@@ -41,7 +42,7 @@ export default function AssetReservationWizardPage({ initial, onCancel, onCreate
         catch (error) { setFailure(error instanceof Error ? error.message : "Pengajuan tidak dapat ditinjau."); }
     };
     return <div className="flex flex-col gap-6">
-        <header><h1 ref={heading} tabIndex={-1} className="text-2xl font-semibold text-text-heading">Pengajuan Reservasi Aset</h1><p className="mt-1 text-base text-text-secondary">Alokasi otomatis dapat mengganti unit dengan unit lain sekategori. Pemilihan belum mengunci aset.</p></header>
+        <header className="flex min-w-0 items-center gap-3"><KotakIkon ikon="reservasi" accent="accent-green" /><h1 ref={heading} tabIndex={-1} className="text-2xl font-semibold text-text-heading">Pengajuan Reservasi Aset</h1><PopoverInfo judul="Tentang pengajuan aset">Alokasi otomatis dapat mengganti unit dengan unit lain sekategori. Pemilihan belum mengunci aset.</PopoverInfo></header>
         <ol aria-label="Langkah pengajuan" className="flex flex-wrap gap-4">{["Aset & Jadwal", "Keperluan & Lokasi", "Tinjau & Ajukan"].map((label, index) => <li key={label} aria-current={index + 1 === step ? "step" : undefined} className="text-sm font-medium">{index + 1}. {label}</li>)}</ol>
         {!online && <Peringatan varian="warning">Anda sedang luring. Sambungkan kembali sebelum meninjau atau mengajukan.</Peringatan>}
         {!can("reservation.view") && <Peringatan varian="warning">Anda memerlukan akses melihat reservasi untuk memilih aset dan ruangan.</Peringatan>}

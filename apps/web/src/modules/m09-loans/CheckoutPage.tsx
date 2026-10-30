@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useCan } from "../../shared/auth";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat, useDaring } from "../../shared/states";
 import { Peringatan, Tombol } from "../../shared/ui/primitives";
+import { KepalaHalaman } from "../../shared/ui/visual";
 import { readyQuery } from "./api";
 import { CheckoutForm } from "./CheckoutForm";
 
@@ -12,7 +13,7 @@ export default function CheckoutPage({ initialReservation, onCreated }: { readon
     const [page, setPage] = useState(1), [selected, setSelected] = useState<ReadyCheckout | null>(null), [direct, setDirect] = useState(false), [showAll, setShowAll] = useState(false);
     const queue = useQuery({ ...readyQuery(page, showAll ? undefined : initialReservation), enabled: online });
     useEffect(() => { if (initialReservation && !showAll && selected === null) { const row = queue.data?.data.find((r) => r.id === initialReservation); if (row) setSelected(row); } }, [initialReservation, queue.data, selected, showAll]);
-    return <div className="mx-auto flex w-full max-w-4xl flex-col gap-6"><header><h1 className="text-2xl font-semibold text-text-heading">Antrean Serah Terima</h1><p className="mt-2 text-text-secondary">Reservasi aset yang siap diserahkan hari ini. Verifikasi unit fisik sebelum menyerahkan.</p></header>{!online && <Peringatan varian="warning">Anda sedang luring. Antrean dan transaksi memerlukan koneksi.</Peringatan>}
+    return <div className="mx-auto flex w-full max-w-4xl flex-col gap-6"><KepalaHalaman judul="Antrean Serah Terima" ikon="serahTerima" accent="accent-green" info={{ judul: "Tentang Antrean Serah Terima", isi: "Reservasi aset yang siap diserahkan hari ini. Verifikasi unit fisik sebelum menyerahkan." }} />{!online && <Peringatan varian="warning">Anda sedang luring. Antrean dan transaksi memerlukan koneksi.</Peringatan>}
         {selected || direct ? <CheckoutForm key={selected?.id ?? "langsung"} reservation={selected} online={online} onCreated={onCreated} onCancel={() => { setSelected(null); setDirect(false); setShowAll(true); }} /> : <>
             {can("loan.direct") && <Tombol varian="secondary" disabled={!online} onClick={() => setDirect(true)}>Peminjaman langsung</Tombol>}
             {initialReservation && !showAll && <Tombol varian="secondary" onClick={() => setShowAll(true)}>Lihat seluruh antrean hari ini</Tombol>}

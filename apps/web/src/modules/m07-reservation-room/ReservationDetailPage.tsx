@@ -13,6 +13,7 @@ import { jalurTerdaftar } from "../../shared/navigasi";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
 import { DialogKonfirmasi } from "../../shared/ui/dialog";
 import { Isian, Kartu, Lencana, Peringatan, Pilihan, Tombol } from "../../shared/ui/primitives";
+import { KotakIkon, PopoverInfo } from "../../shared/ui/visual";
 import { LinimasaPersetujuan, waktuWib } from "../m10-approval";
 import { batalkanReservasi, catatPenggunaan, detailReservasiQuery } from "./api";
 import { jamWib, tanggalPanjang, tanggalWib } from "./kalender";
@@ -131,13 +132,16 @@ export default function ReservationDetailPage({
                 )}
             </nav>
             <header className="flex flex-wrap items-start justify-between gap-4">
-                <div className="flex flex-col gap-2">
-                    <h1 ref={judul} tabIndex={-1} className="text-2xl font-semibold text-text-heading">
-                        {d.nomor}
-                    </h1>
-                    <span className="self-start">
+                {/* Kepala halaman detail (PATTERNS §1.2, DSD-13): h1 tetap menerima fokus. */}
+                <div className="flex min-w-0 items-center gap-3">
+                    <KotakIkon ikon="reservasi" accent="accent-green" />
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h1 ref={judul} tabIndex={-1} className="text-2xl font-semibold text-text-heading">
+                            {d.nomor}
+                        </h1>
+                        <PopoverInfo judul="Tentang Detail Reservasi">Objek, jadwal, tanggal turunan, dan linimasa persetujuan pengajuan ini.</PopoverInfo>
                         <Lencana varian={VARIAN_STATUS_RESERVASI[d.status]}>{LABEL_STATUS_RESERVASI[d.status]}</Lencana>
-                    </span>
+                    </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                     {d.jenis === "ASET" && d.status === "DISETUJUI" && can("loan.manage") && <Link to="/peminjaman/serah-terima" search={{ reservasi: d.id }} className="text-text-link underline">Serah terima</Link>}

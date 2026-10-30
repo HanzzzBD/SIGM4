@@ -156,7 +156,7 @@ export function KartuEntitas({
     readonly href: string;
     readonly meta?: readonly (string | null | undefined)[];
     readonly status?: readonly { readonly label: string; readonly varian: Semantik | "neutral" }[];
-    readonly angka?: string;
+    readonly angka?: string | undefined;
     readonly ikon?: NamaIkon;
     readonly foto?: string | null;
 }) {
@@ -331,7 +331,9 @@ export interface Saran {
     readonly judul: string;
     readonly alasan: string;
     readonly labelAksi: string;
-    readonly href: string;
+    /** Tujuan halaman yang sudah ada; tanpa `href`, `onAksi` menjalankan aksi di halaman yang sama (keputusan 46). */
+    readonly href?: string;
+    readonly onAksi?: () => void;
 }
 
 const kunciTutup = (id: string) => `sigm4.saran.tutup.${id}`;
@@ -356,9 +358,15 @@ export function KartuSaran({ saran, onTutup }: { readonly saran: Saran; readonly
                     <p className="text-base font-semibold text-info-strong">{saran.judul}</p>
                     <p className="text-sm text-text-secondary">{saran.alasan}</p>
                 </div>
-                <TautanAplikasi href={saran.href} className="inline-flex min-h-control-md shrink-0 items-center rounded-md border border-border-strong bg-surface-default px-4 text-base font-medium text-text-primary transisi-cepat hover:bg-neutral-50">
-                    {saran.labelAksi}
-                </TautanAplikasi>
+                {saran.href === undefined ? (
+                    <Tombol varian="secondary" className="shrink-0" onClick={saran.onAksi}>
+                        {saran.labelAksi}
+                    </Tombol>
+                ) : (
+                    <TautanAplikasi href={saran.href} className="inline-flex min-h-control-md shrink-0 items-center rounded-md border border-border-strong bg-surface-default px-4 text-base font-medium text-text-primary transisi-cepat hover:bg-neutral-50">
+                        {saran.labelAksi}
+                    </TautanAplikasi>
+                )}
                 <button type="button" onClick={onTutup} aria-label={`Sembunyikan saran: ${saran.judul}`} className="flex size-touch shrink-0 items-center justify-center rounded-md text-icon-muted hover:bg-neutral-50">
                     <Ikon nama="tutup" ukuran="sm" />
                 </button>

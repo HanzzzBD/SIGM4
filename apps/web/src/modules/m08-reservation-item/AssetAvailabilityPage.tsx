@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useCan } from "../../shared/auth";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat, useDaring } from "../../shared/states";
 import { Isian, KotakCentang, Lencana, Peringatan, Pilihan, Tombol } from "../../shared/ui/primitives";
+import { KepalaHalaman } from "../../shared/ui/visual";
 import { availabilityQuery } from "./api";
 
 export interface AvailabilitySearch {
@@ -65,7 +66,7 @@ export default function AssetAvailabilityPage({ search, onSearch }: { readonly s
         change({ mulai: localWib(start), selesai: localWib(new Date(Date.parse(start) + duration).toISOString()) });
     };
     return <div className="flex flex-col gap-6">
-        <header><h1 className="text-2xl font-semibold text-text-heading">Katalog Aset</h1><p className="mt-1 text-base text-text-secondary">Lihat ketersediaan dan pilih unit aset untuk rentang peminjaman. Seluruh waktu dalam WIB.</p></header>
+        <KepalaHalaman judul="Katalog Aset" ikon="katalog" accent="accent-green" info={{ judul: "Tentang Katalog Aset", isi: "Lihat ketersediaan dan pilih unit aset untuk rentang peminjaman. Seluruh waktu dalam WIB." }} />
         <form className="grid grid-cols-1 gap-4 md:grid-cols-2" onSubmit={(event) => { event.preventDefault(); change({ q: keyword.trim() || undefined }); }}>
             <Isian label="Mulai peminjaman (WIB)" type="datetime-local" step="60" required value={search.mulai} onChange={(event) => change({ mulai: event.target.value })} />
             <Isian label="Rencana pengembalian (WIB)" type="datetime-local" step="60" required value={search.selesai} onChange={(event) => change({ selesai: event.target.value })} />

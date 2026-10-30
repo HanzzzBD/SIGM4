@@ -142,6 +142,27 @@ describe("P-29 Wizard Pengajuan Reservasi", () => {
         expect(screen.getByRole("listitem", { current: "step" }).textContent).toContain("Langkah 1: Pilih Ruangan & Waktu");
     });
 
+    it("PR-07-39: langkah 2 memvalidasi langsung saat isian ditinggalkan (skema bersama, UXD-27) tanpa pratinjau server", async () => {
+        const log = server();
+        await renderAplikasi(URL_WIZARD);
+        const user = userEvent.setup();
+        await waitFor(() => expect((screen.getByLabelText(/^Ruangan/) as HTMLSelectElement).value).toBe("10"));
+        await user.click(screen.getByRole("button", { name: "Lanjut" }));
+        const nama = await screen.findByLabelText(/^Nama kegiatan/);
+        await user.click(nama);
+        expect(screen.getByText("Contoh: Rapat Koordinasi Wali Kelas")).toBeTruthy();
+        expect(screen.queryByText("Nama kegiatan wajib diisi.")).toBeNull();
+        await user.tab();
+        expect(screen.getByText("Nama kegiatan wajib diisi.")).toBeTruthy();
+        const peserta = screen.getByLabelText(/^Perkiraan jumlah peserta/);
+        await user.type(peserta, "0");
+        await user.tab();
+        expect(screen.getByText("Jumlah peserta minimal 1.")).toBeTruthy();
+        // UXD-04: langkah Tinjau tetap hanya dicapai lewat tombolnya; validasi langsung tidak memanggil server.
+        expect(screen.getByRole("button", { name: "Lanjut ke Tinjau" })).toBeTruthy();
+        expect(log.some((p) => p.url === "/reservations/preview")).toBe(false);
+    });
+
     it("alur utuh: langkah 1 bentrok ditolak + saran; langkah 2 wajib diisi; tinjau dari pratinjau server; Ajukan ber-Idempotency-Key; tanpa pelanggaran axe", async () => {
         const log = server();
         const { container, router } = await renderAplikasi("/reservasi/baru?ruangan=10&mulai=2027-03-01T02%3A00%3A00.000Z&selesai=2027-03-01T03%3A00%3A00.000Z");
