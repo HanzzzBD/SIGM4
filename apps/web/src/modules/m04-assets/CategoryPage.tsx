@@ -7,10 +7,13 @@ import { useState } from "react";
 import type { SyntheticEvent } from "react";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
 import { DialogKonfirmasi } from "../../shared/ui/dialog";
-import { Isian, Peringatan, Pilihan, Tombol } from "../../shared/ui/primitives";
+import { Isian, Peringatan, Pilihan, Tombol, gabung } from "../../shared/ui/primitives";
+import { KartuEntitas, KepalaHalaman, PengalihTampilan, useTampilanDaftar } from "../../shared/ui/visual";
 import type { KategoriLengkap } from "./form-aset";
 import { KUNCI_KATEGORI, angkaAtauNull, galatIsian, hapusKategori, kategoriLengkapQuery, simpanKategori } from "./form-aset";
 
+const TH = "sticky top-0 h-header-table bg-surface-subtle px-4 text-left text-sm font-medium text-text-primary";
+const TD = "border-t border-border-subtle px-4 py-3 text-base text-text-primary";
 const KOSONG = { nama: "", kode: "", induk: "", umur: "", interval: "" };
 type Isi = typeof KOSONG;
 const dari = (k: KategoriLengkap): Isi => ({ nama: k.nama, kode: k.kode, induk: k.parent_id ?? "", umur: k.umur_teknis_tahun === null ? "" : String(k.umur_teknis_tahun), interval: k.interval_preventif_hari === null ? "" : String(k.interval_preventif_hari) });
@@ -27,6 +30,7 @@ export function periksaKategori(f: Isi): Readonly<Record<string, string>> {
 export default function CategoryPage() {
     const qc = useQueryClient();
     const kueri = useQuery(kategoriLengkapQuery);
+    const [tampilan, setTampilan] = useTampilanDaftar("P-21");
     const [edit, setEdit] = useState<string | null>(null);
     const [f, setF] = useState<Isi>(KOSONG);
     const [galat, setGalat] = useState<Readonly<Record<string, string>>>({});
@@ -87,35 +91,25 @@ export default function CategoryPage() {
         }
     };
 
-    const Baris = ({ k, sub }: { readonly k: KategoriLengkap; readonly sub: boolean }) => (
-        <li className={sub ? "border-t border-border-subtle py-3 pl-8 pr-4" : "border-t border-border-subtle px-4 py-3 first:border-t-0"}>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-col">
-                    <span className="font-medium text-text-primary">
-                        {k.nama} <span className="font-mono text-sm text-text-secondary">{k.kode}</span>
-                    </span>
-                    <span className="text-sm text-text-secondary">
-                        Umur teknis {k.umur_teknis_tahun === null ? "—" : `${String(k.umur_teknis_tahun)} tahun`} · Interval preventif {k.interval_preventif_hari === null ? "—" : `${String(k.interval_preventif_hari)} hari`}
-                    </span>
-                </div>
-                <div className="flex gap-2">
-                    <Tombol varian="secondary" aria-label={`Ubah kategori ${k.nama}`} onClick={() => mulai(k)}>
-                        Ubah
-                    </Tombol>
-                    <Tombol varian="tertiary" aria-label={`Hapus kategori ${k.nama}`} onClick={() => setHapus(k)}>
-                        Hapus
-                    </Tombol>
-                </div>
-            </div>
-        </li>
+    const aksi = (k: KategoriLengkap) => (
+        <div className="flex gap-2">
+            <Tombol varian="secondary" aria-label={`Ubah kategori ${k.nama}`} onClick={() => mulai(k)}>
+                Ubah
+            </Tombol>
+            <Tombol varian="tertiary" aria-label={`Hapus kategori ${k.nama}`} onClick={() => setHapus(k)}>
+                Hapus
+            </Tombol>
+        </div>
     );
+    const umur = (k: KategoriLengkap) => (k.umur_teknis_tahun === null ? "—" : `${String(k.umur_teknis_tahun)} tahun`);
+    const interval = (k: KategoriLengkap) => (k.interval_preventif_hari === null ? "—" : `${String(k.interval_preventif_hari)} hari`);
+    // Urutan pohon dua tingkat dipertahankan pada kedua tampilan: induk lalu subkategorinya.
+    const urut = induk.flatMap((k) => [k, ...semua.filter((s) => s.parent_id === k.id)]);
+    const namaInduk = (k: KategoriLengkap) => semua.find((s) => s.id === k.parent_id)?.nama;
 
     return (
         <div className="flex flex-col gap-6">
-            <header className="flex flex-col gap-1">
-                <h1 className="text-2xl font-semibold text-text-heading">Kategori Aset</h1>
-                <p className="text-base text-text-secondary">Dua tingkat: kategori induk dan subkategori. Interval preventif dipakai jadwal pemeliharaan.</p>
-            </header>
+            <KepalaHalaman judul="Kategori Aset" ikon="kategori" accent="accent-blue" info={{ judul: "Tentang Kategori Aset", isi: "Dua tingkat: kategori induk dan subkategori. Interval preventif dipakai jadwal pemeliharaan." }} aksi={<PengalihTampilan nilai={tampilan} onUbah={setTampilan} />} />
             {pesan !== null && <Peringatan varian="success">{pesan}</Peringatan>}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 <section aria-labelledby="judul-daftar-kategori" className="flex flex-col gap-3 lg:col-span-2">
@@ -124,21 +118,43 @@ export default function CategoryPage() {
                     </h2>
                     {semua.length === 0 ? (
                         <KeadaanKosong judul="Belum ada kategori" pesan="Tambahkan kategori pertama melalui formulir." />
-                    ) : (
-                        <ul className="rounded-md border border-border-subtle bg-surface-default">
-                            {induk.map((k) => (
-                                <li key={k.id}>
-                                    <ul>
-                                        <Baris k={k} sub={false} />
-                                        {semua
-                                            .filter((s) => s.parent_id === k.id)
-                                            .map((s) => (
-                                                <Baris key={s.id} k={s} sub />
-                                            ))}
-                                    </ul>
+                    ) : tampilan === "kartu" ? (
+                        <ul aria-label="Daftar kategori aset" className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                            {urut.map((k) => (
+                                <li key={k.id} className="flex flex-col gap-2">
+                                    <KartuEntitas judul={k.nama} href={`/aset?kategori=${k.id}`} ikon="kategori" meta={[k.kode, namaInduk(k) === undefined ? "Kategori utama" : `Sub dari ${namaInduk(k) ?? ""}`]} status={[{ label: `Preventif ${interval(k)}`, varian: "neutral" }]} />
+                                    {aksi(k)}
                                 </li>
                             ))}
                         </ul>
+                    ) : (
+                        <div className="overflow-auto border border-border-subtle bg-surface-default">
+                            <table className="w-full border-collapse">
+                                <caption className="sr-only">Daftar kategori aset</caption>
+                                <thead>
+                                    <tr>
+                                        {["Nama", "Kode", "Umur teknis", "Interval preventif", "Aksi"].map((h) => (
+                                            <th key={h} scope="col" className={TH}>
+                                                {h}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {urut.map((k) => (
+                                        <tr key={k.id} className="h-row">
+                                            <th scope="row" className={gabung(TD, "text-left font-medium", k.parent_id !== null && "pl-8")}>
+                                                {k.nama}
+                                            </th>
+                                            <td className={`${TD} font-mono text-sm`}>{k.kode}</td>
+                                            <td className={`${TD} tabular-nums`}>{umur(k)}</td>
+                                            <td className={`${TD} tabular-nums`}>{interval(k)}</td>
+                                            <td className={TD}>{aksi(k)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     )}
                 </section>
                 <form noValidate onSubmit={(e) => void kirim(e)} aria-labelledby="judul-form-kategori" className="flex flex-col gap-4 rounded-md border border-border-subtle bg-surface-default p-4">

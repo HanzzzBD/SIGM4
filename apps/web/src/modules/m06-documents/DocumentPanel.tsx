@@ -3,7 +3,10 @@ import { useState } from "react";
 import { useCan } from "../../shared/auth";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
 import { Peringatan, Tombol } from "../../shared/ui/primitives";
+import { saranGaransiAset } from "../../shared/saran";
+import { DaftarSaran } from "../../shared/ui/visual";
 import { dokumenAsetQuery } from "./api";
+import { hariIniWib } from "./garansi";
 import { DaftarDokumen } from "./DaftarDokumen";
 import { UnggahDokumen } from "./UnggahDokumen";
 
@@ -16,6 +19,7 @@ export default function DocumentPanel({ id }: { readonly id: string }) {
         <header className="flex flex-wrap items-center justify-between gap-3"><h2 id="judul-dokumen-aset" className="text-xl font-semibold text-text-heading">Dokumen Aset</h2><div className="flex flex-wrap gap-2"><Tombol varian="secondary" onClick={() => void query.refetch()} disabled={query.isFetching}>Muat ulang</Tombol>{can("asset_document.manage") && <Tombol disabled={unggah} onClick={() => { setUnggah(true); setTersimpan(false); }}>Unggah Dokumen</Tombol>}</div></header>
         {tersimpan && <Peringatan varian="success">Dokumen tersimpan. Status pemeriksaan akan diperbarui otomatis.</Peringatan>}
         {unggah && <UnggahDokumen assetId={id} onBatal={() => setUnggah(false)} onSelesai={() => { setUnggah(false); setTersimpan(true); }} />}
+        {query.data && <DaftarSaran saran={saranGaransiAset(id, query.data, hariIniWib(), can)} />}
         {query.isPending ? <KeadaanMemuat label="Memuat dokumen aset" /> : query.isError ? <KeadaanGalat galat={query.error} onCobaLagi={() => void query.refetch()} /> : query.data.length === 0 ? <KeadaanKosong judul="Belum ada dokumen" pesan="Dokumen yang ditautkan ke aset ini akan tampil di sini." /> : <DaftarDokumen rows={query.data} assetId={id} />}
     </section>;
 }

@@ -6,6 +6,7 @@ import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { KeadaanGalat, KeadaanMemuat } from "../../shared/states";
 import { Isian, KotakCentang, Lencana, Peringatan, Pilihan, Tombol } from "../../shared/ui/primitives";
+import { KepalaHalaman } from "../../shared/ui/visual";
 import type { AsetRingkas, TataLetak } from "./api";
 import { LABEL_TATA_LETAK, MAKS_LABEL, TATA_LETAK, asetRingkasQuery, cariAsetQuery, cetakLabel, tandaiTerpasang } from "./api";
 
@@ -81,10 +82,7 @@ export default function LabelQrPage({ awal, belum = false }: { readonly awal: re
 
     return (
         <div className="flex flex-col gap-6">
-            <header className="flex flex-col gap-1">
-                <h1 className="text-2xl font-semibold text-text-heading">Label QR</h1>
-                <p className="text-base text-text-secondary">Susun lembar label untuk dicetak. Satu cetakan memuat hingga {MAKS_LABEL} label; mencetak ulang tidak mengubah QR.</p>
-            </header>
+            <KepalaHalaman judul="Label QR" ikon="qr" accent="accent-blue" info={{ judul: "Tentang Label QR", isi: `Susun lembar label untuk dicetak. Satu cetakan memuat hingga ${String(MAKS_LABEL)} label; mencetak ulang tidak mengubah QR.` }} />
             {status !== null && <Peringatan varian={status.varian}>{status.pesan}</Peringatan>}
             {belum && <div className="flex flex-col gap-3"><Peringatan varian="info">Menampilkan aset yang belum berlabel QR. Pilih aset yang akan dicetak.</Peringatan><nav aria-label="Halaman aset belum berlabel" className="flex flex-wrap items-center gap-3"><Tombol varian="secondary" disabled={page <= 1 || hasilCari.isFetching} onClick={() => setPage((p) => p - 1)}>Sebelumnya</Tombol><span>Halaman {page}</span><Tombol varian="secondary" disabled={hasilCari.isFetching || (hasilCari.data?.length ?? 0) < 25} onClick={() => setPage((p) => p + 1)}>Berikutnya</Tombol></nav></div>}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

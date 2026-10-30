@@ -11,6 +11,7 @@ import { useCan } from "../../shared/auth";
 import { materialFromUuid } from "../m22-materials";
 import { jalurTerdaftar } from "../../shared/navigasi";
 import { Isian, Lencana, Peringatan, Tombol, gabung } from "../../shared/ui/primitives";
+import { KepalaHalaman } from "../../shared/ui/visual";
 import type { AsetPindaian, AsetRingkas } from "./api";
 import { asetDariKode, asetDariUuid, uuidDariQr, qrConfigurationQuery } from "./api";
 import { usePemindai } from "./pemindai";
@@ -72,10 +73,7 @@ export default function ScanPage({ onBuka,onBukaBahan }: { readonly onBuka: (ass
 
     return (
         <div className="flex max-w-prose flex-col gap-6">
-            <header className="flex flex-col gap-1">
-                <h1 className="text-2xl font-semibold text-text-heading">Scan QR</h1>
-                <p className="text-base text-text-secondary">Arahkan kamera ke label QR aset atau bahan. Bahan membuka saldo jenis bahan.</p>
-            </header>
+            <KepalaHalaman judul="Scan QR" ikon="pindai" accent="accent-blue" info={{ judul: "Tentang Scan QR", isi: "Arahkan kamera ke label QR aset atau bahan. Bahan membuka saldo jenis bahan." }} />
             {configuration.isPending && <p role="status">Menyiapkan pemindai QR…</p>}
             {configuration.isError && <Peringatan varian="error">Konfigurasi label QR belum dapat dimuat. <Tombol varian="secondary" onClick={() => void configuration.refetch()}>Coba lagi</Tombol></Peringatan>}
             <p role="status" aria-live="polite" className="sr-only">

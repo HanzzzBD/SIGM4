@@ -15,6 +15,7 @@ import { useCan } from "../../shared/auth";
 import { jalurTerdaftar } from "../../shared/navigasi";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
 import { Lencana, Peringatan, gabung } from "../../shared/ui/primitives";
+import { KotakIkon, PopoverInfo } from "../../shared/ui/visual";
 import { LinimasaAset } from "./LinimasaAset";
 import { loadDocumentPanel } from "../m06-documents";
 import { muatServiceHistoryPanel } from "../m12-maintenance";
@@ -121,19 +122,25 @@ export default function AssetDetailPage({ id, tab, riwayatPage, onRiwayatPage }:
                 </Link>{" "}
                 / {d.kode_barang}
             </nav>
+            {/* Kepala halaman detail (PATTERNS §1.2, DSD-13): h1 tetap menerima fokus saat berpindah aset. */}
             <header className="flex flex-wrap items-start justify-between gap-4">
-                <div className="flex flex-col gap-2">
-                    <h1 ref={judul} tabIndex={-1} className="text-2xl font-semibold text-text-heading outline-none">
-                        <span className="font-mono">{d.kode_barang}</span> · {d.nama}
-                    </h1>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Lencana varian={VARIAN_KONDISI[d.kondisi]}>{LABEL_KONDISI_ASET[d.kondisi]}</Lencana>
-                        <Lencana varian={VARIAN_STATUS[d.status]}>{LABEL_STATUS_ASET[d.status]}</Lencana>
-                        <span className="text-sm text-text-secondary">
+                <div className="flex min-w-0 items-center gap-3">
+                    <KotakIkon ikon="aset" accent="accent-blue" />
+                    <div className="flex min-w-0 flex-col gap-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h1 ref={judul} tabIndex={-1} className="text-2xl font-semibold text-text-heading outline-none">
+                                <span className="font-mono">{d.kode_barang}</span> · {d.nama}
+                            </h1>
+                            <PopoverInfo judul="Tentang Detail Aset">Profil unit beserta seluruh riwayatnya. Saran tindakan muncul di tab Riwayat dan Dokumen bila datanya memenuhi aturan.</PopoverInfo>
+                            <Lencana varian={VARIAN_KONDISI[d.kondisi]}>{LABEL_KONDISI_ASET[d.kondisi]}</Lencana>
+                            <Lencana varian={VARIAN_STATUS[d.status]}>{LABEL_STATUS_ASET[d.status]}</Lencana>
+                        </div>
+                        <p className="text-sm text-text-secondary">
                             {d.kategori.nama} · {d.lokasi.ruang} · Diperoleh {d.tahun_perolehan}
-                        </span>
+                        </p>
                     </div>
                 </div>
+                <div className="flex flex-wrap items-center gap-3">
                 {aksiTransaksi && can("asset.update") && jalurTerdaftar("/aset/mutasi") && (
                     // BR-010: mutasi diblokir saat Dipinjam — tetap terlihat, nonaktif beserta alasannya (UX-05).
                     d.status === "DIPINJAM" ? (
@@ -169,6 +176,7 @@ export default function AssetDetailPage({ id, tab, riwayatPage, onRiwayatPage }:
                         Ubah
                     </a>
                 )}
+                </div>
             </header>
 
             {d.dihapuskan && (

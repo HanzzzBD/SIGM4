@@ -10,6 +10,7 @@ import type { SyntheticEvent } from "react";
 import { useCan } from "../../shared/auth";
 import { jalurTerdaftar } from "../../shared/navigasi";
 import { Isian, KotakCentang, Peringatan, Pilihan, Tombol } from "../../shared/ui/primitives";
+import { KepalaHalaman } from "../../shared/ui/visual";
 import type { AsetDibuat, Sumber } from "./form-aset";
 import { LABEL_SUMBER, SUMBER, angkaAtauNull, daftarkanAset, galatIsian, penggunaAktifQuery, teksAtauNull } from "./form-aset";
 import { KONDISI, kategoriQuery, ruanganQuery } from "./katalog";
@@ -84,7 +85,7 @@ export default function AddAssetPage({ initialRoom }: { readonly initialRoom?: s
         const ids = hasil.map((a) => a.id).join(",");
         return (
             <div className="flex max-w-prose flex-col gap-6">
-                <h1 className="text-2xl font-semibold text-text-heading">Aset terdaftar</h1>
+                <KepalaHalaman judul="Aset terdaftar" ikon="aset" accent="accent-blue" />
                 <Peringatan varian="success">{hasil.length === 1 ? "1 unit aset berhasil didaftarkan." : `${String(hasil.length)} unit aset berhasil didaftarkan, masing-masing berkode dan ber-QR unik.`}</Peringatan>
                 <ul aria-label="Unit yang terbentuk" className="flex flex-col rounded-md border border-border-subtle bg-surface-default">
                     {hasil.map((a) => (
@@ -120,10 +121,7 @@ export default function AddAssetPage({ initialRoom }: { readonly initialRoom?: s
     const jumlahLebih = Number(f.jumlah) > 1;
     return (
         <>{guard.prompt}<form noValidate onSubmit={(e) => void kirim(e)} className="flex max-w-prose flex-col gap-6">
-            <header className="flex flex-col gap-1">
-                <h1 className="text-2xl font-semibold text-text-heading">Tambah Aset</h1>
-                <p className="text-base text-text-secondary">Daftarkan satu atau beberapa unit sekaligus. Kode aset dan QR dibuat otomatis untuk setiap unit.</p>
-            </header>
+            <KepalaHalaman judul="Tambah Aset" ikon="aset" accent="accent-blue" info={{ judul: "Tentang Tambah Aset", isi: "Daftarkan satu atau beberapa unit sekaligus. Kode aset dan QR dibuat otomatis untuk setiap unit." }} />
             {umum !== null && <Peringatan varian="error">{umum}</Peringatan>}
             <Isian label="Nama aset" required value={f.nama} galat={galat["nama"]} onChange={(e) => atur("nama", e.target.value)} />
             <div className="flex flex-col gap-2">

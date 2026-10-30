@@ -1,5 +1,8 @@
 import type { DokumenAset } from "@sigm4/schemas";
 
+/** Tanggal kalender WIB (UTC+7) — dasar hitung masa garansi dan saran NT-29. */
+export const hariIniWib = (now = new Date()) => new Date(now.getTime() + 7 * 3600000).toISOString().slice(0, 10);
+
 export function penandaGaransi(d: DokumenAset, now = new Date()) {
     if (d.jenis !== "GARANSI" || !d.garansi_mulai || !d.garansi_selesai) return null;
     const today = new Date(now.getTime() + 7 * 3600000).toISOString().slice(0, 10);

@@ -6,6 +6,7 @@ import { ApiError } from "../../shared/api";
 import { useCan } from "../../shared/auth";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat, KeadaanTanpaAkses, useDaring } from "../../shared/states";
 import { Isian, KotakCentang, Peringatan, Pilihan, Tombol } from "../../shared/ui/primitives";
+import { KepalaHalaman } from "../../shared/ui/visual";
 import { downloadMovementDocument, moveAssets, movementAssetsQuery, movementDocumentQuery, movementRoomsQuery, movementUsersQuery } from "./movement-api";
 import type { MovementAsset } from "./movement-api";
 import {detailAsetQuery} from "./katalog";
@@ -49,7 +50,7 @@ export default function AssetMovementPage({ documentId, onDocument, initialAsset
     }
     const doc = report.data;
     return <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <header><h1 className="text-2xl font-semibold text-text-primary">Mutasi Lokasi Aset</h1><p className="mt-2 text-base text-text-secondary">Pindahkan hingga 50 aset dalam satu operasi. Satu berita acara memuat seluruh aset yang dipindahkan.</p></header>
+        <KepalaHalaman judul="Mutasi Lokasi Aset" ikon="aset" accent="accent-blue" info={{ judul: "Tentang Mutasi Lokasi", isi: "Pindahkan hingga 50 aset dalam satu operasi. Satu berita acara memuat seluruh aset yang dipindahkan." }} />
         {edit && <section aria-labelledby="move-heading" className="flex flex-col gap-4 rounded-md border border-border-subtle bg-surface-default p-4">
             <h2 id="move-heading" className="text-lg font-semibold text-text-primary">Pilih aset dan tujuan</h2>
             {source.isFetching&&initialAsset!==undefined&&<KeadaanMemuat label="Memuat aset dari halaman detail"/>}

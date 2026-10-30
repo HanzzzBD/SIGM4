@@ -7,6 +7,8 @@ import type { Saran } from "../ui/visual";
 
 type Isi = Record<string, unknown>;
 const angka = new Intl.NumberFormat("id-ID");
+const TANGGAL = new Intl.DateTimeFormat("id-ID", { timeZone: "UTC", dateStyle: "long" });
+const tanggal = (iso: string | undefined) => (iso === undefined ? "—" : TANGGAL.format(new Date(`${iso}T00:00:00Z`)));
 
 interface AturanSaran {
     /** id kartu manifes dashboard yang isinya dibaca. */
@@ -56,6 +58,57 @@ export const ATURAN_SARAN: readonly AturanSaran[] = [
 
 /** id kartu yang dibaca registri — halaman memuatnya lewat kueri kartu yang sama (cache bersama). */
 export const KARTU_SARAN: readonly string[] = ATURAN_SARAN.map((a) => a.kartu);
+
+/** Saran halaman detail beserta permission aksinya; penyaringan sama dengan Dashboard (PM-04). */
+type SaranBerizin = readonly (readonly [Saran | null, string])[];
+const izinkan = (daftar: SaranBerizin, can: (permission: string) => boolean): readonly Saran[] => daftar.flatMap(([s, p]) => (s !== null && can(p) ? [s] : []));
+
+/** P-82 dari `GET /materials/{id}` — FR-22.7 langkah 3, BR-085: sama dengan kartu Dashboard. */
+export function saranBahan(m: { readonly nama: string; readonly stok_menipis: boolean; readonly status: string; readonly saldo_total: number | null; readonly stok_minimum: number | null; readonly satuan: { readonly simbol: string } }, can: (permission: string) => boolean): readonly Saran[] {
+    // Saldo `null` = scope terbatas (BR-091a): tidak ada angka untuk dijadikan alasan.
+    const s: Saran | null =
+        !m.stok_menipis || m.status !== "AKTIF" || m.saldo_total === null || m.stok_minimum === null
+            ? null
+            : { id: "stok-bahan-menipis", judul: `Stok ${m.nama} di bawah minimum`, alasan: `Sisa ${angka.format(m.saldo_total)} ${m.satuan.simbol} · minimum ${angka.format(m.stok_minimum)}`, labelAksi: "Ajukan pengadaan", href: "/pengadaan/baru" };
+    return izinkan([[s, "procurement.create"]], can);
+}
+
+/**
+ * P-18 tab Riwayat dari halaman pertama linimasa (`GET /assets/{id}/timeline`): preventif terakhir dilewati
+ * tanpa pemeliharaan sesudahnya (BR-051) → work order manual.
+ */
+export function saranLinimasaAset(assetId: string, entri: readonly { readonly jenis: string; readonly nama?: string; readonly jatuh_tempo?: string }[], can: (permission: string) => boolean): readonly Saran[] {
+    const terakhir = entri.find((e) => e.jenis === "PREVENTIF_DILEWATI" || e.jenis === "PEMELIHARAAN");
+    const s: Saran | null =
+        terakhir?.jenis !== "PREVENTIF_DILEWATI"
+            ? null
+            : { id: `preventif-dilewati-${assetId}`, judul: `Pemeliharaan ${terakhir.nama ?? "preventif"} terlewat`, alasan: `Jatuh tempo ${tanggal(terakhir.jatuh_tempo)} · belum ada work order sesudahnya`, labelAksi: "Buat work order", href: `/work-order/baru?aset=${assetId}` };
+    return izinkan([[s, "workorder.create"]], can);
+}
+
+/** P-18 tab Riwayat dari `GET /assets/{id}/service-history` — BR-053: biaya melewati ambang → penggantian. */
+export function saranServisAset(assetId: string, d: { readonly rekomendasi_penggantian: boolean | null; readonly total_biaya: string | null; readonly jumlah_perbaikan: number }, can: (permission: string) => boolean): readonly Saran[] {
+    const biaya = d.total_biaya === null ? "" : ` · total Rp ${angka.format(Number(d.total_biaya))}`;
+    const s: Saran | null = d.rekomendasi_penggantian !== true ? null : { id: `penggantian-${assetId}`, judul: "Biaya pemeliharaan melewati ambang nilai perolehan", alasan: `${angka.format(d.jumlah_perbaikan)} perbaikan${biaya}`, labelAksi: "Usulkan penggantian", href: `/pengadaan/baru?aset=${assetId}` };
+    return izinkan([[s, "procurement.create"]], can);
+}
+
+/**
+ * P-18 tab Dokumen dari `GET /assets/{id}/documents` — NT-29 (garansi berakhir ≤ 30 hari) dan BR-052:
+ * kerusakan dilaporkan selagi garansi aktif. `hariIni` YYYY-MM-DD WIB dari pemanggil.
+ */
+export function saranGaransiAset(assetId: string, dokumen: readonly { readonly jenis: string; readonly nama_berkas: string; readonly garansi_mulai: string | null; readonly garansi_selesai: string | null }[], hariIni: string, can: (permission: string) => boolean): readonly Saran[] {
+    const segera = dokumen
+        .filter((d) => d.jenis === "GARANSI" && d.garansi_mulai !== null && d.garansi_selesai !== null && d.garansi_mulai <= hariIni && d.garansi_selesai >= hariIni)
+        .map((d) => ({ d, hari: Math.round((Date.parse(d.garansi_selesai ?? "") - Date.parse(hariIni)) / 86_400_000) }))
+        .filter((x) => x.hari <= 30)
+        .sort((a, b) => a.hari - b.hari)[0];
+    const s: Saran | null =
+        segera === undefined
+            ? null
+            : { id: `garansi-${assetId}`, judul: segera.hari === 0 ? "Garansi aset berakhir hari ini" : `Garansi aset berakhir dalam ${angka.format(segera.hari)} hari`, alasan: `${segera.d.nama_berkas} · berakhir ${tanggal(segera.d.garansi_selesai ?? undefined)}`, labelAksi: "Lapor kerusakan", href: `/kerusakan/baru?aset=${assetId}` };
+    return izinkan([[s, "damage.create"]], can);
+}
 
 export function saranDashboard(isiKartu: Readonly<Record<string, Isi | undefined>>, can: (permission: string) => boolean): readonly Saran[] {
     return ATURAN_SARAN.flatMap((a) => {
