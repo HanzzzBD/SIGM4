@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@react-native-firebase/app": "26.4.0",
-    "@react-native-firebase/installations": "26.4.0",
+    "@react-native-firebase/installations": "27.1.0",
     "@react-native-firebase/messaging": "26.4.0",
     "@sigm4/schemas": "*",
     "axios": "1.20.0",
