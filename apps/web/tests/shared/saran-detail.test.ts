@@ -2,7 +2,7 @@
 // halaman, dan tidak pernah dihasilkan tanpa permission aksinya (PM-04).
 
 import { describe, expect, it } from "vitest";
-import { saranBahan, saranGaransiAset, saranLinimasaAset, saranServisAset } from "../../src/shared/saran";
+import { saranBahan, saranGaransiAset, saranLinimasaAset, saranPeminjaman, saranPersetujuan, saranServisAset } from "../../src/shared/saran";
 
 const semua = () => true;
 const tanpa = (kode: string) => (p: string) => p !== kode;
@@ -56,5 +56,32 @@ describe("saran garansi P-18 (NT-29, BR-052)", () => {
         expect(saranGaransiAset("12", [doc("2026-11-10", "2026-11-01")], "2026-10-30", semua)).toEqual([]);
         expect(saranGaransiAset("12", [doc("2026-11-10", "2025-01-01", "FAKTUR")], "2026-10-30", semua)).toEqual([]);
         expect(saranGaransiAset("12", [doc("2026-11-10")], "2026-10-30", tanpa("damage.create"))).toEqual([]);
+    });
+});
+
+describe("saran jatuh tempo P-34 (FR-09.3, BR-034, keputusan 46)", () => {
+    const loan = { id: "101", tanggal_jatuh_tempo: "2027-07-06T10:00:00Z", aksi: { perpanjang: true } };
+    it("≤ 3 hari sebelum jatuh tempo dan perpanjangan diizinkan server → aksi di halaman (tanpa href)", () => {
+        const [s] = saranPeminjaman(loan, new Date("2027-07-03T10:00:00Z"));
+        expect(s).toMatchObject({ judul: "Peminjaman jatuh tempo dalam 3 hari", labelAksi: "Ajukan perpanjangan" });
+        expect(s?.href).toBeUndefined();
+        expect(saranPeminjaman(loan, new Date("2027-07-05T12:00:00Z"))[0]?.judul).toBe("Peminjaman jatuh tempo dalam 1 hari");
+    });
+    it("tidak muncul > 3 hari, sesudah jatuh tempo (BR-034), atau bila server tidak mengizinkan perpanjangan", () => {
+        expect(saranPeminjaman(loan, new Date("2027-07-03T09:59:00Z"))).toEqual([]);
+        expect(saranPeminjaman(loan, new Date("2027-07-06T10:00:00Z"))).toEqual([]);
+        expect(saranPeminjaman({ ...loan, aksi: { perpanjang: false } }, new Date("2027-07-05T12:00:00Z"))).toEqual([]);
+        expect(saranPeminjaman({ ...loan, aksi: {} }, new Date("2027-07-05T12:00:00Z"))).toEqual([]);
+    });
+});
+
+describe("saran keputusan tertunda P-37 (FR-10.2, keputusan 47)", () => {
+    const butir = (instance_id: number, terlambat: boolean | null) => ({ instance_id, label: `Reservasi Ruangan #${String(instance_id)}`, sla: terlambat === null ? null : { terlambat } });
+    it("menghitung yang melewati SLA dan menunjuk yang pertama menurut urutan server", () => {
+        expect(saranPersetujuan([butir(46, true), butir(47, true), butir(45, false), butir(44, null)], semua)).toEqual([{ id: "persetujuan-lewat-sla", judul: "2 pengajuan melewati SLA", alasan: "Paling lama: Reservasi Ruangan #46", labelAksi: "Putuskan yang paling lama", href: "/persetujuan/46" }]);
+    });
+    it("tidak muncul tanpa pengajuan terlambat atau tanpa approval.decide", () => {
+        expect(saranPersetujuan([butir(45, false), butir(44, null)], semua)).toEqual([]);
+        expect(saranPersetujuan([butir(46, true)], tanpa("approval.decide"))).toEqual([]);
     });
 });

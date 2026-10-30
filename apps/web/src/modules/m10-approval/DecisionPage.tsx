@@ -13,6 +13,7 @@ import { ApiError } from "../../shared/api";
 import { KeadaanGalat, KeadaanMemuat } from "../../shared/states";
 import { DialogKonfirmasi } from "../../shared/ui/dialog";
 import { Lencana, Peringatan, Tombol } from "../../shared/ui/primitives";
+import { KotakIkon, PopoverInfo } from "../../shared/ui/visual";
 import { LinimasaPersetujuan, riwayatApprovalQuery, waktuWib } from "./linimasa";
 import type { Keputusan } from "./persetujuan";
 import { KUNCI_PENDING, labelPengajuan, pemutusLain, pendingQuery, putuskan, teksSisaSla } from "./persetujuan";
@@ -93,9 +94,13 @@ export default function DecisionPage({ id, konteks, onSelesai,khusus }: { readon
     return (
         <div className="flex flex-col gap-6 pb-16">
             <header className="flex flex-col gap-2">
-                <h1 ref={judul} tabIndex={-1} className="text-2xl font-semibold text-text-heading outline-none">
-                    {label}
-                </h1>
+                <div className="flex min-w-0 items-center gap-3">
+                    <KotakIkon ikon="persetujuan" accent="accent-green" />
+                    <h1 ref={judul} tabIndex={-1} className="text-2xl font-semibold text-text-heading outline-none">
+                        {label}
+                    </h1>
+                    <PopoverInfo judul="Tentang Detail Keputusan">Konteks lengkap, riwayat pemohon, dan ketersediaan objek sebelum Anda memutuskan.</PopoverInfo>
+                </div>
                 <div className="flex flex-wrap items-center gap-2 text-base text-text-secondary">
                     <Lencana varian={d.status === "DISETUJUI" ? "success" : d.status === "DITOLAK" ? "error" : d.status === "PERLU_REVISI" ? "warning" : "neutral"}>{labelEnum(LABEL_STATUS_INSTANCE_APPROVAL, d.status)}</Lencana>
                     <span>

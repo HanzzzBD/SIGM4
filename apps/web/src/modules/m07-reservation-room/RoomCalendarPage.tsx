@@ -10,6 +10,7 @@ import type { KeyboardEvent, ReactNode } from "react";
 import { useSesi } from "../../shared/auth";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
 import { Isian, Lencana, Pilihan, Tombol, gabung } from "../../shared/ui/primitives";
+import { KepalaHalaman } from "../../shared/ui/visual";
 import { ketersediaanQuery } from "./api";
 import type { FilterKalender } from "./api";
 import {
@@ -463,10 +464,7 @@ export default function RoomCalendarPage({
 
     return (
         <div className="flex w-full flex-col gap-4">
-            <header className="flex flex-col gap-2">
-                <h1 className="text-2xl font-semibold text-text-primary">Kalender Ruangan</h1>
-                <p className="text-base text-text-secondary">Lihat ruangan yang terpakai dan kosong sebelum mengajukan reservasi. Seluruh waktu dalam WIB.</p>
-            </header>
+            <KepalaHalaman judul="Kalender Ruangan" ikon="kalender" accent="accent-green" info={{ judul: "Tentang Kalender Ruangan", isi: "Lihat ruangan yang terpakai dan kosong sebelum mengajukan reservasi. Seluruh waktu dalam WIB." }} />
 
             <section aria-label="Filter ruangan" className="grid grid-cols-1 gap-3 rounded-md border border-border-subtle bg-surface-default p-4 md:grid-cols-3">
                 <Pilihan label="Gedung" kosong="Semua gedung" opsi={[...gedung].map(([nilai, label]) => ({ nilai, label }))} value={pencarian.gedung ?? ""} onChange={(e) => onPencarian({ gedung: e.currentTarget.value || undefined })} />

@@ -29,7 +29,27 @@ describe("PR-05-05..08 — web pemantauan, kewajiban dan perpanjangan", () => {
  it("empat tab dan saringan peminjaman berada di URL, estimasi jelas dan axe lulus", async () => {
   const calls = server(), { container } = await renderAplikasi("/peminjaman"); await screen.findByRole("link", { name: LOAN.nomor });
   fireEvent.click(screen.getByRole("button", { name: "Terlambat" })); await waitFor(() => expect(calls.some((p) => p.url === "/loans" && p.params?.["tab"] === "terlambat")).toBe(true));
-  expect(screen.getByText(/Denda berjalan adalah estimasi/)).toBeTruthy(); expect(await pelanggaranAxe(container)).toEqual([]);
+  // UXD-24: penjelasan estimasi pindah ke Popover Info C-39; kolom tabel tetap menamai nilainya estimasi.
+  expect(await screen.findByRole("columnheader", { name: "Estimasi denda" })).toBeTruthy(); expect(await pelanggaranAxe(container)).toEqual([]);
+  fireEvent.click(screen.getByRole("button", { name: "Tentang halaman ini" })); expect((await screen.findByText(/Denda berjalan adalah estimasi/)).textContent).toContain("sampai pengembalian tercatat");
+ });
+ it("PR-07-39: P-32 Tabel ⇄ Kartu membaca tab & saringan URL yang sama (UXD-26)", async () => {
+  const calls = server(), { router } = await renderAplikasi("/peminjaman?tab=terlambat"); await screen.findByRole("table", { name: "Daftar peminjaman" });
+  const sebelum = router.state.location.href, params = calls.filter((p) => p.url === "/loans").map((p) => JSON.stringify(p.params));
+  fireEvent.click(screen.getByRole("radio", { name: "Kartu" })); expect(screen.queryByRole("table")).toBeNull();
+  expect(within(screen.getByRole("list", { name: "Daftar peminjaman" })).getByRole("link", { name: new RegExp(LOAN.nomor) }).getAttribute("href")).toBe("/peminjaman/101");
+  expect(router.state.location.href).toBe(sebelum); expect(new Set(calls.filter((p) => p.url === "/loans").map((p) => JSON.stringify(p.params)))).toEqual(new Set(params)); expect(params.every((p) => JSON.parse(p).tab === "terlambat")).toBe(true);
+ });
+ it("PR-07-39: P-34 saran jatuh tempo ≤ 3 hari membuka form perpanjangan di tempat (FR-09.3, BR-034, keputusan 46)", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2027-07-05T12:00:00Z"));
+  try {
+   server(); await renderAplikasi("/peminjaman/101"); const saran = await screen.findByRole("note", { name: "Peminjaman jatuh tempo dalam 1 hari" });
+   fireEvent.click(within(saran).getByRole("button", { name: "Ajukan perpanjangan" })); expect(await screen.findByLabelText(/Jatuh tempo baru/)).toBeTruthy(); expect(screen.queryByRole("note")).toBeNull();
+  } finally { vi.useRealTimers(); }
+ });
+ it("PR-07-39: P-34 tanpa saran bila jatuh tempo masih > 3 hari", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2027-07-01T12:00:00Z"));
+  try { server(); await renderAplikasi("/peminjaman/101"); await screen.findByRole("heading", { name: LOAN.nomor }); expect(screen.queryByRole("note")).toBeNull(); } finally { vi.useRealTimers(); }
  });
  it("daftar kewajiban memilih jenis/status dan menautkan detail", async () => {
   const calls = server(); await renderAplikasi("/denda"); await screen.findByRole("link", { name: /Keterlambatan.*PRJ-01/ });

@@ -4,7 +4,7 @@ import { ReportExportPanel } from "../m16-analytics";
 // memenuhi spesifikasi C-15 (ekstraksi menjadi komponen bersama menunggu pemakai kedua, log §10):
 // sudut tegas, kepala 48px melekat, baris 44px, urut lewat kepala kolom (ikon + `aria-sort`), klik
 // baris membuka detail, kosong di dalam badan tabel, kartu per baris 48px di bawah 48rem, dan
-// saringan/urutan/halaman/ukuran halaman di URL (SDD-FE-10).
+// saringan/urutan/halaman/ukuran halaman di URL (SDD-FE-10); pengalih Tabel ⇄ Kartu C-40 (UXD-26).
 
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -16,6 +16,7 @@ import { useCan } from "../../shared/auth";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
 import { Ikon } from "../../shared/ui/icon";
 import { Isian, KotakCentang, Lencana, Pilihan, Tombol, gabung } from "../../shared/ui/primitives";
+import { KartuEntitas, KepalaHalaman, PengalihTampilan, useTampilanDaftar } from "../../shared/ui/visual";
 import { daftarReservasiQuery } from "./api";
 import { jamWib, tanggalPendek, tanggalWib } from "./kalender";
 import { LABEL_STATUS_RESERVASI, VARIAN_STATUS_RESERVASI } from "./status";
@@ -85,6 +86,7 @@ export default function ReservationListPage({ pencarian, onPencarian }: { readon
     const exportFilter = Object.fromEntries(Object.entries(query).filter(([key]) => key !== "page" && key !== "per_page"));
     // Kata kunci dikirim saat formulir dikirim, bukan per ketukan.
     const [kata, setKata] = useState(pencarian.q ?? "");
+    const [tampilan, setTampilan] = useTampilanDaftar("P-30");
     const tersaring = pencarian.q !== undefined || pencarian.status !== undefined || pencarian.saya === true || pencarian.dari !== undefined || pencarian.sampai !== undefined;
     const ubah = (p: Partial<PencarianDaftar>) => onPencarian({ ...p, page: undefined });
     const buka = (r: ReservationListItem) => void navigate({ to: "/reservasi/$id", params: { id: r.id } });
@@ -109,17 +111,19 @@ export default function ReservationListPage({ pencarian, onPencarian }: { readon
 
     return (
         <div className="flex flex-col gap-6">
-            <header className="flex flex-wrap items-start justify-between gap-4">
-                <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl font-semibold text-text-heading">Daftar Reservasi</h1>
-                    <p className="text-base text-text-secondary">Pengajuan reservasi ruangan beserta statusnya. Seluruh waktu dalam WIB.</p>
-                </div>
-                {can("reservation.create") && (
-                    <Link to="/reservasi/baru" className="inline-flex min-h-control-md items-center rounded-md bg-teal-600 px-4 text-base font-medium text-text-inverse hover:bg-teal-700">
-                        Ajukan reservasi
-                    </Link>
-                )}
-            </header>
+            <KepalaHalaman
+                judul="Daftar Reservasi"
+                ikon="reservasi"
+                accent="accent-green"
+                info={{ judul: "Tentang Daftar Reservasi", isi: "Pengajuan reservasi ruangan beserta statusnya. Seluruh waktu dalam WIB." }}
+                aksi={
+                    can("reservation.create") ? (
+                        <Link to="/reservasi/baru" className="inline-flex min-h-control-md items-center rounded-md bg-teal-600 px-4 text-base font-medium text-text-inverse hover:bg-teal-700">
+                            Ajukan reservasi
+                        </Link>
+                    ) : undefined
+                }
+            />
             <ReportExportPanel path="/reservations/export" jenis="reservations" filter={exportFilter} exportId={pencarian.ekspor} />
 
             <section aria-label="Saringan reservasi" className="grid grid-cols-1 gap-3 rounded-md border border-border-subtle bg-surface-default p-4 md:grid-cols-2">
@@ -149,6 +153,9 @@ export default function ReservationListPage({ pencarian, onPencarian }: { readon
                 </div>
                 <Isian label="Dari tanggal" type="date" value={pencarian.dari ?? ""} onChange={(e) => ubah({ dari: e.target.value === "" ? undefined : e.target.value })} />
                 <Isian label="Sampai tanggal" type="date" value={pencarian.sampai ?? ""} onChange={(e) => ubah({ sampai: e.target.value === "" ? undefined : e.target.value })} />
+                <div className="flex justify-end md:col-span-2">
+                    <PengalihTampilan nilai={tampilan} onUbah={setTampilan} />
+                </div>
             </section>
 
             {kueri.isPending ? (
@@ -158,7 +165,8 @@ export default function ReservationListPage({ pencarian, onPencarian }: { readon
             ) : (
                 <>
                     {/* Tabel lebar menggulir di dalam wadahnya sendiri (NFR-C-02); sudut tegas (C-15). */}
-                    <div className="hidden max-h-screen overflow-auto border border-border-subtle bg-surface-default md:block">
+                    {tampilan === "tabel" ? (
+                    <div className="max-h-screen overflow-auto border border-border-subtle bg-surface-default">
                         <table className="w-full border-collapse">
                             <caption className="sr-only">Pengajuan reservasi, {pencarian.urut === "mulai" ? "urut waktu mulai terbaru" : "urut tanggal pengajuan terbaru"}</caption>
                             <thead>
@@ -210,33 +218,18 @@ export default function ReservationListPage({ pencarian, onPencarian }: { readon
                             </tbody>
                         </table>
                     </div>
-
-                    {/* < 48rem: kartu per baris, 3–4 field terpenting, seluruh kartu satu target ketuk ≥ 48px (C-15). */}
-                    <div className="md:hidden">
-                        {kueri.data.data.length === 0 ? (
-                            kosong
-                        ) : (
-                            <ul aria-label="Pengajuan reservasi" className="flex flex-col gap-2">
-                                {kueri.data.data.map((r) => (
-                                    <li key={r.id}>
-                                        <Link
-                                            to="/reservasi/$id"
-                                            params={{ id: r.id }}
-                                            aria-label={`${r.nomor}, ${LABEL_STATUS_RESERVASI[r.status]}, ${r.nama_kegiatan ?? "tanpa nama kegiatan"}, ${jadwal(r)}`}
-                                            className="flex min-h-row-mobile flex-col gap-1 border border-border-subtle bg-surface-default p-3 hover:bg-neutral-50"
-                                        >
-                                            <span className="flex items-start justify-between gap-2">
-                                                <span className="font-medium text-text-link">{r.nomor}</span>
-                                                <Lencana varian={VARIAN_STATUS_RESERVASI[r.status]}>{LABEL_STATUS_RESERVASI[r.status]}</Lencana>
-                                            </span>
-                                            <span className="text-base text-text-primary">{r.nama_kegiatan ?? "—"}</span>
-                                            <span className="text-sm text-text-secondary">{jadwal(r)}</span>
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
+                    ) : kueri.data.data.length === 0 ? (
+                        kosong
+                    ) : (
+                        // Kartu Entitas C-32 (UXD-26): saringan, urutan, dan halaman sama dengan Tabel.
+                        <ul aria-label="Pengajuan reservasi" className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                            {kueri.data.data.map((r) => (
+                                <li key={r.id}>
+                                    <KartuEntitas judul={r.nama_kegiatan ?? r.nomor} href={`/reservasi/${r.id}`} ikon="reservasi" meta={[r.nomor, jadwal(r)]} status={[{ label: LABEL_STATUS_RESERVASI[r.status], varian: VARIAN_STATUS_RESERVASI[r.status] }]} />
+                                </li>
+                            ))}
+                        </ul>
+                    )}
 
                     {kueri.data.meta.total > 0 && (
                         <nav aria-label="Halaman daftar reservasi" className="flex flex-wrap items-center justify-between gap-3 text-sm text-text-secondary tabular-nums">

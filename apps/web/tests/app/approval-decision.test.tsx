@@ -94,7 +94,7 @@ function server(o: { me?: unknown; pending?: unknown[]; riwayat?: Jawaban; decid
     });
 }
 
-beforeEach(() => vi.stubGlobal("crypto", { ...globalThis.crypto, randomUUID: () => "kunci-uji" }));
+beforeEach(() => { vi.stubGlobal("crypto", { ...globalThis.crypto, randomUUID: () => "kunci-uji" }); window.localStorage.clear(); window.sessionStorage.clear(); });
 afterEach(() => vi.unstubAllGlobals());
 
 describe("format jam kerja (CAL-01)", () => {
@@ -121,6 +121,23 @@ describe("P-37 Persetujuan Saya", () => {
         expect(within(baris[1]!).getByText("Pak Budi")).toBeTruthy();
         expect(within(baris[1]!).getByText(/WIB$/)).toBeTruthy();
         expect(await pelanggaranAxe(container)).toEqual([]);
+    });
+
+    it("PR-07-39: saran C-41 menunjuk pengajuan tertua yang melewati SLA; Kartu memakai data yang sama (keputusan 47)", async () => {
+        server({ pending: [{ ...ITEM, instance_id: 46, sla: { sisa_menit_kerja: 0, terlambat: true } }, { ...ITEM, instance_id: 47, sla: { sisa_menit_kerja: 0, terlambat: true } }, ITEM] });
+        await renderAplikasi("/persetujuan");
+        const saran = await screen.findByRole("note", { name: "2 pengajuan melewati SLA" });
+        expect(within(saran).getByRole("link", { name: "Putuskan yang paling lama" }).getAttribute("href")).toBe("/persetujuan/46");
+        await userEvent.setup().click(screen.getByRole("radio", { name: "Kartu" }));
+        const kartu = within(screen.getByRole("list", { name: "Pengajuan menunggu keputusan" })).getAllByRole("link");
+        expect(kartu.map((k) => k.getAttribute("href"))).toEqual(["/persetujuan/46", "/persetujuan/47", "/persetujuan/45"]);
+    });
+
+    it("PR-07-39: tanpa pengajuan melewati SLA tidak ada saran", async () => {
+        server();
+        await renderAplikasi("/persetujuan");
+        await screen.findByRole("link", { name: "Reservasi Ruangan #123" });
+        expect(screen.queryByRole("note")).toBeNull();
     });
 
     it("kosong → keadaan kosong berpenjelasan", async () => {

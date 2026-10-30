@@ -14,6 +14,7 @@ import { KeadaanGalat, KeadaanMemuat } from "../../shared/states";
 import { DialogKonfirmasi } from "../../shared/ui/dialog";
 import { Ikon } from "../../shared/ui/icon";
 import { Isian, Kartu, KotakCentang, Lencana, Peringatan, Pilihan, Tombol, gabung } from "../../shared/ui/primitives";
+import { KotakIkon, PopoverInfo } from "../../shared/ui/visual";
 import { ajukanReservasi, ketersediaanQuery, pratinjauPengajuan } from "./api";
 import { geserHari, jamWib, tanggalPanjang, tanggalWib, tengahMalamWib } from "./kalender";
 import { ISIAN_KOSONG, NAMA_HARI, bodyDari, masalahWaktu, opsiJam, ruanganCukup, saranSlot } from "./pengajuan";
@@ -40,6 +41,13 @@ const FIELD: Readonly<Record<string, keyof IsianWizard>> = {
     pengulangan: "hari",
     lewati: "lewati",
 };
+/**
+ * Validasi langsung langkah 2 (UXD-27, SDD-FE-18): skema bersama yang sama dengan server, mode *touched*.
+ * Kapasitas ruangan dan bentrok tetap diputus pratinjau server di langkah 3 (UXD-04).
+ */
+const pesanSkema = (r: { readonly error?: { readonly issues: readonly { readonly message: string }[] } | undefined }) => r.error?.issues[0]?.message;
+const cekTeks = (field: "nama_kegiatan" | "jenis_kegiatan") => (nilai: string) => pesanSkema(RoomReservationBodySchema.shape[field].safeParse(nilai));
+const cekPeserta = (nilai: string) => pesanSkema(RoomReservationBodySchema.shape.jumlah_peserta.safeParse(nilai === "" ? undefined : Number(nilai)));
 const LANGKAH_FIELD = (f: keyof IsianWizard): Langkah => (f === "ruangan" || f === "tanggal" || f === "mulai" || f === "selesai" ? 1 : 2);
 
 const KEADAAN: Record<TanggalPengajuanRuangan["keadaan"], { readonly varian: "success" | "error" | "warning" | "neutral"; readonly label: string }> = {
@@ -307,14 +315,16 @@ export default function ReservationWizardPage({
         isi = (
             <div className="flex flex-col gap-6">
                 <Kartu judul="Detail kegiatan">
-                    <Isian label="Nama kegiatan" required maxLength={200} value={isian.nama_kegiatan} galat={galat.nama_kegiatan} onChange={(e) => ubah({ nama_kegiatan: e.currentTarget.value })} />
-                    <Isian label="Jenis kegiatan" required maxLength={100} bantuan="Mis. Rapat, Pelatihan, Lomba, Ibadah." value={isian.jenis_kegiatan} galat={galat.jenis_kegiatan} onChange={(e) => ubah({ jenis_kegiatan: e.currentTarget.value })} />
+                    <Isian label="Nama kegiatan" required maxLength={200} contoh="Rapat Koordinasi Wali Kelas" validasi={cekTeks("nama_kegiatan")} value={isian.nama_kegiatan} galat={galat.nama_kegiatan} onChange={(e) => ubah({ nama_kegiatan: e.currentTarget.value })} />
+                    <Isian label="Jenis kegiatan" required maxLength={100} contoh="Rapat, Pelatihan, Lomba, Ibadah" validasi={cekTeks("jenis_kegiatan")} value={isian.jenis_kegiatan} galat={galat.jenis_kegiatan} onChange={(e) => ubah({ jenis_kegiatan: e.currentTarget.value })} />
                     <Isian
                         label="Perkiraan jumlah peserta"
                         required
                         type="number"
                         min={1}
                         inputMode="numeric"
+                        contoh="30"
+                        validasi={cekPeserta}
                         {...(ruang?.kapasitas === null || ruang === undefined ? {} : { bantuan: `Kapasitas ${ruang.nama}: ${String(ruang.kapasitas)} orang.` })}
                         value={isian.jumlah_peserta}
                         galat={galat.jumlah_peserta}
@@ -438,9 +448,13 @@ export default function ReservationWizardPage({
     return (
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
             <header className="flex flex-col gap-4">
-                <h1 ref={judul} tabIndex={-1} className="text-2xl font-semibold text-text-primary">
-                    Ajukan Reservasi Ruangan
-                </h1>
+                <div className="flex min-w-0 items-center gap-3">
+                    <KotakIkon ikon="reservasi" accent="accent-green" />
+                    <h1 ref={judul} tabIndex={-1} className="text-2xl font-semibold text-text-primary">
+                        Ajukan Reservasi Ruangan
+                    </h1>
+                    <PopoverInfo judul="Tentang pengajuan reservasi">Tiga langkah: pilih ruangan dan waktu, isi detail kegiatan, lalu tinjau sebelum mengajukan. Seluruh waktu dalam WIB.</PopoverInfo>
+                </div>
                 <IndikatorLangkah aktif={langkah} />
                 {langkah === 2 && isian.ruangan !== "" && <Link to="/reservasi/baru" search={{ mode: "aset", ruangan: isian.ruangan, mulai: `${isian.tanggal}T${isian.mulai}:00+07:00`, selesai: `${isian.tanggal}T${isian.selesai}:00+07:00`, keperluan: isian.keperluan, kegiatan: isian.nama_kegiatan, jenis_kegiatan: isian.jenis_kegiatan, peserta: Number(isian.jumlah_peserta) || undefined, ...(isian.berulang ? { hari: [...isian.hari], sampai: isian.sampai } : {}) }} className="text-base text-text-link hover:underline">Gabungkan dengan aset pendukung</Link>}
             </header>
