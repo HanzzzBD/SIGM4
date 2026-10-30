@@ -42,9 +42,10 @@ const DETAIL: AssetDetail = {
     nilai_perolehan: "5000000.00",
 };
 
+// Sub sebelum induk: urutan pohon disusun klien, bukan diandalkan dari urutan API.
 const KATEGORI = [
-    { id: "3", parent_id: null, nama: "Proyektor", kode: "PRY", umur_teknis_tahun: 5, interval_preventif_hari: 180, created_at: "x", updated_at: "x" },
     { id: "4", parent_id: "3", nama: "Proyektor Portabel", kode: "PRY-P", umur_teknis_tahun: null, interval_preventif_hari: null, created_at: "x", updated_at: "x" },
+    { id: "3", parent_id: null, nama: "Proyektor", kode: "PRY", umur_teknis_tahun: 5, interval_preventif_hari: 180, created_at: "x", updated_at: "x" },
 ];
 const halaman = (data: unknown[]): Jawaban => ({ status: 200, data: { success: true, data, meta: { page: 1, per_page: 100, total: data.length, total_pages: 1 } } });
 
@@ -207,7 +208,10 @@ describe("P-21 Kategori Aset", () => {
         const user = userEvent.setup();
         const { container } = await renderAplikasi("/kategori-aset");
         expect(await screen.findByText("Proyektor Portabel")).toBeTruthy();
-        expect(screen.getByText(/Interval preventif 180 hari/)).toBeTruthy();
+        // Tabel pohon: induk lalu subnya; tanpa matchMedia jsdom memakai bawaan Tabel (UXD-26).
+        const baris = screen.getAllByRole("row").slice(1);
+        expect(baris.map((b) => b.querySelector("th")?.textContent)).toEqual(["Proyektor", "Proyektor Portabel"]);
+        expect(within(baris[0]!).getByText("180 hari")).toBeTruthy();
         expect(await pelanggaranAxe(container)).toEqual([]);
         await user.type(screen.getByLabelText(/^Nama/), "Proyektor Mini");
         await user.type(screen.getByLabelText(/^Kode/), "PRY-M");

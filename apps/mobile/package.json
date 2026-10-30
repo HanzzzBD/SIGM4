@@ -11,7 +11,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "export": "expo export --platform android --platform ios",
-    "test": "tsc --project tsconfig.test.json --noEmit && vitest run"
+    "test": "tsc --project tsconfig.test.json --noEmit && vitest run",
+    "eas-build-post-install": "npm run build -w @sigm4/schemas"
   },
   "dependencies": {
     "@react-native-firebase/app": "26.4.0",

@@ -5,8 +5,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { LABEL_KONDISI_ASET } from "@sigm4/schemas";
 import type { EntriLinimasaAset } from "@sigm4/schemas";
+import { useCan } from "../../shared/auth";
+import { saranLinimasaAset } from "../../shared/saran";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
 import { Tombol } from "../../shared/ui/primitives";
+import { DaftarSaran } from "../../shared/ui/visual";
 import { linimasaAsetQuery } from "./katalog";
 
 const WAKTU = new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", dateStyle: "medium", timeStyle: "short" });
@@ -82,6 +85,7 @@ function Isi({ e }: { readonly e: EntriLinimasaAset }) {
 
 export function LinimasaAset({ id, page, onPage }: { readonly id: string; readonly page: number; readonly onPage: (p: number) => void }) {
     const kueri = useQuery(linimasaAsetQuery(id, page));
+    const can = useCan();
     if (kueri.isPending) return <KeadaanMemuat baris={5} label="Memuat riwayat aset" />;
     if (kueri.isError) return <KeadaanGalat galat={kueri.error} onCobaLagi={() => void kueri.refetch()} />;
     if (kueri.data.data.length === 0) return <KeadaanKosong judul="Belum ada riwayat" pesan="Perubahan kondisi, mutasi lokasi, dokumen, dan laporan kerusakan aset ini akan tercatat di sini." />;
@@ -90,6 +94,8 @@ export function LinimasaAset({ id, page, onPage }: { readonly id: string; readon
             <h2 id="judul-riwayat" className="sr-only">
                 Riwayat aset
             </h2>
+            {/* Hanya halaman terbaru yang mewakili keadaan sekarang (SDD-FE-18). */}
+            {page === 1 && <DaftarSaran saran={saranLinimasaAset(id, kueri.data.data, can)} />}
             <ol className="flex flex-col">
                 {kueri.data.data.map((e) => (
                     <li key={`${e.jenis}-${e.id}`} className="flex gap-3 border-l border-border-subtle pb-4 pl-4">

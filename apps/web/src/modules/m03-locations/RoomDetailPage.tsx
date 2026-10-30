@@ -4,6 +4,7 @@ import { loadRoomBlocksPanel } from "../m07-reservation-room";
 import { useCan } from "../../shared/auth";
 import { KeadaanGalat, KeadaanMemuat } from "../../shared/states";
 import { Isian, Pilihan, Tombol } from "../../shared/ui/primitives";
+import { KepalaHalaman } from "../../shared/ui/visual";
 import { assetsQuery, categoriesQuery, downloadInventory, KONDISI, label, responsibleQuery, roomQuery, STATUS, treeQuery } from "./api";
 import type { Filters } from "./api";
 import LocationForm from "./LocationForm";
@@ -26,7 +27,7 @@ export default function RoomDetailPage({ id, filters, tab, onFilters, onTab }: {
     const r = room.data;
     return <div className="flex flex-col gap-6">
         <a href="/lokasi" className="text-text-link">Kembali ke lokasi</a>
-        <header className="flex flex-wrap justify-between gap-4"><div><h1 className="text-2xl font-semibold text-text-heading">{r.nama}</h1><p className="text-text-secondary">{building?.nama} / {area?.nama} / {r.kode}</p></div>{can("location.manage") && <Tombol varian="secondary" onClick={() => setEdit(true)}>Ubah ruangan</Tombol>}</header>
+        <KepalaHalaman judul={r.nama} ikon="lokasi" accent="accent-blue" identitas={[building?.nama, area?.nama, r.kode].filter((x): x is string => x !== undefined)} aksi={can("location.manage") ? <Tombol varian="secondary" onClick={() => setEdit(true)}>Ubah ruangan</Tombol> : undefined} />
         <dl className="grid gap-4 sm:grid-cols-3">{[["Jenis", label(r.jenis)], ["Status", label(r.status)], ["Kapasitas", r.kapasitas === null ? "Belum diisi" : `${r.kapasitas} orang`], ["Penanggung jawab", people.data?.find((p) => p.id === r.penanggung_jawab_id)?.nama ?? (r.penanggung_jawab_id === null ? "Belum diisi" : "Sudah ditetapkan")], ["Dapat direservasi", r.dapat_direservasi ? "Ya" : "Tidak"], ["Reservasi siswa", r.boleh_direservasi_siswa ? "Ya" : "Tidak"]].map(([title, value]) => <div key={title}><dt className="text-sm text-text-secondary">{title}</dt><dd className="font-medium">{value}</dd></div>)}</dl>
         <nav aria-label="Bagian detail ruangan" className="flex gap-3"><Tombol varian={tab === "aset" ? "primary" : "secondary"} aria-current={tab === "aset" ? "page" : undefined} onClick={() => onTab("aset")}>Aset</Tombol><Tombol varian={tab === "jadwal" ? "primary" : "secondary"} aria-current={tab === "jadwal" ? "page" : undefined} onClick={() => onTab("jadwal")}>Jadwal Tetap</Tombol></nav>
         {tab === "jadwal" ? can("reservation.fixed_schedule") ? <Suspense fallback={<KeadaanMemuat label="Memuat jadwal tetap" />}><RoomBlocksPanel roomId={id} onRuangan={() => undefined} onTutup={() => onTab("aset")} tetap /></Suspense> : <p role="status">Anda tidak memiliki izin melihat atau mengelola jadwal tetap.</p> : !can("asset.view") ? <p role="status">Anda tidak memiliki izin melihat aset ruangan.</p> : <>

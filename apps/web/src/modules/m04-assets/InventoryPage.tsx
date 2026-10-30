@@ -1,7 +1,7 @@
 // P-15 Inventaris Aset (UX §6, §7.1 A, §7.4; FR-04.2 langkah 2–4, A1, A2; PR-02-45). Seluruh saringan,
 // urutan, dan halaman hidup di URL (SDD-FE-10) dan tampil sebagai chip yang dapat dihapus (31.3). Tabel
-// C-15: kepala melekat, urut lewat kepala kolom (ikon + `aria-sort`), klik baris membuka P-18, kartu di
-// bawah 48rem. Ekspor melalui worker PR-02-47 mengikuti izin finansial server (BR-073).
+// C-15: kepala melekat, urut lewat kepala kolom (ikon + `aria-sort`), klik baris membuka P-18; pengalih
+// Tabel ⇄ Kartu C-40 membaca saringan URL yang sama (UXD-26, SDD-FE-17). Ekspor melalui worker PR-02-47 mengikuti izin finansial server (BR-073).
 // Pemilihan massal mengikuti P-24 (log phase-02 §3).
 
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +15,7 @@ import { jalurTerdaftar } from "../../shared/navigasi";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
 import { Ikon } from "../../shared/ui/icon";
 import { Isian, Lencana, Pilihan, Tombol, gabung } from "../../shared/ui/primitives";
+import { KartuEntitas, KepalaHalaman, PengalihTampilan, useTampilanDaftar } from "../../shared/ui/visual";
 import type { ItemKatalog, Kondisi, SaringanKatalog, StatusAset, Urutan } from "./katalog";
 import { KONDISI, STATUS, VARIAN_KONDISI, VARIAN_STATUS, kategoriQuery, katalogQuery, ruanganQuery } from "./katalog";
 
@@ -46,6 +47,7 @@ export default function InventoryPage({ pencarian, onPencarian }: { readonly pen
     const kategori = useQuery(kategoriQuery);
     const ruangan = useQuery({ ...ruanganQuery, enabled: can("location.view") });
     const [kata, setKata] = useState(pencarian.q ?? "");
+    const [tampilan, setTampilan] = useTampilanDaftar("P-15");
     const page = pencarian.page ?? 1;
     const urut = pencarian.urut ?? "kode_barang";
     const ubah = (p: Partial<SaringanKatalog>) => onPencarian({ ...p, page: undefined });
@@ -79,12 +81,13 @@ export default function InventoryPage({ pencarian, onPencarian }: { readonly pen
 
     return (
         <div className="flex flex-col gap-6">
-            <header className="flex flex-wrap items-start justify-between gap-4">
-                <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl font-semibold text-text-heading">Inventaris Aset</h1>
-                    <p className="text-base text-text-secondary">Katalog seluruh unit aset beserta kondisi dan statusnya.</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
+            <KepalaHalaman
+                judul="Inventaris Aset"
+                ikon="aset"
+                accent="accent-blue"
+                info={{ judul: "Tentang Inventaris Aset", isi: "Katalog seluruh unit aset beserta kondisi dan statusnya. Saringan tersimpan di alamat halaman sehingga dapat dibagikan." }}
+                aksi={
+                <>
                     {can("asset.create") && jalurTerdaftar("/aset/impor") && (
                         <Link to="/aset/impor" className="inline-flex min-h-control-md items-center rounded-md border border-border-strong px-4 text-base font-medium text-text-primary hover:bg-neutral-50">
                             Impor Aset
@@ -95,8 +98,9 @@ export default function InventoryPage({ pencarian, onPencarian }: { readonly pen
                             Tambah Aset
                         </a>
                     )}
-                </div>
-            </header>
+                </>
+                }
+            />
 
             <section aria-label="Saringan aset" className="flex flex-col gap-3 rounded-md border border-border-subtle bg-surface-default p-4">
                 <form
@@ -112,6 +116,7 @@ export default function InventoryPage({ pencarian, onPencarian }: { readonly pen
                     <Tombol type="submit" varian="secondary">
                         Cari
                     </Tombol>
+                    <PengalihTampilan nilai={tampilan} onUbah={setTampilan} />
                 </form>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     <Pilihan label="Kategori" kosong="Semua kategori" value={pencarian.kategori ?? ""} opsi={(kategori.data ?? []).map((k) => ({ nilai: k.id, label: k.nama }))} onChange={(e) => ubah({ kategori: e.target.value === "" ? undefined : e.target.value })} />
@@ -161,7 +166,8 @@ export default function InventoryPage({ pencarian, onPencarian }: { readonly pen
                 <KeadaanGalat galat={kueri.error} onCobaLagi={() => void kueri.refetch()} />
             ) : (
                 <>
-                    <div className="hidden max-h-screen overflow-auto border border-border-subtle bg-surface-default md:block">
+                    {tampilan === "tabel" ? (
+                    <div className="max-h-screen overflow-auto border border-border-subtle bg-surface-default">
                         <table className="w-full border-collapse">
                             <caption className="sr-only">Inventaris aset</caption>
                             <thead>
@@ -218,34 +224,25 @@ export default function InventoryPage({ pencarian, onPencarian }: { readonly pen
                             </tbody>
                         </table>
                     </div>
-
-                    <div className="md:hidden">
-                        {kueri.data.data.length === 0 ? (
-                            kosong
-                        ) : (
-                            <ul aria-label="Inventaris aset" className="flex flex-col gap-2">
-                                {kueri.data.data.map((a) => (
-                                    <li key={a.id}>
-                                        <Link
-                                            to="/aset/$id"
-                                            params={{ id: a.id }}
-                                            aria-label={`${a.kode_barang}, ${a.nama}, ${LABEL_KONDISI_ASET[a.kondisi]}, ${LABEL_STATUS_ASET[a.status]}`}
-                                            className="flex min-h-row-mobile flex-col gap-1 border border-border-subtle bg-surface-default p-3 hover:bg-neutral-50"
-                                        >
-                                            <span className="flex items-start justify-between gap-2">
-                                                <span className="font-mono font-medium text-text-link">{a.kode_barang}</span>
-                                                <Lencana varian={VARIAN_STATUS[a.status]}>{LABEL_STATUS_ASET[a.status]}</Lencana>
-                                            </span>
-                                            <span className="text-base text-text-primary">{a.nama}</span>
-                                            <span className="text-sm text-text-secondary">
-                                                {LABEL_KONDISI_ASET[a.kondisi]} · {a.lokasi.ruang}
-                                            </span>
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
+                    ) : kueri.data.data.length === 0 ? (
+                        kosong
+                    ) : (
+                        <ul aria-label="Inventaris aset" className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                            {kueri.data.data.map((a) => (
+                                <li key={a.id}>
+                                    <KartuEntitas
+                                        judul={a.nama}
+                                        href={`/aset/${a.id}`}
+                                        meta={[a.kode_barang, a.lokasi.ruang]}
+                                        status={[
+                                            { label: LABEL_KONDISI_ASET[a.kondisi], varian: VARIAN_KONDISI[a.kondisi] },
+                                            { label: LABEL_STATUS_ASET[a.status], varian: VARIAN_STATUS[a.status] },
+                                        ]}
+                                    />
+                                </li>
+                            ))}
+                        </ul>
+                    )}
 
                     {kueri.data.meta.total > 0 && (
                         <nav aria-label="Halaman inventaris" className="flex flex-wrap items-center justify-between gap-3 text-sm text-text-secondary tabular-nums">

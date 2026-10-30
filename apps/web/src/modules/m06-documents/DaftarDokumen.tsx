@@ -6,6 +6,7 @@ import { ApiError } from "../../shared/api";
 import { useCan } from "../../shared/auth";
 import { DialogKonfirmasi } from "../../shared/ui/dialog";
 import { Lencana, Peringatan, Tombol } from "../../shared/ui/primitives";
+import type { Tampilan } from "../../shared/ui/visual";
 import { LABEL_JENIS, dokumenKey, lepasDokumen, unduhDokumen } from "./api";
 import { penandaGaransi } from "./garansi";
 
@@ -17,7 +18,11 @@ const alasan = { PENDING: "Unduh tersedia setelah pemeriksaan selesai.", CLEAN: 
 type Baris = DokumenAset | DokumenLintasAset;
 const pesan = (error: unknown) => error instanceof ApiError ? error.message : "Permintaan belum berhasil. Coba lagi beberapa saat lagi.";
 
-export function DaftarDokumen({ rows, assetId }: { readonly rows: readonly Baris[]; readonly assetId?: string | undefined }) {
+const TH = "sticky top-0 h-header-table bg-surface-subtle px-4 text-left text-sm font-medium text-text-primary";
+const TD = "border-t border-border-subtle px-4 py-3 text-base text-text-primary";
+
+/** Tabel ⇄ Kartu P-26 (UXD-26): baris dan aksi sama; tab Dokumen P-18 tetap kartu. */
+export function DaftarDokumen({ rows, assetId, tampilan = "kartu" }: { readonly rows: readonly Baris[]; readonly assetId?: string | undefined; readonly tampilan?: Tampilan }) {
     const can = useCan();
     const qc = useQueryClient();
     const [pilihan, setPilihan] = useState<{ readonly doc: Baris; readonly id: string } | null>(null);
@@ -47,10 +52,24 @@ export function DaftarDokumen({ rows, assetId }: { readonly rows: readonly Baris
         } catch (error) { setGalat(pesan(error)); }
         finally { setSibuk(false); }
     };
+    const aksi = (d: Baris, id: string) => <div className="flex flex-wrap gap-3"><Tombol varian="secondary" disabled={d.scan_status !== "CLEAN" || unduhan !== null || sibuk} sibuk={unduhan === `${id}:${d.id}`} aria-label={`Unduh ${d.nama_berkas} untuk aset ${"aset" in d ? d.aset.kode_barang : id}`} onClick={() => void download(id, d)}>Unduh</Tombol>
+        {can("asset_document.manage") && <Tombol varian="danger" disabled={sibuk} aria-label={`Lepas ${d.nama_berkas} dari aset ${"aset" in d ? d.aset.kode_barang : id}`} onClick={(event) => { pemicu.current = event.currentTarget; setGalat(undefined); setPilihan({ doc: d, id }); }}>Lepas dari aset</Tombol>}</div>;
     return <div ref={daftar} tabIndex={-1} className="flex min-w-0 flex-col gap-4 outline-none">
         {galat && !pilihan && <Peringatan varian="error">{galat}</Peringatan>}
         {status && <Peringatan varian="success">{status}</Peringatan>}
-        <ul aria-label="Daftar dokumen" className="flex flex-col gap-4">{rows.map((d) => {
+        {tampilan === "tabel" ? <div className="overflow-auto border border-border-subtle bg-surface-default"><table className="w-full border-collapse"><caption className="sr-only">Daftar dokumen</caption><thead><tr>{["Nama berkas", "Aset", "Jenis", "Status", "Diunggah", "Aksi"].map((k) => <th key={k} scope="col" className={TH}>{k}</th>)}</tr></thead><tbody>{rows.map((d) => {
+            const id = "aset" in d ? d.aset.id : assetId;
+            if (!id) return null;
+            const garansi = penandaGaransi(d);
+            return <tr key={`${d.id}:${id}`} className="h-row align-top">
+                <th scope="row" className={`${TD} max-w-xs break-all text-left font-medium`}>{d.nama_berkas}</th>
+                <td className={TD}>{"aset" in d ? (can("asset.view") ? <Link to="/aset/$id/dokumen" params={{ id }} className="text-text-link hover:text-text-link-hover">{d.aset.kode_barang}</Link> : d.aset.kode_barang) : "—"}{"aset" in d && <span className="block text-sm text-text-secondary">{d.aset.nama}</span>}</td>
+                <td className={TD}><Lencana varian="neutral">{LABEL_JENIS[d.jenis]}</Lencana></td>
+                <td className={TD}><span className="flex flex-wrap gap-2"><Lencana varian={d.scan_status === "CLEAN" ? "success" : d.scan_status === "INFECTED" ? "error" : "warning"}>{STATUS[d.scan_status]}</Lencana>{garansi && <Lencana varian={garansi.varian}>{garansi.label}</Lencana>}</span></td>
+                <td className={`${TD} text-sm tabular-nums`}>{WAKTU.format(new Date(d.diunggah_pada))} WIB</td>
+                <td className={TD}>{aksi(d, id)}</td>
+            </tr>;
+        })}</tbody></table></div> : <ul aria-label="Daftar dokumen" className="flex flex-col gap-4">{rows.map((d) => {
             const id = "aset" in d ? d.aset.id : assetId;
             if (!id) return null;
             const garansi = penandaGaransi(d);
@@ -62,10 +81,9 @@ export function DaftarDokumen({ rows, assetId }: { readonly rows: readonly Baris
                 {d.garansi_mulai && d.garansi_selesai && <p className="text-sm text-text-secondary">Masa garansi: {tgl(d.garansi_mulai)} – {tgl(d.garansi_selesai)}</p>}
                 <p className="text-sm text-text-secondary">Diunggah {WAKTU.format(new Date(d.diunggah_pada))} WIB · {(d.ukuran / 1024).toLocaleString("id-ID", { maximumFractionDigits: 1 })} KB · {d.jumlah_aset} tautan aset</p>
                 {d.scan_status !== "CLEAN" && <p className="text-sm text-text-secondary">{alasan[d.scan_status]}</p>}
-                <div className="flex flex-wrap gap-3"><Tombol varian="secondary" disabled={d.scan_status !== "CLEAN" || unduhan !== null || sibuk} sibuk={unduhan === `${id}:${d.id}`} aria-label={`Unduh ${d.nama_berkas} untuk aset ${"aset" in d ? d.aset.kode_barang : id}`} onClick={() => void download(id, d)}>Unduh</Tombol>
-                    {can("asset_document.manage") && <Tombol varian="danger" disabled={sibuk} aria-label={`Lepas ${d.nama_berkas} dari aset ${"aset" in d ? d.aset.kode_barang : id}`} onClick={(event) => { pemicu.current = event.currentTarget; setGalat(undefined); setPilihan({ doc: d, id }); }}>Lepas dari aset</Tombol>}</div>
+                {aksi(d, id)}
             </li>;
-        })}</ul>
+        })}</ul>}
         <DialogKonfirmasi buka={pilihan !== null} onTutup={() => { setPilihan(null); setGalat(undefined); }} onFokusKembali={() => { if (pemicu.current?.isConnected) pemicu.current.focus(); else daftar.current?.focus(); }} judul="Lepas dokumen dari aset ini?" labelAksi="Lepas dokumen" varian="danger" sibuk={sibuk} galat={galat} onKonfirmasi={() => void hapus()}>
             <p className="break-words">{pilihan?.doc.nama_berkas}. Tautan ke aset lain tetap tersedia. Jika ini tautan terakhir, dokumen dihapus dari daftar; berkas tetap disimpan untuk jejak audit.</p>
         </DialogKonfirmasi>

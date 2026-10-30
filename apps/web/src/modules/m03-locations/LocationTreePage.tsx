@@ -4,6 +4,7 @@ import { api } from "../../shared/api";
 import { useCan } from "../../shared/auth";
 import { KeadaanGalat, KeadaanMemuat } from "../../shared/states";
 import { Isian, Pilihan, Tombol } from "../../shared/ui/primitives";
+import { KepalaHalaman } from "../../shared/ui/visual";
 import { DialogKonfirmasi } from "../../shared/ui/dialog";
 import LocationForm from "./LocationForm";
 import type { Target } from "./LocationForm";
@@ -20,7 +21,7 @@ export default function LocationTreePage({ q, status, onSearch }: { readonly q: 
     const match = (name: string, code: string) => `${name} ${code}`.toLocaleLowerCase("id").includes(q.toLocaleLowerCase("id"));
     const buildings = tree.data?.map((b) => ({ ...b, areas: b.areas.map((a) => ({ ...a, rooms: a.rooms.filter((r) => (status === "" || r.status === status) && (match(b.nama, b.kode) || match(a.nama, a.kode) || match(r.nama, r.kode))) })).filter((a) => a.rooms.length > 0 || (status === "" && (match(b.nama, b.kode) || match(a.nama, a.kode)))) })).filter((b) => b.areas.length > 0 || ((status === "" || b.status === status) && match(b.nama, b.kode))) ?? [];
     return <div className="flex flex-col gap-6">
-        <header className="flex flex-wrap justify-between gap-4"><div><h1 className="text-2xl font-semibold text-text-heading">Manajemen Lokasi</h1><p className="text-text-secondary">Gedung, area, dan ruangan beserta jumlah unit aset.</p></div>{manage && <Tombol onClick={() => setTarget({ kind: "buildings" })}>Tambah gedung</Tombol>}</header>
+        <KepalaHalaman judul="Manajemen Lokasi" ikon="lokasi" accent="accent-blue" info={{ judul: "Tentang Lokasi", isi: "Gedung, area, dan ruangan beserta jumlah unit aset. Buka ruangan untuk melihat asetnya." }} aksi={manage ? <Tombol onClick={() => setTarget({ kind: "buildings" })}>Tambah gedung</Tombol> : undefined} />
         <div className="grid gap-4 sm:grid-cols-2"><Isian label="Cari lokasi" type="search" value={q} onChange={(e) => onSearch(e.target.value, status)} /><Pilihan label="Status lokasi" kosong="Semua status" value={status} opsi={[{ nilai: "AKTIF", label: "Aktif" }, { nilai: "NONAKTIF", label: "Nonaktif" }]} onChange={(e) => onSearch(q, e.target.value)} /></div>
         {tree.isPending ? <KeadaanMemuat label="Memuat lokasi" /> : tree.isError ? <KeadaanGalat galat={tree.error} onCobaLagi={() => void tree.refetch()} /> : buildings.length === 0 ? <p role="status">Tidak ada lokasi yang sesuai.</p> : <ul className="flex flex-col gap-4">{buildings.map((b) => <li key={b.id} className="rounded-md border border-border-subtle bg-surface-default p-4">
             <details key={`${b.id}-${q}-${status}`} open={q !== "" || status !== "" || undefined}><summary className="cursor-pointer font-semibold">{b.nama} · {b.kode} · {b.jumlah_aset} aset · {label(b.status)}</summary>

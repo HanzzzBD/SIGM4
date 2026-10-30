@@ -13,6 +13,7 @@ import { useCan } from "../../shared/auth";
 import { KeadaanGalat, KeadaanKosong, KeadaanMemuat } from "../../shared/states";
 import { DialogKonfirmasi } from "../../shared/ui/dialog";
 import { Isian, KotakCentang, Peringatan, Pilihan, Tombol } from "../../shared/ui/primitives";
+import { KepalaHalaman } from "../../shared/ui/visual";
 import type { Sumber } from "./form-aset";
 import { LABEL_SUMBER, SUMBER, angkaAtauNull, galatIsian, penggunaAktifQuery, teksAtauNull, ubahAset } from "./form-aset";
 import { KONDISI, detailAsetQuery } from "./katalog";
@@ -105,14 +106,7 @@ function Formulir({ d, onSelesai }: { readonly d: AssetDetail; readonly onSelesa
 
     return (
         <form noValidate onSubmit={(e) => void kirim(e)} className="flex max-w-prose flex-col gap-6">
-            <header className="flex flex-col gap-1">
-                <h1 className="text-2xl font-semibold text-text-heading">
-                    Ubah Aset <span className="font-mono">{d.kode_barang}</span>
-                </h1>
-                <p className="text-base text-text-secondary">
-                    Kategori {d.kategori.nama} dan kode aset tetap. Lokasi diubah lewat Mutasi Lokasi.
-                </p>
-            </header>
+            <KepalaHalaman judul="Ubah Aset" ikon="aset" accent="accent-blue" identitas={[d.kode_barang, d.nama]} info={{ judul: "Tentang Ubah Aset", isi: `Kategori ${d.kategori.nama} dan kode aset tetap. Lokasi diubah lewat Mutasi Lokasi.` }} />
             {umum !== null && <Peringatan varian="error">{umum}</Peringatan>}
             <Isian label="Nama aset" required value={f.nama} galat={galat["nama"]} onChange={(e) => atur("nama", e.target.value)} />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

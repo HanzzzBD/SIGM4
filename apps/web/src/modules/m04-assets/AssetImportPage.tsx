@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { KeadaanGalat, KeadaanMemuat } from "../../shared/states";
 import { Isian, Peringatan, Tombol } from "../../shared/ui/primitives";
+import { KepalaHalaman } from "../../shared/ui/visual";
 import { jalurDrilldown } from "../../shared/navigasi";
 import { AssetImportInputError, downloadTemplate, importJobKey, importJobQuery, importReportCsv, runningImport, saveDownload, uploadAssets } from "./api";
 import { ImportReportRetention, useImportReportExpired } from "../../shared/ui/import-report-retention";
@@ -32,7 +33,7 @@ export default function AssetImportPage({ jobId, onJob }: { readonly jobId: numb
     }
     return (
         <div className="mx-auto flex w-full max-w-md flex-col gap-6">
-            <header><h1 className="text-2xl font-semibold text-text-primary">Impor Aset</h1><p className="mt-2 text-base text-text-secondary">Unggah CSV atau XLSX sesuai templat. Baris yang gagal dapat diperbaiki dan diunggah kembali.</p></header>
+            <KepalaHalaman judul="Impor Aset" ikon="aset" accent="accent-blue" info={{ judul: "Tentang Impor Aset", isi: "Unggah CSV atau XLSX sesuai templat. Baris yang gagal dapat diperbaiki dan diunggah kembali." }} />
             <section aria-labelledby="upload-heading" className="rounded-md border border-border-subtle bg-surface-default p-4">
                 <h2 id="upload-heading" className="mb-4 text-lg font-semibold text-text-primary">Unggah berkas</h2>
                 <div className="mb-4"><Tombol varian="secondary" sibuk={template.isPending} onClick={() => template.mutate()}>Unduh templat XLSX</Tombol></div>
