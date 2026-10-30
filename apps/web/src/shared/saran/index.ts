@@ -8,6 +8,7 @@ import type { Saran } from "../ui/visual";
 type Isi = Record<string, unknown>;
 const angka = new Intl.NumberFormat("id-ID");
 const TANGGAL = new Intl.DateTimeFormat("id-ID", { timeZone: "UTC", dateStyle: "long" });
+const WAKTU = new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", dateStyle: "long", timeStyle: "short" });
 const tanggal = (iso: string | undefined) => (iso === undefined ? "—" : TANGGAL.format(new Date(`${iso}T00:00:00Z`)));
 
 interface AturanSaran {
@@ -108,6 +109,31 @@ export function saranGaransiAset(assetId: string, dokumen: readonly { readonly j
             ? null
             : { id: `garansi-${assetId}`, judul: segera.hari === 0 ? "Garansi aset berakhir hari ini" : `Garansi aset berakhir dalam ${angka.format(segera.hari)} hari`, alasan: `${segera.d.nama_berkas} · berakhir ${tanggal(segera.d.garansi_selesai ?? undefined)}`, labelAksi: "Lapor kerusakan", href: `/kerusakan/baru?aset=${assetId}` };
     return izinkan([[s, "damage.create"]], can);
+}
+
+const HARI_MS = 86_400_000;
+
+/**
+ * P-34 dari `GET /loans/{id}` — FR-09.3 (akan jatuh tempo ≤ 3 hari) dan FR-09.5/BR-034 (perpanjangan sebelum
+ * jatuh tempo). Kelayakan perpanjangan diputus server lewat `aksi.perpanjang`; aksinya membuka form di
+ * halaman yang sama, sehingga saran tanpa `href` (keputusan 46).
+ */
+export function saranPeminjaman(l: { readonly id: string; readonly tanggal_jatuh_tempo: string; readonly aksi: { readonly perpanjang?: boolean | undefined } }, sekarang: Date): readonly Saran[] {
+    const sisa = Date.parse(l.tanggal_jatuh_tempo) - sekarang.getTime();
+    if (l.aksi.perpanjang !== true || sisa <= 0 || sisa > 3 * HARI_MS) return [];
+    const hari = Math.ceil(sisa / HARI_MS);
+    return [{ id: `jatuh-tempo-${l.id}`, judul: hari === 1 ? "Peminjaman jatuh tempo dalam 1 hari" : `Peminjaman jatuh tempo dalam ${angka.format(hari)} hari`, alasan: `Jatuh tempo ${WAKTU.format(new Date(l.tanggal_jatuh_tempo))} WIB · perpanjangan masih dapat diajukan`, labelAksi: "Ajukan perpanjangan" }];
+}
+
+/**
+ * P-37 dari `GET /approvals/pending` — FR-10.2 langkah 2: server mengurutkan tenggat SLA terdekat lebih dulu,
+ * sehingga butir terlambat pertama adalah yang paling lama menunggu melewati SLA (keputusan 47).
+ */
+export function saranPersetujuan(butir: readonly { readonly instance_id: number; readonly label: string; readonly sla: { readonly terlambat: boolean } | null }[], can: (permission: string) => boolean): readonly Saran[] {
+    const lewat = butir.filter((b) => b.sla?.terlambat === true);
+    const pertama = lewat[0];
+    const s: Saran | null = pertama === undefined ? null : { id: "persetujuan-lewat-sla", judul: lewat.length === 1 ? "1 pengajuan melewati SLA" : `${angka.format(lewat.length)} pengajuan melewati SLA`, alasan: `Paling lama: ${pertama.label}`, labelAksi: "Putuskan yang paling lama", href: `/persetujuan/${String(pertama.instance_id)}` };
+    return izinkan([[s, "approval.decide"]], can);
 }
 
 export function saranDashboard(isiKartu: Readonly<Record<string, Isi | undefined>>, can: (permission: string) => boolean): readonly Saran[] {
